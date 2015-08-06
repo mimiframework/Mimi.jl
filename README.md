@@ -23,5 +23,5 @@ Pkg.clone("https://github.com/davidanthoff/Mimi.jl.git")
 ## Models using Mimi
 
 * [FUND.jl](https://github.com/davidanthoff/fund.jl) (currently in beta)
-* DICE.jl and RICE.jl (currently in closed beta)
-* SNEASY.jl (currently in closed beta)
+* Mimi-DICE.jl and Mimi-RICE.jl (currently in closed beta)
+* Mimi-SNEASY.jl (currently in closed beta)
