@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/davidanthoff/Mimi.jl.svg?branch=master)](https://travis-ci.org/davidanthoff/Mimi.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/ppdbe3p1lfh4c2jl?svg=true)](https://ci.appveyor.com/project/davidanthoff/mimi-jl)
 [![Documentation Status](https://readthedocs.org/projects/mimi/badge/?version=latest)](https://readthedocs.org/projects/mimi/?badge=latest)
 
 # Mimi - Integrated Assessment Modeling Framework
