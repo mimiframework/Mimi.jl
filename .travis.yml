@@ -6,3 +6,10 @@ julia:
   - release
 notifications:
   email: false
+before_install:
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+script:
+  - julia -e 'versioninfo(); Pkg.init(); Pkg.clone(pwd())'
+  - julia -e 'Pkg.test("Mimi", coverage=true)'
+after_success:
+  - julia -e 'cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
