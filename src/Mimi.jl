@@ -434,12 +434,16 @@ macro defcomp(name, ex)
 				push!(varalloc.args,u)
 				push!(varalloc.args,:(s.$(variableName) = Array($(variableType),temp_indices...)))
 
-				push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
+				if variableType==:Float64
+					push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
+				end
 			else
 				vartypedef = variableType
-				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), {}, "", "")))
+				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
 
-				push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
+				if variableType==:Float64
+					push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
+				end
 			end
 
 			push!(vardef.args,:($(esc(variableName))::$(esc(vartypedef))))
