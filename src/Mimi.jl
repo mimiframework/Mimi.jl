@@ -3,24 +3,27 @@ module Mimi
 if VERSION < v"0.4.0-dev"
     using Docile
 end
-@docstrings
 
 include("metainfo.jl")
 using DataStructures
 using DataFrames
 using Distributions
+using Compat
 
 export
 	ComponentState, timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
 	connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
 	getdataframe, components, variables, setbestguess, setrandom, getvpd
 
+import
+	Base.getindex
+
 abstract ComponentState
 
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
-	dependentCompsAndParams::Set{(ComponentState,Symbol)}
+	dependentCompsAndParams::Set{@compat Tuple{ComponentState, Symbol}}
 	value
 
 	function CertainScalarParameter(value)
@@ -46,12 +49,12 @@ function setrandom(p::CertainScalarParameter)
 end
 
 type UncertainScalarParameter <: Parameter
-	dependentCompsAndParams::Set{(ComponentState,Symbol)}
+	dependentCompsAndParams::Set{@compat Tuple{ComponentState,Symbol}}
 	value::Distribution
 
 	function UncertainScalarParameter(value)
 		p = new()
-		p.dependentCompsAndParams = Set{(ComponentState,Symbol)}()
+		p.dependentCompsAndParams = Set{@compat Tuple{ComponentState,Symbol}}()
 		p.value = value
 		return p
 	end
@@ -169,7 +172,7 @@ end
 
 function setindex(m::Model, name::Symbol, count::Int)
 	m.indices_counts[name] = count
-	m.indices_values[name] = [1:count]
+	m.indices_values[name] = collect(1:count)
 	nothing
 end
 

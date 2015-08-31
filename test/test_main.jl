@@ -1,5 +1,6 @@
 using Base.Test
 using Mimi
+using Compat
 
 @defcomp foo1 begin
 	index1 = Index()
@@ -15,7 +16,7 @@ using Mimi
 	var5 = Variable(index=[index1,4])
 end
 
-x1 = foo1({:time=>10, :index1=>3})
+x1 = foo1(@compat Dict{Symbol, Int}(:time=>10, :index1=>3))
 
 @test x1.Dimensions.index1.start == 1
 @test x1.Dimensions.index1.stop == 3
