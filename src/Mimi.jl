@@ -16,7 +16,7 @@ export
 	getdataframe, components, variables, setbestguess, setrandom, getvpd
 
 import
-	Base.getindex
+	Base.getindex, Base.run
 
 abstract ComponentState
 
@@ -28,7 +28,7 @@ type CertainScalarParameter <: Parameter
 
 	function CertainScalarParameter(value)
 		p = new()
-		p.dependentCompsAndParams = Set{(ComponentState,Symbol)}()
+		p.dependentCompsAndParams = Set{@compat Tuple{ComponentState,Symbol}}()
 		p.value = value
 		return p
 	end
