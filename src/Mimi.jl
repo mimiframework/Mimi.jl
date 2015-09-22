@@ -283,7 +283,7 @@ function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
 	end
 
 	for c in m.components
-		for name in names(c[2].Parameters)
+		for name in fieldnames(c[2].Parameters)
 			if !in(string(c[1])*string(name), m.parameters_that_are_set)
 				connectparameter(m, c[1], name, name)
 			end
