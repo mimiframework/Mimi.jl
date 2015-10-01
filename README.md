@@ -18,7 +18,7 @@ Mimi is a package that provides a component model for integrated assessment mode
 Mimi is an installable package. To install Mimi, use the following:
 
 ````
-Pkg.clone("Mimi")
+Pkg.add("Mimi")
 ````
 
 ## Models using Mimi
