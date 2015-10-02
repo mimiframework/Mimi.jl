@@ -261,5 +261,4 @@ run1 = run_my_model()
 
 #Check results
 run1[:emissions, :E_Global]
-end
 ```
