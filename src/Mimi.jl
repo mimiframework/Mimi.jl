@@ -69,6 +69,7 @@ function setrandom(p::UncertainScalarParameter)
 	end
 end
 
+
 type UncertainArrayParameter <: Parameter
 	distributions::Array{Distribution, 1}
 	values::Array{Float64,1}
@@ -237,6 +238,15 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 
 	nothing
 end
+
+function updateparameter(m::Model, name::Symbol, value)
+       p = m.parameters[symbol(lowercase(string(name)))]
+
+       p.value = value
+
+       setbestguess(p)
+end
+
 
 function addparameter(m::Model, name::Symbol, value)
 	if isa(value, Distribution)
