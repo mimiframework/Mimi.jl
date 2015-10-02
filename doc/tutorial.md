@@ -222,31 +222,32 @@ Save this file as _**region_parameters.jl**_
 The final step is to create a function that will run our model.
 
 ```julia
-function run_my_model()
 include("gross_economy.jl")
 include("emissions.jl")
 
-my_model = Model()
+function run_my_model()
 
-setindex(my_model, :time, [2015:5:2110])
-setindex(my_model, :regions, ["Region1", "Region2", "Region3"])	 #Note that the regions of your model must be specified here
+	my_model = Model()
 
-addcomponent(my_model, grosseconomy)
-addcomponent(my_model, emissions)
+	setindex(my_model, :time, [2015:5:2110])
+	setindex(my_model, :regions, ["Region1", "Region2", "Region3"])	 #Note that the regions of your model must be specified here
 
-setparameter(my_model, :grosseconomy, :l, l)
-setparameter(my_model, :grosseconomy, :tfp, tfp)
-setparameter(my_model, :grosseconomy, :s, s)
-setparameter(my_model, :grosseconomy, :depk,depk)
-setparameter(my_model, :grosseconomy, :k0, k0)
-setparameter(my_model, :grosseconomy, :share, 0.3)
+	addcomponent(my_model, grosseconomy)
+	addcomponent(my_model, emissions)
 
-#set parameters for emissions component
-setparameter(my_model, :emissions, :sigma, sigma)
-connectparameter(my_model, :emissions, :YGROSS, :grosseconomy)
+	setparameter(my_model, :grosseconomy, :l, l)
+	setparameter(my_model, :grosseconomy, :tfp, tfp)
+	setparameter(my_model, :grosseconomy, :s, s)
+	setparameter(my_model, :grosseconomy, :depk,depk)
+	setparameter(my_model, :grosseconomy, :k0, k0)
+	setparameter(my_model, :grosseconomy, :share, 0.3)
 
-run(my_model)
-return(my_model)
+	#set parameters for emissions component
+	setparameter(my_model, :emissions, :sigma, sigma)
+	connectparameter(my_model, :emissions, :YGROSS, :grosseconomy)
+
+	run(my_model)
+	return(my_model)
 
 end
 ```
