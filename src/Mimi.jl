@@ -13,7 +13,7 @@ using Compat
 export
 	ComponentState, timestep, simulate, run, @defcomp, Model, setindex, addcomponent, setparameter,
 	connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-      getdataframe, components, variables, setbestguess, setrandom, getvpd
+	getdataframe, components, variables, setbestguess, setrandom, getvpd
 
 import
 	Base.getindex, Base.run
