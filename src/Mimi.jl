@@ -13,7 +13,7 @@ using Compat
 export
 	ComponentState, timestep, simulate, run, @defcomp, Model, setindex, addcomponent, setparameter,
 	connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd
+      getdataframe, components, variables, setbestguess, setrandom, getvpd
 
 import
 	Base.getindex, Base.run
@@ -336,16 +336,16 @@ function run(m::Model;ntimesteps=typemax(Int64))
 		init(c)
 	end
 
-    if haskey(m.indices_counts, :time)
-        for t=1:min(m.indices_counts[:time],ntimesteps)
-            for c in values(m.components)
-                timestep(c,t)
-            end
-        end
-    else
-        for c in values(m.components)
-            simulate(c)
-        end
+	if haskey(m.indices_counts, :time)
+		for t=1:min(m.indices_counts[:time],ntimesteps)
+			for c in values(m.components)
+				timestep(c,t)
+			end
+		end
+	else
+		for c in values(m.components)
+			simulate(c)
+		end
 	end
 end
 
@@ -509,8 +509,8 @@ macro defcomp(name, ex)
 			Dimensions::$(esc(symbol(string(name,"Dimensions"))))
 
 			function $(esc(symbol(name)))(indices)
-                s = new()
-                s.nsteps = get(indices, :time, 0)
+				s = new()
+				s.nsteps = get(indices, :time, 0)
 				s.Parameters = $(esc(symbol(string(name,"Parameters"))))()
 				s.Dimensions = $(esc(symbol(string(name,"Dimensions"))))(indices)
 				s.Variables = $(esc(symbol(string(name,"Variables"))))(indices)
@@ -518,8 +518,8 @@ macro defcomp(name, ex)
 			end
 		end
 
-        import Mimi.timestep
-        import Mimi.simulate
+		import Mimi.timestep
+		import Mimi.simulate
 		import Mimi.init
 		import Mimi.resetvariables
 
