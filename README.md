@@ -5,9 +5,9 @@
 
 # Mimi - Integrated Assessment Modeling Framework
 
-A [Julia](http://julialang.org) package for intergrated assessment models. For more information, see the **[Documentation](http://mimi.readthedocs.org/en/latest/)**.
+A [Julia](http://julialang.org) package for integrated assessment models. For more information, see the **[Documentation](http://mimi.readthedocs.org/en/latest/)**.
 
-Please get in touch with [David Anthoff](http://www.david-anthoff.com) if you are interested in using this framework or want to be invovled in any way with this effort.
+Please get in touch with [David Anthoff](http://www.david-anthoff.com) if you are interested in using this framework or want to be involved in any way with this effort.
 
 ## Overview
 
