@@ -237,9 +237,19 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 		push!(p.dependentCompsAndParams, (c, name))
 	else
 		if m.autodiffable
-			setfield!(c.Parameters, name, collect(Number, p.values))
+			try
+				# If component was not defined with defcompo, this will fail
+				setfield!(c.Parameters, name, collect(Number, p.values))
+			catch
+				setfield!(c.Parameters, name, p.values)
+			end
 		else
-			setfield!(c.Parameters, name, p.values)
+			try
+				# If component was defined with defcompo, this will fail
+				setfield!(c.Parameters, name, p.values)
+			catch
+				setfield!(c.Parameters, name, collect(Number, p.values))
+			end
 		end
 	end
 	push!(m.parameters_that_are_set, string(component) * string(name))

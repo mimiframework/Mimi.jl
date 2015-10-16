@@ -7,10 +7,8 @@ define the optimization problem, and `solution` to solve it.
 OptiMimi supports autodifferentiation using ForwardDiff.  To use it,
 the Model must be created with the optional `autodiffable` set to
 `true`, and all components must be created using the `@defcompo`
-macro, instead of `@defcomp`.  Currently, errors will result if either
-`autodiffable` is set to `false` but any component is defined with
-`@defcompo` or `autodiffable` is set to true but any component is not
-defined using `@defcompo`.
+macro, instead of `@defcomp`.  If these are not used, OptiMimi will
+fall back on derivative-free algorithms.
 
 OptiMimi is currently implemented using NLopt, but it is meant to
 provide a general interface for other optimization systems.
