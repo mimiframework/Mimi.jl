@@ -1,10 +1,11 @@
 module OptiMimi
 
 using NLopt
+using ForwardDiff
 
 import Mimi: Model, CertainScalarParameter, CertainArrayParameter, addparameter
 
-export problem, solution
+export problem, solution, unaryobjective
 
 allverbose = false
 
@@ -36,16 +37,69 @@ function setparameters(model::Model, components::Vector{Symbol}, names::Vector{S
     startindex = 1
     for (ii, len, isscalar) in @task nameindexes(model, names)
         if isscalar
-            setfield!(model.components[components[ii]].Parameters, names[ii], xx[startindex])
+            model.components[components[ii]].Parameters.(names[ii]) = xx[startindex]
         else
-            setfield!(model.components[components[ii]].Parameters, names[ii], xx[startindex:(startindex+len - 1)])
+            model.components[components[ii]].Parameters.(names[ii]) = collect(Number, xx[startindex:(startindex+len - 1)])
         end
         startindex += len
     end
 end
 
+"""Generate the form of objective function used by the optimization, taking parameters rather than a model."""
+function unaryobjective(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, objective::Function)
+    function my_objective(xx::Vector)
+        if allverbose
+            println(xx)
+        end
+
+        setparameters(model, components, names, xx)
+        run(model)
+        objective(model)
+    end
+
+    my_objective
+end
+
+"""Create an NLopt-style objective function which does not use its grad argument."""
+function gradfreeobjective(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, objective::Function)
+    myunaryobjective = unaryobjective(model, components, names, objective)
+    function myobjective(xx::Vector, grad::Vector)
+        myunaryobjective(xx)
+    end
+
+    myobjective
+end
+
+"""Create an NLopt-style objective function which computes an autodiff gradient."""
+function autodiffobjective(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, objective::Function)
+    myunaryobjective = unaryobjective(model, components, names, objective)
+    fdcache = ForwardDiffCache()
+    function myobjective(xx::Vector, grad::Vector)
+        grad, allresults = ForwardDiff.gradient(myunaryobjective, xx, AllResults, cache=fdcache)
+        value(allresults)
+    end
+
+    myobjective
+end
+
+function checkautodiff(model::Model, components::Vector{Symbol})
+    # Note: currently checks all components, not just those affected by `components`
+    if model.autodiffable
+        for componentname in components
+            component = model.components[componentname]
+            # Check that the first parameter has type Number
+            onevar = getfield(component.Variables, fieldnames(component.Variables)[1])
+            if eltype(onevar) != Number
+                warn("Model is set to be autodiffable, but $(componentname) is not defined with @defcompo.")
+                model.autodiffable = false
+                return
+            end
+        end
+    end
+end
+
 """Setup an optimization problem."""
-function problem{T<:Real}(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, lowers::Vector{T}, uppers::Vector{T}, objective::Function; constraints::Vector{Function}=Function[], algorithm::Symbol=:LN_COBYLA)
+function problem{T<:Real}(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, lowers::Vector{T}, uppers::Vector{T}, objective::Function; constraints::Vector{Function}=Function[], algorithm::Symbol=:LN_COBYLA_OR_LD_MMA)
     my_lowers = T[]
     my_uppers = T[]
 
@@ -57,15 +111,27 @@ function problem{T<:Real}(model::Model, components::Vector{Symbol}, names::Vecto
         totalvars += len
     end
 
-    function my_objective(xx::Vector, grad::Vector)
-        if allverbose
-            println(xx)
+    checkautodiff(model, components)
+
+    if model.autodiffable
+        if algorithm == :LN_COBYLA_OR_LD_MMA
+            algorithm = :LD_MMA
+        end
+        if string(algorithm)[2] == 'N'
+            warn("Model is autodifferentiable, but optimizing using a derivative-free algorithm.")
+            myobjective = gradfreeobjective(model, components, names, objective)
+        else
+            myobjective = autodiffobjective(model, components, names, objective)
+        end
+    else
+        if algorithm == :LN_COBYLA_OR_LD_MMA
+            algorithm = :LN_COBYLA
+        elseif string(algorithm)[2] == 'D'
+            warn("Model is non-differentiable, but requested a gradient algorithm; instead using LN_COBYLA.")
+            algorithm = :LN_COBYLA
         end
 
-        setparameters(model, components, names, xx)
-
-        run(model)
-        objective(model)
+        myobjective = gradfreeobjective(model, components, names, objective)
     end
 
     opt = Opt(algorithm, totalvars)
@@ -73,7 +139,7 @@ function problem{T<:Real}(model::Model, components::Vector{Symbol}, names::Vecto
     upper_bounds!(opt, my_uppers)
     xtol_rel!(opt, minimum(1e-6 * (uppers - lowers)))
 
-    max_objective!(opt, my_objective)
+    max_objective!(opt, myobjective)
 
     for constraint in constraints
         let this_constraint = constraint

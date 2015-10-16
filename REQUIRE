@@ -5,3 +5,4 @@ DataFrames
 Docile
 Compat
 NLopt
+ForwardDiff
