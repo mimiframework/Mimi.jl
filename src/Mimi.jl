@@ -247,8 +247,13 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 			try
 				# If component was defined with defcompo, this will fail
 				setfield!(c.Parameters, name, p.values)
-			catch
-				setfield!(c.Parameters, name, collect(Number, p.values))
+			catch ex
+				# This could be for another reason (e.g., Ints passed in)
+				if isa(ex, TypeError) && eltype(p.values) == Float64
+					setfield!(c.Parameters, name, collect(Number, p.values))
+				else
+					throw(ex)
+				end
 			end
 		end
 	end

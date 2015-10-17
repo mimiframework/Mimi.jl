@@ -75,7 +75,8 @@ function autodiffobjective(model::Model, components::Vector{Symbol}, names::Vect
     myunaryobjective = unaryobjective(model, components, names, objective)
     fdcache = ForwardDiffCache()
     function myobjective(xx::Vector, grad::Vector)
-        grad, allresults = ForwardDiff.gradient(myunaryobjective, xx, AllResults, cache=fdcache)
+        calcgrad, allresults = ForwardDiff.gradient(myunaryobjective, xx, AllResults, cache=fdcache)
+        copy!(grad, calcgrad)
         value(allresults)
     end
 

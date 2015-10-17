@@ -1,5 +1,7 @@
 module metainfo
 
+using Compat
+
 type MetaVariable
 	name::Symbol
 	datatype::DataType
