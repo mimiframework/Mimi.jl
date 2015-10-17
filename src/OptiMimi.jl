@@ -74,11 +74,20 @@ end
 """Create an NLopt-style objective function which computes an autodiff gradient."""
 function autodiffobjective(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, objective::Function)
     myunaryobjective = unaryobjective(model, components, names, objective)
-    fdcache = ForwardDiffCache()
-    function myobjective(xx::Vector, grad::Vector)
-        calcgrad, allresults = ForwardDiff.gradient(myunaryobjective, xx, AllResults, cache=fdcache)
-        copy!(grad, calcgrad)
-        value(allresults)
+    if VERSION < v"0.4.0-dev"
+        # Slower: doesn't use cache
+        function myobjective(xx::Vector, gradout::Vector)
+            gradual = myunaryobjective(GraDual(xx))
+            copy!(gradout, grad(gradual))
+            value(gradual)
+        end
+    else
+        fdcache = ForwardDiffCache()
+        function myobjective(xx::Vector, grad::Vector)
+            calcgrad, allresults = ForwardDiff.gradient(myunaryobjective, xx, AllResults, cache=fdcache)
+            copy!(grad, calcgrad)
+            value(allresults)
+        end
     end
 
     myobjective
