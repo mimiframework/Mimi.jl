@@ -2,6 +2,7 @@ module OptiMimi
 
 using NLopt
 using ForwardDiff
+using Compat
 
 import Mimi: Model, CertainScalarParameter, CertainArrayParameter, addparameter
 
