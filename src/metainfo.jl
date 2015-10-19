@@ -4,12 +4,12 @@ type MetaVariable
 	name::Symbol
 	datatype::DataType
 	dimensions::Array{Any}
-	description::String
-	unit::String
+	description::UTF8String
+	unit::UTF8String
 end
 
 type MetaComponent
-	name::String
+	name::UTF8String
 	variables::Dict{Symbol,MetaVariable}
 end
 

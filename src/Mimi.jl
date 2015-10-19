@@ -118,7 +118,7 @@ type Model
 	indices_counts::Dict{Symbol,Int}
 	indices_values::Dict{Symbol,Vector{Any}}
 	components::OrderedDict{Symbol,ComponentState}
-	parameters_that_are_set::Set{String}
+	parameters_that_are_set::Set{UTF8String}
 	parameters::Dict{Symbol,Parameter}
 
 	function Model()
@@ -126,7 +126,7 @@ type Model
 		m.indices_counts = Dict{Symbol,Int}()
 		m.indices_values = Dict{Symbol, Vector{Any}}()
 		m.components = OrderedDict{Symbol,ComponentState}()
-		m.parameters_that_are_set = Set{String}()
+		m.parameters_that_are_set = Set{UTF8String}()
 		m.parameters = Dict{Symbol, Parameter}()
 		return m
 	end
