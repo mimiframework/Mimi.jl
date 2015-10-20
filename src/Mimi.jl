@@ -120,14 +120,16 @@ type Model
 	components::OrderedDict{Symbol,ComponentState}
 	parameters_that_are_set::Set{UTF8String}
 	parameters::Dict{Symbol,Parameter}
+	numberType::DataType
 
-	function Model()
+	function Model(numberType::DataType=Float64)
 		m = new()
 		m.indices_counts = Dict{Symbol,Int}()
 		m.indices_values = Dict{Symbol, Vector{Any}}()
 		m.components = OrderedDict{Symbol,ComponentState}()
 		m.parameters_that_are_set = Set{UTF8String}()
 		m.parameters = Dict{Symbol, Parameter}()
+		m.numberType = numberType
 		return m
 	end
 end
@@ -187,7 +189,7 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
 		error("Can only specify before or after parameter")
 	end
 
-	comp = t(m.indices_counts)
+	comp = t(m.numberType, m.indices_counts)
 
 	if before!=nothing
 		newcomponents = OrderedDict{Symbol,ComponentState}()
@@ -516,7 +518,7 @@ macro defcomp(name, ex)
 			return $(esc(symbol(string(name, "Impl")))){Float64}(Float64, indices)
 		end
 
-		function $(esc(symbol(name))){T}(::T, indices)
+		function $(esc(symbol(name))){T}(::Type{T}, indices)
 			return $(esc(symbol(string(name, "Impl")))){T}(T, indices)
 		end
 
