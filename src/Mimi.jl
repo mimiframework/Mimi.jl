@@ -500,8 +500,8 @@ macro defcomp(name, ex)
 
 		type $(esc(symbol(string(name, "Impl")))){T} <: $(esc(symbol(name)))
 			nsteps::Int
-			Parameters::$(esc(symbol(string(name,"Parameters"))))
-			Variables::$(esc(symbol(string(name,"Variables"))))
+			Parameters::$(esc(symbol(string(name,"Parameters")))){T}
+			Variables::$(esc(symbol(string(name,"Variables")))){T}
 			Dimensions::$(esc(symbol(string(name,"Dimensions"))))
 
 			function $(esc(symbol(string(name, "Impl")))){T}(::Type{T}, indices)
