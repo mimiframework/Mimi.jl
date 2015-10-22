@@ -11,7 +11,7 @@ using Distributions
 using Compat
 
 export
-	ComponentState, timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
+	ComponentState, timestep, simulate, run, @defcomp, @defcompo, Model, setindex, addcomponent, setparameter,
 	connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
 	getdataframe, components, variables, setbestguess, setrandom, getvpd
 
@@ -120,14 +120,16 @@ type Model
 	components::OrderedDict{Symbol,ComponentState}
 	parameters_that_are_set::Set{UTF8String}
 	parameters::Dict{Symbol,Parameter}
+	autodiffable::Bool
 
-	function Model()
+	function Model(autodiffable=false)
 		m = new()
 		m.indices_counts = Dict{Symbol,Int}()
 		m.indices_values = Dict{Symbol, Vector{Any}}()
 		m.components = OrderedDict{Symbol,ComponentState}()
 		m.parameters_that_are_set = Set{UTF8String}()
 		m.parameters = Dict{Symbol, Parameter}()
+		m.autodiffable = autodiffable
 		return m
 	end
 end
@@ -234,7 +236,26 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 	if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
 		push!(p.dependentCompsAndParams, (c, name))
 	else
-		setfield!(c.Parameters,name,p.values)
+		if m.autodiffable
+			try
+				# If component was not defined with defcompo, this will fail
+				setfield!(c.Parameters, name, collect(Number, p.values))
+			catch
+				setfield!(c.Parameters, name, p.values)
+			end
+		else
+			try
+				# If component was defined with defcompo, this will fail
+				setfield!(c.Parameters, name, p.values)
+			catch ex
+				# This could be for another reason (e.g., Ints passed in)
+				if isa(ex, TypeError) && eltype(p.values) == Float64
+					setfield!(c.Parameters, name, collect(Number, p.values))
+				else
+					throw(ex)
+				end
+			end
+		end
 	end
 	push!(m.parameters_that_are_set, string(component) * string(name))
 
@@ -336,9 +357,15 @@ function run(m::Model;ntimesteps=typemax(Int64))
 		init(c)
 	end
 
-	for t=1:min(m.indices_counts[:time],ntimesteps)
+	if haskey(m.indices_counts, :time)
+		for t=1:min(m.indices_counts[:time],ntimesteps)
+			for c in values(m.components)
+				timestep(c,t)
+			end
+		end
+	else
 		for c in values(m.components)
-			timestep(c,t)
+			simulate(c)
 		end
 	end
 end
@@ -346,6 +373,12 @@ end
 function timestep(s, t)
 	typeofs = typeof(s)
 	println("Generic timestep called for $typeofs.")
+end
+
+"""Simulate function, if the model does not use time."""
+function simulate(s)
+	typeofs = typeof(s)
+	println("Generic simulate called for $typeofs.")
 end
 
 function init(s)
@@ -369,6 +402,18 @@ end
 Define a new component.
 """
 macro defcomp(name, ex)
+	# All of the actual work will be done by defcomphelper
+	defcomphelper(name, ex, :Float64)
+end
+
+"""Define a component that can be optimized."""
+macro defcompo(name, ex)
+	# All of the actual work will be done by defcomphelper
+	defcomphelper(name, ex, :Number)
+end
+
+# numtype: Use :Number if OptiMimi uses ForwardDiff; otherwise, use :Float64
+function defcomphelper(name, ex, numtype)
 	dimdef = Expr(:block)
 	dimconstructor = Expr(:block)
 
@@ -389,7 +434,7 @@ macro defcomp(name, ex)
 		elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Parameter
 			if isa(line.args[1], Symbol)
 				parameterName = line.args[1]
-				parameterType = :Float64
+				parameterType = numtype
 			elseif line.args[1].head==:(::)
 				parameterName = line.args[1].args[1]
 				parameterType = line.args[1].args[2]
@@ -408,7 +453,7 @@ macro defcomp(name, ex)
 		elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
 			if isa(line.args[1], Symbol)
 				variableName = line.args[1]
-				variableType = :Float64
+				variableType = numtype
 			elseif line.args[1].head==:(::)
 				variableName = line.args[1].args[1]
 				variableType = line.args[1].args[2]
@@ -437,14 +482,14 @@ macro defcomp(name, ex)
 				push!(varalloc.args,u)
 				push!(varalloc.args,:(s.$(variableName) = Array($(variableType),temp_indices...)))
 
-				if variableType==:Float64
+				if variableType==numtype
 					push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
 				end
 			else
 				vartypedef = variableType
 				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
 
-				if variableType==:Float64
+				if variableType==numtype
 					push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
 				end
 			end
@@ -498,7 +543,7 @@ macro defcomp(name, ex)
 
 			function $(esc(symbol(name)))(indices)
 				s = new()
-				s.nsteps = indices[:time]
+				s.nsteps = get(indices, :time, 0)
 				s.Parameters = $(esc(symbol(string(name,"Parameters"))))()
 				s.Dimensions = $(esc(symbol(string(name,"Dimensions"))))(indices)
 				s.Variables = $(esc(symbol(string(name,"Variables"))))(indices)
@@ -507,6 +552,7 @@ macro defcomp(name, ex)
 		end
 
 		import Mimi.timestep
+		import Mimi.simulate
 		import Mimi.init
 		import Mimi.resetvariables
 
@@ -535,3 +581,5 @@ function timestep(s::adder, t::Int)
 end
 
 end # module
+
+include("OptiMimi.jl")
