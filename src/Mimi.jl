@@ -1,14 +1,9 @@
 module Mimi
 
-if VERSION < v"0.4.0-dev"
-    using Docile
-end
-
 include("metainfo.jl")
 using DataStructures
 using DataFrames
 using Distributions
-using Compat
 
 export
 	ComponentState, timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
@@ -23,12 +18,12 @@ abstract ComponentState
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
-	dependentCompsAndParams::Set{@compat Tuple{ComponentState, Symbol}}
+	dependentCompsAndParams::Set{Tuple{ComponentState, Symbol}}
 	value
 
 	function CertainScalarParameter(value)
 		p = new()
-		p.dependentCompsAndParams = Set{@compat Tuple{ComponentState,Symbol}}()
+		p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
 		p.value = value
 		return p
 	end
@@ -49,12 +44,12 @@ function setrandom(p::CertainScalarParameter)
 end
 
 type UncertainScalarParameter <: Parameter
-	dependentCompsAndParams::Set{@compat Tuple{ComponentState,Symbol}}
+	dependentCompsAndParams::Set{Tuple{ComponentState,Symbol}}
 	value::Distribution
 
 	function UncertainScalarParameter(value)
 		p = new()
-		p.dependentCompsAndParams = Set{@compat Tuple{ComponentState,Symbol}}()
+		p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
 		p.value = value
 		return p
 	end
