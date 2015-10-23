@@ -72,8 +72,8 @@ model2 = Model(Number)
 setindex(model2, :time, 1)
 setindex(model2, :regions, 2)
 addcomponent(model2, quad2)
-setparameter(model2, :quad2, :maximum, [2., 10.])
-setparameter(model2, :quad2, :input, [0., 0.])
+setparameter(model2, :quad2, :maximum, convert(Array{Number,1}, [2., 10.]))
+setparameter(model2, :quad2, :input, convert(Array{Number,1}, [0., 0.]))
 
 objective2(model::Model) = sum(model[:quad2, :value])
 
