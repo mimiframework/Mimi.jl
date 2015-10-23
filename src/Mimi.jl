@@ -115,14 +115,16 @@ type Model
 	components::OrderedDict{Symbol,ComponentState}
 	parameters_that_are_set::Set{UTF8String}
 	parameters::Dict{Symbol,Parameter}
+	numberType::DataType
 
-	function Model()
+	function Model(numberType::DataType=Float64)
 		m = new()
 		m.indices_counts = Dict{Symbol,Int}()
 		m.indices_values = Dict{Symbol, Vector{Any}}()
 		m.components = OrderedDict{Symbol,ComponentState}()
 		m.parameters_that_are_set = Set{UTF8String}()
 		m.parameters = Dict{Symbol, Parameter}()
+		m.numberType = numberType
 		return m
 	end
 end
@@ -182,7 +184,7 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
 		error("Can only specify before or after parameter")
 	end
 
-	comp = t(m.indices_counts)
+	comp = t(m.numberType, m.indices_counts)
 
 	if before!=nothing
 		newcomponents = OrderedDict{Symbol,ComponentState}()
@@ -384,7 +386,7 @@ macro defcomp(name, ex)
 		elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Parameter
 			if isa(line.args[1], Symbol)
 				parameterName = line.args[1]
-				parameterType = :Float64
+				parameterType = :Number
 			elseif line.args[1].head==:(::)
 				parameterName = line.args[1].args[1]
 				parameterType = line.args[1].args[2]
@@ -392,18 +394,20 @@ macro defcomp(name, ex)
 				error()
 			end
 
+			concreteParameterType = parameterType == :Number ? :T : parameterType
+
 			if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
 				parameterIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
-				partypedef = :(Array{$(parameterType),$(length(parameterIndex))})
+				partypedef = :(Array{$(concreteParameterType),$(length(parameterIndex))})
 			else
-				partypedef = parameterType
+				partypedef = concreteParameterType
 			end
 
 			push!(pardef.args,:($(esc(parameterName))::$(esc(partypedef))))
 		elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
 			if isa(line.args[1], Symbol)
 				variableName = line.args[1]
-				variableType = :Float64
+				variableType = :Number
 			elseif line.args[1].head==:(::)
 				variableName = line.args[1].args[1]
 				variableType = line.args[1].args[2]
@@ -411,9 +415,11 @@ macro defcomp(name, ex)
 				error()
 			end
 
+			concreteVariableType = variableType == :Number ? :T : variableType
+
 			if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
 				variableIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
-				vartypedef = :(Array{$(variableType),$(length(variableIndex))})
+				vartypedef = :(Array{$(concreteVariableType),$(length(variableIndex))})
 
 				vardims = Array(Any, 0)
 				u = :(temp_indices = [])
@@ -430,16 +436,16 @@ macro defcomp(name, ex)
 				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), "", "")))
 
 				push!(varalloc.args,u)
-				push!(varalloc.args,:(s.$(variableName) = Array($(variableType),temp_indices...)))
+				push!(varalloc.args,:(s.$(variableName) = Array($(concreteVariableType),temp_indices...)))
 
-				if variableType==:Float64
+				if variableType==:Number
 					push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
 				end
 			else
-				vartypedef = variableType
+				vartypedef = concreteVariableType
 				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
 
-				if variableType==:Float64
+				if variableType==:Number
 					push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
 				end
 			end
@@ -454,21 +460,21 @@ macro defcomp(name, ex)
 
 	x = quote
 
-		type $(symbol(string(name,"Parameters")))
+		type $(symbol(string(name,"Parameters"))){$(esc(:T))}
 			$(pardef)
 
-			function $(esc(symbol(string(name,"Parameters"))))()
-				$(esc(:s)) = new()
+			function $(esc(symbol(string(name,"Parameters")))){$(esc(:T))}(::Type{$(esc(:T))})
+				$(esc(:s)) = new{$(esc(:T))}()
 				return $(esc(:s))
 			end
 		end
 
-		type $(symbol(string(name,"Variables")))
+		type $(symbol(string(name,"Variables"))){$(esc(:T))}
 			$(vardef)
 
-			function $(esc(symbol(string(name, "Variables"))))(indices)
+			function $(esc(symbol(string(name, "Variables")))){$(esc(:T))}(::Type{$(esc(:T))}, indices)
 				$(esc(:indices)) = indices
-				$(esc(:s)) = new()
+				$(esc(:s)) = new{$(esc(:T))}()
 				$(esc(varalloc))
 				return $(esc(:s))
 			end
@@ -485,20 +491,30 @@ macro defcomp(name, ex)
 			end
 		end
 
-		type $(esc(symbol(name))) <: Mimi.ComponentState
+		abstract $(esc(symbol(name))) <: Mimi.ComponentState
+
+		type $(esc(symbol(string(name, "Impl")))){T} <: $(esc(symbol(name)))
 			nsteps::Int
-			Parameters::$(esc(symbol(string(name,"Parameters"))))
-			Variables::$(esc(symbol(string(name,"Variables"))))
+			Parameters::$(esc(symbol(string(name,"Parameters")))){T}
+			Variables::$(esc(symbol(string(name,"Variables")))){T}
 			Dimensions::$(esc(symbol(string(name,"Dimensions"))))
 
-			function $(esc(symbol(name)))(indices)
-				s = new()
+			function $(esc(symbol(string(name, "Impl")))){T}(::Type{T}, indices)
+				s = new{T}()
 				s.nsteps = indices[:time]
-				s.Parameters = $(esc(symbol(string(name,"Parameters"))))()
+				s.Parameters = $(esc(symbol(string(name,"Parameters")))){T}(T)
 				s.Dimensions = $(esc(symbol(string(name,"Dimensions"))))(indices)
-				s.Variables = $(esc(symbol(string(name,"Variables"))))(indices)
+				s.Variables = $(esc(symbol(string(name,"Variables")))){T}(T, indices)
 				return s
 			end
+		end
+
+		function $(esc(symbol(name)))(indices)
+			return $(esc(symbol(string(name, "Impl")))){Float64}(Float64, indices)
+		end
+
+		function $(esc(symbol(name))){T}(::Type{T}, indices)
+			return $(esc(symbol(string(name, "Impl")))){T}(T, indices)
 		end
 
 		import Mimi.timestep
