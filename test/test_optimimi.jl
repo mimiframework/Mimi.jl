@@ -1,8 +1,6 @@
 include("../src/OptiMimi.jl")
 using Base.Test
 
-push!(LOAD_PATH, "/Users/jrising/projects/iam/")
-
 using Mimi
 using OptiMimi
 using ForwardDiff
