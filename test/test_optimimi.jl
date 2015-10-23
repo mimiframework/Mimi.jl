@@ -20,7 +20,7 @@ using ForwardDiff
     value = Variable(index=[regions])
 end
 
-function simulate(state::quad1)
+function timestep(state::quad1, t)
     v = state.Variables
     p = state.Parameters
 
@@ -29,6 +29,7 @@ end
 
 # Prepare model
 model1 = Model()
+setindex(model1, :time, 1)
 setindex(model1, :regions, 2)
 addcomponent(model1, quad1)
 setparameter(model1, :quad1, :maximum, [2., 10.])
@@ -59,7 +60,7 @@ optprob = problem(model1, [:quad1], [:input], [0.], [100.0], objective1)
     value = Variable(index=[regions])
 end
 
-function simulate(state::quad2)
+function timestep(state::quad2, t)
     v = state.Variables
     p = state.Parameters
 
@@ -68,6 +69,7 @@ end
 
 # Prepare model
 model2 = Model(true)
+setindex(model2, :time, 1)
 setindex(model2, :regions, 2)
 addcomponent(model2, quad2)
 setparameter(model2, :quad2, :maximum, [2., 10.])
