@@ -93,22 +93,6 @@ function autodiffobjective(model::Model, components::Vector{Symbol}, names::Vect
     myobjective
 end
 
-function checkautodiff(model::Model, components::Vector{Symbol})
-    # Note: currently checks all components, not just those affected by `components`
-    if model.autodiffable
-        for componentname in components
-            component = model.components[componentname]
-            # Check that the first parameter has type Number
-            onevar = getfield(component.Variables, fieldnames(component.Variables)[1])
-            if eltype(onevar) != Number
-                warn("Model is set to be autodiffable, but $(componentname) is not defined with @defcompo.")
-                model.autodiffable = false
-                return
-            end
-        end
-    end
-end
-
 """Setup an optimization problem."""
 function problem{T<:Real}(model::Model, components::Vector{Symbol}, names::Vector{Symbol}, lowers::Vector{T}, uppers::Vector{T}, objective::Function; constraints::Vector{Function}=Function[], algorithm::Symbol=:LN_COBYLA_OR_LD_MMA)
     my_lowers = T[]
@@ -122,9 +106,7 @@ function problem{T<:Real}(model::Model, components::Vector{Symbol}, names::Vecto
         totalvars += len
     end
 
-    checkautodiff(model, components)
-
-    if model.autodiffable
+    if model.numberType==Number
         if algorithm == :LN_COBYLA_OR_LD_MMA
             algorithm = :LD_MMA
         end
