@@ -68,7 +68,7 @@ function timestep(state::quad2, t)
 end
 
 # Prepare model
-model2 = Model(true)
+model2 = Model(Number)
 setindex(model2, :time, 1)
 setindex(model2, :regions, 2)
 addcomponent(model2, quad2)
