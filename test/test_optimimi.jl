@@ -1,3 +1,4 @@
+include("../src/OptiMimi.jl")
 using Base.Test
 
 push!(LOAD_PATH, "/Users/jrising/projects/iam/")
