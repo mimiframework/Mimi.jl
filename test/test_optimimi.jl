@@ -47,7 +47,7 @@ optprob = problem(model1, [:quad1], [:input], [0.], [100.0], objective1)
 # Automatic differentiation
 
 # Create quadratic component
-@defcompo quad2 begin
+@defcomp quad2 begin
     regions = Index()
 
     # The x-value of the maximum of the quadratic
