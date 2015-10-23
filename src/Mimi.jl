@@ -11,7 +11,7 @@ using Distributions
 using Compat
 
 export
-	ComponentState, timestep, simulate, run, @defcomp, @defcompo, Model, setindex, addcomponent, setparameter,
+	ComponentState, timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
 	connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
 	getdataframe, components, variables, setbestguess, setrandom, getvpd
 
@@ -120,16 +120,16 @@ type Model
 	components::OrderedDict{Symbol,ComponentState}
 	parameters_that_are_set::Set{UTF8String}
 	parameters::Dict{Symbol,Parameter}
-	autodiffable::Bool
+	numberType::DataType
 
-	function Model(autodiffable=false)
+	function Model(numberType::DataType=Float64)
 		m = new()
 		m.indices_counts = Dict{Symbol,Int}()
 		m.indices_values = Dict{Symbol, Vector{Any}}()
 		m.components = OrderedDict{Symbol,ComponentState}()
 		m.parameters_that_are_set = Set{UTF8String}()
 		m.parameters = Dict{Symbol, Parameter}()
-		m.autodiffable = autodiffable
+		m.numberType = numberType
 		return m
 	end
 end
@@ -189,7 +189,7 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
 		error("Can only specify before or after parameter")
 	end
 
-	comp = t(m.indices_counts)
+	comp = t(m.numberType, m.indices_counts)
 
 	if before!=nothing
 		newcomponents = OrderedDict{Symbol,ComponentState}()
@@ -236,26 +236,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 	if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
 		push!(p.dependentCompsAndParams, (c, name))
 	else
-		if m.autodiffable
-			try
-				# If component was not defined with defcompo, this will fail
-				setfield!(c.Parameters, name, collect(Number, p.values))
-			catch
-				setfield!(c.Parameters, name, p.values)
-			end
-		else
-			try
-				# If component was defined with defcompo, this will fail
-				setfield!(c.Parameters, name, p.values)
-			catch ex
-				# This could be for another reason (e.g., Ints passed in)
-				if isa(ex, TypeError) && eltype(p.values) == Float64
-					setfield!(c.Parameters, name, collect(Number, p.values))
-				else
-					throw(ex)
-				end
-			end
-		end
+		setfield!(c.Parameters,name,p.values)
 	end
 	push!(m.parameters_that_are_set, string(component) * string(name))
 
@@ -357,15 +338,9 @@ function run(m::Model;ntimesteps=typemax(Int64))
 		init(c)
 	end
 
-	if haskey(m.indices_counts, :time)
-		for t=1:min(m.indices_counts[:time],ntimesteps)
-			for c in values(m.components)
-				timestep(c,t)
-			end
-		end
-	else
+	for t=1:min(m.indices_counts[:time],ntimesteps)
 		for c in values(m.components)
-			simulate(c)
+			timestep(c,t)
 		end
 	end
 end
@@ -373,12 +348,6 @@ end
 function timestep(s, t)
 	typeofs = typeof(s)
 	println("Generic timestep called for $typeofs.")
-end
-
-"""Simulate function, if the model does not use time."""
-function simulate(s)
-	typeofs = typeof(s)
-	println("Generic simulate called for $typeofs.")
 end
 
 function init(s)
@@ -402,18 +371,6 @@ end
 Define a new component.
 """
 macro defcomp(name, ex)
-	# All of the actual work will be done by defcomphelper
-	defcomphelper(name, ex, :Float64)
-end
-
-"""Define a component that can be optimized."""
-macro defcompo(name, ex)
-	# All of the actual work will be done by defcomphelper
-	defcomphelper(name, ex, :Number)
-end
-
-# numtype: Use :Number if OptiMimi uses ForwardDiff; otherwise, use :Float64
-function defcomphelper(name, ex, numtype)
 	dimdef = Expr(:block)
 	dimconstructor = Expr(:block)
 
@@ -434,7 +391,7 @@ function defcomphelper(name, ex, numtype)
 		elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Parameter
 			if isa(line.args[1], Symbol)
 				parameterName = line.args[1]
-				parameterType = numtype
+				parameterType = :Number
 			elseif line.args[1].head==:(::)
 				parameterName = line.args[1].args[1]
 				parameterType = line.args[1].args[2]
@@ -442,18 +399,20 @@ function defcomphelper(name, ex, numtype)
 				error()
 			end
 
+			concreteParameterType = parameterType == :Number ? :T : parameterType
+
 			if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
 				parameterIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
-				partypedef = :(Array{$(parameterType),$(length(parameterIndex))})
+				partypedef = :(Array{$(concreteParameterType),$(length(parameterIndex))})
 			else
-				partypedef = parameterType
+				partypedef = concreteParameterType
 			end
 
 			push!(pardef.args,:($(esc(parameterName))::$(esc(partypedef))))
 		elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
 			if isa(line.args[1], Symbol)
 				variableName = line.args[1]
-				variableType = numtype
+				variableType = :Number
 			elseif line.args[1].head==:(::)
 				variableName = line.args[1].args[1]
 				variableType = line.args[1].args[2]
@@ -461,9 +420,11 @@ function defcomphelper(name, ex, numtype)
 				error()
 			end
 
+			concreteVariableType = variableType == :Number ? :T : variableType
+
 			if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
 				variableIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
-				vartypedef = :(Array{$(variableType),$(length(variableIndex))})
+				vartypedef = :(Array{$(concreteVariableType),$(length(variableIndex))})
 
 				vardims = Array(Any, 0)
 				u = :(temp_indices = [])
@@ -480,16 +441,16 @@ function defcomphelper(name, ex, numtype)
 				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), "", "")))
 
 				push!(varalloc.args,u)
-				push!(varalloc.args,:(s.$(variableName) = Array($(variableType),temp_indices...)))
+				push!(varalloc.args,:(s.$(variableName) = Array($(concreteVariableType),temp_indices...)))
 
-				if variableType==numtype
+				if variableType==:Number
 					push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
 				end
 			else
-				vartypedef = variableType
+				vartypedef = concreteVariableType
 				push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
 
-				if variableType==numtype
+				if variableType==:Number
 					push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
 				end
 			end
@@ -504,21 +465,21 @@ function defcomphelper(name, ex, numtype)
 
 	x = quote
 
-		type $(symbol(string(name,"Parameters")))
+		type $(symbol(string(name,"Parameters"))){$(esc(:T))}
 			$(pardef)
 
-			function $(esc(symbol(string(name,"Parameters"))))()
-				$(esc(:s)) = new()
+			function $(esc(symbol(string(name,"Parameters")))){$(esc(:T))}(::Type{$(esc(:T))})
+				$(esc(:s)) = new{$(esc(:T))}()
 				return $(esc(:s))
 			end
 		end
 
-		type $(symbol(string(name,"Variables")))
+		type $(symbol(string(name,"Variables"))){$(esc(:T))}
 			$(vardef)
 
-			function $(esc(symbol(string(name, "Variables"))))(indices)
+			function $(esc(symbol(string(name, "Variables")))){$(esc(:T))}(::Type{$(esc(:T))}, indices)
 				$(esc(:indices)) = indices
-				$(esc(:s)) = new()
+				$(esc(:s)) = new{$(esc(:T))}()
 				$(esc(varalloc))
 				return $(esc(:s))
 			end
@@ -535,24 +496,33 @@ function defcomphelper(name, ex, numtype)
 			end
 		end
 
-		type $(esc(symbol(name))) <: Mimi.ComponentState
+		abstract $(esc(symbol(name))) <: Mimi.ComponentState
+
+		type $(esc(symbol(string(name, "Impl")))){T} <: $(esc(symbol(name)))
 			nsteps::Int
-			Parameters::$(esc(symbol(string(name,"Parameters"))))
-			Variables::$(esc(symbol(string(name,"Variables"))))
+			Parameters::$(esc(symbol(string(name,"Parameters")))){T}
+			Variables::$(esc(symbol(string(name,"Variables")))){T}
 			Dimensions::$(esc(symbol(string(name,"Dimensions"))))
 
-			function $(esc(symbol(name)))(indices)
-				s = new()
-				s.nsteps = get(indices, :time, 0)
-				s.Parameters = $(esc(symbol(string(name,"Parameters"))))()
+			function $(esc(symbol(string(name, "Impl")))){T}(::Type{T}, indices)
+				s = new{T}()
+				s.nsteps = indices[:time]
+				s.Parameters = $(esc(symbol(string(name,"Parameters")))){T}(T)
 				s.Dimensions = $(esc(symbol(string(name,"Dimensions"))))(indices)
-				s.Variables = $(esc(symbol(string(name,"Variables"))))(indices)
+				s.Variables = $(esc(symbol(string(name,"Variables")))){T}(T, indices)
 				return s
 			end
 		end
 
+		function $(esc(symbol(name)))(indices)
+			return $(esc(symbol(string(name, "Impl")))){Float64}(Float64, indices)
+		end
+
+		function $(esc(symbol(name))){T}(::Type{T}, indices)
+			return $(esc(symbol(string(name, "Impl")))){T}(T, indices)
+		end
+
 		import Mimi.timestep
-		import Mimi.simulate
 		import Mimi.init
 		import Mimi.resetvariables
 
@@ -581,5 +551,3 @@ function timestep(s::adder, t::Int)
 end
 
 end # module
-
-include("OptiMimi.jl")
