@@ -1,5 +1,6 @@
-# Mimi.jl v0.1.0 Release Notes
+# Mimi.jl v0.0.3 Release Notes
 * Drop julia 0.3 support
+* Use a parametric type for number fields (low level dev feature)
 
 # Mimi.jl v0.0.2 Release Notes
 * Make julia 0.4 compatible
