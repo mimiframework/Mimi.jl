@@ -298,7 +298,7 @@ Return the values for a variable as a DataFrame.
 """
 function getdataframe(m::Model, component::Symbol, name::Symbol)
 	comp_type = typeof(m.components[component])
-	vardiminfo = getdiminfoforvar(typeof(m.components[component]), name)
+	vardiminfo = getdiminfoforvar(super(typeof(m.components[component])), name)
 	if length(vardiminfo)==0
 		return m[component, name]
 	elseif length(vardiminfo)==1
