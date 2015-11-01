@@ -13,7 +13,7 @@ Please get in touch with [David Anthoff](http://www.david-anthoff.com) if you ar
 
 Mimi is a package that provides a component model for integrated assessment models.
 
-Also see the [OptiMimi][http://github.com/jrising/OptiMimi.jl] package for optimizing parameters within Mimi models.
+Also see the [OptiMimi](http://github.com/jrising/OptiMimi.jl) package for optimizing parameters within Mimi models.
 
 ## Installation
 
