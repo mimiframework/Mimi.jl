@@ -159,7 +159,7 @@ List all the variables in a component.
 """
 function variables(m::Model, componentname::Symbol)
 	meta = metainfo.getallcomps()
-	c = meta[typeof(m.components[componentname])]
+	c = meta[super(typeof(m.components[componentname]))]
 	collect(keys(c.variables))
 end
 
