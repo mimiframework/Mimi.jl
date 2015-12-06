@@ -24,10 +24,10 @@ setindex(m, :time, 1)
 foo = addcomponent(m, Foo)
 bar = addcomponent(m, Bar)
 
-foo[:input] = convert(Float64, π)
+foo[:input] = 3.14
 bar[:intermed] = foo[:intermed]
 
 run(m)
 
-@test m[:Bar, :output][1] == convert(Float64, π)
+@test m[:Bar, :output][1] == 3.14
 
