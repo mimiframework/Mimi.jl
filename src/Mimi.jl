@@ -200,12 +200,12 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
 	else
 		m.components[name] = comp
 	end
-	nothing
+
+    ComponentReference(m, name)
 end
 
 function addcomponent(m::Model, t;before=nothing,after=nothing)
 	addcomponent(m,t,symbol(string(t)),before=before,after=after)
-	nothing
 end
 
 """
@@ -544,5 +544,7 @@ function timestep(s::adder, t::Int)
 
     v.output[t] = p.input[t] + p.add[t]
 end
+
+include("references.jl")
 
 end # module

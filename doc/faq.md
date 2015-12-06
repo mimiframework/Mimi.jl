@@ -34,3 +34,25 @@ Here, `../data/cubicparams.csv` is a parameter definition file that looks someth
 -.57211657,.17500949,-.01388863
 .04413228,-.01388863,.00111965
 ```
+
+## How do I use component references?
+
+Component references allow you to write cleaner model code when connecting components.  The `addcomponent` function returns a reference to the component that you just added:
+```
+mycomponent = addcomponent(model, MyComponent)
+```
+
+If you want to get a reference to a component after the `addcomponent` call has been made, you can construct the reference as:
+```
+mycomponent = ComponentReference(model, :MyComponent)
+```
+
+You can use this component reference in place of the `setparameter` and `connectparameter` calls.
+
+## References in place of `setparameter`
+
+The line `setparameter(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
+
+## References in place of `connectparameter`
+
+The line `connectparameter(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.
