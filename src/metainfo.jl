@@ -22,17 +22,13 @@ end
 
 const global _mimi_metainfo = Dict{Tuple{Symbol,Symbol},MetaComponent}()
 
-function addcomponent(comp::DataType)
-    component_name = symbol(comp)
-    module_name = symbol(comp.name.module)
+function addcomponent(module_name::Symbol, component_name::Symbol)
     c = MetaComponent(module_name, component_name)
     _mimi_metainfo[(module_name, component_name)] = c
     nothing
 end
 
-function addvariable(comp::DataType, name, datatype, dimensions, description, unit)
-    component_name = symbol(comp)
-    module_name = symbol(comp.name.module)
+function addvariable(module_name::Symbol, component_name::Symbol, name, datatype, dimensions, description, unit)
     c = _mimi_metainfo[(module_name, component_name)]
 
     v = MetaVariable(name, datatype, dimensions, description, unit)

@@ -449,7 +449,7 @@ macro defcomp(name, ex)
                     end
                     push!(vardims, l)
                 end
-                push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), "", "")))
+                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), "", "")))
 
                 push!(varalloc.args,u)
                 push!(varalloc.args,:(s.$(variableName) = Array($(concreteVariableType),temp_indices...)))
@@ -459,7 +459,7 @@ macro defcomp(name, ex)
                 end
             else
                 vartypedef = concreteVariableType
-                push!(metavardef.args, :(metainfo.addvariable($(esc(name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
+                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
 
                 if variableType==:Number
                     push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
@@ -541,7 +541,7 @@ macro defcomp(name, ex)
             $(resetvarsdef)
         end
 
-        metainfo.addcomponent($(esc(symbol(name))))
+        metainfo.addcomponent(module_name(current_module()), $(Expr(:quote,name)))
         $(metavardef)
     end
 
