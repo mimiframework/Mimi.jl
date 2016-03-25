@@ -9,20 +9,28 @@ type MetaVariable
 end
 
 type MetaComponent
-    name::UTF8String
+    name::Symbol
+
     variables::Dict{Symbol,MetaVariable}
+
+    function MetaComponent(name::Symbol)
+        v = new(name, Dict{Symbol, MetaVariable}())
+        return v
+    end
 end
 
-const global _mimi_metainfo = Dict{Type,MetaComponent}()
+const global _mimi_metainfo = Dict{Symbol,MetaComponent}()
 
 function addcomponent(comp::DataType)
-    c = MetaComponent(string(comp), Dict{Symbol, MetaVariable}())
-    _mimi_metainfo[comp] = c
+    component_name = symbol(comp)
+    c = MetaComponent(component_name)
+    _mimi_metainfo[component_name] = c
     nothing
 end
 
 function addvariable(comp::DataType, name, datatype, dimensions, description, unit)
-    c = _mimi_metainfo[comp]
+    component_name = symbol(comp)
+    c = _mimi_metainfo[component_name]
 
     v = MetaVariable(name, datatype, dimensions, description, unit)
     c.variables[name] = v

@@ -160,7 +160,7 @@ List all the variables in a component.
 """
 function variables(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
-    c = meta[super(typeof(m.components[componentname]))]
+    c = meta[symbol(super(typeof(m.components[componentname])))]
     collect(keys(c.variables))
 end
 
@@ -308,7 +308,7 @@ Return the values for a variable as a DataFrame.
 """
 function getdataframe(m::Model, component::Symbol, name::Symbol)
     comp_type = typeof(m.components[component])
-    vardiminfo = getdiminfoforvar(super(typeof(m.components[component])), name)
+    vardiminfo = getdiminfoforvar(symbol(super(typeof(m.components[component]))), name)
     if length(vardiminfo)==0
         return m[component, name]
     elseif length(vardiminfo)==1
