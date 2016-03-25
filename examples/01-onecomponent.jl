@@ -6,7 +6,7 @@ using Mimi
 # First define the state this component will hold
 
 @defcomp component1 begin
-	savingsrate = Parameter()
+    savingsrate = Parameter()
 
 end
 

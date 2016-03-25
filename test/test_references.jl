@@ -2,8 +2,8 @@ using Base.Test
 using Mimi
 
 @defcomp Foo begin
-	input = Parameter()
-	intermed = Variable(index=[time])
+    input = Parameter()
+    intermed = Variable(index=[time])
 end
 
 function timestep(c::Foo, tt)
@@ -11,8 +11,8 @@ function timestep(c::Foo, tt)
 end
 
 @defcomp Bar begin
-	intermed = Parameter(index=[time])
-	output = Variable(index=[time])
+    intermed = Parameter(index=[time])
+    output = Variable(index=[time])
 end
 
 function timestep(c::Bar, tt)
