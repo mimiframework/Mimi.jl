@@ -392,6 +392,7 @@ macro defcomp(name, ex)
     resetvarsdef = Expr(:block)
 
     metavardef = Expr(:block)
+    metapardef = Expr(:block)
 
     for line in ex.args
         if line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Index
@@ -415,8 +416,25 @@ macro defcomp(name, ex)
             if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
                 parameterIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
                 partypedef = :(Array{$(concreteParameterType),$(length(parameterIndex))})
+
+                pardims = Array(Any, 0)
+                u = :(temp_indices = [])
+                for l in parameterIndex
+                    if isa(l, Symbol)
+                        push!(u.args[2].args, :(indices[$(QuoteNode(l))]))
+                    elseif isa(l, Int)
+                        push!(u.args[2].args, l)
+                    else
+                        error()
+                    end
+                    push!(pardims, l)
+                end
+
+                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), "", "")))
             else
                 partypedef = concreteParameterType
+
+                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], "", "")))
             end
 
             push!(pardef.args,:($(esc(parameterName))::$(esc(partypedef))))
@@ -543,6 +561,7 @@ macro defcomp(name, ex)
 
         metainfo.addcomponent(module_name(current_module()), $(Expr(:quote,name)))
         $(metavardef)
+        $(metapardef)
     end
 
     x
