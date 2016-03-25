@@ -13,16 +13,16 @@ type MetaComponent
     variables::Dict{Symbol,MetaVariable}
 end
 
-const global _iamfmetainfo = Dict{Type,MetaComponent}()
+const global _mimi_metainfo = Dict{Type,MetaComponent}()
 
 function addcomponent(comp::DataType)
     c = MetaComponent(string(comp), Dict{Symbol, MetaVariable}())
-    _iamfmetainfo[comp] = c
+    _mimi_metainfo[comp] = c
     nothing
 end
 
 function addvariable(comp::DataType, name, datatype, dimensions, description, unit)
-    c = _iamfmetainfo[comp]
+    c = _mimi_metainfo[comp]
 
     v = MetaVariable(name, datatype, dimensions, description, unit)
     c.variables[name] = v
@@ -30,7 +30,7 @@ function addvariable(comp::DataType, name, datatype, dimensions, description, un
 end
 
 function getallcomps()
-    _iamfmetainfo
+    _mimi_metainfo
 end
 
 end
