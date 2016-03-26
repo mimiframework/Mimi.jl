@@ -393,6 +393,7 @@ macro defcomp(name, ex)
 
     metavardef = Expr(:block)
     metapardef = Expr(:block)
+    metadimdef = Expr(:block)
 
     for line in ex.args
         if line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Index
@@ -400,6 +401,8 @@ macro defcomp(name, ex)
 
             push!(dimdef.args,:($(esc(dimensionName))::$(esc(UnitRange{Int64}))))
             push!(dimconstructor.args,:(s.$(dimensionName) = UnitRange{Int64}(1,indices[$(QuoteNode(dimensionName))])))
+
+            push!(metadimdef.args, :(metainfo.adddimension(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(dimensionName)) )))
         elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Parameter
             if isa(line.args[1], Symbol)
                 parameterName = line.args[1]
@@ -492,64 +495,20 @@ macro defcomp(name, ex)
         end
     end
 
+    module_def = :(eval(current_module(), :(module temporary_name end)))
+    module_def.args[3].args[1].args[2] = symbol(string("_mimi_implementation_", name))
+
+    call_expr = Expr(:call,
+        Expr(:curly,
+            Expr(:., Expr(:., symbol(current_module()), QuoteNode(symbol(string("_mimi_implementation_", name)))), QuoteNode(symbol(string(name,"Impl")))) ,
+            :T),
+        :T,
+        :indices
+        )
+
     x = quote
 
-        type $(symbol(string(name,"Parameters"))){$(esc(:T))}
-            $(pardef)
-
-            function $(esc(symbol(string(name,"Parameters")))){$(esc(:T))}(::Type{$(esc(:T))})
-                $(esc(:s)) = new{$(esc(:T))}()
-                return $(esc(:s))
-            end
-        end
-
-        type $(symbol(string(name,"Variables"))){$(esc(:T))}
-            $(vardef)
-
-            function $(esc(symbol(string(name, "Variables")))){$(esc(:T))}(::Type{$(esc(:T))}, indices)
-                $(esc(:indices)) = indices
-                $(esc(:s)) = new{$(esc(:T))}()
-                $(esc(varalloc))
-                return $(esc(:s))
-            end
-        end
-
-        type $(symbol(string(name,"Dimensions")))
-            $(dimdef)
-
-            function $(esc(symbol(string(name,"Dimensions"))))(indices)
-                $(esc(:indices)) = indices
-                $(esc(:s)) = new()
-                $(esc(dimconstructor))
-                return $(esc(:s))
-            end
-        end
-
         abstract $(esc(symbol(name))) <: Mimi.ComponentState
-
-        type $(esc(symbol(string(name, "Impl")))){T} <: $(esc(symbol(name)))
-            nsteps::Int
-            Parameters::$(esc(symbol(string(name,"Parameters")))){T}
-            Variables::$(esc(symbol(string(name,"Variables")))){T}
-            Dimensions::$(esc(symbol(string(name,"Dimensions"))))
-
-            function $(esc(symbol(string(name, "Impl")))){T}(::Type{T}, indices)
-                s = new{T}()
-                s.nsteps = indices[:time]
-                s.Parameters = $(esc(symbol(string(name,"Parameters")))){T}(T)
-                s.Dimensions = $(esc(symbol(string(name,"Dimensions"))))(indices)
-                s.Variables = $(esc(symbol(string(name,"Variables")))){T}(T, indices)
-                return s
-            end
-        end
-
-        function $(esc(symbol(name)))(indices)
-            return $(esc(symbol(string(name, "Impl")))){Float64}(Float64, indices)
-        end
-
-        function $(esc(symbol(name))){T}(::Type{T}, indices)
-            return $(esc(symbol(string(name, "Impl")))){T}(T, indices)
-        end
 
         import Mimi.timestep
         import Mimi.init
@@ -562,6 +521,16 @@ macro defcomp(name, ex)
         metainfo.addcomponent(module_name(current_module()), $(Expr(:quote,name)))
         $(metavardef)
         $(metapardef)
+        $(metadimdef)
+
+        $(module_def)
+
+        eval($(esc(symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
+
+        function $(esc(symbol(name))){T}(::Type{T}, indices)
+            $(call_expr)
+        end
+
     end
 
     x
