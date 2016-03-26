@@ -168,7 +168,7 @@ function generate_comp_expressions(module_name, component_name)
         end
 
         # Define implementation typeof
-        type $(symbol(string(component_name, "Impl"))){T} <: $(symbol(module_name)).$(symbol(component_name))
+        type $(symbol(string(component_name, "Impl"))){T} <: Main.$(symbol(module_name)).$(symbol(component_name))
             nsteps::Int
             Parameters::$(symbol(string(component_name,"Parameters"))){T}
             Variables::$(symbol(string(component_name,"Variables"))){T}

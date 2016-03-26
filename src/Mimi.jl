@@ -457,7 +457,7 @@ macro defcomp(name, ex)
 
     call_expr = Expr(:call,
         Expr(:curly,
-            Expr(:., Expr(:., symbol(current_module()), QuoteNode(symbol(string("_mimi_implementation_", name)))), QuoteNode(symbol(string(name,"Impl")))) ,
+            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(symbol(current_module()))), QuoteNode(symbol(string("_mimi_implementation_", name)))), QuoteNode(symbol(string(name,"Impl")))) ,
             :T),
         :T,
         :indices
