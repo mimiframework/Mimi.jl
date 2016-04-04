@@ -1,3 +1,6 @@
+# Mimi.jl v.next Release Notes
+* Move type generation from macro to runtime phase (low level dev feature)
+
 # Mimi.jl v0.0.3 Release Notes
 * Drop julia 0.3 support
 * Use a parametric type for number fields (low level dev feature)
