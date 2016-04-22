@@ -3,6 +3,8 @@
 [![Coverage Status](https://coveralls.io/repos/davidanthoff/Mimi.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/davidanthoff/Mimi.jl?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/mimi/badge/?version=latest)](https://readthedocs.org/projects/mimi/?badge=latest)
 
+[![Join the chat at https://gitter.im/davidanthoff/Mimi.jl](https://badges.gitter.im/davidanthoff/Mimi.jl.svg)](https://gitter.im/davidanthoff/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 # Mimi - Integrated Assessment Modeling Framework
 
 A [Julia](http://julialang.org) package for integrated assessment models. For more information, see the **[Documentation](http://mimi.readthedocs.org/en/latest/)**.
