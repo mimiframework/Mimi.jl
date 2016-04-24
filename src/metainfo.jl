@@ -5,7 +5,7 @@ type MetaVariable
     datatype::DataType
     dimensions::Array{Any}
     description::UTF8String
-    unit::UTF8String
+    unit::Any
 end
 
 type MetaParameter
@@ -13,7 +13,7 @@ type MetaParameter
     datatype::DataType
     dimensions::Array{Any}
     description::UTF8String
-    unit::UTF8String
+    unit::Any
 end
 
 type MetaDimension
