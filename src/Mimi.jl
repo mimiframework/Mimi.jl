@@ -1,6 +1,7 @@
 module Mimi
 
 include("metainfo.jl")
+include("clock.jl")
 using DataStructures
 using DataFrames
 using Distributions
@@ -343,16 +344,18 @@ show(io::IO, a::ComponentState) = print(io, "ComponentState")
 Run the model once.
 """
 function run(m::Model;ntimesteps=typemax(Int64))
+    clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
 
     for c in values(m.components)
         resetvariables(c)
         init(c)
     end
 
-    for t=1:min(m.indices_counts[:time],ntimesteps)
+    while !finished(clock)
         for c in values(m.components)
-            timestep(c,t)
+            timestep(c,clock.t)
         end
+        move_forward(clock)
     end
 end
 
