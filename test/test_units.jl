@@ -1,21 +1,22 @@
 using Base.Test
 using Mimi
 
-@test unitcheck("kg", "any")
+# Try directly using unitcheck
 @test unitcheck("kg", "kg")
 @test !unitcheck("kg", "MT")
+@test !unitcheck("kg", "")
 
-
+# Create a model with some matching and some mis-matching units
 @defcomp FooUnits begin
-    output = Variable(units="kg")
+    output = Variable(unit="kg")
 end
 
 @defcomp BarUnits begin
-    input = Parameter(units="MT")
+    input = Parameter(unit="MT")
 end
 
 @defcomp BazUnits begin
-    input = Parameter(units="kg")
+    input = Parameter(unit="kg")
 end
 
 m = Model()
@@ -24,6 +25,10 @@ foo = addcomponent(m, FooUnits)
 bar = addcomponent(m, BarUnits)
 baz = addcomponent(m, BazUnits)
 
-@test_throws AssertionError bar[:input] = foo[:output]
+# Check that we cannot connect foo and bar...
+@test_throws ErrorException bar[:input] = foo[:output]
+# ...unless we pass ignoreunits=true
+connectparameter(m, :BarUnits, :input,  :FooUnits, :output, ignoreunits=true)
+# But we can connect foo and baz
 baz[:input] = foo[:output]
 

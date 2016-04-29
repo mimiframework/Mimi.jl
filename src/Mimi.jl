@@ -275,13 +275,16 @@ function addparameter(m::Model, name::Symbol, value)
     end
 end
 
-function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol)
+function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
     c_target = m.components[target_component]
     c_source = m.components[source_component]
 
     # Check the units, if provided
-    @assert unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
-                      getmetainfo(m, source_component).variables[source_name].unit) "Units of $source_component.$source_name do not match $target_component.$target_name."
+    if !ignoreunits &&
+        !unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
+                   getmetainfo(m, source_component).variables[source_name].unit)
+        throw(ErrorException("Units of $source_component.$source_name do not match $target_component.$target_name."))
+    end
 
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
@@ -291,9 +294,9 @@ end
 """
 Default string, string unit check function
 """
-function unitcheck(one::Union{UTF8String, ASCIIString}, two::Union{UTF8String, ASCIIString})
-    # True if both "", either are "any", or they match
-    return one == "any" || two == "any" || one == two
+function unitcheck(one::AbstractString, two::AbstractString)
+    # True if and only if they match
+    return one == two
 end
 
 """
@@ -440,9 +443,9 @@ macro defcomp(name, ex)
 
             kws = collectkw(line.args[2].args)
 
-            # Get description and units, if provided
-            description = get(kws, :description, "") # Proposal: change to 'nothing'
-            units = get(kws, :units, "") # Proposal: change to 'nothing'
+            # Get description and unit, if provided
+            description = get(kws, :description, "")
+            unit = get(kws, :unit, "")
 
             if haskey(kws, :index)
                 parameterIndex = kws[:index].args
@@ -452,9 +455,9 @@ macro defcomp(name, ex)
                     push!(pardims, l)
                 end
 
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(units))))
+                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
             else
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(units))))
+                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
             end
         elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
             if isa(line.args[1], Symbol)
@@ -469,9 +472,9 @@ macro defcomp(name, ex)
 
             kws = collectkw(line.args[2].args)
 
-            # Get description and units, if provided
-            description = get(kws, :description, "") # Proposal: change to 'nothing'
-            units = get(kws, :units, "") # Proposal: change to 'nothing'
+            # Get description and unit, if provided
+            description = get(kws, :description, "")
+            unit = get(kws, :unit, "")
 
             if haskey(kws, :index)
                 variableIndex = kws[:index].args
@@ -481,13 +484,13 @@ macro defcomp(name, ex)
                     push!(vardims, l)
                 end
 
-                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), $(description), $(units))))
+                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), $(description), $(unit))))
 
                 if variableType==:Number
                     push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
                 end
             else
-                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], $(description), $(units))))
+                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], $(description), $(unit))))
 
                 if variableType==:Number
                     push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
