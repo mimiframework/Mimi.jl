@@ -9,7 +9,7 @@ using Distributions
 export
     ComponentState, timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd
+    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
 
 import
     Base.getindex, Base.run
@@ -157,13 +157,20 @@ function components(m::Model)
 end
 
 """
-List all the variables in a component.
+Return the MetaComponent for a given component
 """
-function variables(m::Model, componentname::Symbol)
+function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
     meta_module_name = symbol(super(typeof(m.components[componentname])).name.module)
     meta_component_name = symbol(super(typeof(m.components[componentname])).name.name)
-    c = meta[(meta_module_name, meta_component_name)]
+    meta[(meta_module_name, meta_component_name)]
+end
+
+"""
+List all the variables in a component.
+"""
+function variables(m::Model, componentname::Symbol)
+    c = getmetainfo(m, componentname)
     collect(keys(c.variables))
 end
 
@@ -269,12 +276,28 @@ function addparameter(m::Model, name::Symbol, value)
     end
 end
 
-function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol)
+function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
     c_target = m.components[target_component]
     c_source = m.components[source_component]
+
+    # Check the units, if provided
+    if !ignoreunits &&
+        !unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
+                   getmetainfo(m, source_component).variables[source_name].unit)
+        throw(ErrorException("Units of $source_component.$source_name do not match $target_component.$target_name."))
+    end
+
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
     nothing
+end
+
+"""
+Default string, string unit check function
+"""
+function unitcheck(one::AbstractString, two::AbstractString)
+    # True if and only if they match
+    return one == two
 end
 
 """
@@ -382,6 +405,20 @@ function getvpd(s)
 end
 
 """
+Helper function for macro: collects all the keyword arguments in a function call to a dictionary.
+"""
+function collectkw(args::Vector{Any})
+    kws = Dict{Symbol, Any}()
+    for arg in args
+        if isa(arg, Expr) && arg.head == :kw
+            kws[arg.args[1]] = arg.args[2]
+        end
+    end
+
+    kws
+end
+
+"""
 Define a new component.
 """
 macro defcomp(name, ex)
@@ -407,17 +444,23 @@ macro defcomp(name, ex)
                 error()
             end
 
-            if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
-                parameterIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
+            kws = collectkw(line.args[2].args)
+
+            # Get description and unit, if provided
+            description = get(kws, :description, "")
+            unit = get(kws, :unit, "")
+
+            if haskey(kws, :index)
+                parameterIndex = kws[:index].args
 
                 pardims = Array(Any, 0)
                 for l in parameterIndex
                     push!(pardims, l)
                 end
 
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), "", "")))
+                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
             else
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], "", "")))
+                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
             end
         elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
             if isa(line.args[1], Symbol)
@@ -430,20 +473,27 @@ macro defcomp(name, ex)
                 error()
             end
 
-            if any(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)
-                variableIndex = first(filter(l->isa(l,Expr) && l.head==:kw && l.args[1]==:index,line.args[2].args)).args[2].args
+            kws = collectkw(line.args[2].args)
+
+            # Get description and unit, if provided
+            description = get(kws, :description, "")
+            unit = get(kws, :unit, "")
+
+            if haskey(kws, :index)
+                variableIndex = kws[:index].args
 
                 vardims = Array(Any, 0)
                 for l in variableIndex
                     push!(vardims, l)
                 end
-                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), "", "")))
+
+                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), $(description), $(unit))))
 
                 if variableType==:Number
                     push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
                 end
             else
-                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], "", "")))
+                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], $(description), $(unit))))
 
                 if variableType==:Number
                     push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
