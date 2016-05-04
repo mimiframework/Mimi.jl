@@ -7,7 +7,7 @@ using DataFrames
 using Distributions
 
 export
-    ComponentState, timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
+    ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
     getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
 
@@ -376,15 +376,15 @@ function run(m::Model;ntimesteps=typemax(Int64))
 
     while !finished(clock)
         for c in values(m.components)
-            timestep(c,clock.t)
+            run_timestep(c,clock.t)
         end
         move_forward(clock)
     end
 end
 
-function timestep(s, t)
+function run_timestep(s, t)
     typeofs = typeof(s)
-    println("Generic timestep called for $typeofs.")
+    println("Generic run_timestep called for $typeofs.")
 end
 
 function init(s)
@@ -520,7 +520,7 @@ macro defcomp(name, ex)
 
         abstract $(esc(symbol(name))) <: Mimi.ComponentState
 
-        import Mimi.timestep
+        import Mimi.run_timestep
         import Mimi.init
         import Mimi.resetvariables
 
@@ -552,7 +552,7 @@ end
     output = Variable(index=[time])
 end
 
-function timestep(s::adder, t::Int)
+function run_timestep(s::adder, t::Int)
     v = s.Variables
     p = s.Parameters
 
