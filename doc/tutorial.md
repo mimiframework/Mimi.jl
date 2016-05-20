@@ -91,7 +91,7 @@ setparameter(my_model, :grosseconomy, :share, 0.3)
 
 #Set parameters for the emissions component
 setparameter(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connectparameter(my_model, :emissions, :YGROSS, :grosseconomy)  #Note that connectparameter was used here.
+connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  #Note that connectparameter was used here.
 
 run(my_model)
 
@@ -244,7 +244,7 @@ function run_my_model()
 
 	#set parameters for emissions component
 	setparameter(my_model, :emissions, :sigma, sigma)
-	connectparameter(my_model, :emissions, :YGROSS, :grosseconomy)
+	connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
 	run(my_model)
 	return(my_model)
