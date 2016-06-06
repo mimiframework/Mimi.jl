@@ -11,7 +11,7 @@ run(`mkdir tmp_testing`)
 cd("tmp_testing")
 
 #loop through each dependent package
-for url in dependencies:
+for url in dependencies
   #download the package
   run(`wget $url`)
   zip_name = chomp(readall(`basename $url`))
@@ -19,12 +19,14 @@ for url in dependencies:
   run(`rm $zip_name`)
   package_name = chomp(readall(`ls`))
   #test the package
-  try:
+  try
     Pkg.test(package_name)
-  catch e:
+  catch e
     append!(errors, [(package_name, e)])
+  end
   #delete current package before testing next one
   run(`rm -rf *`)
+end
 
 #remove the temporary directory
 cd("../")
@@ -32,9 +34,12 @@ run(`rm -rf tmp_testing`)
 
 #report the errors that occurred
 num_errors = length(errors)
-if num_errors == 1:
+if num_errors == 1
   println("1 test failed:")
-else:
+else
   println("$num_errors tests failed:")
+end
+
 for package_name, error in errors:
   println("error in $package_name:" + error)
+end
