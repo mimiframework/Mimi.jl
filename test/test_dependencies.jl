@@ -1,7 +1,7 @@
 using Mimi
 
 #list of URLs of branches of packages to test
-dependencies = []
+dependencies = ["https://github.com/davidanthoff/fund.jl/archive/master.zip"]
 
 #list of failed tests to build as you go
 errors = []
@@ -40,6 +40,8 @@ else
   println("$num_errors tests failed:")
 end
 
-for package_name, error in errors:
-  println("error in $package_name:" + error)
+for item in errors
+  package_name, error = item
+  println("error in $package_name:")
+  println(error)
 end
