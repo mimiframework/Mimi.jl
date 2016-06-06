@@ -8,7 +8,7 @@ errors = []
 
 #make a temporary directory to run the tests in
 run(`mkdir tmp_testing`)
-cd("tmp")
+cd("tmp_testing")
 
 #loop through each dependent package
 for url in dependencies:
@@ -37,4 +37,4 @@ if num_errors == 1:
 else:
   println("$num_errors tests failed:")
 for package_name, error in errors:
-  println("error in $package_name:" + e)
+  println("error in $package_name:" + error)
