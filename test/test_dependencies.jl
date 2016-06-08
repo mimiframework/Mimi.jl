@@ -20,16 +20,16 @@ for url in dependencies
   download(url)
   zip_name = chomp(basename(url))
   unzip(zip_name, tmp_path)
-  rm(tmp_path + zip_name)
+  rm(string(tmp_path, zip_name))
   package_name = chomp(readall(`ls`))
   #test the package
   try
-    include(tmp_path + package_name + "/test/runtests.jl")
+    include(string(tmp_path, package_name, "/test/runtests.jl"))
   catch e
     append!(errors, [(package_name, e)])
   end
   #delete current package before testing next one
-  rm(tmp_path + package_name, recursive=true)
+  rm(string(tmp_path, package_name), recursive=true)
 end
 
 #remove the temporary directory
