@@ -1,36 +1,39 @@
 using Mimi
 
+Pkg.add("InfoZIP")
+
 #list of URLs of branches of packages to test
-dependencies = ["https://github.com/davidanthoff/fund.jl/archive/master.zip"]
+dependencies = [
+"https://github.com/davidanthoff/fund.jl/archive/master.zip"
+]
 
 #list of failed tests to build as you go
 errors = []
-
 #make a temporary directory to run the tests in
-run(`mkdir tmp_testing`)
-cd("tmp_testing")
+tmp_path = joinpath(dirname(@__FILE__),"tmp_testing/")
+mkdir(tmp_path)
+cd(tmp_path)
 
 #loop through each dependent package
 for url in dependencies
   #download the package
-  run(`wget $url`)
-  zip_name = chomp(readall(`basename $url`))
-  run(`unzip -x $zip_name`)
-  run(`rm $zip_name`)
+  download(url)
+  zip_name = chomp(basename(url))
+  unzip(zip_name, tmp_path)
+  rm(tmp_path + zip_name)
   package_name = chomp(readall(`ls`))
   #test the package
   try
-    Pkg.test(package_name)
+    include(tmp_path + package_name + "/test/runtests.jl")
   catch e
     append!(errors, [(package_name, e)])
   end
   #delete current package before testing next one
-  run(`rm -rf *`)
+  rm(tmp_path + package_name, recursive=true)
 end
 
 #remove the temporary directory
-cd("../")
-run(`rm -rf tmp_testing`)
+rm(tmp_path, recursive=true)
 
 #report the errors that occurred
 num_errors = length(errors)
