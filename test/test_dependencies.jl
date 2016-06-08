@@ -38,13 +38,17 @@ rm(tmp_path, recursive=true)
 #report the errors that occurred
 num_errors = length(errors)
 if num_errors == 1
-  println("1 test failed:")
+  error_message = "1 test failed \n:
+  "
 else
-  println("$num_errors tests failed:")
+  error_message = "$num_errors tests failed: \n"
 end
 
 for item in errors
   package_name, error = item
-  println("error in $package_name:")
-  println(error)
+  error_message = string(error_message, "error in $package_name:", error, "\n")
+end
+
+if num_errors > 0
+  throw(Exception: error_message)
 end
