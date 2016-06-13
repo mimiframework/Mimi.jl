@@ -15,10 +15,11 @@ mkdir(tmp_path)
 #loop through each dependent package
 for url in dependencies
   #download the package
-  download(url, tmp_path)
   zip_name = chomp(basename(url))
-  unzip(zip_name, tmp_path)
-  rm(string(tmp_path, zip_name))
+  file_path = joinpath(tmp_path, zip_name)
+  download(url, file_path)
+  unzip(file_path, tmp_path)
+  rm(file_path)
   package_name = chomp(readir())
   #test the package
   try
@@ -39,7 +40,7 @@ num_errors = length(errors)
 error_message = "Failed tests: $num_errors"
 
 for (package_name, error) in errors
-  error_message = string(error_message, "error in $package_name:", error, "\n")
+  error_message = string("\n", error_message, "error in $package_name:", error)
 end
 
 if num_errors > 0
