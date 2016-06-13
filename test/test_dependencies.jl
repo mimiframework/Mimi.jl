@@ -40,7 +40,7 @@ num_errors = length(errors)
 error_message = "Failed tests: $num_errors"
 
 for (package_name, error) in errors
-  error_message = string("\n", error_message, "error in $package_name:", error)
+  error_message = string(error_message, "\n", "error in $package_name:", error)
 end
 
 if num_errors > 0
