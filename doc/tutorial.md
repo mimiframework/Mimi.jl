@@ -6,7 +6,7 @@ In this example, we will construct a stylized model of the global economy and it
 There are two main steps to creating a component:
 
 * Define the component using ``@defcomp`` where the parameters and variables are listed.
-* Use the timestep function ``timestep(state::component_name, t:Int)`` to set the equations of that component.
+* Use the run_timestep function ``run_timestep(state::component_name, t::Int)`` to set the equations of that component.
 
 Starting with the economy component, each variable and parameter is listed. If either varialbes or parameters have a time-dimension, that must be set with ``(index=[time])``.
 
@@ -25,10 +25,10 @@ using Mimi
 end
 ```
 
-Next, the timestep function must be defined along with the various equations of the ``grosseconomy`` component. In this step, the variables and parameters are linked to this component by ``state`` and must be identified as either a variable or a parameter in each equation. For this example, ``v`` will refer to variables while ``p`` refers to paremeters.
+Next, the run_timestep function must be defined along with the various equations of the ``grosseconomy`` component. In this step, the variables and parameters are linked to this component by ``state`` and must be identified as either a variable or a parameter in each equation. For this example, ``v`` will refer to variables while ``p`` refers to paremeters.
 
 ```julia
-function timestep(state::grosseconomy, t::Int)
+function run_timestep(state::grosseconomy, t::Int)
 	v = state.Variables
 	p = state.Parameters
 
@@ -55,7 +55,7 @@ end
 ```
 
 ```julia
-function timestep(state::emissions, t::Int)
+function run_timestep(state::emissions, t::Int)
 	v = state.Variables
 	p = state.Parameters
 
@@ -104,7 +104,7 @@ my_model[:emissions, :E]
 We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:
 
 * When using ``@defcomp``, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include ``(index=[regions])``. This can be combined with the time index as well, ``(index=[time, regions])``.
-* In the timestep function, a region dimension must be defined using ``state.Dimensions``.  Unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
+* In the run_timestep function, a region dimension must be defined using ``state.Dimensions``.  Unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
 * ``setindex`` must be used to specify your regions in the same way that it is used to specify your timestep.
 * When using ``setparameter`` for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into ``setparameter`` rather than an entire equation.
 * When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, ``using Mimi`` must be speficied for each component. This approach will be used here.
@@ -128,7 +128,7 @@ using Mimi
 end
 
 
-function timestep(state::grosseconomy, t::Int)
+function run_timestep(state::grosseconomy, t::Int)
 	v = state.Variables
 	p = state.Parameters
 	d = state.Dimensions 						#Note that the regional dimension is defined here and parameters and variables are indexed by 'r'
@@ -164,7 +164,7 @@ using Mimi											#Make sure to call Mimi again
 end
 
 
-function timestep(state::emissions, t::Int)
+function run_timestep(state::emissions, t::Int)
 	v = state.Variables
 	p = state.Parameters
 	d = state.Dimensions

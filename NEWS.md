@@ -1,5 +1,6 @@
 # Mimi.jl v.next Release Notes
 * Move type generation from macro to runtime phase (low level dev feature)
+* Rename the timestep function to run_timestep
 
 # Mimi.jl v0.0.3 Release Notes
 * Drop julia 0.3 support
