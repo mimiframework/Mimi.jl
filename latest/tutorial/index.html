@@ -180,12 +180,20 @@
     </a>
     
       
+        
+      
       
         <ul>
           
             <li class="anchor">
-              <a title="###Constructing A One-Region Model" href="#constructing-a-one-region-model">
-                ###Constructing A One-Region Model
+              <a title="Constructing A One-Region Model" href="#constructing-a-one-region-model">
+                Constructing A One-Region Model
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="Constructing A Multi-Region Model" href="#constructing-a-multi-region-model">
+                Constructing A Multi-Region Model
               </a>
             </li>
           
@@ -223,10 +231,10 @@
       <article class="article">
         <div class="wrapper">
           
-            <h1>Tutorial</h1>
-          
-          <p><a id='###Constructing-A-One-Region-Model-1'></a></p>
-<h2 id="constructing-a-one-region-model">###Constructing A One-Region Model</h2>
+          <p><a id='Tutorial-1'></a></p>
+<h1 id="tutorial">Tutorial</h1>
+<p><a id='Constructing-A-One-Region-Model-1'></a></p>
+<h2 id="constructing-a-one-region-model">Constructing A One-Region Model</h2>
 <p>In this example, we will construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy will involve creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.</p>
 <p>There are two main steps to creating a component:</p>
 <ul>
@@ -316,7 +324,8 @@ run(my_model)
 my_model[:emissions, :E]
 </code></pre>
 
-<h3 id="constructing-a-multi-region-model">Constructing A Multi-Region Model</h3>
+<p><a id='Constructing-A-Multi-Region-Model-1'></a></p>
+<h2 id="constructing-a-multi-region-model">Constructing A Multi-Region Model</h2>
 <p>We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:</p>
 <ul>
 <li>When using <code>@defcomp</code>, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include <code>(index=[regions])</code>. This can be combined with the time index as well, <code>(index=[time, regions])</code>.</li>

@@ -217,84 +217,36 @@
           
           <p><a id='Reference-1'></a></p>
 <h1 id="reference">Reference</h1>
-<p><a id='Base.getindex' href='#Base.getindex'>#</a>
-<strong><code>Base.getindex</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code class="rst">..  getindex(collection, key...)
-
-Retrieve the value(s) stored at the given key or index within a collection.
-The syntax ``a[i,j,...]`` is converted by the compiler to
-``getindex(a, i, j, ...)``.
-</code></pre>
-
-<pre><code class="rst">..  getindex(A, inds...)
-
-Returns a subset of array ``A`` as specified by ``inds``, where each ``ind`` may be an ``Int``, a ``Range``, or a ``Vector``. See the manual section on :ref:`array indexing &lt;man-array-indexing&gt;` for details.
-</code></pre>
-
-<pre><code class="rst">..  getindex(type[, elements...])
-
-Construct a 1-d array of the specified type. This is usually called with the syntax ``Type[]``. Element values can be specified using ``Type[a,b,c,...]``.
-</code></pre>
-
-<p>Get a variable reference as <code>reference[name]</code>.</p>
-<p><a id='Base.run' href='#Base.run'>#</a>
-<strong><code>Base.run</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code>run(command)
-</code></pre>
-
-<p>Run a command object, constructed with backticks. Throws an error if anything goes wrong, including the process exiting with a non-zero status.</p>
-<p>Run the model once.</p>
-<p><a id='Base.setindex!' href='#Base.setindex!'>#</a>
-<strong><code>Base.setindex!</code></strong> &mdash; <em>Function</em>.</p>
-<pre><code>setindex!(collection, value, key...)
-</code></pre>
-
-<p>Store the given value at the given key or index within a collection. The syntax <code>a[i,j,...] = x</code> is converted by the compiler to <code>(setindex!(a, x, i, j, ...); x)</code>.</p>
-<pre><code>setindex!(A, X, inds...)
-</code></pre>
-
-<p>Store values from array <code>X</code> within some subset of <code>A</code> as specified by <code>inds</code>.</p>
-<p>Set a component parameter as <code>reference[symbol] = value</code>.</p>
-<p>Connect two components as <code>reference1[name1] = reference2[name2]</code>.</p>
-<p><a id='Mimi.addcomponent' href='#Mimi.addcomponent'>#</a>
-<strong><code>Mimi.addcomponent</code></strong> &mdash; <em>Function</em>.</p>
-<p>Add a component to a model.</p>
-<p><a id='Mimi.collectkw' href='#Mimi.collectkw'>#</a>
-<strong><code>Mimi.collectkw</code></strong> &mdash; <em>Function</em>.</p>
-<p>Helper function for macro: collects all the keyword arguments in a function call to a dictionary.</p>
 <p><a id='Mimi.components' href='#Mimi.components'>#</a>
 <strong><code>Mimi.components</code></strong> &mdash; <em>Function</em>.</p>
 <p>List all the components in a given model.</p>
+<p><a id='Mimi.variables' href='#Mimi.variables'>#</a>
+<strong><code>Mimi.variables</code></strong> &mdash; <em>Function</em>.</p>
+<p>List all the variables in a component.</p>
+<p><a id='Mimi.addcomponent' href='#Mimi.addcomponent'>#</a>
+<strong><code>Mimi.addcomponent</code></strong> &mdash; <em>Function</em>.</p>
+<p>Add a component to a model.</p>
+<p><a id='Mimi.setparameter' href='#Mimi.setparameter'>#</a>
+<strong><code>Mimi.setparameter</code></strong> &mdash; <em>Function</em>.</p>
+<p>Set a component parameter as <code>setparameter(reference, name, value)</code>.</p>
+<p>Set the parameter of a component in a model to a given value.</p>
 <p><a id='Mimi.connectparameter' href='#Mimi.connectparameter'>#</a>
 <strong><code>Mimi.connectparameter</code></strong> &mdash; <em>Function</em>.</p>
 <p>Connect two components as <code>connectparameter(reference1, reference2, name)</code>.</p>
 <p>Connect two components as <code>connectparameter(reference1, name1, reference2, name2)</code>.</p>
 <p>Bind the parameter of one component to a variable in another component.</p>
-<p><a id='Mimi.getdataframe' href='#Mimi.getdataframe'>#</a>
-<strong><code>Mimi.getdataframe</code></strong> &mdash; <em>Function</em>.</p>
-<p>Return the values for a variable as a DataFrame.</p>
-<p><a id='Mimi.getmetainfo' href='#Mimi.getmetainfo'>#</a>
-<strong><code>Mimi.getmetainfo</code></strong> &mdash; <em>Function</em>.</p>
-<p>Return the MetaComponent for a given component</p>
 <p><a id='Mimi.setleftoverparameters' href='#Mimi.setleftoverparameters'>#</a>
 <strong><code>Mimi.setleftoverparameters</code></strong> &mdash; <em>Function</em>.</p>
 <p>Set all the parameters in a model that don't have a value and are not connected to some other component to a value from a dictionary.</p>
-<p><a id='Mimi.setparameter' href='#Mimi.setparameter'>#</a>
-<strong><code>Mimi.setparameter</code></strong> &mdash; <em>Function</em>.</p>
-<p>Set a component parameter as <code>setparameter(reference, name, value)</code>.</p>
-<p>Set the parameter of a component in a model to a given value.</p>
-<p><a id='Mimi.unitcheck' href='#Mimi.unitcheck'>#</a>
-<strong><code>Mimi.unitcheck</code></strong> &mdash; <em>Function</em>.</p>
-<p>Default string, string unit check function</p>
-<p><a id='Mimi.variables' href='#Mimi.variables'>#</a>
-<strong><code>Mimi.variables</code></strong> &mdash; <em>Function</em>.</p>
-<p>List all the variables in a component.</p>
-<p><a id='Mimi.ComponentReference' href='#Mimi.ComponentReference'>#</a>
-<strong><code>Mimi.ComponentReference</code></strong> &mdash; <em>Type</em>.</p>
-<p>A container for a component, for interacting with it within a model.</p>
-<p><a id='Mimi.VariableReference' href='#Mimi.VariableReference'>#</a>
-<strong><code>Mimi.VariableReference</code></strong> &mdash; <em>Type</em>.</p>
-<p>A container for a name within a component, to improve connectparameter aesthetics.</p>
+<p><a id='Mimi.getdataframe' href='#Mimi.getdataframe'>#</a>
+<strong><code>Mimi.getdataframe</code></strong> &mdash; <em>Function</em>.</p>
+<p>Return the values for a variable as a DataFrame.</p>
+<p><a id='Base.run' href='#Base.run'>#</a>
+<strong><code>Base.run</code></strong> &mdash; <em>Function</em>.</p>
+<p>Run the model once.</p>
+<p><a id='Mimi.@defcomp' href='#Mimi.@defcomp'>#</a>
+<strong><code>Mimi.@defcomp</code></strong> &mdash; <em>Macro</em>.</p>
+<p>Define a new component.</p>
           <aside class="copyright" role="note">
             
             Documentation built with
