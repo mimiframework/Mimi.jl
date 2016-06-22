@@ -7,6 +7,8 @@
 
 # Mimi - Integrated Assessment Modeling Framework
 
+[![Join the chat at https://gitter.im/anthofflab/Mimi.jl](https://badges.gitter.im/anthofflab/Mimi.jl.svg)](https://gitter.im/anthofflab/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A [Julia](http://julialang.org) package for integrated assessment models. For more information, see the **[Documentation](http://mimi.readthedocs.org/en/latest/)**.
 
 Please get in touch with [David Anthoff](http://www.david-anthoff.com) if you are interested in using this framework or want to be involved in any way with this effort.
