@@ -1,5 +1,6 @@
-###Constructing A One-Region Model
----
+# Tutorial
+
+## Constructing A One-Region Model
 
 In this example, we will construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy will involve creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
 
@@ -99,7 +100,7 @@ run(my_model)
 my_model[:emissions, :E]
 ```
 
-###Constructing A Multi-Region Model
+## Constructing A Multi-Region Model
 
 We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:
 
