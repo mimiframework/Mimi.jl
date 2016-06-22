@@ -1,9 +1,9 @@
-[![Build Status](https://travis-ci.org/davidanthoff/Mimi.jl.svg?branch=master)](https://travis-ci.org/davidanthoff/Mimi.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/ppdbe3p1lfh4c2jl?svg=true)](https://ci.appveyor.com/project/davidanthoff/mimi-jl)
-[![Coverage Status](https://coveralls.io/repos/davidanthoff/Mimi.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/davidanthoff/Mimi.jl?branch=master)
+[![Build Status](https://travis-ci.org/anthofflab/Mimi.jl.svg?branch=master)](https://travis-ci.org/anthofflab/Mimi.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/ibbj9nfjxdybe0yn/branch/master?svg=true)](https://ci.appveyor.com/project/davidanthoff/mimi-jl/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/anthofflab/Mimi.jl/badge.svg?branch=master)](https://coveralls.io/github/anthofflab/Mimi.jl?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/mimi/badge/?version=latest)](https://readthedocs.org/projects/mimi/?badge=latest)
 
-[![Join the chat at https://gitter.im/davidanthoff/Mimi.jl](https://badges.gitter.im/davidanthoff/Mimi.jl.svg)](https://gitter.im/davidanthoff/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/anthofflab/Mimi.jl](https://badges.gitter.im/anthofflab/Mimi.jl.svg)](https://gitter.im/anthofflab/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Mimi - Integrated Assessment Modeling Framework
 

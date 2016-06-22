@@ -1,6 +1,6 @@
 site_name: Mimi.jl
-site_url: https://github.com/davidanthoff/Mimi.jl
-repo_url: https://github.com/davidanthoff/Mimi.jl
+site_url: https://github.com/anthofflab/Mimi.jl
+repo_url: https://github.com/anthofflab/Mimi.jl
 docs_dir: doc
 theme: readthedocs
 pages:
