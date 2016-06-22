@@ -14,3 +14,6 @@ script:
   - julia --check-bounds=yes -e 'Pkg.test("Mimi", coverage=true)'
 after_success:
   - julia -e 'cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
+  - julia -e 'Pkg.add("Documenter")'
+  - julia -e 'cd(Pkg.dir("Mimi")); include(joinpath("docs","make.jl"))'
+   
