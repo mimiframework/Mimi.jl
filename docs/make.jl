@@ -1,6 +1,8 @@
 using Documenter, Mimi
 
-makedocs()
+makedocs(
+    modules = [Mimi]
+)
 
 deploydocs(
     deps = Deps.pip("pygments", "mkdocs", "mkdocs-material", "python-markdown-math"),
