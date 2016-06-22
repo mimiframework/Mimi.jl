@@ -9,18 +9,20 @@ dependencies = [
 #list of failed tests to build as you go
 errors = []
 #make a temporary directory to run the tests in
-tmp_path = joinpath(dirname(@__FILE__),"tmp_testing")
+tmp_path = joinpath(dirname(@__FILE__),"tmp_testing/")
 mkdir(tmp_path)
 
 #loop through each dependent package
 for url in dependencies
   #download the package
   zip_name = chomp(basename(url))
-  file_path = joinpath(tmp_path, zip_name)
-  download(url, file_path)
-  unzip(file_path, tmp_path)
-  rm(file_path)
-  package_name = chomp(readir())
+  zip_file_path = joinpath(tmp_path, zip_name)
+  download(url, zip_file_path)
+  InfoZIP.unzip(zip_file_path, tmp_path)
+  rm(zip_file_path)
+  #find the name of the unzipped package (this only works if the zip archive only has one directory, the package)
+  package_name = readdir(tmp_path)[1]
+
   #test the package
   try
     process = string(tmp_path, package_name, "/test/runtests.jl")
@@ -29,7 +31,7 @@ for url in dependencies
     append!(errors, [(package_name, e)])
   end
   #delete current package before testing next one
-  rm(string(tmp_path, package_name), recursive=true)
+  rm(joinpath(tmp_path, package_name), recursive=true)
 end
 
 #remove the temporary directory
@@ -45,4 +47,6 @@ end
 
 if num_errors > 0
   error(error_message)
+else
+  println("All dependency tests passed.")
 end
