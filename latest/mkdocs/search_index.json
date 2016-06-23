@@ -2,13 +2,28 @@
     "docs": [
         {
             "location": "/", 
-            "text": "Welcome to Mimi\n\n\nMimi is the Integrated assessment modeling framework.", 
+            "text": "Welcome to Mimi\n\n\n\n\nOverview\n\n\nMimi is a package that provides a component model for integrated assessment models.\n\n\n\n\nInstallation\n\n\nMimi is an installable package. To install Mimi, use the following:\n\n\nPkg.add(\nMimi\n)\n\n\n\n\n\n\nModels using Mimi\n\n\n\n\nFUND.jl\n (currently in beta)\n\n\nMimi-DICE.jl and Mimi-RICE.jl (currently in closed beta)\n\n\nMimi-SNEASY.jl (currently in closed beta)", 
             "title": "Home"
         }, 
         {
             "location": "/#welcome-to-mimi", 
-            "text": "Mimi is the Integrated assessment modeling framework.", 
+            "text": "", 
             "title": "Welcome to Mimi"
+        }, 
+        {
+            "location": "/#overview", 
+            "text": "Mimi is a package that provides a component model for integrated assessment models.", 
+            "title": "Overview"
+        }, 
+        {
+            "location": "/#installation", 
+            "text": "Mimi is an installable package. To install Mimi, use the following:  Pkg.add( Mimi )", 
+            "title": "Installation"
+        }, 
+        {
+            "location": "/#models-using-mimi", 
+            "text": "FUND.jl  (currently in beta)  Mimi-DICE.jl and Mimi-RICE.jl (currently in closed beta)  Mimi-SNEASY.jl (currently in closed beta)", 
+            "title": "Models using Mimi"
         }, 
         {
             "location": "/tutorial/", 
