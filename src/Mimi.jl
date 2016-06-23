@@ -380,7 +380,7 @@ function run(m::Model;ntimesteps=typemax(Int64))
 
     while !finished(clock)
         for c in values(m.components)
-            run_timestep(c,clock.t)
+            run_timestep(c,gettimestep(clock))
         end
         move_forward(clock)
     end
