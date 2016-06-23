@@ -150,7 +150,9 @@ function setrandom(m::Model)
 end
 
 """
-List all the components in a given model.
+    components(m::Model)
+
+List all the components in model `m`.
 """
 function components(m::Model)
     collect(keys(m.components))
@@ -165,7 +167,9 @@ function getmetainfo(m::Model, componentname::Symbol)
 end
 
 """
-List all the variables in a component.
+    variables(m::Model, componentname::Symbol)
+
+List all the variables of `componentname` in model `m`.
 """
 function variables(m::Model, componentname::Symbol)
     c = getmetainfo(m, componentname)
@@ -326,9 +330,11 @@ function getindex(m::Model, component::Symbol, name::Symbol)
 end
 
 """
-Return the values for a variable as a DataFrame.
+    getdataframe(m::Model, componentname::Symbol, name::Symbol)
+
+Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
 """
-function getdataframe(m::Model, component::Symbol, name::Symbol)
+function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     comp_type = typeof(m.components[component])
 
     meta_module_name = symbol(super(typeof(m.components[component])).name.module)
@@ -360,7 +366,9 @@ import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
 """
-Run the model once.
+    run(m::Model)
+
+Run model `m` once.
 """
 function run(m::Model;ntimesteps=typemax(Int64))
     clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
