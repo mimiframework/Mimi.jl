@@ -219,10 +219,16 @@
 <h1 id="reference">Reference</h1>
 <p><a id='Mimi.components' href='#Mimi.components'>#</a>
 <strong><code>Mimi.components</code></strong> &mdash; <em>Function</em>.</p>
-<p>List all the components in a given model.</p>
+<pre><code>components(m::Model)
+</code></pre>
+
+<p>List all the components in model <code>m</code>.</p>
 <p><a id='Mimi.variables' href='#Mimi.variables'>#</a>
 <strong><code>Mimi.variables</code></strong> &mdash; <em>Function</em>.</p>
-<p>List all the variables in a component.</p>
+<pre><code>variables(m::Model, componentname::Symbol)
+</code></pre>
+
+<p>List all the variables of <code>componentname</code> in model <code>m</code>.</p>
 <p><a id='Mimi.addcomponent' href='#Mimi.addcomponent'>#</a>
 <strong><code>Mimi.addcomponent</code></strong> &mdash; <em>Function</em>.</p>
 <p>Add a component to a model.</p>
@@ -240,10 +246,16 @@
 <p>Set all the parameters in a model that don't have a value and are not connected to some other component to a value from a dictionary.</p>
 <p><a id='Mimi.getdataframe' href='#Mimi.getdataframe'>#</a>
 <strong><code>Mimi.getdataframe</code></strong> &mdash; <em>Function</em>.</p>
-<p>Return the values for a variable as a DataFrame.</p>
+<pre><code>getdataframe(m::Model, componentname::Symbol, name::Symbol)
+</code></pre>
+
+<p>Return the values for variable <code>name</code> in <code>componentname</code> of model <code>m</code> as a DataFrame.</p>
 <p><a id='Base.run' href='#Base.run'>#</a>
 <strong><code>Base.run</code></strong> &mdash; <em>Function</em>.</p>
-<p>Run the model once.</p>
+<pre><code>run(m::Model)
+</code></pre>
+
+<p>Run model <code>m</code> once.</p>
 <p><a id='Mimi.@defcomp' href='#Mimi.@defcomp'>#</a>
 <strong><code>Mimi.@defcomp</code></strong> &mdash; <em>Macro</em>.</p>
 <p>Define a new component.</p>
