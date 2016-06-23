@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/anthofflab/Mimi.jl.svg?branch=master)](https://travis-ci.org/anthofflab/Mimi.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/ibbj9nfjxdybe0yn/branch/master?svg=true)](https://ci.appveyor.com/project/davidanthoff/mimi-jl/branch/master)
+[![Mimi](http://pkg.julialang.org/badges/Mimi_0.4.svg)](http://pkg.julialang.org/?pkg=Mimi)
 [![Coverage Status](https://coveralls.io/repos/github/anthofflab/Mimi.jl/badge.svg?branch=master)](https://coveralls.io/github/anthofflab/Mimi.jl?branch=master)
 
 [![Join the chat at https://gitter.im/anthofflab/Mimi.jl](https://badges.gitter.im/anthofflab/Mimi.jl.svg)](https://gitter.im/anthofflab/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
