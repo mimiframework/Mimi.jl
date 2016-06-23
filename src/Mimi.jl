@@ -335,18 +335,18 @@ end
 Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
 """
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
-    comp_type = typeof(m.components[component])
+    comp_type = typeof(m.components[componentname])
 
-    meta_module_name = symbol(super(typeof(m.components[component])).name.module)
-    meta_component_name = symbol(super(typeof(m.components[component])).name.name)
+    meta_module_name = symbol(super(typeof(m.components[componentname])).name.module)
+    meta_component_name = symbol(super(typeof(m.components[componentname])).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
     if length(vardiminfo)==0
-        return m[component, name]
+        return m[componentname, name]
     elseif length(vardiminfo)==1
         df = DataFrame()
         df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
-        df[name] = m[component, name]
+        df[name] = m[componentname, name]
         return df
     elseif length(vardiminfo)==2
         df = DataFrame()
@@ -354,7 +354,7 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
         dim2 = length(m.indices_values[vardiminfo[2]])
         df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
-        data = m[component, name]
+        data = m[componentname, name]
         df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
         return df
     else
