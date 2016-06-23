@@ -156,9 +156,7 @@ function components(m::Model)
     collect(keys(m.components))
 end
 
-"""
-Return the MetaComponent for a given component
-"""
+# Return the MetaComponent for a given component
 function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
     meta_module_name = symbol(super(typeof(m.components[componentname])).name.module)
@@ -292,9 +290,7 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
     nothing
 end
 
-"""
-Default string, string unit check function
-"""
+# Default string, string unit check function
 function unitcheck(one::AbstractString, two::AbstractString)
     # True if and only if they match
     return one == two
@@ -404,9 +400,7 @@ function getvpd(s)
     return s.Variables, s.Parameters, s.Dimensions
 end
 
-"""
-Helper function for macro: collects all the keyword arguments in a function call to a dictionary.
-"""
+# Helper function for macro: collects all the keyword arguments in a function call to a dictionary.
 function collectkw(args::Vector{Any})
     kws = Dict{Symbol, Any}()
     for arg in args
