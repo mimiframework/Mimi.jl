@@ -12,6 +12,8 @@ Mimi is an installable package. To install Mimi, use the following:
 Pkg.add("Mimi")
 ```
 
+For more complete setup instructions, follow the [Installation Guide](@ref).
+
 ## Models using Mimi
 
 * [FUND.jl](https://github.com/davidanthoff/fund.jl) (currently in beta)
