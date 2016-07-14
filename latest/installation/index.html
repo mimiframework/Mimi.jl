@@ -9,10 +9,8 @@
     <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1">
     
       
-        <title>Mimi.jl - Integrated Assessment Modeling Framework</title>
+        <title>Installation Guide - Mimi.jl</title>
       
-      
-        <meta name="description" content="Integrated Assessment Modeling Framework">
       
       
       
@@ -21,33 +19,33 @@
     
     <meta property="og:url" content="None">
     <meta property="og:title" content="Mimi.jl">
-    <meta property="og:image" content="None/./">
+    <meta property="og:image" content="None/../">
     <meta name="apple-mobile-web-app-title" content="Mimi.jl">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     
-    <link rel="shortcut icon" type="image/x-icon" href="./assets/images/favicon-e565ddfa3b.ico">
-    <link rel="icon" type="image/x-icon" href="./assets/images/favicon-e565ddfa3b.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../assets/images/favicon-e565ddfa3b.ico">
+    <link rel="icon" type="image/x-icon" href="../assets/images/favicon-e565ddfa3b.ico">
     <style>
       @font-face {
       	font-family: 'Icon';
-      	src: url('./assets/fonts/icon.eot?52m981');
-      	src: url('./assets/fonts/icon.eot?#iefix52m981')
+      	src: url('../assets/fonts/icon.eot?52m981');
+      	src: url('../assets/fonts/icon.eot?#iefix52m981')
                format('embedded-opentype'),
-      		   url('./assets/fonts/icon.woff?52m981')
+      		   url('../assets/fonts/icon.woff?52m981')
                format('woff'),
-      		   url('./assets/fonts/icon.ttf?52m981')
+      		   url('../assets/fonts/icon.ttf?52m981')
                format('truetype'),
-      		   url('./assets/fonts/icon.svg?52m981#icon')
+      		   url('../assets/fonts/icon.svg?52m981#icon')
                format('svg');
       	font-weight: normal;
       	font-style: normal;
       }
     </style>
-    <link rel="stylesheet" href="./assets/stylesheets/application-a422ff04cc.css">
+    <link rel="stylesheet" href="../assets/stylesheets/application-a422ff04cc.css">
     
-      <link rel="stylesheet" href="./assets/stylesheets/palettes-05ab2406df.css">
+      <link rel="stylesheet" href="../assets/stylesheets/palettes-05ab2406df.css">
     
     
       
@@ -64,9 +62,9 @@
       </style>
     
     
-      <link rel="stylesheet" href="./assets/Documenter.css">
+      <link rel="stylesheet" href="../assets/Documenter.css">
     
-    <script src="./assets/javascripts/modernizr-4ab42b99fd.js"></script>
+    <script src="../assets/javascripts/modernizr-4ab42b99fd.js"></script>
     
   </head>
   
@@ -98,7 +96,7 @@
             
           </span>
         
-        Mimi.jl
+        Installation Guide
       </div>
     </div>
     
@@ -168,8 +166,17 @@
           
             
   <li>
-    <a class="current" title="Home" href=".">
+    <a class="" title="Home" href="..">
       Home
+    </a>
+    
+  </li>
+
+          
+            
+  <li>
+    <a class="current" title="Installation Guide" href="./">
+      Installation Guide
     </a>
     
       
@@ -179,20 +186,32 @@
         <ul>
           
             <li class="anchor">
-              <a title="Overview" href="#overview">
-                Overview
+              <a title="Installing julia" href="#installing-julia">
+                Installing julia
               </a>
             </li>
           
             <li class="anchor">
-              <a title="Installation" href="#installation">
-                Installation
+              <a title="Installing Mimi" href="#installing-mimi">
+                Installing Mimi
               </a>
             </li>
           
             <li class="anchor">
-              <a title="Models using Mimi" href="#models-using-mimi">
-                Models using Mimi
+              <a title="Using Mimi" href="#using-mimi">
+                Using Mimi
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="Editor support" href="#editor-support">
+                Editor support
+              </a>
+            </li>
+          
+            <li class="anchor">
+              <a title="Getting started" href="#getting-started">
+                Getting started
               </a>
             </li>
           
@@ -204,16 +223,7 @@
           
             
   <li>
-    <a class="" title="Installation Guide" href="installation/">
-      Installation Guide
-    </a>
-    
-  </li>
-
-          
-            
-  <li>
-    <a class="" title="Tutorial" href="tutorial/">
+    <a class="" title="Tutorial" href="../tutorial/">
       Tutorial
     </a>
     
@@ -222,7 +232,7 @@
           
             
   <li>
-    <a class="" title="FAQ" href="faq/">
+    <a class="" title="FAQ" href="../faq/">
       FAQ
     </a>
     
@@ -231,7 +241,7 @@
           
             
   <li>
-    <a class="" title="Reference" href="reference/">
+    <a class="" title="Reference" href="../reference/">
       Reference
     </a>
     
@@ -248,24 +258,44 @@
       <article class="article">
         <div class="wrapper">
           
-          <p><a id='Welcome-to-Mimi-1'></a></p>
-<h1 id="welcome-to-mimi">Welcome to Mimi</h1>
-<p><a id='Overview-1'></a></p>
-<h2 id="overview">Overview</h2>
-<p>Mimi is a package that provides a component model for integrated assessment models.</p>
-<p><a id='Installation-1'></a></p>
-<h2 id="installation">Installation</h2>
-<p>Mimi is an installable package. To install Mimi, use the following:</p>
-<pre><code class="julia">Pkg.add(&quot;Mimi&quot;)
+          <p><a id='Installation-Guide-1'></a></p>
+<h1 id="installation-guide">Installation Guide</h1>
+<p>This guide will briefly explain how to install julia and Mimi.</p>
+<p><a id='Installing-julia-1'></a></p>
+<h2 id="installing-julia">Installing julia</h2>
+<p>Mimi requires the programming language <a href="http://julialang.org/">julia</a> to run. You can download the current release from the julia <a href="http://julialang.org/downloads/">download page</a>. You should download and install the command line version from that page.</p>
+<p><a id='Installing-Mimi-1'></a></p>
+<h2 id="installing-mimi">Installing Mimi</h2>
+<p>Once julia is installed, start julia and you should see a julia command prompt. To install the Mimi package, issue the following command:</p>
+<pre><code class="julia">julia&gt; Pkg.add(&quot;Mimi&quot;)
 </code></pre>
 
-<p><a id='Models-using-Mimi-1'></a></p>
-<h2 id="models-using-mimi">Models using Mimi</h2>
+<p>You only have to run this command once on your machine.</p>
+<p>As Mimi gets improved we will release new versions of the package. To make sure you always have the latest version of Mimi installed, you can run the following command at the julia prompt:</p>
+<pre><code class="julia">julia&gt; Pkg.update()
+</code></pre>
+
+<p>This will update <em>all</em> installed packages to their latest version (not just the Mimi package).</p>
+<p><a id='Using-Mimi-1'></a></p>
+<h2 id="using-mimi">Using Mimi</h2>
+<p>When you start a new julia command prompt, Mimi is not yet loaded into that julia session. To load Mimi, issue the following command:</p>
+<pre><code class="julia">julia&gt; using Mimi
+</code></pre>
+
+<p>You will have to run this command every time you want to use Mimi in julia. You would typically also add <code>using Mimi</code> to the top of any julia code file that for example defines Mimi components.</p>
+<p><a id='Editor-support-1'></a></p>
+<h2 id="editor-support">Editor support</h2>
+<p>There are various editors around that have julia support:</p>
 <ul>
-<li><a href="https://github.com/davidanthoff/fund.jl">FUND.jl</a> (currently in beta)</li>
-<li>Mimi-DICE.jl and Mimi-RICE.jl (currently in closed beta)</li>
-<li>Mimi-SNEASY.jl (currently in closed beta)</li>
+<li><a href="https://github.com/JuliaLang/IJulia.jl">IJulia</a> adds julia support to the <a href="http://jupyter.org/">jupyter</a> (formerly IPython) notebook system.</li>
+<li><a href="http://junolab.org/">Juno</a> adds julia specific features to the <a href="https://atom.io/">Atom</a> editor. It currently is the closest to a fully featured julia IDE.</li>
+<li><a href="https://www.sublimetext.com/">Sublime</a>, <a href="https://code.visualstudio.com/">VS Code</a>, <a href="https://www.gnu.org/software/emacs/">Emacs</a> and many other editors all have julia extensions that add various levels of support for the julia language.</li>
 </ul>
+<p><a id='Getting-started-1'></a></p>
+<h2 id="getting-started">Getting started</h2>
+<p>The best way to get started with Mimi is to work through the tutorial in the documentation. The <code>examples/tutorial</code> folder in the <a href="https://github.com/anthofflab/Mimi.jl">Mimi</a> github repository has julia code files that completely implement the example described in the tutorial.</p>
+<p>The <a href="https://github.com/anthofflab/Mimi.jl">Mimi</a> github repository also has links to various models that are based on Mimi, and looking through their code can be instructive.</p>
+<p>Finally, when in doubt, ask your question in the <a href="https://gitter.im/anthofflab/Mimi.jl">Mimi gitter chatroom</a> or send an email to <a href="../anthoff@berkeley.edu">David Anthoff</a> and ask for help. Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!</p>
           <aside class="copyright" role="note">
             
             Documentation built with
@@ -282,17 +312,33 @@
   <nav class="pagination" aria-label="Footer">
     <div class="previous">
       
+        <a href=".." title="Home">
+          <span class="direction">
+            Previous
+          </span>
+          <div class="page">
+            <div class="button button-previous" role="button" aria-label="Previous">
+              <i class="icon icon-back"></i>
+            </div>
+            <div class="stretch">
+              <div class="title">
+                Home
+              </div>
+            </div>
+          </div>
+        </a>
+      
     </div>
     <div class="next">
       
-        <a href="installation/" title="Installation Guide">
+        <a href="../tutorial/" title="Tutorial">
           <span class="direction">
             Next
           </span>
           <div class="page">
             <div class="stretch">
               <div class="title">
-                Installation Guide
+                Tutorial
               </div>
             </div>
             <div class="button button-next" role="button" aria-label="Next">
@@ -318,14 +364,14 @@
       </div>
     </main>
     <script>
-      var base_url = '.';
+      var base_url = '..';
       var repo_id  = 'anthofflab/Mimi.jl';
     </script>
-    <script src="./assets/javascripts/application-997097ee0c.js"></script>
+    <script src="../assets/javascripts/application-997097ee0c.js"></script>
     
       <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
-      <script src="./assets/mathjaxhelper.js"></script>
+      <script src="../assets/mathjaxhelper.js"></script>
     
     
   </body>
