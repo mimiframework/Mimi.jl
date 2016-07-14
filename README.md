@@ -34,6 +34,10 @@ Pkg.add("Mimi")
 * Mimi-DICE.jl and Mimi-RICE.jl (currently in closed beta)
 * Mimi-SNEASY.jl (currently in closed beta)
 
+## Contributing
+
+Contributions to Mimi are most welcome! You can interact with the Mimi development team via issues and pull requests here on github, and in the [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room.
+
 ## Acknowledgements
 
 This work is partially supported by the National Science Foundation through the Network for Sustainable Climate Risk Management ([SCRiM](http://scrimhub.org/)) under NSF cooperative agreement GEO-1240507.
