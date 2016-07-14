@@ -27,6 +27,7 @@ docs_dir: 'build'
 
 pages:
   - Home: index.md
+  - Installation Guide: installation.md
   - Tutorial: tutorial.md
   - FAQ: faq.md
   - Reference: reference.md
