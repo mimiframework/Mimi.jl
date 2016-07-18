@@ -2,6 +2,7 @@ module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
+include("graph_API.jl")
 using DataStructures
 using DataFrames
 using Distributions
@@ -9,7 +10,7 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
+    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck, print_graph, get_string_representation
 
 import
     Base.getindex, Base.run
@@ -128,6 +129,7 @@ type Model
     parameters_that_are_set::Set{UTF8String}
     parameters::Dict{Symbol,Parameter}
     numberType::DataType
+    model_graph::ModelGraph
 
     function Model(numberType::DataType=Float64)
         m = new()
@@ -137,6 +139,7 @@ type Model
         m.parameters_that_are_set = Set{UTF8String}()
         m.parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
+        m.model_graph = ModelGraph()
         return m
     end
 end
@@ -225,6 +228,7 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
     end
 
     ComponentReference(m, name)
+    add_node(m.model_graph, name)
 end
 
 function addcomponent(m::Model, t;before=nothing,after=nothing)
@@ -301,6 +305,8 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
 
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
+    e=edge(target_name, target_component, source_component)
+    add_edge(m.model_graph, e)
     nothing
 end
 
@@ -570,6 +576,18 @@ function run_timestep(s::adder, t::Int)
 
     v.output[t] = p.input[t] + p.add[t]
 end
+
+#Begin Graph Functionality section
+
+function print_graph(m::Model)
+  print_graph(m.model_graph)
+end
+
+function get_string_representation(m::Model)
+  return string_representation(m.model_graph)
+end
+
+#End of graph section
 
 include("references.jl")
 
