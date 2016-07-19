@@ -1,7 +1,8 @@
-# Mimi.jl v.next Release Notes
+# Mimi.jl v0.1.2 Release Notes
+* Add Lint.jl support
+* Various bug fixes
 
 # Mimi.jl v0.1.1 Release Notes
-
 * Documentation updates
 
 # Mimi.jl v0.1.0 Release Notes
