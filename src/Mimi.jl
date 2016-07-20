@@ -10,7 +10,7 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck, print_graph, get_string_representation
+    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck, print_graph
 
 import
     Base.getindex, Base.run
@@ -122,6 +122,18 @@ end
 function setrandom(p::CertainArrayParameter)
 end
 
+type ComponentInstanceInfo
+  name::Symbol
+  component_type #the type here is a Type? or ComponentState or something else?
+end
+
+type ParameterVariableConnection
+  source_variable_name::Symbol
+  source_component_name::Symbol
+  target_parameter_name::Symbol
+  target_component_name::Symbol
+end
+
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
@@ -129,7 +141,9 @@ type Model
     parameters_that_are_set::Set{UTF8String}
     parameters::Dict{Symbol,Parameter}
     numberType::DataType
-    model_graph::ModelGraph
+    #model_graph::ModelGraph
+    edges::Array{ParameterVariableConnection, 1}
+    nodes::Dict{Symbol, ComponentInstanceInfo}
 
     function Model(numberType::DataType=Float64)
         m = new()
@@ -139,7 +153,8 @@ type Model
         m.parameters_that_are_set = Set{UTF8String}()
         m.parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
-        m.model_graph = ModelGraph()
+        m.edges = []
+        m.nodes = Dict{Symbol, ComponentInstanceInfo}()
         return m
     end
 end
@@ -227,8 +242,12 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
         m.components[name] = comp
     end
 
+    #add_node(m.model_graph, name)
+    this = ComponentInstanceInfo(name, t) #build node instance
+    #push!(m.nodes, this) #add to model's list of nodes
+    m.nodes[name] = this
+
     ComponentReference(m, name)
-    add_node(m.model_graph, name)
 end
 
 function addcomponent(m::Model, t;before=nothing,after=nothing)
@@ -305,8 +324,13 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
 
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
-    e=edge(target_name, target_component, source_component)
-    add_edge(m.model_graph, e)
+
+    #e=edge(target_name, target_component, source_component)
+    #add_edge(m.model_graph, e)
+
+    this = ParameterVariableConnection(source_name, source_component, target_name, target_component)
+    push!(m.edges, this)
+
     nothing
 end
 
@@ -580,12 +604,56 @@ end
 #Begin Graph Functionality section
 
 function print_graph(m::Model)
-  print_graph(m.model_graph)
+  for c in keys(m.nodes)
+    i_edges = get_connections(m,c,:INCOMING)
+    o_edges = get_connections(m,c,:OUTGOING)
+    println(c)
+    println("  incoming parameters:")
+    [println("    - ",e.target_parameter_name," from ",e.source_component_name) for e in i_edges]
+    println("  outgoing variables:")
+    [println("    - ",e.source_variable_name," from ",e.target_component_name) for e in o_edges]
+  end
 end
 
-function get_string_representation(m::Model)
-  return string_representation(m.model_graph)
+function get_connections(m::Model, c::ComponentInstanceInfo, which::Symbol)
+  return get_connections(m, c.name, which)
 end
+
+function get_connections(m::Model, component_name::Symbol, which::Symbol)
+  #which = uppercase(which)
+  if which==:ALL
+    function bool(e::ParameterVariableConnection)
+      return e.source_component_name==component_name || e.target_component_name==component_name
+    end
+  elseif which==:INCOMING
+    function bool(e::ParameterVariableConnection)
+      return e.target_component_name==component_name
+    end
+  elseif which==:OUTGOING
+    function bool(e::ParameterVariableConnection)
+      return e.source_component_name==component_name
+    end
+  else
+    @assert false ["Invalid parameter to the 'which' argument; must be 'all' or 'incoming' or 'outgoing'."]
+  end
+
+  lst=[]
+  for e in m.edges
+    if bool(e)
+      push!(lst, e)
+    end
+  end
+
+  return lst
+end
+
+# function print_graph(m::Model)
+#   print_graph(m.model_graph)
+# end
+#
+# function get_string_representation(m::Model)
+#   return string_representation(m.model_graph)
+# end
 
 #End of graph section
 
