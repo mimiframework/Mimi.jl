@@ -202,7 +202,10 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     nothing
 end
 
-function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
+"""
+Add a component to a model.
+"""
+function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothing,after=nothing)
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -226,15 +229,6 @@ function addcomponent(m::Model, t, name::Symbol;before=nothing,after=nothing)
 
     ComponentReference(m, name)
 end
-
-function addcomponent(m::Model, t;before=nothing,after=nothing)
-    addcomponent(m,t,symbol(string(t)),before=before,after=after)
-end
-
-"""
-Add a component to a model.
-"""
-addcomponent
 
 """
 Set the parameter of a component in a model to a given value.
@@ -279,6 +273,11 @@ function addparameter(m::Model, name::Symbol, value)
             p = UncertainArrayParameter(value)
             m.parameters[symbol(lowercase(string(name)))] = p
         else
+            if !(typeof(value) <: Array{m.numberType})
+                # E.g., if model takes Number and given Float64, convert it
+                value = convert(Array{m.numberType}, value)
+            end
+
             p = CertainArrayParameter(value)
             m.parameters[symbol(lowercase(string(name)))] = p
         end
