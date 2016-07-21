@@ -4,8 +4,8 @@ using ZipFile
 function unzip(inputfilename, outputpath=pwd())
     r = ZipFile.Reader(inputfilename)
     try
-        for f in r.files
-	          outpath = joinpath(outputpath, f.name)
+	    for f in r.files
+	        outpath = joinpath(outputpath, f.name)
 	        if isdirpath(outpath)
                 mkpath(outpath)
             else
