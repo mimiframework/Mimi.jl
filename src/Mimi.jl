@@ -195,13 +195,9 @@ end
 """
 Add a component to a model.
 """
-function addcomponent(m::Model, t, name::Union{Symbol,Void}=nothing; before=nothing,after=nothing)
+function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothing,after=nothing)
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
-    end
-
-    if name == nothing
-        name = symbol(string(t))
     end
 
     comp = t(m.numberType, m.indices_counts)
