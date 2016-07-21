@@ -1,5 +1,24 @@
 using Mimi
-using InfoZIP
+using ZipFile
+
+function unzip(inputfilename, outputpath=pwd())
+    r = ZipFile.Reader(inputfilename)
+    try
+        for f in r.files
+            outpath = joinpath(outputpath, f.name)
+            if isdirpath(outpath)
+                mkpath(outpath)
+            else
+                Base.open(outpath, "w") do io
+                    write(io, readall(f))
+                end
+            end
+        end
+    finally
+        close(r)
+    end
+    nothing
+end
 
 #list of URLs of branches of packages to test
 dependencies = [
@@ -18,7 +37,7 @@ for url in dependencies
   zip_name = chomp(basename(url))
   zip_file_path = joinpath(tmp_path, zip_name)
   download(url, zip_file_path)
-  InfoZIP.unzip(zip_file_path, tmp_path)
+  unzip(zip_file_path, tmp_path)
   rm(zip_file_path)
   #find the name of the unzipped package (this only works if the zip archive only has one directory, the package)
   package_name = readdir(tmp_path)[1]
