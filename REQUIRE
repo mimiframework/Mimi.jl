@@ -3,3 +3,4 @@ DataStructures
 Distributions
 DataFrames
 Documenter
+Compat 0.8.6

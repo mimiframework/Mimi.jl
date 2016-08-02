@@ -5,6 +5,7 @@ include("clock.jl")
 using DataStructures
 using DataFrames
 using Distributions
+using Compat
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
@@ -125,7 +126,7 @@ type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
     components::OrderedDict{Symbol,ComponentState}
-    parameters_that_are_set::Set{UTF8String}
+    parameters_that_are_set::Set{Compat.UTF8String}
     parameters::Dict{Symbol,Parameter}
     numberType::DataType
 
@@ -134,7 +135,7 @@ type Model
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
         m.components = OrderedDict{Symbol,ComponentState}()
-        m.parameters_that_are_set = Set{UTF8String}()
+        m.parameters_that_are_set = Set{Compat.UTF8String}()
         m.parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         return m
@@ -171,8 +172,8 @@ end
 # Return the MetaComponent for a given component
 function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
-    meta_module_name = symbol(super(typeof(m.components[componentname])).name.module)
-    meta_component_name = symbol(super(typeof(m.components[componentname])).name.name)
+    meta_module_name = Symbol(super(typeof(m.components[componentname])).name.module)
+    meta_component_name = Symbol(super(typeof(m.components[componentname])).name.name)
     meta[(meta_module_name, meta_component_name)]
 end
 
@@ -237,13 +238,13 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     addparameter(m, name, value)
     connectparameter(m, component, name, name)
 
-    setbestguess(m.parameters[symbol(lowercase(string(name)))])
+    setbestguess(m.parameters[Symbol(lowercase(string(name)))])
     nothing
 end
 
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     c = m.components[component]
-    p = m.parameters[symbol(lowercase(string(parametername)))]
+    p = m.parameters[Symbol(lowercase(string(parametername)))]
 
     if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
         push!(p.dependentCompsAndParams, (c, name))
@@ -256,7 +257,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 end
 
 function updateparameter(m::Model, name::Symbol, value)
-       p = m.parameters[symbol(lowercase(string(name)))]
+       p = m.parameters[Symbol(lowercase(string(name)))]
 
        p.value = value
 
@@ -267,11 +268,11 @@ end
 function addparameter(m::Model, name::Symbol, value)
     if isa(value, Distribution)
         p = UncertainScalarParameter(value)
-        m.parameters[symbol(lowercase(string(name)))] = p
+        m.parameters[Symbol(lowercase(string(name)))] = p
     elseif isa(value, AbstractArray)
         if any(x->isa(x, Distribution), value)
             p = UncertainArrayParameter(value)
-            m.parameters[symbol(lowercase(string(name)))] = p
+            m.parameters[Symbol(lowercase(string(name)))] = p
         else
             if !(typeof(value) <: Array{m.numberType})
                 # E.g., if model takes Number and given Float64, convert it
@@ -279,11 +280,11 @@ function addparameter(m::Model, name::Symbol, value)
             end
 
             p = CertainArrayParameter(value)
-            m.parameters[symbol(lowercase(string(name)))] = p
+            m.parameters[Symbol(lowercase(string(name)))] = p
         end
     else
         p = CertainScalarParameter(value)
-        m.parameters[symbol(lowercase(string(name)))] = p
+        m.parameters[Symbol(lowercase(string(name)))] = p
     end
 end
 
@@ -321,7 +322,7 @@ to some other component to a value from a dictionary.
 """
 function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
     for (name, value) in parameters
-        addparameter(m, symbol(name), value)
+        addparameter(m, Symbol(name), value)
     end
 
     for c in m.components
@@ -346,8 +347,8 @@ Return the values for variable `name` in `componentname` of model `m` as a DataF
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     comp_type = typeof(m.components[componentname])
 
-    meta_module_name = symbol(super(typeof(m.components[componentname])).name.module)
-    meta_component_name = symbol(super(typeof(m.components[componentname])).name.name)
+    meta_module_name = Symbol(super(typeof(m.components[componentname])).name.module)
+    meta_component_name = Symbol(super(typeof(m.components[componentname])).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
     if length(vardiminfo)==0
@@ -501,13 +502,13 @@ macro defcomp(name, ex)
                 push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), $(description), $(unit))))
 
                 if variableType==:Number
-                    push!(resetvarsdef.args,:($(esc(symbol("fill!")))(s.Variables.$(variableName),$(esc(symbol("NaN"))))))
+                    push!(resetvarsdef.args,:($(esc(Symbol("fill!")))(s.Variables.$(variableName),$(esc(Symbol("NaN"))))))
                 end
             else
                 push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], $(description), $(unit))))
 
                 if variableType==:Number
-                    push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(symbol("NaN")))))
+                    push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(Symbol("NaN")))))
                 end
             end
         elseif line.head==:line
@@ -517,11 +518,11 @@ macro defcomp(name, ex)
     end
 
     module_def = :(eval(current_module(), :(module temporary_name end)))
-    module_def.args[3].args[1].args[2] = symbol(string("_mimi_implementation_", name))
+    module_def.args[3].args[1].args[2] = Symbol(string("_mimi_implementation_", name))
 
     call_expr = Expr(:call,
         Expr(:curly,
-            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(symbol(current_module()))), QuoteNode(symbol(string("_mimi_implementation_", name)))), QuoteNode(symbol(string(name,"Impl")))) ,
+            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
             :T),
         :T,
         :indices
@@ -529,13 +530,13 @@ macro defcomp(name, ex)
 
     x = quote
 
-        abstract $(esc(symbol(name))) <: Mimi.ComponentState
+        abstract $(esc(Symbol(name))) <: Mimi.ComponentState
 
         import Mimi.run_timestep
         import Mimi.init
         import Mimi.resetvariables
 
-        function $(esc(symbol("resetvariables")))(s::$(esc(symbol(name))))
+        function $(esc(Symbol("resetvariables")))(s::$(esc(Symbol(name))))
             $(resetvarsdef)
         end
 
@@ -546,9 +547,9 @@ macro defcomp(name, ex)
 
         $(module_def)
 
-        eval($(esc(symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
+        eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
 
-        function $(esc(symbol(name))){T}(::Type{T}, indices)
+        function $(esc(Symbol(name))){T}(::Type{T}, indices)
             $(call_expr)
         end
 

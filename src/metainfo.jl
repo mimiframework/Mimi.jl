@@ -1,19 +1,20 @@
 module metainfo
+using Compat
 
 type MetaVariable
     name::Symbol
     datatype::DataType
     dimensions::Array{Any}
-    description::UTF8String
-    unit::UTF8String
+    description::Compat.UTF8String
+    unit::Compat.UTF8String
 end
 
 type MetaParameter
     name::Symbol
     datatype::DataType
     dimensions::Array{Any}
-    description::UTF8String
-    unit::UTF8String
+    description::Compat.UTF8String
+    unit::Compat.UTF8String
 end
 
 type MetaDimension
@@ -79,7 +80,7 @@ function generate_comp_expressions(module_name, component_name)
         using Mimi
 
         # Define type for parameters
-        type $(symbol(string(component_name,"Parameters"))){T}
+        type $(Symbol(string(component_name,"Parameters"))){T}
             $(begin
                 x = Expr(:block)
                 for p in parameters
@@ -94,13 +95,13 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(symbol(string(component_name,"Parameters"))){T}(::Type{T})
+            function $(Symbol(string(component_name,"Parameters"))){T}(::Type{T})
                 new{T}()
             end
         end
 
         # Define type for variables
-        type $(symbol(string(component_name,"Variables"))){T}
+        type $(Symbol(string(component_name,"Variables"))){T}
             $(begin
                 x = Expr(:block)
                 for v in variables
@@ -115,7 +116,7 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(symbol(string(component_name, "Variables"))){T}(::Type{T}, indices)
+            function $(Symbol(string(component_name, "Variables"))){T}(::Type{T}, indices)
                 s = new{T}()
 
                 $(begin
@@ -145,7 +146,7 @@ function generate_comp_expressions(module_name, component_name)
 
 
         # Define type for dimensions
-        type $(symbol(string(component_name,"Dimensions")))
+        type $(Symbol(string(component_name,"Dimensions")))
             $(begin
                 x = Expr(:block)
                 for d in dimensions
@@ -154,7 +155,7 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(symbol(string(component_name,"Dimensions")))(indices)
+            function $(Symbol(string(component_name,"Dimensions")))(indices)
                 s = new()
                 $(begin
                     ep = Expr(:block)
@@ -168,18 +169,18 @@ function generate_comp_expressions(module_name, component_name)
         end
 
         # Define implementation typeof
-        type $(symbol(string(component_name, "Impl"))){T} <: Main.$(symbol(module_name)).$(symbol(component_name))
+        type $(Symbol(string(component_name, "Impl"))){T} <: Main.$(Symbol(module_name)).$(Symbol(component_name))
             nsteps::Int
-            Parameters::$(symbol(string(component_name,"Parameters"))){T}
-            Variables::$(symbol(string(component_name,"Variables"))){T}
-            Dimensions::$(symbol(string(component_name,"Dimensions")))
+            Parameters::$(Symbol(string(component_name,"Parameters"))){T}
+            Variables::$(Symbol(string(component_name,"Variables"))){T}
+            Dimensions::$(Symbol(string(component_name,"Dimensions")))
 
-            function $(symbol(string(component_name, "Impl"))){T}(::Type{T}, indices)
+            function $(Symbol(string(component_name, "Impl"))){T}(::Type{T}, indices)
                 s = new{T}()
                 s.nsteps = indices[:time]
-                s.Parameters = $(symbol(string(component_name,"Parameters"))){T}(T)
-                s.Dimensions = $(symbol(string(component_name,"Dimensions")))(indices)
-                s.Variables = $(symbol(string(component_name,"Variables"))){T}(T, indices)
+                s.Parameters = $(Symbol(string(component_name,"Parameters"))){T}(T)
+                s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)
+                s.Variables = $(Symbol(string(component_name,"Variables"))){T}(T, indices)
                 return s
             end
         end
