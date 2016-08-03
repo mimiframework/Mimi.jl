@@ -1,3 +1,7 @@
+# Mimi.jl v0.2.0 Release Notes
+* External parameters get automatically converted to the correct number type
+* julia 0.5 compatible
+
 # Mimi.jl v0.1.1 Release Notes
 * Documentation updates
 * Add Lint.jl support
