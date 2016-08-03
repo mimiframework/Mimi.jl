@@ -172,8 +172,8 @@ end
 # Return the MetaComponent for a given component
 function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
-    meta_module_name = Symbol(super(typeof(m.components[componentname])).name.module)
-    meta_component_name = Symbol(super(typeof(m.components[componentname])).name.name)
+    meta_module_name = Symbol(supertype(typeof(m.components[componentname])).name.module)
+    meta_component_name = Symbol(supertype(typeof(m.components[componentname])).name.name)
     meta[(meta_module_name, meta_component_name)]
 end
 
@@ -347,8 +347,8 @@ Return the values for variable `name` in `componentname` of model `m` as a DataF
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     comp_type = typeof(m.components[componentname])
 
-    meta_module_name = Symbol(super(typeof(m.components[componentname])).name.module)
-    meta_component_name = Symbol(super(typeof(m.components[componentname])).name.name)
+    meta_module_name = Symbol(supertype(typeof(m.components[componentname])).name.module)
+    meta_component_name = Symbol(supertype(typeof(m.components[componentname])).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
     if length(vardiminfo)==0
