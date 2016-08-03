@@ -1,8 +1,7 @@
-# Mimi.jl v.next Release Notes
-
 # Mimi.jl v0.1.1 Release Notes
-
 * Documentation updates
+* Add Lint.jl support
+* Various bug fixes
 
 # Mimi.jl v0.1.0 Release Notes
 * Move type generation from macro to runtime phase (low level dev feature)

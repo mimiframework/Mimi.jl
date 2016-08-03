@@ -1,6 +1,6 @@
 type Clock
-	t::Int64
-	final_t::Int64
+	t::Int
+	final_t::Int
 end
 
 function gettimestep(c::Clock)
