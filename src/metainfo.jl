@@ -150,7 +150,7 @@ function generate_comp_expressions(module_name, component_name)
             $(begin
                 x = Expr(:block)
                 for d in dimensions
-                    push!(x.args, :($(d.name)::UnitRange{Int64}) )
+                    push!(x.args, :($(d.name)::UnitRange{Int}) )
                 end
                 x
             end)
@@ -160,7 +160,7 @@ function generate_comp_expressions(module_name, component_name)
                 $(begin
                     ep = Expr(:block)
                     for d in dimensions
-                        push!(ep.args,:(s.$(d.name) = UnitRange{Int64}(1,indices[$(QuoteNode(d.name))])))
+                        push!(ep.args,:(s.$(d.name) = UnitRange{Int}(1,indices[$(QuoteNode(d.name))])))
                     end
                     ep
                 end)

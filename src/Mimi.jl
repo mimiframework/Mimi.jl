@@ -380,7 +380,7 @@ show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
 Run model `m` once.
 """
-function run(m::Model;ntimesteps=typemax(Int64))
+function run(m::Model;ntimesteps=typemax(Int))
     clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
 
     for c in values(m.components)
