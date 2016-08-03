@@ -3,6 +3,7 @@
 [![Mimi](http://pkg.julialang.org/badges/Mimi_0.4.svg)](http://pkg.julialang.org/?pkg=Mimi)
 [![Mimi](http://pkg.julialang.org/badges/Mimi_0.5.svg)](http://pkg.julialang.org/?pkg=Mimi)
 [![Coverage Status](https://coveralls.io/repos/github/anthofflab/Mimi.jl/badge.svg?branch=master)](https://coveralls.io/github/anthofflab/Mimi.jl?branch=master)
+[![codecov](https://codecov.io/gh/anthofflab/Mimi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/anthofflab/Mimi.jl)
 
 [![Join the chat at https://gitter.im/anthofflab/Mimi.jl](https://badges.gitter.im/anthofflab/Mimi.jl.svg)](https://gitter.im/anthofflab/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
