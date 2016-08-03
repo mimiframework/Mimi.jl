@@ -10,7 +10,7 @@ function unzip(inputfilename, outputpath=pwd())
                 mkpath(outpath)
             else
                 Base.open(outpath, "w") do io
-                    write(io, readall(f))
+                    write(io, readstring(f))
                 end
             end
         end
