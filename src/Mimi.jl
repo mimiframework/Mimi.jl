@@ -11,7 +11,7 @@ using Compat
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck, get_connections
+    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
 
 import
     Base.getindex, Base.run, Base.show
@@ -237,7 +237,7 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
             if i==before
                 newcomponents[name] = comp
                 this = ComponentInstanceInfo(name, t)
-                m.components2[name] = this
+                newcomponents2[name] = this
             end
             newcomponents[i] = m.components[i]
             newcomponents2[i] = m.components2[i]
