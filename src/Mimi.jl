@@ -2,6 +2,7 @@ module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
+
 using DataStructures
 using DataFrames
 using Distributions
@@ -13,7 +14,7 @@ export
     getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
 
 import
-    Base.getindex, Base.run
+    Base.getindex, Base.run, Base.show
 
 function lint_helper(ex::Expr, ctx)
     if ex.head == :macrocall
@@ -122,6 +123,18 @@ end
 function setrandom(p::CertainArrayParameter)
 end
 
+type ComponentInstanceInfo
+    name::Symbol
+    component_type::DataType
+end
+
+type ParameterVariableConnection
+    source_variable_name::Symbol
+    source_component_name::Symbol
+    target_parameter_name::Symbol
+    target_component_name::Symbol
+end
+
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
@@ -129,6 +142,8 @@ type Model
     parameters_that_are_set::Set{Compat.UTF8String}
     parameters::Dict{Symbol,Parameter}
     numberType::DataType
+    connections::Array{ParameterVariableConnection, 1}
+    components2::OrderedDict{Symbol, ComponentInstanceInfo}
 
     function Model(numberType::DataType=Float64)
         m = new()
@@ -138,6 +153,8 @@ type Model
         m.parameters_that_are_set = Set{Compat.UTF8String}()
         m.parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
+        m.connections = Array(ParameterVariableConnection, 0)
+        m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         return m
     end
 end
@@ -215,17 +232,24 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
 
     if before!=nothing
         newcomponents = OrderedDict{Symbol,ComponentState}()
+        newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         for i in keys(m.components)
             if i==before
                 newcomponents[name] = comp
+                curr = ComponentInstanceInfo(name, t)
+                newcomponents2[name] = curr
             end
             newcomponents[i] = m.components[i]
+            newcomponents2[i] = m.components2[i]
         end
         m.components = newcomponents
+        m.components2 = newcomponents2
     elseif after!=nothing
         error("Not yet implemented")
     else
         m.components[name] = comp
+        this = ComponentInstanceInfo(name, t)
+        m.components2[name] = this
     end
 
     ComponentReference(m, name)
@@ -301,6 +325,10 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
 
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
+
+    this = ParameterVariableConnection(source_name, source_component, target_name, target_component)
+    push!(m.connections, this)
+
     nothing
 end
 
@@ -570,6 +598,49 @@ function run_timestep(s::adder, t::Int)
 
     v.output[t] = p.input[t] + p.add[t]
 end
+
+#Begin Graph Functionality section
+
+function show(io::IO, m::Model)
+    println(io, "showing model component connections:")
+    for item in enumerate(keys(m.components2))
+        c = item[2]
+        i_connections = get_connections(m,c,:incoming)
+        o_connections = get_connections(m,c,:outgoing)
+        println(io, item[1], ". ", c, " component")
+        println(io, "    incoming parameters:")
+        if length(i_connections)==0
+            println(io, "      none")
+        else
+            [println(io, "      - ",e.target_parameter_name," from ",e.source_component_name," component") for e in i_connections]
+        end
+        println(io, "    outgoing variables:")
+        if length(o_connections)==0
+            println(io, "      none")
+        else
+            [println(io, "      - ",e.source_variable_name," in ",e.target_component_name, " component") for e in o_connections]
+        end
+    end
+end
+
+function get_connections(m::Model, c::ComponentInstanceInfo, which::Symbol)
+    return get_connections(m, c.name, which)
+end
+
+function get_connections(m::Model, component_name::Symbol, which::Symbol)
+    if which==:all
+        f = e -> e.source_component_name==component_name || e.target_component_name==component_name
+    elseif which==:incoming
+        f = e -> e.target_component_name==component_name
+    elseif which==:outgoing
+        f = e -> e.source_component_name==component_name
+    else
+        error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
+    end
+    return filter(f, m.connections)
+end
+
+#End of graph section
 
 include("references.jl")
 
