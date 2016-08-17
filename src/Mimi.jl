@@ -144,6 +144,7 @@ type Model
     numberType::DataType
     connections::Array{ParameterVariableConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
+    current_model_run::modelInstance
 
     function Model(numberType::DataType=Float64)
         m = new()
@@ -155,6 +156,7 @@ type Model
         m.numberType = numberType
         m.connections = Array(ParameterVariableConnection, 0)
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+        m.current_model_run = dummy #better name for this?
         return m
     end
 end
@@ -402,6 +404,44 @@ end
 
 import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
+
+type modelInstance
+    components::OrderedDict{Symbol, ComponentState}
+    #more fields for whatever it is that needs to be accessbile after a model run
+end
+
+#null case of a modelInstance, to be used before the model is run:
+dummy = modelInstance(OrderedDict{Symbol, ComponentState}())
+
+function build(m::Model)
+    builtComponents = OrderedDict{Symbol, ComponentState}()
+    for c in m.components2
+        t = c.component_type
+        comp = t(m.numberType, m.indices_counts)
+        builtComponents[c.name] = comp
+    end
+    m.current_model_run = modelInstance(builtComponents) #should we keep a list of all model runs or just update and keep the most recent one like this?
+    #also need to go through and set parameters
+end
+
+function run2(m::Model;ntimesteps=typemax(Int))
+    build(m)
+    builtComponents = values(m.current_model_run.components)
+
+    clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
+
+    for c in builtComponents
+        resetvariables(c) #don't need this right?
+        init(c) #maybe need this?
+    end
+
+    while !finished(clock)
+        for c in builtComponents
+            run_timestep(c,gettimestep(clock))
+        end
+        move_forward(clock)
+    end
+end
 
 """
     run(m::Model)
