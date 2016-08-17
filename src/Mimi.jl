@@ -236,8 +236,8 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         for i in keys(m.components)
             if i==before
                 newcomponents[name] = comp
-                this = ComponentInstanceInfo(name, t)
-                newcomponents2[name] = this
+                curr = ComponentInstanceInfo(name, t)
+                newcomponents2[name] = curr
             end
             newcomponents[i] = m.components[i]
             newcomponents2[i] = m.components2[i]
@@ -603,11 +603,11 @@ end
 
 function show(io::IO, m::Model)
     println(io, "showing model component connections:")
-    i=1
-    for c in keys(m.components2)
+    for item in enumerate(keys(m.components2))
+        c = item[2]
         i_connections = get_connections(m,c,:incoming)
         o_connections = get_connections(m,c,:outgoing)
-        println(io, i, ". ", c, " component")
+        println(io, item[1], ". ", c, " component")
         println(io, "    incoming parameters:")
         if length(i_connections)==0
             println(io, "      none")
@@ -620,7 +620,6 @@ function show(io::IO, m::Model)
         else
             [println(io, "      - ",e.source_variable_name," in ",e.target_component_name, " component") for e in o_connections]
         end
-        i += 1
     end
 end
 
@@ -630,15 +629,15 @@ end
 
 function get_connections(m::Model, component_name::Symbol, which::Symbol)
     if which==:all
-        bool(e) = e.source_component_name==component_name || e.target_component_name==component_name
+        f = e -> e.source_component_name==component_name || e.target_component_name==component_name
     elseif which==:incoming
-        bool(e) = e.target_component_name==component_name
+        f = e -> e.target_component_name==component_name
     elseif which==:outgoing
-        bool(e) = e.source_component_name==component_name
+        f = e -> = e.source_component_name==component_name
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
-    return filter(bool, m.connections)
+    return filter(f, m.connections)
 end
 
 #End of graph section
