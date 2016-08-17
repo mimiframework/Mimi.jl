@@ -633,7 +633,7 @@ function get_connections(m::Model, component_name::Symbol, which::Symbol)
     elseif which==:incoming
         f = e -> e.target_component_name==component_name
     elseif which==:outgoing
-        f = e -> = e.source_component_name==component_name
+        f = e -> e.source_component_name==component_name
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
