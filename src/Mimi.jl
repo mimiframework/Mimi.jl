@@ -443,7 +443,7 @@ function build(m::Model)
     return ModelInstance(builtComponents)
 end
 
-function run2(m::Model;ntimesteps=typemax(Int))
+function run(m::Model;ntimesteps=typemax(Int))
     if m.mi==null
         m.mi = build(m)
     else
@@ -470,7 +470,7 @@ end
 
 Run model `m` once.
 """
-function run(m::Model;ntimesteps=typemax(Int))
+function old_run(m::Model;ntimesteps=typemax(Int))
     clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
 
     for c in values(m.components)
