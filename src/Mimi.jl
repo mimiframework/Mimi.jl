@@ -135,6 +135,14 @@ type ParameterVariableConnection
     target_component_name::Symbol
 end
 
+type ModelInstance
+    components::OrderedDict{Symbol, ComponentState}
+    #more fields for whatever it is that needs to be accessbile after a model run
+end
+
+#null case of a modelInstance, to be used before the model is run:
+null = ModelInstance(OrderedDict{Symbol, ComponentState}())
+
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
@@ -144,7 +152,7 @@ type Model
     numberType::DataType
     connections::Array{ParameterVariableConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
-    current_model_run::modelInstance
+    mi::ModelInstance
 
     function Model(numberType::DataType=Float64)
         m = new()
@@ -156,7 +164,7 @@ type Model
         m.numberType = numberType
         m.connections = Array(ParameterVariableConnection, 0)
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
-        m.current_model_run = dummy #better name for this?
+        m.mi = null
         return m
     end
 end
@@ -253,7 +261,7 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         this = ComponentInstanceInfo(name, t)
         m.components2[name] = this
     end
-
+    m.mi = null
     ComponentReference(m, name)
 end
 
@@ -265,6 +273,7 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     connectparameter(m, component, name, name)
 
     setbestguess(m.parameters[Symbol(lowercase(string(name)))])
+    m.mi = null
     nothing
 end
 
@@ -366,7 +375,11 @@ function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
-    return getfield(m.components[component].Variables, name)
+    return getindex(m.mi, component, name)
+end
+
+function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
+    return getfield(mi.components[component].Variables, name)
 end
 
 """
@@ -405,44 +418,53 @@ end
 import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
-type modelInstance
-    components::OrderedDict{Symbol, ComponentState}
-    #more fields for whatever it is that needs to be accessbile after a model run
-end
-
-#null case of a modelInstance, to be used before the model is run:
-dummy = modelInstance(OrderedDict{Symbol, ComponentState}())
-
 function build(m::Model)
+    #instantiate the components
     builtComponents = OrderedDict{Symbol, ComponentState}()
     for c in m.components2
         t = c.component_type
         comp = t(m.numberType, m.indices_counts)
         builtComponents[c.name] = comp
     end
-    m.current_model_run = modelInstance(builtComponents) #should we keep a list of all model runs or just update and keep the most recent one like this?
-    #also need to go through and set parameters
+
+    #make the parameter connections
+    for x in m.connections
+        c_target = mi.components[x.target_component_name]
+        c_source = mi.components[x.source_component_name]
+        # Check the units, if provided
+        if !ignoreunits &&
+            !unitcheck(getmetainfo(m, x.target_component_name).parameters[x.target_parameter_name].unit,
+                       getmetainfo(m, x.source_component_name).variables[x.source_component_name].unit)
+            throw(ErrorException("Units of $source_component.$source_name do not match $target_component.$target_name."))
+        end
+        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variabele_name))
+        #push!(m.parameters_that_are_set, string(target_component) * string(target_name))
+
+    return ModelInstance(builtComponents)
 end
 
 function run2(m::Model;ntimesteps=typemax(Int))
-    build(m)
-    builtComponents = values(m.current_model_run.components)
+    if m.mi==null
+        m.mi = build(m)
+    else
+        for c in values(m.mi.components)
+            resetvariables(c)
+            init(c)
+        end
+    end
+    run(m.mi)
+end
 
+function run(mi::ModelInstance)
     clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
 
-    for c in builtComponents
-        resetvariables(c) #don't need this right?
-        init(c) #maybe need this?
-    end
-
     while !finished(clock)
-        for c in builtComponents
+        for c in values(mi.components)
             run_timestep(c,gettimestep(clock))
         end
         move_forward(clock)
     end
 end
-
 """
     run(m::Model)
 
