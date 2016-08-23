@@ -133,6 +133,7 @@ type ParameterVariableConnection
     source_component_name::Symbol
     target_parameter_name::Symbol
     target_component_name::Symbol
+    ignoreunits::Bool
 end
 
 type ModelInstance
@@ -337,8 +338,8 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
 
-    this = ParameterVariableConnection(source_name, source_component, target_name, target_component)
-    push!(m.connections, this)
+    curr = ParameterVariableConnection(source_name, source_component, target_name, target_component, ignoreunits)
+    push!(m.connections, curr)
 
     nothing
 end
@@ -421,7 +422,7 @@ show(io::IO, a::ComponentState) = print(io, "ComponentState")
 function build(m::Model)
     #instantiate the components
     builtComponents = OrderedDict{Symbol, ComponentState}()
-    for c in m.components2
+    for c in values(m.components2)
         t = c.component_type
         comp = t(m.numberType, m.indices_counts)
         builtComponents[c.name] = comp
@@ -429,10 +430,10 @@ function build(m::Model)
 
     #make the parameter connections
     for x in m.connections
-        c_target = mi.components[x.target_component_name]
-        c_source = mi.components[x.source_component_name]
+        c_target = builtComponents[x.target_component_name]
+        c_source = builtComponents[x.source_component_name]
         # Check the units, if provided
-        if !ignoreunits &&
+        if !x.ignoreunits &&
             !unitcheck(getmetainfo(m, x.target_component_name).parameters[x.target_parameter_name].unit,
                        getmetainfo(m, x.source_component_name).variables[x.source_component_name].unit)
             throw(ErrorException("Units of $source_component.$source_name do not match $target_component.$target_name."))
