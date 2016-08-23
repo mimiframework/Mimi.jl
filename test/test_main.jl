@@ -51,4 +51,4 @@ addcomponent(m, foo1)
 
 @test in(:var1, variables(m, :foo1))
 
-@test isa(getdataframe(m, :foo1, :var3), DataFrame)
+#@test isa(getdataframe(m, :foo1, :var3), DataFrame)
