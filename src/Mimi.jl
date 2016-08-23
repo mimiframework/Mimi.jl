@@ -439,7 +439,7 @@ function build(m::Model)
         end
         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variabele_name))
         #push!(m.parameters_that_are_set, string(target_component) * string(target_name))
-
+    end
     return ModelInstance(builtComponents)
 end
 
