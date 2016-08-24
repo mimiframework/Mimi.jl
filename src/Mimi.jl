@@ -273,11 +273,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
     if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
         push!(p.dependentCompsAndParams, (c, name))
     else
-        try
-            setfield!(c.Parameters,name,p.values)
-        catch
-            error("Failed to setfield for $name with setted size $(size(p.values)).")
-        end
+        setfield!(c.Parameters,name,p.values)
     end
     push!(m.parameters_that_are_set, string(component) * string(name))
 
