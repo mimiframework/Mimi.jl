@@ -12,6 +12,11 @@ branches:
   only:
   - master
   - /release-.*/
+script:
+ - julia -e 'Pkg.clone(pwd())'
+ - julia -e 'Pkg.build("$name")'
+ - if [ -f test/runtests.jl ]; then julia --check-bounds=yes -e 'Pkg.test("$name", coverage=true)'; fi
+ - julia test/test_dependencies.jl
 after_success:
   - julia -e 'cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
   - julia -e 'cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
