@@ -200,8 +200,9 @@ end
 # Return the MetaComponent for a given component
 function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
-    meta_module_name = Symbol(supertype(typeof(m.components[componentname])).name.module)
-    meta_component_name = Symbol(supertype(typeof(m.components[componentname])).name.name)
+    meta_module_name = Symbol(m.components2[componentname].component_type.name.module)
+    meta_component_name = Symbol(m.components2[componentname].component_type)
+    #meta_component_name = Symbol(supertype(typeof(m.components[componentname])).name.name)
     meta[(meta_module_name, meta_component_name)]
 end
 
@@ -332,9 +333,10 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
     if !ignoreunits &&
         !unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
                    getmetainfo(m, source_component).variables[source_name].unit)
-        throw(ErrorException("Units of $source_component.$source_name do not match $target_component.$target_name."))
+        Error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
 
+    #just delete these two
     setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
 
@@ -373,6 +375,10 @@ function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
         end
     end
     nothing
+end
+
+function setleftoverparameters(mi::ModelInstance)
+    
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
@@ -432,13 +438,7 @@ function build(m::Model)
     for x in m.connections
         c_target = builtComponents[x.target_component_name]
         c_source = builtComponents[x.source_component_name]
-        # Check the units, if provided
-        if !x.ignoreunits &&
-            !unitcheck(getmetainfo(m, x.target_component_name).parameters[x.target_parameter_name].unit,
-                       getmetainfo(m, x.source_component_name).variables[x.source_component_name].unit)
-            throw(ErrorException("Units of $source_component.$source_name do not match $target_component.$target_name."))
-        end
-        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variabele_name))
+        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
         #push!(m.parameters_that_are_set, string(target_component) * string(target_name))
     end
     return ModelInstance(builtComponents)
@@ -447,17 +447,17 @@ end
 function run(m::Model;ntimesteps=typemax(Int))
     if m.mi==null
         m.mi = build(m)
-    else
-        for c in values(m.mi.components)
-            resetvariables(c)
-            init(c)
-        end
     end
-    run(m.mi)
+    run(m.mi, ntimesteps, m.indices_counts)
 end
 
-function run(mi::ModelInstance)
-    clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
+function run(mi::ModelInstance, ntimesteps, indices_counts)
+    for c in values(mi.components)
+        resetvariables(c)
+        init(c)
+    end
+
+    clock = Clock(1,min(indices_counts[:time],ntimesteps))
 
     while !finished(clock)
         for c in values(mi.components)
