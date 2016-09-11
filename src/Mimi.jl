@@ -1,4 +1,4 @@
-module Mimi
+ module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
@@ -28,15 +28,30 @@ end
 
 abstract ComponentState
 
+type ComponentInstanceInfo
+    name::Symbol
+    component_type::DataType
+    external_parameters::Array{Tuple{Symbol, Symbol},1}
+    function ComponentInstanceInfo(n::Symbol, t::DataType)
+        c=new()
+        c.name = n
+        c.component_type = t
+        c.external_parameters = Array{Tuple{Symbol, Symbol},1}()
+        return c
+    end
+end
+
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
     dependentCompsAndParams::Set{Tuple{ComponentState, Symbol}}
+    dependentCompsAndParams2::Set{Tuple{ComponentInstanceInfo, Symbol}}
     value
 
     function CertainScalarParameter(value)
         p = new()
         p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
+        p.dependentCompsAndParams2 = Set{Tuple{ComponentInstanceInfo,Symbol}}()
         p.value = value
         return p
     end
@@ -58,11 +73,13 @@ end
 
 type UncertainScalarParameter <: Parameter
     dependentCompsAndParams::Set{Tuple{ComponentState,Symbol}}
+    dependentCompsAndParams2::Set{Tuple{ComponentInstanceInfo, Symbol}}
     value::Distribution
 
     function UncertainScalarParameter(value)
         p = new()
         p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
+        p.dependentCompsAndParams2 = Set{Tuple{ComponentInstanceInfo,Symbol}}()
         p.value = value
         return p
     end
@@ -123,11 +140,6 @@ end
 function setrandom(p::CertainArrayParameter)
 end
 
-type ComponentInstanceInfo
-    name::Symbol
-    component_type::DataType
-end
-
 type ParameterVariableConnection
     source_variable_name::Symbol
     source_component_name::Symbol
@@ -150,6 +162,7 @@ type Model
     components::OrderedDict{Symbol,ComponentState}
     parameters_that_are_set::Set{Compat.UTF8String}
     parameters::Dict{Symbol,Parameter}
+    #external_parameters::Dict{Symbol,ExternalParameterInstance}
     numberType::DataType
     connections::Array{ParameterVariableConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
@@ -163,7 +176,7 @@ type Model
         m.parameters_that_are_set = Set{Compat.UTF8String}()
         m.parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
-        m.connections = Array(ParameterVariableConnection, 0)
+        m.connections = Array{ParameterVariableConnection,1}()
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         m.mi = null
         return m
@@ -202,8 +215,7 @@ function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
     meta_module_name = Symbol(m.components2[componentname].component_type.name.module)
     meta_component_name = Symbol(m.components2[componentname].component_type)
-    #meta_component_name = Symbol(supertype(typeof(m.components[componentname])).name.name)
-    meta[(meta_module_name, meta_component_name)]
+          meta[(meta_module_name, meta_component_name)]
 end
 
 """
@@ -248,8 +260,7 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         for i in keys(m.components)
             if i==before
                 newcomponents[name] = comp
-                curr = ComponentInstanceInfo(name, t)
-                newcomponents2[name] = curr
+                newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
             newcomponents[i] = m.components[i]
             newcomponents2[i] = m.components2[i]
@@ -282,11 +293,17 @@ end
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     c = m.components[component]
     p = m.parameters[Symbol(lowercase(string(parametername)))]
+    #new:
+    c2 = m.components2[component]
 
     if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
         push!(p.dependentCompsAndParams, (c, name))
+        #new:
+        push!(p.dependentCompsAndParams2, (c2, name))
     else
         setfield!(c.Parameters,name,p.values)
+        #new:
+        push!(c2.external_parameters, (name, parametername))
     end
     push!(m.parameters_that_are_set, string(component) * string(name))
 
@@ -378,7 +395,7 @@ function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
 end
 
 function setleftoverparameters(mi::ModelInstance)
-    
+
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
@@ -431,6 +448,10 @@ function build(m::Model)
     for c in values(m.components2)
         t = c.component_type
         comp = t(m.numberType, m.indices_counts)
+        for p in c.external_parameters
+            param = m.parameters[Symbol(lowercase(string(p[2])))]
+            setfield!(comp.Parameters, p[1], param.values)
+        end
         builtComponents[c.name] = comp
     end
 
