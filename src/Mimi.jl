@@ -69,14 +69,14 @@ end
 function setbestguess(mi::ModelInstance, p::CertainScalarParameter)
     for (c, name) in p.dependentCompsAndParams2
         bg_value = p.value
-        setfield!(mi[c].Parameters,name,bg_value)
+        setfield!(mi.components[c].Parameters,name,bg_value)
     end
 end
 
 function setrandom(mi::ModelInstance, p::CertainScalarParameter)
     for (c, name) in p.dependentCompsAndParams2
         bg_value = p.value
-        setfield!(mi[c].Parameters,name,bg_value)
+        setfield!(mi.components[c].Parameters,name,bg_value)
     end
 end
 
@@ -97,14 +97,14 @@ end
 function setbestguess(mi::ModelInstance, p::UncertainScalarParameter)
     bg_value = mode(p.value)
     for (c, name) in p.dependentCompsAndParams2
-        setfield!(mi[c].Parameters,name,bg_value)
+        setfield!(mi.components[c].Parameters,name,bg_value)
     end
 end
 
 function setrandom(mi::ModelInstance, p::UncertainScalarParameter)
     sample = rand(p.value)
     for (c, name) in p.dependentCompsAndParams2
-        setfield!(mi[c].Parameters,name,sample)
+        setfield!(mi.components[c].Parameters,name,sample)
     end
 end
 
