@@ -41,61 +41,70 @@ type ComponentInstanceInfo
     end
 end
 
+type ModelInstance
+    components::OrderedDict{Symbol, ComponentState}
+    #more fields for whatever it is that needs to be accessbile after a model run
+end
+
+#null case of a modelInstance, to be used before the model is run:
+null = ModelInstance(OrderedDict{Symbol, ComponentState}())
+
+
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
-    dependentCompsAndParams::Set{Tuple{ComponentState, Symbol}}
-    dependentCompsAndParams2::Set{Tuple{ComponentInstanceInfo, Symbol}}
+    #dependentCompsAndParams::Set{Tuple{ComponentState, Symbol}}
+    dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value
 
     function CertainScalarParameter(value)
         p = new()
-        p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
-        p.dependentCompsAndParams2 = Set{Tuple{ComponentInstanceInfo,Symbol}}()
+        #p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
+        p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
         p.value = value
         return p
     end
 end
 
-function setbestguess(p::CertainScalarParameter)
-    for (c, name) in p.dependentCompsAndParams
+function setbestguess(mi::ModelInstance, p::CertainScalarParameter)
+    for (c, name) in p.dependentCompsAndParams2
         bg_value = p.value
-        setfield!(c.Parameters,name,bg_value)
+        setfield!(mi[c].Parameters,name,bg_value)
     end
 end
 
-function setrandom(p::CertainScalarParameter)
-    for (c, name) in p.dependentCompsAndParams
+function setrandom(mi::ModelInstance, p::CertainScalarParameter)
+    for (c, name) in p.dependentCompsAndParams2
         bg_value = p.value
-        setfield!(c.Parameters,name,bg_value)
+        setfield!(mi[c].Parameters,name,bg_value)
     end
 end
 
 type UncertainScalarParameter <: Parameter
-    dependentCompsAndParams::Set{Tuple{ComponentState,Symbol}}
-    dependentCompsAndParams2::Set{Tuple{ComponentInstanceInfo, Symbol}}
+    #dependentCompsAndParams::Set{Tuple{ComponentState,Symbol}}
+    dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value::Distribution
 
     function UncertainScalarParameter(value)
         p = new()
-        p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
-        p.dependentCompsAndParams2 = Set{Tuple{ComponentInstanceInfo,Symbol}}()
+        #p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
+        p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
         p.value = value
         return p
     end
 end
 
-function setbestguess(p::UncertainScalarParameter)
+function setbestguess(mi::ModelInstance, p::UncertainScalarParameter)
     bg_value = mode(p.value)
-    for (c, name) in p.dependentCompsAndParams
-        setfield!(c.Parameters,name,bg_value)
+    for (c, name) in p.dependentCompsAndParams2
+        setfield!(mi[c].Parameters,name,bg_value)
     end
 end
 
-function setrandom(p::UncertainScalarParameter)
+function setrandom(mi::ModelInstance, p::UncertainScalarParameter)
     sample = rand(p.value)
-    for (c, name) in p.dependentCompsAndParams
-        setfield!(c.Parameters,name,sample)
+    for (c, name) in p.dependentCompsAndParams2
+        setfield!(mi[c].Parameters,name,sample)
     end
 end
 
@@ -148,18 +157,10 @@ type ParameterVariableConnection
     ignoreunits::Bool
 end
 
-type ModelInstance
-    components::OrderedDict{Symbol, ComponentState}
-    #more fields for whatever it is that needs to be accessbile after a model run
-end
-
-#null case of a modelInstance, to be used before the model is run:
-null = ModelInstance(OrderedDict{Symbol, ComponentState}())
-
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
-    components::OrderedDict{Symbol,ComponentState}
+    #components::OrderedDict{Symbol,ComponentState}
     parameters_that_are_set::Set{Compat.UTF8String}
     parameters::Dict{Symbol,Parameter}
     #external_parameters::Dict{Symbol,ExternalParameterInstance}
@@ -167,18 +168,20 @@ type Model
     connections::Array{ParameterVariableConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
     mi::ModelInstance
+    setbestguess::Bool
 
     function Model(numberType::DataType=Float64)
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
-        m.components = OrderedDict{Symbol,ComponentState}()
+        #m.components = OrderedDict{Symbol,ComponentState}()
         m.parameters_that_are_set = Set{Compat.UTF8String}()
         m.parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         m.connections = Array{ParameterVariableConnection,1}()
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         m.mi = null
+        m.setbestguess = false
         return m
     end
 end
@@ -189,9 +192,18 @@ type MarginalModel
     delta::Float64
 end
 
+# function setbestguess(m::Model)
+#     for p in values(m.parameters)
+#         setbestguess(p)
+#     end
+# end
 function setbestguess(m::Model)
+    m.setbestguess = true
+end
+
+function setbestguess(mi::ModelInstance, m::Model)
     for p in values(m.parameters)
-        setbestguess(p)
+        setbestguess(mi, p)
     end
 end
 
@@ -252,27 +264,26 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         error("Can only specify before or after parameter")
     end
 
-    comp = t(m.numberType, m.indices_counts)
+    #comp = t(m.numberType, m.indices_counts)
 
     if before!=nothing
-        newcomponents = OrderedDict{Symbol,ComponentState}()
+        #newcomponents = OrderedDict{Symbol,ComponentState}()
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
-        for i in keys(m.components)
+        for i in keys(m.components2)
             if i==before
-                newcomponents[name] = comp
+                #newcomponents[name] = comp
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
-            newcomponents[i] = m.components[i]
+            #newcomponents[i] = m.components[i]
             newcomponents2[i] = m.components2[i]
         end
-        m.components = newcomponents
+        #m.components = newcomponents
         m.components2 = newcomponents2
     elseif after!=nothing
         error("Not yet implemented")
     else
-        m.components[name] = comp
-        this = ComponentInstanceInfo(name, t)
-        m.components2[name] = this
+        #m.components[name] = comp
+        m.components2[name] = ComponentInstanceInfo(name, t)
     end
     m.mi = null
     ComponentReference(m, name)
@@ -285,23 +296,23 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     addparameter(m, name, value)
     connectparameter(m, component, name, name)
 
-    setbestguess(m.parameters[Symbol(lowercase(string(name)))])
+    #setbestguess(m.parameters[Symbol(lowercase(string(name)))])
     m.mi = null
     nothing
 end
 
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
-    c = m.components[component]
+    #c = m.components[component]
     p = m.parameters[Symbol(lowercase(string(parametername)))]
     #new:
     c2 = m.components2[component]
 
     if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
-        push!(p.dependentCompsAndParams, (c, name))
+        #push!(p.dependentCompsAndParams, (c, name))
         #new:
-        push!(p.dependentCompsAndParams2, (c2, name))
+        push!(p.dependentCompsAndParams2, (component, name))
     else
-        setfield!(c.Parameters,name,p.values)
+        #setfield!(c.Parameters,name,p.values)
         #new:
         push!(c2.external_parameters, (name, parametername))
     end
@@ -343,8 +354,8 @@ function addparameter(m::Model, name::Symbol, value)
 end
 
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
-    c_target = m.components[target_component]
-    c_source = m.components[source_component]
+    #c_target = m.components[target_component]
+    #c_source = m.components[source_component]
 
     # Check the units, if provided
     if !ignoreunits &&
@@ -354,7 +365,7 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
     end
 
     #just delete these two
-    setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
+    #setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
     push!(m.parameters_that_are_set, string(target_component) * string(target_name))
 
     curr = ParameterVariableConnection(source_name, source_component, target_name, target_component, ignoreunits)
@@ -379,23 +390,12 @@ connectparameter
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary.
 """
-function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
+
+function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
     for (name, value) in parameters
         addparameter(m, Symbol(name), value)
     end
-
-    for c in m.components
-        for name in fieldnames(c[2].Parameters)
-            if !in(string(c[1])*string(name), m.parameters_that_are_set)
-                connectparameter(m, c[1], name, name)
-            end
-        end
-    end
     nothing
-end
-
-function setleftoverparameters(mi::ModelInstance)
-
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
@@ -448,10 +448,20 @@ function build(m::Model)
     for c in values(m.components2)
         t = c.component_type
         comp = t(m.numberType, m.indices_counts)
+
+        #setleftoverparameters:
+        for name in fieldnames(comp.Parameters)
+            if !in(string(c.name)*string(name), m.parameters_that_are_set)
+                connectparameter(m, comp.name, name, name)
+            end
+        end
+
+        #set external parameters
         for p in c.external_parameters
             param = m.parameters[Symbol(lowercase(string(p[2])))]
             setfield!(comp.Parameters, p[1], param.values)
         end
+
         builtComponents[c.name] = comp
     end
 
@@ -460,11 +470,23 @@ function build(m::Model)
         c_target = builtComponents[x.target_component_name]
         c_source = builtComponents[x.source_component_name]
         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
-        #push!(m.parameters_that_are_set, string(target_component) * string(target_name))
     end
-    return ModelInstance(builtComponents)
+
+    mi = ModelInstance(builtComponents)
+
+    #do setbestguess if needed
+    if m.setbestguess
+        setbestguess(mi, m)
+    end
+
+    return mi
 end
 
+"""
+    run(m::Model)
+
+Run model `m` once.
+"""
 function run(m::Model;ntimesteps=typemax(Int))
     if m.mi==null
         m.mi = build(m)
@@ -482,26 +504,6 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
 
     while !finished(clock)
         for c in values(mi.components)
-            run_timestep(c,gettimestep(clock))
-        end
-        move_forward(clock)
-    end
-end
-"""
-    run(m::Model)
-
-Run model `m` once.
-"""
-function old_run(m::Model;ntimesteps=typemax(Int))
-    clock = Clock(1,min(m.indices_counts[:time],ntimesteps))
-
-    for c in values(m.components)
-        resetvariables(c)
-        init(c)
-    end
-
-    while !finished(clock)
-        for c in values(m.components)
             run_timestep(c,gettimestep(clock))
         end
         move_forward(clock)
