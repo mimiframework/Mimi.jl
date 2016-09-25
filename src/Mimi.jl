@@ -143,7 +143,7 @@ type CertainArrayParameter <: Parameter
     end
 end
 
-function setbestguess(p::CertainArrayParameter)
+function setbestguess(mi::ModelInstance, p::CertainArrayParameter)
 end
 
 function setrandom(p::CertainArrayParameter)
