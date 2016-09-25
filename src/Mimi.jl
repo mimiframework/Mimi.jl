@@ -452,7 +452,7 @@ function build(m::Model)
         #setleftoverparameters:
         for name in fieldnames(comp.Parameters)
             if !in(string(c.name)*string(name), m.parameters_that_are_set)
-                connectparameter(m, comp.name, name, name)
+                connectparameter(m, c.name, name, name)
             end
         end
 
