@@ -25,9 +25,9 @@ foo = addcomponent(m, Foo)
 bar = addcomponent(m, Bar)
 
 foo[:input] = 3.14
-bar[:intermed] = foo[:intermed]
+#bar[:intermed] = foo[:intermed]
+connectparameter(m, :Bar, :intermed, :Foo, :intermed)
 
 run(m)
 
 @test m[:Bar, :output][1] == 3.14
-
