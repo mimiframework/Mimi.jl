@@ -31,19 +31,18 @@ abstract ComponentState
 type ComponentInstanceInfo
     name::Symbol
     component_type::DataType
-    external_parameters::Array{Tuple{Symbol, Symbol},1}
-    function ComponentInstanceInfo(n::Symbol, t::DataType)
-        c=new()
-        c.name = n
-        c.component_type = t
-        c.external_parameters = Array{Tuple{Symbol, Symbol},1}()
-        return c
-    end
+    #external_parameters::Array{Tuple{Symbol, Symbol},1}
+    # function ComponentInstanceInfo(n::Symbol, t::DataType)
+    #     c=new()
+    #     c.name = n
+    #     c.component_type = t
+    #     #c.external_parameters = Array{Tuple{Symbol, Symbol},1}()
+    #     return c
+    # end
 end
 
 type ModelInstance
     components::OrderedDict{Symbol, ComponentState}
-    #more fields for whatever it is that needs to be accessbile after a model run
 end
 
 #null case of a modelInstance, to be used before the model is run:
@@ -149,7 +148,7 @@ end
 function setrandom(p::CertainArrayParameter)
 end
 
-type ParameterVariableConnection
+type InternalParameterConnection
     source_variable_name::Symbol
     source_component_name::Symbol
     target_parameter_name::Symbol
@@ -157,31 +156,39 @@ type ParameterVariableConnection
     ignoreunits::Bool
 end
 
+type ExternalParameterConnection
+    component_name::Symbol
+    param_name::Symbol #name of the parameter in the component
+    external_parameter::Parameter
+end
+
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
     #components::OrderedDict{Symbol,ComponentState}
-    parameters_that_are_set::Set{Compat.UTF8String}
-    parameters::Dict{Symbol,Parameter}
+    #parameters_that_are_set::Set{Compat.UTF8String}
+    external_parameters::Dict{Symbol,Parameter}
     #external_parameters::Dict{Symbol,ExternalParameterInstance}
     numberType::DataType
-    connections::Array{ParameterVariableConnection, 1}
+    internal_parameter_connections::Array{InternalParameterConnection, 1}
+    external_parameter_connections::Array{ExternalParameterConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
     mi::ModelInstance
-    setbestguess::Bool
+    #setbestguess::Bool
 
     function Model(numberType::DataType=Float64)
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
         #m.components = OrderedDict{Symbol,ComponentState}()
-        m.parameters_that_are_set = Set{Compat.UTF8String}()
-        m.parameters = Dict{Symbol, Parameter}()
+        #m.parameters_that_are_set = Set{Compat.UTF8String}()
+        m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
-        m.connections = Array{ParameterVariableConnection,1}()
+        m.internal_parameter_connections = Array{InternalParameterConnection,1}()
+        m.external_parameter_connections = Array{ExternalParameterConnection, 1}()
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         m.mi = null
-        m.setbestguess = false
+        #m.setbestguess = false
         return m
     end
 end
@@ -303,20 +310,23 @@ end
 
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     #c = m.components[component]
-    p = m.parameters[Symbol(lowercase(string(parametername)))]
+    p = m.external_parameters[Symbol(lowercase(string(parametername)))]
     #new:
-    c2 = m.components2[component]
+    #c2 = m.components2[component]
 
-    if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
-        #push!(p.dependentCompsAndParams, (c, name))
-        #new:
-        push!(p.dependentCompsAndParams2, (component, name))
-    else
-        #setfield!(c.Parameters,name,p.values)
-        #new:
-        push!(c2.external_parameters, (name, parametername))
-    end
-    push!(m.parameters_that_are_set, string(component) * string(name))
+    # if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
+    #     #push!(p.dependentCompsAndParams, (c, name))
+    #     #new:
+    #     push!(p.dependentCompsAndParams2, (component, name))
+    # else
+    #     #setfield!(c.Parameters,name,p.values)
+    #     #new:
+    #     push!(c2.external_parameters, (name, parametername))
+    # end
+    # push!(m.parameters_that_are_set, string(component) * string(name))
+
+    x = ExternalParameterConnection(component, name, p)
+    push!(m.external_parameter_connections, x)
 
     nothing
 end
@@ -333,11 +343,11 @@ end
 function addparameter(m::Model, name::Symbol, value)
     if isa(value, Distribution)
         p = UncertainScalarParameter(value)
-        m.parameters[Symbol(lowercase(string(name)))] = p
+        m.external_parameters[Symbol(lowercase(string(name)))] = p
     elseif isa(value, AbstractArray)
         if any(x->isa(x, Distribution), value)
             p = UncertainArrayParameter(value)
-            m.parameters[Symbol(lowercase(string(name)))] = p
+            m.external_parameters[Symbol(lowercase(string(name)))] = p
         else
             if !(typeof(value) <: Array{m.numberType})
                 # E.g., if model takes Number and given Float64, convert it
@@ -345,11 +355,11 @@ function addparameter(m::Model, name::Symbol, value)
             end
 
             p = CertainArrayParameter(value)
-            m.parameters[Symbol(lowercase(string(name)))] = p
+            m.external_parameters[Symbol(lowercase(string(name)))] = p
         end
     else
         p = CertainScalarParameter(value)
-        m.parameters[Symbol(lowercase(string(name)))] = p
+        m.external_parameters[Symbol(lowercase(string(name)))] = p
     end
 end
 
@@ -366,10 +376,10 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
 
     #just delete these two
     #setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
-    push!(m.parameters_that_are_set, string(target_component) * string(target_name))
+    #push!(m.parameters_that_are_set, string(target_component) * string(target_name))
 
-    curr = ParameterVariableConnection(source_name, source_component, target_name, target_component, ignoreunits)
-    push!(m.connections, curr)
+    curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
+    push!(m.internal_parameter_connections, curr)
 
     nothing
 end
@@ -395,7 +405,27 @@ function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
     for (name, value) in parameters
         addparameter(m, Symbol(name), value)
     end
+
+    for c in m.components2
+        for p in get_parameters(m, c.name)
+            if !check_if_set(m, c, p)
+                connectparameter(m, c, p, p)
+            end
+        end
+    end
+
     nothing
+end
+
+""" helper function for setleftoverparameters"""
+function check_if_set(m::Model, component::ComponentInstanceInfo, param::Symbol)
+    return true
+end
+
+""" helper function for setleftoverparameters"""
+function get_parameters(m::Model, component::ComponentInstanceInfo)
+    params = Array{Parameter, 1}()
+    return params
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
@@ -412,18 +442,26 @@ end
 Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
 """
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
-    comp_type = typeof(m.components[componentname])
+    if m.mi == null
+        Error("Cannot get dataframe, model has not been built yet")
+    else
+        return getdataframe(m, m.mi, componentname, name)
+    end
+end
 
-    meta_module_name = Symbol(supertype(typeof(m.components[componentname])).name.module)
-    meta_component_name = Symbol(supertype(typeof(m.components[componentname])).name.name)
+function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::Symbol)
+    comp_type = typeof(mi.components[componentname])
+
+    meta_module_name = Symbol(supertype(typeof(mi.components[componentname])).name.module)
+    meta_component_name = Symbol(supertype(typeof(mi.components[componentname])).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
     if length(vardiminfo)==0
-        return m[componentname, name]
+        return mi[componentname, name]
     elseif length(vardiminfo)==1
         df = DataFrame()
         df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
-        df[name] = m[componentname, name]
+        df[name] = mi[componentname, name]
         return df
     elseif length(vardiminfo)==2
         df = DataFrame()
@@ -450,34 +488,45 @@ function build(m::Model)
         comp = t(m.numberType, m.indices_counts)
 
         #setleftoverparameters:
-        for name in fieldnames(comp.Parameters)
-            if !in(string(c.name)*string(name), m.parameters_that_are_set)
-                connectparameter(m, c.name, name, name)
-            end
-        end
+        # for name in fieldnames(comp.Parameters)
+        #     if !in(string(c.name)*string(name), m.parameters_that_are_set)
+        #         connectparameter(m, c.name, name, name)
+        #     end
+        # end
 
         #set external parameters
-        for p in c.external_parameters
-            param = m.parameters[Symbol(lowercase(string(p[2])))]
-            setfield!(comp.Parameters, p[1], param.values)
-        end
+        # for p in c.external_parameters
+        #     param = m.parameters[Symbol(lowercase(string(p[2])))]
+        #     setfield!(comp.Parameters, p[1], param.values)
+        # end
 
         builtComponents[c.name] = comp
+        print(comp.Parameters)
     end
 
     #make the parameter connections
-    for x in m.connections
+    for x in m.internal_parameter_connections
         c_target = builtComponents[x.target_component_name]
         c_source = builtComponents[x.source_component_name]
         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
     end
 
+    for x in m.external_parameter_connections
+        param = x.external_parameter
+        if isa(param, CertainScalarParameter) | isa(param, UncertainScalarParameter)
+            setfield!(builtComponents[x.component_name], x.param_name, param.value)
+        else
+            setfield!(builtComponents[x.component_name], x.param_name, param.values)
+        end
+    end
+
+
     mi = ModelInstance(builtComponents)
 
     #do setbestguess if needed
-    if m.setbestguess
-        setbestguess(mi, m)
-    end
+    # if m.setbestguess
+    #     setbestguess(mi, m)
+    # end
 
     return mi
 end
