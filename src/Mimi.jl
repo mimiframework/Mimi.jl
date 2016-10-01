@@ -501,7 +501,6 @@ function build(m::Model)
         # end
 
         builtComponents[c.name] = comp
-        print(comp.Parameters)
     end
 
     #make the parameter connections
@@ -514,9 +513,9 @@ function build(m::Model)
     for x in m.external_parameter_connections
         param = x.external_parameter
         if isa(param, CertainScalarParameter) | isa(param, UncertainScalarParameter)
-            setfield!(builtComponents[x.component_name], x.param_name, param.value)
+            setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
         else
-            setfield!(builtComponents[x.component_name], x.param_name, param.values)
+            setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
         end
     end
 
