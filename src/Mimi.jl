@@ -406,7 +406,7 @@ function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
         addparameter(m, Symbol(name), value)
     end
 
-    for c in m.components2
+    for c in values(m.components2)
         for p in get_parameters(m, c.name)
             if !check_if_set(m, c, p)
                 connectparameter(m, c, p, p)
@@ -424,7 +424,7 @@ end
 
 """ helper function for setleftoverparameters"""
 function get_parameters(m::Model, component::ComponentInstanceInfo)
-    params = Array{Parameter, 1}()
+    params = Array{Symbol, 1}()
     return params
 end
 
