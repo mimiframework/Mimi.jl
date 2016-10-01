@@ -771,7 +771,7 @@ function get_connections(m::Model, component_name::Symbol, which::Symbol)
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
-    return filter(f, m.connections)
+    return filter(f, m.internal_parameter_connections)
 end
 
 #End of graph section
