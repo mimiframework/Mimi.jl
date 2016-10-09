@@ -411,7 +411,7 @@ function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
         set_params = get_set_parameters(m, c)
         for p in params
             if !in(p, set_params)
-                connectparameter(m, c, p, p)
+                connectparameter(m, c.name, p, p)
             end
         end
     end
