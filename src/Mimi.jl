@@ -407,8 +407,10 @@ function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
     end
 
     for c in values(m.components2)
-        for p in get_parameters(m, c.name)
-            if !check_if_set(m, c, p)
+        params = get_parameters(m, c)
+        set_params = get_set_parameters(m, c)
+        for p in params
+            if !in(p, set_params)
                 connectparameter(m, c, p, p)
             end
         end
@@ -418,14 +420,26 @@ function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
 end
 
 """ helper function for setleftoverparameters"""
-function check_if_set(m::Model, component::ComponentInstanceInfo, param::Symbol)
-    return true
+function get_set_parameters(m::Model, c::ComponentInstanceInfo)
+    ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
+    ext_set_params = map(x->x.param_name, ext_connections)
+
+    int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+    int_set_params - map(x->x.target_parameter_name, int_connections)
+
+    return union(ext_set_params, int_set_params)
 end
+# function check_if_set(m::Model, component::ComponentInstanceInfo, param::Symbol)
+#
+#     return true
+# end
 
 """ helper function for setleftoverparameters"""
 function get_parameters(m::Model, component::ComponentInstanceInfo)
-    params = Array{Symbol, 1}()
-    return params
+    _dict = Mimi.metainfo.getallcomps()
+    _module = module_name(component.component_type.name.module)
+    _metacomponent = _dict[(_module, component.name)]
+    return keys(_metacomponent.parameters)
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
