@@ -205,7 +205,8 @@ end
 #     end
 # end
 function setbestguess(m::Model)
-    m.setbestguess = true
+    #m.setbestguess = true
+    error("setbestguess not available")
 end
 
 function setbestguess(mi::ModelInstance, m::Model)
@@ -272,8 +273,9 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
     end
 
     #comp = t(m.numberType, m.indices_counts)
-
-    if before!=nothing
+    if before!=nothing && after!=nothing
+        error("not implemented; cannot specify both beofre and after")
+    elseif before!=nothing
         #newcomponents = OrderedDict{Symbol,ComponentState}()
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         for i in keys(m.components2)
@@ -287,7 +289,15 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         #m.components = newcomponents
         m.components2 = newcomponents2
     elseif after!=nothing
-        error("Not yet implemented")
+        newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+        for i in keys(m.components2)
+            newcomponents2[i] = m.components[i]
+            if i==after
+                newcomponents2[name] = ComponentInstanceInfo(name, t)
+            end
+        end
+        m.components2 = newcomponents2
+
     else
         #m.components[name] = comp
         m.components2[name] = ComponentInstanceInfo(name, t)
