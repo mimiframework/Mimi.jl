@@ -425,7 +425,7 @@ function get_set_parameters(m::Model, c::ComponentInstanceInfo)
     ext_set_params = map(x->x.param_name, ext_connections)
 
     int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
-    int_set_params - map(x->x.target_parameter_name, int_connections)
+    int_set_params = map(x->x.target_parameter_name, int_connections)
 
     return union(ext_set_params, int_set_params)
 end
