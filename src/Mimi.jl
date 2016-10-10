@@ -1,4 +1,4 @@
- module Mimi
+module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
