@@ -31,14 +31,6 @@ abstract ComponentState
 type ComponentInstanceInfo
     name::Symbol
     component_type::DataType
-    #external_parameters::Array{Tuple{Symbol, Symbol},1}
-    # function ComponentInstanceInfo(n::Symbol, t::DataType)
-    #     c=new()
-    #     c.name = n
-    #     c.component_type = t
-    #     #c.external_parameters = Array{Tuple{Symbol, Symbol},1}()
-    #     return c
-    # end
 end
 
 type ModelInstance
@@ -52,13 +44,11 @@ null = ModelInstance(OrderedDict{Symbol, ComponentState}())
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
-    #dependentCompsAndParams::Set{Tuple{ComponentState, Symbol}}
     dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value
 
     function CertainScalarParameter(value)
         p = new()
-        #p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
         p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
         p.value = value
         return p
@@ -80,13 +70,11 @@ function setrandom(mi::ModelInstance, p::CertainScalarParameter)
 end
 
 type UncertainScalarParameter <: Parameter
-    #dependentCompsAndParams::Set{Tuple{ComponentState,Symbol}}
     dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value::Distribution
 
     function UncertainScalarParameter(value)
         p = new()
-        #p.dependentCompsAndParams = Set{Tuple{ComponentState,Symbol}}()
         p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
         p.value = value
         return p
@@ -165,30 +153,23 @@ end
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
-    #components::OrderedDict{Symbol,ComponentState}
-    #parameters_that_are_set::Set{Compat.UTF8String}
     external_parameters::Dict{Symbol,Parameter}
-    #external_parameters::Dict{Symbol,ExternalParameterInstance}
     numberType::DataType
     internal_parameter_connections::Array{InternalParameterConnection, 1}
     external_parameter_connections::Array{ExternalParameterConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
     mi::ModelInstance
-    #setbestguess::Bool
 
     function Model(numberType::DataType=Float64)
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
-        #m.components = OrderedDict{Symbol,ComponentState}()
-        #m.parameters_that_are_set = Set{Compat.UTF8String}()
         m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         m.internal_parameter_connections = Array{InternalParameterConnection,1}()
         m.external_parameter_connections = Array{ExternalParameterConnection, 1}()
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         m.mi = null
-        #m.setbestguess = false
         return m
     end
 end
@@ -199,13 +180,7 @@ type MarginalModel
     delta::Float64
 end
 
-# function setbestguess(m::Model)
-#     for p in values(m.parameters)
-#         setbestguess(p)
-#     end
-# end
 function setbestguess(m::Model)
-    #m.setbestguess = true
     error("setbestguess not available")
 end
 
@@ -272,21 +247,14 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         error("Can only specify before or after parameter")
     end
 
-    #comp = t(m.numberType, m.indices_counts)
-    if before!=nothing && after!=nothing
-        error("not implemented; cannot specify both beofre and after")
-    elseif before!=nothing
-        #newcomponents = OrderedDict{Symbol,ComponentState}()
+    if before!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         for i in keys(m.components2)
             if i==before
-                #newcomponents[name] = comp
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
-            #newcomponents[i] = m.components[i]
             newcomponents2[i] = m.components2[i]
         end
-        #m.components = newcomponents
         m.components2 = newcomponents2
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
@@ -299,7 +267,6 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
         m.components2 = newcomponents2
 
     else
-        #m.components[name] = comp
         m.components2[name] = ComponentInstanceInfo(name, t)
     end
     m.mi = null
@@ -312,29 +279,12 @@ Set the parameter of a component in a model to a given value.
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
     addparameter(m, name, value)
     connectparameter(m, component, name, name)
-
-    #setbestguess(m.parameters[Symbol(lowercase(string(name)))])
     m.mi = null
     nothing
 end
 
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
-    #c = m.components[component]
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
-    #new:
-    #c2 = m.components2[component]
-
-    # if isa(p, CertainScalarParameter) || isa(p, UncertainScalarParameter)
-    #     #push!(p.dependentCompsAndParams, (c, name))
-    #     #new:
-    #     push!(p.dependentCompsAndParams2, (component, name))
-    # else
-    #     #setfield!(c.Parameters,name,p.values)
-    #     #new:
-    #     push!(c2.external_parameters, (name, parametername))
-    # end
-    # push!(m.parameters_that_are_set, string(component) * string(name))
-
     x = ExternalParameterConnection(component, name, p)
     push!(m.external_parameter_connections, x)
 
@@ -374,8 +324,6 @@ function addparameter(m::Model, name::Symbol, value)
 end
 
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
-    #c_target = m.components[target_component]
-    #c_source = m.components[source_component]
 
     # Check the units, if provided
     if !ignoreunits &&
@@ -383,10 +331,6 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
                    getmetainfo(m, source_component).variables[source_name].unit)
         Error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
-
-    #just delete these two
-    #setfield!(c_target.Parameters, target_name, getfield(c_source.Variables, source_name))
-    #push!(m.parameters_that_are_set, string(target_component) * string(target_name))
 
     curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
     push!(m.internal_parameter_connections, curr)
@@ -439,10 +383,6 @@ function get_set_parameters(m::Model, c::ComponentInstanceInfo)
 
     return union(ext_set_params, int_set_params)
 end
-# function check_if_set(m::Model, component::ComponentInstanceInfo, param::Symbol)
-#
-#     return true
-# end
 
 """ helper function for setleftoverparameters"""
 function get_parameters(m::Model, component::ComponentInstanceInfo)
@@ -511,19 +451,6 @@ function build(m::Model)
         t = c.component_type
         comp = t(m.numberType, m.indices_counts)
 
-        #setleftoverparameters:
-        # for name in fieldnames(comp.Parameters)
-        #     if !in(string(c.name)*string(name), m.parameters_that_are_set)
-        #         connectparameter(m, c.name, name, name)
-        #     end
-        # end
-
-        #set external parameters
-        # for p in c.external_parameters
-        #     param = m.parameters[Symbol(lowercase(string(p[2])))]
-        #     setfield!(comp.Parameters, p[1], param.values)
-        # end
-
         builtComponents[c.name] = comp
     end
 
@@ -545,11 +472,6 @@ function build(m::Model)
 
 
     mi = ModelInstance(builtComponents)
-
-    #do setbestguess if needed
-    # if m.setbestguess
-    #     setbestguess(mi, m)
-    # end
 
     return mi
 end
