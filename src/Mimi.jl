@@ -329,7 +329,7 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
     if !ignoreunits &&
         !unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
                    getmetainfo(m, source_component).variables[source_name].unit)
-        Error("Units of $source_component.$source_name do not match $target_component.$target_name.")
+        error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
 
     curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
@@ -407,7 +407,7 @@ Return the values for variable `name` in `componentname` of model `m` as a DataF
 """
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     if isnull(m.mi)
-        Error("Cannot get dataframe, model has not been built yet")
+        error("Cannot get dataframe, model has not been built yet")
     else
         return getdataframe(m, get(m.mi), componentname, name)
     end
