@@ -26,7 +26,7 @@ bar = addcomponent(m, BarUnits)
 baz = addcomponent(m, BazUnits)
 
 # Check that we cannot connect foo and bar...
-#@test_throws ErrorException bar[:input] = foo[:output]
+@test_throws ErrorException bar[:input] = foo[:output]
 # ...unless we pass ignoreunits=true
 connectparameter(m, :BarUnits, :input,  :FooUnits, :output, ignoreunits=true)
 # But we can connect foo and baz
