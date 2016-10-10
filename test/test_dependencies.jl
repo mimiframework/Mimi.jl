@@ -1,3 +1,7 @@
+if Pkg.installed("ZipFile") == nothing
+    Pkg.add("ZipFile")
+end
+
 using Mimi
 using ZipFile
 using Compat
