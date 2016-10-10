@@ -6,10 +6,10 @@ In this example, we will construct a stylized model of the global economy and it
 
 There are two main steps to creating a component:
 
-* Define the component using ``@defcomp`` where the parameters and variables are listed.
-* Use the run_timestep function ``run_timestep(state::component_name, t::Int)`` to set the equations of that component.
+* Define the component using `@defcomp` where the parameters and variables are listed.
+* Use the run_timestep function `run_timestep(state::component_name, t::Int)` to set the equations of that component.
 
-Starting with the economy component, each variable and parameter is listed. If either varialbes or parameters have a time-dimension, that must be set with ``(index=[time])``.
+Starting with the economy component, each variable and parameter is listed. If either varialbes or parameters have a time-dimension, that must be set with `(index=[time])`.
 
 ```julia
 using Mimi
@@ -26,7 +26,7 @@ using Mimi
 end
 ```
 
-Next, the run_timestep function must be defined along with the various equations of the ``grosseconomy`` component. In this step, the variables and parameters are linked to this component by ``state`` and must be identified as either a variable or a parameter in each equation. For this example, ``v`` will refer to variables while ``p`` refers to paremeters.
+Next, the run_timestep function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component by `state` and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to paremeters.
 
 ```julia
 function run_timestep(state::grosseconomy, t::Int)
@@ -45,7 +45,7 @@ function run_timestep(state::grosseconomy, t::Int)
 end
 ```
 
-Next, the the component for greenhouse gas emissions must be created.  Although the steps are the same as for the ``grosseconomy`` component, there is one minor difference. While ``YGROSS`` was a variable in the ``grosseconomy`` component, it now enters the ``emissions`` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
+Next, the the component for greenhouse gas emissions must be created.  Although the steps are the same as for the `grosseconomy` component, there is one minor difference. While `YGROSS` was a variable in the `grosseconomy` component, it now enters the `emissions` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
 
 ```julia
 @defcomp emissions begin
@@ -65,14 +65,14 @@ function run_timestep(state::emissions, t::Int)
 end
 ```
 
-We can now use Mimi to construct a model that binds the ``grosseconomy`` and ``emissions`` components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.
+We can now use Mimi to construct a model that binds the `grosseconomy` and `emissions` components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.
 
-* Once the model is defined, ``setindex`` is used to set the length and interval of the time step.
-* We then use ``addcomponent`` to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.
-* Next, ``setparameter`` is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using ``setparameter`` two different times. The syntax is ``setparameter(model_name, :component_name, :parameter_name, value)``
-* If any variables of one component are parameters for another, ``connectparameter`` is used to couple the two components together. In this example, _YGROSS_ is a variable in the ``grosseconomy`` component and a parameter in the ``emissions`` component. The syntax is ``connectparameter(model_name, :component_name_current, :parameter_name, :component_name_variable)``, where ``:component_name_variable`` refers to the component where your parameter was initially calculated as a variable.
-* Finally, the model can be run using the command ``run(model_name)``.
-* To access model results, use ``model_name[:component, :variable_name]``.
+* Once the model is defined, `setindex` is used to set the length and interval of the time step.
+* We then use `addcomponent` to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.
+* Next, `setparameter` is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using `setparameter` two different times. The syntax is `setparameter(model_name, :component_name, :parameter_name, value)`
+* If any variables of one component are parameters for another, `connectparameter` is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connectparameter(model_name, :component_name_current, :parameter_name, :component_name_variable)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
+* Finally, the model can be run using the command `run(model_name)`.
+* To access model results, use `model_name[:component, :variable_name]`.
 
 ```julia
 my_model = Model()
@@ -104,11 +104,11 @@ my_model[:emissions, :E]
 
 We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:
 
-* When using ``@defcomp``, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include ``(index=[regions])``. This can be combined with the time index as well, ``(index=[time, regions])``.
-* In the run_timestep function, a region dimension must be defined using ``state.Dimensions``.  Unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
-* ``setindex`` must be used to specify your regions in the same way that it is used to specify your timestep.
-* When using ``setparameter`` for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into ``setparameter`` rather than an entire equation.
-* When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, ``using Mimi`` must be speficied for each component. This approach will be used here.
+* When using `@defcomp`, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include `(index=[regions])`. This can be combined with the time index as well, `(index=[time, regions])`.
+* In the run_timestep function, a region dimension must be defined using `state.Dimensions`.  Unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
+* `setindex` must be used to specify your regions in the same way that it is used to specify your timestep.
+* When using `setparameter` for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into `setparameter` rather than an entire equation.
+* When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, `using Mimi` must be speficied for each component. This approach will be used here.
 
 To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.
 
@@ -252,7 +252,7 @@ function run_my_model()
 
 end
 ```
-We can now call in our parameter file, use ``run_my_model`` to construct our model, and evaluate the results.
+We can now call in our parameter file, use `run_my_model` to construct our model, and evaluate the results.
 
 ```julia
 using Mimi
