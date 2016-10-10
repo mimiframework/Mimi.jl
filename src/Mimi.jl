@@ -37,10 +37,6 @@ type ModelInstance
     components::OrderedDict{Symbol, ComponentState}
 end
 
-#null case of a modelInstance, to be used before the model is run:
-null = ModelInstance(OrderedDict{Symbol, ComponentState}())
-
-
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
@@ -158,7 +154,7 @@ type Model
     internal_parameter_connections::Array{InternalParameterConnection, 1}
     external_parameter_connections::Array{ExternalParameterConnection, 1}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
-    mi::ModelInstance
+    mi::Nullable{ModelInstance}
 
     function Model(numberType::DataType=Float64)
         m = new()
@@ -169,7 +165,7 @@ type Model
         m.internal_parameter_connections = Array{InternalParameterConnection,1}()
         m.external_parameter_connections = Array{ExternalParameterConnection, 1}()
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
-        m.mi = null
+        m.mi = Nullable{ModelInstance}()
         return m
     end
 end
@@ -181,14 +177,22 @@ type MarginalModel
 end
 
 function setbestguess(m::Model)
+    if isnull(m.mi)
+        m.mi = Nullable{ModelInstance}(build(m))
+    end
+
     for p in values(m.external_parameters)
-        setbestguess(m.mi, p)
+        setbestguess(get(m.mi), p)
     end
 end
 
 function setrandom(m::Model)
+    if isnull(m.mi)
+        m.mi = Nullable{ModelInstance}(build(m))
+    end
+
     for p in values(m.external_parameters)
-        setrandom(m.mi, p)
+        setrandom(get(m.mi), p)
     end
 end
 
@@ -265,7 +269,7 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
     else
         m.components2[name] = ComponentInstanceInfo(name, t)
     end
-    m.mi = null
+    m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
 end
 
@@ -275,7 +279,7 @@ Set the parameter of a component in a model to a given value.
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
     addparameter(m, name, value)
     connectparameter(m, component, name, name)
-    m.mi = null
+    m.mi = Nullable{ModelInstance}()
     nothing
 end
 
@@ -389,7 +393,7 @@ function get_parameters(m::Model, component::ComponentInstanceInfo)
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
-    return getindex(m.mi, component, name)
+    return getindex(get(m.mi), component, name)
 end
 
 function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
@@ -402,10 +406,10 @@ end
 Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
 """
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
-    if m.mi == null
+    if isnull(m.mi)
         Error("Cannot get dataframe, model has not been built yet")
     else
-        return getdataframe(m, m.mi, componentname, name)
+        return getdataframe(m, get(m.mi), componentname, name)
     end
 end
 
@@ -478,10 +482,10 @@ end
 Run model `m` once.
 """
 function run(m::Model;ntimesteps=typemax(Int))
-    if m.mi==null
-        m.mi = build(m)
+    if isnull(m.mi)
+        m.mi = Nullable{ModelInstance}(build(m))
     end
-    run(m.mi, ntimesteps, m.indices_counts)
+    run(get(m.mi), ntimesteps, m.indices_counts)
 end
 
 function run(mi::ModelInstance, ntimesteps, indices_counts)
