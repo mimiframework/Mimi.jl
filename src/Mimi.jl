@@ -210,7 +210,7 @@ function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
     meta_module_name = Symbol(m.components2[componentname].component_type.name.module)
     meta_component_name = Symbol(m.components2[componentname].component_type)
-          meta[(meta_module_name, meta_component_name)]
+    return meta[(meta_module_name, meta_component_name)]
 end
 
 """
