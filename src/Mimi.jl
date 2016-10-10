@@ -108,13 +108,13 @@ type UncertainArrayParameter <: Parameter
     end
 end
 
-function setbestguess(p::UncertainArrayParameter)
+function setbestguess(mi::ModelInstance, p::UncertainArrayParameter)
     for i in 1:length(p.distributions)
         p.values[i] = mode(p.distributions[i])
     end
 end
 
-function setrandom(p::UncertainArrayParameter)
+function setrandom(mi::ModelInstance, p::UncertainArrayParameter)
     for i in 1:length(p.distributions)
         p.values[i] = rand(p.distributions[i])
     end
@@ -133,7 +133,7 @@ end
 function setbestguess(mi::ModelInstance, p::CertainArrayParameter)
 end
 
-function setrandom(p::CertainArrayParameter)
+function setrandom(mi::ModelInstance, p::CertainArrayParameter)
 end
 
 type InternalParameterConnection
@@ -181,18 +181,14 @@ type MarginalModel
 end
 
 function setbestguess(m::Model)
-    error("setbestguess not available")
-end
-
-function setbestguess(mi::ModelInstance, m::Model)
-    for p in values(m.parameters)
-        setbestguess(mi, p)
+    for p in values(m.external_parameters)
+        setbestguess(m.mi, p)
     end
 end
 
 function setrandom(m::Model)
-    for p in values(m.parameters)
-        setrandom(p)
+    for p in values(m.external_parameters)
+        setrandom(m.mi, p)
     end
 end
 
