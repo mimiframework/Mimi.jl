@@ -388,7 +388,7 @@ end
 function get_parameters(m::Model, component::ComponentInstanceInfo)
     _dict = Mimi.metainfo.getallcomps()
     _module = module_name(component.component_type.name.module)
-    _metacomponent = _dict[(_module, component.name)]
+    _metacomponent = _dict[(_module, component.component_type.name.name)]
     return keys(_metacomponent.parameters)
 end
 
