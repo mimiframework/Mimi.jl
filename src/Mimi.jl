@@ -6,7 +6,6 @@ include("clock.jl")
 using DataStructures
 using DataFrames
 using Distributions
-using Compat
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
