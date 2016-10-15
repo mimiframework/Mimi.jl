@@ -27,3 +27,7 @@ connectparameter(m, :A, :parA, :B, :varB)
 @test length(Mimi.get_connections(m, :B, :incoming)) == 0
 @test Mimi.get_connections(m, :B, :outgoing)[1].target_component_name == :A
 @test length(Mimi.get_connections(m, :A, :all)) == 1
+
+#############################################
+#  Tests for connecting scalar parameters   #
+#############################################
