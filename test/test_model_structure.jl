@@ -55,5 +55,5 @@ end
 run(m)
 
 for t in m.indices_counts[:time]
-    @test m[:A, :varA] == m[:B, :varB]
+    @test m[:A, :varA][t] == m[:B, :varB][t]
 end
