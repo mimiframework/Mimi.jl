@@ -14,7 +14,7 @@ end
 end
 
 m = Model()
-setindex(m, :time, [2015:5:2110])
+setindex(m, :time, [2015:5:2100])
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
@@ -31,3 +31,29 @@ connectparameter(m, :A, :parA, :B, :varB)
 #############################################
 #  Tests for connecting scalar parameters   #
 #############################################
+
+function run_timestep(s::B, t::Int)
+    v = s.Variables
+    p = s.Parameters
+    d = s.Dimensions
+
+    if t==1
+        v.varB[t] = 1
+    else
+        v.varB[t] = v.varB[t-1] + 1
+    end
+end
+
+function run_timestep(s::A, t::Int)
+    v = s.Variables
+    p = s.Parameters
+    d = s.Dimensions
+
+    v.varA[t] = p.parA[t]
+end
+
+run(m)
+
+for t in m.indices_counts[:time]
+    @test m[:A, :varA] == m[:B, :varB]
+end
