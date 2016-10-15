@@ -271,6 +271,12 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
     m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
 end
+"""
+Load Parameters
+"""
+function loadParameters()
+end
+
 
 """
 Set the parameter of a component in a model to a given value.
@@ -701,6 +707,7 @@ function show(io::IO, m::Model)
         end
     end
 end
+
 
 function get_connections(m::Model, c::ComponentInstanceInfo, which::Symbol)
     return get_connections(m, c.name, which)
