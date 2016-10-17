@@ -5,12 +5,12 @@ using Mimi
 
 @defcomp A begin
   varA = Variable(index=[time])
-  parA = Parameter(index=[time])
+  parA = Parameter()
 end
 
 @defcomp B begin
-  varB = Variable(index=[time])
-  parB = Parameter(index=[time])
+  varB = Variable()
+  parB = Parameter()
 end
 
 m = Model()
@@ -38,9 +38,9 @@ function run_timestep(s::B, t::Int)
     d = s.Dimensions
 
     if t==1
-        v.varB[t] = 1
-    else
-        v.varB[t] = v.varB[t-1] + 1
+        v.varB = 1
+    elseif t==10
+        v.varB = 10
     end
 end
 
@@ -49,11 +49,15 @@ function run_timestep(s::A, t::Int)
     p = s.Parameters
     d = s.Dimensions
 
-    v.varA[t] = p.parA[t]
+    v.varA[t] = p.parA
 end
 
 run(m)
 
-for t in m.indices_counts[:time]
-    @test m[:A, :varA][t] == m[:B, :varB][t]
+for t in range(1, 9)
+    @test m[:A, :varA][t] == 1
+end
+
+for t in range(10, m.indices_counts[:time]-10)
+    @test m[:A, :varA][t] == 10
 end
