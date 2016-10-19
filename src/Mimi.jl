@@ -32,10 +32,6 @@ type ComponentInstanceInfo
     component_type::DataType
 end
 
-type ModelInstance
-    components::OrderedDict{Symbol, ComponentState}
-end
-
 abstract Parameter
 
 type CertainScalarParameter <: Parameter
@@ -48,6 +44,25 @@ type CertainScalarParameter <: Parameter
         p.value = value
         return p
     end
+end
+
+type InternalParameterConnection
+    source_variable_name::Symbol
+    source_component_name::Symbol
+    target_parameter_name::Symbol
+    target_component_name::Symbol
+    ignoreunits::Bool
+end
+
+type ExternalParameterConnection
+    component_name::Symbol
+    param_name::Symbol #name of the parameter in the component
+    external_parameter::Parameter
+end
+
+type ModelInstance
+    components::OrderedDict{Symbol, ComponentState}
+    internal_parameter_connections::Array{InternalParameterConnection, 1}
 end
 
 function setbestguess(mi::ModelInstance, p::CertainScalarParameter)
@@ -129,20 +144,6 @@ function setbestguess(mi::ModelInstance, p::CertainArrayParameter)
 end
 
 function setrandom(mi::ModelInstance, p::CertainArrayParameter)
-end
-
-type InternalParameterConnection
-    source_variable_name::Symbol
-    source_component_name::Symbol
-    target_parameter_name::Symbol
-    target_component_name::Symbol
-    ignoreunits::Bool
-end
-
-type ExternalParameterConnection
-    component_name::Symbol
-    param_name::Symbol #name of the parameter in the component
-    external_parameter::Parameter
 end
 
 type Model
@@ -470,7 +471,7 @@ function build(m::Model)
     end
 
 
-    mi = ModelInstance(builtComponents)
+    mi = ModelInstance(builtComponents, m.internal_parameter_connections)
 
     return mi
 end
@@ -496,10 +497,31 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
     clock = Clock(1,min(indices_counts[:time],ntimesteps))
 
     while !finished(clock)
-        for c in values(mi.components)
+        #update_scalar_parameters(mi)
+        for i in mi.components
+            name = i[1]
+            c = i[2]
+            update_scalar_parameters(mi, name)
             run_timestep(c,gettimestep(clock))
         end
         move_forward(clock)
+    end
+end
+
+function update_scalar_parameters(mi::ModelInstance, c::Symbol)
+    for x in get_connections(mi, c, :incoming)
+        c_target = mi.components[x.target_component_name]
+        c_source = mi.components[x.source_component_name]
+        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
+    end
+end
+
+function update_scalar_parameters(mi::ModelInstance)
+    #this function is bad!! doesn't necessarilly update scalars in the correct order 
+    for x in mi.internal_parameter_connections
+        c_target = mi.components[x.target_component_name]
+        c_source = mi.components[x.source_component_name]
+        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
     end
 end
 
@@ -717,6 +739,19 @@ function get_connections(m::Model, component_name::Symbol, which::Symbol)
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
     return filter(f, m.internal_parameter_connections)
+end
+
+function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbol)
+    if which==:all
+        f = e -> e.source_component_name==component_name || e.target_component_name==component_name
+    elseif which==:incoming
+        f = e -> e.target_component_name==component_name
+    elseif which==:outgoing
+        f = e -> e.source_component_name==component_name
+    else
+        error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
+    end
+    return filter(f, mi.internal_parameter_connections)
 end
 
 #End of graph section
