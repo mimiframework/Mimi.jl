@@ -42,11 +42,13 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
   return plt
 end
 
-# Accepts a camel case or snake case string, and makes it human-readable
-# e.g. camelCase -> Camel Case; snake_case -> Snake Case
-# Warning: due to limitations in Julia's implementation of regex (or limits in my
-# understanding of Julia's implementation of regex), cannot handle camel case strings
-# with more than 2 consecutive capitals, e.g. thisIsTXTFormat -> This Is T X T Format
+"""
+Accepts a camel case or snake case string, and makes it human-readable
+e.g. camelCase -> Camel Case; snake_case -> Snake Case
+Warning: due to limitations in Julia's implementation of regex (or limits in my
+understanding of Julia's implementation of regex), cannot handle camel case strings
+with more than 2 consecutive capitals, e.g. thisIsTXTFormat -> This Is T X T Format
+"""
 function prettifyStringForLabels(s::String)
   if contains(s, "_")
     # Snake Case
