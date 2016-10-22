@@ -5,24 +5,12 @@ using Plots
 Three defaults: single line plot, multiple line plots with legend, bar graph
 when indexing over regions, etc.
 """
-function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, xlabel = string(index), ylabel = string(parameter))
+function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, x_label = string(index), y_label = string(parameter))
   if isnull(m.mi)
     error("A model must be run before it can be plotted")
   end
 
-  plt = plot() # Clear out any previous plots
-
-  if is(legend, nothing)
-    # Assume that we are only plotting one line (i.e. it's not split up by regions)
-    plot(plt, m.indices_values[index], m[component, parameter])
-  else
-    # For multiple lines, we need to read the legend labels from legend
-    for line_index in 1:size(m[component, parameter])[2] # TODO: Check that these dimensions match
-      plot!(plt, m.indices_values[index], m[component, parameter][:,line_index], label = m.indices_values[legend][line_index])
-    end
-  end
-
-  # Add axis labels
+  # Create axis labels
   try
     units = getmetainfo(m, component).parameters[parameter].unit
     units = string("[", units, "]")
@@ -31,12 +19,24 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
   end
 
   # Convert labels from camel case/snake case
-  if xlabel == string(index)
-    xlabel = prettifyStringForLabels(xlabels)
+  if x_label == string(index)
+    x_label = prettifyStringForLabels(x_label)
   end
 
-  if ylabel == string(parameter)
-    ylabel = prettifyStringForLabels(ylabel)
+  if y_label == string(parameter)
+    y_label = prettifyStringForLabels(y_label)
+  end
+
+  plt = plot() # Clear out any previous plots
+
+  if is(legend, nothing)
+    # Assume that we are only plotting one line (i.e. it's not split up by regions)
+    plot(plt, m.indices_values[index], m[component, parameter], xlabel=x_label, ylabel=y_label)
+  else
+    # For multiple lines, we need to read the legend labels from legend
+    for line_index in 1:size(m[component, parameter])[2] # TODO: Check that these dimensions match
+      plot!(plt, m.indices_values[index], m[component, parameter][:,line_index], label = m.indices_values[legend][line_index], xlabel=x_label, ylabel=y_label)
+    end
   end
 
   return plt
