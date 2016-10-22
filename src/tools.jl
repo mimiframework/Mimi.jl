@@ -2,8 +2,8 @@
 using Plots
 
 """
-Three defaults: single line plot, multiple line plots with legend, bar graph
-when indexing over regions, etc.
+Extends the Plots module to be able to take a model information parameters for
+convenience. More advanced plotting may require accessing the Plots module directly.
 """
 function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, x_label = string(index), y_label = string(parameter))
   if isnull(m.mi)
@@ -43,11 +43,11 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
 end
 
 """
-Accepts a camel case or snake case string, and makes it human-readable
+Accepts a camelcase or snakecase string, and makes it human-readable
 e.g. camelCase -> Camel Case; snake_case -> Snake Case
 Warning: due to limitations in Julia's implementation of regex (or limits in my
-understanding of Julia's implementation of regex), cannot handle camel case strings
-with more than 2 consecutive capitals, e.g. thisIsTXTFormat -> This Is T X T Format
+understanding of Julia's implementation of regex), cannot handle camelcase strings
+with more than 2 consecutive capitals, e.g. fileInTXTFormat -> File In T X T Format
 """
 function prettifyStringForLabels(s::String)
   if contains(s, "_")
