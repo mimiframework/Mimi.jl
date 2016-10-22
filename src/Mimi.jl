@@ -728,12 +728,11 @@ end
 Three defaults: single line plot, multiple line plots with legend, bar graph
 when indexing over regions, etc.
 """
-function auto_plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, xlabel = string(index), ylabel = string(parameter), dest = nothing)
+function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, xlabel = string(index), ylabel = string(parameter))
   if isnull(m.mi)
-      run(m)
+    error("A model must be run before it can be plotted")
   end
 
-  pyplot()
   plt = plot() # Clear out any previous plots
 
   if is(legend, nothing)
@@ -746,11 +745,52 @@ function auto_plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbo
     end
   end
 
-  if !is(dest, nothing)
-    savefig(dest)
+  # Add axis labels
+  try
+    units = getmetainfo(m, component).parameters[parameter].unit
+    units = string("[", units, "]")
+  catch
+    units = ""
+  end
+
+  # Convert labels from camel case/snake case
+  if xlabel == string(index)
+    xlabel = prettifyStringForLabels(xlabels)
+  end
+
+  if ylabel == string(parameter)
+    ylabel = prettifyStringForLabels(ylabel)
   end
 
   return plt
+end
+
+# Accepts a camel case or snake case string, and makes it human-readable
+# e.g. camelCase -> Camel Case; snake_case -> Snake Case
+# Warning: due to limitations in Julia's implementation of regex (or limits in my
+# understanding of Julia's implementation of regex), cannot handle camel case strings
+# with more than 2 consecutive capitals, e.g. thisIsTXTFormat -> This Is T X T Format
+function prettifyStringForLabels(s::String)
+  if contains(s, "_")
+    # Snake Case
+    s = replace(s, r"_", s" ")
+  else
+    # Camel Case
+    s = replace(s, r"([a-z])([A-Z])", s"\1 \2")
+    s = replace(s, r"([A-Z])([A-Z])", s"\1 \2")
+  end
+
+  # Capitalize the first letter of each word
+    print(s)
+  s_arr = split(s)
+  to_ret = ""
+  for word in s_arr
+    word_caps = string(uppercase(word[1]), word[2:length(word)])
+        to_ret = string(to_ret, word_caps, " ")
+  end
+
+  # Return our string, minus the trailing space that was added
+  return to_ret[1:length(to_ret) - 1]
 end
 
 # End plotting section
