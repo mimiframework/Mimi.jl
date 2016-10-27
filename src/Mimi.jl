@@ -10,7 +10,7 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
+    getdataframe, components, variables, getvpd, unitcheck
 
 import
     Base.getindex, Base.run, Base.show
@@ -34,11 +34,11 @@ end
 
 abstract Parameter
 
-type CertainScalarParameter <: Parameter
+type ScalarModelParameter <: Parameter
     dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value
 
-    function CertainScalarParameter(value)
+    function ScalarModelParameter(value)
         p = new()
         p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
         p.value = value
@@ -65,85 +65,14 @@ type ModelInstance
     internal_parameter_connections::Array{InternalParameterConnection, 1}
 end
 
-function setbestguess(mi::ModelInstance, p::CertainScalarParameter)
-    for (c, name) in p.dependentCompsAndParams2
-        bg_value = p.value
-        setfield!(mi.components[c].Parameters,name,bg_value)
-    end
-end
-
-function setrandom(mi::ModelInstance, p::CertainScalarParameter)
-    for (c, name) in p.dependentCompsAndParams2
-        bg_value = p.value
-        setfield!(mi.components[c].Parameters,name,bg_value)
-    end
-end
-
-type UncertainScalarParameter <: Parameter
-    dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
-    value::Distribution
-
-    function UncertainScalarParameter(value)
-        p = new()
-        p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
-        p.value = value
-        return p
-    end
-end
-
-function setbestguess(mi::ModelInstance, p::UncertainScalarParameter)
-    bg_value = mode(p.value)
-    for (c, name) in p.dependentCompsAndParams2
-        setfield!(mi.components[c].Parameters,name,bg_value)
-    end
-end
-
-function setrandom(mi::ModelInstance, p::UncertainScalarParameter)
-    sample = rand(p.value)
-    for (c, name) in p.dependentCompsAndParams2
-        setfield!(mi.components[c].Parameters,name,sample)
-    end
-end
-
-
-type UncertainArrayParameter <: Parameter
-    distributions::Array{Distribution, 1}
-    values::Array{Float64,1}
-
-    function UncertainArrayParameter(distributions)
-        uap = new()
-        uap.distributions = distributions
-        uap.values = Array(Float64, size(distributions))
-        return uap
-    end
-end
-
-function setbestguess(mi::ModelInstance, p::UncertainArrayParameter)
-    for i in 1:length(p.distributions)
-        p.values[i] = mode(p.distributions[i])
-    end
-end
-
-function setrandom(mi::ModelInstance, p::UncertainArrayParameter)
-    for i in 1:length(p.distributions)
-        p.values[i] = rand(p.distributions[i])
-    end
-end
-
-type CertainArrayParameter <: Parameter
+type ArrayModelParameter <: Parameter
     values
 
-    function CertainArrayParameter(values::Array)
+    function ArrayModelParameter(values::Array)
         uap = new()
         uap.values = values
         return uap
     end
-end
-
-function setbestguess(mi::ModelInstance, p::CertainArrayParameter)
-end
-
-function setrandom(mi::ModelInstance, p::CertainArrayParameter)
 end
 
 type Model
@@ -301,24 +230,15 @@ end
 
 
 function addparameter(m::Model, name::Symbol, value)
-    if isa(value, Distribution)
-        p = UncertainScalarParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
-    elseif isa(value, AbstractArray)
-        if any(x->isa(x, Distribution), value)
-            p = UncertainArrayParameter(value)
-            m.external_parameters[Symbol(lowercase(string(name)))] = p
-        else
-            if !(typeof(value) <: Array{m.numberType})
-                # E.g., if model takes Number and given Float64, convert it
-                value = convert(Array{m.numberType}, value)
-            end
-
-            p = CertainArrayParameter(value)
-            m.external_parameters[Symbol(lowercase(string(name)))] = p
+    if isa(value, AbstractArray)
+        if !(typeof(value) <: Array{m.numberType})
+            # E.g., if model takes Number and given Float64, convert it
+            value = convert(Array{m.numberType}, value)
         end
+        p = ArrayModelParameter(value)
+        m.external_parameters[Symbol(lowercase(string(name)))] = p
     else
-        p = CertainScalarParameter(value)
+        p = ScalarModelParameter(value)
         m.external_parameters[Symbol(lowercase(string(name)))] = p
     end
 end
@@ -463,7 +383,7 @@ function build(m::Model)
 
     for x in m.external_parameter_connections
         param = x.external_parameter
-        if isa(param, CertainScalarParameter) | isa(param, UncertainScalarParameter)
+        if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
         else
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
