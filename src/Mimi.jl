@@ -6,6 +6,7 @@ include("clock.jl")
 using DataStructures
 using DataFrames
 using Distributions
+using NamedArrays
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
@@ -69,9 +70,19 @@ type ArrayModelParameter <: Parameter
     values
 
     function ArrayModelParameter(values::Array)
-        uap = new()
-        uap.values = values
-        return uap
+        amp = new()
+        amp.values = values
+        return amp
+    end
+end
+
+type NamedArrayModelParameter <: Parameter
+    values
+
+    function NamedArrayModelParameter(values::NamedArray)
+        namp = new()
+        namp.values = values
+        return namp
     end
 end
 
@@ -214,6 +225,16 @@ end
 
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
+
+    if isa(p, NamedArrayModelParameter)
+        if !(eltype(p.values) == getmetainfo(m, component).parameters[parametername].datatype)
+            error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: " parametername )
+        elseif !(size(p.values) == getmetainfo(m, component).parameters[parametername].)
+
+        end
+
+    end
+
     x = ExternalParameterConnection(component, name, p)
     push!(m.external_parameter_connections, x)
 
@@ -229,18 +250,25 @@ function updateparameter(m::Model, name::Symbol, value)
 end
 
 
-function addparameter(m::Model, name::Symbol, value)
-    if isa(value, AbstractArray)
+
+
+function addparameter(m::Model, name::Symbol, value::AbstractArray)
+    if isa(value, NamedArray)
+        p = NamedArrayModelParameter(value)
+        m.external_parameters[Symbol(lowercase(string(name)))] = p
+    else
         if !(typeof(value) <: Array{m.numberType})
             # E.g., if model takes Number and given Float64, convert it
             value = convert(Array{m.numberType}, value)
         end
         p = ArrayModelParameter(value)
         m.external_parameters[Symbol(lowercase(string(name)))] = p
-    else
-        p = ScalarModelParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
     end
+end
+
+function addparameter(m::Model, name::Symbol, value::Number)
+    p = ScalarModelParameter(value)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
@@ -437,7 +465,7 @@ function update_scalar_parameters(mi::ModelInstance, c::Symbol)
 end
 
 function update_scalar_parameters(mi::ModelInstance)
-    #this function is bad!! doesn't necessarilly update scalars in the correct order 
+    #this function is bad!! doesn't necessarilly update scalars in the correct order
     for x in mi.internal_parameter_connections
         c_target = mi.components[x.target_component_name]
         c_source = mi.components[x.source_component_name]
