@@ -223,16 +223,33 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     nothing
 end
 
+function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::NamedArrayModelParameter)
+    if !(eltype(p.values) == getmetainfo(m, component).parameters[parametername].datatype)
+        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: " parametername )
+    elseif !(size(p.values) == size(getmetainfo(m, component).parameters[parametername]))
+        error(string("Mismatched size of parameter connection. Component: ", component, ", Parameter: " parametername )
+    else
+        for (dimname in keys(m.indices_values))
+            if !(dimname in dimnames(p.values))
+                error("Dimension in model missing in parameter")
+            else
+                all_labels = names(p.values, findnext(dimnames(p.values), dimname, 1))
+                for i in 1:1:length(all_labels)
+                    if !(all_labels[i] == m.indices_values[dimname][i])
+                        error("Labels do not match!")
+                    end
+                end
+            end
+        end
+    end
+end
+
+
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
     if isa(p, NamedArrayModelParameter)
-        if !(eltype(p.values) == getmetainfo(m, component).parameters[parametername].datatype)
-            error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: " parametername )
-        elseif !(size(p.values) == getmetainfo(m, component).parameters[parametername].)
-
-        end
-
+        checklabels(m, component, name, parametername, p)
     end
 
     x = ExternalParameterConnection(component, name, p)
