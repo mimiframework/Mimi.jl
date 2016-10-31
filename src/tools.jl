@@ -20,11 +20,11 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
 
   # Convert labels from camel case/snake case
   if x_label == string(index)
-    x_label = prettifyStringForLabels(x_label)
+    x_label = prettifystring(x_label)
   end
 
   if y_label == string(parameter)
-    y_label = prettifyStringForLabels(y_label)
+    y_label = prettifystring(y_label)
   end
 
   plt = plot() # Clear out any previous plots
@@ -49,7 +49,7 @@ Warning: due to limitations in Julia's implementation of regex (or limits in my
 understanding of Julia's implementation of regex), cannot handle camelcase strings
 with more than 2 consecutive capitals, e.g. fileInTXTFormat -> File In T X T Format
 """
-function prettifyStringForLabels(s::String)
+function prettifystring(s::String)
   if contains(s, "_")
     # Snake Case
     s = replace(s, r"_", s" ")
