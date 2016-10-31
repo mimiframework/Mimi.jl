@@ -13,7 +13,7 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
   # Create axis labels
   try
     units = getmetainfo(m, component).parameters[parameter].unit
-    units = string("[", units, "]")
+    units = string(" [", units, "]")
   catch
     units = ""
   end
@@ -26,6 +26,9 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
   if y_label == string(parameter)
     y_label = prettifystring(y_label)
   end
+
+  x_label = string(x_label, units)
+  y_label = string(y_label, units)
 
   plt = plot() # Clear out any previous plots
 
