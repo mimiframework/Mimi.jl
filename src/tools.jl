@@ -64,7 +64,7 @@ function prettifyStringForLabels(s::String)
   to_ret = ""
   for word in s_arr
     word_caps = string(uppercase(word[1]), word[2:length(word)])
-        to_ret = string(to_ret, word_caps, " ")
+    to_ret = string(to_ret, word_caps, " ")
   end
 
   # Return our string, minus the trailing space that was added
