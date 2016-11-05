@@ -263,7 +263,7 @@ function updateparameter(m::Model, name::Symbol, value)
        setbestguess(p)
 end
 
-function check_parameter_dimensions(m::Model, dims::vector)
+function check_parameter_dimensions(m::Model, dims::Vector)
     for dim in dims
         if dim in keys(m.indices_values)
             labels = names(value, findnext(dims, dim, 1))
