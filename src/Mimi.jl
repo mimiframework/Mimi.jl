@@ -263,13 +263,13 @@ function updateparameter(m::Model, name::Symbol, value)
        setbestguess(p)
 end
 
-function check_parameter_dimensions(m::Model, dims::vector)
+function check_parameter_dimensions(m::Model, dims::Vector)
     for dim in dims
         if dim in keys(m.indices_values)
             labels = names(value, findnext(dims, dim, 1))
             for i in collect(1:1:length(all_labels))
                 if !(labels[i] == m.indices_values[dim][i])
-                    error("Labels do not match!")
+                    error("Parameter labels for ", dim, " dimension in ", ," parameter do not match model's indices values")
                 end
             end
         else
@@ -292,7 +292,7 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = nothing
+    dims = Vector{Symbol}()
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
