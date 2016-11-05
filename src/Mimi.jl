@@ -70,9 +70,10 @@ type ArrayModelParameter <: Parameter
     values::AbstractArray
     dims::Vector{Symbol}
 
-    function ArrayModelParameter(values::AbstractArray)
+    function ArrayModelParameter(values::AbstractArray, dims::Vector{Symbol})
         amp = new()
         amp.values = values
+        amp.dims = dims
         return amp
     end
 end
