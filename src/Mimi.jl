@@ -292,7 +292,7 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = nothing
+    dims = Nullable{Vector}()
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
