@@ -269,11 +269,11 @@ function check_parameter_dimensions(m::Model, dims::Vector)
             labels = names(value, findnext(dims, dim, 1))
             for i in collect(1:1:length(all_labels))
                 if !(labels[i] == m.indices_values[dim][i])
-                    error("Parameter labels for ", dim, " dimension in ", ," parameter do not match model's indices values")
+                    error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
                 end
             end
         else
-            error()
+            error(string("Dimension ", dim, " in parameter ", name, " not found in model's dimensions"))
         end
     end
 end
@@ -281,7 +281,7 @@ end
 function addparameter(m::Model, name::Symbol, value::NamedArray)
     dims = dimnames(value)
 
-    check_parameter_dimensions(m, dims)
+    check_parameter_dimensions(m, dims, name)
 
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
@@ -300,7 +300,7 @@ end
 function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
-    check_parameter_dimensions(m, dims)
+    check_parameter_dimensions(m, dims, name)
 
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
