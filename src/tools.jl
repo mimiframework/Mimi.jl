@@ -13,7 +13,7 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
   # Create axis labels
   try
     units = getmetainfo(m, component).parameters[parameter].unit
-    units = string(" [", units, "]")
+    units = "[$(units)]"
   catch
     units = ""
   end
@@ -27,8 +27,8 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
     y_label = prettifystring(y_label)
   end
 
-  x_label = string(x_label, units)
-  y_label = string(y_label, units)
+  x_label = "$(x_label) $(units)"
+  y_label = "$(y_label) $(units)"
 
   plt = plot() # Clear out any previous plots
 
@@ -66,8 +66,8 @@ function prettifystring(s::String)
   s_arr = split(s)
   to_ret = ""
   for word in s_arr
-    word_caps = string(uppercase(word[1]), word[2:length(word)])
-    to_ret = string(to_ret, word_caps, " ")
+    word_caps = "$(uppercase(word[1]))$(word[2:length(word)])"
+    to_ret = "$(to_ret)$(word_caps) "
   end
 
   # Return our string, minus the trailing space that was added
