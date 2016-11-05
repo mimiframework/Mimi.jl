@@ -67,24 +67,25 @@ type ModelInstance
 end
 
 type ArrayModelParameter <: Parameter
-    values
+    values::AbstractArray
+    dims::Vector{Symbol}
 
-    function ArrayModelParameter(values::Array)
+    function ArrayModelParameter(values::AbstractArray)
         amp = new()
         amp.values = values
         return amp
     end
 end
 
-type NamedArrayModelParameter <: Parameter
-    values
-
-    function NamedArrayModelParameter(values::NamedArray)
-        namp = new()
-        namp.values = values
-        return namp
-    end
-end
+# type NamedArrayModelParameter <: Parameter
+#     values
+#
+#     function NamedArrayModelParameter(values::NamedArray)
+#         namp = new()
+#         namp.values = values
+#         return namp
+#     end
+# end
 
 type Model
     indices_counts::Dict{Symbol,Int}
@@ -267,7 +268,9 @@ function updateparameter(m::Model, name::Symbol, value)
 end
 
 
+function addparameter(m::Model, name::Symbol, value::AbstractArray)
 
+end
 
 function addparameter(m::Model, name::Symbol, value::AbstractArray)
     if isa(value, NamedArray)
@@ -283,7 +286,7 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
     end
 end
 
-function addparameter(m::Model, name::Symbol, value::Number)
+function addparameter(m::Model, name::Symbol, value)
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
