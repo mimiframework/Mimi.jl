@@ -722,5 +722,5 @@ end
 #End of graph section
 
 include("references.jl")
-include("tools.jl")
+include("plotting.jl")
 end # module
