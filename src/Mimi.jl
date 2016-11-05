@@ -227,20 +227,16 @@ end
 function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::NamedArrayModelParameter)
     if !(eltype(p.values) == getmetainfo(m, component).parameters[parametername].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: " parametername )
-    elseif !(size(p.values) == size(getmetainfo(m, component).parameters[parametername]))
-        error(string("Mismatched size of parameter connection. Component: ", component, ", Parameter: " parametername )
+    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
+        error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: " parametername )
     else
-        for (dimname in keys(m.indices_values))
-            if !(dimname in dimnames(p.values))
-                error("Dimension in model missing in parameter")
-            else
-                all_labels = names(p.values, findnext(dimnames(p.values), dimname, 1))
-                for i in 1:1:length(all_labels)
-                    if !(all_labels[i] == m.indices_values[dimname][i])
-                        error("Labels do not match!")
-                    end
-                end
+        comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
+        i=1
+        for dim in comp_dims
+            if !(size(m.indices_values[dim])==size(p.values)[i])
+                error(" ")
             end
+            i+=1
         end
     end
 end
@@ -249,7 +245,7 @@ end
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
-    if isa(p, NamedArrayModelParameter)
+    if isa(p, ArrayModelParameter)
         checklabels(m, component, name, parametername, p)
     end
 
@@ -267,26 +263,51 @@ function updateparameter(m::Model, name::Symbol, value)
        setbestguess(p)
 end
 
-
-function addparameter(m::Model, name::Symbol, value::AbstractArray)
-
-end
-
-function addparameter(m::Model, name::Symbol, value::AbstractArray)
-    if isa(value, NamedArray)
-        p = NamedArrayModelParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
-    else
-        if !(typeof(value) <: Array{m.numberType})
-            # E.g., if model takes Number and given Float64, convert it
-            value = convert(Array{m.numberType}, value)
+function check_parameter_dimensions(m::Model, dims::vector)
+    for dim in dims
+        if dim in keys(m.indices_values)
+            labels = names(value, findnext(dims, dim, 1))
+            for i in collect(1:1:length(all_labels))
+                if !(labels[i] == m.indices_values[dim][i])
+                    error("Labels do not match!")
+                end
+            end
+        else
+            error()
         end
-        p = ArrayModelParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
     end
 end
 
-function addparameter(m::Model, name::Symbol, value)
+function addparameter(m::Model, name::Symbol, value::NamedArray)
+    dims = dimnames(value)
+
+    check_parameter_dimensions(m, dims)
+
+    p = ArrayModelParameter(value, dims)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+function addparameter(m::Model, name::Symbol, value::AbstractArray)
+    if !(typeof(value) <: Array{m.numberType})
+        # E.g., if model takes Number and given Float64, convert it
+        value = convert(Array{m.numberType}, value)
+    end
+    dims = nothing
+    p = ArrayModelParameter(value, dims)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+    #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
+
+    check_parameter_dimensions(m, dims)
+
+    p = ArrayModelParameter(value, dims)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+function addparameter(m::Model, name::Symbol, value::Any)
+    #function for adding scalar parameters ("Any" type)
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
