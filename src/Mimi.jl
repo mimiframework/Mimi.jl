@@ -226,9 +226,9 @@ end
 
 function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
     if !(eltype(p.values) == getmetainfo(m, component).parameters[parametername].datatype)
-        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername ))
+        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
     elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
-        error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername ))
+        error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
     else
         comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
         i=1
