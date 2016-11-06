@@ -234,8 +234,8 @@ function checklabels(m::Model, component::Symbol, name::Symbol, parametername::S
         comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
         i=1
         for dim in comp_dims
-            if !(size(m.indices_values[dim])==size(p.values)[i])
-                error(" ")
+            if !(length(m.indices_values[dim])==size(p.values)[i])
+                error("Length of the labels and the provided data are not matching")
             end
             i+=1
         end
@@ -293,7 +293,7 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = Vector{Symbol}()
+    dims = Vector{Symbol}(ndims(value))
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
