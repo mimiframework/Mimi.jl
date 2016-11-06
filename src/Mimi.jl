@@ -70,9 +70,10 @@ type ArrayModelParameter <: Parameter
     values::AbstractArray
     dims::Vector{Symbol}
 
-    function ArrayModelParameter(values::AbstractArray)
+    function ArrayModelParameter(values::AbstractArray, dims::AbstractArray )
         amp = new()
         amp.values = values
+        amp.dims = dims
         return amp
     end
 end
@@ -225,7 +226,8 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
 end
 
 function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) == getmetainfo(m, component).parameters[parametername].datatype)
+
+    if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
     elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
         error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
@@ -233,8 +235,8 @@ function checklabels(m::Model, component::Symbol, name::Symbol, parametername::S
         comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
         i=1
         for dim in comp_dims
-            if !(size(m.indices_values[dim])==size(p.values)[i])
-                error(" ")
+            if !(length(m.indices_values[dim])==size(p.values)[i])
+                error("Length of the labels and the provided data are not matching")
             end
             i+=1
         end
@@ -292,7 +294,7 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = Vector{Symbol}()
+    dims = Vector{Symbol}(ndims(value))
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
