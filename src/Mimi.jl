@@ -10,7 +10,7 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck
+    getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck, plot
 
 import
     Base.getindex, Base.run, Base.show

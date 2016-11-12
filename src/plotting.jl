@@ -5,7 +5,7 @@ using Plots
 Extends the Plots module to be able to take a model information parameters for
 convenience. More advanced plotting may require accessing the Plots module directly.
 """
-function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, x_label = string(index), y_label = string(parameter))
+plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, x_label = string(index), y_label = string(parameter))
     if isnull(m.mi)
         error("A model must be run before it can be plotted")
     end
