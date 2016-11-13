@@ -68,7 +68,7 @@ end
 
 type ArrayModelParameter <: Parameter
     values::AbstractArray
-    dims::Vector{Symbol}
+    dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
 
     function ArrayModelParameter(values::AbstractArray, dims::Vector{Symbol})
         amp = new()
@@ -264,13 +264,15 @@ function updateparameter(m::Model, name::Symbol, value)
        setbestguess(p)
 end
 
-function check_parameter_dimensions(m::Model, dims::Vector)
+function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
         if dim in keys(m.indices_values)
-            labels = names(value, findnext(dims, dim, 1))
-            for i in collect(1:1:length(all_labels))
-                if !(labels[i] == m.indices_values[dim][i])
-                    error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
+            if isa(value, NamedArray)
+                labels = names(value, findnext(dims, dim, 1))
+                for i in collect(1:1:length(all_labels))
+                    if !(labels[i] == m.indices_values[dim][i])
+                        error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
+                    end
                 end
             end
         else
@@ -282,7 +284,7 @@ end
 function addparameter(m::Model, name::Symbol, value::NamedArray)
     dims = dimnames(value)
 
-    check_parameter_dimensions(m, dims, name)
+    check_parameter_dimensions(m, value, dims, name)
 
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
@@ -293,7 +295,7 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = Vector{Symbol}(ndims(value))
+    dims = Array{Symbol, 2}()
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
@@ -301,7 +303,7 @@ end
 function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
-    check_parameter_dimensions(m, dims, name)
+    check_parameter_dimensions(m, value, dims, name)
 
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
