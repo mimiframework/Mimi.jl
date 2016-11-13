@@ -1,4 +1,5 @@
 using Mimi
+using NamedArrays
 
 #GROSS ECONOMY COMPONENT
 @defcomp grosseconomy begin
@@ -95,35 +96,35 @@ for t in 1:20
 end
 
 #DEFINE ALL THE PARAMETERS using NAMEDARRAYS
-region_labels = ["Region1", "Region2", "Region3"])
+region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
 
 l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in 1:20
+for t in time_labels
     l2[t,1] = (1. + 0.015)^t *2000
     l2[t,2] = (1. + 0.02)^t * 1250
     l2[t,3] = (1. + 0.03)^t * 1700
 end
 
 tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in 1:20
+for t in time_labels
     tfp2[t,1] = (1 + 0.06)^t * 3.2
     tfp2[t,2] = (1 + 0.03)^t * 1.8
     tfp2[t,3] = (1 + 0.05)^t * 2.5
 end
 
 s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in 1:20
+for t in time_labels
     s2[t,1] = 0.21
     s2[t,2] = 0.15
     s2[t,3] = 0.28
 end
 
-depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels), (:region))
-k02   = NamedArrat([50.5, 22., 33.5], (region_labels), (:region))
+depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:region,))
+k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:region,))
 
 sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in 1:20
+for t in time_labels
     sigma2[t,1] = (1. - 0.05)^t * 0.58
     sigma2[t,2] = (1. - 0.04)^t * 0.5
     sigma2[t,3] = (1. - 0.045)^t * 0.6
@@ -188,5 +189,11 @@ run2 = run_my_model2()
 #Check results
 #run1[:emissions, :E_Global]
 
-for _ in _
-    @test(run1[comp, var] == run2[])
+for t in range(1, length(time_labels))
+    for r in range(1, length(region_labels))
+        @test(run1[:grosseconomy :YGROSS][t, r] == run2[:grosseconomy :YGROSS][time_labels[t], r])
+        @test(run1[:grosseconomy :K][t, r] == run2[:grosseconomy :K][time_labels[t], r])
+        @test(run1[:emissions :E][t, r] == run2[:emissions :E][time_labels[t], r])
+        @test(run1[:emissions :E_Global][t, r] == run2[:emissions :E_Global][time_labels[t], r])
+    end
+end
