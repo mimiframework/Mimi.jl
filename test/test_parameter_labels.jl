@@ -95,42 +95,6 @@ for t in 1:20
     sigma[t,3] = (1. - 0.045)^t * 0.6
 end
 
-#DEFINE ALL THE PARAMETERS using NAMEDARRAYS
-region_labels = ["Region1", "Region2", "Region3"]
-time_labels = collect(2015:5:2110)
-
-l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    l2[t,1] = (1. + 0.015)^t *2000
-    l2[t,2] = (1. + 0.02)^t * 1250
-    l2[t,3] = (1. + 0.03)^t * 1700
-end
-
-tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    tfp2[t,1] = (1 + 0.06)^t * 3.2
-    tfp2[t,2] = (1 + 0.03)^t * 1.8
-    tfp2[t,3] = (1 + 0.05)^t * 2.5
-end
-
-s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    s2[t,1] = 0.21
-    s2[t,2] = 0.15
-    s2[t,3] = 0.28
-end
-
-depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:region,))
-k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:region,))
-
-sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    sigma2[t,1] = (1. - 0.05)^t * 0.58
-    sigma2[t,2] = (1. - 0.04)^t * 0.5
-    sigma2[t,3] = (1. - 0.045)^t * 0.6
-end
-
-
 #FUNCTION TO RUN MY MODEL
 function run_my_model()
 
@@ -157,6 +121,43 @@ function run_my_model()
     return(my_model)
 
 end
+
+
+#DEFINE ALL THE PARAMETERS using NAMEDARRAYS
+region_labels = ["Region1", "Region2", "Region3"]
+time_labels = collect(2015:5:2110)
+
+l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    l2[t,1] = (1. + 0.015)^t *2000
+    l2[t,2] = (1. + 0.02)^t * 1250
+    l2[t,3] = (1. + 0.03)^t * 1700
+end
+
+tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    tfp2[t,1] = (1 + 0.06)^t * 3.2
+    tfp2[t,2] = (1 + 0.03)^t * 1.8
+    tfp2[t,3] = (1 + 0.05)^t * 2.5
+end
+
+s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    s2[t,1] = 0.21
+    s2[t,2] = 0.15
+    s2[t,3] = 0.28
+end
+
+depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:regions,))
+k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:regions,))
+
+sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    sigma2[t,1] = (1. - 0.05)^t * 0.58
+    sigma2[t,2] = (1. - 0.04)^t * 0.5
+    sigma2[t,3] = (1. - 0.045)^t * 0.6
+end
+
 
 function run_my_model2()
 
