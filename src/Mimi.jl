@@ -144,7 +144,7 @@ end
 List all the components in model `m`.
 """
 function components(m::Model)
-    collect(keys(m.components))
+    collect(keys(m.components2))
 end
 
 # Return the MetaComponent for a given component
@@ -284,15 +284,18 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
 end
 
 function addparameter(m::Model, name::Symbol, value::NamedArray)
+    #namedarray given, so we can perform label checks
     dims = dimnames(value)
 
     check_parameter_dimensions(m, value, dims, name)
 
-    p = ArrayModelParameter(value, dims)
+    p = ArrayModelParameter(convert(Array, value), dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
 function addparameter(m::Model, name::Symbol, value::AbstractArray)
+    #cannot perform any parameter label checks in this case
+
     if !(typeof(value) <: Array{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
@@ -305,7 +308,7 @@ end
 function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
-    check_parameter_dimensions(m, value, dims, name)
+    check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
 
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p

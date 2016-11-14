@@ -192,9 +192,9 @@ run2 = run_my_model2()
 
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
-        @test(run1[:grosseconomy :YGROSS][t, r] == run2[:grosseconomy :YGROSS][time_labels[t], r])
-        @test(run1[:grosseconomy :K][t, r] == run2[:grosseconomy :K][time_labels[t], r])
-        @test(run1[:emissions :E][t, r] == run2[:emissions :E][time_labels[t], r])
-        @test(run1[:emissions :E_Global][t, r] == run2[:emissions :E_Global][time_labels[t], r])
+        @test(run1[:grosseconomy :YGROSS][t, r] == run2[:grosseconomy :YGROSS][t, r])
+        @test(run1[:grosseconomy :K][t, r] == run2[:grosseconomy :K][t, r])
+        @test(run1[:emissions :E][t, r] == run2[:emissions :E][t, r])
+        @test(run1[:emissions :E_Global][t, r] == run2[:emissions :E_Global][t, r])
     end
 end
