@@ -10,7 +10,11 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
+<<<<<<< HEAD
     getdataframe, components, variables, setbestguess, setrandom, getvpd, unitcheck, plot
+=======
+    getdataframe, components, variables, getvpd, unitcheck
+>>>>>>> 597f60cca22abaae025c850415595b4ccaf713c9
 
 import
     Base.getindex, Base.run, Base.show
@@ -32,103 +36,18 @@ type ComponentInstanceInfo
     component_type::DataType
 end
 
-type ModelInstance
-    components::OrderedDict{Symbol, ComponentState}
-end
-
 abstract Parameter
 
-type CertainScalarParameter <: Parameter
+type ScalarModelParameter <: Parameter
     dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value
 
-    function CertainScalarParameter(value)
+    function ScalarModelParameter(value)
         p = new()
         p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
         p.value = value
         return p
     end
-end
-
-function setbestguess(mi::ModelInstance, p::CertainScalarParameter)
-    for (c, name) in p.dependentCompsAndParams2
-        bg_value = p.value
-        setfield!(mi.components[c].Parameters,name,bg_value)
-    end
-end
-
-function setrandom(mi::ModelInstance, p::CertainScalarParameter)
-    for (c, name) in p.dependentCompsAndParams2
-        bg_value = p.value
-        setfield!(mi.components[c].Parameters,name,bg_value)
-    end
-end
-
-type UncertainScalarParameter <: Parameter
-    dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
-    value::Distribution
-
-    function UncertainScalarParameter(value)
-        p = new()
-        p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
-        p.value = value
-        return p
-    end
-end
-
-function setbestguess(mi::ModelInstance, p::UncertainScalarParameter)
-    bg_value = mode(p.value)
-    for (c, name) in p.dependentCompsAndParams2
-        setfield!(mi.components[c].Parameters,name,bg_value)
-    end
-end
-
-function setrandom(mi::ModelInstance, p::UncertainScalarParameter)
-    sample = rand(p.value)
-    for (c, name) in p.dependentCompsAndParams2
-        setfield!(mi.components[c].Parameters,name,sample)
-    end
-end
-
-
-type UncertainArrayParameter <: Parameter
-    distributions::Array{Distribution, 1}
-    values::Array{Float64,1}
-
-    function UncertainArrayParameter(distributions)
-        uap = new()
-        uap.distributions = distributions
-        uap.values = Array(Float64, size(distributions))
-        return uap
-    end
-end
-
-function setbestguess(mi::ModelInstance, p::UncertainArrayParameter)
-    for i in 1:length(p.distributions)
-        p.values[i] = mode(p.distributions[i])
-    end
-end
-
-function setrandom(mi::ModelInstance, p::UncertainArrayParameter)
-    for i in 1:length(p.distributions)
-        p.values[i] = rand(p.distributions[i])
-    end
-end
-
-type CertainArrayParameter <: Parameter
-    values
-
-    function CertainArrayParameter(values::Array)
-        uap = new()
-        uap.values = values
-        return uap
-    end
-end
-
-function setbestguess(mi::ModelInstance, p::CertainArrayParameter)
-end
-
-function setrandom(mi::ModelInstance, p::CertainArrayParameter)
 end
 
 type InternalParameterConnection
@@ -143,6 +62,21 @@ type ExternalParameterConnection
     component_name::Symbol
     param_name::Symbol #name of the parameter in the component
     external_parameter::Parameter
+end
+
+type ModelInstance
+    components::OrderedDict{Symbol, ComponentState}
+    internal_parameter_connections::Array{InternalParameterConnection, 1}
+end
+
+type ArrayModelParameter <: Parameter
+    values
+
+    function ArrayModelParameter(values::Array)
+        uap = new()
+        uap.values = values
+        return uap
+    end
 end
 
 type Model
@@ -300,24 +234,15 @@ end
 
 
 function addparameter(m::Model, name::Symbol, value)
-    if isa(value, Distribution)
-        p = UncertainScalarParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
-    elseif isa(value, AbstractArray)
-        if any(x->isa(x, Distribution), value)
-            p = UncertainArrayParameter(value)
-            m.external_parameters[Symbol(lowercase(string(name)))] = p
-        else
-            if !(typeof(value) <: Array{m.numberType})
-                # E.g., if model takes Number and given Float64, convert it
-                value = convert(Array{m.numberType}, value)
-            end
-
-            p = CertainArrayParameter(value)
-            m.external_parameters[Symbol(lowercase(string(name)))] = p
+    if isa(value, AbstractArray)
+        if !(typeof(value) <: Array{m.numberType})
+            # E.g., if model takes Number and given Float64, convert it
+            value = convert(Array{m.numberType}, value)
         end
+        p = ArrayModelParameter(value)
+        m.external_parameters[Symbol(lowercase(string(name)))] = p
     else
-        p = CertainScalarParameter(value)
+        p = ScalarModelParameter(value)
         m.external_parameters[Symbol(lowercase(string(name)))] = p
     end
 end
@@ -462,7 +387,7 @@ function build(m::Model)
 
     for x in m.external_parameter_connections
         param = x.external_parameter
-        if isa(param, CertainScalarParameter) | isa(param, UncertainScalarParameter)
+        if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
         else
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
@@ -470,7 +395,7 @@ function build(m::Model)
     end
 
 
-    mi = ModelInstance(builtComponents)
+    mi = ModelInstance(builtComponents, m.internal_parameter_connections)
 
     return mi
 end
@@ -496,10 +421,31 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
     clock = Clock(1,min(indices_counts[:time],ntimesteps))
 
     while !finished(clock)
-        for c in values(mi.components)
+        #update_scalar_parameters(mi)
+        for i in mi.components
+            name = i[1]
+            c = i[2]
+            update_scalar_parameters(mi, name)
             run_timestep(c,gettimestep(clock))
         end
         move_forward(clock)
+    end
+end
+
+function update_scalar_parameters(mi::ModelInstance, c::Symbol)
+    for x in get_connections(mi, c, :incoming)
+        c_target = mi.components[x.target_component_name]
+        c_source = mi.components[x.source_component_name]
+        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
+    end
+end
+
+function update_scalar_parameters(mi::ModelInstance)
+    #this function is bad!! doesn't necessarilly update scalars in the correct order 
+    for x in mi.internal_parameter_connections
+        c_target = mi.components[x.target_component_name]
+        c_source = mi.components[x.source_component_name]
+        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
     end
 end
 
@@ -717,6 +663,19 @@ function get_connections(m::Model, component_name::Symbol, which::Symbol)
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
     return filter(f, m.internal_parameter_connections)
+end
+
+function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbol)
+    if which==:all
+        f = e -> e.source_component_name==component_name || e.target_component_name==component_name
+    elseif which==:incoming
+        f = e -> e.target_component_name==component_name
+    elseif which==:outgoing
+        f = e -> e.source_component_name==component_name
+    else
+        error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
+    end
+    return filter(f, mi.internal_parameter_connections)
 end
 
 #End of graph section
