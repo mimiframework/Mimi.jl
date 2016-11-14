@@ -36,13 +36,3 @@ bar[:intermed] = foo[:intermed]
 
 run(m)
 Plots.plot(m, :Bar, :output)
-savefig("test")
-
-f1 = open("test.png")
-f2 = open("testout.png")
-
-s1 = readstring(f1)
-s2 = readstring(f2)
-@test s1 == s2
-
-rm("test.png")
