@@ -5,7 +5,7 @@ using Plots
 Extends the Plots module to be able to take a model information parameters for
 convenience. More advanced plotting may require accessing the Plots module directly.
 """
-function plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = nothing, x_label::String = string(index), y_label::String = string(parameter))
+function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = :none, x_label::String = string(index), y_label::String = string(parameter))
     if isnull(m.mi)
         error("A model must be run before it can be plotted")
     end
@@ -31,9 +31,9 @@ function plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :
 
     plt = plot() # Clear out any previous plots
 
-    if is(legend, nothing)
+    if legend == :none
         # Assume that we are only plotting one line (i.e. it's not split up by regions)
-        plot(plt, m.indices_values[index], m[component, parameter], xlabel=x_label, ylabel=y_label)
+        plt = plot(m.indices_values[index], m[component, parameter], xlabel=x_label, ylabel=y_label)
     else
         # For multiple lines, we need to read the legend labels from legend
         for line_index in 1:size(m[component, parameter])[2] # TODO: Check that these dimensions match
