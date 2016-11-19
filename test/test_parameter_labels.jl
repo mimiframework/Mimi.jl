@@ -184,6 +184,7 @@ end
 region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
 
+l2 = NamedArray(l, (time_labels, region_labels), (:time, :regions))
 l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
     l2[t,"Region1"] = (1. + 0.015)^t *2000
@@ -191,12 +192,13 @@ for t in time_labels
     l2[t,"Region3"] = (1. + 0.03)^t * 1700
 end
 
-tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
-for t in time_labels
-    tfp2[t,"Region1"] = (1 + 0.06)^t * 3.2
-    tfp2[t,"Region2"] = (1 + 0.03)^t * 1.8
-    tfp2[t,"Region3"] = (1 + 0.05)^t * 2.5
-end
+tfp2 = NamedArray(tfp, (time_labels, region_labels), (:time, :regions))
+# tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+# for t in time_labels
+#     tfp2[t,"Region1"] = (1 + 0.06)^t * 3.2
+#     tfp2[t,"Region2"] = (1 + 0.03)^t * 1.8
+#     tfp2[t,"Region3"] = (1 + 0.05)^t * 2.5
+# end
 
 s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
