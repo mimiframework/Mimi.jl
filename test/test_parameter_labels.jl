@@ -54,6 +54,7 @@ run(model2)
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
         @test(model1[:compA, :y][t, r] == model2[:compA, :y][t, r])
+        #println(model1[:compA, :y][t, r], model2[:compA, :y][t, r])
     end
 end
 
