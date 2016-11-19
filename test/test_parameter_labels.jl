@@ -2,6 +2,62 @@ using Mimi
 using NamedArrays
 using Base.Test
 
+@defcomp compA begin
+    regions = Index()
+
+    y = Variable(index=[time, regions])
+    x = Parameter(index=[time, regions])
+
+end
+
+function run_timestep(state::compA, t::Int)
+    v = state.Variables
+    p = state.Parameters
+    d = state.Dimensions
+
+    for r in d.regions
+        v.y[t, r] = p.x[t, r]
+    end
+end
+
+x = Array(Float64,20,3)
+for t in 1:20
+    x[t,1] = 1
+    x[t,2] = 2
+    x[t,3] = 3
+end
+
+region_labels = ["Region1", "Region2", "Region3"]
+time_labels = collect(2015:5:2110)
+x2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in 1:20
+    x[t,1] = 1
+    x[t,2] = 2
+    x[t,3] = 3
+end
+
+model1 = Model()
+setindex(model1, :time, collect(2015:5:2110))
+setindex(model1, :regions, ["Region1", "Region2", "Region3"])
+addcomponent(model1, compA)
+setparameter(model1, :compA, :x, x)
+
+model2 = Model()
+setindex(model2, :time, collect(2015:5:2110))
+setindex(model2, :regions, ["Region1", "Region2", "Region3"])
+addcomponent(model2, compA)
+setparameter(model2, :compA, :x, x2)
+
+run(model1)
+run(model2)
+
+for t in range(1, length(time_labels))
+    for r in range(1, length(region_labels))
+        @test(model1[:compA, :y][t, r] == model2[:compA, :y][t, r])
+    end
+end
+
+
 #GROSS ECONOMY COMPONENT
 @defcomp grosseconomy begin
     regions = Index()                           #Note that a regional index is defined here
