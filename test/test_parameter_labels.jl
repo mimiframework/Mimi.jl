@@ -30,10 +30,10 @@ end
 region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
 x2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
-for t in 1:20
-    x[t,1] = 1
-    x[t,2] = 2
-    x[t,3] = 3
+for t in time_labels
+    x2[t,"Region1"] = 1
+    x2[t,"Region2"] = 2
+    x2[t,"Region3"] = 3
 end
 
 model1 = Model()
@@ -186,23 +186,23 @@ time_labels = collect(2015:5:2110)
 
 l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
-    l2[t,1] = (1. + 0.015)^t *2000
-    l2[t,2] = (1. + 0.02)^t * 1250
-    l2[t,3] = (1. + 0.03)^t * 1700
+    l2[t,"Region1"] = (1. + 0.015)^t *2000
+    l2[t,"Region2"] = (1. + 0.02)^t * 1250
+    l2[t,"Region3"] = (1. + 0.03)^t * 1700
 end
 
 tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
-    tfp2[t,1] = (1 + 0.06)^t * 3.2
-    tfp2[t,2] = (1 + 0.03)^t * 1.8
-    tfp2[t,3] = (1 + 0.05)^t * 2.5
+    tfp2[t,"Region1"] = (1 + 0.06)^t * 3.2
+    tfp2[t,"Region2"] = (1 + 0.03)^t * 1.8
+    tfp2[t,"Region3"] = (1 + 0.05)^t * 2.5
 end
 
 s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
-    s2[t,1] = 0.21
-    s2[t,2] = 0.15
-    s2[t,3] = 0.28
+    s2[t,"Region1"] = 0.21
+    s2[t,"Region2"] = 0.15
+    s2[t,"Region3"] = 0.28
 end
 
 depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:regions,))
@@ -210,9 +210,9 @@ k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:regions,))
 
 sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
-    sigma2[t,1] = (1. - 0.05)^t * 0.58
-    sigma2[t,2] = (1. - 0.04)^t * 0.5
-    sigma2[t,3] = (1. - 0.045)^t * 0.6
+    sigma2[t,"Region1"] = (1. - 0.05)^t * 0.58
+    sigma2[t,"Region2"] = (1. - 0.04)^t * 0.5
+    sigma2[t,"Region3"] = (1. - 0.045)^t * 0.6
 end
 
 
@@ -227,14 +227,14 @@ function run_my_model2()
     addcomponent(my_model2, emissions)
 
     setparameter(my_model2, :grosseconomy, :l, l2)
-    setparameter(my_model2, :grosseconomy, :tfp, tfp2)
+    setparameter(my_model2, :grosseconomy, :tfp, tfp)
     setparameter(my_model2, :grosseconomy, :s, s2)
     setparameter(my_model2, :grosseconomy, :depk,depk2)
     setparameter(my_model2, :grosseconomy, :k0, k02)
     setparameter(my_model2, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    setparameter(my_model2, :emissions, :sigma, sigma)
+    setparameter(my_model2, :emissions, :sigma, sigma2)
     connectparameter(my_model2, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model2)
@@ -252,6 +252,6 @@ for t in range(1, length(time_labels))
         @test(run1[:grosseconomy, :YGROSS][t, r] == run2[:grosseconomy, :YGROSS][t, r])
         @test(run1[:grosseconomy, :K][t, r] == run2[:grosseconomy, :K][t, r])
         @test(run1[:emissions, :E][t, r] == run2[:emissions, :E][t, r])
-        @test(run1[:emissions, :E_Global][t, r] == run2[:emissions, :E_Global][t, r])
     end
+    @test(run1[:emissions, :E_Global][t] == run2[:emissions, :E_Global][t])
 end
