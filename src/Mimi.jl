@@ -287,6 +287,7 @@ function addparameter(m::Model, name::Symbol, value::NamedArray)
     #namedarray given, so we can perform label checks
     dims = dimnames(value)
 
+    println(value)
     check_parameter_dimensions(m, value, dims, name)
 
     p = ArrayModelParameter(value.array, dims) #want to use convert(Array, value) but broken
