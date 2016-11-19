@@ -1,7 +1,7 @@
 using Mimi
 using Base.Test
 
-tests = ["main", "references", "units", "model_structure", "parameter_checking"]
+tests = ["main", "references", "units", "model_structure", "parameter_labels"]
 
 for t in tests
     fp = joinpath("test_$t.jl")
