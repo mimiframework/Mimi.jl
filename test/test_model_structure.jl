@@ -13,11 +13,17 @@ end
   parB = Parameter()
 end
 
+@defcomp C begin
+  varB = Variable()
+  parB = Parameter()
+end
+
 m = Model()
 setindex(m, :time, collect(2015:5:2100))
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
+@test_throws ErrorException addcomponent(m, B, after=:A, before=:B)
 
 connectparameter(m, :A, :parA, :B, :varB)
 
@@ -33,7 +39,6 @@ connectparameter(m, :A, :parA, :B, :varB)
 #############################################
 
 function run_timestep(s::B, t::Int)
-    print("B")
     v = s.Variables
     p = s.Parameters
     d = s.Dimensions
@@ -46,7 +51,6 @@ function run_timestep(s::B, t::Int)
 end
 
 function run_timestep(s::A, t::Int)
-    print("A")
     v = s.Variables
     p = s.Parameters
     d = s.Dimensions
