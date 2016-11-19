@@ -289,7 +289,7 @@ function addparameter(m::Model, name::Symbol, value::NamedArray)
 
     check_parameter_dimensions(m, value, dims, name)
 
-    p = ArrayModelParameter(convert(Array, value), dims)
+    p = ArrayModelParameter(value.array, dims) #want to use convert(Array, value) but broken
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
