@@ -144,7 +144,7 @@ end
 List all the components in model `m`.
 """
 function components(m::Model)
-    collect(keys(m.components))
+    collect(keys(m.components2))
 end
 
 # Return the MetaComponent for a given component
@@ -229,7 +229,9 @@ function checklabels(m::Model, component::Symbol, name::Symbol, parametername::S
     if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
     elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
-        error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
+        if isa(p.values, NamedArray)
+            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
+        end
     else
         comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
         i=1
@@ -269,7 +271,7 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
         if dim in keys(m.indices_values)
             if isa(value, NamedArray)
                 labels = names(value, findnext(dims, dim, 1))
-                for i in collect(1:1:length(all_labels))
+                for i in collect(1:1:length(labels))
                     if !(labels[i] == m.indices_values[dim][i])
                         error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
                     end
@@ -282,20 +284,23 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
 end
 
 function addparameter(m::Model, name::Symbol, value::NamedArray)
+    #namedarray given, so we can perform label checks
     dims = dimnames(value)
 
     check_parameter_dimensions(m, value, dims, name)
 
-    p = ArrayModelParameter(value, dims)
+    p = ArrayModelParameter(value.array, dims) #want to use convert(Array, value) but broken
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
 function addparameter(m::Model, name::Symbol, value::AbstractArray)
+    #cannot perform any parameter label checks in this case
+
     if !(typeof(value) <: Array{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = Array{Symbol, 2}()
+    dims = Vector{Symbol}()
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
@@ -303,7 +308,7 @@ end
 function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
-    check_parameter_dimensions(m, value, dims, name)
+    check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
 
     p = ArrayModelParameter(value, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p

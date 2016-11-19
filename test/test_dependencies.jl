@@ -27,7 +27,7 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-"https://github.com/davidanthoff/fund.jl/archive/master.zip"
+"https://github.com/davidanthoff/fund.jl/archive/ee1c3adabacfecbb284a0fe60aae2e3b87946aa6.zip"
 ]
 
 #list of failed tests to build as you go

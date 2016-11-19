@@ -1,5 +1,6 @@
 using Mimi
 using NamedArrays
+using Base.Test
 
 #GROSS ECONOMY COMPONENT
 @defcomp grosseconomy begin
@@ -95,42 +96,6 @@ for t in 1:20
     sigma[t,3] = (1. - 0.045)^t * 0.6
 end
 
-#DEFINE ALL THE PARAMETERS using NAMEDARRAYS
-region_labels = ["Region1", "Region2", "Region3"]
-time_labels = collect(2015:5:2110)
-
-l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    l2[t,1] = (1. + 0.015)^t *2000
-    l2[t,2] = (1. + 0.02)^t * 1250
-    l2[t,3] = (1. + 0.03)^t * 1700
-end
-
-tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    tfp2[t,1] = (1 + 0.06)^t * 3.2
-    tfp2[t,2] = (1 + 0.03)^t * 1.8
-    tfp2[t,3] = (1 + 0.05)^t * 2.5
-end
-
-s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    s2[t,1] = 0.21
-    s2[t,2] = 0.15
-    s2[t,3] = 0.28
-end
-
-depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:region,))
-k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:region,))
-
-sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :region))
-for t in time_labels
-    sigma2[t,1] = (1. - 0.05)^t * 0.58
-    sigma2[t,2] = (1. - 0.04)^t * 0.5
-    sigma2[t,3] = (1. - 0.045)^t * 0.6
-end
-
-
 #FUNCTION TO RUN MY MODEL
 function run_my_model()
 
@@ -158,26 +123,63 @@ function run_my_model()
 
 end
 
+
+#DEFINE ALL THE PARAMETERS using NAMEDARRAYS
+region_labels = ["Region1", "Region2", "Region3"]
+time_labels = collect(2015:5:2110)
+
+l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    l2[t,1] = (1. + 0.015)^t *2000
+    l2[t,2] = (1. + 0.02)^t * 1250
+    l2[t,3] = (1. + 0.03)^t * 1700
+end
+
+tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    tfp2[t,1] = (1 + 0.06)^t * 3.2
+    tfp2[t,2] = (1 + 0.03)^t * 1.8
+    tfp2[t,3] = (1 + 0.05)^t * 2.5
+end
+
+s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    s2[t,1] = 0.21
+    s2[t,2] = 0.15
+    s2[t,3] = 0.28
+end
+
+depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:regions,))
+k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:regions,))
+
+sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+for t in time_labels
+    sigma2[t,1] = (1. - 0.05)^t * 0.58
+    sigma2[t,2] = (1. - 0.04)^t * 0.5
+    sigma2[t,3] = (1. - 0.045)^t * 0.6
+end
+
+
 function run_my_model2()
 
     my_model2 = Model()
 
-    setindex(my_model, :time, collect(2015:5:2110))
-    setindex(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
+    setindex(my_model2, :time, collect(2015:5:2110))
+    setindex(my_model2, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
-    addcomponent(my_model, grosseconomy)
-    addcomponent(my_model, emissions)
+    addcomponent(my_model2, grosseconomy)
+    addcomponent(my_model2, emissions)
 
-    setparameter(my_model, :grosseconomy, :l, l2)
-    setparameter(my_model, :grosseconomy, :tfp, tfp2)
-    setparameter(my_model, :grosseconomy, :s, s2)
-    setparameter(my_model, :grosseconomy, :depk,depk2)
-    setparameter(my_model, :grosseconomy, :k0, k02)
-    setparameter(my_model, :grosseconomy, :share, 0.3)
+    setparameter(my_model2, :grosseconomy, :l, l2)
+    setparameter(my_model2, :grosseconomy, :tfp, tfp2)
+    setparameter(my_model2, :grosseconomy, :s, s2)
+    setparameter(my_model2, :grosseconomy, :depk,depk2)
+    setparameter(my_model2, :grosseconomy, :k0, k02)
+    setparameter(my_model2, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    setparameter(my_model, :emissions, :sigma, sigma)
-    connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    setparameter(my_model2, :emissions, :sigma, sigma)
+    connectparameter(my_model2, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model2)
     return(my_model2)
@@ -186,14 +188,14 @@ end
 
 run1 = run_my_model()
 run2 = run_my_model2()
+
 #Check results
-#run1[:emissions, :E_Global]
 
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
-        @test(run1[:grosseconomy :YGROSS][t, r] == run2[:grosseconomy :YGROSS][time_labels[t], r])
-        @test(run1[:grosseconomy :K][t, r] == run2[:grosseconomy :K][time_labels[t], r])
-        @test(run1[:emissions :E][t, r] == run2[:emissions :E][time_labels[t], r])
-        @test(run1[:emissions :E_Global][t, r] == run2[:emissions :E_Global][time_labels[t], r])
+        @test(run1[:grosseconomy, :YGROSS][t, r] == run2[:grosseconomy, :YGROSS][t, r])
+        @test(run1[:grosseconomy, :K][t, r] == run2[:grosseconomy, :K][t, r])
+        @test(run1[:emissions, :E][t, r] == run2[:emissions, :E][t, r])
+        @test(run1[:emissions, :E_Global][t, r] == run2[:emissions, :E_Global][t, r])
     end
 end
