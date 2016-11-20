@@ -513,14 +513,14 @@ function update_scalar_parameters(mi::ModelInstance, c::Symbol)
     end
 end
 
-function update_scalar_parameters(mi::ModelInstance)
-    #this function is bad!! doesn't necessarilly update scalars in the correct order
-    for x in mi.internal_parameter_connections
-        c_target = mi.components[x.target_component_name]
-        c_source = mi.components[x.source_component_name]
-        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
-    end
-end
+# function update_scalar_parameters(mi::ModelInstance)
+#     #this function is bad!! doesn't necessarilly update scalars in the correct order
+#     for x in mi.internal_parameter_connections
+#         c_target = mi.components[x.target_component_name]
+#         c_source = mi.components[x.source_component_name]
+#         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
+#     end
+# end
 
 function run_timestep(s, t)
     typeofs = typeof(s)

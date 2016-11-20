@@ -61,7 +61,7 @@ for t in range(1, length(time_labels))
     end
 end
 
-
+@test(size(getdataframe(model1, :compA, :y)) == (60, 3))
 
 #####################################
 #  LARGER MULTIREGIONAL TEST (2/3)  #
