@@ -11,7 +11,7 @@ using NamedArrays
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck
+    getdataframe, components, variables, getvpd, unitcheck, addparameter
 
 import
     Base.getindex, Base.run, Base.show
