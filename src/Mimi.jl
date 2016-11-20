@@ -188,7 +188,7 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         for i in keys(m.components2)
-            newcomponents2[i] = m.components[i]
+            newcomponents2[i] = m.components2[i]
             if i==after
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
@@ -437,7 +437,7 @@ function update_scalar_parameters(mi::ModelInstance, c::Symbol)
 end
 
 function update_scalar_parameters(mi::ModelInstance)
-    #this function is bad!! doesn't necessarilly update scalars in the correct order 
+    #this function is bad!! doesn't necessarilly update scalars in the correct order
     for x in mi.internal_parameter_connections
         c_target = mi.components[x.target_component_name]
         c_source = mi.components[x.source_component_name]
