@@ -78,16 +78,6 @@ type ArrayModelParameter <: Parameter
     end
 end
 
-# type NamedArrayModelParameter <: Parameter
-#     values
-#
-#     function NamedArrayModelParameter(values::NamedArray)
-#         namp = new()
-#         namp.values = values
-#         return namp
-#     end
-# end
-
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
@@ -282,7 +272,9 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
         end
     end
 end
-
+"""
+Parameter dimension checks are performed on the NamedArray. Adds an array type parameter to the model.
+"""
 function addparameter(m::Model, name::Symbol, value::NamedArray)
     #namedarray given, so we can perform label checks
     dims = dimnames(value)
@@ -293,6 +285,9 @@ function addparameter(m::Model, name::Symbol, value::NamedArray)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+"""
+Adds an array type parameter to the model.
+"""
 function addparameter(m::Model, name::Symbol, value::AbstractArray)
     #cannot perform any parameter label checks in this case
 
@@ -305,6 +300,9 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+"""
+Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
+"""
 function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
@@ -314,6 +312,9 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+"""
+Adds a scalar type parameter to the model.
+"""
 function addparameter(m::Model, name::Symbol, value::Any)
     #function for adding scalar parameters ("Any" type)
     p = ScalarModelParameter(value)
