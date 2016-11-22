@@ -36,8 +36,8 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
         plt = plot(m.indices_values[index], m[component, parameter], xlabel=x_label, ylabel=y_label)
     else
         # For multiple lines, we need to read the legend labels from legend
-        if size(m[component, parameter])[2] == size(m.indices_values[legend])
-            for line_index in 1:size(m[component, parameter])[2] # TODO: Check that these dimensions match
+        if size(1:size(m[component, parameter])[2]) == size(m.indices_values[legend])
+            for line_index in 1:size(m[component, parameter])[2] 
                 plot!(plt, m.indices_values[index], m[component, parameter][:,line_index], label = m.indices_values[legend][line_index], xlabel=x_label, ylabel=y_label)
             end
         else
