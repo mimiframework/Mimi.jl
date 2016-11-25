@@ -10,7 +10,7 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck
+    getdataframe, components, variables, getvpd, unitcheck, plot
 
 import
     Base.getindex, Base.run, Base.show
@@ -437,7 +437,7 @@ function update_scalar_parameters(mi::ModelInstance, c::Symbol)
 end
 
 function update_scalar_parameters(mi::ModelInstance)
-    #this function is bad!! doesn't necessarilly update scalars in the correct order 
+    #this function is bad!! doesn't necessarilly update scalars in the correct order
     for x in mi.internal_parameter_connections
         c_target = mi.components[x.target_component_name]
         c_source = mi.components[x.source_component_name]
@@ -677,5 +677,5 @@ end
 #End of graph section
 
 include("references.jl")
-
+include("plotting.jl")
 end # module
