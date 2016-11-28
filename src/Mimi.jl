@@ -11,7 +11,7 @@ using NamedArrays
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, addparameter
+    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot
 
 import
     Base.getindex, Base.run, Base.show
@@ -514,6 +514,7 @@ function update_scalar_parameters(mi::ModelInstance, c::Symbol)
     end
 end
 
+
 # function update_scalar_parameters(mi::ModelInstance)
 #     #this function is bad!! doesn't necessarilly update scalars in the correct order
 #     for x in mi.internal_parameter_connections
@@ -522,6 +523,7 @@ end
 #         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
 #     end
 # end
+
 
 function run_timestep(s, t)
     typeofs = typeof(s)
@@ -755,5 +757,5 @@ end
 #End of graph section
 
 include("references.jl")
-
+include("plotting.jl")
 end # module
