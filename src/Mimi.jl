@@ -10,7 +10,7 @@ using Distributions
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck
+    getdataframe, components, variables, getvpd, unitcheck, plot
 
 import
     Base.getindex, Base.run, Base.show
@@ -677,5 +677,5 @@ end
 #End of graph section
 
 include("references.jl")
-
+include("plotting.jl")
 end # module
