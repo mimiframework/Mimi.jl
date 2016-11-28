@@ -33,7 +33,6 @@ connectparameter(m, :A, :parA, :B, :varB)
 #############################################
 
 function run_timestep(s::B, t::Int)
-    print("B")
     v = s.Variables
     p = s.Parameters
     d = s.Dimensions
@@ -46,7 +45,6 @@ function run_timestep(s::B, t::Int)
 end
 
 function run_timestep(s::A, t::Int)
-    print("A")
     v = s.Variables
     p = s.Parameters
     d = s.Dimensions

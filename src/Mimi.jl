@@ -6,11 +6,12 @@ include("clock.jl")
 using DataStructures
 using DataFrames
 using Distributions
+using NamedArrays
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, plot
+    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot
 
 import
     Base.getindex, Base.run, Base.show
@@ -66,12 +67,14 @@ type ModelInstance
 end
 
 type ArrayModelParameter <: Parameter
-    values
+    values::AbstractArray
+    dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
 
-    function ArrayModelParameter(values::Array)
-        uap = new()
-        uap.values = values
-        return uap
+    function ArrayModelParameter(values::AbstractArray, dims::Vector{Symbol})
+        amp = new()
+        amp.values = values
+        amp.dims = dims
+        return amp
     end
 end
 
@@ -131,7 +134,7 @@ end
 List all the components in model `m`.
 """
 function components(m::Model)
-    collect(keys(m.components))
+    collect(keys(m.components2))
 end
 
 # Return the MetaComponent for a given component
@@ -212,8 +215,33 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     nothing
 end
 
+function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
+    if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
+        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
+    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
+        if isa(p.values, NamedArray)
+            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
+        end
+    else
+        comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
+        i=1
+        for dim in comp_dims
+            if !(length(m.indices_values[dim])==size(p.values)[i])
+                error("Length of the labels and the provided data are not matching")
+            end
+            i+=1
+        end
+    end
+end
+
+
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
+
+    if isa(p, ArrayModelParameter)
+        checklabels(m, component, name, parametername, p)
+    end
+
     x = ExternalParameterConnection(component, name, p)
     push!(m.external_parameter_connections, x)
 
@@ -228,19 +256,69 @@ function updateparameter(m::Model, name::Symbol, value)
        setbestguess(p)
 end
 
-
-function addparameter(m::Model, name::Symbol, value)
-    if isa(value, AbstractArray)
-        if !(typeof(value) <: Array{m.numberType})
-            # E.g., if model takes Number and given Float64, convert it
-            value = convert(Array{m.numberType}, value)
+function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol)
+    for dim in dims
+        if dim in keys(m.indices_values)
+            if isa(value, NamedArray)
+                labels = names(value, findnext(dims, dim, 1))
+                for i in collect(1:1:length(labels))
+                    if !(labels[i] == m.indices_values[dim][i])
+                        error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
+                    end
+                end
+            end
+        else
+            error(string("Dimension ", dim, " in parameter ", name, " not found in model's dimensions"))
         end
-        p = ArrayModelParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
-    else
-        p = ScalarModelParameter(value)
-        m.external_parameters[Symbol(lowercase(string(name)))] = p
     end
+end
+"""
+Parameter dimension checks are performed on the NamedArray. Adds an array type parameter to the model.
+"""
+function addparameter(m::Model, name::Symbol, value::NamedArray)
+    #namedarray given, so we can perform label checks
+    dims = dimnames(value)
+
+    check_parameter_dimensions(m, value, dims, name)
+
+    p = ArrayModelParameter(value.array, dims) #want to use convert(Array, value) but broken
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+"""
+Adds an array type parameter to the model.
+"""
+function addparameter(m::Model, name::Symbol, value::AbstractArray)
+    #cannot perform any parameter label checks in this case
+
+    if !(typeof(value) <: Array{m.numberType})
+        # E.g., if model takes Number and given Float64, convert it
+        value = convert(Array{m.numberType}, value)
+    end
+    dims = Vector{Symbol}()
+    p = ArrayModelParameter(value, dims)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+"""
+Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
+"""
+function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+    #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
+
+    check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
+
+    p = ArrayModelParameter(value, dims)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+"""
+Adds a scalar type parameter to the model.
+"""
+function addparameter(m::Model, name::Symbol, value::Any)
+    #function for adding scalar parameters ("Any" type)
+    p = ScalarModelParameter(value)
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
@@ -436,14 +514,16 @@ function update_scalar_parameters(mi::ModelInstance, c::Symbol)
     end
 end
 
-function update_scalar_parameters(mi::ModelInstance)
-    #this function is bad!! doesn't necessarilly update scalars in the correct order
-    for x in mi.internal_parameter_connections
-        c_target = mi.components[x.target_component_name]
-        c_source = mi.components[x.source_component_name]
-        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
-    end
-end
+
+# function update_scalar_parameters(mi::ModelInstance)
+#     #this function is bad!! doesn't necessarilly update scalars in the correct order
+#     for x in mi.internal_parameter_connections
+#         c_target = mi.components[x.target_component_name]
+#         c_source = mi.components[x.source_component_name]
+#         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
+#     end
+# end
+
 
 function run_timestep(s, t)
     typeofs = typeof(s)
