@@ -83,4 +83,4 @@ for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
 
-print("Woot passed all tests")
+print("Woot passed all tests!")
