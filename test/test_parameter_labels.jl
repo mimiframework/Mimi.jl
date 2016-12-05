@@ -59,12 +59,6 @@ run(model2)
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
         @test(model1[:compA, :y][t, r] == model2[:compA, :y][t, r])
-<<<<<<< HEAD
-        #println(model1[:compA, :y][t, r], model2[:compA, :y][t, r])
-    end
-end
-
-=======
     end
 end
 
@@ -73,8 +67,6 @@ end
 #####################################
 #  LARGER MULTIREGIONAL TEST (2/3)  #
 #####################################
-
->>>>>>> cdf82b5100b834eb8bf22b1c19a1d04ff76a6f15
 
 #GROSS ECONOMY COMPONENT
 @defcomp grosseconomy begin
@@ -268,17 +260,12 @@ run2 = run_my_model2()
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
         @test(run1[:grosseconomy, :YGROSS][t, r] == run2[:grosseconomy, :YGROSS][t, r])
-<<<<<<< HEAD
-=======
         #println(run1[:grosseconomy, :YGROSS][t, r],", ", run2[:grosseconomy, :YGROSS][t, r])
->>>>>>> cdf82b5100b834eb8bf22b1c19a1d04ff76a6f15
         @test(run1[:grosseconomy, :K][t, r] == run2[:grosseconomy, :K][t, r])
         @test(run1[:emissions, :E][t, r] == run2[:emissions, :E][t, r])
     end
     @test(run1[:emissions, :E_Global][t] == run2[:emissions, :E_Global][t])
 end
-<<<<<<< HEAD
-=======
 
 
 
@@ -299,4 +286,3 @@ for t in range(1, length(time_labels))
         @test(model1[:compA, :y][t, r] == model3[:compA, :y][t, r])
     end
 end
->>>>>>> cdf82b5100b834eb8bf22b1c19a1d04ff76a6f15
