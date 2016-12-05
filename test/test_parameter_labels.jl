@@ -1,7 +1,11 @@
 using Mimi
 using NamedArrays
 using Base.Test
-println("NEW TEST RUN")
+
+
+##########################
+#    BASIC TEST (1/3)    #
+##########################
 
 @defcomp compA begin
     regions = Index()
@@ -55,10 +59,22 @@ run(model2)
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
         @test(model1[:compA, :y][t, r] == model2[:compA, :y][t, r])
+<<<<<<< HEAD
         #println(model1[:compA, :y][t, r], model2[:compA, :y][t, r])
     end
 end
 
+=======
+    end
+end
+
+@test(size(getdataframe(model1, :compA, :y)) == (60, 3))
+
+#####################################
+#  LARGER MULTIREGIONAL TEST (2/3)  #
+#####################################
+
+>>>>>>> cdf82b5100b834eb8bf22b1c19a1d04ff76a6f15
 
 #GROSS ECONOMY COMPONENT
 @defcomp grosseconomy begin
@@ -252,8 +268,35 @@ run2 = run_my_model2()
 for t in range(1, length(time_labels))
     for r in range(1, length(region_labels))
         @test(run1[:grosseconomy, :YGROSS][t, r] == run2[:grosseconomy, :YGROSS][t, r])
+<<<<<<< HEAD
+=======
+        #println(run1[:grosseconomy, :YGROSS][t, r],", ", run2[:grosseconomy, :YGROSS][t, r])
+>>>>>>> cdf82b5100b834eb8bf22b1c19a1d04ff76a6f15
         @test(run1[:grosseconomy, :K][t, r] == run2[:grosseconomy, :K][t, r])
         @test(run1[:emissions, :E][t, r] == run2[:emissions, :E][t, r])
     end
     @test(run1[:emissions, :E_Global][t] == run2[:emissions, :E_Global][t])
 end
+<<<<<<< HEAD
+=======
+
+
+
+###########################################
+#    TEST 4th ADDPARAMETER OPTION (3/3)   #
+###########################################
+
+model3 = Model()
+setindex(model3, :time, collect(2015:5:2110))
+setindex(model3, :regions, ["Region1", "Region2", "Region3"])
+addcomponent(model3, compA)
+addparameter(model3, :x, x, [:time, :regions])
+connectparameter(model3, :compA, :x, :x)
+run(model3)
+
+for t in range(1, length(time_labels))
+    for r in range(1, length(region_labels))
+        @test(model1[:compA, :y][t, r] == model3[:compA, :y][t, r])
+    end
+end
+>>>>>>> cdf82b5100b834eb8bf22b1c19a1d04ff76a6f15
