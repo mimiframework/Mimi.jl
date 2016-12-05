@@ -13,24 +13,45 @@ end
   parB = Parameter()
 end
 
+@defcomp C begin
+  varC = Variable()
+  parC = Parameter()
+end
+
 m = Model()
 setindex(m, :time, collect(2015:5:2100))
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
+@test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
+addcomponent(m, C, after=:B)
 
 connectparameter(m, :A, :parA, :B, :varB)
 
-@test length(m.components2)==2
+@test length(m.components2)==3
 @test length(m.internal_parameter_connections)==1
 @test Mimi.get_connections(m, :A, :incoming)[1].source_component_name == :B
 @test length(Mimi.get_connections(m, :B, :incoming)) == 0
 @test Mimi.get_connections(m, :B, :outgoing)[1].target_component_name == :A
 @test length(Mimi.get_connections(m, :A, :all)) == 1
 
+connectparameter(m, :A, :parA, :C, :varC)
+@test length(m.internal_parameter_connections)==2
 #############################################
 #  Tests for connecting scalar parameters   #
 #############################################
+
+function run_timestep(s::C, t::Int)
+    v = s.Variables
+    p = s.Parameters
+    d = s.Dimensions
+
+    if t==1
+        v.varC = 1
+    elseif t==10
+        v.varC = 10
+    end
+end
 
 function run_timestep(s::B, t::Int)
     v = s.Variables
@@ -61,3 +82,5 @@ end
 for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
+
+print("Woot passed all tests!")

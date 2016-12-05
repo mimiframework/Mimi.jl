@@ -191,7 +191,7 @@ function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothin
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         for i in keys(m.components2)
-            newcomponents2[i] = m.components[i]
+            newcomponents2[i] = m.components2[i]
             if i==after
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end

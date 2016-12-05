@@ -2,6 +2,7 @@ using Mimi
 using NamedArrays
 using Base.Test
 
+
 ##########################
 #    BASIC TEST (1/3)    #
 ##########################
@@ -66,7 +67,6 @@ end
 #####################################
 #  LARGER MULTIREGIONAL TEST (2/3)  #
 #####################################
-
 
 #GROSS ECONOMY COMPONENT
 @defcomp grosseconomy begin
