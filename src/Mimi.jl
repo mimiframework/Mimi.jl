@@ -2,7 +2,6 @@ module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
-include("marginalmodel.jl")
 
 using DataStructures
 using DataFrames
@@ -102,6 +101,8 @@ type Model
         return m
     end
 end
+
+include("marginalmodel.jl")
 
 function setbestguess(m::Model)
     if isnull(m.mi)
