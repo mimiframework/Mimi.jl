@@ -2,6 +2,7 @@ module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
+include("marginalmodel.jl")
 
 using DataStructures
 using DataFrames
@@ -102,12 +103,6 @@ type Model
     end
 end
 
-type MarginalModel
-    base::Model
-    marginal::Model
-    delta::Float64
-end
-
 function setbestguess(m::Model)
     if isnull(m.mi)
         m.mi = Nullable{ModelInstance}(build(m))
@@ -153,10 +148,6 @@ List all the variables of `componentname` in model `m`.
 function variables(m::Model, componentname::Symbol)
     c = getmetainfo(m, componentname)
     collect(keys(c.variables))
-end
-
-function getindex(m::MarginalModel, component::Symbol, name::Symbol)
-    return (m.marginal[component,name].-m.base[component,name])./m.delta
 end
 
 function setindex(m::Model, name::Symbol, count::Int)
