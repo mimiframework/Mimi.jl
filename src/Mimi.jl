@@ -141,7 +141,7 @@ end
 function getmetainfo(m::Model, componentname::Symbol)
     meta = metainfo.getallcomps()
     meta_module_name = Symbol(m.components2[componentname].component_type.name.module)
-    meta_component_name = Symbol(m.components2[componentname].component_type)
+    meta_component_name = m.components2[componentname].component_type.name.name
     return meta[(meta_module_name, meta_component_name)]
 end
 
@@ -174,7 +174,7 @@ end
 """
 Add a component to a model.
 """
-function addcomponent(m::Model, t, name::Symbol=Symbol(string(t)); before=nothing,after=nothing)
+function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -216,7 +216,6 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
 end
 
 function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
-    # meta_comp_name = Symbol(string(m.components2[component].component_type))
     if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
     elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
