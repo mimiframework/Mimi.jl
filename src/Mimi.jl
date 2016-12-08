@@ -2,7 +2,6 @@ module Mimi
 
 include("metainfo.jl")
 include("clock.jl")
-include("adder.jl")
 
 using DataStructures
 using DataFrames
@@ -217,14 +216,15 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
 end
 
 function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
+    meta_comp_name = Symbol(string(m.components2[component].component_type))
+    if !(eltype(p.values) <: getmetainfo(m, meta_comp_name).parameters[parametername].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
-    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
+    elseif !(size(p.dims) == size(getmetainfo(m, meta_comp_name).parameters[parametername].dimensions))
         if isa(p.values, NamedArray)
             error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
         end
     else
-        comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
+        comp_dims = getmetainfo(m, meta_comp_name).parameters[parametername].dimensions
         i=1
         for dim in comp_dims
             if !(length(m.indices_values[dim])==size(p.values)[i])
@@ -687,6 +687,8 @@ macro defcomp(name, ex)
 
     x
 end
+
+include("adder.jl")
 
 #Begin Graph Functionality section
 
