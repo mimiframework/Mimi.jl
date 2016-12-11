@@ -108,16 +108,6 @@ type MarginalModel
     delta::Float64
 end
 
-function setbestguess(m::Model)
-    if isnull(m.mi)
-        m.mi = Nullable{ModelInstance}(build(m))
-    end
-
-    for p in values(m.external_parameters)
-        setbestguess(get(m.mi), p)
-    end
-end
-
 function setrandom(m::Model)
     if isnull(m.mi)
         m.mi = Nullable{ModelInstance}(build(m))
@@ -253,7 +243,6 @@ function updateparameter(m::Model, name::Symbol, value)
 
        p.value = value
 
-       setbestguess(p)
 end
 
 function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol)
