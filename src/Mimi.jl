@@ -102,11 +102,7 @@ type Model
     end
 end
 
-type MarginalModel
-    base::Model
-    marginal::Model
-    delta::Float64
-end
+include("marginalmodel.jl")
 
 function setrandom(m::Model)
     if isnull(m.mi)
@@ -143,10 +139,6 @@ List all the variables of `componentname` in model `m`.
 function variables(m::Model, componentname::Symbol)
     c = getmetainfo(m, componentname)
     collect(keys(c.variables))
-end
-
-function getindex(m::MarginalModel, component::Symbol, name::Symbol)
-    return (m.marginal[component,name].-m.base[component,name])./m.delta
 end
 
 function setindex(m::Model, name::Symbol, count::Int)
