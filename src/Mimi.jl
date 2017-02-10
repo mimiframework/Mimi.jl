@@ -11,8 +11,8 @@ using NamedArrays
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, indexcount,
-    indexvalues, variable_dimensions, parameter_dimensions
+    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, get_indexcount,
+    get_indexvalues, get_dimensions
 
 import
     Base.getindex, Base.run, Base.show
@@ -381,26 +381,27 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
 end
 
 """ returns the size of index i in model m"""
-function indexcount(m::Model, i::Symbol)
+function get_indexcount(m::Model, i::Symbol)
     return m.indices_counts[i]
 end
 
 """ returns the values of index i in model m"""
-function indexvalues(m::Model, i::Symbol)
+function get_indexvalues(m::Model, i::Symbol)
     return m.indices_values[i]
 end
 
-""" returns the dimension labels of the variable in the given component"""
-function variable_dimensions(m::Model, component::Symbol, var::Symbol)
+""" returns the dimension labels of the variable or parameter in the given component"""
+function get_dimensions(m::Model, component::Symbol, x::Symbol)
     metacomp = getmetainfo(m,component)
-    return metacomp.variables[var].dimensions
+    if x in keys(metacomp.variables)
+        return metacomp.variables[var].dimensions
+    elseif x in keys(metacomp.parameters)
+        return metacomp.parameters[par].dimensions
+    else
+        error(string("Cannot access dimensions; " x, " is not a variable or a parameter in component ", component, "."))
+    end
 end
 
-""" returns the dimension labels of the parameter in the given component"""
-function parameter_dimensions(m::Model, component::Symbol, par::Symbol)
-    metacomp = getmetainfo(m, component)
-    return metacomp.parameters[par].dimensions
-end
 """
     getdataframe(m::Model, componentname::Symbol, name::Symbol)
 
