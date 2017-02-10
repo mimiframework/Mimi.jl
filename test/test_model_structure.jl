@@ -83,4 +83,9 @@ for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
 
-print("Woot passed all tests!")
+@test indexcount(m, :time) == 18
+
+a = indexvalues(m, :time)
+for i in range(1,18)
+    @test a[i] == 2010 + 5*i
+end

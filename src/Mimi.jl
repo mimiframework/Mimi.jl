@@ -11,7 +11,7 @@ using NamedArrays
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot
+    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, indexcount, indexvalues
 
 import
     Base.getindex, Base.run, Base.show
@@ -377,6 +377,16 @@ end
 
 function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     return getfield(mi.components[component].Variables, name)
+end
+
+""" returns the size of index i in model m"""
+function indexcount(m::Model, i::Symbol)
+    return m.indices_counts[i]
+end
+
+""" returns the values of index i in model m"""
+function indexvalues(m::Model, i::Symbol)
+    return m.indices_values[i]
 end
 
 """
