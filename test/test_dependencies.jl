@@ -1,32 +1,9 @@
-if Pkg.installed("ZipFile") == nothing
-    Pkg.add("ZipFile")
-end
-
 using Mimi
-using ZipFile
+using InfoZIP
 using Compat
 
-function unzip(inputfilename, outputpath=pwd())
-    r = ZipFile.Reader(inputfilename)
-    try
-        for f in r.files
-            outpath = joinpath(outputpath, f.name)
-            if isdirpath(outpath)
-                mkpath(outpath)
-            else
-                Base.open(outpath, "w") do io
-                    write(io, readstring(f))
-                end
-            end
-        end
-    finally
-        close(r)
-    end
-    nothing
-end
-
 function isa_url(x)
-    return ismatch(r".*git.*", x)
+    return ismatch(r".*git.*", x) #probably a better way to do this
 end
 
 #list of URLs of branches of packages to test
@@ -47,7 +24,7 @@ function run_dependency_tests(dependencies=dependencies)
             zip_name = chomp(basename(d))
             zip_file_path = joinpath(tmp_path, zip_name)
             download(d, zip_file_path)
-            unzip(zip_file_path, tmp_path)
+            InfoZIP.unzip(zip_file_path, tmp_path)
             rm(zip_file_path)
             #find the name of the unzipped package (this only works if the zip archive only has one directory, the package)
             package_name = readdir(tmp_path)[1]
