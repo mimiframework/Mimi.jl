@@ -62,5 +62,3 @@ function run_dependency_tests(dependencies=dependencies)
         println("All dependency tests passed.")
     end
 end
-
-run_dependency_tests()
