@@ -156,6 +156,10 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     for i in keys(m.components2)
         #println(i)
         #curr_component = m.components2[i].name
+        #m.mi.components[curr_component].Variables
+        #for var in curr_component.name.Variables
+        #    println(var)
+        #end
         #getindex(m, curr_component, m.components2[i].t)
         #println(m.components2[i].component)
         #println(getindex(m, m.components2[i], i))
@@ -222,6 +226,9 @@ end
 Set the parameter of a component in a model to a given value.
 """
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
+    if !(component in keys(m.components2))
+        error("Following component does not exist in model: ", component)
+    end
     addparameter(m, name, value)
     connectparameter(m, component, name, name)
     m.mi = Nullable{ModelInstance}()
