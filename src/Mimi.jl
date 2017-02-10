@@ -192,7 +192,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
         before_exists = false
         for i in keys(m.components2)
             if i==before
-                before_exits = true
+                before_exists = true
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
             newcomponents2[i] = m.components2[i]
