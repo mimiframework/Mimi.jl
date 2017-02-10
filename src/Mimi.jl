@@ -11,7 +11,8 @@ using NamedArrays
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, indexcount, indexvalues
+    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, indexcount,
+    indexvalues, variable_dimensions, parameter_dimensions
 
 import
     Base.getindex, Base.run, Base.show
@@ -389,6 +390,17 @@ function indexvalues(m::Model, i::Symbol)
     return m.indices_values[i]
 end
 
+""" returns the dimension labels of the variable in the given component"""
+function variable_dimensions(m::Model, component::Symbol, var::Symbol)
+    metacomp = getmetainfo(m,component)
+    return metacomp.variables[var].dimensions
+end
+
+""" returns the dimension labels of the parameter in the given component"""
+function parameter_dimensions(m::Model, component::Symbol, par::Symbol)
+    metacomp = getmetainfo(m, component)
+    return metacomp.parameters[par].dimensions
+end
 """
     getdataframe(m::Model, componentname::Symbol, name::Symbol)
 

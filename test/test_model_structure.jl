@@ -89,3 +89,6 @@ a = indexvalues(m, :time)
 for i in range(1,18)
     @test a[i] == 2010 + 5*i
 end
+
+@test variable_dimensions(m, :A, :varA)[1] == :time
+@test length(parameter_dimensions(m, :A, :parA)) == 0
