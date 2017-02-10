@@ -3,7 +3,7 @@ using InfoZIP
 using Compat
 
 function isa_url(x)
-    return ismatch(r".*git.*", x) #probably a better way to do this
+    return startswith(x, "https:")
 end
 
 #list of URLs of branches of packages to test
