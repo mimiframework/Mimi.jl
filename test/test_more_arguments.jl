@@ -48,6 +48,6 @@ addcomponent(my_model, testcomp1)
 println("~~Passed all addcomponent cases~~")
 
 println("~~Starting setindex Argument Cases~~")
+#@test_throws ErrorException setindex(my_model, :area, [2015:5:2110])
 setindex(my_model, :time, [2015:5:2110])
-@test_throws ErrorException setindex(my_model, :area, [2015:5:2110])
 println("~~Finished setindex Argument Cases~~")

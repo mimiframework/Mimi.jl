@@ -142,19 +142,28 @@ function variables(m::Model, componentname::Symbol)
 end
 
 function setindex(m::Model, name::Symbol, count::Int)
-    if !(name in keys(m.indices_counts) || name in keys(m.indices_values))
-        error("Index name does not exist within model")
-    end
+    
+    #if !(name in keys(m.indices_counts) || name in keys(m.indices_values))
+    #    error("The following index name does not exist within model: ", name)
+    #end
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
     nothing
 end
 
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
-    if !(name in keys(m.indices_counts) || name in keys(m.indices_values))
-        print("LOL")
-        error("Index name does not exist within model")
+    print("running")
+    for i in keys(m.components2)
+        #println(i)
+        #curr_component = m.components2[i].name
+        #getindex(m, curr_component, m.components2[i].t)
+        #println(m.components2[i].component)
+        #println(getindex(m, m.components2[i], i))
+        #getindex(m::Model, component::Symbol, name::Symbol)
     end
+    #if !(name in keys(m.indices_counts) || name in keys(m.indices_values))
+    #    error("Index name does not exist within model: ", name)
+    #end
     m.indices_counts[name] = length(values)
     m.indices_values[name] = copy(values)
     nothing
