@@ -477,7 +477,8 @@ end
 
 function run(mi::ModelInstance, ntimesteps, indices_counts)
     if length(mi.components) == 0
-      error("You are trying to run a model with no components")
+        #println("this is run")
+        error("You are trying to run a model with no components")
     end
 
     for c in values(mi.components)
