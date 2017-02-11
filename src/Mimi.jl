@@ -329,6 +329,7 @@ function setleftoverparameters(m::Model,parameters::Dict{Any,Any})
         for name in fieldnames(c[2].Parameters)
             if !in(string(c[1])*string(name), m.parameters_that_are_set)
                 connectparameter(m, c[1], name, name)
+                setbestguess(m.parameters[Symbol(lowercase(string(name)))])
             end
         end
     end
