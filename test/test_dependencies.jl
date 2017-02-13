@@ -4,7 +4,6 @@ end
 
 using Mimi
 using ZipFile
-using Compat
 
 function unzip(inputfilename, outputpath=pwd())
     r = ZipFile.Reader(inputfilename)
