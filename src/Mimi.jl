@@ -186,6 +186,57 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
     m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
 end
+"""
+Load Parameters
+"""
+#CAN REMOVE THIS FROM FUND
+function loadparameters(datadir="../data")
+  files = readdir(datadir)
+  filter!(i->i!="desktop.ini", files)
+  parameters = Dict{Any, Any}([lowercase(splitext(file)[1]) => readdlm(joinpath(datadir,file), ',') for file in files])
+
+  prepparameters!(parameters)
+
+  return parameters
+end
+
+#CAN REMOVE THIS FROM FUND
+function prepparameters!(parameters)
+    for i in parameters
+        p = i[2]
+        column_count = size(p,2)
+        if column_count == 1
+            parameters[i[1]] = getbestguess(convertparametervalue(p[1,1]))
+        elseif column_count == 2
+            parameters[i[1]] = Float64[getbestguess(convertparametervalue(p[j,2])) for j in 1:size(p,1)]
+        elseif column_count == 3
+            length_index1 = length(unique(p[:,1]))
+            length_index2 = length(unique(p[:,2]))
+            new_p = Array(Float64,length_index1,length_index2)
+            cur_1 = 1
+            cur_2 = 1
+            for j in 1:size(p,1)
+                new_p[cur_1,cur_2] = getbestguess(convertparametervalue(p[j,3]))
+                cur_2 += 1
+                if cur_2 > length_index2
+                    cur_2 = 1
+                    cur_1 += 1
+                end
+            end
+            parameters[i[1]] = new_p
+        end
+    end
+end
+
+#NEED THIS IN FUND
+function getbestguess(p)
+    if isa(p, ContinuousUnivariateDistribution)
+        return mode(p)
+    else
+        return p
+    end
+end
+
 
 """
 Set the parameter of a component in a model to a given value.
@@ -693,6 +744,7 @@ function show(io::IO, m::Model)
         end
     end
 end
+
 
 function get_connections(m::Model, c::ComponentInstanceInfo, which::Symbol)
     return get_connections(m, c.name, which)
