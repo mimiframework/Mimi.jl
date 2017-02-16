@@ -142,12 +142,32 @@ function variables(m::Model, componentname::Symbol)
 end
 
 function setindex(m::Model, name::Symbol, count::Int)
+    
+    #if !(name in keys(m.indices_counts) || name in keys(m.indices_values))
+    #    error("The following index name does not exist within model: ", name)
+    #end
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
     nothing
 end
 
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
+    print("running")
+    for i in keys(m.components2)
+        #println(i)
+        #curr_component = m.components2[i].name
+        #m.mi.components[curr_component].Variables
+        #for var in curr_component.name.Variables
+        #    println(var)
+        #end
+        #getindex(m, curr_component, m.components2[i].t)
+        #println(m.components2[i].component)
+        #println(getindex(m, m.components2[i], i))
+        #getindex(m::Model, component::Symbol, name::Symbol)
+    end
+    #if !(name in keys(m.indices_counts) || name in keys(m.indices_values))
+    #    error("Index name does not exist within model: ", name)
+    #end
     m.indices_counts[name] = length(values)
     m.indices_values[name] = copy(values)
     nothing
@@ -160,26 +180,41 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
-
+    #checking if component being added already exists
+    newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+    for i in keys(m.components2)
+        if i==name
+            error("You cannot add two components of the same name: ", i)
+        end
+    end
     if before!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+        before_exists = false
         for i in keys(m.components2)
             if i==before
+                before_exists = true
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
             newcomponents2[i] = m.components2[i]
+        end
+        if !before_exists
+            error("Component to add before does not exist: ", before)
         end
         m.components2 = newcomponents2
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+        after_exists = false
         for i in keys(m.components2)
             newcomponents2[i] = m.components2[i]
             if i==after
+                after_exists = true
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
         end
+        if !after_exists
+            error("Component to add after does not exist: ", after)
+        end
         m.components2 = newcomponents2
-
     else
         m.components2[name] = ComponentInstanceInfo(name, t)
     end
@@ -191,6 +226,9 @@ end
 Set the parameter of a component in a model to a given value.
 """
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
+    if !(component in keys(m.components2))
+        error("Following component does not exist in model: ", component)
+    end
     addparameter(m, name, value)
     connectparameter(m, component, name, name)
     m.mi = Nullable{ModelInstance}()
