@@ -376,11 +376,11 @@ function getindex(m::Model, component::Symbol, name::Symbol)
 end
 
 function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
-    if (component not in mi.components)
+    if !(component in keys(mi.components))
         error("Component does not exist in current model")
     end
-    if (name not in mi.components.Variables)
-        error("Variable does not exists in this component")
+    if !(name in fieldnames(mi.components[component].Variables))
+        error("Variable does not exist in this component")
     end
     return getfield(mi.components[component].Variables, name)
 end
