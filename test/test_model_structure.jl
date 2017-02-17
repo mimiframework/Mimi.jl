@@ -83,6 +83,9 @@ for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
 
+@test m[:A, :parA] == 10
+@test_throws ErrorException m[:A, :xx]
+
 @test getindexcount(m, :time) == 18
 
 a = getindexvalues(m, :time)

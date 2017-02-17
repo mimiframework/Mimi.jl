@@ -397,10 +397,13 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     if !(component in keys(mi.components))
         error("Component does not exist in current model")
     end
-    if !(name in fieldnames(mi.components[component].Variables))
-        error("Variable does not exist in this component")
+    if name in fieldnames(mi.components[component].Variables)
+        return getfield(mi.components[component].Variables, name)
+    elseif name in fieldnames(mi.components[component].Parameters)
+        return getfield(mi.components[component].Parameters, name)
+    else
+        error(string(name, " is not a paramter or a variable in component ", component, "."))
     end
-    return getfield(mi.components[component].Variables, name)
 end
 
 """ returns the size of index i in model m"""
