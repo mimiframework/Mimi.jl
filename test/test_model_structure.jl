@@ -86,3 +86,12 @@ end
 @test m[:A, :parA] == 10
 @test_throws ErrorException m[:A, :xx]
 
+@test getindexcount(m, :time) == 18
+
+a = getindexvalues(m, :time)
+for i in range(1,18)
+    @test a[i] == 2010 + 5*i
+end
+
+@test getindexlabels(m, :A, :varA)[1] == :time
+@test length(getindexlabels(m, :A, :parA)) == 0

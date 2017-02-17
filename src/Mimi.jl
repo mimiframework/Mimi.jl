@@ -11,7 +11,8 @@ using NamedArrays
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot
+    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, getindexcount,
+    getindexvalues, getindexlabels
 
 import
     Base.getindex, Base.run, Base.show
@@ -402,6 +403,28 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
         return getfield(mi.components[component].Parameters, name)
     else
         error(string(name, " is not a paramter or a variable in component ", component, "."))
+    end
+end
+
+""" returns the size of index i in model m"""
+function getindexcount(m::Model, i::Symbol)
+    return m.indices_counts[i]
+end
+
+""" returns the values of index i in model m"""
+function getindexvalues(m::Model, i::Symbol)
+    return m.indices_values[i]
+end
+
+""" returns the index labels of the variable or parameter in the given component"""
+function getindexlabels(m::Model, component::Symbol, x::Symbol)
+    metacomp = getmetainfo(m,component)
+    if x in keys(metacomp.variables)
+        return metacomp.variables[x].dimensions
+    elseif x in keys(metacomp.parameters)
+        return metacomp.parameters[x].dimensions
+    else
+        error(string("Cannot access dimensions; ", x, " is not a variable or a parameter in component ", component, "."))
     end
 end
 
