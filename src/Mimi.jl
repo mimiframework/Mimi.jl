@@ -141,6 +141,15 @@ function variables(m::Model, componentname::Symbol)
     collect(keys(c.variables))
 end
 
+"""
+    variables(mi::ModelInstance, componentname::Symbol)
+
+List all the variables of `componentname` in the ModelInstance 'mi'.
+"""
+function variables(mi::ModelInstance, componentname::Symbol)
+    return fieldnames(mi.components[component].Variables)
+end
+
 function setindex(m::Model, name::Symbol, count::Int)
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
