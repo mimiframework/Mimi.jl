@@ -145,9 +145,10 @@ end
     variables(mi::ModelInstance, componentname::Symbol)
 
 List all the variables of `componentname` in the ModelInstance 'mi'.
+NOTE: this variables function does NOT take in Nullable instances
 """
 function variables(mi::ModelInstance, componentname::Symbol)
-    return fieldnames(mi.components[component].Variables)
+    return fieldnames(mi.components[componentname].Variables)
 end
 
 function setindex(m::Model, name::Symbol, count::Int)
