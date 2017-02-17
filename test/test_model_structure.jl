@@ -85,3 +85,4 @@ end
 
 @test m[:A, :parA] == 10
 @test_throws ErrorException m[:A, :xx]
+
