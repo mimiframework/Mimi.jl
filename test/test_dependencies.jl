@@ -1,3 +1,7 @@
+if Pkg.installed("InfoZIP") == nothing
+    Pkg.add("InfoZIP")
+end
+
 using Mimi
 using InfoZIP
 using Compat
@@ -20,7 +24,7 @@ function run_dependency_tests(dependencies=dependencies)
 
     #loop through each dependent package
     for d in dependencies
-        if  isa_url(d) #what's the best way to know if it's a url?
+        if  isa_url(d)
             zip_name = chomp(basename(d))
             zip_file_path = joinpath(tmp_path, zip_name)
             download(d, zip_file_path)
@@ -35,7 +39,7 @@ function run_dependency_tests(dependencies=dependencies)
         end
         #test the package
         try
-            run(`julia $process`)
+            run("$JULIA_HOME/julia $process")
         catch e
             append!(errors, [(package_name, e)])
         end
