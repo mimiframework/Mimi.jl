@@ -474,6 +474,10 @@ function run(m::Model;ntimesteps=typemax(Int))
 end
 
 function run(mi::ModelInstance, ntimesteps, indices_counts)
+    if length(mi.components) == 0
+        error("You are trying to run a model with no components")
+    end
+
     for c in values(mi.components)
         resetvariables(c)
         init(c)
