@@ -39,7 +39,7 @@ function run_dependency_tests(dependencies=dependencies)
         end
         #test the package
         try
-            run("$JULIA_HOME/julia $process")
+            run(`$JULIA_HOME/julia $process`)
         catch e
             append!(errors, [(package_name, e)])
         end
