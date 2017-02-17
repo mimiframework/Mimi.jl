@@ -161,22 +161,39 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
         error("Can only specify before or after parameter")
     end
 
+    #checking if component being added already exists
+    for i in keys(m.components2)
+        if i==name
+            error("You cannot add two components of the same name: ", i)
+        end
+    end
+
     if before!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+        before_exists = false
         for i in keys(m.components2)
             if i==before
+                before_exists = true
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
             newcomponents2[i] = m.components2[i]
         end
+        if !before_exists
+            error("Component to add before does not exist: ", before)
+        end 
         m.components2 = newcomponents2
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
+        after_exists = false
         for i in keys(m.components2)
             newcomponents2[i] = m.components2[i]
             if i==after
+                after_exists = true
                 newcomponents2[name] = ComponentInstanceInfo(name, t)
             end
+        end
+        if !after_exists
+            error("Component to add after does not exist: ", after)
         end
         m.components2 = newcomponents2
 
