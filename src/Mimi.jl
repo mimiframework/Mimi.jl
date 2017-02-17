@@ -376,7 +376,23 @@ function getindex(m::Model, component::Symbol, name::Symbol)
 end
 
 function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
-    return getfield(mi.components[component].Variables, name)
+    # if name in mi.components[component].Variables
+    #     return getfield(mi.components[component].Variables, name)
+    # elseif name in mi.components[component].Parameters
+    #     return getfield(mi.components[component].Parameters, name)
+    # else
+    #     error(string(name, " is not a paramter or a variable in component ", component, "."))
+    # end
+    try
+        return getfield(mi.components[component].Variables, name)
+    catch
+    end
+    try
+        return getfield(mi.components[component].Parameters, name)
+    catch
+        error(string(name, " is not a paramter or a variable in component ", component, "."))
+    end
+
 end
 
 """

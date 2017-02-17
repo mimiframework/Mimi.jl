@@ -83,4 +83,5 @@ for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
 
-print("Woot passed all tests!")
+@test m[:A, :parA] == 10
+@test_throws ErrorException m[:A, :xx]
