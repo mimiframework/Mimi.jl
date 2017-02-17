@@ -147,12 +147,6 @@ end
 List all the variables of `componentname` in the ModelInstance 'mi'.
 NOTE: this variables function does NOT take in Nullable instances
 """
-function variables(mi::Nullable{ModelInstance}, componentname::Symbol)
-    if isnull(mi)
-        error("Cannot get variables when model has not been built yet")
-    end
-    return fieldnames(get(mi).components[componentname].Variables)
-end
 
 function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
