@@ -381,24 +381,24 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
 end
 
 """ returns the size of index i in model m"""
-function get_indexcount(m::Model, i::Symbol)
+function getindexcount(m::Model, i::Symbol)
     return m.indices_counts[i]
 end
 
 """ returns the values of index i in model m"""
-function get_indexvalues(m::Model, i::Symbol)
+function getindexvalues(m::Model, i::Symbol)
     return m.indices_values[i]
 end
 
-""" returns the dimension labels of the variable or parameter in the given component"""
-function get_dimensions(m::Model, component::Symbol, x::Symbol)
+""" returns the index labels of the variable or parameter in the given component"""
+function getindexlabels(m::Model, component::Symbol, x::Symbol)
     metacomp = getmetainfo(m,component)
     if x in keys(metacomp.variables)
         return metacomp.variables[var].dimensions
     elseif x in keys(metacomp.parameters)
         return metacomp.parameters[par].dimensions
     else
-        error(string("Cannot access dimensions; " x, " is not a variable or a parameter in component ", component, "."))
+        error(string("Cannot access dimensions; ", x, " is not a variable or a parameter in component ", component, "."))
     end
 end
 
