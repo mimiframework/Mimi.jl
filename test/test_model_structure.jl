@@ -83,12 +83,12 @@ for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
 
-@test get_indexcount(m, :time) == 18
+@test getindexcount(m, :time) == 18
 
-a = get_indexvalues(m, :time)
+a = getindexvalues(m, :time)
 for i in range(1,18)
     @test a[i] == 2010 + 5*i
 end
 
-@test get_dimensions(m, :A, :varA)[1] == :time
-@test length(get_dimensions(m, :A, :parA)) == 0
+@test getindexlabels(m, :A, :varA)[1] == :time
+@test length(getindexlabels(m, :A, :parA)) == 0
