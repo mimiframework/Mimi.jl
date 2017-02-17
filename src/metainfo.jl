@@ -1,20 +1,19 @@
 module metainfo
-using Compat
 
 type MetaVariable
     name::Symbol
     datatype::DataType
     dimensions::Array{Any}
-    description::Compat.UTF8String
-    unit::Compat.UTF8String
+    description::String
+    unit::String
 end
 
 type MetaParameter
     name::Symbol
     datatype::DataType
     dimensions::Array{Any}
-    description::Compat.UTF8String
-    unit::Compat.UTF8String
+    description::String
+    unit::String
 end
 
 type MetaDimension
