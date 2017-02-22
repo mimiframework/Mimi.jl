@@ -74,17 +74,6 @@ type Model
     end
 end
 
-
-function setrandom(m::Model)
-    if isnull(m.mi)
-        m.mi = Nullable{ModelInstance}(build(m))
-    end
-
-    for p in values(m.external_parameters)
-        setrandom(get(m.mi), p)
-    end
-end
-
 """
     components(m::Model)
 
