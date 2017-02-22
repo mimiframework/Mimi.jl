@@ -2,7 +2,7 @@ using Documenter, Mimi
 
 makedocs(
     modules = [Mimi],
-	format = Documenter.Formats.HTML,
+	format = :html,
 	sitename = "Mimi.jl",
 	pages = [
 		"Home" => "index.md",
