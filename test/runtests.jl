@@ -13,7 +13,8 @@ tests = ["main",
     "getindex",
     "num_components",
     "components_ordering",
-    "variables_model_instance"
+    "variables_model_instance",
+    "getdataframe"
 ]
 
 for t in tests

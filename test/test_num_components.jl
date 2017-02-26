@@ -20,6 +20,5 @@
      v.varA[t] = p.parA
  end
  
- 
+ #trying to run model with no components
  @test_throws ErrorException run(m)
- println("Passed all test_num_component tests")

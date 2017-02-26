@@ -406,6 +406,8 @@ Return the values for variable `name` in `componentname` of model `m` as a DataF
 function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
+    elseif !(name in variables(m, componentname))
+        error("Cannot get dataframe; variable not in provided component") 
     else
         return getdataframe(m, get(m.mi), componentname, name)
     end
