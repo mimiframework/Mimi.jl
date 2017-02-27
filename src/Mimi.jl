@@ -9,7 +9,7 @@ export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
     getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, getindexcount,
-    getindexvalues, getindexlabels, get_unconnected_parameters
+    getindexvalues, getindexlabels, delete!, get_unconnected_parameters
 
 import
     Base.getindex, Base.run, Base.show

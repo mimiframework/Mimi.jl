@@ -175,6 +175,28 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
     ComponentReference(m, name)
 end
 
+import Base.delete!
+
+"""
+Deletes a component from a model
+"""
+
+function delete!(m::Model, component::Symbol)
+    if !(component in keys(m.components2))
+        error("Cannot delete '$component' from model; component does not exist.")
+    end
+
+    delete!(m.components2, component)
+
+    ipc_filter = x -> x.source_component_name!=component && x.target_component_name!=component
+    filter!(ipc_filter, m.internal_parameter_connections)
+
+    epc_filter = x -> x.component_name!=component
+    filter!(epc_filter, m.external_parameter_connections)
+
+    m.mi = Nullable{ModelInstance}()
+end
+
 """
 Set the parameter of a component in a model to a given value.
 """

@@ -90,6 +90,10 @@ for t in range(10, m.indices_counts[:time]-10)
     @test m[:A, :varA][t] == 10
 end
 
+##########################
+#   tests for indexing   #
+##########################
+
 @test m[:A, :parA] == 10
 @test_throws ErrorException m[:A, :xx]
 
@@ -103,6 +107,16 @@ end
 @test getindexlabels(m, :A, :varA)[1] == :time
 @test length(getindexlabels(m, :A, :parA)) == 0
 
+################################
+#  tests for delete! function  #
+################################
+
+@test_throws ErrorException delete!(m, :D)
+delete!(m, :A)
+@test length(m.internal_parameter_connections)==0
+@test !(:A in components(m))
+@test length(components(m))==2
+
 #######################################
 #   Test check for unset parameters   #
 #######################################
@@ -114,3 +128,4 @@ end
 
 addcomponent(m, D)
 @test_throws ErrorException Mimi.build(m)
+
