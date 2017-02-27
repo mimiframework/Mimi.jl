@@ -470,7 +470,7 @@ that have not been connected to a value in the model.
 """
 function get_unconnected_parameters(m::Model)
     unset_params = Array{Tuple{Symbol,Symbol}, 1}()
-    for (name, c) in values(m.components2)
+    for (name, c) in m.components2
         params = get_parameters(m, c)
         set_params = get_set_parameters(m, c)
         append!(unset_params, map(x->(name, x), setdiff(params, set_params)))

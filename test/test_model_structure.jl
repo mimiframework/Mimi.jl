@@ -25,11 +25,11 @@ addcomponent(m, B, before=:A)
 @test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
 addcomponent(m, C, after=:B)
 
-@test length(Mimi.get_unconnected_parameters(m))==2
+@test length(get_unconnected_parameters(m))==2
 
 connectparameter(m, :A, :parA, :B, :varB)
 
-@test Mimi.get_unconnected_parameters(m)[1]==(:C,:parC)
+@test get_unconnected_parameters(m)[1]==(:C,:parC)
 
 @test length(m.components2)==3
 @test length(m.internal_parameter_connections)==1
@@ -113,7 +113,7 @@ end
 
 @test_throws ErrorException delete!(m, :D)
 delete!(m, :A)
-@test length(m.internal_parameter_connections)==0
+@test length(m.internal_parameter_connections)==1
 @test !(:A in components(m))
 @test length(components(m))==2
 
@@ -128,4 +128,3 @@ end
 
 addcomponent(m, D)
 @test_throws ErrorException Mimi.build(m)
-
