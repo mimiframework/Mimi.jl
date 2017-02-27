@@ -180,7 +180,6 @@ import Base.delete!
 """
 Deletes a component from a model
 """
-
 function delete!(m::Model, component::Symbol)
     if !(component in keys(m.components2))
         error("Cannot delete '$component' from model; component does not exist.")
