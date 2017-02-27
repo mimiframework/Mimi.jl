@@ -178,11 +178,19 @@ end
 Deletes a component from a model
 """
 function delete!(m::Model, component::Symbol)
-    if component not in keys(m.components2)
-        error("Cannot delete '",component,"' from model; component does not exist.")
+    if !(component in keys(m.components2))
+        error("Cannot delete '$component' from model; component does not exist.")
     end
-    
 
+    Base.delete!(m.components2, component)
+
+    ipc_filter = x -> x.source_component_name!=component && x.target_component_name!=component
+    filter!(ipc_filter, m.internal_parameter_connections)
+
+    epc_filter = x -> x.component_name!=component
+    filter!(epc_filter, m.external_parameter_connections)
+
+    m.mi = Nullable{ModelInstance}()
 end
 
 """
