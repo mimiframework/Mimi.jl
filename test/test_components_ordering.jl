@@ -38,7 +38,6 @@ function run_timestep(tc1::testcomp3, t::Int)
     v.var1[t] = p.par1[t]
 end
 
-println("~~Starting component_ordering tests~~")
 addcomponent(my_model, testcomp1)
 @test_throws ErrorException addcomponent(my_model, testcomp1)
 #Testing to catch adding component twice
@@ -46,4 +45,3 @@ addcomponent(my_model, testcomp1)
 #Testing to catch if before or after does not exist
 @test_throws ErrorException addcomponent(my_model, testcomp2, before=testcomp3)
 @test_throws ErrorException addcomponent(my_model, testcomp2, after=testcomp3)
-println("~~Passed all component_ordering tests~~")
