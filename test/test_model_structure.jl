@@ -104,8 +104,8 @@ end
 #  tests for delete! function  #
 ################################
 
-@test_throws ErrorException Mimi.delete!(m, :D)
-Mimi.delete!(m, :A)
+@test_throws ErrorException delete!(m, :D)
+delete!(m, :A)
 @test length(m.internal_parameter_connections)==0
 @test !(:A in components(m))
 @test length(components(m))==2

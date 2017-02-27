@@ -174,15 +174,19 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
     m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
 end
+
+import Base.delete!
+
 """
 Deletes a component from a model
 """
+
 function delete!(m::Model, component::Symbol)
     if !(component in keys(m.components2))
         error("Cannot delete '$component' from model; component does not exist.")
     end
 
-    Base.delete!(m.components2, component)
+    delete!(m.components2, component)
 
     ipc_filter = x -> x.source_component_name!=component && x.target_component_name!=component
     filter!(ipc_filter, m.internal_parameter_connections)
