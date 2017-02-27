@@ -442,13 +442,18 @@ end
 import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
+"""
+Returns a list of tuples (componentname, parametername) of parameters
+that have not been connected to a value in the model.
+"""
 function show_unconnected_parameters(m::Model)
-    all_params = Array{Tuple{Symbol,Symbol}, 1}()
-    for name, comp in m.components2
-        for param in get_parameters(m, comp)
-            push!(all_params, (name, param))
-        end
-    end 
+    unset_params = Array{Tuple{Symbol,Symbol}, 1}()
+    for c in values(m.components2)
+        params = get_parameters(m, c)
+        set_params = get_set_parameters(m, c)
+        append!(unset_params, map(x->(c.name, x), setdiff(params, set_params)))
+    end
+    return unset_params
 end
 
 function build(m::Model)
