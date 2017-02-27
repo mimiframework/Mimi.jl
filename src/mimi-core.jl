@@ -446,19 +446,19 @@ show(io::IO, a::ComponentState) = print(io, "ComponentState")
 Returns a list of tuples (componentname, parametername) of parameters
 that have not been connected to a value in the model.
 """
-function show_unconnected_parameters(m::Model)
+function get_unconnected_parameters(m::Model)
     unset_params = Array{Tuple{Symbol,Symbol}, 1}()
-    for c in values(m.components2)
+    for (name, c) in values(m.components2)
         params = get_parameters(m, c)
         set_params = get_set_parameters(m, c)
-        append!(unset_params, map(x->(c.name, x), setdiff(params, set_params)))
+        append!(unset_params, map(x->(name, x), setdiff(params, set_params)))
     end
     return unset_params
 end
 
 function build(m::Model)
     #check if all parameters are set
-    unset = show_unconnected_parameters(m)
+    unset = get_unconnected_parameters(m)
     if !isempty(unset)
         msg = "Cannot build model; the following parameters are unset: "
         for p in unset

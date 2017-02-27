@@ -25,11 +25,11 @@ addcomponent(m, B, before=:A)
 @test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
 addcomponent(m, C, after=:B)
 
-@test length(Mimi.show_unconnected_parameters(m))==2
+@test length(Mimi.get_unconnected_parameters(m))==2
 
 connectparameter(m, :A, :parA, :B, :varB)
 
-@test Mimi.show_unconnected_parameters(m)[1]==(:C,:parC)
+@test Mimi.get_unconnected_parameters(m)[1]==(:C,:parC)
 
 @test length(m.components2)==3
 @test length(m.internal_parameter_connections)==1
@@ -42,7 +42,7 @@ connectparameter(m, :A, :parA, :B, :varB)
 connectparameter(m, :C, :parC, :B, :varB)
 @test length(m.internal_parameter_connections)==2
 
-@test length(Mimi.show_unconnected_parameters(m))==0
+@test length(Mimi.get_unconnected_parameters(m))==0
 
 #############################################
 #  Tests for connecting scalar parameters   #
