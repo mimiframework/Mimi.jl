@@ -102,3 +102,15 @@ end
 
 @test getindexlabels(m, :A, :varA)[1] == :time
 @test length(getindexlabels(m, :A, :parA)) == 0
+
+#######################################
+#   Test check for unset parameters   #
+#######################################
+
+@defcomp D begin
+  varD = Variable(index=[time])
+  parD = Parameter()
+end
+
+addcomponent(m, D)
+@test_throws ErrorException Mimi.build(m)

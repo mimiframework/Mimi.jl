@@ -462,7 +462,7 @@ function build(m::Model)
     if !isempty(unset)
         msg = "Cannot build model; the following parameters are unset: "
         for p in unset
-            msg = string(msg, p)
+            msg = string(msg, p, " ")
         end
         error(msg)
     end
