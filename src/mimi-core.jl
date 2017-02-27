@@ -457,6 +457,15 @@ function show_unconnected_parameters(m::Model)
 end
 
 function build(m::Model)
+    #check if all parameters are set
+    unset = show_unconnected_parameters(m)
+    if !isempty(unset)
+        msg = "Cannot build model; the following parameters are unset: "
+        for p in unset
+            msg = string(msg, p)
+        end
+        error(msg)
+    end
     #instantiate the components
     builtComponents = OrderedDict{Symbol, ComponentState}()
     for c in values(m.components2)
