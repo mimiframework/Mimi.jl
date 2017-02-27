@@ -240,13 +240,6 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
     nothing
 end
 
-function updateparameter(m::Model, name::Symbol, value)
-       p = m.parameters[Symbol(lowercase(string(name)))]
-
-       p.value = value
-
-end
-
 function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
         if dim in keys(m.indices_values)
