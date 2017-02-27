@@ -151,7 +151,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
         end
         if !before_exists
             error("Component to add before does not exist: ", before)
-        end 
+        end
         m.components2 = newcomponents2
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
@@ -173,6 +173,16 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
     end
     m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
+end
+"""
+Deletes a component from a model
+"""
+function delete!(m::Model, component::Symbol)
+    if component not in keys(m.components2)
+        error("Cannot delete '",component,"' from model; component does not exist.")
+    end
+    
+
 end
 
 """
