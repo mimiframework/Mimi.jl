@@ -151,7 +151,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
         end
         if !before_exists
             error("Component to add before does not exist: ", before)
-        end 
+        end
         m.components2 = newcomponents2
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
@@ -441,6 +441,15 @@ end
 
 import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
+
+function show_unconnected_parameters(m::Model)
+    all_params = Array{Tuple{Symbol,Symbol}, 1}()
+    for name, comp in m.components2
+        for param in get_parameters(m, comp)
+            push!(all_params, (name, param))
+        end
+    end 
+end
 
 function build(m::Model)
     #instantiate the components
