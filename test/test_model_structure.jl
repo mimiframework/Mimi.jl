@@ -10,7 +10,6 @@ end
 
 @defcomp B begin
   varB = Variable()
-  parB = Parameter()
 end
 
 @defcomp C begin
@@ -26,7 +25,11 @@ addcomponent(m, B, before=:A)
 @test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
 addcomponent(m, C, after=:B)
 
+@test length(get_unconnected_parameters(m))==2
+
 connectparameter(m, :A, :parA, :B, :varB)
+
+@test get_unconnected_parameters(m)[1]==(:C,:parC)
 
 @test length(m.components2)==3
 @test length(m.internal_parameter_connections)==1
@@ -35,8 +38,12 @@ connectparameter(m, :A, :parA, :B, :varB)
 @test Mimi.get_connections(m, :B, :outgoing)[1].target_component_name == :A
 @test length(Mimi.get_connections(m, :A, :all)) == 1
 
-connectparameter(m, :A, :parA, :C, :varC)
+#connectparameter(m, :A, :parA, :C, :varC)
+connectparameter(m, :C, :parC, :B, :varB)
 @test length(m.internal_parameter_connections)==2
+
+@test length(Mimi.get_unconnected_parameters(m))==0
+
 #############################################
 #  Tests for connecting scalar parameters   #
 #############################################
@@ -106,6 +113,18 @@ end
 
 @test_throws ErrorException delete!(m, :D)
 delete!(m, :A)
-@test length(m.internal_parameter_connections)==0
+@test length(m.internal_parameter_connections)==1
 @test !(:A in components(m))
 @test length(components(m))==2
+
+#######################################
+#   Test check for unset parameters   #
+#######################################
+
+@defcomp D begin
+  varD = Variable(index=[time])
+  parD = Parameter()
+end
+
+addcomponent(m, D)
+@test_throws ErrorException Mimi.build(m)

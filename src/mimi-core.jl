@@ -180,7 +180,6 @@ import Base.delete!
 """
 Deletes a component from a model
 """
-
 function delete!(m::Model, component::Symbol)
     if !(component in keys(m.components2))
         error("Cannot delete '$component' from model; component does not exist.")
@@ -466,7 +465,30 @@ end
 import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
+"""
+Returns a list of tuples (componentname, parametername) of parameters
+that have not been connected to a value in the model.
+"""
+function get_unconnected_parameters(m::Model)
+    unset_params = Array{Tuple{Symbol,Symbol}, 1}()
+    for (name, c) in m.components2
+        params = get_parameters(m, c)
+        set_params = get_set_parameters(m, c)
+        append!(unset_params, map(x->(name, x), setdiff(params, set_params)))
+    end
+    return unset_params
+end
+
 function build(m::Model)
+    #check if all parameters are set
+    unset = get_unconnected_parameters(m)
+    if !isempty(unset)
+        msg = "Cannot build model; the following parameters are unset: "
+        for p in unset
+            msg = string(msg, p, " ")
+        end
+        error(msg)
+    end
     #instantiate the components
     builtComponents = OrderedDict{Symbol, ComponentState}()
     for c in values(m.components2)
