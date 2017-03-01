@@ -1,3 +1,12 @@
+# Mimi.jl v0.2.3 Release Notes
+* Fix an error in the documentation
+
+# Mimi.jl v0.2.2 Release Notes
+* Fix a bug in setleftoverparameters
+
+# Mimi.jl v0.2.1 Release Notes
+* Fix a bug in the dependency testing code
+
 # Mimi.jl v0.2.0 Release Notes
 * External parameters get automatically converted to the correct number type
 * julia 0.5 compatible
