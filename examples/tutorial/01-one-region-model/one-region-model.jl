@@ -42,7 +42,7 @@ end
 
 my_model = Model()
 
-setindex(my_model, :time, [2015:5:2110])
+setindex(my_model, :time, collect(2015:5:2110))
 
 addcomponent(my_model, grosseconomy)  #Order matters here. If the emissions component were defined first, the model would not run.
 addcomponent(my_model, emissions)
