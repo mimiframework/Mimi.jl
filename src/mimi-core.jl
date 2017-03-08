@@ -732,6 +732,39 @@ end
 
 #Begin Graph Functionality section
 
+# Graphically show the parameter connections between models
+# Make sure you run this:
+# using PlotRecipes
+# # we'll use the PyPlot backend, and set a couple defaults
+# pyplot(alpha=0.5, size=(800,400))
+# Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+using PlotRecipes
+function showConnections(m::Model)
+    comp_names = Set()
+    source_nodes = []
+    destiny_nodes = []
+    
+    for connection in m.internal_parameter_connections
+        source = connection.source_component_name
+        target = connection.target_component_name
+        source_var = connection.source_variable_name
+        target_par = connection.target_parameter_name
+        push!(comp_names, source, target, source_var, target_par)
+        #source --> source_var
+        push!(source_nodes, source)
+        push!(destiny_nodes, source_var)
+        #source_var --> target_par
+        push!(source_nodes, source_var)
+        push!(destiny_nodes, target_par)
+        #target_par --> target
+        push!(source_nodes, target_par)
+        push!(destiny_nodes, target)
+    end
+    names = collect(comp_names)
+    pyplot(alpha=0.5, size=(800,400))
+    graphplot(source_nodes, destiny_nodes, names=names)
+end
+
 function show(io::IO, m::Model)
     println(io, "showing model component connections:")
     for item in enumerate(keys(m.components2))
