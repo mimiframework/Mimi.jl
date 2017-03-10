@@ -740,7 +740,8 @@ end
 # Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
 using PlotRecipes
 function showConnections(m::Model)
-    comp_names = Set()
+    node_to_num = Dict()
+    node_to_color = Dict()
     source_nodes = []
     destiny_nodes = []
     
@@ -749,20 +750,50 @@ function showConnections(m::Model)
         target = connection.target_component_name
         source_var = connection.source_variable_name
         target_par = connection.target_parameter_name
-        push!(comp_names, source, target, source_var, target_par)
+        
+        #Load everything into dictionary of valid nodes
+        if !(source in keys(node_to_num))
+            node_to_num[source] = length(node_to_num) + 1
+            node_to_color[source] = :blue
+        end
+        if !(target in keys(node_to_num))
+            node_to_num[target] = length(node_to_num) + 1
+            node_to_color[target] = :blue
+        end
+        if !(source_var in keys(node_to_num))
+            node_to_num[source_var] = length(node_to_num) + 1
+            node_to_color[source_var] = :red
+        end
+        if !(target_par in keys(node_to_num))
+            node_to_num[target_par] = length(node_to_num) + 1
+            node_to_color[target_par] = :red
+        end
+
         #source --> source_var
-        push!(source_nodes, source)
-        push!(destiny_nodes, source_var)
+        push!(source_nodes, node_to_num[source])
+        push!(destiny_nodes, node_to_num[source_var])
+
         #source_var --> target_par
-        push!(source_nodes, source_var)
-        push!(destiny_nodes, target_par)
+        push!(source_nodes, node_to_num[source_var])
+        push!(destiny_nodes, node_to_num[target_par])
+        
         #target_par --> target
-        push!(source_nodes, target_par)
-        push!(destiny_nodes, target)
+        push!(source_nodes, node_to_num[target_par])
+        push!(destiny_nodes, node_to_num[target])
     end
-    names = collect(comp_names)
+    pairs = [pair for pair in node_to_num]
+    pairs = sort(pairs, by=(g(x) = x[2]))
+    ord_names = [pair[1] for pair in pairs]
+    ord_colors = [node_to_color[node] for node in ord_names]
+    ord_names = [string(name) for name in ord_names]
+
+    #Make sure the arrays passed in are of the following types
+    source_nodes = convert(Array{Int64}, source_nodes)
+    destiny_nodes = convert(Array{Int64}, destiny_nodes)
+    ord_names = convert(Array{String}, ord_names)
+
     pyplot(alpha=0.5, size=(800,400))
-    graphplot(source_nodes, destiny_nodes, names=names)
+    graphplot(source_nodes, destiny_nodes, names=ord_names, m = ord_colors)
 end
 
 function show(io::IO, m::Model)
