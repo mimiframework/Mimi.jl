@@ -225,6 +225,14 @@ function checklabels(m::Model, component::Symbol, name::Symbol, parametername::S
     end
 end
 
+"""
+Removes any parameter connections for a given parameter in a given component.
+"""
+function disconnect(m::Model, component::Symbol, parameter::Symbol)
+    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
+    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
+end
+
 
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
@@ -304,14 +312,6 @@ function addparameter(m::Model, name::Symbol, value::Any)
     #function for adding scalar parameters ("Any" type)
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
-end
-
-"""
-Removes any parameter connections for a given parameter in a given component.
-"""
-function disconnect(m::Model, component::Symbol, parameter::Symbol)
-    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
-    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
 end
 
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
