@@ -229,8 +229,8 @@ end
 Removes any parameter connections for a given parameter in a given component.
 """
 function disconnect(m::Model, component::Symbol, parameter::Symbol)
-    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
-    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
+    m.internal_parameter_connections = filter(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
+    m.external_parameter_connections = filter(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
 end
 
 
