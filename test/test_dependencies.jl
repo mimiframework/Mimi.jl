@@ -33,11 +33,19 @@ function run_dependency_tests(dependencies=dependencies)
             rm(zip_file_path)
             #find the name of the unzipped package (this only works if the zip archive only has one directory, the package)
             package_name = readdir(tmp_path)[1]
-            process = string(tmp_path, package_name, "/test/runtests.jl")
+            file_path = string(tmp_path, package_name)
         else
             package_name = basename(d)
-            process = string(d, "/test/runtests.jl")
+            file_path = d
         end
+
+        #first check for mimitests.jl, if not found default to runtests.jl
+        if "mimitests.jl" in readdir(string(file_path, "/test/"))
+            process = string(file_path, "/test/mimitests.jl")
+        else
+            process = string(file_path, "/test/runtests.jl")
+        end
+
         #test the package
         try
             run(`$JULIA_HOME/julia $process`)
