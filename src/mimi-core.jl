@@ -125,11 +125,11 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
 end
 
 """
-    addcomponent(m::Model, t, name::Symbol=t.name.name, before=nothing,after=nothing)
+    addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
 
 Add a component of type t to a model.
 """
-function addcomponent(m::Model, t, name::Symbol=t.name.name, before=nothing,after=nothing)
+function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
