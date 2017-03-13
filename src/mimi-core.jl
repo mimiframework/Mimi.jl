@@ -125,7 +125,9 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
 end
 
 """
-Add a component to a model.
+    addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
+
+Add a component of type t to a model.
 """
 function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
     if before!=nothing && after!=nothing
@@ -178,7 +180,9 @@ end
 import Base.delete!
 
 """
-Deletes a component from a model
+    delete!(m::Model, component::Symbol)
+
+Delete a component from a model, by name.
 """
 function delete!(m::Model, component::Symbol)
     if !(component in keys(m.components2))
@@ -197,6 +201,8 @@ function delete!(m::Model, component::Symbol)
 end
 
 """
+    setparameter(m::Model, component::Symbol, name::Symbol, value)
+
 Set the parameter of a component in a model to a given value.
 """
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
@@ -233,7 +239,11 @@ function disconnect(m::Model, component::Symbol, parameter::Symbol)
     filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
 end
 
+"""
+    connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
 
+Connect a parameter in a component to an external parameter.
+"""
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
@@ -265,8 +275,11 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
         end
     end
 end
+
 """
-Parameter dimension checks are performed on the NamedArray. Adds an array type parameter to the model.
+    addparameter(m::Model, name::Symbol, value::NamedArray)
+
+Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
 """
 function addparameter(m::Model, name::Symbol, value::NamedArray)
     #namedarray given, so we can perform label checks
@@ -279,7 +292,9 @@ function addparameter(m::Model, name::Symbol, value::NamedArray)
 end
 
 """
-Adds an array type parameter to the model.
+    addparameter(m::Model, name::Symbol, value::AbstractArray)
+
+Add an array type parameter to the model.
 """
 function addparameter(m::Model, name::Symbol, value::AbstractArray)
     #cannot perform any parameter label checks in this case
@@ -294,6 +309,8 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
 end
 
 """
+    addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+
 Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
 """
 function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
@@ -306,7 +323,9 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector
 end
 
 """
-Adds a scalar type parameter to the model.
+    addparameter(m::Model, name::Symbol, value::Any)
+
+Add a scalar type parameter to the model.
 """
 function addparameter(m::Model, name::Symbol, value::Any)
     #function for adding scalar parameters ("Any" type)
@@ -314,6 +333,11 @@ function addparameter(m::Model, name::Symbol, value::Any)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+"""
+    connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
+
+Bind the parameter of one component to a variable in another component.
+"""
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
 
     # Check the units, if provided
@@ -338,17 +362,13 @@ function unitcheck(one::AbstractString, two::AbstractString)
     return one == two
 end
 
-"""
-Bind the parameter of one component to a variable in another component.
 
 """
-connectparameter
+    setleftoverparameters(m::Model, parameters::Dict{Any,Any})
 
-"""
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary.
 """
-
 function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
     for (name, value) in parameters
         addparameter(m, Symbol(name), value)
@@ -403,17 +423,29 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     end
 end
 
-""" returns the size of index i in model m"""
+"""
+    getindexcount(m::Model, i::Symbol)
+
+Returns the size of index i in model m.
+"""
 function getindexcount(m::Model, i::Symbol)
     return m.indices_counts[i]
 end
 
-""" returns the values of index i in model m"""
+"""
+    getindexvalues(m::Model, i::Symbol)
+
+Return the values of index i in model m.
+"""
 function getindexvalues(m::Model, i::Symbol)
     return m.indices_values[i]
 end
 
-""" returns the index labels of the variable or parameter in the given component"""
+"""
+    getindexlabels(m::Model, component::Symbol, x::Symbol)
+
+Return the index labels of the variable or parameter in the given component.
+"""
 function getindexlabels(m::Model, component::Symbol, x::Symbol)
     metacomp = getmetainfo(m,component)
     if x in keys(metacomp.variables)
@@ -472,7 +504,9 @@ import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
 """
-Returns a list of tuples (componentname, parametername) of parameters
+    get_unconnected_parameters(m::Model)
+
+Return a list of tuples (componentname, parametername) of parameters
 that have not been connected to a value in the model.
 """
 function get_unconnected_parameters(m::Model)
@@ -616,6 +650,8 @@ function collectkw(args::Vector{Any})
 end
 
 """
+    @defcomp name begin
+
 Define a new component.
 """
 macro defcomp(name, ex)

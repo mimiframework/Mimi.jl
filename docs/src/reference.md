@@ -1,13 +1,20 @@
 # Reference
 
 ```@docs
-components
-variables
+@defcomp
 addcomponent
+delete!
+addparameter
 setparameter
 connectparameter
+get_unconnected_parameters
 setleftoverparameters
-getdataframe
+setindex
 run
-@defcomp
+components
+variables
+getdataframe
+getindexcount
+getindexvalues
+getindexlabels
 ```
