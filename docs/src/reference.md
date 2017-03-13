@@ -9,7 +9,6 @@ setparameter
 connectparameter
 get_unconnected_parameters
 setleftoverparameters
-setindex
 run
 components
 variables
