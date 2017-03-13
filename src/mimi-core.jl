@@ -232,6 +232,14 @@ function checklabels(m::Model, component::Symbol, name::Symbol, parametername::S
 end
 
 """
+Removes any parameter connections for a given parameter in a given component.
+"""
+function disconnect(m::Model, component::Symbol, parameter::Symbol)
+    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
+    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
+end
+
+"""
     connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
 
 Connect a parameter in a component to an external parameter.
@@ -242,6 +250,8 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
     if isa(p, ArrayModelParameter)
         checklabels(m, component, name, parametername, p)
     end
+
+    disconnect(m, component, name)
 
     x = ExternalParameterConnection(component, name, p)
     push!(m.external_parameter_connections, x)
@@ -336,6 +346,9 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
                    getmetainfo(m, source_component).variables[source_name].unit)
         error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
+
+    # remove any existing connections for this target component and parameter
+    disconnect(m, target_component, target_name)
 
     curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
     push!(m.internal_parameter_connections, curr)
