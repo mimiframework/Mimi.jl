@@ -149,7 +149,7 @@ var documenterSearchIndex = {"docs": [
     "page": "User Guide",
     "title": "Plotting",
     "category": "section",
-    "text": "(Image: Plotting Example)Mimi provides support for plotting using the Plots module. Mimi extends Plots by adding an additional method to the Plotsplot function. Specifically, it adds a new method with the signaturefunction Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol, legend::Symbol, x_label::String, y_label::String)A few important things to note:The model m must be built and run before it is passed into plot\nindex, legend, x_label, and y_label are optional keyword arguments. If no values are provided, the plot will index by time and use the data it has to best fill in the axis labels.\nlegend should be a Symbol that refers to an index on the model set by a call to setindexThis method returns a PlotsPlot object, so calling it in an instance of an IJulia Notebook will display the plot. Because this method is defined on the Plots package, it is easy to use the other features of the Plots package. For example, calling savefig(x) will save the plot as xpng, etc. See the Plots Documentaton for a full list of capabilities."
+    "text": "(Image: Plotting Example)Mimi provides support for plotting using the Plots module. Mimi extends Plots by adding an additional method to the Plots.plot function. Specifically, it adds a new method with the signaturefunction Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol, legend::Symbol, x_label::String, y_label::String)A few important things to note:The model m must be built and run before it is passed into plot\nindex, legend, x_label, and y_label are optional keyword arguments. If no values are provided, the plot will index by time and use the data it has to best fill in the axis labels.\nlegend should be a Symbol that refers to an index on the model set by a call to setindexThis method returns a PlotsPlot object, so calling it in an instance of an IJulia Notebook will display the plot. Because this method is defined on the Plots package, it is easy to use the other features of the Plots package. For example, calling savefig(\"x\") will save the plot as x.png, etc. See the Plots Documentaton for a full list of capabilities."
 },
 
 {
@@ -217,83 +217,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "reference.html#Mimi.components",
-    "page": "Reference",
-    "title": "Mimi.components",
-    "category": "Function",
-    "text": "components(m::Model)\n\nList all the components in model m.\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.variables",
-    "page": "Reference",
-    "title": "Mimi.variables",
-    "category": "Function",
-    "text": "variables(m::Model, componentname::Symbol)\n\nList all the variables of componentname in model m.\n\n\n\nvariables(mi::ModelInstance, componentname::Symbol)\n\nList all the variables of componentname in the ModelInstance 'mi'. NOTE: this variables function does NOT take in Nullable instances\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.addcomponent",
-    "page": "Reference",
-    "title": "Mimi.addcomponent",
-    "category": "Function",
-    "text": "Add a component to a model.\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.setparameter",
-    "page": "Reference",
-    "title": "Mimi.setparameter",
-    "category": "Function",
-    "text": "Set the parameter of a component in a model to a given value.\n\n\n\nSet a component parameter as setparameter(reference, name, value).\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.connectparameter",
-    "page": "Reference",
-    "title": "Mimi.connectparameter",
-    "category": "Function",
-    "text": "Bind the parameter of one component to a variable in another component.\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.setleftoverparameters",
-    "page": "Reference",
-    "title": "Mimi.setleftoverparameters",
-    "category": "Function",
-    "text": "Set all the parameters in a model that don't have a value and are not connected to some other component to a value from a dictionary.\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.getdataframe",
-    "page": "Reference",
-    "title": "Mimi.getdataframe",
-    "category": "Function",
-    "text": "getdataframe(m::Model, componentname::Symbol, name::Symbol)\n\nReturn the values for variable name in componentname of model m as a DataFrame.\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Base.run",
-    "page": "Reference",
-    "title": "Base.run",
-    "category": "Function",
-    "text": "run(m::Model)\n\nRun model m once.\n\n\n\n"
-},
-
-{
-    "location": "reference.html#Mimi.@defcomp",
-    "page": "Reference",
-    "title": "Mimi.@defcomp",
-    "category": "Macro",
-    "text": "Define a new component.\n\n\n\n"
-},
-
-{
     "location": "reference.html#Reference-1",
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "components\nvariables\naddcomponent\nsetparameter\nconnectparameter\nsetleftoverparameters\ngetdataframe\nrun\n@defcomp"
+    "text": "@defcomp\naddcomponent\ndelete!\naddparameter\nsetparameter\nconnectparameter\nget_unconnected_parameters\nsetleftoverparameters\nsetindex\nrun\ncomponents\nvariables\ngetdataframe\ngetindexcount\ngetindexvalues\ngetindexlabels"
 },
 
 ]}
