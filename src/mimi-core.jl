@@ -107,17 +107,26 @@ end
 List all the variables of `componentname` in the ModelInstance 'mi'.
 NOTE: this variables function does NOT take in Nullable instances
 """
-
 function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+"""
+    setindex(m::Model, name::Symbol, count::Int)
+
+Set the values of `Model`'s' index `name` to integers 1 through `count`.
+"""
 function setindex(m::Model, name::Symbol, count::Int)
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
     nothing
 end
 
+"""
+    setindex{T}(m::Model, name::Symbol, values::Vector{T})
+
+Set the values of `Model`'s index `name` to `values`.
+"""
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
     m.indices_values[name] = copy(values)
