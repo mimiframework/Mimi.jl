@@ -738,7 +738,6 @@ end
 # # we'll use the PyPlot backend, and set a couple defaults
 # pyplot(alpha=0.5, size=(800,400))
 # Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
-using PlotRecipes
 function showConnections(m::Model)
     node_to_num = Dict()
     node_to_color = Dict()
