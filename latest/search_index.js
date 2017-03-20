@@ -225,6 +225,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "reference.html#Mimi.setindex",
+    "page": "Reference",
+    "title": "Mimi.setindex",
+    "category": "Function",
+    "text": "setindex(m::Model, name::Symbol, count::Int)\n\nSet the values of Model's' index name to integers 1 through count.\n\n\n\nsetindex{T}(m::Model, name::Symbol, values::Vector{T})\n\nSet the values of Model's index name to values.\n\n\n\nsetindex{T}(m::Model, name::Symbol, valuerange::Range{T})\n\nSet the values of Model's index name to the values in the given range valuerange.\n\n\n\n"
+},
+
+{
     "location": "reference.html#Mimi.addcomponent",
     "page": "Reference",
     "title": "Mimi.addcomponent",
@@ -341,7 +349,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "@defcomp\naddcomponent\ndelete!\naddparameter\nsetparameter\nconnectparameter\nget_unconnected_parameters\nsetleftoverparameters\nrun\ncomponents\nvariables\ngetdataframe\ngetindexcount\ngetindexvalues\ngetindexlabels"
+    "text": "@defcomp\nsetindex\naddcomponent\ndelete!\naddparameter\nsetparameter\nconnectparameter\nget_unconnected_parameters\nsetleftoverparameters\nrun\ncomponents\nvariables\ngetdataframe\ngetindexcount\ngetindexvalues\ngetindexlabels"
 },
 
 ]}
