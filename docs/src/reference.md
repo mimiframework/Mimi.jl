@@ -2,6 +2,7 @@
 
 ```@docs
 @defcomp
+setindex
 addcomponent
 delete!
 addparameter
