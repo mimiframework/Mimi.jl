@@ -124,6 +124,12 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     nothing
 end
 
+function setindex{T}(m::Model, name::Symbol, valuerange::Range{T})
+    m.indices_counts[name] = length(valuerange)
+    m.indices_values[name] = Vector{T}(valuerange)
+    nothing
+end 
+
 """
     addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
 
