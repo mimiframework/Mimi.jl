@@ -18,7 +18,7 @@ end
 end
 
 m = Model()
-setindex(m, :time, collect(2015:5:2100))
+setindex(m, :time, 2015:5:2100)
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
@@ -130,3 +130,5 @@ end
 
 addcomponent(m, D)
 @test_throws ErrorException Mimi.build(m)
+
+println("passes")
