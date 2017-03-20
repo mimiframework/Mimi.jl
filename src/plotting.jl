@@ -5,9 +5,17 @@ using Plots
 Extends the Plots module to be able to take a model information parameters for
 convenience. More advanced plotting may require accessing the Plots module directly.
 """
-function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend::Symbol = :none, x_label::String = string(index), y_label::String = string(parameter))
+function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend = nothing, x_label::String = string(index), y_label::String = string(parameter))
     if isnull(m.mi)
         error("A model must be run before it can be plotted")
+    end
+
+    values = m[component, parameter]
+
+    if legend==nothing && isa(values, Array) && ndims(values)==2
+        a = getindexlabels(m, component, parameter)
+        a = filter(i->i!=index, a)
+        legend = a[1]
     end
 
     # Create axis labels
@@ -31,14 +39,14 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
 
     plt = plot() # Clear out any previous plots
 
-    if legend == :none
+    if legend == nothing
         # Assume that we are only plotting one line (i.e. it's not split up by regions)
-        plt = plot(m.indices_values[index], m[component, parameter], xlabel=x_label, ylabel=y_label)
+        plt = plot(m.indices_values[index], values, xlabel=x_label, ylabel=y_label)
     else
         # For multiple lines, we need to read the legend labels from legend
-        if size(1:size(m[component, parameter])[2]) == size(m.indices_values[legend])
-            for line_index in 1:size(m[component, parameter])[2] 
-                plot!(plt, m.indices_values[index], m[component, parameter][:,line_index], label = m.indices_values[legend][line_index], xlabel=x_label, ylabel=y_label)
+        if size(1:size(values)[2]) == size(m.indices_values[legend])
+            for line_index in 1:size(values)[2] 
+                plot!(plt, m.indices_values[index], values[:,line_index], label = m.indices_values[legend][line_index], xlabel=x_label, ylabel=y_label)
             end
         else
             error("Label dimensions did not match")
