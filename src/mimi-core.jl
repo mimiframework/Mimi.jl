@@ -226,7 +226,7 @@ end
 Set the parameter of a component in a model to a given value.
 """
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
-    addparameter(m, name, value)
+    set_external_parameter(m, name, value)
     connectparameter(m, component, name, name)
     m.mi = Nullable{ModelInstance}()
     nothing
@@ -301,7 +301,7 @@ end
 
 Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
 """
-function addparameter(m::Model, name::Symbol, value::NamedArray)
+function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
     #namedarray given, so we can perform label checks
     dims = dimnames(value)
 
@@ -316,7 +316,7 @@ end
 
 Add an array type parameter to the model.
 """
-function addparameter(m::Model, name::Symbol, value::AbstractArray)
+function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
     #cannot perform any parameter label checks in this case
 
     if !(typeof(value) <: Array{m.numberType})
@@ -333,7 +333,7 @@ end
 
 Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
 """
-function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
     check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
@@ -347,7 +347,7 @@ end
 
 Add a scalar type parameter to the model.
 """
-function addparameter(m::Model, name::Symbol, value::Any)
+function set_external_parameter(m::Model, name::Symbol, value::Any)
     #function for adding scalar parameters ("Any" type)
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
@@ -391,7 +391,7 @@ to some other component to a value from a dictionary.
 """
 function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
     for (name, value) in parameters
-        addparameter(m, Symbol(name), value)
+        set_external_parameter(m, Symbol(name), value)
     end
 
     for c in values(m.components2)
@@ -711,9 +711,9 @@ macro defcomp(name, ex)
                     push!(pardims, l)
                 end
 
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
+                push!(metapardef.args, :(metainfo.set_external_parameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
             else
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
+                push!(metapardef.args, :(metainfo.set_external_parameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
             end
         elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
             if isa(line.args[1], Symbol)

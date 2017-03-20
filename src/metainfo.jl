@@ -50,7 +50,7 @@ function addvariable(module_name::Symbol, component_name::Symbol, name, datatype
     nothing
 end
 
-function addparameter(module_name::Symbol, component_name::Symbol, name, datatype, dimensions, description, unit)
+function set_external_parameter(module_name::Symbol, component_name::Symbol, name, datatype, dimensions, description, unit)
     c = _mimi_metainfo[(module_name, component_name)]
 
     p = MetaParameter(name, datatype, dimensions, description, unit)
