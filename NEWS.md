@@ -1,4 +1,4 @@
-# Mimi.jl v.next Release Notes
+# Mimi.jl v0.3.0 Release Notes
 * Drop julia 0.4 support
 * Add plotting functionality
 * New internal data structure representation of a model
