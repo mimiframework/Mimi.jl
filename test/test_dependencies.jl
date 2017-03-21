@@ -4,7 +4,6 @@ end
 
 using Mimi
 using InfoZIP
-using Compat
 
 function isa_url(x)
     return startswith(x, "https:")
