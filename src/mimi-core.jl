@@ -610,7 +610,11 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
             name = i[1]
             c = i[2]
             update_scalar_parameters(mi, name)
-            run_timestep(c,gettimestep(clock))
+            if method_exists(run_timestep, (typeof(c), Clock)):
+                run_timestep(c, clock)
+            else
+                run_timestep(c, gettimestep(clock))
+            end
         end
         move_forward(clock)
     end

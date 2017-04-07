@@ -19,3 +19,12 @@ function finished(c::Clock)
 		return false
 	end
 end
+
+type Timestep{Offset}
+	t::Int
+	function Timestep(i::Int)
+		ts = new()
+		ts.t = i - Offset + 1
+		return ts
+	end
+end
