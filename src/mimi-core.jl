@@ -639,10 +639,10 @@ end
 # end
 
 
-function run_timestep(s, t)
-    typeofs = typeof(s)
-    println("Generic run_timestep called for $typeofs.")
-end
+# function run_timestep(s, t)
+#     typeofs = typeof(s)
+#     println("Generic run_timestep called for $typeofs.")
+# end
 
 function init(s)
 end
