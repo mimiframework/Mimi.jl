@@ -270,14 +270,14 @@ end
 
 
 ###########################################
-#    TEST 4th ADDPARAMETER OPTION (3/3)   #
+#    TEST 4th set_external_parameter OPTION (3/3)   #
 ###########################################
 
 model3 = Model()
 setindex(model3, :time, collect(2015:5:2110))
 setindex(model3, :regions, ["Region1", "Region2", "Region3"])
 addcomponent(model3, compA)
-addparameter(model3, :x, x, [:time, :regions])
+set_external_parameter(model3, :x, x, [:time, :regions])
 connectparameter(model3, :compA, :x, :x)
 run(model3)
 

@@ -9,7 +9,7 @@ using PlotRecipes
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, addparameter, plot, getindexcount,
+    getdataframe, components, variables, getvpd, unitcheck, set_external_parameter, plot, getindexcount,
     getindexvalues, getindexlabels, delete!, get_unconnected_parameters
 
 import

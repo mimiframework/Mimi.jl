@@ -18,7 +18,7 @@ end
 end
 
 m = Model()
-setindex(m, :time, collect(2015:5:2100))
+setindex(m, :time, 2015:5:2100)
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
@@ -27,6 +27,7 @@ addcomponent(m, C, after=:B)
 
 @test length(get_unconnected_parameters(m))==2
 
+connectparameter(m, :A, :parA, :C, :varC)
 connectparameter(m, :A, :parA, :B, :varB)
 
 @test get_unconnected_parameters(m)[1]==(:C,:parC)
@@ -112,6 +113,7 @@ end
 ################################
 
 @test_throws ErrorException delete!(m, :D)
+@test length(m.internal_parameter_connections)==2
 delete!(m, :A)
 @test length(m.internal_parameter_connections)==1
 @test !(:A in components(m))
@@ -128,3 +130,5 @@ end
 
 addcomponent(m, D)
 @test_throws ErrorException Mimi.build(m)
+
+println("passes")

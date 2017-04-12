@@ -32,8 +32,13 @@ Pkg.add("Mimi")
 ## Models using Mimi
 
 * [FUND.jl](https://github.com/davidanthoff/fund.jl) (currently in beta)
-* Mimi-DICE.jl and Mimi-RICE.jl (currently in closed beta)
+* Mimi-DICE.jl (currently in closed beta)
+* [Mimi-RICE-2010.jl](https://github.com/anthofflab/mimi-rice-2010.jl)
 * Mimi-SNEASY.jl (currently in closed beta)
+* Mimi-FAIR.jl (currently in closed beta)
+* Mimi-MAGICC.jl (currently in closed beta)
+* Mimi-HECTOR.jl (currently in closed beta)
+* Mimi-PAGE.jl (currently in closed beta)
 
 ## Contributing
 

@@ -1,5 +1,15 @@
-# Mimi.jl v.next Release Notes
+# Mimi.jl v0.3.0 Release Notes
 * Drop julia 0.4 support
+* Add plotting functionality
+* New internal data structure representation of a model
+* Running a model automatically invokes building a ModelInstance first
+* Add `delete!` function for removing a component from a model
+* Add functions to retrieve the index of a model, parameter, or variable
+* Add ability to test local dependent Mimi models in test_dependencies.jl
+* Support for NamedArrays for parameters
+* Checks for the validity of input arguments for all exported Mimi functions
+* Rearrange src file structure; create mimi-core.jl
+* Remove setbestguess and setrandom functions
 
 # Mimi.jl v0.2.3 Release Notes
 * Fix an error in the documentation

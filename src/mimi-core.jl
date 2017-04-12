@@ -107,17 +107,26 @@ end
 List all the variables of `componentname` in the ModelInstance 'mi'.
 NOTE: this variables function does NOT take in Nullable instances
 """
-
 function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+"""
+    setindex(m::Model, name::Symbol, count::Int)
+
+Set the values of `Model`'s' index `name` to integers 1 through `count`.
+"""
 function setindex(m::Model, name::Symbol, count::Int)
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
     nothing
 end
 
+"""
+    setindex{T}(m::Model, name::Symbol, values::Vector{T})
+
+Set the values of `Model`'s index `name` to `values`.
+"""
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
     m.indices_values[name] = copy(values)
@@ -125,7 +134,20 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
 end
 
 """
-Add a component to a model.
+    setindex{T}(m::Model, name::Symbol, valuerange::Range{T})
+
+Set the values of `Model`'s index `name` to the values in the given range `valuerange`.
+"""
+function setindex{T}(m::Model, name::Symbol, valuerange::Range{T})
+    m.indices_counts[name] = length(valuerange)
+    m.indices_values[name] = Vector{T}(valuerange)
+    nothing
+end
+
+"""
+    addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
+
+Add a component of type t to a model.
 """
 function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
     if before!=nothing && after!=nothing
@@ -178,7 +200,9 @@ end
 import Base.delete!
 
 """
-Deletes a component from a model
+    delete!(m::Model, component::Symbol)
+
+Delete a component from a model, by name.
 """
 function delete!(m::Model, component::Symbol)
     if !(component in keys(m.components2))
@@ -197,10 +221,12 @@ function delete!(m::Model, component::Symbol)
 end
 
 """
+    setparameter(m::Model, component::Symbol, name::Symbol, value)
+
 Set the parameter of a component in a model to a given value.
 """
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
-    addparameter(m, name, value)
+    set_external_parameter(m, name, value)
     connectparameter(m, component, name, name)
     m.mi = Nullable{ModelInstance}()
     nothing
@@ -225,13 +251,27 @@ function checklabels(m::Model, component::Symbol, name::Symbol, parametername::S
     end
 end
 
+"""
+Removes any parameter connections for a given parameter in a given component.
+"""
+function disconnect(m::Model, component::Symbol, parameter::Symbol)
+    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
+    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
+end
 
+"""
+    connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
+
+Connect a parameter in a component to an external parameter.
+"""
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
     if isa(p, ArrayModelParameter)
         checklabels(m, component, name, parametername, p)
     end
+
+    disconnect(m, component, name)
 
     x = ExternalParameterConnection(component, name, p)
     push!(m.external_parameter_connections, x)
@@ -255,10 +295,13 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
         end
     end
 end
+
 """
-Parameter dimension checks are performed on the NamedArray. Adds an array type parameter to the model.
+    addparameter(m::Model, name::Symbol, value::NamedArray)
+
+Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
 """
-function addparameter(m::Model, name::Symbol, value::NamedArray)
+function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
     #namedarray given, so we can perform label checks
     dims = dimnames(value)
 
@@ -269,9 +312,11 @@ function addparameter(m::Model, name::Symbol, value::NamedArray)
 end
 
 """
-Adds an array type parameter to the model.
+    addparameter(m::Model, name::Symbol, value::AbstractArray)
+
+Add an array type parameter to the model.
 """
-function addparameter(m::Model, name::Symbol, value::AbstractArray)
+function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
     #cannot perform any parameter label checks in this case
 
     if !(typeof(value) <: Array{m.numberType})
@@ -284,9 +329,11 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray)
 end
 
 """
+    addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+
 Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
 """
-function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
 
     check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
@@ -296,14 +343,21 @@ function addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector
 end
 
 """
-Adds a scalar type parameter to the model.
+    addparameter(m::Model, name::Symbol, value::Any)
+
+Add a scalar type parameter to the model.
 """
-function addparameter(m::Model, name::Symbol, value::Any)
+function set_external_parameter(m::Model, name::Symbol, value::Any)
     #function for adding scalar parameters ("Any" type)
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+"""
+    connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
+
+Bind the parameter of one component to a variable in another component.
+"""
 function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
 
     # Check the units, if provided
@@ -312,6 +366,9 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
                    getmetainfo(m, source_component).variables[source_name].unit)
         error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
+
+    # remove any existing connections for this target component and parameter
+    disconnect(m, target_component, target_name)
 
     curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
     push!(m.internal_parameter_connections, curr)
@@ -325,20 +382,16 @@ function unitcheck(one::AbstractString, two::AbstractString)
     return one == two
 end
 
-"""
-Bind the parameter of one component to a variable in another component.
 
 """
-connectparameter
+    setleftoverparameters(m::Model, parameters::Dict{Any,Any})
 
-"""
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary.
 """
-
 function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
     for (name, value) in parameters
-        addparameter(m, Symbol(name), value)
+        set_external_parameter(m, Symbol(name), value)
     end
 
     for c in values(m.components2)
@@ -390,17 +443,29 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     end
 end
 
-""" returns the size of index i in model m"""
+"""
+    getindexcount(m::Model, i::Symbol)
+
+Returns the size of index i in model m.
+"""
 function getindexcount(m::Model, i::Symbol)
     return m.indices_counts[i]
 end
 
-""" returns the values of index i in model m"""
+"""
+    getindexvalues(m::Model, i::Symbol)
+
+Return the values of index i in model m.
+"""
 function getindexvalues(m::Model, i::Symbol)
     return m.indices_values[i]
 end
 
-""" returns the index labels of the variable or parameter in the given component"""
+"""
+    getindexlabels(m::Model, component::Symbol, x::Symbol)
+
+Return the index labels of the variable or parameter in the given component.
+"""
 function getindexlabels(m::Model, component::Symbol, x::Symbol)
     metacomp = getmetainfo(m,component)
     if x in keys(metacomp.variables)
@@ -421,7 +486,7 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
     elseif !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable not in provided component") 
+        error("Cannot get dataframe; variable not in provided component")
     else
         return getdataframe(m, get(m.mi), componentname, name)
     end
@@ -459,7 +524,9 @@ import Base.show
 show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
 """
-Returns a list of tuples (componentname, parametername) of parameters
+    get_unconnected_parameters(m::Model)
+
+Return a list of tuples (componentname, parametername) of parameters
 that have not been connected to a value in the model.
 """
 function get_unconnected_parameters(m::Model)
@@ -603,6 +670,8 @@ function collectkw(args::Vector{Any})
 end
 
 """
+    @defcomp name begin
+
 Define a new component.
 """
 macro defcomp(name, ex)
@@ -642,9 +711,9 @@ macro defcomp(name, ex)
                     push!(pardims, l)
                 end
 
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
+                push!(metapardef.args, :(metainfo.set_external_parameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
             else
-                push!(metapardef.args, :(metainfo.addparameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
+                push!(metapardef.args, :(metainfo.set_external_parameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
             end
         elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
             if isa(line.args[1], Symbol)
