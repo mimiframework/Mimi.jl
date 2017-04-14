@@ -602,7 +602,7 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         init(c)
     end
 
-    clock = Clock(1,min(indices_counts[:time],ntimesteps))
+    clock = Clock(min(indices_counts[:time],ntimesteps))
 
     while !finished(clock)
         #update_scalar_parameters(mi)
@@ -610,10 +610,10 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
             name = i[1]
             c = i[2]
             update_scalar_parameters(mi, name)
-            if method_exists(run_timestep, (typeof(c), Clock))
-                run_timestep(c, clock)
+            if method_exists(run_timestep, (typeof(c), Timestep))
+                run_timestep(c, gettimestep(mi, c, clock)) #need to convert to component specific timestep?
             else
-                run_timestep(c, gettimestep(clock))
+                run_timestep(c, gettimeindex(clock)) #int version (old way)
             end
         end
         move_forward(clock)
