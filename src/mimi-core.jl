@@ -890,6 +890,16 @@ function showConnections(m::Model, component_name::Symbol)
         source_var = connection.source_variable_name
         target_par = connection.target_parameter_name
         if (component_name == source || component_name == target)
+            if component_name == source
+                target = Symbol(string(target, "-out"))
+                source_var = Symbol(string(source_var, "-out"))
+                target_par = Symbol(string(target_par, "-out"))
+            else
+                source = Symbol(string(source, "-in"))
+                source_var = Symbol(string(source_var, "-in"))
+                target_par = Symbol(string(target_par, "-in"))
+            end
+
             #Load everything into dictionary of valid nodes
             if !(source in keys(node_to_num))
                 node_to_num[source] = length(node_to_num) + 1
@@ -918,8 +928,10 @@ function showConnections(m::Model, component_name::Symbol)
             push!(destiny_nodes, node_to_num[source_var])
 
             #source_var --> target_par
-            push!(source_nodes, node_to_num[source_var])
-            push!(destiny_nodes, node_to_num[target_par])
+            if !(source_var == target_par)
+                push!(source_nodes, node_to_num[source_var])
+                push!(destiny_nodes, node_to_num[target_par])
+            end
             
             #target_par --> target
             push!(source_nodes, node_to_num[target_par])
