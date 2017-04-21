@@ -197,6 +197,16 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
     ComponentReference(m, name)
 end
 
+function addcomponent(m::Model, t, name::Symbol, offset::Int; before=nothing,after=nothing)
+    # need to store offset value
+    addcomponent(m, t, name, before=before, after=after)
+end
+
+function addcomponent(m::Model, t, name::Symbol, offset::Int, final::Int; before=nothing,after=nothing)
+    # need to store offset and final values
+    addcomponent(m, t, name, before=before, after=after)
+end
+
 import Base.delete!
 
 """
@@ -539,6 +549,11 @@ function get_unconnected_parameters(m::Model)
     return unset_params
 end
 
+function makeclock(mi::ModelInstance, ntimesteps, indices_counts)
+    # later will involve finding first offset in all components
+    return Clock(1, min(indices_counts[:time],ntimesteps))
+end
+
 function build(m::Model)
     #check if all parameters are set
     unset = get_unconnected_parameters(m)
@@ -602,21 +617,38 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         init(c)
     end
 
-    clock = Clock(min(indices_counts[:time],ntimesteps))
+    #components = collect(mi.components)
+
+    newstyle = Array{Bool}(length(mi.components))
+    offsets = Array{Int}(length(mi.components))
+    i = 1
+    # for i in collect(1:length(components))
+    for comp in mi.components
+        c = comp[2]
+        newstyle[i] = method_exists(run_timestep, (typeof(c), Timestep))
+        i = i + 1
+    end
+    
+    clock = makeclock(mi, ntimesteps, indices_counts)
 
     while !finished(clock)
         #update_scalar_parameters(mi)
-        for i in mi.components
-            name = i[1]
-            c = i[2]
+        i = 1
+        #for i in collect(1:length(components))
+            # name = components[i][1]
+            # c = components[i][2]
+        for comp in mi.components
+            name = comp[1]
+            c = comp[2]
             update_scalar_parameters(mi, name)
-            if method_exists(run_timestep, (typeof(c), Timestep))
-                run_timestep(c, gettimestep(mi, c, clock)) #need to convert to component specific timestep?
+            if newstyle[i]
+                run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
             else
                 run_timestep(c, gettimeindex(clock)) #int version (old way)
             end
         end
         move_forward(clock)
+        i = i + 1
     end
 end
 
