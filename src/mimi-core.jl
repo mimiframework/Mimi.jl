@@ -492,6 +492,7 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     end
 end
 
+
 function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::Symbol)
     comp_type = typeof(mi.components[componentname])
 
@@ -518,6 +519,60 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     else
         error("Not yet implemented")
     end
+end
+
+function getdataframe(m::Model, comp_name_pairs::Pair...)
+    if isnull(m.mi)
+        error("Cannot get dataframe, model has not been built yet")
+    #elseif !(name in variables(m, componentname))
+    #    add check to verify if anything in the pair list is not in the model
+    #    error("Cannot get dataframe; variable not in provided component")
+    else
+        return getdataframe(m, get(m.mi), comp_name_pairs)
+    end
+end
+
+
+function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
+    #Figure out how to define stronger type for comp_name_pairs 
+    #(should be ::Pair{Symbol, Any})
+    firstpair = comp_name_pairs[1]
+    componentname = firstpair[1]
+    name = firstpair[2]
+    if isa(name, Tuple)
+        name = name[1]
+    end
+    
+    meta_module_name = Symbol(supertype(typeof(mi.components[componentname])).name.module)
+    meta_component_name = Symbol(supertype(typeof(mi.components[componentname])).name.name)
+
+    vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
+
+    df = DataFrame()
+
+    dim1 = length(m.indices_values[vardiminfo[1]])
+    dim2 = length(m.indices_values[vardiminfo[2]])
+    df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+    df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
+     
+    
+    for pair in comp_name_pairs
+        componentname = pair[1]
+        name = pair[2]
+
+        if isa(name, Tuple)
+            for comp_var in name
+                data = m[componentname, comp_var]
+                df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+            end
+        elseif isa(name, Symbol)
+            data = m[componentname, name]
+            df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+        else
+            error("Name value for variable(s) in a component was neither a tuple nor a Symbol.")
+        end
+    end
+    return df
 end
 
 import Base.show
