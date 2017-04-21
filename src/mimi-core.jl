@@ -700,8 +700,9 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         error("You are trying to run a model with no components")
     end
 
-    for c in values(mi.components)
+    for (name,c) in mi.components
         resetvariables(c)
+        update_scalar_parameters(mi, name)
         init(c)
     end
 
