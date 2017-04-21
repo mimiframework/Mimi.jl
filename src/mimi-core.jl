@@ -605,7 +605,8 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
             error(string("Name value for variable(s) in a component, ", componentname, " was neither a tuple nor a Symbol."))
         end
     end
-    
+
+     
     return df
 end
    
