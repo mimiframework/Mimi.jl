@@ -606,7 +606,6 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         end
     end
 
-     
     return df
 end
    
