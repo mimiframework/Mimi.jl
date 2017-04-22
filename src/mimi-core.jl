@@ -891,11 +891,11 @@ function showConnections(m::Model, component_name::Symbol)
         target_par = connection.target_parameter_name
         if (component_name == source || component_name == target)
             if component_name == source
-                target = Symbol(string(target, "-out"))
+                target = Symbol(string(target, "-cout"))
                 source_var = Symbol(string(source_var, "-out"))
                 target_par = Symbol(string(target_par, "-out"))
             else
-                source = Symbol(string(source, "-in"))
+                source = Symbol(string(source, "-cin"))
                 source_var = Symbol(string(source_var, "-in"))
                 target_par = Symbol(string(target_par, "-in"))
             end
