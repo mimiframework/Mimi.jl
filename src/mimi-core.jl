@@ -492,11 +492,12 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     end
 end
 
+
 function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::Symbol)
     comp_type = typeof(mi.components[componentname])
 
-    meta_module_name = Symbol(supertype(typeof(mi.components[componentname])).name.module)
-    meta_component_name = Symbol(supertype(typeof(mi.components[componentname])).name.name)
+    meta_module_name = Symbol(supertype(comp_type).name.module)
+    meta_component_name = Symbol(supertype(comp_type).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
     if length(vardiminfo)==0
@@ -518,6 +519,118 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     else
         error("Not yet implemented")
     end
+end
+
+"""
+    getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => name::Symbol)...)
+    getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => (name::Symbol, name::Symbol...)...)
+       
+Return the values for each variable `name` in each corresponding `componentname` of model `m` as a DataFrame.
+"""
+function getdataframe(m::Model, comp_name_pairs::Pair...)
+    if isnull(m.mi)
+        error("Cannot get dataframe, model has not been built yet")
+    else
+        return getdataframe(m, get(m.mi), comp_name_pairs)
+    end
+end
+
+
+function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
+    #Make sure tuple passed in is not empty
+    if length(comp_name_pairs) == 0
+        error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
+    end
+
+    #Get the base value of the number of dimensions from the first 
+    # componentname and name pair association
+    firstpair = comp_name_pairs[1]
+    componentname = firstpair[1]
+    name = firstpair[2]
+    if isa(name, Tuple)
+        name = name[1]
+    end
+
+    if !(name in variables(m, componentname))
+        error("Cannot get dataframe; variable not in provided component")
+    end
+
+    vardiminfo = getvardiminfo(mi, componentname, name)
+    num_dim = length(vardiminfo)
+    
+    #Initialize dataframe depending on num dimensions
+    df = DataFrame()
+    if num_dim == 1
+        df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
+    elseif num_dim == 2
+        dim1 = length(m.indices_values[vardiminfo[1]])
+        dim2 = length(m.indices_values[vardiminfo[2]])
+        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
+    end
+
+    #Iterate through all the pairs; always check for each variable 
+    # that the number of dimensions matcht that of the first
+    for pair in comp_name_pairs
+        componentname = pair[1]
+        name = pair[2]
+
+        if isa(name, Tuple)
+            for comp_var in name
+                if !(comp_var in variables(m, componentname))
+                    error(string("Cannot get dataframe; variable, ", comp_var,  " not in provided component ", componentname))
+                end
+                
+                vardiminfo = getvardiminfo(mi, componentname, comp_var)
+
+                if !(length(vardiminfo) == num_dim)
+                    error(string("Not all components have the same number of dimensions"))
+                end
+
+                if (num_dim==1)
+                    df[comp_var] = mi[componentname, comp_var]
+                elseif (num_dim == 2)
+                    data = m[componentname, comp_var]
+                    df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+                end
+            end
+        
+        elseif (isa(name, Symbol))
+            if !(name in variables(m, componentname))
+                error(string("Cannot get dataframe; variable, ", name,  " not in provided component ", componentname))
+            end
+            
+            vardiminfo = getvardiminfo(mi, componentname, name)
+
+            if !(length(vardiminfo) == num_dim)
+                error(string("Not all components have the same number of dimensions"))
+            end
+            if (num_dim==1)
+                df[name] = mi[componentname, name]
+            elseif (num_dim == 2)
+                data = m[componentname, name]
+                df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+            end
+        else
+            error(string("Name value for variable(s) in a component, ", componentname, " was neither a tuple nor a Symbol."))
+        end
+    end
+
+    return df
+end
+   
+
+function getvardiminfo(mi::ModelInstance, componentname::Symbol, name::Symbol)
+    if !(componentname in keys(mi.components))
+        error("Component not found model components")
+    end
+    comp_type = typeof(mi.components[componentname])
+
+    meta_module_name = Symbol(supertype(comp_type).name.module)
+    meta_component_name = Symbol(supertype(comp_type).name.name)
+
+    vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
+    return vardiminfo
 end
 
 import Base.show
