@@ -170,7 +170,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, fin
     end
 
     if final == nothing
-        final = m.indices_values[:time][length(m.indices_values)]
+        final = m.indices_values[:time][length(m.indices_values[:time])]
     end
 
     if before!=nothing
