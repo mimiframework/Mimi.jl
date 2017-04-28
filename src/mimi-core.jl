@@ -545,6 +545,10 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         name = name[1]
     end
 
+    if !(name in variables(m, componentname))
+        error("Cannot get dataframe; variable not in provided component")
+    end
+
     vardiminfo = getvardiminfo(mi, componentname, name)
     num_dim = length(vardiminfo)
     
