@@ -49,5 +49,3 @@ dataframe = getdataframe(my_model, :testcomp1, :var1)
 @test(dataframe[2] == par)
 #Test trying to getdataframe from component that does not exist
 @test_throws ErrorException getdataframe(my_model, :testcomp1, :var2)
-
-#Expanded getdataframe

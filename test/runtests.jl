@@ -14,7 +14,8 @@ tests = ["main",
     "num_components",
     "components_ordering",
     "variables_model_instance",
-    "getdataframe"
+    "getdataframe",
+    "mult_getdataframe"
 ]
 
 for t in tests
