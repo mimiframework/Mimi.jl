@@ -3,6 +3,8 @@ abstract ComponentState
 type ComponentInstanceInfo
     name::Symbol
     component_type::DataType
+    offset::Int
+    final::Int
 end
 
 abstract Parameter
@@ -36,6 +38,8 @@ end
 type ModelInstance
     components::OrderedDict{Symbol, ComponentState}
     internal_parameter_connections::Array{InternalParameterConnection, 1}
+    offsets::Array{Int, 1} # in order corresponding with components
+    final_times::Array{Int, 1}
 end
 
 type ArrayModelParameter <: Parameter
@@ -149,7 +153,7 @@ end
 
 Add a component of type t to a model.
 """
-function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
+function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, final=nothing, before=nothing,after=nothing)
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -161,13 +165,21 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
         end
     end
 
+    if offset == nothing
+        offset = m.indices_values[:time][1]
+    end
+
+    if final == nothing
+        final = m.indices_values[:time][length(m.indices_values)]
+    end
+
     if before!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         before_exists = false
         for i in keys(m.components2)
             if i==before
                 before_exists = true
-                newcomponents2[name] = ComponentInstanceInfo(name, t)
+                newcomponents2[name] = ComponentInstanceInfo(name, t, offset, final)
             end
             newcomponents2[i] = m.components2[i]
         end
@@ -182,7 +194,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
             newcomponents2[i] = m.components2[i]
             if i==after
                 after_exists = true
-                newcomponents2[name] = ComponentInstanceInfo(name, t)
+                newcomponents2[name] = ComponentInstanceInfo(name, t, offset, final)
             end
         end
         if !after_exists
@@ -191,20 +203,10 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,afte
         m.components2 = newcomponents2
 
     else
-        m.components2[name] = ComponentInstanceInfo(name, t)
+        m.components2[name] = ComponentInstanceInfo(name, t, offset, final)
     end
     m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
-end
-
-function addcomponent(m::Model, t, name::Symbol, offset::Int; before=nothing,after=nothing)
-    # need to store offset value
-    addcomponent(m, t, name, before=before, after=after)
-end
-
-function addcomponent(m::Model, t, name::Symbol, offset::Int, final::Int; before=nothing,after=nothing)
-    # need to store offset and final values
-    addcomponent(m, t, name, before=before, after=after)
 end
 
 import Base.delete!
@@ -566,11 +568,16 @@ function build(m::Model)
     end
     #instantiate the components
     builtComponents = OrderedDict{Symbol, ComponentState}()
+    offsets = Array{Int, 1}()
+    final_times = Array{Int, 1}()
     for c in values(m.components2)
         t = c.component_type
         comp = t(m.numberType, m.indices_counts)
 
         builtComponents[c.name] = comp
+
+        push!(offsets, c.offset)
+        push!(final_times, c.final)
     end
 
     #make the parameter connections
@@ -590,7 +597,7 @@ function build(m::Model)
     end
 
 
-    mi = ModelInstance(builtComponents, m.internal_parameter_connections)
+    mi = ModelInstance(builtComponents, m.internal_parameter_connections, offsets, final_times)
 
     return mi
 end
@@ -617,38 +624,32 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         init(c)
     end
 
-    #components = collect(mi.components)
+    components = [x for x in mi.components]
+    newstyle = Array{Bool, 1}(length(components))
+    offsets = mi.offsets
+    final_times = mi.final_times
 
-    newstyle = Array{Bool}(length(mi.components))
-    offsets = Array{Int}(length(mi.components))
-    i = 1
-    # for i in collect(1:length(components))
-    for comp in mi.components
-        c = comp[2]
+    for i in collect(1:length(components))
+        c = components[i][2]
         newstyle[i] = method_exists(run_timestep, (typeof(c), Timestep))
-        i = i + 1
     end
-    
+
     clock = makeclock(mi, ntimesteps, indices_counts)
 
     while !finished(clock)
-        #update_scalar_parameters(mi)
-        i = 1
-        #for i in collect(1:length(components))
-            # name = components[i][1]
-            # c = components[i][2]
-        for comp in mi.components
-            name = comp[1]
-            c = comp[2]
+        for i in collect(1:length(components))
+            name = components[i][1]
+            c = components[i][2]
             update_scalar_parameters(mi, name)
-            if newstyle[i]
-                run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
-            else
-                run_timestep(c, gettimeindex(clock)) #int version (old way)
+            if gettimeindex(clock) <= final_times[i] - offsets[i] + 1
+                if newstyle[i]
+                    run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
+                else
+                    run_timestep(c, gettimeindex(clock)) #int version (old way)
+                end
             end
         end
         move_forward(clock)
-        i = i + 1
     end
 end
 
