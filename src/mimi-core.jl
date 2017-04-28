@@ -153,7 +153,7 @@ end
 
 Add a component of type t to a model.
 """
-function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, final=nothing, before=nothing,after=nothing)
+function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, final=nothing, before=nothing,after=nothing)
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -165,12 +165,12 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, fin
         end
     end
 
-    if offset == nothing
-        offset = m.indices_values[:time][1]
+    if start == nothing
+        start = m.indices_values[:time][1]
     end
 
     if final == nothing
-        final = m.indices_values[:time][length(m.indices_values[:time])]
+        final = m.indices_values[:time][end]
     end
 
     if before!=nothing
@@ -179,7 +179,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, fin
         for i in keys(m.components2)
             if i==before
                 before_exists = true
-                newcomponents2[name] = ComponentInstanceInfo(name, t, offset, final)
+                newcomponents2[name] = ComponentInstanceInfo(name, t, start, final)
             end
             newcomponents2[i] = m.components2[i]
         end
@@ -194,7 +194,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, fin
             newcomponents2[i] = m.components2[i]
             if i==after
                 after_exists = true
-                newcomponents2[name] = ComponentInstanceInfo(name, t, offset, final)
+                newcomponents2[name] = ComponentInstanceInfo(name, t, start, final)
             end
         end
         if !after_exists
@@ -203,7 +203,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; offset=nothing, fin
         m.components2 = newcomponents2
 
     else
-        m.components2[name] = ComponentInstanceInfo(name, t, offset, final)
+        m.components2[name] = ComponentInstanceInfo(name, t, start, final)
     end
     m.mi = Nullable{ModelInstance}()
     ComponentReference(m, name)
@@ -640,8 +640,8 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         for i in collect(1:length(components))
             name = components[i][1]
             c = components[i][2]
-            update_scalar_parameters(mi, name)
             if gettimeindex(clock) <= final_times[i] - offsets[i] + 1
+                update_scalar_parameters(mi, name)
                 if newstyle[i]
                     run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
                 else

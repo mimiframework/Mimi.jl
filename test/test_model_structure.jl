@@ -130,5 +130,3 @@ end
 
 addcomponent(m, D)
 @test_throws ErrorException Mimi.build(m)
-
-println("passes")
