@@ -17,8 +17,8 @@ end
 
 par = collect(2015:5:2110)
 
-addcomponent(my_model, testcomp1)
 setindex(my_model, :time, collect(2015:5:2110))
+addcomponent(my_model, testcomp1)
 setparameter(my_model, :testcomp1, :par1, par)
 run(my_model);
 #NOTE: this variables function does NOT take in Nullable instances

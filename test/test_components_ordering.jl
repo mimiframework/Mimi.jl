@@ -38,6 +38,7 @@ function run_timestep(tc1::testcomp3, t::Int)
     v.var1[t] = p.par1[t]
 end
 
+setindex(my_model, :time, 2015:5:2110)
 addcomponent(my_model, testcomp1)
 @test_throws ErrorException addcomponent(my_model, testcomp1)
 #Testing to catch adding component twice
