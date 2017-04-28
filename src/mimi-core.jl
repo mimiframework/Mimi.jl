@@ -521,6 +521,12 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     end
 end
 
+"""
+    getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => name::Symbol)...)
+    getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => (name::Symbol, name::Symbol...)...)
+       
+Return the values for each variable `name` in each corresponding `componentname` of model `m` as a DataFrame.
+"""
 function getdataframe(m::Model, comp_name_pairs::Pair...)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
