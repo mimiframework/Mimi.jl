@@ -39,8 +39,10 @@ end
 
 par = collect(2015:5:2110)
 
-addcomponent(my_model, testcomp1)
+
 setindex(my_model, :time, collect(2015:5:2110))
+addcomponent(my_model, testcomp1)
+
 setparameter(my_model, :testcomp1, :par1, par)
 run(my_model)
 #Regular get index
@@ -51,4 +53,3 @@ run(my_model)
 @test_throws ErrorException Mimi.getindex(my_model, :testcomp2, :var2)
 
 #Possibly more tests after adding another component
-

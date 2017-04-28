@@ -5,7 +5,6 @@
 setindex
 addcomponent
 delete!
-addparameter
 setparameter
 connectparameter
 get_unconnected_parameters
