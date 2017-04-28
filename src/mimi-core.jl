@@ -865,14 +865,20 @@ function showConnections(m::Model)
 end
 
 
-#Begin Graph Functionality section
+"""
+    showConnections(m::Model, component_name::Symbol)
 
-# Graphically show the parameter connections between models
-# Make sure you run this:
-# using PlotRecipes
-# # we'll use the PyPlot backend, and set a couple defaults
-# pyplot(alpha=0.5, size=(800,400))
-# Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+Returns a tree visualization of the incoming conencted components for passed in component_name as 
+well as incoming connected paramters as well as outgoing internal parameter connections. 
+
+ Graphically show the parameter connections between models
+ Make sure you run this:
+ using PlotRecipes
+ # we'll use the PyPlot backend, and set a couple defaults
+ pyplot(alpha=0.5, size=(800,400))
+ Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+"""
+
 function showConnections(m::Model, component_name::Symbol)
     comp_to_num = Dict()
     var_to_num = Dict()
