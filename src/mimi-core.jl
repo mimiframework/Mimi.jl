@@ -864,15 +864,17 @@ function showConnections(m::Model)
     graphplot(source_nodes, destiny_nodes, names=ord_names, m = ord_colors)
 end
 
+"""
+    showConnections(m::Model, component_name::Symbol)
 
-#Begin Graph Functionality section
-
-# Graphically show the parameter connections between models
-# Make sure you run this:
-# using PlotRecipes
-# # we'll use the PyPlot backend, and set a couple defaults
-# pyplot(alpha=0.5, size=(800,400))
-# Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+ Graphically show the parameter connections between models with a given component name
+ 
+ Make sure you run this:
+ using PlotRecipes
+ # we'll use the PyPlot backend, and set a couple defaults
+ pyplot(alpha=0.5, size=(800,400))
+ Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+"""
 function showConnections(m::Model, component_name::Symbol)
     node_to_num = Dict()
     node_to_color = Dict()
