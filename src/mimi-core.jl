@@ -950,6 +950,7 @@ macro defcomp(name, ex)
     x
 end
 
+
 #Begin Graph Functionality section
 
 # Graphically show the parameter connections between models
@@ -1027,84 +1028,163 @@ end
  Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
 """
 function showConnections(m::Model, component_name::Symbol)
-    node_to_num = Dict()
-    node_to_color = Dict()
+    #Reference to account for repeats
+    cin_node_to_num = Dict()
+    cout_node_to_num = Dict()
+    vin_node_to_num = Dict()
+    vout_node_to_num = Dict()
+    ref_node_to_num = Dict()
+
+    #Return values
     source_nodes = []
     destiny_nodes = []
-    
-    #Add Dummy Node to all source nodes except componentname
-    dummy_node = :START
-    node_to_num[dummy_node] = length(node_to_num) + 1
-    node_to_color[dummy_node] = :yellow
+    num_to_color = Dict()
+    num_to_node = Dict()
 
+    #Initiate num nodes in graph
+    num_nodes = 0
+
+    #Add Dummy Node to ref nodes as connection to all source nodes except componentname
+    dummy_node = :START
+    ref_node_to_num[dummy_node] = num_nodes + 1
+    num_to_node[num_nodes + 1] = dummy_node
+    num_to_color[num_nodes + 1] = :yellow
+    num_nodes += 1
+    
+    #Add component_name ref nodes also
+    ref_node_to_num[component_name] = num_nodes + 1
+    num_to_node[num_nodes + 1] = component_name
+    num_to_color[num_nodes + 1] = :orange
+    num_nodes += 1
+
+    #component_name is target component? or source component?
+    comp_is_source = false
+    comp_is_target = false
+
+    #Iterate througb all the internal parameter connections
     for connection in m.internal_parameter_connections
         source = connection.source_component_name
         target = connection.target_component_name
         source_var = connection.source_variable_name
         target_par = connection.target_parameter_name
-        if (component_name == source || component_name == target)
-            if component_name == source
-                target = Symbol(string(target, "-cout"))
-                source_var = Symbol(string(source_var, "-out"))
-                target_par = Symbol(string(target_par, "-out"))
-            else
-                source = Symbol(string(source, "-cin"))
-                source_var = Symbol(string(source_var, "-in"))
-                target_par = Symbol(string(target_par, "-in"))
-            end
+        
+        comp_is_source = source == component_name
+        comp_is_target = target == component_name
 
-            #Load everything into dictionary of valid nodes
-            if !(source in keys(node_to_num))
-                node_to_num[source] = length(node_to_num) + 1
-                node_to_color[source] = :blue
+        #Load everything into dictionaries of valid nodes
+        if (comp_is_source || comp_is_target)
+            if comp_is_source
+                if !(target in keys(cout_node_to_num))
+                    cout_node_to_num[target] = num_nodes + 1
+                    num_to_node[num_nodes + 1] = target
+                    num_to_color[num_nodes + 1] = :blue
+                    num_nodes += 1
+                end
+                if !(source_var in keys(vout_node_to_num))
+                    vout_node_to_num[source_var] = num_nodes + 1
+                    num_to_node[num_nodes + 1] = source_var
+                    num_to_color[num_nodes + 1] = :red
+                    num_nodes += 1 
+                end
+                if !(target_par in keys(vout_node_to_num))
+                    vout_node_to_num[target_par] = num_nodes + 1
+                    num_to_node[num_nodes + 1] = target_par
+                    num_to_color[num_nodes + 1] = :red
+                    num_nodes += 1
+                end
             end
-            if !(target in keys(node_to_num))
-                node_to_num[target] = length(node_to_num) + 1
-                node_to_color[target] = :blue
-            end
-            if !(source_var in keys(node_to_num))
-                node_to_num[source_var] = length(node_to_num) + 1
-                node_to_color[source_var] = :red
-            end
-            if !(target_par in keys(node_to_num))
-                node_to_num[target_par] = length(node_to_num) + 1
-                node_to_color[target_par] = :red
-            end
-            if (component_name == target)
-                #dummy --> source
-                push!(source_nodes, node_to_num[dummy_node])
-                push!(destiny_nodes, node_to_num[source])
-            end
-
-            #source --> source_var
-            push!(source_nodes, node_to_num[source])
-            push!(destiny_nodes, node_to_num[source_var])
-
-            #source_var --> target_par
-            if !(source_var == target_par)
-                push!(source_nodes, node_to_num[source_var])
-                push!(destiny_nodes, node_to_num[target_par])
+            if comp_is_target
+                if !(source in keys(cin_node_to_num))
+                    cin_node_to_num[source] = num_nodes + 1
+                    num_to_node[num_nodes + 1] = source
+                    num_to_color[num_nodes + 1] = :blue
+                    num_nodes += 1
+                end
+                if !(source_var in keys(vin_node_to_num))
+                    vin_node_to_num[source_var] = num_nodes + 1
+                    num_to_node[num_nodes + 1] = source_var
+                    num_to_color[num_nodes + 1] = :red
+                    num_nodes += 1 
+                end
+                if !(target_par in keys(vin_node_to_num))
+                    vin_node_to_num[target_par] = num_nodes + 1
+                    num_to_node[num_nodes + 1] = target_par
+                    num_to_color[num_nodes + 1] = :red
+                    num_nodes += 1
+                end
             end
             
-            #target_par --> target
-            push!(source_nodes, node_to_num[target_par])
-            push!(destiny_nodes, node_to_num[target])
+            if comp_is_source
+                #source --> source_var
+                push!(source_nodes, ref_node_to_num[component_name])
+                push!(destiny_nodes, vout_node_to_num[source_var])
+                
+                #source_var --> target_par
+                if !(source_var == target_par)
+                    push!(source_nodes, vout_node_to_num[source_var])
+                    push!(destiny_nodes, vout_node_to_num[target_par])
+                end
+
+                #target_par --> target
+                push!(source_nodes, vout_node_to_num[target_par])
+                push!(destiny_nodes, cout_node_to_num[target])
+            end
+
+            if comp_is_source
+                #source --> source_var
+                push!(source_nodes, ref_node_to_num[component_name])
+                push!(destiny_nodes, vout_node_to_num[source_var])
+                
+                #source_var --> target_par
+                if !(source_var == target_par)
+                    push!(source_nodes, vout_node_to_num[source_var])
+                    push!(destiny_nodes, vout_node_to_num[target_par])
+                end
+
+                #target_par --> target
+                push!(source_nodes, vout_node_to_num[target_par])
+                push!(destiny_nodes, cout_node_to_num[target])
+            end
+
+            if comp_is_target
+                #dummy --> source
+                push!(source_nodes, ref_node_to_num[dummy_node])
+                push!(destiny_nodes, cin_node_to_num[source])
+
+                #source --> source_var
+                push!(source_nodes, cin_node_to_num[source])
+                push!(destiny_nodes, vin_node_to_num[source_var])
+                
+                #source_var --> target_par
+                if !(source_var == target_par)
+                    push!(source_nodes, vin_node_to_num[source_var])
+                    push!(destiny_nodes, vin_node_to_num[target_par])
+                end
+
+                #target_par --> target
+                push!(source_nodes, vin_node_to_num[target_par])
+                push!(destiny_nodes, ref_node_to_num[component_name])
+            end       
         end
     end
-
-    pairs = [pair for pair in node_to_num]
-    pairs = sort(pairs, by=(g(x) = x[2]))
-    ord_names = [pair[1] for pair in pairs]
-    ord_colors = [node_to_color[node] for node in ord_names]
-    ord_names = [string(name) for name in ord_names]
-
+    
     #Make sure the arrays passed in are of the following types
+    node_names = []
+    node_colors = []
+    for i in collect(1:length(num_to_node))
+        push!(node_names, string(num_to_node[i]))
+    end
+    for i in collect(1:length(num_to_color))
+        push!(node_colors, num_to_color[i])
+    end
+
     source_nodes = convert(Array{Int64}, source_nodes)
     destiny_nodes = convert(Array{Int64}, destiny_nodes)
-    ord_names = convert(Array{String}, ord_names)
+    #node_names = convert(Array{string}, node_names)
 
     pyplot(alpha=0.5, size=(800,400))
-    graphplot(source_nodes, destiny_nodes, names=ord_names, m = ord_colors, method=:tree, root=:left)
+    graphplot(source_nodes, destiny_nodes, names=node_names, m = node_colors, method=:tree, root=:left)
+
 end
 
 function show(io::IO, m::Model)
