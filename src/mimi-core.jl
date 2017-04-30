@@ -959,7 +959,7 @@ end
 # # we'll use the PyPlot backend, and set a couple defaults
 # pyplot(alpha=0.5, size=(800,400))
 # Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
-function showConnections(m::Model)
+function show_connections(m::Model)
     node_to_num = Dict()
     node_to_color = Dict()
     source_nodes = []
@@ -1017,7 +1017,7 @@ function showConnections(m::Model)
 end
 
 """
-    showConnections(m::Model, component_name::Symbol)
+    show_connections(m::Model, component_name::Symbol)
 
  Graphically show the parameter connections between models with a given component name
  
@@ -1027,7 +1027,12 @@ end
  pyplot(alpha=0.5, size=(800,400))
  Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
 """
-function showConnections(m::Model, component_name::Symbol)
+function show_connections(m::Model, component_name::Symbol)
+    #Check if component exists
+    if !(component_name in keys(m.components2))
+        error("Cannot show connections of component that does not exist.")
+    end
+
     #Reference to account for repeats
     cin_node_to_num = Dict()
     cout_node_to_num = Dict()

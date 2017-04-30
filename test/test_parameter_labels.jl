@@ -286,3 +286,6 @@ for t in range(1, length(time_labels))
         @test(model1[:compA, :y][t, r] == model3[:compA, :y][t, r])
     end
 end
+
+#Visualize Parameter Labels (test for showing connections)
+show_connections(run1, :emissions)
