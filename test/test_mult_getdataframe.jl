@@ -178,6 +178,7 @@ curr_get_dataframe = Mimi.getdataframe(run1, :emissions, :E)
 ## MORE TESTS ###
 #################
 my_model = Model()
+setindex(my_model, :time, collect(2015:5:2110))
 
 #Testing that you cannot add two components of the same name
 @defcomp testcomp1 begin
@@ -194,7 +195,7 @@ end
 
 par = collect(2015:5:2110)
 addcomponent(my_model, testcomp1)
-setindex(my_model, :time, collect(2015:5:2110))
+
 setparameter(my_model, :testcomp1, :par1, par)
 run(my_model)
 
