@@ -15,6 +15,7 @@ tests = ["main",
     "components_ordering",
     "variables_model_instance",
     "getdataframe",
+    "mult_getdataframe",
     "ourarrays"
 ]
 
