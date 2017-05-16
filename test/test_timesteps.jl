@@ -1,34 +1,39 @@
+using Mimi
+using Base.Test
+
 # we'll have Bar run from 2000 to 2010
 # and Foo from 2005 to 2010
 
 @defcomp Foo begin
     input = Parameter()
-    intermed = Variable(index=[time])
+    output = Variable(index=[time])
 end
 
 function run_timestep(c::Foo, ts::Timestep)
-    c.Variables.intermed[ts] = c.Parameters.input
+    c.Variables.output[ts] = c.Parameters.input + ts.t
 end
 
 @defcomp Bar begin
-    intermed = Parameter(index=[time])
+    input = Parameter(index=[time])
     output = Variable(index=[time])
 end
 
 function run_timestep(c::Bar, ts::Timestep)
-    if ts.t <= 5
-        c.Parameters.intermed[ts] = 1
+    if gettime(ts) < 2005
+        c.Variables.output[ts] = c.Parameters.input[ts]
     else
-
-
-    c.Variables.output[ts] = c.Parameters.intermed[ts]
+        c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
+    end
 end
 
 m = Model()
 setindex(m, :time, 2000:2010)
-foo = addcomponent(m, Foo, 2005) #offset for foo
+foo = addcomponent(m, Foo, start=2005) #offset for foo
 bar = addcomponent(m, Bar)
 
-#connectparameter(m, :Bar, :intermed, :Foo, :intermed)
+set_external_parameter(m, :x, 5.)
+set_external_parameter(m, :y, collect(1:11))
+connectparameter(m, :Foo, :input, :x)
+connectparameter(m, :Bar, :input, :y)
 
 run(m)
