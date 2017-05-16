@@ -16,6 +16,9 @@ t2 = Mimi.getnexttimestep(t)
 
 @test x[t2] == 11
 
+@test Mimi.indices(x) == (2000:2003,)
+@test Mimi.linearindices(x) == 2000:2003
+
 #####################
 #  Test OurTMatrix  #
 #####################
@@ -27,3 +30,6 @@ y = Mimi.OurTMatrix{Int, 2000}(a[:,1:2])
 
 @test y[t2,1] == 3
 @test y[t2,2] == 7
+
+@test Mimi.indices(y) == (2000:2003, 1:2)
+@test Mimi.length(linearindices(y)) == 8

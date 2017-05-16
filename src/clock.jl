@@ -64,6 +64,10 @@ function getobjectivetime{Offset, Final}(ts::Timestep{Offset, Final})
 	return ts.t + Offset - 1
 end
 
+################
+#  OurTVector  #
+################
+
 type OurTVector{T, Offset} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 1 for the vector case
 	data::OffsetArray{T, 1, Array{T, 1}}
 
@@ -73,6 +77,23 @@ type OurTVector{T, Offset} #don't need to encode N (number of dimensions) as a t
 		return x
 	end
 end
+
+function Base.getindex{T, d_offset, t_offset, Final}(x::OurTVector{T, d_offset}, ts::Timestep{t_offset, Final})
+	t = getobjectivetime(ts)
+	return x.data[t]
+end
+
+function Base.indices{T, Offset}(x::OurTVector{T, Offset})
+	return indices(x.data)
+end
+
+function Base.linearindices{T, Offset}(x::OurTVector{T, Offset})
+	return linearindices(x.data)
+end
+
+################
+#  OurTMatrix  #
+################
 
 type OurTMatrix{T, Offset} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 2 for the matrix case
 	data::OffsetArray{T, 2, Array{T, 2}}
@@ -84,12 +105,15 @@ type OurTMatrix{T, Offset} #don't need to encode N (number of dimensions) as a t
 	end
 end
 
-function Base.getindex{T, d_offset, t_offset, Final}(x::OurTVector{T, d_offset}, ts::Timestep{t_offset, Final})
-	t = getobjectivetime(ts)
-	return x.data[t]
-end
-
 function Base.getindex{T, d_offset, t_offset, Final}(x::OurTMatrix{T, d_offset}, ts::Timestep{t_offset, Final}, i::Int)
 	t = getobjectivetime(ts)
 	return x.data[t, i]
+end
+
+function Base.indices{T, Offset}(x::OurTMatrix{T, Offset})
+	return indices(x.data)
+end
+
+function Base.linearindices{T, Offset}(x::OurTMatrix{T, Offset})
+	return linearindices(x.data)
 end
