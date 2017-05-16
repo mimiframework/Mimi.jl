@@ -14,7 +14,8 @@ tests = ["main",
     "num_components",
     "components_ordering",
     "variables_model_instance",
-    "getdataframe"
+    "getdataframe",
+    "ourarrays"
 ]
 
 for t in tests
