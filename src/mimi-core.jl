@@ -244,7 +244,7 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     nothing
 end
 
-function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
+function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
     if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
     elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
@@ -280,7 +280,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
     if isa(p, ArrayModelParameter)
-        checklabels(m, component, name, parametername, p)
+        checklabels(m, component, name, p)
     end
 
     disconnect(m, component, name)
