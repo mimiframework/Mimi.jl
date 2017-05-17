@@ -1,4 +1,4 @@
-#tests the framework of components and connections without actually running the model
+#tests the framework of components and connections
 
 using Base.Test
 using Mimi

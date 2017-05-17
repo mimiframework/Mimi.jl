@@ -154,6 +154,22 @@ end
 Add a component of type t to a model.
 """
 function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, final=nothing, before=nothing,after=nothing)
+    # check that start and final are within the model's time index range
+    time_index = m.indices_values[:time]
+
+    if start == nothing
+        start = m.indices_values[:time][1]
+    elseif start < time_index[1]
+        error("Cannot add component ", name, " with start time before start of model's time index range.")
+    end
+
+    if final == nothing
+        final = m.indices_values[:time][end]
+    elseif final > time_index[end]
+        error("Cannot add component ", name, " with final time after end of model's time index range.")
+    end
+
+
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -163,14 +179,6 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, fina
         if i==name
             error("You cannot add two components of the same name: ", i)
         end
-    end
-
-    if start == nothing
-        start = m.indices_values[:time][1]
-    end
-
-    if final == nothing
-        final = m.indices_values[:time][end]
     end
 
     if before!=nothing

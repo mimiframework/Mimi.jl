@@ -28,6 +28,10 @@ end
 
 m = Model()
 setindex(m, :time, 2000:2010)
+# test that you can only add components with start/final within model's time index range
+@test_throws ErrorException addcomponent(m, Foo, start=1900)
+@test_throws ErrorException addcomponent(m, Foo, final=2100)
+
 foo = addcomponent(m, Foo, start=2005) #offset for foo
 bar = addcomponent(m, Bar)
 
