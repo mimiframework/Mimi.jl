@@ -10,10 +10,12 @@ function isfirsttimestep(ts::Timestep)
 	return ts.t == 1
 end
 
+# for users to tell when they are on the final timestep 
 function isfinaltimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
 	return gettime(ts) == Final
 end
 
+# used to determine when a clock is finished
 function ispastfinaltimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
 	return gettime(ts) > Final
 end

@@ -1,6 +1,27 @@
 using Mimi
 using Base.Test
 
+###################################
+#  Test basic timestep functions  #
+###################################
+
+t = Timestep{1850, 10, 3000}(1)
+@test isfirsttimestep(t)
+t1 = Mimi.getnexttimestep(t)
+t2 = Mimi.getnewtimestep(t1, 1860)
+@test isfirsttimestep(t2)
+t3 = Mimi.getnewtimestep(t2, 1840)
+@test t3.t == 3
+
+t = Timestep{2000, 1, 2050}(51)
+@test isfinaltimestep(t)
+t = Mimi.getnexttimestep(t)
+@test_throws ErrorException Mimi.getnexttimestep(t)
+
+#########################################################
+#  Test a model with components with different offsets  #
+#########################################################
+
 # we'll have Bar run from 2000 to 2010
 # and Foo from 2005 to 2010
 
