@@ -719,11 +719,10 @@ function build(m::Model)
 end
 
 function makeclock(mi::ModelInstance, ntimesteps, indices_values)
-    # later will involve finding first offset in all components
     start = indices_values[:time][1]
     stop = indices_values[:time][min(length(indices_values[:time]),ntimesteps)]
     if length(indices_values[:time])>1
-        duration = indices_values[:time][2]-indices_values[:time][1] #should probably make this better
+        duration = indices_values[:time][2]-indices_values[:time][1] #assumes that all timesteps of the model are the same length
     else
         duration = 1
     end
@@ -769,7 +768,7 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
         for i in collect(1:length(components))
             name = components[i][1]
             c = components[i][2]
-            if gettimeindex(clock) <= final_times[i] - offsets[i] + 1
+            if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i] 
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
                     run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?

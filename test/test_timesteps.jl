@@ -19,7 +19,7 @@ end
 end
 
 function run_timestep(c::Bar, ts::Timestep)
-    if gettime(ts) < 2005
+    if Mimi.gettime(ts) < 2005
         c.Variables.output[ts] = c.Parameters.input[ts]
     else
         c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
@@ -40,4 +40,4 @@ set_external_parameter(m, :y, collect(1:11))
 connectparameter(m, :Foo, :input, :x)
 connectparameter(m, :Bar, :input, :y)
 
-run(m)
+# run(m)

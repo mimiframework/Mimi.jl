@@ -4,12 +4,6 @@
 
 immutable Timestep{Offset, Duration, Final}
 	t::Int
-
-	# function Timestep(year::Int)
-	# 	ts = new{Offset, Duration, Final}(Int64((year - Offset)/Duration + 1))
-	# 	return ts
-	# end
-
 end
 
 function isfirsttimestep(ts::Timestep)
@@ -59,6 +53,10 @@ end
 
 function gettimeindex(c::Clock)
 	return c.ts.t
+end
+
+function gettime(c::Clock)
+	return gettime(c.ts)
 end
 
 function move_forward(c::Clock)

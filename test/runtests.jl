@@ -16,7 +16,8 @@ tests = ["main",
     "variables_model_instance",
     "getdataframe",
     "mult_getdataframe",
-    "ourarrays"
+    "ourarrays",
+    "timesteps"
 ]
 
 for t in tests
