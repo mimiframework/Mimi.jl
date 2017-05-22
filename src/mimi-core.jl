@@ -309,7 +309,7 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::NamedArray)
+    set_external_parameter(m::Model, name::Symbol, value::NamedArray)
 
 Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
 """
@@ -324,7 +324,7 @@ function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::AbstractArray)
+    set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
 
 Add an array type parameter to the model.
 """
@@ -341,7 +341,7 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+    set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
 
 Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
 """
@@ -355,7 +355,7 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, di
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::Any)
+    set_external_parameter(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter to the model.
 """
@@ -536,7 +536,7 @@ end
 """
     getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => name::Symbol)...)
     getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => (name::Symbol, name::Symbol...)...)
-       
+
 Return the values for each variable `name` in each corresponding `componentname` of model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name_pairs::Pair...)
@@ -554,7 +554,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
     end
 
-    #Get the base value of the number of dimensions from the first 
+    #Get the base value of the number of dimensions from the first
     # componentname and name pair association
     firstpair = comp_name_pairs[1]
     componentname = firstpair[1]
@@ -569,7 +569,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     vardiminfo = getvardiminfo(mi, componentname, name)
     num_dim = length(vardiminfo)
-    
+
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
     if num_dim == 1
@@ -581,7 +581,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 
-    #Iterate through all the pairs; always check for each variable 
+    #Iterate through all the pairs; always check for each variable
     # that the number of dimensions matcht that of the first
     for pair in comp_name_pairs
         componentname = pair[1]
@@ -592,7 +592,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                 if !(comp_var in variables(m, componentname))
                     error(string("Cannot get dataframe; variable, ", comp_var,  " not in provided component ", componentname))
                 end
-                
+
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
 
                 if !(length(vardiminfo) == num_dim)
@@ -606,12 +606,12 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                     df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
                 end
             end
-        
+
         elseif (isa(name, Symbol))
             if !(name in variables(m, componentname))
                 error(string("Cannot get dataframe; variable, ", name,  " not in provided component ", componentname))
             end
-            
+
             vardiminfo = getvardiminfo(mi, componentname, name)
 
             if !(length(vardiminfo) == num_dim)
@@ -630,7 +630,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     return df
 end
-   
+
 
 function getvardiminfo(mi::ModelInstance, componentname::Symbol, name::Symbol)
     if !(componentname in keys(mi.components))
