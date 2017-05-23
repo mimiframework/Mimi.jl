@@ -158,13 +158,13 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, fina
     time_index = m.indices_values[:time]
 
     if start == nothing
-        start = m.indices_values[:time][1]
+        start = time_index[1]
     elseif start < time_index[1]
         error("Cannot add component ", name, " with start time before start of model's time index range.")
     end
 
     if final == nothing
-        final = m.indices_values[:time][end]
+        final = time_index[end]
     elseif final > time_index[end]
         error("Cannot add component ", name, " with final time after end of model's time index range.")
     end
@@ -767,15 +767,17 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
     end
 
     clock = makeclock(mi, ntimesteps, indices_values)
+    duration = getduration(indices_values)
+    comp_clocks = [Clock(offsets[i], final_times[i], duration) for i in collect(1:length(components))]
 
     while !finished(clock)
-        for i in collect(1:length(components))
-            name = components[i][1]
-            c = components[i][2]
+        for (i, (name, c)) in enumerate(components)
             if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
-                    run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
+                    # run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
+                    run_timestep(c, comp_clocks[i])
+                    move_forwar(comp_clocks[i])
                 else
                     run_timestep(c, gettimeindex(clock)) #int version (old way)
                 end
