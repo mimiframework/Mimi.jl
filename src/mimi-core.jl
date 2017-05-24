@@ -309,7 +309,7 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::NamedArray)
+    set_external_parameter(m::Model, name::Symbol, value::NamedArray)
 
 Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
 """
@@ -324,7 +324,7 @@ function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::AbstractArray)
+    set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
 
 Add an array type parameter to the model.
 """
@@ -341,7 +341,7 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+    set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
 
 Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
 """
@@ -355,7 +355,7 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, di
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::Any)
+    set_external_parameter(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter to the model.
 """
