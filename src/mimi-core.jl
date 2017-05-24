@@ -154,6 +154,22 @@ end
 Add a component of type t to a model.
 """
 function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, final=nothing, before=nothing,after=nothing)
+    # check that start and final are within the model's time index range
+    time_index = m.indices_values[:time]
+
+    if start == nothing
+        start = time_index[1]
+    elseif start < time_index[1]
+        error("Cannot add component ", name, " with start time before start of model's time index range.")
+    end
+
+    if final == nothing
+        final = time_index[end]
+    elseif final > time_index[end]
+        error("Cannot add component ", name, " with final time after end of model's time index range.")
+    end
+
+
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -163,14 +179,6 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, fina
         if i==name
             error("You cannot add two components of the same name: ", i)
         end
-    end
-
-    if start == nothing
-        start = m.indices_values[:time][1]
-    end
-
-    if final == nothing
-        final = m.indices_values[:time][end]
     end
 
     if before!=nothing
@@ -311,7 +319,7 @@ end
 """
     set_external_parameter(m::Model, name::Symbol, value::NamedArray)
 
-Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
+Add an array type parameter to the model, perform dimension checking on the given NamedArray.
 """
 function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
     #namedarray given, so we can perform label checks
@@ -664,11 +672,6 @@ function get_unconnected_parameters(m::Model)
     return unset_params
 end
 
-function makeclock(mi::ModelInstance, ntimesteps, indices_counts)
-    # later will involve finding first offset in all components
-    return Clock(1, min(indices_counts[:time],ntimesteps))
-end
-
 function build(m::Model)
     #check if all parameters are set
     unset = get_unconnected_parameters(m)
@@ -715,6 +718,21 @@ function build(m::Model)
     return mi
 end
 
+function getduration(indices_values)
+    if length(indices_values[:time])>1
+        return indices_values[:time][2]-indices_values[:time][1] #assumes that all timesteps of the model are the same length
+    else
+        return 1
+    end
+end
+
+function makeclock(mi::ModelInstance, ntimesteps, indices_values)
+    start = indices_values[:time][1]
+    stop = indices_values[:time][min(length(indices_values[:time]),ntimesteps)]
+    duration = getduration(indices_values)
+    return Clock(start, stop, duration)
+end
+
 """
     run(m::Model)
 
@@ -724,10 +742,10 @@ function run(m::Model;ntimesteps=typemax(Int))
     if isnull(m.mi)
         m.mi = Nullable{ModelInstance}(build(m))
     end
-    run(get(m.mi), ntimesteps, m.indices_counts)
+    run(get(m.mi), ntimesteps, m.indices_values)
 end
 
-function run(mi::ModelInstance, ntimesteps, indices_counts)
+function run(mi::ModelInstance, ntimesteps, indices_values)
     if length(mi.components) == 0
         error("You are trying to run a model with no components")
     end
@@ -748,16 +766,18 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         newstyle[i] = method_exists(run_timestep, (typeof(c), Timestep))
     end
 
-    clock = makeclock(mi, ntimesteps, indices_counts)
+    clock = makeclock(mi, ntimesteps, indices_values)
+    duration = getduration(indices_values)
+    comp_clocks = [Clock(offsets[i], final_times[i], duration) for i in collect(1:length(components))]
 
     while !finished(clock)
-        for i in collect(1:length(components))
-            name = components[i][1]
-            c = components[i][2]
-            if gettimeindex(clock) <= final_times[i] - offsets[i] + 1
+        for (i, (name, c)) in enumerate(components)
+            if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
-                    run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
+                    # run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
+                    run_timestep(c, comp_clocks[i])
+                    move_forward(comp_clocks[i])
                 else
                     run_timestep(c, gettimeindex(clock)) #int version (old way)
                 end
