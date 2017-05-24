@@ -257,6 +257,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "reference.html#Mimi.set_external_parameter",
+    "page": "Reference",
+    "title": "Mimi.set_external_parameter",
+    "category": "Function",
+    "text": "set_external_parameter(m::Model, name::Symbol, value::NamedArray)\n\nAdd an array type parameter to the model, perferm dimension checking on the given NamedArray.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::AbstractArray)\n\nAdd an array type parameter to the model.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})\n\nTakes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::Any)\n\nAdd a scalar type parameter to the model.\n\n\n\n"
+},
+
+{
     "location": "reference.html#Mimi.connectparameter",
     "page": "Reference",
     "title": "Mimi.connectparameter",
@@ -341,7 +349,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "@defcomp\nsetindex\naddcomponent\ndelete!\nsetparameter\nconnectparameter\nget_unconnected_parameters\nsetleftoverparameters\nrun\ncomponents\nvariables\ngetdataframe\ngetindexcount\ngetindexvalues\ngetindexlabels"
+    "text": "@defcomp\nsetindex\naddcomponent\ndelete!\nsetparameter\nset_external_parameter\nconnectparameter\nget_unconnected_parameters\nsetleftoverparameters\nrun\ncomponents\nvariables\ngetdataframe\ngetindexcount\ngetindexvalues\ngetindexlabels"
 },
 
 ]}
