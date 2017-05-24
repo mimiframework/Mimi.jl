@@ -777,7 +777,7 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
                 if newstyle[i]
                     # run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
                     run_timestep(c, comp_clocks[i])
-                    move_forwar(comp_clocks[i])
+                    move_forward(comp_clocks[i])
                 else
                     run_timestep(c, gettimeindex(clock)) #int version (old way)
                 end
