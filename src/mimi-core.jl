@@ -244,15 +244,15 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
     nothing
 end
 
-function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
-        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
-    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
+function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
+    if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
+        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
+    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
         if isa(p.values, NamedArray)
-            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
+            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
         end
     else
-        comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
+        comp_dims = getmetainfo(m, component).parameters[name].dimensions
         i=1
         for dim in comp_dims
             if !(length(m.indices_values[dim])==size(p.values)[i])
@@ -280,7 +280,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
     if isa(p, ArrayModelParameter)
-        checklabels(m, component, name, parametername, p)
+        checklabels(m, component, name, p)
     end
 
     disconnect(m, component, name)
@@ -536,7 +536,7 @@ end
 """
     getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => name::Symbol)...)
     getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => (name::Symbol, name::Symbol...)...)
-       
+
 Return the values for each variable `name` in each corresponding `componentname` of model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name_pairs::Pair...)
@@ -554,7 +554,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
     end
 
-    #Get the base value of the number of dimensions from the first 
+    #Get the base value of the number of dimensions from the first
     # componentname and name pair association
     firstpair = comp_name_pairs[1]
     componentname = firstpair[1]
@@ -569,7 +569,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     vardiminfo = getvardiminfo(mi, componentname, name)
     num_dim = length(vardiminfo)
-    
+
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
     if num_dim == 1
@@ -581,7 +581,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 
-    #Iterate through all the pairs; always check for each variable 
+    #Iterate through all the pairs; always check for each variable
     # that the number of dimensions matcht that of the first
     for pair in comp_name_pairs
         componentname = pair[1]
@@ -592,7 +592,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                 if !(comp_var in variables(m, componentname))
                     error(string("Cannot get dataframe; variable, ", comp_var,  " not in provided component ", componentname))
                 end
-                
+
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
 
                 if !(length(vardiminfo) == num_dim)
@@ -606,12 +606,12 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                     df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
                 end
             end
-        
+
         elseif (isa(name, Symbol))
             if !(name in variables(m, componentname))
                 error(string("Cannot get dataframe; variable, ", name,  " not in provided component ", componentname))
             end
-            
+
             vardiminfo = getvardiminfo(mi, componentname, name)
 
             if !(length(vardiminfo) == num_dim)
@@ -630,7 +630,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     return df
 end
-   
+
 
 function getvardiminfo(mi::ModelInstance, componentname::Symbol, name::Symbol)
     if !(componentname in keys(mi.components))
