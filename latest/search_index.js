@@ -261,7 +261,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reference",
     "title": "Mimi.set_external_parameter",
     "category": "Function",
-    "text": "set_external_parameter(m::Model, name::Symbol, value::NamedArray)\n\nAdd an array type parameter to the model, perferm dimension checking on the given NamedArray.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::AbstractArray)\n\nAdd an array type parameter to the model.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})\n\nTakes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::Any)\n\nAdd a scalar type parameter to the model.\n\n\n\n"
+    "text": "set_external_parameter(m::Model, name::Symbol, value::NamedArray)\n\nAdd an array type parameter to the model, perform dimension checking on the given NamedArray.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::AbstractArray)\n\nAdd an array type parameter to the model.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})\n\nTakes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.\n\n\n\nset_external_parameter(m::Model, name::Symbol, value::Any)\n\nAdd a scalar type parameter to the model.\n\n\n\n"
 },
 
 {
