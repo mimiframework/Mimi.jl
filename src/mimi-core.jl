@@ -965,6 +965,8 @@ macro defcomp(name, ex)
     end
     push!(call_expr.args, :indices)
     push!(callsignature.args, :indices)
+    println(call_expr)
+    println(callsignature)
 
     x = quote
 
