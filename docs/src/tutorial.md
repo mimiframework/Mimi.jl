@@ -26,7 +26,7 @@ using Mimi
 end
 ```
 
-Next, the run_timestep function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component by `state` and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to paremeters.
+Next, the run_timestep function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component by `state` and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
 
 ```julia
 function run_timestep(state::grosseconomy, t::Int)

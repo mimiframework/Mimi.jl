@@ -4,7 +4,19 @@
 
 See the Tutorial for in depth examples of one-region and multi-region models.
 
+Any Mimi model is made up of at least one component, so before you define a model, you need to create your components. We define a component in the following way:
 
+```julia
+using Mimi
+
+@defcomp MyComponent begin
+  A = Variable(index = [time])
+  B = Variable(index = [time])
+  c = Parameter()
+  d = Parameter(index = [time])
+  e = Parameter(index = [time])
+end
+```
 
 
 ## Plotting
