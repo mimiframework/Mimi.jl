@@ -946,7 +946,7 @@ macro defcomp(name, ex)
     call_expr = Expr(:call,
         Expr(:curly,
             Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
-            :T),
+            :T, :OFFSET, :DURATION),
         :T,
         :OFFSET,
         :DURATION
@@ -990,7 +990,7 @@ macro defcomp(name, ex)
         # function $(esc(Symbol(name))){T}(::Type{T}, indices)
         #     $(call_expr)
         # end
-        callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this? 
+        callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
         $Expr(:function, $callsignature, $call_expr)
 
     end
