@@ -852,6 +852,8 @@ macro defcomp(name, ex)
     metapardef = Expr(:block)
     metadimdef = Expr(:block)
 
+    numarrayparams = 0
+
     for line in ex.args
         if line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Index
             dimensionName = line.args[1]
@@ -875,6 +877,8 @@ macro defcomp(name, ex)
             unit = get(kws, :unit, "")
 
             if haskey(kws, :index)
+                numarrayparams += 1
+
                 parameterIndex = kws[:index].args
 
                 pardims = Array(Any, 0)
@@ -932,13 +936,35 @@ macro defcomp(name, ex)
     module_def = :(eval(current_module(), :(module temporary_name end)))
     module_def.args[3].args[1].args[2] = Symbol(string("_mimi_implementation_", name))
 
+    # call_expr = Expr(:call,
+    #     Expr(:curly,
+    #         Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
+    #         :T),
+    #     :T,
+    #     :indices
+    #     )
     call_expr = Expr(:call,
         Expr(:curly,
             Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
             :T),
         :T,
-        :indices
+        :OFFSET,
+        :DURATION
         )
+    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION), Expr(:(::), Expr(:curly, :Type, :T)), Expr(:(::), Expr(:curly, :Type, :OFFSET)), Expr(:(::), Expr(:curly, :Type, :DURATION)))
+    for i in 1:numarrayparams
+        push!(call_expr.args, Symbol("OFFSET$i"))
+        push!(call_expr.args, Symbol("DURATION$i"))
+        push!(call_expr.args[1].args, Symbol("OFFSET$i"))
+        push!(call_expr.args[1].args, Symbol("DURATION$i"))
+
+        push!(callsignature.args[1].args, Symbol("OFFSET$i"))
+        push!(callsignature.args[1].args, Symbol("DURATION$i"))
+        push!(callsignature.args, Expr(:(::), Expr(:curly, :Type, Symbol("OFFSET$i"))))
+        push!(callsignature.args, Expr(:(::), Expr(:curly, :Type, Symbol("DURATION$i"))))
+    end
+    push!(call_expr.args, :indices)
+    push!(callsignature.args, :indices)
 
     x = quote
 
@@ -961,9 +987,11 @@ macro defcomp(name, ex)
 
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
 
-        function $(esc(Symbol(name))){T}(::Type{T}, indices)
-            $(call_expr)
-        end
+        # function $(esc(Symbol(name))){T}(::Type{T}, indices)
+        #     $(call_expr)
+        # end
+        callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this? 
+        $Expr(:function, $callsignature, $call_expr)
 
     end
 
