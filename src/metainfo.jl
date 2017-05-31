@@ -143,7 +143,7 @@ function generate_comp_expressions(module_name, component_name)
             # function $(Symbol(string(component_name,"Parameters"))){T}(::Type{T})
                 # new{T}()
             # end
-            $(Expr(:function, $(pconstructor), $(pnewcall)))
+            $(Expr(:function, pconstructor, pnewcall))
         end
 
         # Define type for variables
@@ -232,7 +232,7 @@ function generate_comp_expressions(module_name, component_name)
             #     s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)
             #     s.Variables = $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(T, indices)
             # end
-            $(Expr(:function, $(implconstructor),
+            $(Expr(:function, implconstructor,
                 :(s = $(implnewcall)),
                 :(s.nsteps = indices[:time]),
                 :(s.Parameters = $(pconstructor)),

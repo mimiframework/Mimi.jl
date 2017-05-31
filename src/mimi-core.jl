@@ -993,7 +993,7 @@ macro defcomp(name, ex)
         #     $(call_expr)
         # end
         # callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
-        $(Expr(:function, $callsignature, $call_expr))
+        $(Expr(:function, callsignature, call_expr))
 
     end
 
