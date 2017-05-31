@@ -105,7 +105,7 @@ function generate_comp_expressions(module_name, component_name)
     pnewcall = Expr(:call, pnewargs)
     implnewcall = Expr(:call, inewargs)
     push!(implconstructor.args, :indices)
-    
+
     println(ptypesignature)
     println(pconstructor)
     println(implconstructor)
@@ -115,7 +115,7 @@ function generate_comp_expressions(module_name, component_name)
 
         # Define type for parameters
         # type $(Symbol(string(component_name,"Parameters"))){T}
-        type $ptypesignature
+        type $(ptypesignature)
             $(begin
                 x = Expr(:block)
                 i=1
@@ -143,7 +143,7 @@ function generate_comp_expressions(module_name, component_name)
             # function $(Symbol(string(component_name,"Parameters"))){T}(::Type{T})
                 # new{T}()
             # end
-            $Expr(:function, $pconstructor, $pnewcall)
+            $(Expr(:function, $(pconstructor), $(pnewcall)))
         end
 
         # Define type for variables
@@ -221,7 +221,7 @@ function generate_comp_expressions(module_name, component_name)
         # Define implementation typeof
         type $(Symbol(string(component_name, "Impl"))){T} <: Main.$(Symbol(module_name)).$(Symbol(component_name))
             nsteps::Int
-            Parameters::$ptypesignature
+            Parameters::$(ptypesignature)
             Variables::$(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}
             Dimensions::$(Symbol(string(component_name,"Dimensions")))
 
@@ -232,14 +232,14 @@ function generate_comp_expressions(module_name, component_name)
             #     s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)
             #     s.Variables = $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(T, indices)
             # end
-            $Expr(:function, $implconstructor,
-                :(s = $implnewcall),
+            $(Expr(:function, $(implconstructor),
+                :(s = $(implnewcall)),
                 :(s.nsteps = indices[:time]),
-                :(s.Parameters = $pconstructor),
+                :(s.Parameters = $(pconstructor)),
                 :(s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)),
                 :(s.Variables = $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(T, indices)),
                 :(return s)
-            )
+            ))
 
         end
 
