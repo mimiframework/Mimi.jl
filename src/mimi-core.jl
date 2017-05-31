@@ -986,9 +986,9 @@ macro defcomp(name, ex)
         $(metadimdef)
 
         $(module_def)
-
+        println("here")
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
-
+        println("there")
         # function $(esc(Symbol(name))){T}(::Type{T}, indices)
         #     $(call_expr)
         # end
