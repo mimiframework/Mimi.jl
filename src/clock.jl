@@ -10,7 +10,7 @@ function isfirsttimestep(ts::Timestep)
 	return ts.t == 1
 end
 
-# for users to tell when they are on the final timestep 
+# for users to tell when they are on the final timestep
 function isfinaltimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
 	return gettime(ts) == Final
 end
@@ -88,8 +88,21 @@ function Base.getindex{T, d_offset, Duration, t_offset, Final}(x::OurTVector{T, 
 	return x.data[t]
 end
 
+# int indexing version for old style components
+function Base.getindex{T, Offset, Duration}(x::OurTVector{T, Offset, Duration}, i::Int)
+	return x.data[i]
+end
+
 function Base.indices{T, Offset, Duration}(x::OurTVector{T, Offset, Duration})
 	return (Offset:Duration:(Offset + (length(x.data)-1)*Duration), )
+end
+
+function getoffset{T, Offset, Duration}(v::OurTVector{T, Offset, Duration})
+	return Offset
+end
+
+function Base.eltype(v::OurTVector)
+	return eltype(v.data)
 end
 
 ################
@@ -109,6 +122,19 @@ function Base.getindex{T, d_offset, Duration, t_offset, Final}(x::OurTMatrix{T, 
 	return x.data[t, i]
 end
 
+# int indexing version for old style components
+function Base.getindex{T, Offset, Duration}(x::OurTMatrix{T, Offset, Duration}, t::Int, i::Int)
+	return x.data[t, i]
+end
+
 function Base.indices{T, Offset, Duration}(x::OurTMatrix{T, Offset, Duration})
 	return (Offset:Duration:(Offset+(size(x.data)[1]-1)*Duration), 1:size(x.data)[2])
+end
+
+function getoffset{T, Offset, Duration}(v::OurTMatrix{T, Offset, Duration})
+	return Offset
+end
+
+function Base.eltype(v::OurTMatrix)
+	return eltype(v.data)
 end
