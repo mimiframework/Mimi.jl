@@ -765,7 +765,7 @@ function build(m::Model)
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
-        constructor = Expr(:call, c.component_type, c.offset, duration)
+        constructor = Expr(:call, c.component_type, m.numberType, c.offset, duration)
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0
                 if pname in ext_params
@@ -781,8 +781,8 @@ function build(m::Model)
             end
         end
 
-        println(constructor)
         push!(constructor.args, m.indices_counts)
+        println(constructor)
         comp = eval(constructor)
 
         builtComponents[c.name] = comp
@@ -1081,9 +1081,9 @@ macro defcomp(name, ex)
         $(metadimdef)
 
         $(module_def)
-        println("here")
+        # println("here")
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
-        println("there")
+        # println("there")
         # function $(esc(Symbol(name))){T}(::Type{T}, indices)
         #     $(call_expr)
         # end

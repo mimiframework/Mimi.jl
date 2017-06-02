@@ -134,7 +134,6 @@ function generate_comp_expressions(module_name, component_name)
                     if length(p.dimensions)==0
                         push!(x.args, :($(p.name)::$(concreteParameterType)) )
                     elseif length(p.dimensions)==1
-                        println("B")
                         push!(x.args, :($(p.name)::OurTVector{$(concreteParameterType), $(offset), $(duration)}))
                         i += 1
                     elseif length(p.dimensions)==2
