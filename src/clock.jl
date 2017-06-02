@@ -77,6 +77,16 @@ end
 
 type OurTVector{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 1 for the vector case
 	data::Array{T, 1}
+	function OurTVector(d::Array{T, 1})
+		v = new()
+		v.data = d
+		return v
+	end
+	function OurTVector(i::Int)
+		v = new()
+		v.data = Array{T,1}(i)
+		return v
+	end
 end
 
 function Base.getindex{T, Offset, Duration, Final}(x::OurTVector{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final})
@@ -111,6 +121,16 @@ end
 
 type OurTMatrix{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 2 for the matrix case
 	data::Array{T, 2}
+	function OurTMatrix(d::Array{T, 2})
+		m = new()
+		m.data = d
+		return m
+	end
+	function OurTMatrix(i::Int, j::Int)
+		m = new()
+		m.data = Array{T,2}(i, j)
+		return m
+	end
 end
 
 function Base.getindex{T, Offset, Duration, Final}(x::OurTMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, i::Int)

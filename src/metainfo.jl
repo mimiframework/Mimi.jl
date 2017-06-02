@@ -185,8 +185,8 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(Symbol(string(component_name, "Variables"))){T, OFFSET, DURATION}(::Type{T}, ::Type{OFFSET}, ::Type{DURATION}, indices)
-                s = new{T, OFFSET, DURATION}()
+            function $(Symbol(string(component_name, "Variables")))(indices)
+                s = new()
 
                 $(begin
                     ep = Expr(:block)
@@ -204,7 +204,13 @@ function generate_comp_expressions(module_name, component_name)
                             end
                         end
                         push!(ep.args,u)
-                        push!(ep.args,:(s.$(v.name) = Array($(concreteVariableType),temp_indices...)))
+                        if length(u.args[2].args) == 1
+                            push!(ep.args,:(s.$(v.name) = OurTVector{$concreteVariableType, OFFSET, DURATION}($(u.args[2].args[1]))))
+                        elseif length(u.args[2].args) == 2
+                            push!(ep.args,:(s.$(v.name) = OurTMatrix{$concreteVariableType, OFFSET, DURATION}($(u.args[2].args[1]), $(u.args[2].args[2]))))
+                        else
+                            push!(ep.args,:(s.$(v.name) = Array($(concreteVariableType),temp_indices...)))
+                        end
                     end
                     ep
                 end)
@@ -268,7 +274,7 @@ function generate_comp_expressions(module_name, component_name)
             :(return Expr(:call, $implsignature,
                 indices[:time],
                 $(paramcall),
-                $(Symbol(string(component_name,"Variables")))(T, Type{Val{OFFSET}}, Type{Val{DURATION}}, indices),
+                $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(indices),
                 $(Symbol(string(component_name,"Dimensions")))(indices)
                 ))
         ))
