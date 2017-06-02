@@ -766,7 +766,7 @@ function build(m::Model)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
         # constructor = Expr(:call, c.component_type, m.numberType, c.offset, duration)
-        constructor = Expr(:call, Expr(:curly, c.component_type, m.numberType, c.offset, duration), m.numberType, c.offset, duration)
+        constructor = Expr(:call, c.component_type, m.numberType, :(Type{Val{$c.offset}}), :(Type{Val{$duration}}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0
                 if pname in ext_params
@@ -777,10 +777,8 @@ function build(m::Model)
                     error("unset paramter; should be caught earlier")
                 end
 
-                push!(constructor.args, offset)
-                push!(constructor.args[1].args, offset)
-                push!(constructor.args, duration)
-                push!(constructor.args[1].args, duration)
+                push!(constructor.args, :(Type{Val{$offset}}))
+                push!(constructor.args, :(Type{Val{$duration}}))
             end
         end
 
@@ -1042,19 +1040,19 @@ macro defcomp(name, ex)
     #     :indices
     #     )
     call_expr = Expr(:call,
-        Expr(:curly,
-            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
-            :T, :OFFSET, :DURATION),
+        Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
         :T,
-        :OFFSET,
-        :DURATION
+        :(Type{Val{:OFFSET}}),
+        :(Type{Val{:DURATION}})
         )
     callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION), Expr(:(::), Expr(:curly, :Type, :T)), Expr(:(::), Expr(:curly, :Type, :OFFSET)), Expr(:(::), Expr(:curly, :Type, :DURATION)))
     for i in 1:numarrayparams
-        push!(call_expr.args, Symbol("OFFSET$i"))
-        push!(call_expr.args, Symbol("DURATION$i"))
-        push!(call_expr.args[1].args, Symbol("OFFSET$i"))
-        push!(call_expr.args[1].args, Symbol("DURATION$i"))
+        push!(call_expr.args, :(Type{Val{$(Symbol("OFFSET$i"))}}))
+        push!(call_expr.args, :(Type{Val{$(Symbol("DURATION$i"))}}))
+        # push!(call_expr.args, Symbol("OFFSET$i"))
+        # push!(call_expr.args, Symbol("DURATION$i"))
+        # push!(call_expr.args[1].args, Symbol("OFFSET$i"))
+        # push!(call_expr.args[1].args, Symbol("DURATION$i"))
 
         push!(callsignature.args[1].args, Symbol("OFFSET$i"))
         push!(callsignature.args[1].args, Symbol("DURATION$i"))

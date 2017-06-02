@@ -83,6 +83,7 @@ function generate_comp_expressions(module_name, component_name)
     ptypesignature = Expr(:curly, Symbol(pname), :T)
     pconstructor = Expr(:call, Expr(:curly, Symbol(pname), :T),  Expr(:(::), Expr(:curly, :Type, :T)))
     pnewargs = Expr(:curly, :new, :T)
+    paramcall = Expr(:call, Symbol(pname), :T)
     inewargs = Expr(:curly, :new, :T, :OFFSET, :DURATION)
     implconstructor = Expr(:call, Expr(:curly, Symbol(string(component_name, "Impl")), :T, :OFFSET, :DURATION), Expr(:(::), Expr(:curly, :Type, :T)), Expr(:(::), Expr(:curly, :Type, :OFFSET)), Expr(:(::), Expr(:curly, :Type, :DURATION)))
     implsignature = Expr(:curly, Symbol((string(component_name, "Impl"))), :T, :OFFSET, :DURATION)
@@ -97,6 +98,9 @@ function generate_comp_expressions(module_name, component_name)
         push!(pconstructor.args[1].args, Symbol("DURATION$i"))
         push!(pconstructor.args, Expr(:(::), Expr(:curly, :Type, Symbol("OFFSET$i"))))
         push!(pconstructor.args, Expr(:(::), Expr(:curly, :Type, Symbol("DURATION$i"))))
+
+        push!(paramcall.args, :(Type{Val{$(Symbol("OFFSET$i"))}}))
+        push!(paramcall.args, :(Type{Val{$(Symbol("DURATION$i"))}}))
 
         push!(implconstructor.args[1].args, Symbol("OFFSET$i"))
         push!(implconstructor.args[1].args, Symbol("DURATION$i"))
@@ -115,7 +119,10 @@ function generate_comp_expressions(module_name, component_name)
 
     println(ptypesignature)
     println(pconstructor)
+    println(paramcall)
+    println(implsignature)
     println(implconstructor)
+    println(implnewcall)
 
     compexpr = quote
         using Mimi
@@ -150,8 +157,13 @@ function generate_comp_expressions(module_name, component_name)
             # function $(Symbol(string(component_name,"Parameters"))){T}(::Type{T})
                 # new{T}()
             # end
-            $(Expr(:function, pconstructor, :(println("A")), pnewcall))
+            # $(Expr(:function, pconstructor, pnewcall))
+            # $(Expr(:function, pconstructor, :(new())))
         end
+
+        $(Expr(:function, pconstructor,
+            :(return Expr(:call, $ptypesignature))
+        ))
 
         # Define type for variables
         type $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}
@@ -240,17 +252,26 @@ function generate_comp_expressions(module_name, component_name)
             #     s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)
             #     s.Variables = $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(T, indices)
             # end
-            $(Expr(:function, implconstructor,
-                :(s = $(implnewcall)),
-                :(s.nsteps = indices[:time]),
-                :(s.Parameters = $(pconstructor)),
-                :(s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)),
-                :(s.Variables = $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(T, indices)),
-                :(return s)
-            ))
+            # $(Expr(:function, implconstructor,
+            #     # :(s = $(implnewcall)),
+            #     :(s=esc(new)()),
+            #     :(println("there")),
+            #     :(s.nsteps = indices[:time]),
+            #     :(s.Parameters = $(pconstructor)),
+            #     :(s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)),
+            #     :(s.Variables = $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(T, indices)),
+            #     :(return s)
+            # ))
 
         end
-
+        $(Expr(:function, implconstructor,
+            :(return Expr(:call, $implsignature,
+                indices[:time],
+                $(paramcall),
+                $(Symbol(string(component_name,"Variables")))(T, Type{Val{OFFSET}}, Type{Val{DURATION}}, indices),
+                $(Symbol(string(component_name,"Dimensions")))(indices)
+                ))
+        ))
 
     end
     return compexpr
