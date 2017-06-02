@@ -765,7 +765,8 @@ function build(m::Model)
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
-        constructor = Expr(:call, c.component_type, m.numberType, c.offset, duration)
+        # constructor = Expr(:call, c.component_type, m.numberType, c.offset, duration)
+        constructor = Expr(:call, Expr(:curly, c.component_type, m.numberType, c.offset, duration), m.numberType, c.offset, duration)
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0
                 if pname in ext_params
@@ -777,7 +778,9 @@ function build(m::Model)
                 end
 
                 push!(constructor.args, offset)
+                push!(constructor.args[1].args, offset)
                 push!(constructor.args, duration)
+                push!(constructor.args[1].args, duration)
             end
         end
 
@@ -1057,6 +1060,7 @@ macro defcomp(name, ex)
         push!(callsignature.args[1].args, Symbol("DURATION$i"))
         push!(callsignature.args, Expr(:(::), Expr(:curly, :Type, Symbol("OFFSET$i"))))
         push!(callsignature.args, Expr(:(::), Expr(:curly, :Type, Symbol("DURATION$i"))))
+
     end
     push!(call_expr.args, :indices)
     push!(callsignature.args, :indices)
