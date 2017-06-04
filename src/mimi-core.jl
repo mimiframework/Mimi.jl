@@ -972,6 +972,174 @@ end
 
 #Begin Graph Functionality section
 
+# Graphically show the parameter connections between models
+# Make sure you run this:
+# using PlotRecipes
+# # we'll use the PyPlot backend, and set a couple defaults
+# pyplot(alpha=0.5, size=(800,400))
+# Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+function showConnections(m::Model)
+    node_to_num = Dict()
+    node_to_color = Dict()
+    source_nodes = []
+    destiny_nodes = []
+    
+    for connection in m.internal_parameter_connections
+        source = connection.source_component_name
+        target = connection.target_component_name
+        source_var = connection.source_variable_name
+        target_par = connection.target_parameter_name
+        
+        #Load everything into dictionary of valid nodes
+        if !(source in keys(node_to_num))
+            node_to_num[source] = length(node_to_num) + 1
+            node_to_color[source] = :blue
+        end
+        if !(target in keys(node_to_num))
+            node_to_num[target] = length(node_to_num) + 1
+            node_to_color[target] = :blue
+        end
+        if !(source_var in keys(node_to_num))
+            node_to_num[source_var] = length(node_to_num) + 1
+            node_to_color[source_var] = :red
+        end
+        if !(target_par in keys(node_to_num))
+            node_to_num[target_par] = length(node_to_num) + 1
+            node_to_color[target_par] = :red
+        end
+
+        #source --> source_var
+        push!(source_nodes, node_to_num[source])
+        push!(destiny_nodes, node_to_num[source_var])
+
+        #source_var --> target_par
+        push!(source_nodes, node_to_num[source_var])
+        push!(destiny_nodes, node_to_num[target_par])
+        
+        #target_par --> target
+        push!(source_nodes, node_to_num[target_par])
+        push!(destiny_nodes, node_to_num[target])
+    end
+    pairs = [pair for pair in node_to_num]
+    pairs = sort(pairs, by=(g(x) = x[2]))
+    ord_names = [pair[1] for pair in pairs]
+    ord_colors = [node_to_color[node] for node in ord_names]
+    ord_names = [string(name) for name in ord_names]
+
+    #Make sure the arrays passed in are of the following types
+    source_nodes = convert(Array{Int64}, source_nodes)
+    destiny_nodes = convert(Array{Int64}, destiny_nodes)
+    ord_names = convert(Array{String}, ord_names)
+
+    pyplot(alpha=0.5, size=(800,400))
+    graphplot(source_nodes, destiny_nodes, names=ord_names, m = ord_colors)
+end
+
+
+"""
+    showConnections(m::Model, component_name::Symbol)
+
+Returns a tree visualization of the incoming conencted components for passed in component_name as 
+well as incoming connected paramters as well as outgoing internal parameter connections. 
+
+ Graphically show the parameter connections between models
+ Make sure you run this:
+ using PlotRecipes
+ # we'll use the PyPlot backend, and set a couple defaults
+ pyplot(alpha=0.5, size=(800,400))
+ Based on Tom Breloffs plotting package: http://www.breloff.com/Graphs/
+"""
+
+function showConnections(m::Model, component_name::Symbol)
+    comp_to_num = Dict()
+    var_to_num = Dict()
+    node_num_to_color = Dict()
+    source_nodes = []
+    destiny_nodes = []
+
+
+    #Add Dummy Node to all source nodes except componentname
+    dummy_node = :START
+    comp_to_num[dummy_node] = 1
+    node_num_to_color[1] = :yellow
+
+    for connection in m.internal_parameter_connections
+        source = connection.source_component_name
+        target = connection.target_component_name
+        source_var = connection.source_variable_name
+        target_par = connection.target_parameter_name
+        if (component_name == source || component_name == target)
+            
+            if component_name == source
+                target = Symbol(string(target, "-cout"))
+                source_var = Symbol(string(source_var, "-out"))
+                target_par = Symbol(string(target_par, "-out"))
+            else
+                source = Symbol(string(source, "-cin"))
+                source_var = Symbol(string(source_var, "-in"))
+                target_par = Symbol(string(target_par, "-in"))
+            end
+            
+
+            #Load everything into dictionary of valid nodes
+            if !(source in keys(comp_to_num))
+                pos = length(comp_to_num) + length(var_to_num) + 1
+                comp_to_num[source] = pos
+                node_num_to_color[pos] = :blue
+            end
+            if !(target in keys(comp_to_num))
+                pos = length(comp_to_num) + length(var_to_num) + 1
+                comp_to_num[target] = pos
+                node_num_to_color[pos] = :blue
+            end
+            if !(source_var in keys(var_to_num))
+                pos = length(comp_to_num) + length(var_to_num) + 1
+                var_to_num[source_var] = pos
+                node_num_to_color[pos] = :red
+            end
+            if !(target_par in keys(var_to_num))
+                pos = length(comp_to_num) + length(var_to_num) + 1
+                var_to_num[target_par] = pos
+                node_num_to_color[pos] = :red
+            end
+            if (component_name == target)
+                #dummy --> source
+                push!(source_nodes, comp_to_num[dummy_node])
+                push!(destiny_nodes, comp_to_num[source])
+            end
+
+            #source --> source_var
+            push!(source_nodes, comp_to_num[source])
+            push!(destiny_nodes, var_to_num[source_var])
+
+            #source_var --> target_par
+            if !(source_var == target_par)
+                push!(source_nodes, var_to_num[source_var])
+                push!(destiny_nodes, comp_to_num[target_par])
+            end
+            
+            #target_par --> target
+            push!(source_nodes, var_to_num[target_par])
+            push!(destiny_nodes, comp_to_num[target])
+        end
+    end
+
+    pairs = append!([pair for pair in comp_to_num], [pair for pair in var_to_num]) 
+    pairs = sort(pairs, by=(g(x) = x[2]))
+    ord_names = [pair[1] for pair in pairs]
+    println(node_num_to_color)
+    ord_colors = [node_num_to_color[i] for i in collect(1:length(ord_names))]
+    ord_names = [string(name) for name in ord_names]
+
+    #Make sure the arrays passed in are of the following types
+    source_nodes = convert(Array{Int64}, source_nodes)
+    destiny_nodes = convert(Array{Int64}, destiny_nodes)
+    ord_names = convert(Array{String}, ord_names)
+
+    pyplot(alpha=0.5, size=(800,400))
+    graphplot(source_nodes, destiny_nodes, names=ord_names, m = ord_colors, method=:tree, root=:left)
+end
+
 function show(io::IO, m::Model)
     println(io, "showing model component connections:")
     for item in enumerate(keys(m.components2))

@@ -4,6 +4,7 @@ using DataStructures
 using DataFrames
 using Distributions
 using NamedArrays
+using PlotRecipes
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
