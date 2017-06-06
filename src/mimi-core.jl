@@ -1032,21 +1032,6 @@ macro defcomp(name, ex)
     module_def = :(eval(current_module(), :(module temporary_name end)))
     module_def.args[3].args[1].args[2] = Symbol(string("_mimi_implementation_", name))
 
-    # call_expr = Expr(:call,
-    #     Expr(:curly,
-    #         Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
-    #         :T),
-    #     :T,
-    #     :indices
-    #     )
-
-    # call_expr = Expr(:call,
-    #     Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
-    #     :T,
-    #     :(Type{Val{:OFFSET}}),
-    #     :(Type{Val{:DURATION}})
-    #     )
-
     call_expr = Expr(:call,
         Expr(:curly,
             Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
@@ -1089,9 +1074,7 @@ macro defcomp(name, ex)
         $(metadimdef)
 
         $(module_def)
-        # println("here")
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
-        # println("there")
 
         # callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
         $(Expr(:function, callsignature, call_expr))

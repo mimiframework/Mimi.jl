@@ -15,13 +15,10 @@ y = collect(2:2:22)
 setparameter(model1, :adder, :input, x)
 setparameter(model1, :adder, :add, y)
 
-mi = Mimi.build(model1)
-run(mi, 10, model1.indices_values)
-# run(model1)
+run(model1)
 
 for i in collect(1:10)
     @test model1[:adder, :output][i] == 3i
-    #println(model1[:adder, :output][i])
 end
 
 ##############################################
@@ -37,5 +34,4 @@ run(model2)
 
 for i in collect(1:10)
     @test model2[:compA, :output][i] == 3i
-    #println(model2[:compA, :output][i])
 end

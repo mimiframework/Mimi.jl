@@ -115,6 +115,14 @@ function Base.eltype(v::OurTVector)
 	return eltype(v.data)
 end
 
+function Base.fill!(v::OurTVector, x)
+	fill!(v.data, x)
+end
+
+function Base.setindex!(v::OurTVector, a, b)
+	setindex!(v.data, a, b)
+end
+
 ################
 #  OurTMatrix  #
 ################
@@ -157,4 +165,12 @@ end
 
 function Base.eltype(v::OurTMatrix)
 	return eltype(v.data)
+end
+
+function Base.fill!(m::OurTMatrix, x)
+	fill!(m.data, x)
+end
+
+function Base.setindex!(m::OurTMatrix, a, b, c)
+	setindex!(m.data, a, b, c)
 end

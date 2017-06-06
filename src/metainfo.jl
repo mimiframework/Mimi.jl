@@ -81,11 +81,6 @@ function generate_comp_expressions(module_name, component_name)
     pname = string(component_name,"Parameters")
 
     ptypesignature = Expr(:curly, Symbol(pname), :T)
-    # pconstructor = Expr(:call, Expr(:curly, Symbol(pname), :T),  Expr(:(::), Expr(:curly, :Type, :T)))
-    # pnewargs = Expr(:curly, :new, :T)
-    # paramcall = Expr(:call, Symbol(pname), :T)
-    # inewargs = Expr(:curly, :new, :T, :OFFSET, :DURATION)
-    # implconstructor = Expr(:call, Expr(:curly, Symbol(string(component_name, "Impl")), :T, :OFFSET, :DURATION), Expr(:(::), Expr(:curly, :Type, :T)), Expr(:(::), Expr(:curly, :Type, :OFFSET)), Expr(:(::), Expr(:curly, :Type, :DURATION)))
     implconstructor = Expr(:call, Symbol(string(component_name, "Impl")))
     implsignature = Expr(:curly, Symbol((string(component_name, "Impl"))), :T, :OFFSET, :DURATION)
     for (i, p) in enumerate(arrayparameters)
@@ -94,42 +89,17 @@ function generate_comp_expressions(module_name, component_name)
 
         push!(implsignature.args, Symbol("OFFSET$i"))
         push!(implsignature.args, Symbol("DURATION$i"))
-
-        # push!(pconstructor.args[1].args, Symbol("OFFSET$i"))
-        # push!(pconstructor.args[1].args, Symbol("DURATION$i"))
-        # push!(pconstructor.args, Expr(:(::), Expr(:curly, :Type, Symbol("OFFSET$i"))))
-        # push!(pconstructor.args, Expr(:(::), Expr(:curly, :Type, Symbol("DURATION$i"))))
-
-        # push!(paramcall.args, :(Type{Val{$(Symbol("OFFSET$i"))}}))
-        # push!(paramcall.args, :(Type{Val{$(Symbol("DURATION$i"))}}))
-
-        # push!(implconstructor.args[1].args, Symbol("OFFSET$i"))
-        # push!(implconstructor.args[1].args, Symbol("DURATION$i"))
-        # push!(implconstructor.args, Expr(:(::), Expr(:curly, :Type, Symbol("OFFSET$i"))))
-        # push!(implconstructor.args, Expr(:(::), Expr(:curly, :Type, Symbol("DURATION$i"))))
-
-        # push!(inewargs.args, Symbol("OFFSET$i"))
-        # push!(inewargs.args, Symbol("DURATION$i"))
-
-        # push!(pnewargs.args, Symbol("OFFSET$i"))
-        # push!(pnewargs.args, Symbol("DURATION$i"))
     end
-    # pnewcall = Expr(:call, pnewargs)
-    # implnewcall = Expr(:call, inewargs)
     push!(implconstructor.args, :indices)
 
-    println(ptypesignature)
-    # println(pconstructor)
-    # println(paramcall)
-    println(implsignature)
-    println(implconstructor)
-    # println(implnewcall)
+    # println(ptypesignature)
+    # println(implsignature)
+    # println(implconstructor)
 
     compexpr = quote
         using Mimi
 
         # Define type for parameters
-        # type $(Symbol(string(component_name,"Parameters"))){T}
         type $(ptypesignature)
             $(begin
                 x = Expr(:block)
