@@ -756,17 +756,13 @@ function build(m::Model)
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
     for c in values(m.components2)
-        # t = c.component_type
-        # comp = t(m.numberType, m.indices_counts)
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
-        # ext_params = Dict(x.param_name => x for x in ext_connections)
         ext_params = map(x->x.param_name, ext_connections)
 
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
-        # constructor = Expr(:call, c.component_type, m.numberType, c.offset, duration)
-        constructor = Expr(:call, c.component_type, m.numberType, :(Type{Val{$c.offset}}), :(Type{Val{$duration}}))
+        constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0
                 if pname in ext_params
@@ -777,14 +773,18 @@ function build(m::Model)
                     error("unset paramter; should be caught earlier")
                 end
 
-                push!(constructor.args, :(Type{Val{$offset}}))
-                push!(constructor.args, :(Type{Val{$duration}}))
+                push!(constructor.args, :(Val{$offset}))
+                push!(constructor.args, :(Val{$duration}))
             end
         end
 
         push!(constructor.args, m.indices_counts)
         println(constructor)
-        comp = eval(constructor)
+        println(typeof(constructor))
+
+        comp = eval(eval(constructor))
+        println(comp)
+        println(typeof(comp))
 
         builtComponents[c.name] = comp
 
@@ -1039,31 +1039,37 @@ macro defcomp(name, ex)
     #     :T,
     #     :indices
     #     )
+
+    # call_expr = Expr(:call,
+    #     Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
+    #     :T,
+    #     :(Type{Val{:OFFSET}}),
+    #     :(Type{Val{:DURATION}})
+    #     )
+
     call_expr = Expr(:call,
-        Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
-        :T,
-        :(Type{Val{:OFFSET}}),
-        :(Type{Val{:DURATION}})
+        Expr(:curly,
+            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
+            :T, :OFFSET, :DURATION
+            ),
+        :indices
         )
-    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION), Expr(:(::), Expr(:curly, :Type, :T)), Expr(:(::), Expr(:curly, :Type, :OFFSET)), Expr(:(::), Expr(:curly, :Type, :DURATION)))
+
+    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION), :(::Type{T}), :(::Type{Val{OFFSET}}),:(::Type{Val{DURATION}}))
     for i in 1:numarrayparams
-        push!(call_expr.args, :(Type{Val{$(Symbol("OFFSET$i"))}}))
-        push!(call_expr.args, :(Type{Val{$(Symbol("DURATION$i"))}}))
-        # push!(call_expr.args, Symbol("OFFSET$i"))
-        # push!(call_expr.args, Symbol("DURATION$i"))
-        # push!(call_expr.args[1].args, Symbol("OFFSET$i"))
-        # push!(call_expr.args[1].args, Symbol("DURATION$i"))
+        push!(call_expr.args[1].args, Symbol("OFFSET$i"))
+        push!(call_expr.args[1].args, Symbol("DURATION$i"))
 
         push!(callsignature.args[1].args, Symbol("OFFSET$i"))
         push!(callsignature.args[1].args, Symbol("DURATION$i"))
-        push!(callsignature.args, Expr(:(::), Expr(:curly, :Type, Symbol("OFFSET$i"))))
-        push!(callsignature.args, Expr(:(::), Expr(:curly, :Type, Symbol("DURATION$i"))))
+        push!(callsignature.args, :(::Type{Val{$(Symbol("OFFSET$i"))}}))
+        push!(callsignature.args, :(::Type{Val{$(Symbol("DURATION$i"))}}))
 
     end
-    push!(call_expr.args, :indices)
     push!(callsignature.args, :indices)
     println(call_expr)
     println(callsignature)
+    println(Expr(:function, callsignature, call_expr))
 
     x = quote
 
@@ -1086,9 +1092,7 @@ macro defcomp(name, ex)
         # println("here")
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
         # println("there")
-        # function $(esc(Symbol(name))){T}(::Type{T}, indices)
-        #     $(call_expr)
-        # end
+
         # callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
         $(Expr(:function, callsignature, call_expr))
 
