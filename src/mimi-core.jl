@@ -757,7 +757,8 @@ function build(m::Model)
     final_times = Array{Int, 1}()
     for c in values(m.components2)
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
-        ext_params = map(x->x.param_name, ext_connections)
+        # ext_params = map(x->x.param_name, ext_connections)
+        ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
@@ -765,8 +766,8 @@ function build(m::Model)
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0
-                if pname in ext_params
-                    offset = getoffset(m.external_parameters[pname].values)
+                if pname in keys(ext_params)
+                    offset = getoffset(ext_params[pname].values)
                 elseif pname in keys(int_params)
                     offset = m.components2[int_params[pname].source_component_name].offset
                 else
@@ -779,13 +780,9 @@ function build(m::Model)
         end
 
         push!(constructor.args, m.indices_counts)
-        println(constructor)
-        println(typeof(constructor))
+        # println(constructor)
 
         comp = eval(eval(constructor))
-        println(comp)
-        println(typeof(comp))
-
         builtComponents[c.name] = comp
 
         push!(offsets, c.offset)
@@ -1052,9 +1049,9 @@ macro defcomp(name, ex)
 
     end
     push!(callsignature.args, :indices)
-    println(call_expr)
-    println(callsignature)
-    println(Expr(:function, callsignature, call_expr))
+    # println(call_expr)
+    # println(callsignature)
+    # println(Expr(:function, callsignature, call_expr))
 
     x = quote
 
@@ -1077,7 +1074,7 @@ macro defcomp(name, ex)
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
 
         # callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
-        $(Expr(:function, callsignature, call_expr))
+        $(Expr(:function, Expr(:call, Expr(:curly, esc(Symbol(name)), callsignature.args[1].args[2:end]...), callsignature.args[2:end]...), call_expr))
 
     end
 
