@@ -521,11 +521,11 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
         error("Component does not exist in current model")
     end
     if name in fieldnames(mi.components[component].Variables)
-        return getfield(mi.components[component].Variables, name)
+        return getfield(mi.components[component].Variables, name).data
     elseif name in fieldnames(mi.components[component].Parameters)
-        return getfield(mi.components[component].Parameters, name)
+        return getfield(mi.components[component].Parameters, name).data
     else
-        error(string(name, " is not a paramter or a variable in component ", component, "."))
+        error(string(name, " is not a parameter or a variable in component ", component, "."))
     end
 end
 
