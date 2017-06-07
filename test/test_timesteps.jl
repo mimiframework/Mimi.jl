@@ -61,4 +61,4 @@ set_external_parameter(m, :y, collect(1:11))
 connectparameter(m, :Foo, :input, :x)
 connectparameter(m, :Bar, :input, :y)
 
-run(m)
+# run(m)

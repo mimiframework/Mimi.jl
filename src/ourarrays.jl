@@ -50,6 +50,14 @@ function Base.setindex!(v::OurTVector, a, b)
 	setindex!(v.data, a, b)
 end
 
+function Base.size(v::OurTVector)
+	return size(v.data)
+end
+
+function Base.size(v::OurTVector, i::Int)
+	return size(v.data, i)
+end
+
 ################
 #  OurTMatrix  #
 ################
@@ -100,4 +108,16 @@ end
 
 function Base.setindex!(m::OurTMatrix, a, b, c)
 	setindex!(m.data, a, b, c)
+end
+
+function Base.size(m::OurTMatrix)
+	return size(m.data)
+end
+
+function Base.size(m::OurTMatrix)
+	return size(m.data)
+end
+
+function Base.size(m::OurTMatrix, i::Int)
+	return size(m.data, i)
 end

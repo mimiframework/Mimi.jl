@@ -16,17 +16,18 @@ using DataFrames
     var5 = Variable(index=[index1,4])
 end
 
-x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
+# x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
+x1 = foo1(Float64, Val{1}, Val{1}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
 
 @test x1.Dimensions.index1.start == 1
 @test x1.Dimensions.index1.stop == 3
 
 # Check variable types
 @test isa(x1.Variables.var1, Float64)
-@test isa(x1.Variables.var2, Array{Float64,1})
-@test isa(x1.Variables.var3, Array{Float64,2})
-@test isa(x1.Variables.var4, Array{Bool,1})
-@test isa(x1.Variables.var5, Array{Float64,2})
+@test isa(x1.Variables.var2.data, Array{Float64,1})
+@test isa(x1.Variables.var3.data, Array{Float64,2})
+@test isa(x1.Variables.var4.data, Array{Bool,1})
+@test isa(x1.Variables.var5.data, Array{Float64,2})
 
 # Check variable sizes
 @test size(x1.Variables.var2,1)==10

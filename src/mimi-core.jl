@@ -348,10 +348,10 @@ function set_external_parameter(m::Model, name::Symbol, value::NamedArray; offse
         offset = m.indices_values[:time][1]
     end
 
-    if !(typeof(value) <: Array{m.numberType})
-        # E.g., if model takes Number and given Float64, convert it
-        value = convert(Array{m.numberType}, value)
-    end
+    # if !(typeof(value) <: Array{m.numberType})
+    #     # E.g., if model takes Number and given Float64, convert it
+    #     value = convert(Array{m.numberType}, value)
+    # end
 
     #namedarray given, so we can perform label checks
     dims = dimnames(value)
@@ -832,6 +832,10 @@ end
 Run model `m` once.
 """
 function run(m::Model;ntimesteps=typemax(Int))
+    if length(m.components2) == 0
+        error("Cannot run a model with no components.")
+    end
+
     if isnull(m.mi)
         m.mi = Nullable{ModelInstance}(build(m))
     end
@@ -840,7 +844,7 @@ end
 
 function run(mi::ModelInstance, ntimesteps, indices_values)
     if length(mi.components) == 0
-        error("You are trying to run a model with no components")
+        error("Cannot run a model with no components.")
     end
 
     for (name,c) in mi.components
