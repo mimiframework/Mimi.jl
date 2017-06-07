@@ -348,10 +348,10 @@ function set_external_parameter(m::Model, name::Symbol, value::NamedArray; offse
         offset = m.indices_values[:time][1]
     end
 
-    # if !(typeof(value) <: Array{m.numberType})
-    #     # E.g., if model takes Number and given Float64, convert it
-    #     value = convert(Array{m.numberType}, value)
-    # end
+    if !(typeof(value) <: NamedArray{m.numberType})
+        # E.g., if model takes Number and given Float64, convert it
+        value = convert(NamedArray{m.numberType}, value)
+    end
 
     #namedarray given, so we can perform label checks
     dims = dimnames(value)

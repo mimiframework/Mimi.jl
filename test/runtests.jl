@@ -25,3 +25,5 @@ for t in tests
     println("$fp ...")
     include(fp)
 end
+
+println("All tests pass.")
