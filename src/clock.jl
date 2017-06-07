@@ -99,7 +99,7 @@ function Base.getindex{T, d_offset, Duration, t_offset, Final}(x::OurTVector{T, 
 end
 
 # int indexing version for old style components
-function Base.getindex{T, Offset, Duration}(x::OurTVector{T, Offset, Duration}, i::Int)
+function Base.getindex{T, Offset, Duration, OT1<:Union{Int, Colon, OrdinalRange}}(x::OurTVector{T, Offset, Duration}, i::OT1)
 	return x.data[i]
 end
 
@@ -141,17 +141,17 @@ type OurTMatrix{T, Offset, Duration} #don't need to encode N (number of dimensio
 	end
 end
 
-function Base.getindex{T, Offset, Duration, Final}(x::OurTMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, i::Int)
+function Base.getindex{T, Offset, Duration, Final, OT1<:Union{Int, Colon, OrdinalRange}}(x::OurTMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, i::OT1)
 	return x.data[ts.t, i]
 end
 
-function Base.getindex{T, d_offset, Duration, t_offset, Final}(x::OurTMatrix{T, d_offset, Duration}, ts::Timestep{t_offset, Duration, Final}, i::Int)
+function Base.getindex{T, d_offset, Duration, t_offset, Final, OT1<:Union{Int, Colon, OrdinalRange}}(x::OurTMatrix{T, d_offset, Duration}, ts::Timestep{t_offset, Duration, Final}, i::OT1)
 	t = Int64(ts.t + (t_offset - d_offset)/Duration)
 	return x.data[t, i]
 end
 
 # int indexing version for old style components
-function Base.getindex{T, Offset, Duration}(x::OurTMatrix{T, Offset, Duration}, t::Int, i::Int)
+function Base.getindex{T, Offset, Duration, OT1<:Union{Int, Colon, OrdinalRange}, OT2<:Union{Int, Colon, OrdinalRange}}(x::OurTMatrix{T, Offset, Duration}, t::OT1, i::OT2)
 	return x.data[t, i]
 end
 
