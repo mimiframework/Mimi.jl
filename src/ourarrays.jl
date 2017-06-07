@@ -114,10 +114,6 @@ function Base.size(m::OurTMatrix)
 	return size(m.data)
 end
 
-function Base.size(m::OurTMatrix)
-	return size(m.data)
-end
-
 function Base.size(m::OurTMatrix, i::Int)
 	return size(m.data, i)
 end
