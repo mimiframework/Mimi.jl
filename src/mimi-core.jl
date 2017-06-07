@@ -521,7 +521,12 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
         error("Component does not exist in current model")
     end
     if name in fieldnames(mi.components[component].Variables)
-        return getfield(mi.components[component].Variables, name).data
+        v = getfield(mi.components[component].Variables, name)
+        if isa(v, OurTVector) || isa(v, OurTMatrix)
+            return v.data
+        else
+            return v
+        end
     elseif name in fieldnames(mi.components[component].Parameters)
         p = getfield(mi.components[component].Parameters, name)
         if isa(p, OurTVector) || isa(p, OurTMatrix)
