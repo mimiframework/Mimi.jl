@@ -523,7 +523,12 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     if name in fieldnames(mi.components[component].Variables)
         return getfield(mi.components[component].Variables, name).data
     elseif name in fieldnames(mi.components[component].Parameters)
-        return getfield(mi.components[component].Parameters, name).data
+        p = getfield(mi.components[component].Parameters, name)
+        if isa(p, OurTVector) || isa(p, OurTMatrix)
+            return p.data
+        else
+            return p
+        end
     else
         error(string(name, " is not a parameter or a variable in component ", component, "."))
     end

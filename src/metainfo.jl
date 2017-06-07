@@ -1,4 +1,5 @@
 module metainfo
+using DataStructures
 
 type MetaVariable
     name::Symbol
@@ -24,12 +25,12 @@ type MetaComponent
     module_name::Symbol
     component_name::Symbol
 
-    variables::Dict{Symbol,MetaVariable}
-    parameters::Dict{Symbol,MetaParameter}
-    dimensions::Dict{Symbol,MetaDimension}
+    variables::OrderedDict{Symbol,MetaVariable}
+    parameters::OrderedDict{Symbol,MetaParameter}
+    dimensions::OrderedDict{Symbol,MetaDimension}
 
     function MetaComponent(module_name::Symbol, component_name::Symbol)
-        v = new(module_name, component_name, Dict{Symbol, MetaVariable}(), Dict{Symbol, MetaParameter}(), Dict{Symbol, MetaDimension}())
+        v = new(module_name, component_name, OrderedDict{Symbol, MetaVariable}(), OrderedDict{Symbol, MetaParameter}(), OrderedDict{Symbol, MetaDimension}())
         return v
     end
 end
