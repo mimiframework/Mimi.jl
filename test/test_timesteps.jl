@@ -77,3 +77,31 @@ end
 for i in 6:11
     @test m[:Bar, :output][i] == i*i
 end
+
+##################################################
+#  Now build a model with connecting components  #
+##################################################
+
+@defcomp Foo2 begin
+    input = Parameter(index=[time])
+    output = Variable(index=[time])
+end
+
+function run_timestep(c::Foo2, ts::Timestep)
+    c.Variables.output[ts] = c.Parameters.input[ts]
+end
+
+m2 = Model()
+setindex(m2, :time, 2000:2010)
+bar = addcomponent(m2, Bar)
+foo2 = addcomponent(m2, Foo2, start=2005) #offset for foo
+
+set_external_parameter(m2, :y, collect(1:11))
+connectparameter(m2, :Bar, :input, :y)
+connectparameter(m2, :Foo2, :input, :Bar, :output)
+
+run(m2)
+
+for i in 1:6
+    @test m2[:Foo2, :output][i] == (i+5)^2
+end
