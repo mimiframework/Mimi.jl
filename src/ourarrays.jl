@@ -46,16 +46,16 @@ function Base.fill!(v::OurTVector, x)
 	fill!(v.data, x)
 end
 
-function Base.setindex!{T, Offset, Duration, Final}(v::OurTVector{T, Offset, Duration}, a::T, ts::Timestep{Offset, Duration, Final})
+function Base.setindex!{T, Offset, Duration, Final}(v::OurTVector{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final})
 	setindex!(v.data, a, ts.t)
 end
 
-function Base.setindex!{T, d_offset, Duration, t_offset, Final}(v::OurTVector{T, d_offset, Duration}, a::T, ts::Timestep{t_offset, Duration, Final})
+function Base.setindex!{T, d_offset, Duration, t_offset, Final}(v::OurTVector{T, d_offset, Duration}, a, ts::Timestep{t_offset, Duration, Final})
 	t = Int64(ts.t + (t_offset - d_offset)/Duration)
 	setindex!(v.data, a, t)
 end
 
-function Base.setindex!{T, offset, duration}(v::OurTVector{T, offset, duration}, a::T, i::Int)
+function Base.setindex!{T, offset, duration}(v::OurTVector{T, offset, duration}, a, i::Int)
 	setindex!(v.data, a, i)
 end
 
@@ -99,16 +99,16 @@ function Base.getindex{T, Offset, Duration, OT1<:Union{Int, Colon, OrdinalRange}
 	return x.data[t, i]
 end
 
-function Base.setindex!{T, Offset, Duration, Final}(m::OurTMatrix{T, Offset, Duration}, a::T, ts::Timestep{Offset, Duration, Final}, j::Int)
+function Base.setindex!{T, Offset, Duration, Final}(m::OurTMatrix{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final}, j::Int)
 	setindex!(m.data, a, ts.t, j)
 end
 
-function Base.setindex!{T, d_offset, Duration, t_offset, Final}(m::OurTMatrix{T, d_offset, Duration}, a::T, ts::Timestep{t_offset, Duration, Final}, j::Int)
+function Base.setindex!{T, d_offset, Duration, t_offset, Final}(m::OurTMatrix{T, d_offset, Duration}, a, ts::Timestep{t_offset, Duration, Final}, j::Int)
 	t = Int64(ts.t + (t_offset - d_offset)/Duration)
 	setindex!(m.data, a, t, j)
 end
 
-function Base.setindex!{T, offset, duration}(m::OurTMatrix{T, offset, duration}, a::T, i::Int, j::Int)
+function Base.setindex!{T, offset, duration}(m::OurTMatrix{T, offset, duration}, a, i::Int, j::Int)
 	setindex!(m.data, a, i, j)
 end
 
@@ -126,10 +126,6 @@ end
 
 function Base.fill!(m::OurTMatrix, x)
 	fill!(m.data, x)
-end
-
-function Base.setindex!(m::OurTMatrix, a, b, c)
-	setindex!(m.data, a, b, c)
 end
 
 function Base.size(m::OurTMatrix)
