@@ -773,7 +773,7 @@ function build(m::Model)
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
-        constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}))
+        constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0
                 if pname in keys(ext_params)
@@ -1045,12 +1045,12 @@ macro defcomp(name, ex)
     call_expr = Expr(:call,
         Expr(:curly,
             Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
-            :T, :OFFSET, :DURATION
+            :T, :OFFSET, :DURATION, :FINAL
             ),
         :indices
         )
 
-    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION), :(::Type{T}), :(::Type{Val{OFFSET}}),:(::Type{Val{DURATION}}))
+    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION, :FINAL), :(::Type{T}), :(::Type{Val{OFFSET}}),:(::Type{Val{DURATION}}),:(::Type{Val{FINAL}}))
     for i in 1:numarrayparams
         push!(call_expr.args[1].args, Symbol("OFFSET$i"))
         push!(call_expr.args[1].args, Symbol("DURATION$i"))

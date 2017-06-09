@@ -63,7 +63,7 @@ connectparameter(m, :Bar, :input, :y)
 
 run(m)
 
-# @test length(m[:Foo, :output])==6
+@test length(m[:Foo, :output])==6
 @test length(m[:Bar, :output])==11
 
 for i in 1:6

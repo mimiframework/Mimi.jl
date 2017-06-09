@@ -17,7 +17,7 @@ using DataFrames
 end
 
 # x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
-x1 = foo1(Float64, Val{1}, Val{1}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
+x1 = foo1(Float64, Val{1}, Val{1}, Val{10}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
 
 @test x1.Dimensions.index1.start == 1
 @test x1.Dimensions.index1.stop == 3

@@ -83,7 +83,7 @@ function generate_comp_expressions(module_name, component_name)
 
     ptypesignature = Expr(:curly, Symbol(pname), :T)
     implconstructor = Expr(:call, Symbol(string(component_name, "Impl")))
-    implsignature = Expr(:curly, Symbol((string(component_name, "Impl"))), :T, :OFFSET, :DURATION)
+    implsignature = Expr(:curly, Symbol((string(component_name, "Impl"))), :T, :OFFSET, :DURATION, :FINAL)
     for (i, p) in enumerate(arrayparameters)
         push!(ptypesignature.args, Symbol("OFFSET$i"))
         push!(ptypesignature.args, Symbol("DURATION$i"))
@@ -133,7 +133,7 @@ function generate_comp_expressions(module_name, component_name)
         end
 
         # Define type for variables
-        type $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}
+        type $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION, FINAL}
             $(begin
                 x = Expr(:block)
                 for v in variables
@@ -160,9 +160,13 @@ function generate_comp_expressions(module_name, component_name)
                     for v in filter(i->length(i.dimensions)>0, variables)
                         concreteVariableType = v.datatype == Number ? :T : v.datatype
 
+                        useTarray = true
                         u = :(temp_indices = [])
-                        for l in v.dimensions
-                            if isa(l, Symbol)
+                        for (i,l) in enumerate(v.dimensions)
+                            if isa(l, Symbol) && l==:time && i==1
+                                push!(u.args[2].args, :(Int((FINAL-OFFSET)/DURATION + 1)))
+                                useTarray = true
+                            elseif isa(l, Symbol)
                                 push!(u.args[2].args, :(indices[$(QuoteNode(l))]))
                             elseif isa(l, Int)
                                 push!(u.args[2].args, l)
@@ -171,10 +175,10 @@ function generate_comp_expressions(module_name, component_name)
                             end
                         end
                         push!(ep.args,u)
-                        if length(u.args[2].args) == 1
-                            push!(ep.args,:(s.$(v.name) = OurTVector{$concreteVariableType, OFFSET, DURATION}($(u.args[2].args[1]))))
-                        elseif length(u.args[2].args) == 2
-                            push!(ep.args,:(s.$(v.name) = OurTMatrix{$concreteVariableType, OFFSET, DURATION}($(u.args[2].args[1]), $(u.args[2].args[2]))))
+                        if length(u.args[2].args) == 1 && useTarray
+                            push!(ep.args,:(s.$(v.name) = OurTVector{$concreteVariableType, OFFSET, DURATION}(temp_indices[1])))
+                        elseif length(u.args[2].args) == 2 && useTarray
+                            push!(ep.args,:(s.$(v.name) = OurTMatrix{$concreteVariableType, OFFSET, DURATION}(temp_indices[1], temp_indices[2])))
                         else
                             push!(ep.args,:(s.$(v.name) = Array($(concreteVariableType),temp_indices...)))
                         end
@@ -214,14 +218,14 @@ function generate_comp_expressions(module_name, component_name)
         type $(implsignature) <: Main.$(Symbol(module_name)).$(Symbol(component_name))
             nsteps::Int
             Parameters::$(ptypesignature)
-            Variables::$(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}
+            Variables::$(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION, FINAL}
             Dimensions::$(Symbol(string(component_name,"Dimensions")))
 
             $(Expr(:function, implconstructor,
                 :(return new(
                     indices[:time],
                     $(ptypesignature)(),
-                    $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION}(indices),
+                    $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION, FINAL}(indices),
                     $(Symbol(string(component_name,"Dimensions")))(indices)
                 ))
 
