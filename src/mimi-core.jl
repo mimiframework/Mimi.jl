@@ -270,8 +270,8 @@ end
 function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
     if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
-    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
-        if isa(p.values, NamedArray)
+    elseif isa(p.values, NamedArray)
+        if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
             error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
         end
     else
@@ -880,6 +880,7 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
     while !finished(clock)
         for (i, (name, c)) in enumerate(components)
             if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
+                # println("running component $name in $(gettime(clock))")
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
                     run_timestep(c, gettimestep(comp_clocks[i]))

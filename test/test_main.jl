@@ -16,6 +16,8 @@ using DataFrames
     var5 = Variable(index=[index1,4])
 end
 
+@test length(Mimi.metainfo.getallcomps())==2 # two because of adder component 
+
 # x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
 x1 = foo1(Float64, Val{1}, Val{1}, Val{10}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
 

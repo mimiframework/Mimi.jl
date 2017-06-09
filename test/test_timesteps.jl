@@ -52,6 +52,7 @@ setindex(m, :time, 2000:2010)
 # test that you can only add components with start/final within model's time index range
 @test_throws ErrorException addcomponent(m, Foo, start=1900)
 @test_throws ErrorException addcomponent(m, Foo, final=2100)
+@test_throws ErrorException set_external_parameter(m, :a, 1:10, duration=5)
 
 foo = addcomponent(m, Foo, start=2005) #offset for foo
 bar = addcomponent(m, Bar)
@@ -105,3 +106,33 @@ run(m2)
 for i in 1:6
     @test m2[:Foo2, :output][i] == (i+5)^2
 end
+
+#########################################
+#  Connect them in the other direction  #
+#########################################
+
+@defcomp Bar2 begin
+    input = Parameter(index=[time])
+    output = Variable(index=[time])
+end
+
+function run_timestep(c::Bar2, ts::Timestep)
+    if Mimi.gettime(ts) < 2005
+        c.Variables.output[ts] = 0
+    else
+        c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
+    end
+end
+
+m3 = Model()
+setindex(m3, :time, 2000:2010)
+addcomponent(m3, Foo, start=2005)
+addcomponent(m3, Bar2)
+set_external_parameter(m3, :x, 5.)
+connectparameter(m3, :Foo, :input, :x)
+connectparameter(m3, :Bar2, :input, :Foo, :output)
+run(m3)
+
+@test length(m3[:Foo, :output])==6
+@test length(m3[:Bar2, :input])==6
+@test length(m3[:Bar2, :output])==11
