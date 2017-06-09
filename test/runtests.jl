@@ -2,7 +2,8 @@ using Mimi
 using Base.Test
 
 
-tests = ["main",
+tests = [
+    "main",
     "references",
     "units",
     "model_structure",

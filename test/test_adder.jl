@@ -10,7 +10,7 @@ setindex(model1, :time, collect(1:10))
 addcomponent(model1, adder)
 
 x = collect(1:10)
-y = collect(2:2:22)
+y = collect(2:2:20)
 
 setparameter(model1, :adder, :input, x)
 setparameter(model1, :adder, :add, y)
