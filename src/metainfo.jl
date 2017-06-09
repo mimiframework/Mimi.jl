@@ -146,7 +146,7 @@ function generate_comp_expressions(module_name, component_name)
                     elseif length(v.dimensions)==2
                         push!(x.args, :($(v.name)::OurTMatrix{$(concreteVariableType), OFFSET, DURATION}))
                     else
-                        push!(x.args, :($(v.name)::Array{$(concreteVariableType),$(length(v.dimensions))}) )
+                        push!(x.args, :($(v.name)::Array{$(concreteVariableType),$(length(v.dimensions))}))
                     end
                 end
                 x

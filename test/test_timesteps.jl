@@ -61,4 +61,19 @@ set_external_parameter(m, :y, collect(1:11))
 connectparameter(m, :Foo, :input, :x)
 connectparameter(m, :Bar, :input, :y)
 
-# run(m)
+run(m)
+
+# @test length(m[:Foo, :output])==6
+@test length(m[:Bar, :output])==11
+
+for i in 1:6
+    @test m[:Foo, :output][i] == 5+i
+end
+
+for i in 1:5
+    @test m[:Bar, :output][i] == i
+end
+
+for i in 6:11
+    @test m[:Bar, :output][i] == i*i
+end

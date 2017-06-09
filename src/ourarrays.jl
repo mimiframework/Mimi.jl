@@ -46,8 +46,17 @@ function Base.fill!(v::OurTVector, x)
 	fill!(v.data, x)
 end
 
-function Base.setindex!(v::OurTVector, a, b)
-	setindex!(v.data, a, b)
+function Base.setindex!{T, Offset, Duration, Final}(v::OurTVector{T, Offset, Duration}, a::T, ts::Timestep{Offset, Duration, Final})
+	setindex!(v.data, a, ts.t)
+end
+
+function Base.setindex!{T, d_offset, Duration, t_offset, Final}(v::OurTVector{T, d_offset, Duration}, a::T, ts::Timestep{t_offset, Duration, Final})
+	t = Int64(ts.t + (t_offset - d_offset)/Duration)
+	setindex!(v.data, a, t)
+end
+
+function Base.setindex!{T, offset, duration}(v::OurTVector{T, offset, duration}, a::T, i::Int)
+	setindex!(v.data, a, i)
 end
 
 function Base.size(v::OurTVector)
@@ -88,6 +97,19 @@ end
 # int indexing version for old style components
 function Base.getindex{T, Offset, Duration, OT1<:Union{Int, Colon, OrdinalRange}, OT2<:Union{Int, Colon, OrdinalRange}}(x::OurTMatrix{T, Offset, Duration}, t::OT1, i::OT2)
 	return x.data[t, i]
+end
+
+function Base.setindex!{T, Offset, Duration, Final}(m::OurTMatrix{T, Offset, Duration}, a::T, ts::Timestep{Offset, Duration, Final}, j::Int)
+	setindex!(m.data, a, ts.t, j)
+end
+
+function Base.setindex!{T, d_offset, Duration, t_offset, Final}(m::OurTMatrix{T, d_offset, Duration}, a::T, ts::Timestep{t_offset, Duration, Final}, j::Int)
+	t = Int64(ts.t + (t_offset - d_offset)/Duration)
+	setindex!(m.data, a, t, j)
+end
+
+function Base.setindex!{T, offset, duration}(m::OurTMatrix{T, offset, duration}, a::T, i::Int, j::Int)
+	setindex!(m.data, a, i, j)
 end
 
 function Base.indices{T, Offset, Duration}(x::OurTMatrix{T, Offset, Duration})
