@@ -77,7 +77,7 @@ function generate_comp_expressions(module_name, component_name)
     variables = values(_mimi_metainfo[(module_name, component_name)].variables)
     dimensions = values(_mimi_metainfo[(module_name, component_name)].dimensions)
 
-    arrayparameters = collect(filter(i->length(i.dimensions)>0, parameters))
+    arrayparameters = collect(filter(i->(length(i.dimensions)>0 && length(i.dimensions)<=2 && i.dimensions[1]==:time), parameters))
 
     pname = string(component_name,"Parameters")
 
@@ -112,10 +112,10 @@ function generate_comp_expressions(module_name, component_name)
 
                     if length(p.dimensions)==0
                         push!(x.args, :($(p.name)::$(concreteParameterType)) )
-                    elseif length(p.dimensions)==1
+                    elseif length(p.dimensions)==1 && p.dimensions[1]==:time
                         push!(x.args, :($(p.name)::OurTVector{$(concreteParameterType), $(offset), $(duration)}))
                         i += 1
-                    elseif length(p.dimensions)==2
+                    elseif length(p.dimensions)==2 && p.dimensions[1]==:time
                         push!(x.args, :($(p.name)::OurTMatrix{$(concreteParameterType), $(offset), $(duration)}))
                         i+=1
                     else
@@ -141,9 +141,9 @@ function generate_comp_expressions(module_name, component_name)
 
                     if length(v.dimensions)==0
                         push!(x.args, :($(v.name)::$(concreteVariableType)) )
-                    elseif length(v.dimensions)==1
+                    elseif length(v.dimensions)==1 && v.dimensions[1]==:time
                         push!(x.args, :($(v.name)::OurTVector{$(concreteVariableType), OFFSET, DURATION}))
-                    elseif length(v.dimensions)==2
+                    elseif length(v.dimensions)==2 && v.dimensions[1]==:time
                         push!(x.args, :($(v.name)::OurTMatrix{$(concreteVariableType), OFFSET, DURATION}))
                     else
                         push!(x.args, :($(v.name)::Array{$(concreteVariableType),$(length(v.dimensions))}))
@@ -160,7 +160,7 @@ function generate_comp_expressions(module_name, component_name)
                     for v in filter(i->length(i.dimensions)>0, variables)
                         concreteVariableType = v.datatype == Number ? :T : v.datatype
 
-                        useTarray = true
+                        useTarray = false
                         u = :(temp_indices = [])
                         for (i,l) in enumerate(v.dimensions)
                             if isa(l, Symbol) && l==:time && i==1

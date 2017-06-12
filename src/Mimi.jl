@@ -15,9 +15,9 @@ export
 import
     Base.getindex, Base.run, Base.show
 
-include("mimi-core.jl")
 include("clock.jl")
 include("ourarrays.jl")
+include("mimi-core.jl")
 include("metainfo.jl")
 include("marginalmodel.jl")
 include("adder.jl")

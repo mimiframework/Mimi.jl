@@ -46,20 +46,20 @@ type ArrayModelParameter <: Parameter
     # values::AbstractArray
     values
     dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
-    offset::Int
+    # offset::Int
 
-    function ArrayModelParameter{T, N}(values::AbstractArray{T, N}, dims::Vector{Symbol}, offset::Int, duration::Int)
+    function ArrayModelParameter(values, dims::Vector{Symbol})
         amp = new()
-        if length(size(values))==1
-            amp.values = OurTVector{T, offset, duration}(values)
-        elseif length(size(values))==2
-            amp.values = OurTMatrix{T, offset, duration}(values)
-        else
-            amp.values = values #not sure what happens for more than two dimensions
-        end
-        # amp.values = values
+        # if length(size(values))==1
+        #     amp.values = OurTVector{T, offset, duration}(values)
+        # elseif length(size(values))==2
+        #     amp.values = OurTMatrix{T, offset, duration}(values)
+        # else
+        #     amp.values = values #not sure what happens for more than two dimensions
+        # end
+        amp.values = values
         amp.dims = dims
-        amp.offset = offset
+        # amp.offset = offset
         return amp
     end
 end
@@ -230,7 +230,7 @@ end
 import Base.delete!
 
 """
-    delete!(m::Model, component::Symbol)
+    delete!(m::Model, component::Symbol
 
 Delete a component from a model, by name.
 """
@@ -255,10 +255,26 @@ end
 
 Set the parameter of a component in a model to a given value.
 """
-function setparameter(m::Model, component::Symbol, name::Symbol, value; offset=nothing, duration=nothing)
-    if typeof(value)<:AbstractArray
-        set_external_parameter(m, name, value, offset=offset, duration=duration)
-    else
+function setparameter(m::Model, component::Symbol, name::Symbol, value)
+    if typeof(value)<:AbstractArray # array parameter case
+        value = convert(Array{m.numberType}, value)
+        comp_param_dims = getmetainfo(m, component).parameters[name].dimensions
+        if comp_param_dims[1] == :time
+            offset = m.components2[component].offset
+            duration = getduration(m.indices_values)
+            T = eltype(value)
+            if length(comp_param_dims)==1
+                values = OurTVector{T, offset, duration}(value)
+            elseif length(comp_param_dims)==2
+                values = OurTMatrix{T, offset, duration}(value)
+            else
+                values = value
+            end
+        else
+            values = value
+        end
+        set_external_parameter(m, name, values)
+    else # scalar parameter case
         set_external_parameter(m, name, value)
     end
 
@@ -283,7 +299,7 @@ function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelPar
                     error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
                 end
             else
-                # what to check if dim is an Int?
+                # what to check if dim is an Int? nothing
             end
             i+=1
         end
@@ -335,23 +351,22 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
     end
 end
 
+function set_external_parameter(m::Model, name::Symbol, value::OurTVector)
+    p = ArrayModelParameter(value, [:time])
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
+function set_external_parameter(m::Model, name::Symbol, value::OurTMatrix)
+    p = ArrayModelParameter(value, Vector{Symbol}())
+    m.external_parameters[Symbol(lowercase(string(name)))] = p
+end
+
 """
     set_external_parameter(m::Model, name::Symbol, value::NamedArray)
 
 Add an array type parameter to the model, perform dimension checking on the given NamedArray.
 """
-function set_external_parameter(m::Model, name::Symbol, value::NamedArray; offset=nothing, duration=nothing)
-    #for now, duration has to be the same for everything in the model:
-    if duration!=nothing && duration != getduration(m.indices_values)
-        error("Duration of parameter must match duration of the model's time index")
-    else
-        duration = getduration(m.indices_values)
-    end
-
-    if offset==nothing
-        offset = m.indices_values[:time][1]
-    end
-
+function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
     if !(typeof(value) <: NamedArray{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
         value = convert(NamedArray{m.numberType}, value)
@@ -362,7 +377,8 @@ function set_external_parameter(m::Model, name::Symbol, value::NamedArray; offse
 
     check_parameter_dimensions(m, value, dims, name)
 
-    p = ArrayModelParameter(value.array, dims, offset, duration) #want to use convert(Array, value) but broken
+    # p = ArrayModelParameter(value.array, dims, offset, duration)
+    p = ArrayModelParameter(value.array, dims)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
@@ -371,26 +387,14 @@ end
 
 Add an array type parameter to the model.
 """
-function set_external_parameter(m::Model, name::Symbol, value::AbstractArray; offset=nothing, duration=nothing)
-    #cannot perform any parameter label checks in this case
-
-    #for now, duration has to be the same for everything in the model:
-    if duration!=nothing && duration != getduration(m.indices_values)
-        error("Duration of parameter must match duration of the model's time index")
-    else
-        duration = getduration(m.indices_values)
-    end
-
-    if offset==nothing
-        offset = m.indices_values[:time][1]
-    end
-
+function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
     if !(typeof(value) <: Array{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
     dims = Vector{Symbol}()
-    p = ArrayModelParameter(value, dims, offset, duration)
+    p = ArrayModelParameter(value, dims)
+    # p = ArrayModelParameter(value, dims, offset, duration)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
@@ -401,18 +405,6 @@ Takes as input a regular array and a vector of dimension symbol names. Performs 
 """
 function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol}; offset=nothing, duration=nothing)
     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
-
-    #for now, duration has to be the same for everything in the model:
-    if duration!=nothing && duration != getduration(m.indices_values)
-        error("Duration of parameter must match duration of the model's time index")
-    else
-        duration = getduration(m.indices_values)
-    end
-
-    if offset==nothing
-        offset = m.indices_values[:time][1]
-    end
-
     if !(typeof(value) <: Array{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
@@ -420,7 +412,8 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, di
 
     check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
 
-    p = ArrayModelParameter(value, dims, offset, duration)
+    p = ArrayModelParameter(value, dims)
+    # p = ArrayModelParameter(value, dims, offset, duration)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
@@ -779,7 +772,7 @@ function build(m::Model)
 
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
-            if length(p.dimensions) > 0
+            if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
                 if pname in keys(ext_params)
                     offset = getoffset(ext_params[pname].values)
                 elseif pname in keys(int_params)
@@ -814,6 +807,8 @@ function build(m::Model)
         param = x.external_parameter
         if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
+        # elseif isa(getfield(builtComponents[x.component_name].Parameters, x.param_name), Array)
+        #     setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values.data)
         else
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
         end
@@ -988,9 +983,11 @@ macro defcomp(name, ex)
             unit = get(kws, :unit, "")
 
             if haskey(kws, :index)
-                numarrayparams += 1
-
                 parameterIndex = kws[:index].args
+
+                if length(parameterIndex)<=2 && parameterIndex[1]==:time
+                    numarrayparams += 1
+                end
 
                 pardims = Array(Any, 0)
                 for l in parameterIndex

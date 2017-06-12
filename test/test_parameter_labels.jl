@@ -178,7 +178,7 @@ function run_my_model()
     setparameter(my_model, :grosseconomy, :l, l)
     setparameter(my_model, :grosseconomy, :tfp, tfp)
     setparameter(my_model, :grosseconomy, :s, s)
-    setparameter(my_model, :grosseconomy, :depk,depk)
+    setparameter(my_model, :grosseconomy, :depk, depk)
     setparameter(my_model, :grosseconomy, :k0, k0)
     setparameter(my_model, :grosseconomy, :share, 0.3)
 
@@ -271,17 +271,17 @@ end
 
 
 
-###########################################
+#####################################################
 #    TEST 4th set_external_parameter OPTION (3/3)   #
-###########################################
+#####################################################
 
 model3 = Model()
 setindex(model3, :time, collect(2015:5:2110))
 setindex(model3, :regions, ["Region1", "Region2", "Region3"])
 addcomponent(model3, compA)
-@test_throws ErrorException set_external_parameter(model3, :x, x, [:time, :regions], duration=1)
-set_external_parameter(model3, :x, x, [:time, :regions])
-connectparameter(model3, :compA, :x, :x)
+setparameter(model3, :compA, :x, x)
+# set_external_parameter(model3, :x, x, [:time, :regions])
+# connectparameter(model3, :compA, :x, :x)
 run(model3)
 
 for t in range(1, length(time_labels))

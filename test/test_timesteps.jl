@@ -52,15 +52,12 @@ setindex(m, :time, 2000:2010)
 # test that you can only add components with start/final within model's time index range
 @test_throws ErrorException addcomponent(m, Foo, start=1900)
 @test_throws ErrorException addcomponent(m, Foo, final=2100)
-@test_throws ErrorException set_external_parameter(m, :a, 1:10, duration=5)
 
 foo = addcomponent(m, Foo, start=2005) #offset for foo
 bar = addcomponent(m, Bar)
 
-set_external_parameter(m, :x, 5.)
-set_external_parameter(m, :y, collect(1:11))
-connectparameter(m, :Foo, :input, :x)
-connectparameter(m, :Bar, :input, :y)
+setparameter(m, :Foo, :input, 5.)
+setparameter(m, :Bar, :input, collect(1:11))
 
 run(m)
 
@@ -97,8 +94,7 @@ setindex(m2, :time, 2000:2010)
 bar = addcomponent(m2, Bar)
 foo2 = addcomponent(m2, Foo2, start=2005) #offset for foo
 
-set_external_parameter(m2, :y, collect(1:11))
-connectparameter(m2, :Bar, :input, :y)
+setparameter(m2, :Bar, :input, collect(1:11))
 connectparameter(m2, :Foo2, :input, :Bar, :output)
 
 run(m2)
@@ -129,8 +125,7 @@ m3 = Model()
 setindex(m3, :time, 2000:2010)
 addcomponent(m3, Foo, start=2005)
 addcomponent(m3, Bar2)
-set_external_parameter(m3, :x, 5.)
-connectparameter(m3, :Foo, :input, :x)
+setparameter(m3, :Foo, :input, 5.)
 connectparameter(m3, :Bar2, :input, :Foo, :output)
 run(m3)
 
