@@ -465,15 +465,30 @@ Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary.
 """
 function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
-    for (name, value) in parameters
-        set_external_parameter(m, Symbol(name), value)
-    end
-
     for c in values(m.components2)
         params = get_parameter_names(m, c)
         set_params = get_set_parameters(m, c)
         for p in params
             if !in(p, set_params)
+                if !(p in keys(m.external_parameters)) # then we need to set the external parameter
+                    value = parameters[lowercase(string(p))]
+                    comp_param_dims = getmetainfo(m, c.name).parameters[p].dimensions
+                    if length(comp_param_dims)==0 #scalar case
+                        set_external_parameter(m, Symbol(p), value)
+                    else #array case
+                        offset = m.indices_values[:time][1]
+                        duration = getduration(m.indices_values)
+                        T = eltype(value)
+                        if length(comp_param_dims)==1 && comp_param_dims[1]==:time
+                            values = OurTVector{T, offset, duration}(value)
+                        elseif length(comp_param_dims)==2 && comp_param_dims[1]==:time
+                            values = OurTMatrix{T, offset, duration}(value)
+                        else
+                            values = value
+                        end
+                        set_external_parameter(m, Symbol(p), values)
+                    end
+                end
                 connectparameter(m, c.name, p, p)
             end
         end
