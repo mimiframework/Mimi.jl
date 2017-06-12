@@ -46,5 +46,5 @@ run(m)
 @test length(m[:LongComponent, :z])==1001
 
 for i in 1:900
-    @test m[:ShortComponent, :b] == 2*i
+    @test m[:ShortComponent, :b][i] == 2*i
 end

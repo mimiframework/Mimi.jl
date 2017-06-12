@@ -92,7 +92,6 @@ function generate_comp_expressions(module_name, component_name)
         push!(implsignature.args, Symbol("DURATION$i"))
     end
     push!(implconstructor.args, :indices)
-    println(arrayparameters)
     # println(ptypesignature)
     # println(implsignature)
     # println(implconstructor)
@@ -120,7 +119,6 @@ function generate_comp_expressions(module_name, component_name)
                         i+=1
                     else
                         push!(x.args, :($(p.name)::Array{$(concreteParameterType),$(length(p.dimensions))}) )
-                        i+=1
                     end
                 end
                 x
@@ -235,6 +233,7 @@ function generate_comp_expressions(module_name, component_name)
 
 
     end
+    # println(compexpr)
     return compexpr
 end
 
