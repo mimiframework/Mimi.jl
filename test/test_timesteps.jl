@@ -137,3 +137,7 @@ run(m3)
 @test length(m3[:Foo, :output])==6
 @test length(m3[:Bar2, :input])==6
 @test length(m3[:Bar2, :output])==11
+
+##############################
+#  Example of connectorComp  #
+##############################
