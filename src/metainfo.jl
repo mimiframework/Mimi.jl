@@ -92,7 +92,7 @@ function generate_comp_expressions(module_name, component_name)
         push!(implsignature.args, Symbol("DURATION$i"))
     end
     push!(implconstructor.args, :indices)
-
+    println(arrayparameters)
     # println(ptypesignature)
     # println(implsignature)
     # println(implconstructor)

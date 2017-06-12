@@ -1063,10 +1063,11 @@ macro defcomp(name, ex)
         push!(callsignature.args, :(::Type{Val{$(Symbol("DURATION$i"))}}))
 
     end
+    println("numarrayparams = $numarrayparams")
     push!(callsignature.args, :indices)
     # println(call_expr)
     # println(callsignature)
-    # println(Expr(:function, callsignature, call_expr))
+    println(Expr(:function, callsignature, call_expr))
 
     x = quote
 
