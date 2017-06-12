@@ -18,7 +18,8 @@ tests = [
     "getdataframe",
     "mult_getdataframe",
     "ourarrays",
-    "timesteps"
+    "timesteps",
+    "connectorcomp"
 ]
 
 for t in tests

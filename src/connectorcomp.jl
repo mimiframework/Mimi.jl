@@ -11,9 +11,9 @@ function run_timestep(s::ConnectorComp, ts::Timestep)
     v = s.Variables
 
     if hasvalue(p.input1, ts)
-        v.output[ts] = input1[ts]
+        v.output[ts] = p.input1[ts]
     elseif hasvalue(p.input2, ts)
-        v.output[ts] = input2[ts]
+        v.output[ts] = p.input2[ts]
     else
         error("Neither of the inputs to ConnectorComp have data for the current timestep: $(gettime(ts)).")
     end

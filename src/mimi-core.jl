@@ -322,7 +322,7 @@ Connect a parameter in a component to an external parameter.
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[Symbol(lowercase(string(parametername)))]
 
-    if isa(p, ArrayModelParameter)
+    if isa(p, ArrayModelParameter) && component != :ConnectorComp
         checklabels(m, component, name, p)
     end
 
