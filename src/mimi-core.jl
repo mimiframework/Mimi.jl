@@ -278,8 +278,12 @@ function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelPar
         comp_dims = getmetainfo(m, component).parameters[name].dimensions
         i=1
         for dim in comp_dims
-            if !(length(m.indices_values[dim])==size(p.values)[i])
-                error("Length of the labels and the provided data are not matching")
+            if isa(dim, Symbol)
+                if !(length(m.indices_values[dim])==size(p.values)[i])
+                    error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
+                end
+            else
+                # what to check if dim is an Int?
             end
             i+=1
         end
