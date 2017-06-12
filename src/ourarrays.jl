@@ -67,6 +67,17 @@ function Base.size(v::OurTVector, i::Int)
 	return size(v.data, i)
 end
 
+# method where the vector and the timestep have the same offset
+function hasvalue{T, Offset, Duration, Final}(v::OurTVector{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final})
+	return ts.t >= 1 && ts.t <= size(v, 1)
+end
+
+# method where they have different offsets
+function hasvalue{T, Offset1, Offset2, Duration, Final}(v::OurTVector{T, Offset1, Duration}, ts::Timestep{Offset2, Duration, Final})
+	t = gettime(ts)
+	return t >= Offset1 && t <= (Offset1 + (size(v, 1) - 1) * Duration)
+end
+
 ################
 #  OurTMatrix  #
 ################
@@ -134,4 +145,15 @@ end
 
 function Base.size(m::OurTMatrix, i::Int)
 	return size(m.data, i)
+end
+
+# method where the vector and the timestep have the same offset
+function hasvalue{T, Offset, Duration, Final}(m::OurTMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, j::Int)
+	return ts.t >= 1 && ts.t <= size(m, 1) && j>=1 && j<= size(m, 2)
+end
+
+# method where they have different offsets
+function hasvalue{T, Offset1, Offset2, Duration, Final}(m::OurTMatrix{T, Offset1, Duration}, ts::Timestep{Offset2, Duration, Final}, j::Int)
+	t = gettime(ts)
+	return t >= Offset1 && t <= (Offset1 + (size(m, 1) - 1) * Duration) && j>=1 && j<= size(m, 2)
 end

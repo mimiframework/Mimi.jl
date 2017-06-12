@@ -10,6 +10,8 @@ a = collect(reshape(1:16,4,4))
 x = Mimi.OurTVector{Int, 2000, 1}(a[:,3])
 t = Timestep{2001, 1, 3000}(1)
 
+@test hasvalue(x, t)
+@test !hasvalue(x, Timestep{2000, 1, 2012}(10))
 @test x[t] == 10
 
 t2 = Mimi.getnexttimestep(t)
@@ -26,6 +28,8 @@ t3 = Timestep{2000, 1, 3000}(1)
 
 y = Mimi.OurTMatrix{Int, 2000, 1}(a[:,1:2])
 
+@test hasvalue(y, t, 1)
+@test !hasvalue(y, Timestep{2000, 1, 3000}(10), 1)
 @test y[t,1] == 2
 @test y[t,2] == 6
 

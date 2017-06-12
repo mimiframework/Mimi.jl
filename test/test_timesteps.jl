@@ -117,6 +117,7 @@ end
 end
 
 function run_timestep(c::Bar2, ts::Timestep)
+    # c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
     if Mimi.gettime(ts) < 2005
         c.Variables.output[ts] = 0
     else
