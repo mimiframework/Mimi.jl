@@ -253,9 +253,19 @@ end
 """
     setparameter(m::Model, component::Symbol, name::Symbol, value)
 
-Set the parameter of a component in a model to a given value.
+Set the parameter of a component in a model to a given value. Value can by a scalar,
+an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
+the provided data, and will be used to check that they match the model's index labels.
 """
-function setparameter(m::Model, component::Symbol, name::Symbol, value)
+function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=nothing)
+    # perform possible dimension and labels checks
+    if isa(value, NamedArray)
+        dims = dimnames(value)
+    end
+    if dims!=nothing
+        check_parameter_dimensions(m, value, dims, name)
+    end
+    # now set the parameter
     comp_param_dims = getmetainfo(m, component).parameters[name].dimensions
     if length(comp_param_dims) > 0 # array parameter case
         value = convert(Array{m.numberType}, value)
@@ -273,7 +283,7 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
         else
             values = value
         end
-        set_external_array_parameter(m, name, values)
+        set_external_array_parameter(m, name, values, dims)
     else # scalar parameter case
         set_external_scalar_parameter(m, name, value)
     end
@@ -286,22 +296,17 @@ end
 function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
     if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
-    elseif isa(p.values, NamedArray)
+    elseif !(isempty(p.dims))
         if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
             error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
         end
-    else
-        comp_dims = getmetainfo(m, component).parameters[name].dimensions
-        i=1
-        for dim in comp_dims
-            if isa(dim, Symbol)
-                if !(length(m.indices_values[dim])==size(p.values)[i])
-                    error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
-                end
-            else
-                # what to check if dim is an Int? nothing
+    end
+    comp_dims = getmetainfo(m, component).parameters[name].dimensions
+    for (i, dim) in enumerate(comp_dims)
+        if isa(dim, Symbol)
+            if !(length(m.indices_values[dim])==size(p.values)[i])
+                error(string("Mismatched data size for a parameter connection. Component: ", component, ", Parameter: ", name))
             end
-            i+=1
         end
     end
 end
@@ -352,80 +357,37 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
 end
 
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::OurTVector)
+    set_external_array_parameter(m::Model, name::Symbol, value::OurTVector, dims)
 
 Adds a one dimensional time-indexed array parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::OurTVector)
+function set_external_array_parameter(m::Model, name::Symbol, value::OurTVector, dims)
     p = ArrayModelParameter(value, [:time])
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix)
+    set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix, dims)
 
 Adds a two dimensional time-indexed array parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix)
-    p = ArrayModelParameter(value, Vector{Symbol}())
+function set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix, dims)
+    p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
-# """
-#     set_external_array_parameter(m::Model, name::Symbol, value::NamedArray)
-#
-# Add an array type parameter to the model, perform dimension checking on the given NamedArray.
-# """
-# function set_external_array_parameter(m::Model, name::Symbol, value::NamedArray)
-#     if !(typeof(value) <: NamedArray{m.numberType})
-#         # E.g., if model takes Number and given Float64, convert it
-#         value = convert(NamedArray{m.numberType}, value)
-#     end
-#
-#     #namedarray given, so we can perform label checks
-#     dims = dimnames(value)
-#
-#     check_parameter_dimensions(m, value, dims, name)
-#
-#     # p = ArrayModelParameter(value.array, dims, offset, duration)
-#     p = ArrayModelParameter(value.array, dims)
-#     m.external_parameters[Symbol(lowercase(string(name)))] = p
-# end
-
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray)
+    set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims)
 
 Add an array type parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray)
+function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims)
     if !(typeof(value) <: Array{m.numberType})
-        # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = Vector{Symbol}()
-    p = ArrayModelParameter(value, dims)
-    # p = ArrayModelParameter(value, dims, offset, duration)
+    p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
-
-# """
-#     set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
-#
-# Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
-# """
-# function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol}; offset=nothing, duration=nothing)
-#     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
-#     if !(typeof(value) <: Array{m.numberType})
-#         # E.g., if model takes Number and given Float64, convert it
-#         value = convert(Array{m.numberType}, value)
-#     end
-#
-#     check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
-#
-#     p = ArrayModelParameter(value, dims)
-#     # p = ArrayModelParameter(value, dims, offset, duration)
-#     m.external_parameters[Symbol(lowercase(string(name)))] = p
-# end
 
 """
     set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
