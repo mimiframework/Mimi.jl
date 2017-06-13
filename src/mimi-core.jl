@@ -433,6 +433,9 @@ end
 Add a scalar type parameter to the model.
 """
 function set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
+    if typeof(value) <: AbstractArray
+        value = convert(Array{m.numberType}, value)
+    end
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end

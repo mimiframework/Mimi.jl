@@ -9,6 +9,7 @@ tests = [
     "model_structure",
     "tools",
     "parameter_labels",
+    "parametertypes",
     "marginal_models",
     "adder",
     "getindex",
