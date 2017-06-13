@@ -256,9 +256,9 @@ end
 Set the parameter of a component in a model to a given value.
 """
 function setparameter(m::Model, component::Symbol, name::Symbol, value)
-    if typeof(value)<:AbstractArray # array parameter case
+    comp_param_dims = getmetainfo(m, component).parameters[name].dimensions
+    if length(comp_param_dims) > 0 # array parameter case
         value = convert(Array{m.numberType}, value)
-        comp_param_dims = getmetainfo(m, component).parameters[name].dimensions
         if comp_param_dims[1] == :time
             offset = m.components2[component].offset
             duration = getduration(m.indices_values)
@@ -273,9 +273,9 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value)
         else
             values = value
         end
-        set_external_parameter(m, name, values)
+        set_external_array_parameter(m, name, values)
     else # scalar parameter case
-        set_external_parameter(m, name, value)
+        set_external_scalar_parameter(m, name, value)
     end
 
     connectparameter(m, component, name, name)
@@ -351,43 +351,53 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
     end
 end
 
-function set_external_parameter(m::Model, name::Symbol, value::OurTVector)
+"""
+    set_external_array_parameter(m::Model, name::Symbol, value::OurTVector)
+
+Adds a one dimensional time-indexed array parameter to the model.
+"""
+function set_external_array_parameter(m::Model, name::Symbol, value::OurTVector)
     p = ArrayModelParameter(value, [:time])
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
-function set_external_parameter(m::Model, name::Symbol, value::OurTMatrix)
+"""
+    set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix)
+
+Adds a two dimensional time-indexed array parameter to the model.
+"""
+function set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix)
     p = ArrayModelParameter(value, Vector{Symbol}())
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+# """
+#     set_external_array_parameter(m::Model, name::Symbol, value::NamedArray)
+#
+# Add an array type parameter to the model, perform dimension checking on the given NamedArray.
+# """
+# function set_external_array_parameter(m::Model, name::Symbol, value::NamedArray)
+#     if !(typeof(value) <: NamedArray{m.numberType})
+#         # E.g., if model takes Number and given Float64, convert it
+#         value = convert(NamedArray{m.numberType}, value)
+#     end
+#
+#     #namedarray given, so we can perform label checks
+#     dims = dimnames(value)
+#
+#     check_parameter_dimensions(m, value, dims, name)
+#
+#     # p = ArrayModelParameter(value.array, dims, offset, duration)
+#     p = ArrayModelParameter(value.array, dims)
+#     m.external_parameters[Symbol(lowercase(string(name)))] = p
+# end
+
 """
-    set_external_parameter(m::Model, name::Symbol, value::NamedArray)
-
-Add an array type parameter to the model, perform dimension checking on the given NamedArray.
-"""
-function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
-    if !(typeof(value) <: NamedArray{m.numberType})
-        # E.g., if model takes Number and given Float64, convert it
-        value = convert(NamedArray{m.numberType}, value)
-    end
-
-    #namedarray given, so we can perform label checks
-    dims = dimnames(value)
-
-    check_parameter_dimensions(m, value, dims, name)
-
-    # p = ArrayModelParameter(value.array, dims, offset, duration)
-    p = ArrayModelParameter(value.array, dims)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
-end
-
-"""
-    set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
+    set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray)
 
 Add an array type parameter to the model.
 """
-function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
+function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray)
     if !(typeof(value) <: Array{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
@@ -398,32 +408,31 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
+# """
+#     set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
+#
+# Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
+# """
+# function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol}; offset=nothing, duration=nothing)
+#     #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
+#     if !(typeof(value) <: Array{m.numberType})
+#         # E.g., if model takes Number and given Float64, convert it
+#         value = convert(Array{m.numberType}, value)
+#     end
+#
+#     check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
+#
+#     p = ArrayModelParameter(value, dims)
+#     # p = ArrayModelParameter(value, dims, offset, duration)
+#     m.external_parameters[Symbol(lowercase(string(name)))] = p
+# end
+
 """
-    set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
-
-Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
-"""
-function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol}; offset=nothing, duration=nothing)
-    #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
-    if !(typeof(value) <: Array{m.numberType})
-        # E.g., if model takes Number and given Float64, convert it
-        value = convert(Array{m.numberType}, value)
-    end
-
-    check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
-
-    p = ArrayModelParameter(value, dims)
-    # p = ArrayModelParameter(value, dims, offset, duration)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
-end
-
-"""
-    set_external_parameter(m::Model, name::Symbol, value::Any)
+    set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter to the model.
 """
-function set_external_parameter(m::Model, name::Symbol, value::Any)
-    #function for adding scalar parameters ("Any" type)
+function set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
     p = ScalarModelParameter(value)
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
@@ -467,17 +476,12 @@ keys are lowercase strings that match the names of unset parameters in the model
 """
 function setleftoverparameters(m::Model, parameters::Dict{String,Any})
     leftovers = get_unconnected_parameters(m)
-    # for c in values(m.components2)
-    #     params = get_parameter_names(m, c)
-    #     set_params = get_set_parameters(m, c)
-        # for p in params
     for (comp, p) in leftovers
-        # if !(p in set_params)
         if !(p in keys(m.external_parameters)) # then we need to set the external parameter
             value = parameters[lowercase(string(p))]
             comp_param_dims = getmetainfo(m, comp).parameters[p].dimensions
             if length(comp_param_dims)==0 #scalar case
-                set_external_parameter(m, p, value)
+                set_external_scalar_parameter(m, p, value)
             else #array case
                 offset = m.indices_values[:time][1]
                 duration = getduration(m.indices_values)
@@ -489,18 +493,17 @@ function setleftoverparameters(m::Model, parameters::Dict{String,Any})
                 else
                     values = value
                 end
-                set_external_parameter(m, p, values)
+                set_external_array_parameter(m, p, values)
             end
         end
         connectparameter(m, comp, p, p)
-        # end
     end
-    # end
-
     nothing
 end
 
-""" helper function for setleftoverparameters"""
+"""
+Return list of parameters that have been set for component c in model m.
+"""
 function get_set_parameters(m::Model, c::ComponentInstanceInfo)
     ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
     ext_set_params = map(x->x.param_name, ext_connections)
@@ -511,7 +514,9 @@ function get_set_parameters(m::Model, c::ComponentInstanceInfo)
     return union(ext_set_params, int_set_params)
 end
 
-""" helper function for setleftoverparameters"""
+"""
+Return a list of all parameter names for a given component in a model m.
+"""
 function get_parameter_names(m::Model, component::ComponentInstanceInfo)
     _dict = Mimi.metainfo.getallcomps()
     _module = module_name(component.component_type.name.module)
