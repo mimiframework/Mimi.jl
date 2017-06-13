@@ -458,7 +458,7 @@ function setleftoverparameters(m::Model, parameters::Dict{String,Any})
                 else
                     values = value
                 end
-                set_external_array_parameter(m, p, values)
+                set_external_array_parameter(m, p, values, nothing)
             end
         end
         connectparameter(m, comp, p, p)
