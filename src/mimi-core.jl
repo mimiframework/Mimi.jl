@@ -251,7 +251,7 @@ function delete!(m::Model, component::Symbol)
 end
 
 """
-    setparameter(m::Model, component::Symbol, name::Symbol, value)
+    setparameter(m::Model, component::Symbol, name::Symbol, value, dims)
 
 Set the parameter of a component in a model to a given value. Value can by a scalar,
 an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
@@ -268,7 +268,7 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=not
     # now set the parameter
     comp_param_dims = getmetainfo(m, component).parameters[name].dimensions
     if length(comp_param_dims) > 0 # array parameter case
-        value = convert(Array{m.numberType}, value)
+        value = convert(Array{m.numberType}, value) # converts the number type and also if it's a NamedArray it gets converted to Array
         if comp_param_dims[1] == :time
             offset = m.components2[component].offset
             duration = getduration(m.indices_values)
@@ -293,20 +293,19 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=not
     nothing
 end
 
-function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
-        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
-    elseif !(isempty(p.dims))
-        if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
-            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
-        end
-    end
-    comp_dims = getmetainfo(m, component).parameters[name].dimensions
-    for (i, dim) in enumerate(comp_dims)
-        if isa(dim, Symbol)
-            if !(length(m.indices_values[dim])==size(p.values)[i])
-                error(string("Mismatched data size for a parameter connection. Component: ", component, ", Parameter: ", name))
+function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol)
+    for dim in dims
+        if dim in keys(m.indices_values)
+            if isa(value, NamedArray)
+                labels = names(value, findnext(dims, dim, 1))
+                for i in collect(1:1:length(labels))
+                    if !(labels[i] == m.indices_values[dim][i])
+                        error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
+                    end
+                end
             end
+        else
+            error(string("Dimension ", dim, " in parameter ", name, " not found in model's dimensions"))
         end
     end
 end
@@ -339,19 +338,20 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
     nothing
 end
 
-function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol)
-    for dim in dims
-        if dim in keys(m.indices_values)
-            if isa(value, NamedArray)
-                labels = names(value, findnext(dims, dim, 1))
-                for i in collect(1:1:length(labels))
-                    if !(labels[i] == m.indices_values[dim][i])
-                        error(string("Parameter labels for ", dim, " dimension in ", name," parameter do not match model's indices values"))
-                    end
-                end
+function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
+    if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
+        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
+    elseif !(isempty(p.dims))
+        if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
+            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
+        end
+    end
+    comp_dims = getmetainfo(m, component).parameters[name].dimensions
+    for (i, dim) in enumerate(comp_dims)
+        if isa(dim, Symbol)
+            if !(length(m.indices_values[dim])==size(p.values)[i])
+                error(string("Mismatched data size for a parameter connection. Component: ", component, ", Parameter: ", name))
             end
-        else
-            error(string("Dimension ", dim, " in parameter ", name, " not found in model's dimensions"))
         end
     end
 end
