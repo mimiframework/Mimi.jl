@@ -431,7 +431,7 @@ end
 Bind the parameter of one component to a variable in another component.
 """
 function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
-    connectparameter(m, target[1], target[2], source[1], source[2], ignoreunits)
+    connectparameter(m, target[1], target[2], source[1], source[2]; ignoreunits=ignoreunits)
 end
 
 # Default string, string unit check function
