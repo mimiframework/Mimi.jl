@@ -425,6 +425,15 @@ function connectparameter(m::Model, target_component::Symbol, target_name::Symbo
     nothing
 end
 
+"""
+    connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
+
+Bind the parameter of one component to a variable in another component.
+"""
+function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
+    connectparameter(m, target[1], target[2], source[1], source[2], ignoreunits)
+end
+
 # Default string, string unit check function
 function unitcheck(one::AbstractString, two::AbstractString)
     # True if and only if they match
