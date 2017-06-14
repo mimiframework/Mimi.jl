@@ -26,7 +26,18 @@ type InternalParameterConnection
     source_component_name::Symbol
     target_parameter_name::Symbol
     target_component_name::Symbol
+    backup::Symbol # name of the external parameter
     ignoreunits::Bool
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool; backup::Symbol=nothing)
+        ipc = new()
+        ipc.source_variable_name = src_var
+        ipc.source_component_name = src_comp
+        ipc.target_parameter_name = target_par
+        ipc.target_component_name = target_comp
+        ipc.backup = backup
+        ipc.ignoreunits = ignoreunits
+        return ipc
+    end
 end
 
 type ExternalParameterConnection
@@ -43,23 +54,14 @@ type ModelInstance
 end
 
 type ArrayModelParameter <: Parameter
-    # values::AbstractArray
     values
     dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
     # offset::Int
 
     function ArrayModelParameter(values, dims::Vector{Symbol})
         amp = new()
-        # if length(size(values))==1
-        #     amp.values = OurTVector{T, offset, duration}(values)
-        # elseif length(size(values))==2
-        #     amp.values = OurTMatrix{T, offset, duration}(values)
-        # else
-        #     amp.values = values #not sure what happens for more than two dimensions
-        # end
         amp.values = values
         amp.dims = dims
-        # amp.offset = offset
         return amp
     end
 end
@@ -407,19 +409,19 @@ end
 
 Bind the parameter of one component to a variable in another component.
 """
-function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
+function connectparameter(m::Model, target_component::Symbol, target_param::Symbol, source_component::Symbol, source_var::Symbol; ignoreunits::Bool=false)
 
     # Check the units, if provided
     if !ignoreunits &&
-        !unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
-                   getmetainfo(m, source_component).variables[source_name].unit)
+        !unitcheck(getmetainfo(m, target_component).parameters[target_param].unit,
+                   getmetainfo(m, source_component).variables[source_var].unit)
         error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
 
     # remove any existing connections for this target component and parameter
-    disconnect(m, target_component, target_name)
+    disconnect(m, target_component, target_param)
 
-    curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
+    curr = InternalParameterConnection(source_var, source_component, target_param, target_component, ignoreunits)
     push!(m.internal_parameter_connections, curr)
 
     nothing
@@ -432,6 +434,10 @@ Bind the parameter of one component to a variable in another component.
 """
 function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
     connectparameter(m, target[1], target[2], source[1], source[2]; ignoreunits=ignoreunits)
+end
+
+function connectparameter(m::Model, target_component::Symbol, target_param::Symbol, source_component::Symbol, source_var::Symbol, backup::Array; ignoreunits::Bool=false)
+
 end
 
 # Default string, string unit check function
