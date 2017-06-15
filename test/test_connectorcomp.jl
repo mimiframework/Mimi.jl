@@ -1,6 +1,10 @@
 using Mimi
 using Base.Test
 
+#######################################
+#  Manual way of using ConnectorComp  #
+#######################################
+
 @defcomp LongComponent begin
     x = Parameter(index=[time])
     y = Parameter()
@@ -48,3 +52,19 @@ run(m)
 for i in 1:900
     @test m[:ShortComponent, :b][i] == 2*i
 end
+
+
+######################################
+#  Now using new API for connecting  #
+######################################
+
+model2 = Model()
+setindex(model2, :time, 2000:2010)
+addcomponent(model2, ShortComponent; start=2005)
+addcomponent(model2, LongComponent)
+
+setparameter(model2, :ShortComponent, :a, 2.)
+setparameter(model2, :LongComponent, :y, 1.)
+connectparameter(model2, :LongComponent, :x, :ShortComponent, :b, zeros(11))
+
+run(model2)

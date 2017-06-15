@@ -26,9 +26,19 @@ type InternalParameterConnection
     source_component_name::Symbol
     target_parameter_name::Symbol
     target_component_name::Symbol
-    backup::Symbol # name of the external parameter
     ignoreunits::Bool
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool; backup::Symbol=nothing)
+    backup # either nothing or a Symbol: name of the external parameter
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool)
+        ipc = new()
+        ipc.source_variable_name = src_var
+        ipc.source_component_name = src_comp
+        ipc.target_parameter_name = target_par
+        ipc.target_component_name = target_comp
+        ipc.backup = nothing
+        ipc.ignoreunits = ignoreunits
+        return ipc
+    end
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool, backup::Symbol)
         ipc = new()
         ipc.source_variable_name = src_var
         ipc.source_component_name = src_comp
@@ -415,7 +425,7 @@ function connectparameter(m::Model, target_component::Symbol, target_param::Symb
     if !ignoreunits &&
         !unitcheck(getmetainfo(m, target_component).parameters[target_param].unit,
                    getmetainfo(m, source_component).variables[source_var].unit)
-        error("Units of $source_component.$source_name do not match $target_component.$target_name.")
+        error("Units of $source_component.$source_var do not match $target_component.$target_param.")
     end
 
     # remove any existing connections for this target component and parameter
@@ -437,7 +447,48 @@ function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{S
 end
 
 function connectparameter(m::Model, target_component::Symbol, target_param::Symbol, source_component::Symbol, source_var::Symbol, backup::Array; ignoreunits::Bool=false)
+    # If value is a NamedArray, we can check if the labels match
+    if isa(backup, NamedArray)
+        dims = dimnames(backup)
+        check_parameter_dimensions(m, backup, dims, name)
+    else
+        dims = nothing
+    end
 
+    # Check that the backup value is the right size
+    if getspan(m, target_component) != size(backup)[1]
+        error("Backup data must span the whole length of the component.")
+    end
+
+    # some other check for second dimension??
+
+    comp_param_dims = getmetainfo(m, target_component).parameters[target_param].dimensions
+    backup = convert(Array{m.numberType}, backup) # converts the number type, and also if it's a NamedArray it gets converted to Array
+    offset = m.components2[target_component].offset
+    duration = getduration(m.indices_values)
+    T = eltype(backup)
+    if length(comp_param_dims)==1
+        values = OurTVector{T, offset, duration}(backup)
+    elseif length(comp_param_dims)==2
+        values = OurTMatrix{T, offset, duration}(backup)
+    else
+        values = backup
+    end
+    set_external_array_parameter(m, target_param, values, dims)
+
+    if !ignoreunits &&
+        !unitcheck(getmetainfo(m, target_component).parameters[target_param].unit,
+                   getmetainfo(m, source_component).variables[source_var].unit)
+        error("Units of $source_component.$source_name do not match $target_component.$target_name.")
+    end
+
+    # remove any existing connections for this target component and parameter
+    disconnect(m, target_component, target_param)
+
+    curr = InternalParameterConnection(source_var, source_component, target_param, target_component, ignoreunits, target_param)
+    push!(m.internal_parameter_connections, curr)
+
+    nothing
 end
 
 # Default string, string unit check function
@@ -446,6 +497,13 @@ function unitcheck(one::AbstractString, two::AbstractString)
     return one == two
 end
 
+# Return the number of timesteps a given component in a model will run for.
+function getspan(m::Model, comp::Symbol)
+    duration = getduration(m.indices_values)
+    start = m.components2[comp].offset
+    final = m.components2[comp].final
+    return (final - start) / duration + 1
+end
 
 """
     setleftoverparameters(m::Model, parameters::Dict{Any,Any})
@@ -759,38 +817,63 @@ function build(m::Model)
         error(msg)
     end
 
+    # first loop through the components and then add necessary ConnectorComps
+    mi_connections = Array{InternalParameterConnection, 1}()
+    mi_components = OrderedDict{Symbol, ComponentInstanceInfo}()
+    backups = Array{Symbol, 1}()
+    num_connector_comps = 0
     duration = getduration(m.indices_values) # for now, all components have the same duration
+    for c in values(m.components2)
+        # first need to see if we need to build any connector components for this component
+        int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+        need_connectors = filter(x->(x.backup != nothing), int_connections)
+        for ipc in need_connectors
+            num_connector_comps += 1
+            push!(backups, ipc.backup)
+            curr_name = Symbol("ConnectorComp$num_connector_comps")
+            curr = ComponentInstanceInfo(curr_name, ConnectorComp, c.offset, c.final)
+            mi_components[curr_name] = curr
+            push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits))
+            push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, ipc.target_component_name, ipc.ignoreunits))
+        end
 
-    #instantiate the components
+        for ipc in setdiff(int_connections, need_connectors)
+            push!(mi_connections, ipc)
+        end
+
+        mi_components[c.name] = c
+    end
+
+    # now loop through and instantiate each component
     builtComponents = OrderedDict{Symbol, ComponentState}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
-    for c in values(m.components2)
+    for c in values(mi_components) # loops through all ComponentInstanceInfos, including new connectors
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
-        # ext_params = map(x->x.param_name, ext_connections)
         ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
-        int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+        int_connections = filter(x->x.target_component_name==c.name, mi_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if pname in keys(ext_params)
+                if c.component_type == ConnectorComp && pname==:input2
+                    offset = c.offset
+                elseif pname in keys(ext_params)
                     offset = getoffset(ext_params[pname].values)
                 elseif pname in keys(int_params)
-                    offset = m.components2[int_params[pname].source_component_name].offset
+                    offset = mi_components[int_params[pname].source_component_name].offset
                 else
-                    error("unset paramter; should be caught earlier")
+                    error("unset paramter $pname; should be caught earlier")
                 end
-
                 push!(constructor.args, :(Val{$offset}))
                 push!(constructor.args, :(Val{$duration}))
             end
         end
 
         push!(constructor.args, m.indices_counts)
-        # println(constructor)
+        println(constructor)
 
         comp = eval(eval(constructor))
         builtComponents[c.name] = comp
@@ -800,9 +883,10 @@ function build(m::Model)
     end
 
     #make the parameter connections
-    for x in m.internal_parameter_connections
+    for x in mi_connections
         c_target = builtComponents[x.target_component_name]
         c_source = builtComponents[x.source_component_name]
+        println((typeof(c_target).name.name, typeof(c_source).name.name))
         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
     end
 
@@ -810,15 +894,18 @@ function build(m::Model)
         param = x.external_parameter
         if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
-        # elseif isa(getfield(builtComponents[x.component_name].Parameters, x.param_name), Array)
-        #     setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values.data)
         else
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
         end
     end
 
+    # set the external input2's in the connectorcomps
+    for i in 1:num_connector_comps
+        setfield!(builtComponents[Symbol("ConnectorComp$i")].Parameters, :input2, m.external_parameters[backups[i]].values)
+    end
 
-    mi = ModelInstance(builtComponents, m.internal_parameter_connections, offsets, final_times)
+
+    mi = ModelInstance(builtComponents, mi_connections, offsets, final_times)
 
     return mi
 end
