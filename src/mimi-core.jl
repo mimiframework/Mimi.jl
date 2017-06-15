@@ -873,7 +873,7 @@ function build(m::Model)
         end
 
         push!(constructor.args, m.indices_counts)
-        println(constructor)
+        # println(constructor)
 
         comp = eval(eval(constructor))
         builtComponents[c.name] = comp
@@ -886,7 +886,7 @@ function build(m::Model)
     for x in mi_connections
         c_target = builtComponents[x.target_component_name]
         c_source = builtComponents[x.source_component_name]
-        println((typeof(c_target).name.name, typeof(c_source).name.name))
+        # println((typeof(c_target).name.name, typeof(c_source).name.name))
         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
     end
 
