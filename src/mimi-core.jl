@@ -314,7 +314,7 @@ end
 Connect a parameter in a component to an external parameter.
 """
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
-    p = m.external_parameters[Symbol(lowercase(string(parametername)))]
+    p = m.external_parameters[parametername]
 
     if isa(p, ArrayModelParameter) && component != :ConnectorComp
         checklabels(m, component, name, p)
@@ -353,7 +353,7 @@ Adds a one dimensional time-indexed array parameter to the model.
 """
 function set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
     p = ArrayModelParameter(value, [:time])
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -363,7 +363,7 @@ Adds a two dimensional time-indexed array parameter to the model.
 """
 function set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
     p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -376,7 +376,7 @@ function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArr
         value = convert(Array{m.numberType}, value)
     end
     p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -389,7 +389,7 @@ function set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
         value = convert(Array{m.numberType}, value)
     end
     p = ScalarModelParameter(value)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -427,13 +427,13 @@ end
 
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
-keys are lowercase strings that match the names of unset parameters in the model.
+keys are strings that match the names of unset parameters in the model.
 """
 function setleftoverparameters(m::Model, parameters::Dict{String,Any})
     leftovers = get_unconnected_parameters(m)
     for (comp, p) in leftovers
         if !(p in keys(m.external_parameters)) # then we need to set the external parameter
-            value = parameters[lowercase(string(p))]
+            value = parameters[string(p)]
             comp_param_dims = getmetainfo(m, comp).parameters[p].dimensions
             if length(comp_param_dims)==0 #scalar case
                 set_external_scalar_parameter(m, p, value)
