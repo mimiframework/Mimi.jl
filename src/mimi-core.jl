@@ -264,9 +264,9 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=not
             duration = getduration(m.indices_values)
             T = eltype(value)
             if length(comp_param_dims)==1
-                values = OurTVector{T, offset, duration}(value)
+                values = TimestepVector{T, offset, duration}(value)
             elseif length(comp_param_dims)==2
-                values = OurTMatrix{T, offset, duration}(value)
+                values = TimestepMatrix{T, offset, duration}(value)
             else
                 values = value
             end
@@ -347,21 +347,21 @@ function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelPar
 end
 
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::OurTVector, dims)
+    set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
 
 Adds a one dimensional time-indexed array parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::OurTVector, dims)
+function set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
     p = ArrayModelParameter(value, [:time])
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
 
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix, dims)
+    set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
 
 Adds a two dimensional time-indexed array parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix, dims)
+function set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
     p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
     m.external_parameters[Symbol(lowercase(string(name)))] = p
 end
@@ -442,9 +442,9 @@ function setleftoverparameters(m::Model, parameters::Dict{String,Any})
                 duration = getduration(m.indices_values)
                 T = eltype(value)
                 if length(comp_param_dims)==1 && comp_param_dims[1]==:time
-                    values = OurTVector{T, offset, duration}(value)
+                    values = TimestepVector{T, offset, duration}(value)
                 elseif length(comp_param_dims)==2 && comp_param_dims[1]==:time
-                    values = OurTMatrix{T, offset, duration}(value)
+                    values = TimestepMatrix{T, offset, duration}(value)
                 else
                     values = value
                 end
@@ -497,14 +497,14 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     end
     if name in fieldnames(mi.components[component].Variables)
         v = getfield(mi.components[component].Variables, name)
-        if isa(v, OurTVector) || isa(v, OurTMatrix)
+        if isa(v, TimestepVector) || isa(v, TimestepMatrix)
             return v.data
         else
             return v
         end
     elseif name in fieldnames(mi.components[component].Parameters)
         p = getfield(mi.components[component].Parameters, name)
-        if isa(p, OurTVector) || isa(p, OurTMatrix)
+        if isa(p, TimestepVector) || isa(p, TimestepMatrix)
             return p.data
         else
             return p

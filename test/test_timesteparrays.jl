@@ -4,10 +4,10 @@ using Base.Test
 a = collect(reshape(1:16,4,4))
 
 #####################
-#  Test OurTVector  #
+#  Test TimestepVector  #
 #####################
 
-x = Mimi.OurTVector{Int, 2000, 1}(a[:,3])
+x = Mimi.TimestepVector{Int, 2000, 1}(a[:,3])
 t = Timestep{2001, 1, 3000}(1)
 
 @test hasvalue(x, t)
@@ -23,10 +23,10 @@ t3 = Timestep{2000, 1, 3000}(1)
 @test x[t3] == 9
 
 #####################
-#  Test OurTMatrix  #
+#  Test TimestepMatrix  #
 #####################
 
-y = Mimi.OurTMatrix{Int, 2000, 1}(a[:,1:2])
+y = Mimi.TimestepMatrix{Int, 2000, 1}(a[:,1:2])
 
 @test hasvalue(y, t, 1)
 @test !hasvalue(y, Timestep{2000, 1, 3000}(10), 1)
@@ -45,7 +45,7 @@ y = Mimi.OurTMatrix{Int, 2000, 1}(a[:,1:2])
 #  Test with intervals wider than 1  #
 ######################################
 
-z = Mimi.OurTMatrix{Int, 1850, 10}(a[:,3:4]) # duration of 10
+z = Mimi.TimestepMatrix{Int, 1850, 10}(a[:,3:4]) # duration of 10
 t = Timestep{1800,10,3000}(6)
 @test z[t,1] == 9
 @test z[t,2] == 13

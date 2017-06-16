@@ -10,13 +10,13 @@ export
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorComp, getindex,
     getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
     getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
-    isfinaltimestep, OurTVector, OurTMatrix, hasvalue
+    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue
 
 import
     Base.getindex, Base.run, Base.show
 
 include("clock.jl")
-include("ourarrays.jl")
+include("timestep_arrays.jl")
 include("mimi-core.jl")
 include("metainfo.jl")
 include("marginalmodel.jl")
