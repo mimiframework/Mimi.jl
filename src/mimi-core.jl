@@ -831,7 +831,11 @@ function build(m::Model)
             num_connector_comps += 1
             push!(backups, ipc.backup)
             curr_name = Symbol("ConnectorComp$num_connector_comps")
-            curr = ComponentInstanceInfo(curr_name, ConnectorCompA, c.offset, c.final)
+            if length(size(m.external_parameters[ipc.backup].values))==1
+                curr = ComponentInstanceInfo(curr_name, ConnectorCompA, c.offset, c.final)
+            else
+                curr = ComponentInstanceInfo(curr_name, ConnectorCompB, c.offset, c.final)
+            end
             mi_components[curr_name] = curr
             push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits))
             push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, ipc.target_component_name, ipc.ignoreunits))
@@ -858,7 +862,7 @@ function build(m::Model)
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if c.component_type == ConnectorCompA && pname==:input2
+                if pname==:input2 && (c.component_type == ConnectorCompA || c.component_type == ConnectorCompB) 
                     offset = c.offset
                 elseif pname in keys(ext_params)
                     offset = getoffset(ext_params[pname].values)
