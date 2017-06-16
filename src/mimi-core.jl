@@ -43,23 +43,13 @@ type ModelInstance
 end
 
 type ArrayModelParameter <: Parameter
-    # values::AbstractArray
     values
     dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
-    # offset::Int
 
     function ArrayModelParameter(values, dims::Vector{Symbol})
         amp = new()
-        # if length(size(values))==1
-        #     amp.values = OurTVector{T, offset, duration}(values)
-        # elseif length(size(values))==2
-        #     amp.values = OurTMatrix{T, offset, duration}(values)
-        # else
-        #     amp.values = values #not sure what happens for more than two dimensions
-        # end
         amp.values = values
         amp.dims = dims
-        # amp.offset = offset
         return amp
     end
 end
