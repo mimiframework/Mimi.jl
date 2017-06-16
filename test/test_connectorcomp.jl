@@ -69,6 +69,10 @@ connectparameter(model2, :LongComponent, :x, :ShortComponent, :b, zeros(11))
 
 run(model2)
 
+@test length(model2[:ShortComponent, :b])==6
+@test length(model2[:LongComponent, :z])==11
+@test length(components(model2))==2
+
 ########################################################
 #  A model that requires multiregional ConnectorComps  #
 ########################################################
@@ -89,7 +93,7 @@ end
 
 @defcomp Short begin
     regions = Index()
-    
+
     a = Parameter(index=[regions])
     b = Variable(index=[time, regions])
 end
@@ -110,5 +114,8 @@ addcomponent(model3, Long)
 setparameter(model3, :Short, :a, [1,2,3])
 connectparameter(model3, :Long, :x, :Short, :b, zeros(21,3))
 
-mi = Mimi.build(model3)
-run(mi, 21, model3.indices_values)
+run(model3)
+
+@test size(model3[:Short, :b])==(17, 3)
+@test size(model3[:Long, :out])==(21, 3)
+@test length(components(model2))==2
