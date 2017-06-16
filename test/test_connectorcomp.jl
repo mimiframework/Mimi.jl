@@ -68,3 +68,42 @@ setparameter(model2, :LongComponent, :y, 1.)
 connectparameter(model2, :LongComponent, :x, :ShortComponent, :b, zeros(11))
 
 run(model2)
+
+########################################################
+#  A model that requires multiregional ConnectorComps  #
+########################################################
+
+@defcomp Long begin
+    x = Parameter(index = [time, regions])
+    out = Variable(index = [time, regions])
+end
+
+function run_timestep(s::Long, ts::Timestep)
+    p, v, d = s.Parameters, s.Variables, s.Dimensions
+    for r in d.regions
+        v.out[ts, r] = p.x[ts, r]
+    end
+end
+
+@defcomp Short begin
+    a = Parameter(index=[regions])
+    b = Variable(index=[time, regions])
+end
+
+function run_timestep(s::Short, ts::Timestep)
+    p, v, d = s.Parameters, s.Variables, s.Dimensions
+    for r in d.regions
+        v.b[ts, r] = ts.t + p.a[r]
+    end
+end
+
+model3 = Model()
+setindex(model3, :time, 2000:5:2100)
+setindex(model3, :regions, [:A, :B, :C])
+addcomponent(model3, Short; start=2020)
+addcomponent(model3, Long)
+
+setparameter(model3, :Short, :a, [1,2,3])
+connectparameter(model3, :Long, :x, :Short, :b, zeros(21,3))
+
+run(model3)
