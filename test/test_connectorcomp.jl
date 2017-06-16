@@ -74,6 +74,8 @@ run(model2)
 ########################################################
 
 @defcomp Long begin
+    regions = Index()
+
     x = Parameter(index = [time, regions])
     out = Variable(index = [time, regions])
 end
@@ -86,6 +88,8 @@ function run_timestep(s::Long, ts::Timestep)
 end
 
 @defcomp Short begin
+    regions = Index()
+    
     a = Parameter(index=[regions])
     b = Variable(index=[time, regions])
 end

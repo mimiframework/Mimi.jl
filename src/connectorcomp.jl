@@ -20,6 +20,8 @@ function run_timestep(s::ConnectorCompA, ts::Timestep)
 end
 
 @defcomp ConnectorCompB begin
+    regions = Index()
+    
     input1 = Parameter(index = [time, regions])
     input2 = Parameter(index = [time, regions])
     output = Variable(index = [time, regions])
