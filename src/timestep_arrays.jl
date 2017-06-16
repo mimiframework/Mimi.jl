@@ -55,7 +55,7 @@ function Base.setindex!{T, d_offset, Duration, t_offset, Final}(v::TimestepVecto
 	setindex!(v.data, a, t)
 end
 
-function Base.setindex!{T, offset, duration}(v::TimestepVector{T, offset, duration}, a, i::Int)
+function Base.setindex!{T, offset, duration, OT<:Union{Int, Colon, OrdinalRange}}(v::TimestepVector{T, offset, duration}, a, i::OT)
 	setindex!(v.data, a, i)
 end
 
@@ -110,16 +110,16 @@ function Base.getindex{T, Offset, Duration, OT1<:Union{Int, Colon, OrdinalRange}
 	return x.data[t, i]
 end
 
-function Base.setindex!{T, Offset, Duration, Final}(m::TimestepMatrix{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final}, j::Int)
+function Base.setindex!{T, Offset, Duration, Final, OT1<:Union{Int, Colon, OrdinalRange}}(m::TimestepMatrix{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final}, j::OT1)
 	setindex!(m.data, a, ts.t, j)
 end
 
-function Base.setindex!{T, d_offset, Duration, t_offset, Final}(m::TimestepMatrix{T, d_offset, Duration}, a, ts::Timestep{t_offset, Duration, Final}, j::Int)
+function Base.setindex!{T, d_offset, Duration, t_offset, Final, OT1<:Union{Int, Colon, OrdinalRange}}(m::TimestepMatrix{T, d_offset, Duration}, a, ts::Timestep{t_offset, Duration, Final}, j::OT1)
 	t = Int64(ts.t + (t_offset - d_offset)/Duration)
 	setindex!(m.data, a, t, j)
 end
 
-function Base.setindex!{T, offset, duration}(m::TimestepMatrix{T, offset, duration}, a, i::Int, j::Int)
+function Base.setindex!{T, offset, duration, OT1<:Union{Int, Colon, OrdinalRange}, OT2<:Union{Int, Colon, OrdinalRange}}(m::TimestepMatrix{T, offset, duration}, a, i::OT1, j::OT2)
 	setindex!(m.data, a, i, j)
 end
 
