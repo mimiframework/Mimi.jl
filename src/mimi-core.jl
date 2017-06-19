@@ -430,10 +430,11 @@ to some other component to a value from a dictionary. This method assumes the di
 keys are strings that match the names of unset parameters in the model.
 """
 function setleftoverparameters(m::Model, parameters::Dict{String,Any})
+    parameters = Dict(lowercase(k)=>v for (k, v) in parameters)
     leftovers = get_unconnected_parameters(m)
     for (comp, p) in leftovers
         if !(p in keys(m.external_parameters)) # then we need to set the external parameter
-            value = parameters[string(p)]
+            value = parameters[lowercase(string(p))]
             comp_param_dims = getmetainfo(m, comp).parameters[p].dimensions
             if length(comp_param_dims)==0 #scalar case
                 set_external_scalar_parameter(m, p, value)
