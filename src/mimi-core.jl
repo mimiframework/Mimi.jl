@@ -502,7 +502,7 @@ function getspan(m::Model, comp::Symbol)
     duration = getduration(m.indices_values)
     start = m.components2[comp].offset
     final = m.components2[comp].final
-    return (final - start) / duration + 1
+    return Int((final - start) / duration + 1)
 end
 
 """
@@ -640,7 +640,7 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
     elseif !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable not in provided component")
+        error("Cannot get dataframe; variable $name not in component $componentname")
     else
         return getdataframe(m, get(m.mi), componentname, name)
     end
@@ -658,14 +658,31 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
         return mi[componentname, name]
     elseif length(vardiminfo)==1
         df = DataFrame()
-        df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
+        values = m.indices_values[vardiminfo[1]]
+        if vardiminfo[1]==:time
+            comp_start = m.components2[componentname].offset
+            num = getspan(m, componentname)
+            start = findfirst(values, comp_start)
+            df[vardiminfo[1]] = values[start:(start+num-1)]
+        else
+            df[vardiminfo[1]] = values
+        end
         df[name] = mi[componentname, name]
         return df
     elseif length(vardiminfo)==2
         df = DataFrame()
-        dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        if vardiminfo[1]==:time
+            dim1 = getspan(m, componentname)
+            comp_start = m.components2[componentname].offset
+            num = getspan(m, componentname)
+            values = m.indices_values[vardiminfo[1]]
+            start = findfirst(values, comp_start)
+            df[vardiminfo[1]] = repeat(values[start:(start+num-1)],inner=[dim2])
+        else
+            dim1 = length(m.indices_values[vardiminfo[1]])
+            df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        end
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
         data = m[componentname, name]
         df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
@@ -862,7 +879,7 @@ function build(m::Model)
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if pname==:input2 && (c.component_type == ConnectorCompA || c.component_type == ConnectorCompB) 
+                if pname==:input2 && (c.component_type == ConnectorCompA || c.component_type == ConnectorCompB)
                     offset = c.offset
                 elseif pname in keys(ext_params)
                     offset = getoffset(ext_params[pname].values)
