@@ -57,7 +57,7 @@ end
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
-    time_labels::Vector{Any}
+    time_labels::Vector
     external_parameters::Dict{Symbol,Parameter}
     numberType::DataType
     internal_parameter_connections::Array{InternalParameterConnection, 1}
@@ -69,7 +69,7 @@ type Model
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
-        m.time_labels = Vector{Any}()
+        # m.time_labels = Vector{Any}()
         m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         m.internal_parameter_connections = Array{InternalParameterConnection,1}()
@@ -460,6 +460,7 @@ function setleftoverparameters(m::Model, parameters::Dict{String,Any})
             if length(comp_param_dims)==0 #scalar case
                 set_external_scalar_parameter(m, p, value)
             else #array case
+                value = convert(Array{m.numberType}, value)
                 offset = m.indices_values[:time][1]
                 duration = getduration(m.indices_values)
                 T = eltype(value)
@@ -654,11 +655,11 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
     if num_dim == 1
-        df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
+        df[vardiminfo[1]] = (isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels)
     elseif num_dim == 2
         dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        df[vardiminfo[1]] = repeat((isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels), inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 

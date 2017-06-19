@@ -78,6 +78,10 @@ function hasvalue{T, Offset1, Offset2, Duration, Final}(v::TimestepVector{T, Off
 	return t >= Offset1 && t <= (Offset1 + (size(v, 1) - 1) * Duration)
 end
 
+function Base.endof(v::TimestepVector)
+	return length(v.data)
+end
+
 ################
 #  TimestepMatrix  #
 ################
