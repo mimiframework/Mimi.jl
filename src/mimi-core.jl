@@ -154,6 +154,7 @@ function setindex{T}(m::Model, name::Symbol, values::Vector{T})
         m.indices_values[name] = collect(1:length(values))
     else
         m.indices_values[name] = copy(values)
+        m.time_labels = Vector()
     end
     nothing
 end
