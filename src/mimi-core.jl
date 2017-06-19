@@ -57,6 +57,7 @@ end
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
+    time_labels::Vector{Any}
     external_parameters::Dict{Symbol,Parameter}
     numberType::DataType
     internal_parameter_connections::Array{InternalParameterConnection, 1}
@@ -68,6 +69,7 @@ type Model
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
+        m.time_labels = Vector{Any}()
         m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         m.internal_parameter_connections = Array{InternalParameterConnection,1}()
@@ -115,6 +117,20 @@ function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+function isuniform(values::Vector)
+    if length(values)==1 || length(values)==2
+        return true
+    end
+
+    stepsize = values[2]-values[1]
+    for i in 3:length(values)
+        if (values[i]-values[i-1]) != stepsize
+            return false
+        end
+    end
+
+    return true
+end
 """
     setindex(m::Model, name::Symbol, count::Int)
 
@@ -133,7 +149,12 @@ Set the values of `Model`'s index `name` to `values`.
 """
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
-    m.indices_values[name] = copy(values)
+    if name==:time && !isuniform(values)
+        m.time_labels = values
+        m.indices_values[name] = collect(1:length(values))
+    else
+        m.indices_values[name] = copy(values)
+    end
     nothing
 end
 
