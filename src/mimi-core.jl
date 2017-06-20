@@ -343,7 +343,7 @@ Connect a parameter in a component to an external parameter.
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[parametername]
 
-    if isa(p, ArrayModelParameter) && component != :ConnectorCompVector
+    if isa(p, ArrayModelParameter)
         checklabels(m, component, name, p)
     end
 
@@ -356,14 +356,21 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 end
 
 function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
+    metacomp = getmetainfo(m, component)
+    if !(eltype(p.values) <: metacomp.parameters[name].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
     elseif !(isempty(p.dims))
-        if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
+        if !(size(p.dims) == size(metacomp.parameters[name].dimensions))
             error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
         end
     end
-    comp_dims = getmetainfo(m, component).parameters[name].dimensions
+
+    # Return early if it's a ConnectorComp so that we don't check the sizes, because they will not match.
+    if metacomp.component_name == :ConnectorCompVector || metacomp.component_name == :ConnectorCompMatrix
+        return nothing
+    end
+
+    comp_dims = metacomp.parameters[name].dimensions
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol)
             if !(length(m.indices_values[dim])==size(p.values)[i])

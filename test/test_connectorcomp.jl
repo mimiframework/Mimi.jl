@@ -33,20 +33,22 @@ end
 m = Model()
 setindex(m, :time, 2000:3000)
 addcomponent(m, ShortComponent; start=2100)
-addcomponent(m, ConnectorCompVector)
+addcomponent(m, ConnectorCompVector, :MyConnector) # can give it your own name
 addcomponent(m, LongComponent; start=2000)
+
+@test Mimi.getmetainfo(m, :MyConnector).component_name == :ConnectorCompVector
 
 setparameter(m, :ShortComponent, :a, 2.)
 setparameter(m, :LongComponent, :y, 1.)
-connectparameter(m, :ConnectorCompVector, :input1, :ShortComponent, :b)
-setparameter(m, :ConnectorCompVector, :input2, zeros(100))
-connectparameter(m, :LongComponent, :x, :ConnectorCompVector, :output)
+connectparameter(m, :MyConnector, :input1, :ShortComponent, :b)
+setparameter(m, :MyConnector, :input2, zeros(100))
+connectparameter(m, :LongComponent, :x, :MyConnector, :output)
 
 run(m)
 
 @test length(m[:ShortComponent, :b])==901
-@test length(m[:ConnectorCompVector, :input1])==901
-@test length(m[:ConnectorCompVector, :input2])==100
+@test length(m[:MyConnector, :input1])==901
+@test length(m[:MyConnector, :input2])==100
 @test length(m[:LongComponent, :z])==1001
 
 for i in 1:900
