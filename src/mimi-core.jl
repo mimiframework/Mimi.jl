@@ -678,30 +678,46 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     values = m.indices_values[vardiminfo[1]]
     if vardiminfo[1]==:time
         comp_start = m.components2[componentname].offset
-        num = getspan(m, componentname)
+        comp_final = m.components2[componentname].final
         start = findfirst(values, comp_start)
+        final = findfirst(values, comp_final)
+        num = getspan(m, componentname)
     end
 
     if length(vardiminfo)==1
+        # if vardiminfo[1]==:time
+        #     df[vardiminfo[1]] = values[start:(start+num-1)]
+        # else
+        #     df[vardiminfo[1]] = values
+        # end
+        df[vardiminfo[1]] = values
         if vardiminfo[1]==:time
-            df[vardiminfo[1]] = values[start:(start+num-1)]
+            df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
         else
-            df[vardiminfo[1]] = values
+            df[name] = mi[componentname, name]
         end
-        df[name] = mi[componentname, name]
         return df
     elseif length(vardiminfo)==2
         dim2 = length(m.indices_values[vardiminfo[2]])
-        if vardiminfo[1]==:time
-            dim1 = getspan(m, componentname)
-            df[vardiminfo[1]] = repeat(values[start:(start+num-1)],inner=[dim2])
-        else
-            dim1 = length(m.indices_values[vardiminfo[1]])
-            df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
-        end
+        # if vardiminfo[1]==:time
+        #     dim1 = getspan(m, componentname)
+        #     df[vardiminfo[1]] = repeat(values[start:(start+num-1)],inner=[dim2])
+        # else
+        #     dim1 = length(m.indices_values[vardiminfo[1]])
+        #     df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        # end
+        dim1 = length(m.indices_values[vardiminfo[1]])
+        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
+
         data = m[componentname, name]
+        if vardiminfo[1]==:time
+            top = fill(NaN, (start-1, dim2))
+            bottom = fill(NaN, (dim1-final, dim2))
+            data = vcat(top, data, bottom)
+        end
         df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+
         return df
     else
         error("Not yet implemented")

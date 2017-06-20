@@ -1,9 +1,9 @@
 using Mimi
 using Base.Test
 
-#######################################
-#  Manual way of using ConnectorComp  #
-#######################################
+#--------------------------------------
+#  Manual way of using ConnectorComp
+#--------------------------------------
 
 @defcomp LongComponent begin
     x = Parameter(index=[time])
@@ -55,10 +55,12 @@ for i in 1:900
     @test m[:ShortComponent, :b][i] == 2*i
 end
 
+b = getdataframe(m, :ShortComponent, :b)
+@test size(b) == (1001, 2)
 
-######################################
-#  Now using new API for connecting  #
-######################################
+#-------------------------------------
+#  Now using new API for connecting
+#-------------------------------------
 
 model2 = Model()
 setindex(model2, :time, 2000:2010)
@@ -75,9 +77,33 @@ run(model2)
 @test length(model2[:LongComponent, :z])==11
 @test length(components(model2))==2
 
-########################################################
-#  A model that requires multiregional ConnectorComps  #
-########################################################
+#-------------------------------------
+#  A Short component that ends early
+#-------------------------------------
+
+model3 = Model()
+setindex(model3, :time, 2000:2010)
+addcomponent(model3, ShortComponent; final=2005)
+addcomponent(model3, LongComponent)
+
+setparameter(model3, :ShortComponent, :a, 2.)
+setparameter(model3, :LongComponent, :y, 1.)
+connectparameter(model3, :LongComponent, :x, :ShortComponent, :b, zeros(11))
+
+run(model3)
+
+@test length(model3[:ShortComponent, :b])==6
+@test length(model3[:LongComponent, :z])==11
+@test length(components(model3))==2
+
+b2 = getdataframe(model3, :ShortComponent, :b)
+@test size(b2) == (11,2)
+[(@test b2[:b][i]==2*i) for i in 1:6]
+[(@test isnan(b2[:b][i])) for i in 7:11]
+
+#------------------------------------------------------
+#  A model that requires multiregional ConnectorComps
+#------------------------------------------------------
 
 @defcomp Long begin
     regions = Index()
@@ -107,17 +133,20 @@ function run_timestep(s::Short, ts::Timestep)
     end
 end
 
-model3 = Model()
-setindex(model3, :time, 2000:5:2100)
-setindex(model3, :regions, [:A, :B, :C])
-addcomponent(model3, Short; start=2020)
-addcomponent(model3, Long)
+model4 = Model()
+setindex(model4, :time, 2000:5:2100)
+setindex(model4, :regions, [:A, :B, :C])
+addcomponent(model4, Short; start=2020)
+addcomponent(model4, Long)
 
-setparameter(model3, :Short, :a, [1,2,3])
-connectparameter(model3, :Long, :x, :Short, :b, zeros(21,3))
+setparameter(model4, :Short, :a, [1,2,3])
+connectparameter(model4, :Long, :x, :Short, :b, zeros(21,3))
 
-run(model3)
+run(model4)
 
-@test size(model3[:Short, :b])==(17, 3)
-@test size(model3[:Long, :out])==(21, 3)
-@test length(components(model2))==2
+@test size(model4[:Short, :b])==(17, 3)
+@test size(model4[:Long, :out])==(21, 3)
+@test length(components(model4))==2
+
+b3 = getdataframe(model4, :Short, :b)
+@test size(b3)==(63,3)
