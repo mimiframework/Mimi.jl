@@ -489,9 +489,9 @@ function connectparameter(m::Model, target_component::Symbol, target_param::Symb
     duration = getduration(m.indices_values)
     T = eltype(backup)
     if length(comp_param_dims)==1
-        values = OurTVector{T, offset, duration}(backup)
+        values = TimestepVector{T, offset, duration}(backup)
     elseif length(comp_param_dims)==2
-        values = OurTMatrix{T, offset, duration}(backup)
+        values = TimestepMatrix{T, offset, duration}(backup)
     else
         values = backup
     end
