@@ -7,18 +7,21 @@ using NamedArrays
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
-    connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, getindex,
-    getdataframe, components, variables, getvpd, unitcheck, set_external_parameter, plot, getindexcount,
-    getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep, isfinaltimestep
+    connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorComp, getindex,
+    getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
+    getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
+    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue
 
 import
     Base.getindex, Base.run, Base.show
 
+include("clock.jl")
+include("timestep_arrays.jl")
 include("mimi-core.jl")
 include("metainfo.jl")
-include("clock.jl")
 include("marginalmodel.jl")
 include("adder.jl")
+include("connectorcomp.jl")
 include("references.jl")
 include("plotting.jl")
 include("lint_helper.jl")

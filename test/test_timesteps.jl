@@ -56,9 +56,79 @@ setindex(m, :time, 2000:2010)
 foo = addcomponent(m, Foo, start=2005) #offset for foo
 bar = addcomponent(m, Bar)
 
-set_external_parameter(m, :x, 5.)
-set_external_parameter(m, :y, collect(1:11))
-connectparameter(m, :Foo, :input, :x)
-connectparameter(m, :Bar, :input, :y)
+setparameter(m, :Foo, :input, 5.)
+setparameter(m, :Bar, :input, collect(1:11))
 
-# run(m)
+run(m)
+
+@test length(m[:Foo, :output])==6
+@test length(m[:Bar, :output])==11
+
+for i in 1:6
+    @test m[:Foo, :output][i] == 5+i
+end
+
+for i in 1:5
+    @test m[:Bar, :output][i] == i
+end
+
+for i in 6:11
+    @test m[:Bar, :output][i] == i*i
+end
+
+##################################################
+#  Now build a model with connecting components  #
+##################################################
+
+@defcomp Foo2 begin
+    input = Parameter(index=[time])
+    output = Variable(index=[time])
+end
+
+function run_timestep(c::Foo2, ts::Timestep)
+    c.Variables.output[ts] = c.Parameters.input[ts]
+end
+
+m2 = Model()
+setindex(m2, :time, 2000:2010)
+bar = addcomponent(m2, Bar)
+foo2 = addcomponent(m2, Foo2, start=2005) #offset for foo
+
+setparameter(m2, :Bar, :input, collect(1:11))
+connectparameter(m2, :Foo2, :input, :Bar, :output)
+
+run(m2)
+
+for i in 1:6
+    @test m2[:Foo2, :output][i] == (i+5)^2
+end
+
+#########################################
+#  Connect them in the other direction  #
+#########################################
+
+@defcomp Bar2 begin
+    input = Parameter(index=[time])
+    output = Variable(index=[time])
+end
+
+function run_timestep(c::Bar2, ts::Timestep)
+    # c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
+    if Mimi.gettime(ts) < 2005
+        c.Variables.output[ts] = 0
+    else
+        c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
+    end
+end
+
+m3 = Model()
+setindex(m3, :time, 2000:2010)
+addcomponent(m3, Foo, start=2005)
+addcomponent(m3, Bar2)
+setparameter(m3, :Foo, :input, 5.)
+connectparameter(m3, :Bar2, :input, :Foo, :output)
+run(m3)
+
+@test length(m3[:Foo, :output])==6
+@test length(m3[:Bar2, :input])==6
+@test length(m3[:Bar2, :output])==11
