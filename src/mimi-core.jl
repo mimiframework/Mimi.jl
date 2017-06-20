@@ -144,6 +144,7 @@ Set the values of `Model`'s' index `name` to integers 1 through `count`.
 function setindex(m::Model, name::Symbol, count::Int)
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
+    m.time_labels = Vector()
     nothing
 end
 
@@ -172,6 +173,7 @@ Set the values of `Model`'s index `name` to the values in the given range `value
 function setindex{T}(m::Model, name::Symbol, valuerange::Range{T})
     m.indices_counts[name] = length(valuerange)
     m.indices_values[name] = Vector{T}(valuerange)
+    m.time_labels = Vector()
     nothing
 end
 
@@ -675,7 +677,7 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
 
     df = DataFrame()
 
-    values = m.indices_values[vardiminfo[1]]
+    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
     if vardiminfo[1]==:time
         comp_start = m.components2[componentname].offset
         comp_final = m.components2[componentname].final
@@ -685,11 +687,6 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     end
 
     if length(vardiminfo)==1
-        # if vardiminfo[1]==:time
-        #     df[vardiminfo[1]] = values[start:(start+num-1)]
-        # else
-        #     df[vardiminfo[1]] = values
-        # end
         df[vardiminfo[1]] = values
         if vardiminfo[1]==:time
             df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
@@ -699,16 +696,9 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
         return df
     elseif length(vardiminfo)==2
         dim2 = length(m.indices_values[vardiminfo[2]])
-        # if vardiminfo[1]==:time
-        #     dim1 = getspan(m, componentname)
-        #     df[vardiminfo[1]] = repeat(values[start:(start+num-1)],inner=[dim2])
-        # else
-        #     dim1 = length(m.indices_values[vardiminfo[1]])
-        #     df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
-        # end
         dim1 = length(m.indices_values[vardiminfo[1]])
-        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
-        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
+        df[vardiminfo[1]] = repeat(values, inner=[dim2])
+        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]], outer=[dim1])
 
         data = m[componentname, name]
         if vardiminfo[1]==:time
@@ -745,8 +735,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
     end
 
-    #Get the base value of the number of dimensions from the first
-    # componentname and name pair association
+    # Get the base value of the number of dimensions from the first componentname and name pair association
     firstpair = comp_name_pairs[1]
     componentname = firstpair[1]
     name = firstpair[2]
@@ -763,17 +752,17 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
+    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
     if num_dim == 1
-        df[vardiminfo[1]] = (isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels)
+        df[vardiminfo[1]] = values
     elseif num_dim == 2
         dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat((isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels), inner=[dim2])
+        df[vardiminfo[1]] = repeat(values, inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 
-    #Iterate through all the pairs; always check for each variable
-    # that the number of dimensions matches that of the first
+    # Iterate through all the pairs; always check for each variable that the number of dimensions matches that of the first
     for pair in comp_name_pairs
         componentname = pair[1]
         name = pair[2]
@@ -785,15 +774,31 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                 end
 
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
+                if vardiminfo[1]==:time
+                    comp_start = m.components2[componentname].offset
+                    comp_final = m.components2[componentname].final
+                    start = findfirst(values, comp_start)
+                    final = findfirst(values, comp_final)
+                    num = getspan(m, componentname)
+                end
 
                 if !(length(vardiminfo) == num_dim)
                     error(string("Not all components have the same number of dimensions"))
                 end
 
                 if (num_dim==1)
-                    df[comp_var] = mi[componentname, comp_var]
+                    if vardiminfo[1]==:time
+                        df[comp_var] = vcat(repeat([NaN], inner=start-1), mi[componentname, comp_var], repeat([NaN], inner=length(values)-final))
+                    else
+                        df[comp_var] = mi[componentname, comp_var]
+                    end
                 elseif (num_dim == 2)
                     data = m[componentname, comp_var]
+                    if vardiminfo[1]==:time
+                        top = fill(NaN, (start-1, dim2))
+                        bottom = fill(NaN, (dim1-final, dim2))
+                        data = vcat(top, data, bottom)
+                    end
                     df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
                 end
             end
@@ -804,14 +809,30 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
             end
 
             vardiminfo = getvardiminfo(mi, componentname, name)
+            if vardiminfo[1]==:time
+                comp_start = m.components2[componentname].offset
+                comp_final = m.components2[componentname].final
+                start = findfirst(values, comp_start)
+                final = findfirst(values, comp_final)
+                num = getspan(m, componentname)
+            end
 
             if !(length(vardiminfo) == num_dim)
                 error(string("Not all components have the same number of dimensions"))
             end
             if (num_dim==1)
-                df[name] = mi[componentname, name]
+                if vardiminfo[1]==:time
+                    df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
+                else
+                    df[name] = mi[componentname, name]
+                end
             elseif (num_dim == 2)
                 data = m[componentname, name]
+                if vardiminfo[1]==:time
+                    top = fill(NaN, (start-1, dim2))
+                    bottom = fill(NaN, (dim1-final, dim2))
+                    data = vcat(top, data, bottom)
+                end
                 df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
             end
         else

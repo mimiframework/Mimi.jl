@@ -150,3 +150,36 @@ run(model4)
 
 b3 = getdataframe(model4, :Short, :b)
 @test size(b3)==(63,3)
+
+#-------------------------------------------------------------
+#  Test where the short component starts late and ends early
+#-------------------------------------------------------------
+
+model5 = Model()
+setindex(model5, :time, 2000:5:2100)
+setindex(model5, :regions, [:A, :B, :C])
+addcomponent(model5, Short; start=2020, final=2070)
+addcomponent(model5, Long)
+
+setparameter(model5, :Short, :a, [1,2,3])
+connectparameter(model5, :Long, :x, :Short, :b, zeros(21,3))
+
+run(model5)
+
+@test size(model5[:Short, :b])==(11, 3)
+@test size(model5[:Long, :out])==(21, 3)
+@test length(components(model5))==2
+
+b4 = getdataframe(model5, :Short, :b)
+@test size(b4)==(63,3)
+
+#-----------------------------------------
+#  Test getdataframe with multiple pairs
+#-----------------------------------------
+
+result = getdataframe(model5, :Short=>:b, :Long=>:out)
+@test size(result)==(63,4)
+[(@test isnan(result[i, :b])) for i in 1:12]
+[(@test isnan(result[i, :b])) for i in 46:63]
+[(@test result[i, :out]==0) for i in 1:12]
+[(@test result[i, :out]==0) for i in 46:63]
