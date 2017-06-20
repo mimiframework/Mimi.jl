@@ -654,15 +654,22 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     meta_component_name = Symbol(supertype(comp_type).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
+
     if length(vardiminfo)==0
         return mi[componentname, name]
-    elseif length(vardiminfo)==1
-        df = DataFrame()
-        values = m.indices_values[vardiminfo[1]]
+    end
+
+    df = DataFrame()
+
+    values = m.indices_values[vardiminfo[1]]
+    if vardiminfo[1]==:time
+        comp_start = m.components2[componentname].offset
+        num = getspan(m, componentname)
+        start = findfirst(values, comp_start)
+    end
+
+    if length(vardiminfo)==1
         if vardiminfo[1]==:time
-            comp_start = m.components2[componentname].offset
-            num = getspan(m, componentname)
-            start = findfirst(values, comp_start)
             df[vardiminfo[1]] = values[start:(start+num-1)]
         else
             df[vardiminfo[1]] = values
@@ -670,14 +677,9 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
         df[name] = mi[componentname, name]
         return df
     elseif length(vardiminfo)==2
-        df = DataFrame()
         dim2 = length(m.indices_values[vardiminfo[2]])
         if vardiminfo[1]==:time
             dim1 = getspan(m, componentname)
-            comp_start = m.components2[componentname].offset
-            num = getspan(m, componentname)
-            values = m.indices_values[vardiminfo[1]]
-            start = findfirst(values, comp_start)
             df[vardiminfo[1]] = repeat(values[start:(start+num-1)],inner=[dim2])
         else
             dim1 = length(m.indices_values[vardiminfo[1]])
@@ -723,7 +725,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     end
 
     if !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable not in provided component")
+        error("Cannot get dataframe; variable $name not in component $componentname")
     end
 
     vardiminfo = getvardiminfo(mi, componentname, name)
@@ -741,7 +743,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     end
 
     #Iterate through all the pairs; always check for each variable
-    # that the number of dimensions matcht that of the first
+    # that the number of dimensions matches that of the first
     for pair in comp_name_pairs
         componentname = pair[1]
         name = pair[2]
@@ -749,7 +751,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         if isa(name, Tuple)
             for comp_var in name
                 if !(comp_var in variables(m, componentname))
-                    error(string("Cannot get dataframe; variable, ", comp_var,  " not in provided component ", componentname))
+                    error("Cannot get dataframe; variable $name not in component $componentname")
                 end
 
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
@@ -768,7 +770,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
         elseif (isa(name, Symbol))
             if !(name in variables(m, componentname))
-                error(string("Cannot get dataframe; variable, ", name,  " not in provided component ", componentname))
+                error("Cannot get dataframe; variable $name not in component $componentname")
             end
 
             vardiminfo = getvardiminfo(mi, componentname, name)
