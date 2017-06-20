@@ -765,7 +765,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         if isa(name, Tuple)
             for comp_var in name
                 if !(comp_var in variables(m, componentname))
-                    error("Cannot get dataframe; variable $name not in component $componentname")
+                    error("Cannot get dataframe; variable $comp_var not in component $componentname")
                 end
 
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
@@ -850,42 +850,46 @@ function build(m::Model)
         error(msg)
     end
 
-    # first loop through the components and then add necessary ConnectorComps
-    mi_connections = Array{InternalParameterConnection, 1}()
-    mi_components = OrderedDict{Symbol, ComponentInstanceInfo}()
-    backups = Array{Symbol, 1}()
+    mi_connections = Array{InternalParameterConnection, 1}() # This is the list of internal connections that the ModelInstance will know about.
+    mi_components = OrderedDict{Symbol, ComponentInstanceInfo}() # This is the ordered list of components (including hidden ConnectorComps) that the ModelInstance will use.
+    backups = Array{Symbol, 1}() # This is the list of names of external parameters that the ConnectorComps will use as their :input2 parameters.
     num_connector_comps = 0
     duration = getduration(m.indices_values) # for now, all components have the same duration
+    # Loop through the components and add necessary ConnectorComps.
     for c in values(m.components2)
-        # first need to see if we need to build any connector components for this component
+        # first need to see if we need to add any connector components for this component
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
-        need_connectors = filter(x->(x.backup != nothing), int_connections)
-        for ipc in need_connectors
+        need_connector_comps = filter(x->(x.backup != nothing), int_connections)
+        for ipc in need_connector_comps
             num_connector_comps += 1
             push!(backups, ipc.backup)
             curr_name = Symbol("ConnectorComp$num_connector_comps")
-            if length(size(m.external_parameters[ipc.backup].values))==1
+            num_dims = length(size(m.external_parameters[ipc.backup].values))
+            if num_dims == 1
                 curr = ComponentInstanceInfo(curr_name, ConnectorCompVector, c.offset, c.final)
-            else
+            elseif num_dims ==2
                 curr = ComponentInstanceInfo(curr_name, ConnectorCompMatrix, c.offset, c.final)
+            else
+                error("Connector components for parameters with more than two dimensions not implemented.")
             end
-            mi_components[curr_name] = curr
-            push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits))
-            push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, ipc.target_component_name, ipc.ignoreunits))
+            mi_components[curr_name] = curr # add the ConnectorComp to the ordered list of components
+            push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits)) # add a new connection between source_component and the ConnectorComp
+            push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, ipc.target_component_name, ipc.ignoreunits)) # add a new connection between ConnectorComp and target_component
         end
 
-        for ipc in setdiff(int_connections, need_connectors)
+        # Now add the other InternalParameterConnections to the list of connections.
+        for ipc in setdiff(int_connections, need_connector_comps)
             push!(mi_connections, ipc)
         end
 
-        mi_components[c.name] = c
+        mi_components[c.name] = c # Order is imperitive: this component is added after any ConnectorComps were added.
     end
 
-    # now loop through and instantiate each component
+    # Now loop through and instantiate each component.
     builtComponents = OrderedDict{Symbol, ComponentState}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
-    for c in values(mi_components) # loops through all ComponentInstanceInfos, including new connectors
+    for c in values(mi_components) # loops through all ComponentInstanceInfos, including new ConnectorComps, in order.
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
         ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
@@ -919,14 +923,14 @@ function build(m::Model)
         push!(final_times, c.final)
     end
 
-    #make the parameter connections
-    for x in mi_connections
-        c_target = builtComponents[x.target_component_name]
-        c_source = builtComponents[x.source_component_name]
-        # println((typeof(c_target).name.name, typeof(c_source).name.name))
-        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
+    # Make the internal parameter connections, including new hidden connections between ConnectorComps.
+    for ipc in mi_connections
+        c_target = builtComponents[ipc.target_component_name]
+        c_source = builtComponents[ipc.source_component_name]
+        setfield!(c_target.Parameters, ipc.target_parameter_name, getfield(c_source.Variables, ipc.source_variable_name))
     end
 
+    # Make the external parameter connections.
     for x in m.external_parameter_connections
         param = x.external_parameter
         if isa(param, ScalarModelParameter)
@@ -936,11 +940,10 @@ function build(m::Model)
         end
     end
 
-    # set the external input2's in the connectorcomps
+    # Make the external parameter connections for the hidden ConnectorComps: connect each :input2 to its associated backup value.
     for i in 1:num_connector_comps
         setfield!(builtComponents[Symbol("ConnectorComp$i")].Parameters, :input2, m.external_parameters[backups[i]].values)
     end
-
 
     mi = ModelInstance(builtComponents, mi_connections, offsets, final_times)
 
