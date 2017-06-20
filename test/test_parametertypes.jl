@@ -41,8 +41,8 @@ setparameter(m, :MyComp, :f, reshape(1:16, 4, 4))
 @test isa(m.external_parameters[:e], Mimi.ArrayModelParameter)
 @test isa(m.external_parameters[:f], Mimi.ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(m.external_parameters[:a].values) == Mimi.OurTMatrix{Float64, 2000, 1}
-@test typeof(m.external_parameters[:b].values) == Mimi.OurTVector{Float64, 2000, 1}
+@test typeof(m.external_parameters[:a].values) == Mimi.TimestepMatrix{Float64, 2000, 1}
+@test typeof(m.external_parameters[:b].values) == Mimi.TimestepVector{Float64, 2000, 1}
 @test typeof(m.external_parameters[:c].values) == Array{Float64, 1}
 @test typeof(m.external_parameters[:d].value) == Float64
 @test typeof(m.external_parameters[:e].values) == Array{Float64, 1}

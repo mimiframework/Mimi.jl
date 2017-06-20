@@ -112,10 +112,10 @@ function generate_comp_expressions(module_name, component_name)
                     if length(p.dimensions)==0
                         push!(x.args, :($(p.name)::$(concreteParameterType)) )
                     elseif length(p.dimensions)==1 && p.dimensions[1]==:time
-                        push!(x.args, :($(p.name)::OurTVector{$(concreteParameterType), $(offset), $(duration)}))
+                        push!(x.args, :($(p.name)::TimestepVector{$(concreteParameterType), $(offset), $(duration)}))
                         i += 1
                     elseif length(p.dimensions)==2 && p.dimensions[1]==:time
-                        push!(x.args, :($(p.name)::OurTMatrix{$(concreteParameterType), $(offset), $(duration)}))
+                        push!(x.args, :($(p.name)::TimestepMatrix{$(concreteParameterType), $(offset), $(duration)}))
                         i+=1
                     else
                         push!(x.args, :($(p.name)::Array{$(concreteParameterType),$(length(p.dimensions))}) )
@@ -140,9 +140,9 @@ function generate_comp_expressions(module_name, component_name)
                     if length(v.dimensions)==0
                         push!(x.args, :($(v.name)::$(concreteVariableType)) )
                     elseif length(v.dimensions)==1 && v.dimensions[1]==:time
-                        push!(x.args, :($(v.name)::OurTVector{$(concreteVariableType), OFFSET, DURATION}))
+                        push!(x.args, :($(v.name)::TimestepVector{$(concreteVariableType), OFFSET, DURATION}))
                     elseif length(v.dimensions)==2 && v.dimensions[1]==:time
-                        push!(x.args, :($(v.name)::OurTMatrix{$(concreteVariableType), OFFSET, DURATION}))
+                        push!(x.args, :($(v.name)::TimestepMatrix{$(concreteVariableType), OFFSET, DURATION}))
                     else
                         push!(x.args, :($(v.name)::Array{$(concreteVariableType),$(length(v.dimensions))}))
                     end
@@ -174,9 +174,9 @@ function generate_comp_expressions(module_name, component_name)
                         end
                         push!(ep.args,u)
                         if length(u.args[2].args) == 1 && useTarray
-                            push!(ep.args,:(s.$(v.name) = OurTVector{$concreteVariableType, OFFSET, DURATION}(temp_indices[1])))
+                            push!(ep.args,:(s.$(v.name) = TimestepVector{$concreteVariableType, OFFSET, DURATION}(temp_indices[1])))
                         elseif length(u.args[2].args) == 2 && useTarray
-                            push!(ep.args,:(s.$(v.name) = OurTMatrix{$concreteVariableType, OFFSET, DURATION}(temp_indices[1], temp_indices[2])))
+                            push!(ep.args,:(s.$(v.name) = TimestepMatrix{$concreteVariableType, OFFSET, DURATION}(temp_indices[1], temp_indices[2])))
                         else
                             push!(ep.args,:(s.$(v.name) = Array($(concreteVariableType),temp_indices...)))
                         end

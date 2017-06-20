@@ -66,7 +66,6 @@ end
 type ArrayModelParameter <: Parameter
     values
     dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
-    # offset::Int
 
     function ArrayModelParameter(values, dims::Vector{Symbol})
         amp = new()
@@ -79,6 +78,7 @@ end
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
+    time_labels::Vector
     external_parameters::Dict{Symbol,Parameter}
     numberType::DataType
     internal_parameter_connections::Array{InternalParameterConnection, 1}
@@ -90,6 +90,7 @@ type Model
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
+        # m.time_labels = Vector{Any}()
         m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         m.internal_parameter_connections = Array{InternalParameterConnection,1}()
@@ -137,6 +138,20 @@ function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+function isuniform(values::Vector)
+    if length(values)==1 || length(values)==2
+        return true
+    end
+
+    stepsize = values[2]-values[1]
+    for i in 3:length(values)
+        if (values[i]-values[i-1]) != stepsize
+            return false
+        end
+    end
+
+    return true
+end
 """
     setindex(m::Model, name::Symbol, count::Int)
 
@@ -155,7 +170,13 @@ Set the values of `Model`'s index `name` to `values`.
 """
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
-    m.indices_values[name] = copy(values)
+    if name==:time && !isuniform(values)
+        m.time_labels = values
+        m.indices_values[name] = collect(1:length(values))
+    else
+        m.indices_values[name] = copy(values)
+        m.time_labels = Vector()
+    end
     nothing
 end
 
@@ -286,9 +307,9 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=not
             duration = getduration(m.indices_values)
             T = eltype(value)
             if length(comp_param_dims)==1
-                values = OurTVector{T, offset, duration}(value)
+                values = TimestepVector{T, offset, duration}(value)
             elseif length(comp_param_dims)==2
-                values = OurTMatrix{T, offset, duration}(value)
+                values = TimestepMatrix{T, offset, duration}(value)
             else
                 values = value
             end
@@ -336,7 +357,7 @@ end
 Connect a parameter in a component to an external parameter.
 """
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
-    p = m.external_parameters[Symbol(lowercase(string(parametername)))]
+    p = m.external_parameters[parametername]
 
     if isa(p, ArrayModelParameter) && component != :ConnectorCompA
         checklabels(m, component, name, p)
@@ -369,23 +390,23 @@ function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelPar
 end
 
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::OurTVector, dims)
+    set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
 
 Adds a one dimensional time-indexed array parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::OurTVector, dims)
+function set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
     p = ArrayModelParameter(value, [:time])
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
-    set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix, dims)
+    set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
 
 Adds a two dimensional time-indexed array parameter to the model.
 """
-function set_external_array_parameter(m::Model, name::Symbol, value::OurTMatrix, dims)
+function set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
     p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -398,7 +419,7 @@ function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArr
         value = convert(Array{m.numberType}, value)
     end
     p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -411,7 +432,7 @@ function set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
         value = convert(Array{m.numberType}, value)
     end
     p = ScalarModelParameter(value)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -510,9 +531,10 @@ end
 
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
-keys are lowercase strings that match the names of unset parameters in the model.
+keys are strings that match the names of unset parameters in the model.
 """
 function setleftoverparameters(m::Model, parameters::Dict{String,Any})
+    parameters = Dict(lowercase(k)=>v for (k, v) in parameters)
     leftovers = get_unconnected_parameters(m)
     for (comp, p) in leftovers
         if !(p in keys(m.external_parameters)) # then we need to set the external parameter
@@ -521,13 +543,14 @@ function setleftoverparameters(m::Model, parameters::Dict{String,Any})
             if length(comp_param_dims)==0 #scalar case
                 set_external_scalar_parameter(m, p, value)
             else #array case
+                value = convert(Array{m.numberType}, value)
                 offset = m.indices_values[:time][1]
                 duration = getduration(m.indices_values)
                 T = eltype(value)
                 if length(comp_param_dims)==1 && comp_param_dims[1]==:time
-                    values = OurTVector{T, offset, duration}(value)
+                    values = TimestepVector{T, offset, duration}(value)
                 elseif length(comp_param_dims)==2 && comp_param_dims[1]==:time
-                    values = OurTMatrix{T, offset, duration}(value)
+                    values = TimestepMatrix{T, offset, duration}(value)
                 else
                     values = value
                 end
@@ -580,14 +603,14 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     end
     if name in fieldnames(mi.components[component].Variables)
         v = getfield(mi.components[component].Variables, name)
-        if isa(v, OurTVector) || isa(v, OurTMatrix)
+        if isa(v, TimestepVector) || isa(v, TimestepMatrix)
             return v.data
         else
             return v
         end
     elseif name in fieldnames(mi.components[component].Parameters)
         p = getfield(mi.components[component].Parameters, name)
-        if isa(p, OurTVector) || isa(p, OurTMatrix)
+        if isa(p, TimestepVector) || isa(p, TimestepMatrix)
             return p.data
         else
             return p
@@ -734,11 +757,11 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
     if num_dim == 1
-        df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
+        df[vardiminfo[1]] = (isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels)
     elseif num_dim == 2
         dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        df[vardiminfo[1]] = repeat((isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels), inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 
