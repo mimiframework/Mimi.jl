@@ -23,7 +23,7 @@ include("marginalmodel.jl")
 include("adder.jl")
 include("connectorcomp.jl")
 include("references.jl")
-include("plotting.jl")
+# include("plotting.jl")
 include("lint_helper.jl")
 
 end # module
