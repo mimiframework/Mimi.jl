@@ -27,25 +27,9 @@ type InternalParameterConnection
     target_parameter_name::Symbol
     target_component_name::Symbol
     ignoreunits::Bool
-    backup # either nothing or a Symbol: name of the external parameter
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool)
-        ipc = new()
-        ipc.source_variable_name = src_var
-        ipc.source_component_name = src_comp
-        ipc.target_parameter_name = target_par
-        ipc.target_component_name = target_comp
-        ipc.backup = nothing
-        ipc.ignoreunits = ignoreunits
-        return ipc
-    end
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool, backup::Symbol)
-        ipc = new()
-        ipc.source_variable_name = src_var
-        ipc.source_component_name = src_comp
-        ipc.target_parameter_name = target_par
-        ipc.target_component_name = target_comp
-        ipc.backup = backup
-        ipc.ignoreunits = ignoreunits
+    backup # either nothing, or a Symbol matching the name of the external parameter to be used as backup data
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
+        ipc = new(src_var, src_comp, target_par, target_comp, ignoreunits, backup)
         return ipc
     end
 end
@@ -359,7 +343,7 @@ Connect a parameter in a component to an external parameter.
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[parametername]
 
-    if isa(p, ArrayModelParameter) && component != :ConnectorCompA
+    if isa(p, ArrayModelParameter) && component != :ConnectorCompVector
         checklabels(m, component, name, p)
     end
 
@@ -874,9 +858,9 @@ function build(m::Model)
             push!(backups, ipc.backup)
             curr_name = Symbol("ConnectorComp$num_connector_comps")
             if length(size(m.external_parameters[ipc.backup].values))==1
-                curr = ComponentInstanceInfo(curr_name, ConnectorCompA, c.offset, c.final)
+                curr = ComponentInstanceInfo(curr_name, ConnectorCompVector, c.offset, c.final)
             else
-                curr = ComponentInstanceInfo(curr_name, ConnectorCompB, c.offset, c.final)
+                curr = ComponentInstanceInfo(curr_name, ConnectorCompMatrix, c.offset, c.final)
             end
             mi_components[curr_name] = curr
             push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits))
@@ -904,7 +888,7 @@ function build(m::Model)
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if pname==:input2 && (c.component_type == ConnectorCompA || c.component_type == ConnectorCompB)
+                if pname==:input2 && (c.component_type == ConnectorCompVector || c.component_type == ConnectorCompMatrix)
                     offset = c.offset
                 elseif pname in keys(ext_params)
                     offset = getoffset(ext_params[pname].values)

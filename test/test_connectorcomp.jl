@@ -33,20 +33,20 @@ end
 m = Model()
 setindex(m, :time, 2000:3000)
 addcomponent(m, ShortComponent; start=2100)
-addcomponent(m, ConnectorCompA)
+addcomponent(m, ConnectorCompVector)
 addcomponent(m, LongComponent; start=2000)
 
 setparameter(m, :ShortComponent, :a, 2.)
 setparameter(m, :LongComponent, :y, 1.)
-connectparameter(m, :ConnectorCompA, :input1, :ShortComponent, :b)
-setparameter(m, :ConnectorCompA, :input2, zeros(100))
-connectparameter(m, :LongComponent, :x, :ConnectorCompA, :output)
+connectparameter(m, :ConnectorCompVector, :input1, :ShortComponent, :b)
+setparameter(m, :ConnectorCompVector, :input2, zeros(100))
+connectparameter(m, :LongComponent, :x, :ConnectorCompVector, :output)
 
 run(m)
 
 @test length(m[:ShortComponent, :b])==901
-@test length(m[:ConnectorCompA, :input1])==901
-@test length(m[:ConnectorCompA, :input2])==100
+@test length(m[:ConnectorCompVector, :input1])==901
+@test length(m[:ConnectorCompVector, :input2])==100
 @test length(m[:LongComponent, :z])==1001
 
 for i in 1:900

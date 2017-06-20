@@ -1,12 +1,12 @@
 using Mimi
 
-@defcomp ConnectorCompA begin
+@defcomp ConnectorCompVector begin
     input1 = Parameter(index = [time])
     input2 = Parameter(index = [time])
     output = Variable(index = [time])
 end
 
-function run_timestep(s::ConnectorCompA, ts::Timestep)
+function run_timestep(s::ConnectorCompVector, ts::Timestep)
     p = s.Parameters
     v = s.Variables
 
@@ -19,15 +19,15 @@ function run_timestep(s::ConnectorCompA, ts::Timestep)
     end
 end
 
-@defcomp ConnectorCompB begin
+@defcomp ConnectorCompMatrix begin
     regions = Index()
-    
+
     input1 = Parameter(index = [time, regions])
     input2 = Parameter(index = [time, regions])
     output = Variable(index = [time, regions])
 end
 
-function run_timestep(s::ConnectorCompB, ts::Timestep)
+function run_timestep(s::ConnectorCompMatrix, ts::Timestep)
     p = s.Parameters
     v = s.Variables
     d = s.Dimensions
