@@ -2,12 +2,14 @@ using Mimi
 using Base.Test
 
 
-tests = ["main",
+tests = [
+    "main",
     "references",
     "units",
     "model_structure",
     "tools",
     "parameter_labels",
+    "parametertypes",
     "marginal_models",
     "adder",
     "getindex",
@@ -15,7 +17,10 @@ tests = ["main",
     "components_ordering",
     "variables_model_instance",
     "getdataframe",
-    "mult_getdataframe"
+    "mult_getdataframe",
+    "timesteparrays",
+    "timesteps",
+    "connectorcomp"
 ]
 
 for t in tests
@@ -23,3 +28,5 @@ for t in tests
     println("$fp ...")
     include(fp)
 end
+
+println("All tests pass.")

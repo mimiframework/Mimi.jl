@@ -1,19 +1,50 @@
-immutable Timestep{Offset, Final}
+##############
+#  TIMESTEP  #
+##############
+
+immutable Timestep{Offset, Duration, Final}
 	t::Int
-
-	function Timestep(i::Int)
-		ts = new{Offset, Final}(i - Offset + 1)
-		return ts
-	end
-
 end
+
+function isfirsttimestep(ts::Timestep)
+	return ts.t == 1
+end
+
+# for users to tell when they are on the final timestep
+function isfinaltimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
+	return gettime(ts) == Final
+end
+
+# used to determine when a clock is finished
+function ispastfinaltimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
+	return gettime(ts) > Final
+end
+
+function getnexttimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
+	if ispastfinaltimestep(ts)
+		error("Cannot get next timestep, this is final timestep.")
+	end
+	return Timestep{Offset, Duration, Final}(ts.t + 1)
+end
+
+function getnewtimestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final}, newoffset::Int)
+	return Timestep{newoffset, Duration, Final}(Int64(ts.t + (Offset-newoffset)/Duration))
+end
+
+function gettime{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
+	return Offset + (ts.t - 1) * Duration
+end
+
+###########
+#  CLOCK  #
+###########
 
 type Clock
 	ts::Timestep
 
-	function Clock(offset::Int, final::Int)
+	function Clock(offset::Int, final::Int, duration::Int)
 		clk = new()
-		clk.ts = Timestep{offset, final}(offset)
+		clk.ts = Timestep{offset, duration, final}(1)
 		return clk
 	end
 end
@@ -26,6 +57,10 @@ function gettimeindex(c::Clock)
 	return c.ts.t
 end
 
+function gettime(c::Clock)
+	return gettime(c.ts)
+end
+
 function move_forward(c::Clock)
 	c.ts = getnexttimestep(c.ts)
 	nothing
@@ -33,27 +68,4 @@ end
 
 function finished(c::Clock)
 	return ispastfinaltimestep(c.ts)
-end
-
-function isfirsttimestep(ts::Timestep)
-	return ts.t == 1
-end
-
-function isfinaltimestep{Offset, Final}(ts::Timestep{Offset, Final})
-	return ts.t == Final - Offset + 1
-end
-
-function ispastfinaltimestep{Offset, Final}(ts::Timestep{Offset, Final})
-	return ts.t > Final - Offset + 1
-end
-
-function getnexttimestep{Offset, Final}(ts::Timestep{Offset, Final})
-	if ispastfinaltimestep(ts)
-		error("Cannot get next timestep, this is final timestep.")
-	end
-	return Timestep{Offset, Final}(ts.t + Offset)
-end
-
-function getnewtimestep{Offset, Final}(ts::Timestep{Offset, Final}, newoffset::Int)
-	return Timestep{newoffset, Final}(ts.t + Offset - 1 )
 end

@@ -43,10 +43,10 @@ type ModelInstance
 end
 
 type ArrayModelParameter <: Parameter
-    values::AbstractArray
+    values
     dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
 
-    function ArrayModelParameter(values::AbstractArray, dims::Vector{Symbol})
+    function ArrayModelParameter(values, dims::Vector{Symbol})
         amp = new()
         amp.values = values
         amp.dims = dims
@@ -57,6 +57,7 @@ end
 type Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
+    time_labels::Vector
     external_parameters::Dict{Symbol,Parameter}
     numberType::DataType
     internal_parameter_connections::Array{InternalParameterConnection, 1}
@@ -68,6 +69,7 @@ type Model
         m = new()
         m.indices_counts = Dict{Symbol,Int}()
         m.indices_values = Dict{Symbol, Vector{Any}}()
+        # m.time_labels = Vector{Any}()
         m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
         m.internal_parameter_connections = Array{InternalParameterConnection,1}()
@@ -115,6 +117,20 @@ function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+function isuniform(values::Vector)
+    if length(values)==1 || length(values)==2
+        return true
+    end
+
+    stepsize = values[2]-values[1]
+    for i in 3:length(values)
+        if (values[i]-values[i-1]) != stepsize
+            return false
+        end
+    end
+
+    return true
+end
 """
     setindex(m::Model, name::Symbol, count::Int)
 
@@ -133,7 +149,13 @@ Set the values of `Model`'s index `name` to `values`.
 """
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
-    m.indices_values[name] = copy(values)
+    if name==:time && !isuniform(values)
+        m.time_labels = values
+        m.indices_values[name] = collect(1:length(values))
+    else
+        m.indices_values[name] = copy(values)
+        m.time_labels = Vector()
+    end
     nothing
 end
 
@@ -154,6 +176,22 @@ end
 Add a component of type t to a model.
 """
 function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, final=nothing, before=nothing,after=nothing)
+    # check that start and final are within the model's time index range
+    time_index = m.indices_values[:time]
+
+    if start == nothing
+        start = time_index[1]
+    elseif start < time_index[1]
+        error("Cannot add component ", name, " with start time before start of model's time index range.")
+    end
+
+    if final == nothing
+        final = time_index[end]
+    elseif final > time_index[end]
+        error("Cannot add component ", name, " with final time after end of model's time index range.")
+    end
+
+
     if before!=nothing && after!=nothing
         error("Can only specify before or after parameter")
     end
@@ -163,14 +201,6 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, fina
         if i==name
             error("You cannot add two components of the same name: ", i)
         end
-    end
-
-    if start == nothing
-        start = m.indices_values[:time][1]
-    end
-
-    if final == nothing
-        final = m.indices_values[:time][end]
     end
 
     if before!=nothing
@@ -212,7 +242,7 @@ end
 import Base.delete!
 
 """
-    delete!(m::Model, component::Symbol)
+    delete!(m::Model, component::Symbol
 
 Delete a component from a model, by name.
 """
@@ -233,61 +263,45 @@ function delete!(m::Model, component::Symbol)
 end
 
 """
-    setparameter(m::Model, component::Symbol, name::Symbol, value)
+    setparameter(m::Model, component::Symbol, name::Symbol, value, dims)
 
-Set the parameter of a component in a model to a given value.
+Set the parameter of a component in a model to a given value. Value can by a scalar,
+an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
+the provided data, and will be used to check that they match the model's index labels.
 """
-function setparameter(m::Model, component::Symbol, name::Symbol, value)
-    set_external_parameter(m, name, value)
+function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=nothing)
+    # perform possible dimension and labels checks
+    if isa(value, NamedArray)
+        dims = dimnames(value)
+    end
+    if dims!=nothing
+        check_parameter_dimensions(m, value, dims, name)
+    end
+    # now set the parameter
+    comp_param_dims = getmetainfo(m, component).parameters[name].dimensions
+    if length(comp_param_dims) > 0 # array parameter case
+        value = convert(Array{m.numberType}, value) # converts the number type and also if it's a NamedArray it gets converted to Array
+        if comp_param_dims[1] == :time
+            offset = m.components2[component].offset
+            duration = getduration(m.indices_values)
+            T = eltype(value)
+            if length(comp_param_dims)==1
+                values = TimestepVector{T, offset, duration}(value)
+            elseif length(comp_param_dims)==2
+                values = TimestepMatrix{T, offset, duration}(value)
+            else
+                values = value
+            end
+        else
+            values = value
+        end
+        set_external_array_parameter(m, name, values, dims)
+    else # scalar parameter case
+        set_external_scalar_parameter(m, name, value)
+    end
+
     connectparameter(m, component, name, name)
     m.mi = Nullable{ModelInstance}()
-    nothing
-end
-
-function checklabels(m::Model, component::Symbol, name::Symbol, parametername::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) <: getmetainfo(m, component).parameters[parametername].datatype)
-        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", parametername))
-    elseif !(size(p.dims) == size(getmetainfo(m, component).parameters[parametername].dimensions))
-        if isa(p.values, NamedArray)
-            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", parametername))
-        end
-    else
-        comp_dims = getmetainfo(m, component).parameters[parametername].dimensions
-        i=1
-        for dim in comp_dims
-            if !(length(m.indices_values[dim])==size(p.values)[i])
-                error("Length of the labels and the provided data are not matching")
-            end
-            i+=1
-        end
-    end
-end
-
-"""
-Removes any parameter connections for a given parameter in a given component.
-"""
-function disconnect(m::Model, component::Symbol, parameter::Symbol)
-    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
-    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
-end
-
-"""
-    connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
-
-Connect a parameter in a component to an external parameter.
-"""
-function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
-    p = m.external_parameters[Symbol(lowercase(string(parametername)))]
-
-    if isa(p, ArrayModelParameter)
-        checklabels(m, component, name, parametername, p)
-    end
-
-    disconnect(m, component, name)
-
-    x = ExternalParameterConnection(component, name, p)
-    push!(m.external_parameter_connections, x)
-
     nothing
 end
 
@@ -309,60 +323,95 @@ function check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::NamedArray)
-
-Add an array type parameter to the model, perferm dimension checking on the given NamedArray.
+Removes any parameter connections for a given parameter in a given component.
 """
-function set_external_parameter(m::Model, name::Symbol, value::NamedArray)
-    #namedarray given, so we can perform label checks
-    dims = dimnames(value)
-
-    check_parameter_dimensions(m, value, dims, name)
-
-    p = ArrayModelParameter(value.array, dims) #want to use convert(Array, value) but broken
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+function disconnect(m::Model, component::Symbol, parameter::Symbol)
+    filter!(x->!(x.target_component_name==component && x.target_parameter_name==parameter), m.internal_parameter_connections)
+    filter!(x->!(x.component_name==component && x.param_name==parameter), m.external_parameter_connections)
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::AbstractArray)
+    connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
+
+Connect a parameter in a component to an external parameter.
+"""
+function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
+    p = m.external_parameters[parametername]
+
+    if isa(p, ArrayModelParameter) && component != :ConnectorComp
+        checklabels(m, component, name, p)
+    end
+
+    disconnect(m, component, name)
+
+    x = ExternalParameterConnection(component, name, p)
+    push!(m.external_parameter_connections, x)
+
+    nothing
+end
+
+function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
+    if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
+        error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
+    elseif !(isempty(p.dims))
+        if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
+            error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
+        end
+    end
+    comp_dims = getmetainfo(m, component).parameters[name].dimensions
+    for (i, dim) in enumerate(comp_dims)
+        if isa(dim, Symbol)
+            if !(length(m.indices_values[dim])==size(p.values)[i])
+                error(string("Mismatched data size for a parameter connection. Component: ", component, ", Parameter: ", name))
+            end
+        end
+    end
+end
+
+"""
+    set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
+
+Adds a one dimensional time-indexed array parameter to the model.
+"""
+function set_external_array_parameter(m::Model, name::Symbol, value::TimestepVector, dims)
+    p = ArrayModelParameter(value, [:time])
+    m.external_parameters[name] = p
+end
+
+"""
+    set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
+
+Adds a two dimensional time-indexed array parameter to the model.
+"""
+function set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
+    p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
+    m.external_parameters[name] = p
+end
+
+"""
+    set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims)
 
 Add an array type parameter to the model.
 """
-function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
-    #cannot perform any parameter label checks in this case
-
+function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims)
     if !(typeof(value) <: Array{m.numberType})
-        # E.g., if model takes Number and given Float64, convert it
         value = convert(Array{m.numberType}, value)
     end
-    dims = Vector{Symbol}()
-    p = ArrayModelParameter(value, dims)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
+    m.external_parameters[name] = p
 end
 
 """
-    addparameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
-
-Takes as input a regular array and a vector of dimension symbol names. Performs dimension name checks. Adds array type parameter to the model.
-"""
-function set_external_parameter(m::Model, name::Symbol, value::AbstractArray, dims::Vector{Symbol})
-    #instead of a NamedArray, user can pass in the names of the dimensions in the dims vector
-
-    check_parameter_dimensions(m, value, dims, name) #best we can do is check that the dim names match
-
-    p = ArrayModelParameter(value, dims)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
-end
-
-"""
-    addparameter(m::Model, name::Symbol, value::Any)
+    set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter to the model.
 """
-function set_external_parameter(m::Model, name::Symbol, value::Any)
-    #function for adding scalar parameters ("Any" type)
+function set_external_scalar_parameter(m::Model, name::Symbol, value::Any)
+    if typeof(value) <: AbstractArray
+        value = convert(Array{m.numberType}, value)
+    end
     p = ScalarModelParameter(value)
-    m.external_parameters[Symbol(lowercase(string(name)))] = p
+    m.external_parameters[name] = p
 end
 
 """
@@ -399,27 +448,41 @@ end
     setleftoverparameters(m::Model, parameters::Dict{Any,Any})
 
 Set all the parameters in a model that don't have a value and are not connected
-to some other component to a value from a dictionary.
+to some other component to a value from a dictionary. This method assumes the dictionary
+keys are strings that match the names of unset parameters in the model.
 """
-function setleftoverparameters(m::Model, parameters::Dict{Any,Any})
-    for (name, value) in parameters
-        set_external_parameter(m, Symbol(name), value)
-    end
-
-    for c in values(m.components2)
-        params = get_parameters(m, c)
-        set_params = get_set_parameters(m, c)
-        for p in params
-            if !in(p, set_params)
-                connectparameter(m, c.name, p, p)
+function setleftoverparameters(m::Model, parameters::Dict{String,Any})
+    parameters = Dict(lowercase(k)=>v for (k, v) in parameters)
+    leftovers = get_unconnected_parameters(m)
+    for (comp, p) in leftovers
+        if !(p in keys(m.external_parameters)) # then we need to set the external parameter
+            value = parameters[lowercase(string(p))]
+            comp_param_dims = getmetainfo(m, comp).parameters[p].dimensions
+            if length(comp_param_dims)==0 #scalar case
+                set_external_scalar_parameter(m, p, value)
+            else #array case
+                value = convert(Array{m.numberType}, value)
+                offset = m.indices_values[:time][1]
+                duration = getduration(m.indices_values)
+                T = eltype(value)
+                if length(comp_param_dims)==1 && comp_param_dims[1]==:time
+                    values = TimestepVector{T, offset, duration}(value)
+                elseif length(comp_param_dims)==2 && comp_param_dims[1]==:time
+                    values = TimestepMatrix{T, offset, duration}(value)
+                else
+                    values = value
+                end
+                set_external_array_parameter(m, p, values, nothing)
             end
         end
+        connectparameter(m, comp, p, p)
     end
-
     nothing
 end
 
-""" helper function for setleftoverparameters"""
+"""
+Return list of parameters that have been set for component c in model m.
+"""
 function get_set_parameters(m::Model, c::ComponentInstanceInfo)
     ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
     ext_set_params = map(x->x.param_name, ext_connections)
@@ -430,12 +493,22 @@ function get_set_parameters(m::Model, c::ComponentInstanceInfo)
     return union(ext_set_params, int_set_params)
 end
 
-""" helper function for setleftoverparameters"""
-function get_parameters(m::Model, component::ComponentInstanceInfo)
+"""
+Return a list of all parameter names for a given component in a model m.
+"""
+function get_parameter_names(m::Model, component::ComponentInstanceInfo)
     _dict = Mimi.metainfo.getallcomps()
     _module = module_name(component.component_type.name.module)
     _metacomponent = _dict[(_module, component.component_type.name.name)]
     return keys(_metacomponent.parameters)
+end
+
+# returns the {name:parameter} dictionary
+function get_parameters(m::Model, component::ComponentInstanceInfo)
+    _dict = Mimi.metainfo.getallcomps()
+    _module = module_name(component.component_type.name.module)
+    _metacomponent = _dict[(_module, component.component_type.name.name)]
+    return _metacomponent.parameters
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
@@ -447,11 +520,21 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
         error("Component does not exist in current model")
     end
     if name in fieldnames(mi.components[component].Variables)
-        return getfield(mi.components[component].Variables, name)
+        v = getfield(mi.components[component].Variables, name)
+        if isa(v, TimestepVector) || isa(v, TimestepMatrix)
+            return v.data
+        else
+            return v
+        end
     elseif name in fieldnames(mi.components[component].Parameters)
-        return getfield(mi.components[component].Parameters, name)
+        p = getfield(mi.components[component].Parameters, name)
+        if isa(p, TimestepVector) || isa(p, TimestepMatrix)
+            return p.data
+        else
+            return p
+        end
     else
-        error(string(name, " is not a paramter or a variable in component ", component, "."))
+        error(string(name, " is not a parameter or a variable in component ", component, "."))
     end
 end
 
@@ -536,7 +619,7 @@ end
 """
     getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => name::Symbol)...)
     getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => (name::Symbol, name::Symbol...)...)
-       
+
 Return the values for each variable `name` in each corresponding `componentname` of model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name_pairs::Pair...)
@@ -554,7 +637,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
     end
 
-    #Get the base value of the number of dimensions from the first 
+    #Get the base value of the number of dimensions from the first
     # componentname and name pair association
     firstpair = comp_name_pairs[1]
     componentname = firstpair[1]
@@ -569,19 +652,19 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     vardiminfo = getvardiminfo(mi, componentname, name)
     num_dim = length(vardiminfo)
-    
+
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
     if num_dim == 1
-        df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
+        df[vardiminfo[1]] = (isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels)
     elseif num_dim == 2
         dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
+        df[vardiminfo[1]] = repeat((isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels), inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 
-    #Iterate through all the pairs; always check for each variable 
+    #Iterate through all the pairs; always check for each variable
     # that the number of dimensions matcht that of the first
     for pair in comp_name_pairs
         componentname = pair[1]
@@ -592,7 +675,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                 if !(comp_var in variables(m, componentname))
                     error(string("Cannot get dataframe; variable, ", comp_var,  " not in provided component ", componentname))
                 end
-                
+
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
 
                 if !(length(vardiminfo) == num_dim)
@@ -606,12 +689,12 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                     df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
                 end
             end
-        
+
         elseif (isa(name, Symbol))
             if !(name in variables(m, componentname))
                 error(string("Cannot get dataframe; variable, ", name,  " not in provided component ", componentname))
             end
-            
+
             vardiminfo = getvardiminfo(mi, componentname, name)
 
             if !(length(vardiminfo) == num_dim)
@@ -630,7 +713,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     return df
 end
-   
+
 
 function getvardiminfo(mi::ModelInstance, componentname::Symbol, name::Symbol)
     if !(componentname in keys(mi.components))
@@ -657,16 +740,11 @@ that have not been connected to a value in the model.
 function get_unconnected_parameters(m::Model)
     unset_params = Array{Tuple{Symbol,Symbol}, 1}()
     for (name, c) in m.components2
-        params = get_parameters(m, c)
+        params = get_parameter_names(m, c)
         set_params = get_set_parameters(m, c)
         append!(unset_params, map(x->(name, x), setdiff(params, set_params)))
     end
     return unset_params
-end
-
-function makeclock(mi::ModelInstance, ntimesteps, indices_counts)
-    # later will involve finding first offset in all components
-    return Clock(1, min(indices_counts[:time],ntimesteps))
 end
 
 function build(m::Model)
@@ -679,14 +757,41 @@ function build(m::Model)
         end
         error(msg)
     end
+
+    duration = getduration(m.indices_values) # for now, all components have the same duration
+
     #instantiate the components
     builtComponents = OrderedDict{Symbol, ComponentState}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
     for c in values(m.components2)
-        t = c.component_type
-        comp = t(m.numberType, m.indices_counts)
+        ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
+        # ext_params = map(x->x.param_name, ext_connections)
+        ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
+        int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+        int_params = Dict(x.target_parameter_name => x for x in int_connections)
+
+        constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
+        for (pname, p) in get_parameters(m, c)
+            if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
+                if pname in keys(ext_params)
+                    offset = getoffset(ext_params[pname].values)
+                elseif pname in keys(int_params)
+                    offset = m.components2[int_params[pname].source_component_name].offset
+                else
+                    error("unset paramter; should be caught earlier")
+                end
+
+                push!(constructor.args, :(Val{$offset}))
+                push!(constructor.args, :(Val{$duration}))
+            end
+        end
+
+        push!(constructor.args, m.indices_counts)
+        # println(constructor)
+
+        comp = eval(eval(constructor))
         builtComponents[c.name] = comp
 
         push!(offsets, c.offset)
@@ -704,6 +809,8 @@ function build(m::Model)
         param = x.external_parameter
         if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
+        # elseif isa(getfield(builtComponents[x.component_name].Parameters, x.param_name), Array)
+        #     setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values.data)
         else
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
         end
@@ -715,21 +822,40 @@ function build(m::Model)
     return mi
 end
 
+function getduration(indices_values)
+    if length(indices_values[:time])>1
+        return indices_values[:time][2]-indices_values[:time][1] #assumes that all timesteps of the model are the same length
+    else
+        return 1
+    end
+end
+
+function makeclock(mi::ModelInstance, ntimesteps, indices_values)
+    start = indices_values[:time][1]
+    stop = indices_values[:time][min(length(indices_values[:time]),ntimesteps)]
+    duration = getduration(indices_values)
+    return Clock(start, stop, duration)
+end
+
 """
     run(m::Model)
 
 Run model `m` once.
 """
 function run(m::Model;ntimesteps=typemax(Int))
+    if length(m.components2) == 0
+        error("Cannot run a model with no components.")
+    end
+
     if isnull(m.mi)
         m.mi = Nullable{ModelInstance}(build(m))
     end
-    run(get(m.mi), ntimesteps, m.indices_counts)
+    run(get(m.mi), ntimesteps, m.indices_values)
 end
 
-function run(mi::ModelInstance, ntimesteps, indices_counts)
+function run(mi::ModelInstance, ntimesteps, indices_values)
     if length(mi.components) == 0
-        error("You are trying to run a model with no components")
+        error("Cannot run a model with no components.")
     end
 
     for (name,c) in mi.components
@@ -748,16 +874,18 @@ function run(mi::ModelInstance, ntimesteps, indices_counts)
         newstyle[i] = method_exists(run_timestep, (typeof(c), Timestep))
     end
 
-    clock = makeclock(mi, ntimesteps, indices_counts)
+    clock = makeclock(mi, ntimesteps, indices_values)
+    duration = getduration(indices_values)
+    comp_clocks = [Clock(offsets[i], final_times[i], duration) for i in collect(1:length(components))]
 
     while !finished(clock)
-        for i in collect(1:length(components))
-            name = components[i][1]
-            c = components[i][2]
-            if gettimeindex(clock) <= final_times[i] - offsets[i] + 1
+        for (i, (name, c)) in enumerate(components)
+            if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
+                # println("running component $name in $(gettime(clock))")
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
-                    run_timestep(c, getnewtimestep(clock.ts, offsets[i])) #need to convert to component specific timestep?
+                    run_timestep(c, gettimestep(comp_clocks[i]))
+                    move_forward(comp_clocks[i])
                 else
                     run_timestep(c, gettimeindex(clock)) #int version (old way)
                 end
@@ -832,6 +960,8 @@ macro defcomp(name, ex)
     metapardef = Expr(:block)
     metadimdef = Expr(:block)
 
+    numarrayparams = 0
+
     for line in ex.args
         if line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Index
             dimensionName = line.args[1]
@@ -856,6 +986,10 @@ macro defcomp(name, ex)
 
             if haskey(kws, :index)
                 parameterIndex = kws[:index].args
+
+                if length(parameterIndex)<=2 && parameterIndex[1]==:time
+                    numarrayparams += 1
+                end
 
                 pardims = Array(Any, 0)
                 for l in parameterIndex
@@ -914,11 +1048,27 @@ macro defcomp(name, ex)
 
     call_expr = Expr(:call,
         Expr(:curly,
-            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
-            :T),
-        :T,
+            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
+            :T, :OFFSET, :DURATION, :FINAL
+            ),
         :indices
         )
+
+    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION, :FINAL), :(::Type{T}), :(::Type{Val{OFFSET}}),:(::Type{Val{DURATION}}),:(::Type{Val{FINAL}}))
+    for i in 1:numarrayparams
+        push!(call_expr.args[1].args, Symbol("OFFSET$i"))
+        push!(call_expr.args[1].args, Symbol("DURATION$i"))
+
+        push!(callsignature.args[1].args, Symbol("OFFSET$i"))
+        push!(callsignature.args[1].args, Symbol("DURATION$i"))
+        push!(callsignature.args, :(::Type{Val{$(Symbol("OFFSET$i"))}}))
+        push!(callsignature.args, :(::Type{Val{$(Symbol("DURATION$i"))}}))
+
+    end
+    push!(callsignature.args, :indices)
+    # println(call_expr)
+    # println(callsignature)
+    # println(Expr(:function, callsignature, call_expr))
 
     x = quote
 
@@ -938,12 +1088,10 @@ macro defcomp(name, ex)
         $(metadimdef)
 
         $(module_def)
-
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
 
-        function $(esc(Symbol(name))){T}(::Type{T}, indices)
-            $(call_expr)
-        end
+        # callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
+        $(Expr(:function, Expr(:call, Expr(:curly, esc(Symbol(name)), callsignature.args[1].args[2:end]...), callsignature.args[2:end]...), call_expr))
 
     end
 

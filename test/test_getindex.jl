@@ -46,10 +46,10 @@ addcomponent(my_model, testcomp1)
 setparameter(my_model, :testcomp1, :par1, par)
 run(my_model)
 #Regular get index
-@test(Mimi.getindex(my_model, :testcomp1, :var1) == par)
+@test my_model[:testcomp1, :var1] == par
 #Calling get index on nonexistent variable (with existing component)
-@test_throws ErrorException Mimi.getindex(my_model, :testcomp1, :var2)
+@test_throws ErrorException my_model[:testcomp1, :var2]
 #Calling index on component that does not exist
-@test_throws ErrorException Mimi.getindex(my_model, :testcomp2, :var2)
+@test_throws ErrorException my_model[:testcomp2, :var2]
 
 #Possibly more tests after adding another component

@@ -14,7 +14,7 @@ function run_timestep(state::compA, t::Int)
 end
 
 x1 = collect(1:10)
-x2 = collect(2:2:22)
+x2 = collect(2:2:20)
 
 model1 = Model()
 setindex(model1, :time, collect(1:10))
@@ -32,5 +32,5 @@ run(model1)
 run(model2)
 
 for i in collect(1:10)
-    @test mm[:compA, :varA][i] == 2*i 
+    @test mm[:compA, :varA][i] == 2*i
 end
