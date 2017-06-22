@@ -7,7 +7,7 @@ tests = [
     "references",
     "units",
     "model_structure",
-    # "tools",
+    "tools",
     "parameter_labels",
     "parametertypes",
     "marginal_models",
