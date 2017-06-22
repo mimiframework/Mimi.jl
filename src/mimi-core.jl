@@ -443,6 +443,35 @@ function unitcheck(one::AbstractString, two::AbstractString)
     return one == two
 end
 
+"""
+    update_external_parameter(m::Model, name::Symbol, value)
+
+Update the value of an external model parameter, referenced by name.
+"""
+function update_external_parameter(m::Model, name::Symbol, value)
+    if !(name in keys(m.external_parameters))
+        error("Cannot update parameter; $name not found in model's external parameters.")
+    end
+
+    param = m.external_parameters[name]
+
+    if isa(param, ScalarModelParameter)
+        if !(typeof(value) <: typeof(param.value))
+            error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+        else
+            param.value = value
+        end
+    else # ArrayModelParameter
+        if !(value <: AbstractArray)
+            error("Cannot update an array parameter $name with a scalar value.")
+        elseif !(eltype(value) <: eltype(param.values))
+            error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
+        else
+            param.values = value
+        end
+    end
+end
+
 
 """
     setleftoverparameters(m::Model, parameters::Dict{Any,Any})
