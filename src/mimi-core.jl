@@ -117,6 +117,7 @@ function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+# helper function for setindix; used to determine if the provided time values are a uniform range.
 function isuniform(values::Vector)
     if length(values)==1 || length(values)==2
         return true
@@ -773,6 +774,7 @@ function build(m::Model)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
+        # for each parameter of component c, add the offset and duration as a parametric type to the constructor call for the component.
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
                 if pname in keys(ext_params)
@@ -809,8 +811,6 @@ function build(m::Model)
         param = x.external_parameter
         if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
-        # elseif isa(getfield(builtComponents[x.component_name].Parameters, x.param_name), Array)
-        #     setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values.data)
         else
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.values)
         end
@@ -881,7 +881,6 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
     while !finished(clock)
         for (i, (name, c)) in enumerate(components)
             if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
-                # println("running component $name in $(gettime(clock))")
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
                     run_timestep(c, gettimestep(comp_clocks[i]))
