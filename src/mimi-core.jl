@@ -37,7 +37,7 @@ end
 type ExternalParameterConnection
     component_name::Symbol
     param_name::Symbol #name of the parameter in the component
-    external_parameter::Parameter
+    external_parameter::Symbol #name of the parameter stored in m.external_parameters
 end
 
 type ModelInstance
@@ -122,6 +122,7 @@ function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
+# helper function for setindix; used to determine if the provided time values are a uniform range.
 function isuniform(values::Vector)
     if length(values)==1 || length(values)==2
         return true
@@ -351,7 +352,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 
     disconnect(m, component, name)
 
-    x = ExternalParameterConnection(component, name, p)
+    x = ExternalParameterConnection(component, name, parametername)
     push!(m.external_parameter_connections, x)
 
     nothing
@@ -517,6 +518,51 @@ function getspan(m::Model, comp::Symbol)
     start = m.components2[comp].offset
     final = m.components2[comp].final
     return Int((final - start) / duration + 1)
+end
+
+"""
+    update_external_parameter(m::Model, name::Symbol, value)
+
+Update the value of an external model parameter, referenced by name.
+"""
+function update_external_parameter(m::Model, name::Symbol, value)
+    if !(name in keys(m.external_parameters))
+        error("Cannot update parameter; $name not found in model's external parameters.")
+    end
+
+    param = m.external_parameters[name]
+
+    if isa(param, ScalarModelParameter)
+        if !(typeof(value) <: typeof(param.value))
+            try
+                value = convert(typeof(param.value), value)
+            catch e
+                error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+            end
+        elseif size(value) != size(param.value)
+            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
+        else
+            param.value = value
+        end
+    else # ArrayModelParameter
+        if !(typeof(value) <: AbstractArray)
+            error("Cannot update an array parameter $name with a scalar value.")
+        elseif size(value) != size(param.values)
+            error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
+        elseif !(eltype(value) <: eltype(param.values))
+            try
+                value = convert(Array{eltype(param.values)}, value)
+            catch e
+                error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
+            end
+        else # perform the update
+            if isa(param.values, TimestepVector) || isa(param.values, TimestepMatrix)
+                param.values.data = value
+            else
+                param.values = value
+            end
+        end
+    end
 end
 
 """
@@ -928,18 +974,20 @@ function build(m::Model)
     final_times = Array{Int, 1}()
     for c in values(mi_components) # loops through all ComponentInstanceInfos, including new ConnectorComps, in order.
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
-        ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
+        ext_params = map(x->x.param_name, ext_connections)
+        # ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
         int_connections = filter(x->x.target_component_name==c.name, mi_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
+        # for each parameter of component c, add the offset and duration as a parametric type to the constructor call for the component.
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
                 if pname==:input2 && (c.component_type == ConnectorCompVector || c.component_type == ConnectorCompMatrix)
                     offset = c.offset
-                elseif pname in keys(ext_params)
-                    offset = getoffset(ext_params[pname].values)
+                elseif pname in ext_params
+                    offset = getoffset(m.external_parameters[pname].values)
                 elseif pname in keys(int_params)
                     offset = mi_components[int_params[pname].source_component_name].offset
                 else
@@ -969,7 +1017,7 @@ function build(m::Model)
 
     # Make the external parameter connections.
     for x in m.external_parameter_connections
-        param = x.external_parameter
+        param = m.external_parameters[x.external_parameter]
         if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
         else
@@ -1046,7 +1094,6 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
     while !finished(clock)
         for (i, (name, c)) in enumerate(components)
             if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
-                # println("running component $name in $(gettime(clock))")
                 update_scalar_parameters(mi, name)
                 if newstyle[i]
                     run_timestep(c, gettimestep(comp_clocks[i]))

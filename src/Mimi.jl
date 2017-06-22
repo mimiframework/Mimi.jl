@@ -7,10 +7,11 @@ using NamedArrays
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
-    connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorCompVector,
-    ConnectorCompMatrix, getindex, getdataframe, components, variables, getvpd, unitcheck,
-    plot, getindexcount, getindexvalues, getindexlabels, delete!, get_unconnected_parameters,
-    Timestep, isfirsttimestep, isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue
+    connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorCompVector, 
+    ConnectorCompMatrix, getindex, getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
+    getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
+    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter
+
 
 import
     Base.getindex, Base.run, Base.show
