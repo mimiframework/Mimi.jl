@@ -10,7 +10,7 @@ export
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorComp, getindex,
     getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
     getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
-    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter
+    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, TimestepVector, TimestepMatrix, update_external_parameter
 
 import
     Base.getindex, Base.run, Base.show
