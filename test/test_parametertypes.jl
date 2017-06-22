@@ -47,3 +47,20 @@ setparameter(m, :MyComp, :f, reshape(1:16, 4, 4))
 @test typeof(m.external_parameters[:d].value) == Float64
 @test typeof(m.external_parameters[:e].values) == Array{Float64, 1}
 @test typeof(m.external_parameters[:f].value) == Array{Float64, 2}
+
+# test updating parameters
+@test_throws ErrorException update_external_parameter(m, :a, 5) #expects an array
+@test_throws ErrorException update_external_parameter(m, :a, ones(101)) #wrong size
+@test_throws ErrorException update_external_parameter(m, :a, fill("hi", 101, 3)) #wrong type
+update_external_parameter(m, :a, zeros(101,3))
+
+@test_throws ErrorException update_external_parameter(m, :d, ones(5)) #wrong type; should be scalar
+update_external_parameter(m, :d, 5) # should work, will convert to float
+@test_throws ErrorException update_external_parameter(m, :e, 5) #wrong type; should be array
+@test_throws ErrorException update_external_parameter(m, :e, ones(10)) #wrong size
+update_external_parameter(m, :e, [4,5,6,7])
+
+@test length(m.external_parameters) == 6
+@test typeof(m.external_parameters[:a].values) == Mimi.TimestepMatrix{Float64, 2000, 1}
+@test typeof(m.external_parameters[:d].value) == Float64
+@test typeof(m.external_parameters[:e].values) == Array{Float64, 1}

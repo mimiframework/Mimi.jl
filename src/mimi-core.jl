@@ -457,17 +457,33 @@ function update_external_parameter(m::Model, name::Symbol, value)
 
     if isa(param, ScalarModelParameter)
         if !(typeof(value) <: typeof(param.value))
-            error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+            try
+                value = convert(typeof(param.value), value)
+            catch e
+                error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+            end
+        elseif size(value) != size(param.value)
+            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
         else
             param.value = value
         end
     else # ArrayModelParameter
-        if !(value <: AbstractArray)
+        if !(typeof(value) <: AbstractArray)
             error("Cannot update an array parameter $name with a scalar value.")
+        elseif size(value) != size(param.values)
+            error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
         elseif !(eltype(value) <: eltype(param.values))
-            error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
-        else
-            param.values = value
+            try
+                value = convert(Array{eltype(param.values)}, value)
+            catch e
+                error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
+            end
+        else # perform the update
+            if isa(param.values, TimestepVector) || isa(param.values, TimestepMatrix)
+                param.values.data = value
+            else
+                param.values = value
+            end
         end
     end
 end
