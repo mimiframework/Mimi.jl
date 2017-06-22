@@ -32,7 +32,7 @@ end
 type ExternalParameterConnection
     component_name::Symbol
     param_name::Symbol #name of the parameter in the component
-    external_parameter::Parameter
+    external_parameter::Symbol #name of the parameter stored in m.external_parameters
 end
 
 type ModelInstance
@@ -344,7 +344,7 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 
     disconnect(m, component, name)
 
-    x = ExternalParameterConnection(component, name, p)
+    x = ExternalParameterConnection(component, name, parametername)
     push!(m.external_parameter_connections, x)
 
     nothing
@@ -766,8 +766,8 @@ function build(m::Model)
     final_times = Array{Int, 1}()
     for c in values(m.components2)
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
-        # ext_params = map(x->x.param_name, ext_connections)
-        ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
+        ext_params = map(x->x.param_name, ext_connections)
+        # ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
@@ -775,8 +775,8 @@ function build(m::Model)
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if pname in keys(ext_params)
-                    offset = getoffset(ext_params[pname].values)
+                if pname in ext_params
+                    offset = getoffset(m.external_parameters[pname].values)
                 elseif pname in keys(int_params)
                     offset = m.components2[int_params[pname].source_component_name].offset
                 else
@@ -806,7 +806,7 @@ function build(m::Model)
     end
 
     for x in m.external_parameter_connections
-        param = x.external_parameter
+        param = m.external_parameters[x.external_parameter]
         if isa(param, ScalarModelParameter)
             setfield!(builtComponents[x.component_name].Parameters, x.param_name, param.value)
         # elseif isa(getfield(builtComponents[x.component_name].Parameters, x.param_name), Array)
