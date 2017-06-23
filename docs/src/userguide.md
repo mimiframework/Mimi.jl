@@ -154,7 +154,7 @@ This method returns a ``Plots.Plot`` object, so calling it in an instance of an 
 
 ### Parameter connections between different length components
 
-As mentioned above, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when it comes to connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
+As mentioned above, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when for connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
 
 1. A shorter component is connected to a longer component. In this case, nothing additional needs to happen. The shorter component will pick up the correct values it needs from the longer component.
 2. A longer component is connected to a shorter component. In this case, the shorter component will not have enough values to supply to the longer component. In order to make this connection, the user must also provide an array of backup data for the parameter to default to when the shorter component does not have values to give. Do this in the following way:
@@ -186,9 +186,7 @@ update_external_parameter(mymodel, :parametername, newvalues)
 
 Note: newvalues must be the same size and type (or be able to convert to the type) as the old values stored in that parameter.
 
-### Using NamedArrays for setting parameters
-
-### setleftoverparameters
+### Setting parameters with a dictionary
 
 In larger models it can be beneficial to set some of the external parameters using a dictionary of values. To do this, use the following function:
 
@@ -198,6 +196,26 @@ setleftoverparameters(mymodel, parameters)
 
 Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters.
 
+### Using NamedArrays for setting parameters
+
+When a user sets a parameter, Mimi checks that the size and dimensions match what it expects for that component. If the user provides a NamedArray for the values, Mimi will further check that the names of the dimensions match the expected dimensions for that parameter, and that the labels match the model's index values for those dimensions.
+
 ### The internal 'build' function and model instances
 
-A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays been allocated.
+A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays been allocated. When you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model's structure mostly the same. For example:
+
+```julia
+
+instance1 = Mimi.build(mymodel)
+run(instance1)
+
+update_external_parameter(mymodel, paramname, newvalue)
+instance2 = Mimi.build(mymodel)
+run(instance2)
+
+result1 = instance1[:Comp, :Var]
+result2 = instance2[:Comp, :Var]
+
+```
+
+Note that you can index into a ModelInstance in the same way previously shown for indexing into a model.
