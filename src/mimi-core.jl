@@ -10,15 +10,7 @@ end
 abstract Parameter
 
 type ScalarModelParameter <: Parameter
-    dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
     value
-
-    function ScalarModelParameter(value)
-        p = new()
-        p.dependentCompsAndParams2 = Set{Tuple{Symbol,Symbol}}()
-        p.value = value
-        return p
-    end
 end
 
 type InternalParameterConnection
