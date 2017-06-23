@@ -9,7 +9,8 @@ This guide is organized into four main sections for understanding how to use Mim
 1) Defining components
 2) Constructing a model
 3) Running the model
-4) Results
+4) Accessing results
+5) Advanced features
 
 ### Defining Components
 
@@ -24,38 +25,39 @@ using Mimi
 
   A = Variable(index = [time])
   B = Variable(index = [time, regions])
+
   c = Parameter()
   d = Parameter(index = [time])
   e = Parameter(index = [time, regions])
   f = Parameter(index = [regions])
 end
 ```
-A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example above. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' above. They can be two dimensional such as variable 'B' and parameter 'e' above.
+A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example above. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' above. They can be two dimensional such as variable 'B' and parameter 'e' above. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = index()` above.
 
 The user must define a run_timestep function for each component. That looks like the following:
 
 ```julia
 
 function run_timestep(c::MyComponentName, t::Timestep)
-  p = c.Parameters
-  v = c.Variables
-  d = c.Dimensions
+  params = c.Parameters
+  vars = c.Variables
+  dims = c.Dimensions
 
-  v.A[t] = p.c + p.d[t]
-  for r in d.regions
-    v.B[t, r] = p.f[r] * p.e[t, r]
+  vars.A[t] = params.c + params.d[t]
+  for r in dims.regions
+    vars.B[t, r] = params.f[r] * params.e[t, r]
   end
 end
 
 ```
 
-The run_timestep function is responsible for calculating values for each variable in that component. The first argument to the function is a 'ComponentState', a type whose name matches the component you defined. The second argument is a Timestep. In older versions of Mimi, this was just an integer. Read more about Timestep objects below.
+The run_timestep function is responsible for calculating values for each variable in that component. The first argument to the function is a 'ComponentState', a type whose name matches the component you defined. The second argument is a Timestep, which represents which timestep the model is at each time the function gets called. Note that the component state (the first argument) has fields for the Parameters, Variables, and Dimensions of that component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.
 
-#### More about parameter and variable indexes
-
-#### More about Timesteps
+To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
 ### Constructing a Model
+
+The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers. If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
 
 ```julia
 
@@ -65,15 +67,71 @@ setindex(mymodel, :regions, ["USA", "EU", "LATAM"])
 
 ```
 
+The next step is to add components to the model. This is done by the following syntax:
+
+```julia
+
+addcomponent(mymodel, :ComponentA, :GDP)
+addcomponent(mymodel, :ComponentB; start=2010)
+addcomponent(mymodel, :ComponentC; start=2010, final=2100)
+
+```
+
+The first argument to addcomponent is the model, the second is the name of the component type. If an optional second symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in setindex.
+
+The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
+
+To make an external connection, the syntax is as follows:
+
+```julia
+
+setparameter(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
+setparameter(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
+
+```
+
+To make an internal connection:
+
+```julia
+
+connectparameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
+
+```
 
 ### Running a Model
 
+After all components have been added to your model and all parameters have been connected to either external values or internally to another component, then the model is ready to be run. Note: at each timestep, the model will run the components in the order you added them. So if one component is going to rely on the value of another component, then the user must add them to the model in the appropriate order.
+
+```julia
+
+run(mymodel)
+
+```
 
 ### Results
 
-getindex
-getdataframe
-plotting
+After a model has been run, you can access the results (the calculated variable values in each component) in a few different ways.
+
+You can use the `getindex` syntax as follows:
+
+```julia
+
+mymodel[:ComponentName, :VariableName]
+mymodel[:ComponentName, :VariableName][100]
+
+```
+Indexing into a model with the name of the component and variable will return an array with values from each timestep.
+You can index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is tow-dimensional, then a 2-D array will be returned.
+
+You can also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this is:
+
+```julia
+
+getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
+getdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
+getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
+
+```
 
 ## Plotting
 ![Plotting Example](figs/plotting_example.png)
@@ -91,3 +149,13 @@ A few important things to note:
 - `legend` should be a `Symbol` that refers to an index on the model set by a call to `setindex`
 
 This method returns a ``Plots.Plot`` object, so calling it in an instance of an IJulia Notebook will display the plot. Because this method is defined on the Plots package, it is easy to use the other features of the Plots package. For example, calling `savefig("x")` will save the plot as `x.png`, etc. See the [Plots Documentaton](https://juliaplots.github.io/) for a full list of capabilities.
+
+
+
+### Advanced Topics
+
+Connecting a long to a short component (backup data)
+all parameter types (scalar can be array)
+update_external_parameter
+setleftoverparameters
+build and model instances
