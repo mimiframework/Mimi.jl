@@ -152,9 +152,21 @@ This method returns a ``Plots.Plot`` object, so calling it in an instance of an 
 
 ## Advanced Topics
 
+### Timesteps and available functions
+
+A `Timestep` is an immutable type defined within Mimi in "src/clock.jl". It is used to represent and keep track of time indices when running a model.
+
+In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where `t` is a Timestep object:
+
+```julia
+isfinaltimestep(t) # returns true or false
+isfirsttimestep(t) # returns true or false
+gettime(t) # returns the year represented by timestep t
+```
+
 ### Parameter connections between different length components
 
-As mentioned above, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when for connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
+As mentioned earlier, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when for connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
 
 1. A shorter component is connected to a longer component. In this case, nothing additional needs to happen. The shorter component will pick up the correct values it needs from the longer component.
 2. A longer component is connected to a shorter component. In this case, the shorter component will not have enough values to supply to the longer component. In order to make this connection, the user must also provide an array of backup data for the parameter to default to when the shorter component does not have values to give. Do this in the following way:
@@ -168,11 +180,12 @@ Note: for now, to avoid discrepancy with timing and alignment, the backup data m
 
 ### More on parameter indices
 
-As mentioned above, a parameter can have no index (a scalar), or one or multiple of the model's indexes. A parameter can also have an index specified in the following way:
+As mentioned above, a parameter can have no index (a scalar), or one or multiple of the model's indexes. A parameter can also have an indexes specified in the following ways:
 
 ```julia
 @defcomp MyComponent begin
-  p = Parameter(index=[4])
+  p1 = Parameter(index=[4])
+  p2::Array{Float64, 2} = Parameter()
 end
 ```
 
@@ -202,10 +215,9 @@ When a user sets a parameter, Mimi checks that the size and dimensions match wha
 
 ### The internal 'build' function and model instances
 
-A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays been allocated. When you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model's structure mostly the same. For example:
+ When you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays have been allocated. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model's structure mostly the same. For example:
 
 ```julia
-
 instance1 = Mimi.build(mymodel)
 run(instance1)
 
