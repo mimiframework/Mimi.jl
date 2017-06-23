@@ -26,24 +26,24 @@ t = Mimi.getnexttimestep(t)
 # and Foo from 2005 to 2010
 
 @defcomp Foo begin
-    input = Parameter()
+    inputF = Parameter()
     output = Variable(index=[time])
 end
 
 function run_timestep(c::Foo, ts::Timestep)
-    c.Variables.output[ts] = c.Parameters.input + ts.t
+    c.Variables.output[ts] = c.Parameters.inputF + ts.t
 end
 
 @defcomp Bar begin
-    input = Parameter(index=[time])
+    inputB = Parameter(index=[time])
     output = Variable(index=[time])
 end
 
 function run_timestep(c::Bar, ts::Timestep)
     if Mimi.gettime(ts) < 2005
-        c.Variables.output[ts] = c.Parameters.input[ts]
+        c.Variables.output[ts] = c.Parameters.inputB[ts]
     else
-        c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
+        c.Variables.output[ts] = c.Parameters.inputB[ts] * ts.t
     end
 end
 
@@ -56,8 +56,8 @@ setindex(m, :time, 2000:2010)
 foo = addcomponent(m, Foo, start=2005) #offset for foo
 bar = addcomponent(m, Bar)
 
-setparameter(m, :Foo, :input, 5.)
-setparameter(m, :Bar, :input, collect(1:11))
+setparameter(m, :Foo, :inputF, 5.)
+setparameter(m, :Bar, :inputB, collect(1:11))
 
 run(m)
 
@@ -81,12 +81,12 @@ end
 ##################################################
 
 @defcomp Foo2 begin
-    input = Parameter(index=[time])
+    inputF = Parameter(index=[time])
     output = Variable(index=[time])
 end
 
 function run_timestep(c::Foo2, ts::Timestep)
-    c.Variables.output[ts] = c.Parameters.input[ts]
+    c.Variables.output[ts] = c.Parameters.inputF[ts]
 end
 
 m2 = Model()
@@ -94,8 +94,8 @@ setindex(m2, :time, 2000:2010)
 bar = addcomponent(m2, Bar)
 foo2 = addcomponent(m2, Foo2, start=2005) #offset for foo
 
-setparameter(m2, :Bar, :input, collect(1:11))
-connectparameter(m2, :Foo2, :input, :Bar, :output)
+setparameter(m2, :Bar, :inputB, collect(1:11))
+connectparameter(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
@@ -108,7 +108,7 @@ end
 #########################################
 
 @defcomp Bar2 begin
-    input = Parameter(index=[time])
+    inputB = Parameter(index=[time])
     output = Variable(index=[time])
 end
 
@@ -117,7 +117,7 @@ function run_timestep(c::Bar2, ts::Timestep)
     if Mimi.gettime(ts) < 2005
         c.Variables.output[ts] = 0
     else
-        c.Variables.output[ts] = c.Parameters.input[ts] * ts.t
+        c.Variables.output[ts] = c.Parameters.inputB[ts] * ts.t
     end
 end
 
@@ -125,10 +125,10 @@ m3 = Model()
 setindex(m3, :time, 2000:2010)
 addcomponent(m3, Foo, start=2005)
 addcomponent(m3, Bar2)
-setparameter(m3, :Foo, :input, 5.)
-connectparameter(m3, :Bar2, :input, :Foo, :output)
+setparameter(m3, :Foo, :inputF, 5.)
+connectparameter(m3, :Bar2, :inputB, :Foo, :output)
 run(m3)
 
 @test length(m3[:Foo, :output])==6
-@test length(m3[:Bar2, :input])==6
+@test length(m3[:Bar2, :inputB])==6
 @test length(m3[:Bar2, :output])==11
