@@ -6,7 +6,6 @@ setindex
 addcomponent
 delete!
 setparameter
-set_external_parameter
 connectparameter
 get_unconnected_parameters
 setleftoverparameters

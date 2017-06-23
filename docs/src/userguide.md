@@ -12,7 +12,7 @@ This guide is organized into four main sections for understanding how to use Mim
 4) Accessing results
 5) Advanced features
 
-### Defining Components
+## Defining Components
 
 Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components.
 We define a component in the following way:
@@ -55,7 +55,7 @@ The run_timestep function is responsible for calculating values for each variabl
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
-### Constructing a Model
+## Constructing a Model
 
 The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers. If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
 
@@ -98,7 +98,7 @@ connectparameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:v
 
 ```
 
-### Running a Model
+## Running a Model
 
 After all components have been added to your model and all parameters have been connected to either external values or internally to another component, then the model is ready to be run. Note: at each timestep, the model will run the components in the order you added them. So if one component is going to rely on the value of another component, then the user must add them to the model in the appropriate order.
 
@@ -108,7 +108,7 @@ run(mymodel)
 
 ```
 
-### Results
+## Results
 
 After a model has been run, you can access the results (the calculated variable values in each component) in a few different ways.
 
@@ -152,7 +152,7 @@ This method returns a ``Plots.Plot`` object, so calling it in an instance of an 
 
 
 
-### Advanced Topics
+## Advanced Topics
 
 Connecting a long to a short component (backup data)
 all parameter types (scalar can be array)
