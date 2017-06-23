@@ -157,18 +157,47 @@ This method returns a ``Plots.Plot`` object, so calling it in an instance of an 
 As mentioned above, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when it comes to connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
 
 1. A shorter component is connected to a longer component. In this case, nothing additional needs to happen. The shorter component will pick up the correct values it needs from the longer component.
-2. A longer component is connected to a shorter component. In this case, the shorter component will not have enough values to supply to the longer component. In order to make this connection, the user must also provide an array of backup data for the parameter to default to when the shorter component does not have values give. Do this in the following way:
+2. A longer component is connected to a shorter component. In this case, the shorter component will not have enough values to supply to the longer component. In order to make this connection, the user must also provide an array of backup data for the parameter to default to when the shorter component does not have values to give. Do this in the following way:
 
 ```julia
-connectparameter(mymodel, :LongComponent=>:parametername, :ShortCOmponent=>:variabelname)
+backup = rand(100) # data array of the proper size
+connectparameter(mymodel, :LongComponent=>:parametername, :ShortComponent=>:variablename, backup)
 ```
+
+Note: for now, to avoid discrepancy with timing and alignment, the backup data must be the length of the whole component's start to final time, even though it will only be used for values not found in the shorter component.
 
 ### More on parameter indices
 
+As mentioned above, a parameter can have no index (a scalar), or one or multiple of the model's indexes. A parameter can also have an index specified in the following way:
+
+```julia
+@defcomp MyComponent begin
+  p = Parameter(index=[4])
+end
+```
+
 ### Updating an external parameter
+
+When `setparameter` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
+
+```julia
+update_external_parameter(mymodel, :parametername, newvalues)
+```
+
+Note: newvalues must be the same size and type (or be able to convert to the type) as the old values stored in that parameter.
 
 ### Using NamedArrays for setting parameters
 
 ### setleftoverparameters
 
+In larger models it can be beneficial to set some of the external parameters using a dictionary of values. To do this, use the following function:
+
+```julia
+setleftoverparameters(mymodel, parameters)
+```
+
+Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters.
+
 ### The internal 'build' function and model instances
+
+A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays been allocated.
