@@ -461,6 +461,10 @@ function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{S
     connectparameter(m, target[1], target[2], source[1], source[2]; ignoreunits=ignoreunits)
 end
 
+function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
+    connectparameter(m, target[1], target[2], source[1], source[2], backup; ignoreunits=ignoreunits)
+end
+
 function connectparameter(m::Model, target_component::Symbol, target_param::Symbol, source_component::Symbol, source_var::Symbol, backup::Array; ignoreunits::Bool=false)
     # If value is a NamedArray, we can check if the labels match
     if isa(backup, NamedArray)

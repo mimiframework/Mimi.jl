@@ -162,7 +162,7 @@ addcomponent(model5, Short; start=2020, final=2070)
 addcomponent(model5, Long)
 
 setparameter(model5, :Short, :a, [1,2,3])
-connectparameter(model5, :Long, :x, :Short, :b, zeros(21,3))
+connectparameter(model5, :Long=>:x, :Short=>:b, zeros(21,3))
 
 run(model5)
 
