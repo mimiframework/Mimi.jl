@@ -28,7 +28,7 @@ addcomponent(m, C, after=:B)
 @test length(get_unconnected_parameters(m))==2
 
 connectparameter(m, :A, :parA, :C, :varC)
-connectparameter(m, :A, :parA, :B, :varB)
+connectparameter(m, :A=>:parA, :B=>:varB)
 
 @test get_unconnected_parameters(m)[1]==(:C,:parC)
 

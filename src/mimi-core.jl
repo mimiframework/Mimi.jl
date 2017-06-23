@@ -19,6 +19,11 @@ type InternalParameterConnection
     target_parameter_name::Symbol
     target_component_name::Symbol
     ignoreunits::Bool
+    backup # either nothing, or a Symbol matching the name of the external parameter to be used as backup data
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
+        ipc = new(src_var, src_comp, target_par, target_comp, ignoreunits, backup)
+        return ipc
+    end
 end
 
 type ExternalParameterConnection
@@ -132,6 +137,7 @@ Set the values of `Model`'s' index `name` to integers 1 through `count`.
 function setindex(m::Model, name::Symbol, count::Int)
     m.indices_counts[name] = count
     m.indices_values[name] = collect(1:count)
+    m.time_labels = Vector()
     nothing
 end
 
@@ -160,6 +166,7 @@ Set the values of `Model`'s index `name` to the values in the given range `value
 function setindex{T}(m::Model, name::Symbol, valuerange::Range{T})
     m.indices_counts[name] = length(valuerange)
     m.indices_values[name] = Vector{T}(valuerange)
+    m.time_labels = Vector()
     nothing
 end
 
@@ -331,7 +338,7 @@ Connect a parameter in a component to an external parameter.
 function connectparameter(m::Model, component::Symbol, name::Symbol, parametername::Symbol)
     p = m.external_parameters[parametername]
 
-    if isa(p, ArrayModelParameter) && component != :ConnectorComp
+    if isa(p, ArrayModelParameter)
         checklabels(m, component, name, p)
     end
 
@@ -344,14 +351,21 @@ function connectparameter(m::Model, component::Symbol, name::Symbol, parameterna
 end
 
 function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelParameter)
-    if !(eltype(p.values) <: getmetainfo(m, component).parameters[name].datatype)
+    metacomp = getmetainfo(m, component)
+    if !(eltype(p.values) <: metacomp.parameters[name].datatype)
         error(string("Mismatched datatype of parameter connection. Component: ", component, ", Parameter: ", name))
     elseif !(isempty(p.dims))
-        if !(size(p.dims) == size(getmetainfo(m, component).parameters[name].dimensions))
+        if !(size(p.dims) == size(metacomp.parameters[name].dimensions))
             error(string("Mismatched dimensions of parameter connection. Component: ", component, ", Parameter: ", name))
         end
     end
-    comp_dims = getmetainfo(m, component).parameters[name].dimensions
+
+    # Return early if it's a ConnectorComp so that we don't check the sizes, because they will not match.
+    if metacomp.component_name == :ConnectorCompVector || metacomp.component_name == :ConnectorCompMatrix
+        return nothing
+    end
+
+    comp_dims = metacomp.parameters[name].dimensions
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol)
             if !(length(m.indices_values[dim])==size(p.values)[i])
@@ -412,19 +426,77 @@ end
 
 Bind the parameter of one component to a variable in another component.
 """
-function connectparameter(m::Model, target_component::Symbol, target_name::Symbol, source_component::Symbol, source_name::Symbol; ignoreunits::Bool=false)
+function connectparameter(m::Model, target_component::Symbol, target_param::Symbol, source_component::Symbol, source_var::Symbol; ignoreunits::Bool=false)
 
     # Check the units, if provided
     if !ignoreunits &&
-        !unitcheck(getmetainfo(m, target_component).parameters[target_name].unit,
-                   getmetainfo(m, source_component).variables[source_name].unit)
+        !unitcheck(getmetainfo(m, target_component).parameters[target_param].unit,
+                   getmetainfo(m, source_component).variables[source_var].unit)
+        error("Units of $source_component.$source_var do not match $target_component.$target_param.")
+    end
+
+    # remove any existing connections for this target component and parameter
+    disconnect(m, target_component, target_param)
+
+    curr = InternalParameterConnection(source_var, source_component, target_param, target_component, ignoreunits)
+    push!(m.internal_parameter_connections, curr)
+
+    nothing
+end
+
+"""
+    connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
+
+Bind the parameter of one component to a variable in another component.
+"""
+function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
+    connectparameter(m, target[1], target[2], source[1], source[2]; ignoreunits=ignoreunits)
+end
+
+function connectparameter(m::Model, target::Pair{Symbol, Symbol}, source::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
+    connectparameter(m, target[1], target[2], source[1], source[2], backup; ignoreunits=ignoreunits)
+end
+
+function connectparameter(m::Model, target_component::Symbol, target_param::Symbol, source_component::Symbol, source_var::Symbol, backup::Array; ignoreunits::Bool=false)
+    # If value is a NamedArray, we can check if the labels match
+    if isa(backup, NamedArray)
+        dims = dimnames(backup)
+        check_parameter_dimensions(m, backup, dims, name)
+    else
+        dims = nothing
+    end
+
+    # Check that the backup value is the right size
+    if getspan(m, target_component) != size(backup)[1]
+        error("Backup data must span the whole length of the component.")
+    end
+
+    # some other check for second dimension??
+
+    comp_param_dims = getmetainfo(m, target_component).parameters[target_param].dimensions
+    backup = convert(Array{m.numberType}, backup) # converts the number type, and also if it's a NamedArray it gets converted to Array
+    offset = m.components2[target_component].offset
+    duration = getduration(m.indices_values)
+    T = eltype(backup)
+    if length(comp_param_dims)==1
+        values = TimestepVector{T, offset, duration}(backup)
+    elseif length(comp_param_dims)==2
+        values = TimestepMatrix{T, offset, duration}(backup)
+    else
+        values = backup
+    end
+    set_external_array_parameter(m, target_param, values, dims)
+
+    if !ignoreunits &&
+        !unitcheck(getmetainfo(m, target_component).parameters[target_param].unit,
+                   getmetainfo(m, source_component).variables[source_var].unit)
         error("Units of $source_component.$source_name do not match $target_component.$target_name.")
     end
 
     # remove any existing connections for this target component and parameter
-    disconnect(m, target_component, target_name)
+    disconnect(m, target_component, target_param)
 
-    curr = InternalParameterConnection(source_name, source_component, target_name, target_component, ignoreunits)
+    curr = InternalParameterConnection(source_var, source_component, target_param, target_component, ignoreunits, target_param)
     push!(m.internal_parameter_connections, curr)
 
     nothing
@@ -434,6 +506,14 @@ end
 function unitcheck(one::AbstractString, two::AbstractString)
     # True if and only if they match
     return one == two
+end
+
+# Return the number of timesteps a given component in a model will run for.
+function getspan(m::Model, comp::Symbol)
+    duration = getduration(m.indices_values)
+    start = m.components2[comp].offset
+    final = m.components2[comp].final
+    return Int((final - start) / duration + 1)
 end
 
 """
@@ -480,7 +560,6 @@ function update_external_parameter(m::Model, name::Symbol, value)
         end
     end
 end
-
 
 """
     setleftoverparameters(m::Model, parameters::Dict{Any,Any})
@@ -619,7 +698,7 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
     elseif !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable not in provided component")
+        error("Cannot get dataframe; variable $name not in component $componentname")
     else
         return getdataframe(m, get(m.mi), componentname, name)
     end
@@ -633,21 +712,44 @@ function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::
     meta_component_name = Symbol(supertype(comp_type).name.name)
 
     vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
+
     if length(vardiminfo)==0
         return mi[componentname, name]
-    elseif length(vardiminfo)==1
-        df = DataFrame()
-        df[vardiminfo[1]] = m.indices_values[vardiminfo[1]]
-        df[name] = mi[componentname, name]
+    end
+
+    df = DataFrame()
+
+    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
+    if vardiminfo[1]==:time
+        comp_start = m.components2[componentname].offset
+        comp_final = m.components2[componentname].final
+        start = findfirst(values, comp_start)
+        final = findfirst(values, comp_final)
+        num = getspan(m, componentname)
+    end
+
+    if length(vardiminfo)==1
+        df[vardiminfo[1]] = values
+        if vardiminfo[1]==:time
+            df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
+        else
+            df[name] = mi[componentname, name]
+        end
         return df
     elseif length(vardiminfo)==2
-        df = DataFrame()
-        dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat(m.indices_values[vardiminfo[1]],inner=[dim2])
-        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
+        dim1 = length(m.indices_values[vardiminfo[1]])
+        df[vardiminfo[1]] = repeat(values, inner=[dim2])
+        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]], outer=[dim1])
+
         data = m[componentname, name]
+        if vardiminfo[1]==:time
+            top = fill(NaN, (start-1, dim2))
+            bottom = fill(NaN, (dim1-final, dim2))
+            data = vcat(top, data, bottom)
+        end
         df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+
         return df
     else
         error("Not yet implemented")
@@ -675,8 +777,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
     end
 
-    #Get the base value of the number of dimensions from the first
-    # componentname and name pair association
+    # Get the base value of the number of dimensions from the first componentname and name pair association
     firstpair = comp_name_pairs[1]
     componentname = firstpair[1]
     name = firstpair[2]
@@ -685,7 +786,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     end
 
     if !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable not in provided component")
+        error("Cannot get dataframe; variable $name not in component $componentname")
     end
 
     vardiminfo = getvardiminfo(mi, componentname, name)
@@ -693,17 +794,17 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
 
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
+    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
     if num_dim == 1
-        df[vardiminfo[1]] = (isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels)
+        df[vardiminfo[1]] = values
     elseif num_dim == 2
         dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat((isempty(m.time_labels)?m.indices_values[vardiminfo[1]]:m.time_labels), inner=[dim2])
+        df[vardiminfo[1]] = repeat(values, inner=[dim2])
         df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
     end
 
-    #Iterate through all the pairs; always check for each variable
-    # that the number of dimensions matcht that of the first
+    # Iterate through all the pairs; always check for each variable that the number of dimensions matches that of the first
     for pair in comp_name_pairs
         componentname = pair[1]
         name = pair[2]
@@ -711,37 +812,69 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
         if isa(name, Tuple)
             for comp_var in name
                 if !(comp_var in variables(m, componentname))
-                    error(string("Cannot get dataframe; variable, ", comp_var,  " not in provided component ", componentname))
+                    error("Cannot get dataframe; variable $comp_var not in component $componentname")
                 end
 
                 vardiminfo = getvardiminfo(mi, componentname, comp_var)
+                if vardiminfo[1]==:time
+                    comp_start = m.components2[componentname].offset
+                    comp_final = m.components2[componentname].final
+                    start = findfirst(values, comp_start)
+                    final = findfirst(values, comp_final)
+                    num = getspan(m, componentname)
+                end
 
                 if !(length(vardiminfo) == num_dim)
                     error(string("Not all components have the same number of dimensions"))
                 end
 
                 if (num_dim==1)
-                    df[comp_var] = mi[componentname, comp_var]
+                    if vardiminfo[1]==:time
+                        df[comp_var] = vcat(repeat([NaN], inner=start-1), mi[componentname, comp_var], repeat([NaN], inner=length(values)-final))
+                    else
+                        df[comp_var] = mi[componentname, comp_var]
+                    end
                 elseif (num_dim == 2)
                     data = m[componentname, comp_var]
+                    if vardiminfo[1]==:time
+                        top = fill(NaN, (start-1, dim2))
+                        bottom = fill(NaN, (dim1-final, dim2))
+                        data = vcat(top, data, bottom)
+                    end
                     df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
                 end
             end
 
         elseif (isa(name, Symbol))
             if !(name in variables(m, componentname))
-                error(string("Cannot get dataframe; variable, ", name,  " not in provided component ", componentname))
+                error("Cannot get dataframe; variable $name not in component $componentname")
             end
 
             vardiminfo = getvardiminfo(mi, componentname, name)
+            if vardiminfo[1]==:time
+                comp_start = m.components2[componentname].offset
+                comp_final = m.components2[componentname].final
+                start = findfirst(values, comp_start)
+                final = findfirst(values, comp_final)
+                num = getspan(m, componentname)
+            end
 
             if !(length(vardiminfo) == num_dim)
                 error(string("Not all components have the same number of dimensions"))
             end
             if (num_dim==1)
-                df[name] = mi[componentname, name]
+                if vardiminfo[1]==:time
+                    df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
+                else
+                    df[name] = mi[componentname, name]
+                end
             elseif (num_dim == 2)
                 data = m[componentname, name]
+                if vardiminfo[1]==:time
+                    top = fill(NaN, (start-1, dim2))
+                    bottom = fill(NaN, (dim1-final, dim2))
+                    data = vcat(top, data, bottom)
+                end
                 df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
             end
         else
@@ -796,32 +929,66 @@ function build(m::Model)
         error(msg)
     end
 
+    mi_connections = Array{InternalParameterConnection, 1}() # This is the list of internal connections that the ModelInstance will know about.
+    mi_components = OrderedDict{Symbol, ComponentInstanceInfo}() # This is the ordered list of components (including hidden ConnectorComps) that the ModelInstance will use.
+    backups = Array{Symbol, 1}() # This is the list of names of external parameters that the ConnectorComps will use as their :input2 parameters.
+    num_connector_comps = 0
     duration = getduration(m.indices_values) # for now, all components have the same duration
+    # Loop through the components and add necessary ConnectorComps.
+    for c in values(m.components2)
+        # first need to see if we need to add any connector components for this component
+        int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+        need_connector_comps = filter(x->(x.backup != nothing), int_connections)
+        for ipc in need_connector_comps
+            num_connector_comps += 1
+            push!(backups, ipc.backup)
+            curr_name = Symbol("ConnectorComp$num_connector_comps")
+            num_dims = length(size(m.external_parameters[ipc.backup].values))
+            if num_dims == 1
+                curr = ComponentInstanceInfo(curr_name, ConnectorCompVector, c.offset, c.final)
+            elseif num_dims ==2
+                curr = ComponentInstanceInfo(curr_name, ConnectorCompMatrix, c.offset, c.final)
+            else
+                error("Connector components for parameters with more than two dimensions not implemented.")
+            end
+            mi_components[curr_name] = curr # add the ConnectorComp to the ordered list of components
+            push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits)) # add a new connection between source_component and the ConnectorComp
+            push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, ipc.target_component_name, ipc.ignoreunits)) # add a new connection between ConnectorComp and target_component
+        end
 
-    #instantiate the components
+        # Now add the other InternalParameterConnections to the list of connections.
+        for ipc in setdiff(int_connections, need_connector_comps)
+            push!(mi_connections, ipc)
+        end
+
+        mi_components[c.name] = c # Order is imperitive: this component is added after any ConnectorComps were added.
+    end
+
+    # Now loop through and instantiate each component.
     builtComponents = OrderedDict{Symbol, ComponentState}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
-    for c in values(m.components2)
+    for c in values(mi_components) # loops through all ComponentInstanceInfos, including new ConnectorComps, in order.
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
         ext_params = map(x->x.param_name, ext_connections)
         # ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
 
-        int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+        int_connections = filter(x->x.target_component_name==c.name, mi_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
         constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
         # for each parameter of component c, add the offset and duration as a parametric type to the constructor call for the component.
         for (pname, p) in get_parameters(m, c)
             if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if pname in ext_params
+                if pname==:input2 && (c.component_type == ConnectorCompVector || c.component_type == ConnectorCompMatrix)
+                    offset = c.offset
+                elseif pname in ext_params
                     offset = getoffset(m.external_parameters[pname].values)
                 elseif pname in keys(int_params)
-                    offset = m.components2[int_params[pname].source_component_name].offset
+                    offset = mi_components[int_params[pname].source_component_name].offset
                 else
-                    error("unset paramter; should be caught earlier")
+                    error("unset paramter $pname; should be caught earlier")
                 end
-
                 push!(constructor.args, :(Val{$offset}))
                 push!(constructor.args, :(Val{$duration}))
             end
@@ -837,13 +1004,14 @@ function build(m::Model)
         push!(final_times, c.final)
     end
 
-    #make the parameter connections
-    for x in m.internal_parameter_connections
-        c_target = builtComponents[x.target_component_name]
-        c_source = builtComponents[x.source_component_name]
-        setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
+    # Make the internal parameter connections, including new hidden connections between ConnectorComps.
+    for ipc in mi_connections
+        c_target = builtComponents[ipc.target_component_name]
+        c_source = builtComponents[ipc.source_component_name]
+        setfield!(c_target.Parameters, ipc.target_parameter_name, getfield(c_source.Variables, ipc.source_variable_name))
     end
 
+    # Make the external parameter connections.
     for x in m.external_parameter_connections
         param = m.external_parameters[x.external_parameter]
         if isa(param, ScalarModelParameter)
@@ -853,8 +1021,12 @@ function build(m::Model)
         end
     end
 
+    # Make the external parameter connections for the hidden ConnectorComps: connect each :input2 to its associated backup value.
+    for i in 1:num_connector_comps
+        setfield!(builtComponents[Symbol("ConnectorComp$i")].Parameters, :input2, m.external_parameters[backups[i]].values)
+    end
 
-    mi = ModelInstance(builtComponents, m.internal_parameter_connections, offsets, final_times)
+    mi = ModelInstance(builtComponents, mi_connections, offsets, final_times)
 
     return mi
 end
