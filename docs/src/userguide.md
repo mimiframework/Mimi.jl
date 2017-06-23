@@ -10,7 +10,7 @@ This guide is organized into four main sections for understanding how to use Mim
 2) Constructing a model
 3) Running the model
 4) Accessing results
-5) Advanced features
+5) Advanced topics
 
 ## Defining Components
 
@@ -37,7 +37,6 @@ A component can have any number of parameters and variables. Parameters are data
 The user must define a run_timestep function for each component. That looks like the following:
 
 ```julia
-
 function run_timestep(c::MyComponentName, t::Timestep)
   params = c.Parameters
   vars = c.Variables
@@ -60,7 +59,6 @@ To access the data in a parameter or to assign a value to a variable, you must u
 The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers. If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
 
 ```julia
-
 mymodel = Model()
 setindex(mymodel, :time, 1850:2200)
 setindex(mymodel, :regions, ["USA", "EU", "LATAM"])
@@ -70,7 +68,6 @@ setindex(mymodel, :regions, ["USA", "EU", "LATAM"])
 The next step is to add components to the model. This is done by the following syntax:
 
 ```julia
-
 addcomponent(mymodel, :ComponentA, :GDP)
 addcomponent(mymodel, :ComponentB; start=2010)
 addcomponent(mymodel, :ComponentC; start=2010, final=2100)
@@ -84,7 +81,6 @@ The next step is to set the values for all the parameters in the components. Par
 To make an external connection, the syntax is as follows:
 
 ```julia
-
 setparameter(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
 setparameter(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
 
@@ -93,17 +89,21 @@ setparameter(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dim
 To make an internal connection:
 
 ```julia
-
 connectparameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
 
 ```
+
+If you wish to delete a component that has already been added, do the following:
+```julia
+delete!(mymodel, :ComponentName)
+```
+This will delete the component from the model and remove any existing connections it had. Thus if a different component was previously connected to this component, you will need to connect its parameter(s) to something else.
 
 ## Running a Model
 
 After all components have been added to your model and all parameters have been connected to either external values or internally to another component, then the model is ready to be run. Note: at each timestep, the model will run the components in the order you added them. So if one component is going to rely on the value of another component, then the user must add them to the model in the appropriate order.
 
 ```julia
-
 run(mymodel)
 
 ```
@@ -115,7 +115,6 @@ After a model has been run, you can access the results (the calculated variable 
 You can use the `getindex` syntax as follows:
 
 ```julia
-
 mymodel[:ComponentName, :VariableName]
 mymodel[:ComponentName, :VariableName][100]
 
@@ -126,7 +125,6 @@ You can index into this array to get one value (as in the second line, which ret
 You can also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this is:
 
 ```julia
-
 getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
 getdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
 getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
@@ -154,8 +152,23 @@ This method returns a ``Plots.Plot`` object, so calling it in an instance of an 
 
 ## Advanced Topics
 
-Connecting a long to a short component (backup data)
-all parameter types (scalar can be array)
-update_external_parameter
-setleftoverparameters
-build and model instances
+### Parameter connections between different length components
+
+As mentioned above, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when it comes to connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
+
+1. A shorter component is connected to a longer component. In this case, nothing additional needs to happen. The shorter component will pick up the correct values it needs from the longer component.
+2. A longer component is connected to a shorter component. In this case, the shorter component will not have enough values to supply to the longer component. In order to make this connection, the user must also provide an array of backup data for the parameter to default to when the shorter component does not have values give. Do this in the following way:
+
+```julia
+connectparameter(mymodel, :LongComponent=>:parametername, :ShortCOmponent=>:variabelname)
+```
+
+### More on parameter indices
+
+### Updating an external parameter
+
+### Using NamedArrays for setting parameters
+
+### setleftoverparameters
+
+### The internal 'build' function and model instances
