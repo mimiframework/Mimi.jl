@@ -4,13 +4,14 @@
 
 See the Tutorial for in depth examples of one-region and multi-region models.
 
-This guide is organized into four main sections for understanding how to use Mimi.
+This guide is organized into six main sections for understanding how to use Mimi.
 
 1) Defining components
 2) Constructing a model
 3) Running the model
 4) Accessing results
-5) Advanced topics
+5) Plotting
+6) Advanced topics
 
 ## Defining Components
 
@@ -21,7 +22,7 @@ We define a component in the following way:
 using Mimi
 
 @defcomp MyComponentName begin
-  regions = index()
+  regions = Index()
 
   A = Variable(index = [time])
   B = Variable(index = [time, regions])
@@ -32,7 +33,7 @@ using Mimi
   f = Parameter(index = [regions])
 end
 ```
-A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example above. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' above. They can be two dimensional such as variable 'B' and parameter 'e' above. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = index()` above.
+A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example above. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' above. They can be two dimensional such as variable 'B' and parameter 'e' above. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` above.
 
 The user must define a run_timestep function for each component. That looks like the following:
 
@@ -108,15 +109,15 @@ run(mymodel)
 
 ```
 
-## Results
+## Accessing Results
 
 After a model has been run, you can access the results (the calculated variable values in each component) in a few different ways.
 
 You can use the `getindex` syntax as follows:
 
 ```julia
-mymodel[:ComponentName, :VariableName]
-mymodel[:ComponentName, :VariableName][100]
+mymodel[:ComponentName, :VariableName] # returns the whole array of values
+mymodel[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
 Indexing into a model with the name of the component and variable will return an array with values from each timestep.
@@ -166,7 +167,7 @@ gettime(t) # returns the year represented by timestep t
 
 ### Parameter connections between different length components
 
-As mentioned earlier, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications when for connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
+As mentioned earlier, it is possible for some components to start later or end sooner than the full length of the model. This presents potential complications for connecting their parameters. If you are setting the parameters to external values, then the provided values just need to be the right size for that component's parameter. If you are making an internal connection, this can happen in one of two ways:
 
 1. A shorter component is connected to a longer component. In this case, nothing additional needs to happen. The shorter component will pick up the correct values it needs from the longer component.
 2. A longer component is connected to a shorter component. In this case, the shorter component will not have enough values to supply to the longer component. In order to make this connection, the user must also provide an array of backup data for the parameter to default to when the shorter component does not have values to give. Do this in the following way:
@@ -180,14 +181,15 @@ Note: for now, to avoid discrepancy with timing and alignment, the backup data m
 
 ### More on parameter indices
 
-As mentioned above, a parameter can have no index (a scalar), or one or multiple of the model's indexes. A parameter can also have an indexes specified in the following ways:
+As mentioned above, a parameter can have no index (a scalar), or one or multiple of the model's indexes. A parameter can also have an index specified in the following ways:
 
 ```julia
 @defcomp MyComponent begin
-  p1 = Parameter(index=[4])
-  p2::Array{Float64, 2} = Parameter()
+  p1 = Parameter(index=[4]) # an array of length 4
+  p2::Array{Float64, 2} = Parameter() # a two dimensional array of unspecified length
 end
 ```
+In both of these cases, the parameter's values are stored of as an array (p1 is one dimensional, and p2 is two dimensional). But with respect to the model, they are considered "scalar" parameters, simply because they do not use any of the model's indices (namely 'time', or 'regions').
 
 ### Updating an external parameter
 
@@ -197,7 +199,7 @@ When `setparameter` is called, it creates an external parameter by the name prov
 update_external_parameter(mymodel, :parametername, newvalues)
 ```
 
-Note: newvalues must be the same size and type (or be able to convert to the type) as the old values stored in that parameter.
+Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
 ### Setting parameters with a dictionary
 
@@ -211,7 +213,7 @@ Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys ar
 
 ### Using NamedArrays for setting parameters
 
-When a user sets a parameter, Mimi checks that the size and dimensions match what it expects for that component. If the user provides a NamedArray for the values, Mimi will further check that the names of the dimensions match the expected dimensions for that parameter, and that the labels match the model's index values for those dimensions.
+When a user sets a parameter, Mimi checks that the size and dimensions match what it expects for that component. If the user provides a NamedArray for the values, Mimi will further check that the names of the dimensions match the expected dimensions for that parameter, and that the labels match the model's index values for those dimensions. Examples of this can be found in "test/test_parameter_labels.jl".
 
 ### The internal 'build' function and model instances
 
@@ -230,4 +232,4 @@ result2 = instance2[:Comp, :Var]
 
 ```
 
-Note that you can index into a ModelInstance in the same way previously shown for indexing into a model.
+Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.
