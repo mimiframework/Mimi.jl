@@ -559,6 +559,7 @@ function update_external_parameter(m::Model, name::Symbol, value)
             end
         end
     end
+    m.mi = Nullable{ModelInstance}()
 end
 
 """
