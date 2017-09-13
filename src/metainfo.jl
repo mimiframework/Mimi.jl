@@ -94,7 +94,7 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(Symbol(string(component_name,"Parameters"))){T}(::Type{T})
+            function $(Symbol(string(component_name,"Parameters"))){T}() where {T}
                 new{T}()
             end
         end
@@ -115,12 +115,12 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(Symbol(string(component_name, "Variables"))){T}(::Type{T}, indices)
+            function $(Symbol(string(component_name, "Variables"))){T}(indices) where {T}
                 s = new{T}()
 
                 $(begin
                     ep = Expr(:block)
-                    for v in filter(i->length(i.dimensions)>0, variables)
+                    for v in Iterators.filter(i->length(i.dimensions)>0, variables)
                         concreteVariableType = v.datatype == Number ? :T : v.datatype
 
                         u = :(temp_indices = [])
@@ -134,7 +134,7 @@ function generate_comp_expressions(module_name, component_name)
                             end
                         end
                         push!(ep.args,u)
-                        push!(ep.args,:(s.$(v.name) = Array($(concreteVariableType),temp_indices...)))
+                        push!(ep.args,:(s.$(v.name) = Array{$(concreteVariableType)}(temp_indices...)))
                     end
                     ep
                 end)
@@ -174,12 +174,12 @@ function generate_comp_expressions(module_name, component_name)
             Variables::$(Symbol(string(component_name,"Variables"))){T}
             Dimensions::$(Symbol(string(component_name,"Dimensions")))
 
-            function $(Symbol(string(component_name, "Impl"))){T}(::Type{T}, indices)
+            function $(Symbol(string(component_name, "Impl"))){T}(indices) where {T}
                 s = new{T}()
                 s.nsteps = indices[:time]
-                s.Parameters = $(Symbol(string(component_name,"Parameters"))){T}(T)
+                s.Parameters = $(Symbol(string(component_name,"Parameters"))){T}()
                 s.Dimensions = $(Symbol(string(component_name,"Dimensions")))(indices)
-                s.Variables = $(Symbol(string(component_name,"Variables"))){T}(T, indices)
+                s.Variables = $(Symbol(string(component_name,"Variables"))){T}(indices)
                 return s
             end
         end

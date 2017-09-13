@@ -1,11 +1,11 @@
-abstract ComponentState
+abstract type ComponentState end
 
 type ComponentInstanceInfo
     name::Symbol
     component_type::DataType
 end
 
-abstract Parameter
+abstract type Parameter end
 
 type ScalarModelParameter <: Parameter
     dependentCompsAndParams2::Set{Tuple{Symbol, Symbol}}
@@ -409,10 +409,10 @@ end
 
 """ helper function for setleftoverparameters"""
 function get_set_parameters(m::Model, c::ComponentInstanceInfo)
-    ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
+    ext_connections = Iterators.filter(x->x.component_name==c.name, m.external_parameter_connections)
     ext_set_params = map(x->x.param_name, ext_connections)
 
-    int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+    int_connections = Iterators.filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
     int_set_params = map(x->x.target_parameter_name, int_connections)
 
     return union(ext_set_params, int_set_params)
@@ -706,7 +706,7 @@ macro defcomp(name, ex)
             if haskey(kws, :index)
                 parameterIndex = kws[:index].args
 
-                pardims = Array(Any, 0)
+                pardims = Array{Any}(0)
                 for l in parameterIndex
                     push!(pardims, l)
                 end
@@ -735,7 +735,7 @@ macro defcomp(name, ex)
             if haskey(kws, :index)
                 variableIndex = kws[:index].args
 
-                vardims = Array(Any, 0)
+                vardims = Array{Any}(0)
                 for l in variableIndex
                     push!(vardims, l)
                 end
@@ -765,13 +765,12 @@ macro defcomp(name, ex)
         Expr(:curly,
             Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))) ,
             :T),
-        :T,
         :indices
         )
 
     x = quote
 
-        abstract $(esc(Symbol(name))) <: Mimi.ComponentState
+        abstract type $(esc(Symbol(name))) <: Mimi.ComponentState end
 
         import Mimi.run_timestep
         import Mimi.init
@@ -790,7 +789,7 @@ macro defcomp(name, ex)
 
         eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
 
-        function $(esc(Symbol(name))){T}(::Type{T}, indices)
+        function $(esc(Symbol(name)))(::Type{T}, indices) where {T}
             $(call_expr)
         end
 
@@ -837,7 +836,7 @@ function get_connections(m::Model, component_name::Symbol, which::Symbol)
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
-    return filter(f, m.internal_parameter_connections)
+    return collect(Iterators.filter(f, m.internal_parameter_connections))
 end
 
 function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbol)
@@ -850,7 +849,7 @@ function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbo
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
-    return filter(f, mi.internal_parameter_connections)
+    return collect(Iterators.filter(f, mi.internal_parameter_connections))
 end
 
 #End of graph section
