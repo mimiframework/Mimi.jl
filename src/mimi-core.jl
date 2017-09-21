@@ -321,7 +321,8 @@ function set_external_parameter(m::Model, name::Symbol, value::AbstractArray)
 
     if !(typeof(value) <: Array{m.numberType})
         # E.g., if model takes Number and given Float64, convert it
-        value = convert(Array{m.numberType}, value)
+        # Need to force a conversion (simple convert may alias in v0.6)
+        value = Array{m.numberType}(value)
     end
     dims = Vector{Symbol}()
     p = ArrayModelParameter(value, dims)
