@@ -402,7 +402,8 @@ Add an array type parameter to the model.
 """
 function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArray, dims)
     if !(typeof(value) <: Array{m.numberType})
-        value = convert(Array{m.numberType}, value)
+        # Need to force a conversion (simple convert may alias in v0.6)
+        value = Array{m.numberType}(value)
     end
     p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
     m.external_parameters[name] = p
