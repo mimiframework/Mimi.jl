@@ -36,9 +36,11 @@ Pkg.add("Mimi")
 * [Mimi-RICE-2010.jl](https://github.com/anthofflab/mimi-rice-2010.jl)
 * Mimi-SNEASY.jl (currently in closed beta)
 * Mimi-FAIR.jl (currently in closed beta)
-* Mimi-MAGICC.jl (currently in closed beta)
-* Mimi-HECTOR.jl (currently in closed beta)
+* Mimi-MAGICC.jl (CH4 parts currently in closed beta)
+* Mimi-HECTOR.jl (CH4 parts currently in closed beta)
 * Mimi-PAGE.jl (currently in closed beta)
+* Mimi-CIAM.jl (currently in development)
+* Mimi-BRICK.jl (currently in development)
 
 ## Contributing
 
