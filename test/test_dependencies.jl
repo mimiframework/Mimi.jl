@@ -11,7 +11,8 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-"https://github.com/davidanthoff/fund.jl/archive/774a8c382b44de83601ae25b425cddc6c3a449a1.zip",
+#"https://github.com/davidanthoff/fund.jl/archive/774a8c382b44de83601ae25b425cddc6c3a449a1.zip",    # old version
+"https://github.com/davidanthoff/fund.jl/archive/9646dc3083100db49a0334d61ac54299c99b01e5.zip",     # newest version
 "https://github.com/anthofflab/mimi-rice-2010.jl/archive/d10a6687d77eba56d658817815d3edaadc1cb115.zip"
 ]
 
