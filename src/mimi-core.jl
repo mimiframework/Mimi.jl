@@ -148,12 +148,16 @@ Set the values of `Model`'s index `name` to `values`.
 """
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
-    if name==:time && !isuniform(values)
-        m.time_labels = values
-        m.indices_values[name] = collect(1:length(values))
+    if name==:time
+        if !isuniform(values) # case where time values aren't uniform
+            m.time_labels = values
+            m.indices_values[name] = collect(1:length(values))
+        else # case where time values are uniform
+            m.indices_values[name] = copy(values)
+            m.time_labels = Vector()
+        end
     else
         m.indices_values[name] = copy(values)
-        m.time_labels = Vector()
     end
     nothing
 end
