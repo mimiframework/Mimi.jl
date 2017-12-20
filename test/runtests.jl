@@ -1,24 +1,20 @@
 using Mimi
 using Base.Test
 
+@testset "Mimi" begin
 
-tests = ["main",
-    "references",
-    "units",
-    "model_structure",
-    "tools",
-    "parameter_labels",
-    "marginal_models",
-    "adder",
-    "getindex",
-    "num_components",
-    "components_ordering",
-    "variables_model_instance",
-    "getdataframe"
-]
+include("test_main.jl")
+include("test_references.jl")
+include("test_units.jl")
+include("test_model_structure.jl")
+include("test_tools.jl")
+include("test_parameter_labels.jl")
+include("test_marginal_models.jl")
+include("test_adder.jl")
+include("test_getindex.jl")
+include("test_num_components.jl")
+include("test_components_ordering.jl")
+include("test_variables_model_instance.jl")
+include("test_getdataframe.jl")
 
-for t in tests
-    fp = joinpath("test_$t.jl")
-    println("$fp ...")
-    include(fp)
 end
