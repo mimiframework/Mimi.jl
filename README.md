@@ -38,7 +38,7 @@ Pkg.add("Mimi")
 * Mimi-FAIR.jl (currently in closed beta)
 * Mimi-MAGICC.jl (CH4 parts currently in closed beta)
 * Mimi-HECTOR.jl (CH4 parts currently in closed beta)
-* Mimi-PAGE.jl (currently in closed beta)
+* Mimi-PAGE.jl (https://github.com/anthofflab/mimi-page.jl)
 * Mimi-CIAM.jl (currently in development)
 * Mimi-BRICK.jl (currently in development)
 
