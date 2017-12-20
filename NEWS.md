@@ -1,3 +1,7 @@
+# Mimi.jl v0.3.1 Release Notes
+* Make julia 0.6.x compatible
+* Drop julia 0.5 support
+
 # Mimi.jl v0.3.0 Release Notes
 * Drop julia 0.4 support
 * Add plotting functionality
