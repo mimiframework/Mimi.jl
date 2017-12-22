@@ -155,7 +155,7 @@ function generate_comp_expressions(module_name, component_name)
 
                 $(begin
                     ep = Expr(:block)
-                    for v in filter(i->length(i.dimensions)>0, variables)
+                    for v in Iterators.filter(i->length(i.dimensions)>0, variables)
                         concreteVariableType = v.datatype == Number ? :T : v.datatype
 
                         useTarray = false

@@ -42,7 +42,7 @@ resetvariables(x1)
 # Check all variables are defaulted
 @test isnan(x1.Variables.var1)
 
-@test_throws MethodError x1.Parameters.par1 = Array(Float64, 1,2)
+@test_throws MethodError x1.Parameters.par1 = Array{Float64}(1,2)
 
 x1.Parameters.par1 = 5.0
 @test x1.Parameters.par1 == 5.0

@@ -14,7 +14,7 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
 
     if legend==nothing && isa(values, Array) && ndims(values)==2
         a = getindexlabels(m, component, parameter)
-        a = filter(i->i!=index, a)
+        a = Iterators.filter(i->i!=index, a)
         legend = a[1]
     end
 

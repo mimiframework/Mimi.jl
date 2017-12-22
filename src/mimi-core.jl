@@ -1,4 +1,4 @@
-abstract ComponentState
+abstract type ComponentState end
 
 type ComponentInstanceInfo
     name::Symbol
@@ -7,7 +7,7 @@ type ComponentInstanceInfo
     final::Int
 end
 
-abstract Parameter
+abstract type Parameter end
 
 type ScalarModelParameter <: Parameter
     value
@@ -603,10 +603,10 @@ end
 Return list of parameters that have been set for component c in model m.
 """
 function get_set_parameters(m::Model, c::ComponentInstanceInfo)
-    ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
+    ext_connections = Iterators.filter(x->x.component_name==c.name, m.external_parameter_connections)
     ext_set_params = map(x->x.param_name, ext_connections)
 
-    int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
+    int_connections = Iterators.filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
     int_set_params = map(x->x.target_parameter_name, int_connections)
 
     return union(ext_set_params, int_set_params)
@@ -1201,7 +1201,7 @@ macro defcomp(name, ex)
                     numarrayparams += 1
                 end
 
-                pardims = Array(Any, 0)
+                pardims = Array{Any}(0)
                 for l in parameterIndex
                     push!(pardims, l)
                 end
@@ -1230,7 +1230,7 @@ macro defcomp(name, ex)
             if haskey(kws, :index)
                 variableIndex = kws[:index].args
 
-                vardims = Array(Any, 0)
+                vardims = Array{Any}(0)
                 for l in variableIndex
                     push!(vardims, l)
                 end
@@ -1282,7 +1282,7 @@ macro defcomp(name, ex)
 
     x = quote
 
-        abstract $(esc(Symbol(name))) <: Mimi.ComponentState
+        abstract type $(esc(Symbol(name))) <: Mimi.ComponentState end
 
         import Mimi.run_timestep
         import Mimi.init
@@ -1346,7 +1346,7 @@ function get_connections(m::Model, component_name::Symbol, which::Symbol)
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
-    return filter(f, m.internal_parameter_connections)
+    return collect(Iterators.filter(f, m.internal_parameter_connections))
 end
 
 function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbol)
@@ -1359,7 +1359,7 @@ function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbo
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
-    return filter(f, mi.internal_parameter_connections)
+    return collect(Iterators.filter(f, mi.internal_parameter_connections))
 end
 
 #End of graph section

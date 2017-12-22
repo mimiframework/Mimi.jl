@@ -1,32 +1,27 @@
 using Mimi
 using Base.Test
 
+@testset "Mimi" begin
 
-tests = [
-    "main",
-    "references",
-    "units",
-    "model_structure",
-    "tools",
-    "parameter_labels",
-    "parametertypes",
-    "marginal_models",
-    "adder",
-    "getindex",
-    "num_components",
-    "components_ordering",
-    "variables_model_instance",
-    "getdataframe",
-    "mult_getdataframe",
-    "timesteparrays",
-    "timesteps",
-    "connectorcomp"
-]
+include("test_main.jl")
+include("test_references.jl")
+include("test_units.jl")
+include("test_model_structure.jl")
+include("test_tools.jl")
+include("test_parameter_labels.jl")
+include("test_parametertypes.jl")
+include("test_marginal_models.jl")
+include("test_adder.jl")
+include("test_getindex.jl")
+include("test_num_components.jl")
+include("test_components_ordering.jl")
+include("test_variables_model_instance.jl")
+include("test_getdataframe.jl")
+include("test_mult_getdataframe.jl")
+include("test_timesteparrays.jl")
+include("test_timesteps.jl")
+include("test_connectorcomp.jl")
 
-for t in tests
-    fp = joinpath("test_$t.jl")
-    println("$fp ...")
-    include(fp)
 end
 
 println("All tests pass.")
