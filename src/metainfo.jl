@@ -77,7 +77,7 @@ function generate_comp_expressions(module_name, component_name)
     variables = values(_mimi_metainfo[(module_name, component_name)].variables)
     dimensions = values(_mimi_metainfo[(module_name, component_name)].dimensions)
 
-    arrayparameters = collect(filter(i->(length(i.dimensions)>0 && length(i.dimensions)<=2 && i.dimensions[1]==:time), parameters))
+    arrayparameters = collect(Iterators.filter(i->(length(i.dimensions)>0 && length(i.dimensions)<=2 && i.dimensions[1]==:time), parameters))
 
     pname = string(component_name,"Parameters")
 
@@ -150,7 +150,7 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(Symbol(string(component_name, "Variables")))(indices)
+            function $(Symbol(string(component_name, "Variables"))){T, OFFSET, DURATION, FINAL}(indices) where {T, OFFSET, DURATION, FINAL}
                 s = new()
 
                 $(begin
@@ -178,7 +178,7 @@ function generate_comp_expressions(module_name, component_name)
                         elseif length(u.args[2].args) == 2 && useTarray
                             push!(ep.args,:(s.$(v.name) = TimestepMatrix{$concreteVariableType, OFFSET, DURATION}(temp_indices[1], temp_indices[2])))
                         else
-                            push!(ep.args,:(s.$(v.name) = Array($(concreteVariableType),temp_indices...)))
+                            push!(ep.args,:(s.$(v.name) = Array{$(concreteVariableType)}(temp_indices...)))
                         end
                     end
                     ep
