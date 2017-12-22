@@ -4,12 +4,12 @@
 
 mutable struct TimestepVector{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 1 for the vector case
 	data::Array{T, 1}
-	function TimestepVector(d::Array{T, 1})
+	function TimestepVector{T, Offset, Duration}(d::Array{T, 1}) where {T, Offset, Duration}
 		v = new()
 		v.data = d
 		return v
 	end
-	function TimestepVector(i::Int)
+	function TimestepVector{T, Offset, Duration}(i::Int) where {T, Offset, Duration}
 		v = new()
 		v.data = Array{T,1}(i)
 		return v
@@ -88,12 +88,12 @@ end
 
 mutable struct TimestepMatrix{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 2 for the matrix case
 	data::Array{T, 2}
-	function TimestepMatrix(d::Array{T, 2})
+	function TimestepMatrix{T, Offset, Duration}(d::Array{T, 2}) where {T, Offset, Duration}
 		m = new()
 		m.data = d
 		return m
 	end
-	function TimestepMatrix(i::Int, j::Int)
+	function TimestepMatrix{T, Offset, Duration}(i::Int, j::Int) where {T, Offset, Duration}
 		m = new()
 		m.data = Array{T,2}(i, j)
 		return m

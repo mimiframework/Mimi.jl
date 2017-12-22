@@ -82,7 +82,7 @@ function generate_comp_expressions(module_name, component_name)
     pname = string(component_name,"Parameters")
 
     ptypesignature = Expr(:curly, Symbol(pname), :T)
-    implconstructor = Expr(:call, Symbol(string(component_name, "Impl")))
+    implconstructor = Expr(:where, Expr(:call, Expr(:curly, Symbol(string(component_name, "Impl")), :T, :OFFSET, :DURATION, :FINAL, (length(arrayparameters)==0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))...), :indices), :T, :OFFSET, :DURATION, :FINAL, (length(arrayparameters)==0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))...)
     implsignature = Expr(:curly, Symbol((string(component_name, "Impl"))), :T, :OFFSET, :DURATION, :FINAL)
     for (i, p) in enumerate(arrayparameters)
         push!(ptypesignature.args, Symbol("OFFSET$i"))
@@ -91,7 +91,6 @@ function generate_comp_expressions(module_name, component_name)
         push!(implsignature.args, Symbol("OFFSET$i"))
         push!(implsignature.args, Symbol("DURATION$i"))
     end
-    push!(implconstructor.args, :indices)
     # println(ptypesignature)
     # println(implsignature)
     # println(implconstructor)
@@ -124,8 +123,8 @@ function generate_comp_expressions(module_name, component_name)
                 x
             end)
 
-            function $(Symbol(string(component_name,"Parameters")))()
-                new()
+            function $(Symbol(string(component_name,"Parameters"))){$([[:T]; (length(arrayparameters) == 0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))]...)}() where {$([[:T]; (length(arrayparameters) == 0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))]...)}
+                new{$([[:T]; (length(arrayparameters) == 0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))]...)}()
             end
 
         end
@@ -151,7 +150,7 @@ function generate_comp_expressions(module_name, component_name)
             end)
 
             function $(Symbol(string(component_name, "Variables"))){T, OFFSET, DURATION, FINAL}(indices) where {T, OFFSET, DURATION, FINAL}
-                s = new()
+                s = new{T, OFFSET, DURATION, FINAL}()
 
                 $(begin
                     ep = Expr(:block)
@@ -220,7 +219,7 @@ function generate_comp_expressions(module_name, component_name)
             Dimensions::$(Symbol(string(component_name,"Dimensions")))
 
             $(Expr(:function, implconstructor,
-                :(return new(
+                :(return new{$([[:T, :OFFSET, :DURATION, :FINAL]; (length(arrayparameters) == 0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))]...)}(
                     indices[:time],
                     $(ptypesignature)(),
                     $(Symbol(string(component_name,"Variables"))){T, OFFSET, DURATION, FINAL}(indices),

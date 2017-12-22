@@ -69,21 +69,21 @@ function run_timestep(state::emissions, t::Int)
 end
 
 #DEFINE ALL THE PARAMETERS
-l = Array(Float64,20,3)
+l = Array{Float64}(20,3)
 for t in 1:20
     l[t,1] = (1. + 0.015)^t *2000
     l[t,2] = (1. + 0.02)^t * 1250
     l[t,3] = (1. + 0.03)^t * 1700
 end
 
-tfp = Array(Float64,20,3)
+tfp = Array{Float64}(20,3)
 for t in 1:20
     tfp[t,1] = (1 + 0.06)^t * 3.2
     tfp[t,2] = (1 + 0.03)^t * 1.8
     tfp[t,3] = (1 + 0.05)^t * 2.5
 end
 
-s = Array(Float64,20,3)
+s = Array{Float64}(20,3)
 for t in 1:20
     s[t,1] = 0.21
     s[t,2] = 0.15
@@ -93,7 +93,7 @@ end
 depk = [0.11, 0.135 ,0.15]
 k0   = [50.5, 22., 33.5]
 
-sigma = Array(Float64,20,3)
+sigma = Array{Float64}(20,3)
 for t in 1:20
     sigma[t,1] = (1. - 0.05)^t * 0.58
     sigma[t,2] = (1. - 0.04)^t * 0.5
@@ -132,21 +132,21 @@ end
 region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
 
-l2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+l2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
 for t in 1:20
     l2[time_labels[t],1] = (1. + 0.015)^t *2000
     l2[time_labels[t],2] = (1. + 0.02)^t * 1250
     l2[time_labels[t],3] = (1. + 0.03)^t * 1700
 end
 
-tfp2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+tfp2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
 for t in 1:20
     tfp2[time_labels[t],1] = (1 + 0.06)^t * 3.2
     tfp2[time_labels[t],2] = (1 + 0.03)^t * 1.8
     tfp2[time_labels[t],3] = (1 + 0.05)^t * 2.5
 end
 
-s2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+s2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
 for t in 1:20
     s2[time_labels[t],1] = 0.21
     s2[time_labels[t],2] = 0.15
@@ -156,7 +156,7 @@ end
 depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:regions,))
 k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:regions,))
 
-sigma2 = NamedArray(Array(Float64,20,3), (time_labels, region_labels), (:time, :regions))
+sigma2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
 for t in 1:20
     sigma2[time_labels[t],1] = (1. - 0.05)^t * 0.58
     sigma2[time_labels[t],2] = (1. - 0.04)^t * 0.5
