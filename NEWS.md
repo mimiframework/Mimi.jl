@@ -1,4 +1,4 @@
-# Mimi.jl v0.3.1 Release Notes
+# Mimi.jl v0.4.0 Release Notes
 * Make julia 0.6.x compatible
 * Drop julia 0.5 support
 
