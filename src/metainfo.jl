@@ -72,6 +72,14 @@ function getallcomps()
     _mimi_metainfo
 end
 
+function getcomponentdefvariables(module_name::Symbol, component_name::Symbol)
+    return _mimi_metainfo[module_name, component_name].variables
+end
+
+function getcomponentdefvariables(comp_type::Type)
+    return getcomponentdefvariables(comp_type.name.module, comp_type.name.name)
+end
+
 function generate_comp_expressions(module_name, component_name)
     parameters = values(_mimi_metainfo[(module_name, component_name)].parameters)
     variables = values(_mimi_metainfo[(module_name, component_name)].variables)

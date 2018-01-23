@@ -10,7 +10,8 @@ export
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorCompVector,
     ConnectorCompMatrix, getindex, getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
     getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
-    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter
+    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter,
+    @deftimestep
 
 
 import
@@ -18,6 +19,12 @@ import
 
 include("clock.jl")
 include("timestep_arrays.jl")
+include("modelinstance/mi.jl")
+include("modelinstance/parameters.jl")
+include("modelinstance/variables.jl")
+include("modelinstance/component.jl")
+include("modelinstance/build.jl")
+include("modelinstance/deftimestep_macro.jl")
 include("mimi-core.jl")
 include("metainfo.jl")
 include("marginalmodel.jl")
