@@ -1,120 +1,26 @@
+<!-- Mimi UI
+// Lisa Rennels, David Anthoff, Richard Plevin
+// University of California, Berkeley
+//  January 25, 2018 -->
+
 <html>
 <header>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vega/3.0.8/vega.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/2.0.3/vega-lite.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/3.0.0-rc7/vega-embed.js"></script>
-    <style>
-        /* Style the tab */
+    <link rel="stylesheet" type="text/css" href="style.css" />
 
-        .tab {
-            float: left;
-            border: 1px solid #ccc;
-            background-color: #f1f1f1;
-            width: 30%;
-            height: 300px;
-        }
-
-        /* Style the buttons that are used to open the tab content */
-
-        .tab button {
-            display: block;
-            background-color: inherit;
-            color: black;
-            padding: 22px 16px;
-            width: 100%;
-            border: none;
-            outline: none;
-            text-align: left;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        /* Change background color of buttons on hover */
-
-        .tab button:hover {
-            background-color: #ddd;
-        }
-
-        /* Create an active/current "tab button" class */
-
-        .tab button.active {
-            background-color: #ccc;
-        }
-
-        /* Style the tab content */
-
-        .tabcontent {
-            float: left;
-            padding: 0px 12px;
-            border: 1px solid #ccc;
-            width: 70%;
-            border-left: none;
-            height: 300px;
-        }
-    </style>
 </header>
 
 <body>
-    <div id="variablelist" class="tab"></div>
 
+    <div id="variablelist" class="tab"></div>
     <div id="vis"></div>
 
-    <script>
-        // TODO Load this somehow from a file
-        // var variables = ["Var 1", "Var 2", "Var 3"];
+    <script src="variabledata.js"></script> 
+    <script src="buildvariables.js"></script>
 
-        // Also load model output from a file, so that the event handler
-        // can then modify the vegalite spec with that data.
-
-        function refreshVarList(variables) {
-            // Loop over the things that we want to show in the list, add
-            // one button for each element as a child to the variablelist
-            // DIV
-            for (var i of variables) {
-                var newButton = document.createElement("button")
-                newButton.setAttribute("class", "tablinks");
-                // Here we interpolate what should be sent to the event handler,
-                // in our case that should probably be something like
-                // compname.varname
-                newButton.setAttribute("onclick", `openCity(event, '${i}')`);
-                newButton.appendChild(document.createTextNode(i));
-
-                document.getElementById("variablelist").appendChild(newButton);
-            }
-        }
-
-        // This is the event handler that gets called whenever someone
-        // clicks one of the buttons.
-        function openCity(evt, cityName) {
-            // TODO have multiple specs that correspond to the different
-            // plots we discussed. Pick the right spec depending on the
-            // data
-            var yourVLSPect = {
-                "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
-                "description": "A simple bar chart with embedded data.",
-                "title": "Some title",
-                "data": {
-                    "values": [
-                        { "a": "A", "b": 28 }, { "a": "B", "b": 55 }, { "a": "C", "b": 43 },
-                        { "a": "D", "b": 91 }, { "a": "E", "b": 81 }, { "a": "F", "b": 53 },
-                        { "a": "G", "b": 19 }, { "a": "H", "b": 87 }, { "a": "I", "b": 52 }
-                    ]
-                },
-                "mark": "bar",
-                "encoding": {
-                    "x": { "field": "a", "type": "ordinal" },
-                    "y": { "field": "b", "type": "quantitative" }
-                }
-            }
-
-            // TODO Modfiy the spec. Here I just change the title,
-            // but for real we would pass in the correct data here
-            yourVLSPect["title"] = cityName
-
-            // Plot the spec
-            vegaEmbed("#vis", yourVLSPect, { actions: true });
-        }
-    </script>
 </body>
 
 </html>
