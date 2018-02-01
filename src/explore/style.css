@@ -1,7 +1,4 @@
-/* Mimi UI 
-Lisa Rennels, David Anthoff, Richard Plevin 
-University of California, Berkeley 
-January 25, 2018 */
+/* Mimi UI */
 
 /* Style the tab */
 
@@ -21,7 +18,7 @@ January 25, 2018 */
     background-color: inherit;
     color: black;
     padding: 22px 16px;
-    height: 10%;
+    height: 20px;
     width: 100%;
     border: none;
     outline: none;

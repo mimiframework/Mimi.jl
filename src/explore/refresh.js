@@ -1,20 +1,17 @@
 // Mimi UI
-// Lisa Rennels, David Anthoff, Richard Plevin
-// University of California, Berkeley
-// January 25, 2018 
 
-function refreshVarList() {
+function refresh() {
     
     // Loop over the things that we want to show in the list, add
     // one button for each element as a child to the variablelist
     // DIV
-    for (var i in varList) {
+    for (var i in speclist) {
 
         var newButton = document.createElement("button");
         newButton.setAttribute("class", "tablinks");
 
         newButton.setAttribute("onclick", `openVar(event, '${i}')`);
-        newButton.appendChild(document.createTextNode(varList[i]["name"]));
+        newButton.appendChild(document.createTextNode(speclist[i]["name"]));
         document.getElementById("variablelist").appendChild(newButton);
             
     }
@@ -25,7 +22,7 @@ function refreshVarList() {
 function openVar(evt, index) {
     
     // Plot the spec
-    var spect = varList[index]["VLSpect"];
+    var spec = speclist[index]["VLspec"];
     
-    vegaEmbed("#vis", spect, { actions: false });
+    vegaEmbed("#vis", spec, { actions: false });
 }

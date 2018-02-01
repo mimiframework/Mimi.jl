@@ -1,13 +1,10 @@
 // Mimi UI
-// Lisa Rennels, David Anthoff, Richard Plevin
-// University of California, Berkeley
-// January 25, 2018 
 
-var varList = 
+var speclist = 
 [
     {
         name: "Var 1",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -30,7 +27,7 @@ var varList =
 
     {
         name:  "Var 2",
-        VLSpect: {
+        VLspec: {
                 "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple line graph for time series.",
             "title": "Var 2",
@@ -53,7 +50,7 @@ var varList =
 
     {
         name: "Var 3",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "line graph for time series for several regions",
             "title": "Var 3",
@@ -81,7 +78,7 @@ var varList =
 
     {
         name:  "Var 4", 
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
             "description": "stacked line graph for time series for several regions",
             "title": "Var 4",
@@ -121,7 +118,7 @@ var varList =
 
     {
         name: "Var 5",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -143,7 +140,7 @@ var varList =
     },
     {
         name: "Var 6",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -165,7 +162,7 @@ var varList =
     },
     {
         name: "Var 7",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -187,7 +184,7 @@ var varList =
     },
     {
         name: "Var 8",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -209,7 +206,7 @@ var varList =
     },
     {
         name: "Var 9",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -231,7 +228,7 @@ var varList =
     },
     {
         name: "Var 10",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "line graph for time series for several regions",
             "title": "Var 3",
@@ -258,7 +255,7 @@ var varList =
     },
     {
         name: "Var 11",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
@@ -280,7 +277,7 @@ var varList =
     },
     {
         name: "Var 12",
-        VLSpect: {
+        VLspec: {
             "$schema": "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description": "A simple bar chart for regional data.",
             "title": "Var 1",
