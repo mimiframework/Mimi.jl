@@ -47,16 +47,16 @@ function build(m::Model)
     mi_vars = Dict{Tuple{Symbol,Symbol}, Any}()
 
     # Loop over components and instantiate all Variables
-    for (c_name, c_val) in values(mi_components)
+    for (c_name, c_val) in mi_components
         vars = getcomponentdefvariables(c_val.component_type)
         for v in vars
             concreteVariableType = v.datatype == Number ? m.numberType : v.datatype
             if length(v.dimensions) == 0
                 mi_vars[(c_name,v.name)] = Ref{concreteVariableType}()
-            elseif lenght(v.dimensions) == 1 && v.dimensions[1] == :time
-                mi_vars[(c_name,v.name)] = TimestepVector{$(concreteParameterType), $(c_val.offset), $(duration)}(m.indices_counts[:time])
+            elseif length(v.dimensions) == 1 && v.dimensions[1] == :time
+                mi_vars[(c_name,v.name)] = TimestepVector{$(concreteVariableType), $(c_val.offset), $(duration)}(m.indices_counts[:time])
             elseif length(v.dimensions) == 2 && v.dimensions[1] == :time
-                mi_vars[(c_name,v.name)] = TimestepMatrix{$(concreteParameterType), $(c_val.offset), $(duration)}(m.indices_counts[:time], m.indices_counts[v.dimensions[2]])
+                mi_vars[(c_name,v.name)] = TimestepMatrix{$(concreteVariableType), $(c_val.offset), $(duration)}(m.indices_counts[:time], m.indices_counts[v.dimensions[2]])
             else
                 # TODO Handle unnamed indices properly
                 mi_vars[(c_name,v.name)] = Array{$(concreteVariableType),$(length(v.dimensions))}([m.indices_counts[i] for i in v.dimensions]...)
@@ -64,8 +64,11 @@ function build(m::Model)
         end
     end
 
+    # TODO This is where DA gave up :) Stuff above this line might work,
+    # below certainly not.
+    
     # Now loop through and instantiate each component.
-    builtComponents = OrderedDict{Symbol, Component}()
+    builtComponents = OrderedDict{Symbol, ModelInstanceComponent}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
     for c in values(mi_components) # loops through all ComponentInstanceInfos, including new ConnectorComps, in order.

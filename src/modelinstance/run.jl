@@ -1,9 +1,3 @@
-mutable struct ModelInstance
-    components::OrderedDict{Symbol, ComponentState}
-    offsets::Array{Int, 1} # in order corresponding with components
-    final_times::Array{Int, 1}
-end
-
 function run(mi::ModelInstance, ntimesteps, indices_values)
     if length(mi.components) == 0
         error("Cannot run a model with no components.")

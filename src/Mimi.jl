@@ -4,6 +4,7 @@ using DataStructures
 using DataFrames
 using Distributions
 using NamedArrays
+using MacroTools
 
 export
     ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
@@ -19,10 +20,9 @@ import
 
 include("clock.jl")
 include("timestep_arrays.jl")
-include("modelinstance/mi.jl")
-include("modelinstance/parameters.jl")
-include("modelinstance/variables.jl")
-include("modelinstance/component.jl")
+include("modelinstance/mi_types.jl")
+include("modelinstance/dotoverloading.jl")
+include("modelinstance/run.jl")
 include("modelinstance/build.jl")
 include("modelinstance/deftimestep_macro.jl")
 include("mimi-core.jl")
