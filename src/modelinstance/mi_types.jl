@@ -1,3 +1,5 @@
+using DataStructures
+
 # An instance of this type is passed to the run_timestep function of a
 # component, typically as the `p` argument. The main role of this type
 # is to provide the convenient `p.nameofparameter` syntax.
@@ -32,7 +34,8 @@ end
 
 # This type just bundles the values that are passed to `run_timestep` in
 # one structure. We don't strictly need it, but it makes things cleaner.
-struct ModelInstanceComponent{TVARS,TPARS} where {TVARS<:ModelInstanceComponentVariables,TPARS<:ModelInstanceComponentParameters}
+struct ModelInstanceComponent{TVARS <: ModelInstanceComponentVariables, 
+                              TPARS <: ModelInstanceComponentParameters}
     vars::TVARS
     pars::TPARS
     indices

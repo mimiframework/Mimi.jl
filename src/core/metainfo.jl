@@ -1,6 +1,10 @@
 module metainfo
 using DataStructures
 
+export
+    get_componentdef_variables,
+    getallcomps  
+
 type MetaVariable
     name::Symbol
     datatype::DataType
@@ -72,12 +76,17 @@ function getallcomps()
     _mimi_metainfo
 end
 
-function getcomponentdefvariables(module_name::Symbol, component_name::Symbol)
+function get_componentdef_variables(module_name::Symbol, component_name::Symbol)
     return _mimi_metainfo[module_name, component_name].variables
 end
 
-function getcomponentdefvariables(comp_type::Type)
-    return getcomponentdefvariables(comp_type.name.module, comp_type.name.name)
+function get_componentdef_variables(comp_type::Type)
+    return get_componentdef_variables(comp_type.name.module, comp_type.name.name)
+end
+
+# RP: needed to add this. Unclear if method above is necessary, but I doubt it.
+function get_componentdef_variables(name::Any)
+    return get_componentdef_variables(Symbol(name.module), name.name)
 end
 
 function generate_comp_expressions(module_name, component_name)
@@ -244,4 +253,4 @@ function generate_comp_expressions(module_name, component_name)
     return compexpr
 end
 
-end
+end # module

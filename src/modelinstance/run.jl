@@ -1,3 +1,10 @@
+function makeclock(mi::ModelInstance, ntimesteps, indices_values)
+    start = indices_values[:time][1]
+    stop = indices_values[:time][min(length(indices_values[:time]),ntimesteps)]
+    duration = getduration(indices_values)
+    return Clock(start, stop, duration)
+end
+
 function run(mi::ModelInstance, ntimesteps, indices_values)
     if length(mi.components) == 0
         error("Cannot run a model with no components.")

@@ -1,24 +1,14 @@
-function build(m::Model)
-    #check if all parameters are set
-    unset = get_unconnected_parameters(m)
-    if !isempty(unset)
-        msg = "Cannot build model; the following parameters are unset: "
-        for p in unset
-            msg = string(msg, p, " ")
-        end
-        error(msg)
-    end
-
-    mi_connections = Array{InternalParameterConnection, 1}() # This is the list of internal connections that the ModelInstance will know about.
-    mi_components = OrderedDict{Symbol, ComponentInstanceInfo}() # This is the ordered list of components (including hidden ConnectorComps) that the ModelInstance will use.
-    backups = Array{Symbol, 1}() # This is the list of names of external parameters that the ConnectorComps will use as their :input2 parameters.
+function add_connector_comps(m::Model, 
+                             mi_components::OrderedDict{Symbol, ComponentInstanceInfo}, 
+                             mi_connections::Vector{InternalParameterConnection}, 
+                             backups::Vector{Symbol})
     num_connector_comps = 0
-    duration = getduration(m.indices_values) # for now, all components have the same duration
-    # Loop through the components and add necessary ConnectorComps.
+    
     for c in values(m.components2)
         # first need to see if we need to add any connector components for this component
         int_connections = filter(x->x.target_component_name==c.name, m.internal_parameter_connections)
         need_connector_comps = filter(x->(x.backup != nothing), int_connections)
+
         for ipc in need_connector_comps
             num_connector_comps += 1
             push!(backups, ipc.backup)
@@ -32,8 +22,14 @@ function build(m::Model)
                 error("Connector components for parameters with more than two dimensions not implemented.")
             end
             mi_components[curr_name] = curr # add the ConnectorComp to the ordered list of components
-            push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, :input1, curr_name, ipc.ignoreunits)) # add a new connection between source_component and the ConnectorComp
-            push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, ipc.target_component_name, ipc.ignoreunits)) # add a new connection between ConnectorComp and target_component
+
+            # add a connection between source_component and the ConnectorComp
+            push!(mi_connections, InternalParameterConnection(ipc.source_variable_name, ipc.source_component_name, 
+                                                              :input1, curr_name, ipc.ignoreunits))
+
+            # add a connection between ConnectorComp and target_component
+            push!(mi_connections, InternalParameterConnection(:output, curr_name, ipc.target_parameter_name, 
+                                                              ipc.target_component_name, ipc.ignoreunits))
         end
 
         # Now add the other InternalParameterConnections to the list of connections.
@@ -41,37 +37,49 @@ function build(m::Model)
             push!(mi_connections, ipc)
         end
 
-        mi_components[c.name] = c # Order is imperitive: this component is added after any ConnectorComps were added.
+        # Order is imperative: this component is added after any ConnectorComps were added.
+        mi_components[c.name] = c 
     end
 
+    return num_connector_comps
+end
+
+
+function instantiate_variables(m::Model, mi_components::OrderedDict{Symbol, ComponentInstanceInfo}, duration)
     mi_vars = Dict{Tuple{Symbol,Symbol}, Any}()
 
-    # Loop over components and instantiate all Variables
     for (c_name, c_val) in mi_components
-        vars = getcomponentdefvariables(c_val.component_type)
-        for v in vars
+        vars = metainfo.get_componentdef_variables(c_val.component_type.name)
+        for (vname, v) in vars
             concreteVariableType = v.datatype == Number ? m.numberType : v.datatype
             if length(v.dimensions) == 0
                 mi_vars[(c_name,v.name)] = Ref{concreteVariableType}()
             elseif length(v.dimensions) == 1 && v.dimensions[1] == :time
-                mi_vars[(c_name,v.name)] = TimestepVector{$(concreteVariableType), $(c_val.offset), $(duration)}(m.indices_counts[:time])
+                mi_vars[(c_name,v.name)] = TimestepVector{concreteVariableType, c_val.offset, duration}(m.indices_counts[:time])
             elseif length(v.dimensions) == 2 && v.dimensions[1] == :time
-                mi_vars[(c_name,v.name)] = TimestepMatrix{$(concreteVariableType), $(c_val.offset), $(duration)}(m.indices_counts[:time], m.indices_counts[v.dimensions[2]])
+                mi_vars[(c_name,v.name)] = TimestepMatrix{concreteVariableType, c_val.offset, duration}(m.indices_counts[:time], 
+                                                                                                        m.indices_counts[v.dimensions[2]])
             else
                 # TODO Handle unnamed indices properly
-                mi_vars[(c_name,v.name)] = Array{$(concreteVariableType),$(length(v.dimensions))}([m.indices_counts[i] for i in v.dimensions]...)
+                dim_counts = [m.indices_counts[i] for i in v.dimensions]
+                mi_vars[(c_name,v.name)] = Array{concreteVariableType,length(v.dimensions)}(dim_counts...)
             end
         end
     end
 
-    # TODO This is where DA gave up :) Stuff above this line might work,
-    # below certainly not.
-    
-    # Now loop through and instantiate each component.
+    return mi_vars
+end
+
+
+function instantiate_components(m::Model, 
+                                mi_components::OrderedDict{Symbol, ComponentInstanceInfo},
+                                mi_connections::Vector{InternalParameterConnection}, duration)
     builtComponents = OrderedDict{Symbol, ModelInstanceComponent}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
-    for c in values(mi_components) # loops through all ComponentInstanceInfos, including new ConnectorComps, in order.
+
+    # loop over ComponentInstanceInfos, including new ConnectorComps, in order.
+    for c in values(mi_components) 
         ext_connections = filter(x->x.component_name==c.name, m.external_parameter_connections)
         ext_params = map(x->x.param_name, ext_connections)
         # ext_params = Dict(x.param_name => x.external_parameter for x in ext_connections)
@@ -79,18 +87,24 @@ function build(m::Model)
         int_connections = filter(x->x.target_component_name==c.name, mi_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
-        constructor = Expr(:call, c.component_type, m.numberType, :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
-        # for each parameter of component c, add the offset and duration as a parametric type to the constructor call for the component.
+        constructor = Expr(:call, c.component_type, m.numberType, 
+                           :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
+
+        # for each parameter of component c, add the offset and duration as a parametric type to the 
+        # constructor call for the component.
         for (pname, p) in get_parameters(m, c)
-            if length(p.dimensions) > 0 && length(p.dimensions)<=2 && p.dimensions[1]==:time
-                if pname==:input2 && (c.component_type == ConnectorCompVector || c.component_type == ConnectorCompMatrix)
+            if 0 < length(p.dimensions) <= 2 && p.dimensions[1] == :time
+                #
+                # TBD: The special case of :input needs documentation!
+                #
+                if pname == :input2 && (c.component_type == ConnectorCompVector || c.component_type == ConnectorCompMatrix)
                     offset = c.offset
                 elseif pname in ext_params
                     offset = getoffset(m.external_parameters[pname].values)
                 elseif pname in keys(int_params)
                     offset = mi_components[int_params[pname].source_component_name].offset
                 else
-                    error("unset paramter $pname; should be caught earlier")
+                    error("unset parameter $pname; should be caught earlier")
                 end
                 push!(constructor.args, :(Val{$offset}))
                 push!(constructor.args, :(Val{$duration}))
@@ -98,14 +112,56 @@ function build(m::Model)
         end
 
         push!(constructor.args, m.indices_counts)
-        # println(constructor)
+        println("\nConstructor: $constructor")
 
         comp = eval(eval(constructor))
+        println("Comp: $comp")
+
+        # TBD: this fails because components are not ModelInstanceComponents, but are the 
+        # old form, e.g., ::_mimi_implementation_Foo.FooImpl{Float64,1,1,1}, ::Symbol)
         builtComponents[c.name] = comp
 
         push!(offsets, c.offset)
         push!(final_times, c.final)
     end
+
+    return builtComponents
+end
+
+function build(m::Model)
+    #check if all parameters are set
+    unset = get_unconnected_parameters(m)
+    if !isempty(unset)
+        msg = "Cannot build model; the following parameters are unset: "
+        for p in unset
+            msg = string(msg, p, " ")
+        end
+        error(msg)
+    end
+
+    # Internal connections that the ModelInstance will know about.
+    mi_connections = Array{InternalParameterConnection, 1}() 
+    
+    # Ordered list of components (including hidden ConnectorComps) that the ModelInstance will use.
+    mi_components = OrderedDict{Symbol, ComponentInstanceInfo}() 
+    
+    # Names of external parameters that the ConnectorComps will use as their :input2 parameters.
+    backups = Array{Symbol, 1}() 
+    num_connector_comps = 0
+
+    duration = getduration(m.indices_values) # for now, all components have the same duration
+
+    # Loop through the components, adding necessary ConnectorComps and instantiating variables
+    num_connector_comps = add_connector_comps(m, mi_components, mi_connections, backups)
+    mi_var = instantiate_variables(m, mi_components, duration)
+    
+    #######################################################################
+    # TODO This is where DA gave up :) Stuff above this line might work,
+    # below certainly not.
+    #######################################################################
+    
+    # Now loop through and instantiate each component.
+    builtComponents = instantiate_components(m, mi_components, mi_connections, duration)
 
     # Make the internal parameter connections, including new hidden connections between ConnectorComps.
     for ipc in mi_connections

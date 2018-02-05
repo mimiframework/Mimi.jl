@@ -7,31 +7,82 @@ using NamedArrays
 using MacroTools
 
 export
-    ComponentState, run_timestep, run, @defcomp, Model, setindex, addcomponent, setparameter,
-    connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorCompVector,
-    ConnectorCompMatrix, getindex, getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
-    getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
-    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter,
-    @deftimestep
-
+    @defcomp,
+    @deftimestep,
+    ComponentState,
+    ConnectorCompMatrix,
+    ConnectorCompVector,
+    MarginalModel,
+    Model,
+    Timestep,
+    TimestepMatrix,
+    TimestepVector,
+    addcomponent,
+    adder,
+    components,
+    connectparameter,
+    delete!,
+    get_unconnected_parameters,
+    get_componentdef_variables,
+    getdataframe,
+    getindex,
+    getindexcount,
+    getindexlabels,
+    getindexvalues,
+    getvariable,
+    getvpd,
+    hasvalue,
+    isfinaltimestep,
+    isfirsttimestep,
+    plot,
+    run,
+    run_timestep,
+    setindex,
+    set_leftover_parameters,
+    setparameter,
+    unitcheck,
+    update_external_parameter,
+    variables 
 
 import
     Base.getindex, Base.run, Base.show
 
-include("clock.jl")
-include("timestep_arrays.jl")
+# _subdirs = ("modelinstance", "core", "helpercomponents", "utils")
+
+# for d in _subdirs
+#     if ! (d in LOAD_PATH)
+#         push!(LOAD_PATH, d)
+#     end
+# end
+
+# using modelinstance
+# using core
+# using helpercomponents
+# using utils
+
 include("modelinstance/mi_types.jl")
+include("modelinstance/clock.jl")
+
+include("core/mimi_types.jl")
+include("core/timestep_arrays.jl")
+include("core/metainfo.jl")
+
 include("modelinstance/dotoverloading.jl")
 include("modelinstance/run.jl")
 include("modelinstance/build.jl")
 include("modelinstance/deftimestep_macro.jl")
-include("mimi-core.jl")
-include("metainfo.jl")
+
+include("core/references.jl")
+include("core/mimi-core.jl")
+include("core/defcomp.jl")
+
 include("helpercomponents/marginalmodel.jl")
 include("helpercomponents/adder.jl")
 include("helpercomponents/connectorcomp.jl")
-include("references.jl")
-include("plotting.jl")
-include("lint_helper.jl")
+
+include("utils/graph.jl")
+include("utils/plotting.jl")
+include("utils/getdataframe.jl")
+include("utils/lint_helper.jl")
 
 end # module

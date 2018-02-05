@@ -1,76 +1,6 @@
-abstract type ComponentState end
-
-type ComponentInstanceInfo
-    name::Symbol
-    component_type::DataType
-    offset::Int
-    final::Int
-end
-
-abstract type Parameter end
-
-type ScalarModelParameter <: Parameter
-    value
-end
-
-type InternalParameterConnection
-    source_variable_name::Symbol
-    source_component_name::Symbol
-    target_parameter_name::Symbol
-    target_component_name::Symbol
-    ignoreunits::Bool
-    backup # either nothing, or a Symbol matching the name of the external parameter to be used as backup data
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
-        ipc = new(src_var, src_comp, target_par, target_comp, ignoreunits, backup)
-        return ipc
-    end
-end
-
-type ExternalParameterConnection
-    component_name::Symbol
-    param_name::Symbol #name of the parameter in the component
-    external_parameter::Symbol #name of the parameter stored in m.external_parameters
-end
-
-
-
-type ArrayModelParameter <: Parameter
-    values
-    dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
-
-    function ArrayModelParameter(values, dims::Vector{Symbol})
-        amp = new()
-        amp.values = values
-        amp.dims = dims
-        return amp
-    end
-end
-
-type Model
-    indices_counts::Dict{Symbol,Int}
-    indices_values::Dict{Symbol,Vector{Any}}
-    time_labels::Vector
-    external_parameters::Dict{Symbol,Parameter}
-    numberType::DataType
-    internal_parameter_connections::Array{InternalParameterConnection, 1}
-    external_parameter_connections::Array{ExternalParameterConnection, 1}
-    components2::OrderedDict{Symbol, ComponentInstanceInfo}
-    mi::Nullable{ModelInstance}
-
-    function Model(numberType::DataType=Float64)
-        m = new()
-        m.indices_counts = Dict{Symbol,Int}()
-        m.indices_values = Dict{Symbol, Vector{Any}}()
-        # m.time_labels = Vector{Any}()
-        m.external_parameters = Dict{Symbol, Parameter}()
-        m.numberType = numberType
-        m.internal_parameter_connections = Array{InternalParameterConnection,1}()
-        m.external_parameter_connections = Array{ExternalParameterConnection, 1}()
-        m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
-        m.mi = Nullable{ModelInstance}()
-        return m
-    end
-end
+#
+# N.B. Types have been moved to mimi_types.jl
+#
 
 """
     components(m::Model)
@@ -563,13 +493,13 @@ function update_external_parameter(m::Model, name::Symbol, value)
 end
 
 """
-    setleftoverparameters(m::Model, parameters::Dict{Any,Any})
+    set_leftover_parameters(m::Model, parameters::Dict{Any,Any})
 
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
 keys are strings that match the names of unset parameters in the model.
 """
-function setleftoverparameters(m::Model, parameters::Dict{String,Any})
+function set_leftover_parameters(m::Model, parameters::Dict{String,Any})
     parameters = Dict(lowercase(k)=>v for (k, v) in parameters)
     leftovers = get_unconnected_parameters(m)
     for (comp, p) in leftovers
@@ -639,7 +569,7 @@ function getindex(mi::ModelInstance, component::Symbol, name::Symbol)
     end
     if name in fieldnames(mi.components[component].Variables)
         v = getfield(mi.components[component].Variables, name)
-        if isa(v, TimestepVector) || isa(v, TimestepMatrix)
+        if isa(v, PklVector) || isa(v, TimestepMatrix)
             return v.data
         else
             return v
@@ -690,202 +620,6 @@ function getindexlabels(m::Model, component::Symbol, x::Symbol)
     end
 end
 
-"""
-    getdataframe(m::Model, componentname::Symbol, name::Symbol)
-
-Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
-"""
-function getdataframe(m::Model, componentname::Symbol, name::Symbol)
-    if isnull(m.mi)
-        error("Cannot get dataframe, model has not been built yet")
-    elseif !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable $name not in component $componentname")
-    else
-        return getdataframe(m, get(m.mi), componentname, name)
-    end
-end
-
-
-function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::Symbol)
-    comp_type = typeof(mi.components[componentname])
-
-    meta_module_name = Symbol(supertype(comp_type).name.module)
-    meta_component_name = Symbol(supertype(comp_type).name.name)
-
-    vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
-
-    if length(vardiminfo)==0
-        return mi[componentname, name]
-    end
-
-    df = DataFrame()
-
-    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
-    if vardiminfo[1]==:time
-        comp_start = m.components2[componentname].offset
-        comp_final = m.components2[componentname].final
-        start = findfirst(values, comp_start)
-        final = findfirst(values, comp_final)
-        num = getspan(m, componentname)
-    end
-
-    if length(vardiminfo)==1
-        df[vardiminfo[1]] = values
-        if vardiminfo[1]==:time
-            df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
-        else
-            df[name] = mi[componentname, name]
-        end
-        return df
-    elseif length(vardiminfo)==2
-        dim2 = length(m.indices_values[vardiminfo[2]])
-        dim1 = length(m.indices_values[vardiminfo[1]])
-        df[vardiminfo[1]] = repeat(values, inner=[dim2])
-        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]], outer=[dim1])
-
-        data = m[componentname, name]
-        if vardiminfo[1]==:time
-            top = fill(NaN, (start-1, dim2))
-            bottom = fill(NaN, (dim1-final, dim2))
-            data = vcat(top, data, bottom)
-        end
-        df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
-
-        return df
-    else
-        error("Not yet implemented")
-    end
-end
-
-"""
-    getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => name::Symbol)...)
-    getdataframe(m::Model, comp_name_pairs::Pair(componentname::Symbol => (name::Symbol, name::Symbol...)...)
-
-Return the values for each variable `name` in each corresponding `componentname` of model `m` as a DataFrame.
-"""
-function getdataframe(m::Model, comp_name_pairs::Pair...)
-    if isnull(m.mi)
-        error("Cannot get dataframe, model has not been built yet")
-    else
-        return getdataframe(m, get(m.mi), comp_name_pairs)
-    end
-end
-
-
-function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
-    #Make sure tuple passed in is not empty
-    if length(comp_name_pairs) == 0
-        error("Cannot get data frame, did not specify any componentname(s) and variable(s)")
-    end
-
-    # Get the base value of the number of dimensions from the first componentname and name pair association
-    firstpair = comp_name_pairs[1]
-    componentname = firstpair[1]
-    name = firstpair[2]
-    if isa(name, Tuple)
-        name = name[1]
-    end
-
-    if !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable $name not in component $componentname")
-    end
-
-    vardiminfo = getvardiminfo(mi, componentname, name)
-    num_dim = length(vardiminfo)
-
-    #Initialize dataframe depending on num dimensions
-    df = DataFrame()
-    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
-    if num_dim == 1
-        df[vardiminfo[1]] = values
-    elseif num_dim == 2
-        dim1 = length(m.indices_values[vardiminfo[1]])
-        dim2 = length(m.indices_values[vardiminfo[2]])
-        df[vardiminfo[1]] = repeat(values, inner=[dim2])
-        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]],outer=[dim1])
-    end
-
-    # Iterate through all the pairs; always check for each variable that the number of dimensions matches that of the first
-    for pair in comp_name_pairs
-        componentname = pair[1]
-        name = pair[2]
-
-        if isa(name, Tuple)
-            for comp_var in name
-                if !(comp_var in variables(m, componentname))
-                    error("Cannot get dataframe; variable $comp_var not in component $componentname")
-                end
-
-                vardiminfo = getvardiminfo(mi, componentname, comp_var)
-                if vardiminfo[1]==:time
-                    comp_start = m.components2[componentname].offset
-                    comp_final = m.components2[componentname].final
-                    start = findfirst(values, comp_start)
-                    final = findfirst(values, comp_final)
-                    num = getspan(m, componentname)
-                end
-
-                if !(length(vardiminfo) == num_dim)
-                    error(string("Not all components have the same number of dimensions"))
-                end
-
-                if (num_dim==1)
-                    if vardiminfo[1]==:time
-                        df[comp_var] = vcat(repeat([NaN], inner=start-1), mi[componentname, comp_var], repeat([NaN], inner=length(values)-final))
-                    else
-                        df[comp_var] = mi[componentname, comp_var]
-                    end
-                elseif (num_dim == 2)
-                    data = m[componentname, comp_var]
-                    if vardiminfo[1]==:time
-                        top = fill(NaN, (start-1, dim2))
-                        bottom = fill(NaN, (dim1-final, dim2))
-                        data = vcat(top, data, bottom)
-                    end
-                    df[comp_var] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
-                end
-            end
-
-        elseif (isa(name, Symbol))
-            if !(name in variables(m, componentname))
-                error("Cannot get dataframe; variable $name not in component $componentname")
-            end
-
-            vardiminfo = getvardiminfo(mi, componentname, name)
-            if vardiminfo[1]==:time
-                comp_start = m.components2[componentname].offset
-                comp_final = m.components2[componentname].final
-                start = findfirst(values, comp_start)
-                final = findfirst(values, comp_final)
-                num = getspan(m, componentname)
-            end
-
-            if !(length(vardiminfo) == num_dim)
-                error(string("Not all components have the same number of dimensions"))
-            end
-            if (num_dim==1)
-                if vardiminfo[1]==:time
-                    df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
-                else
-                    df[name] = mi[componentname, name]
-                end
-            elseif (num_dim == 2)
-                data = m[componentname, name]
-                if vardiminfo[1]==:time
-                    top = fill(NaN, (start-1, dim2))
-                    bottom = fill(NaN, (dim1-final, dim2))
-                    data = vcat(top, data, bottom)
-                end
-                df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
-            end
-        else
-            error(string("Name value for variable(s) in a component, ", componentname, " was neither a tuple nor a Symbol."))
-        end
-    end
-
-    return df
-end
-
 
 function getvardiminfo(mi::ModelInstance, componentname::Symbol, name::Symbol)
     if !(componentname in keys(mi.components))
@@ -919,6 +653,10 @@ function get_unconnected_parameters(m::Model)
     return unset_params
 end
 
+#
+# N.B. build() moved to modelinstance/build.jl
+#
+
 function getduration(indices_values)
     if length(indices_values[:time])>1
         return indices_values[:time][2]-indices_values[:time][1] #assumes that all timesteps of the model are the same length
@@ -927,19 +665,12 @@ function getduration(indices_values)
     end
 end
 
-function makeclock(mi::ModelInstance, ntimesteps, indices_values)
-    start = indices_values[:time][1]
-    stop = indices_values[:time][min(length(indices_values[:time]),ntimesteps)]
-    duration = getduration(indices_values)
-    return Clock(start, stop, duration)
-end
-
 """
     run(m::Model)
 
 Run model `m` once.
 """
-function run(m::Model;ntimesteps=typemax(Int))
+function run(m::Model; ntimesteps=typemax(Int))
     if length(m.components2) == 0
         error("Cannot run a model with no components.")
     end
@@ -949,6 +680,10 @@ function run(m::Model;ntimesteps=typemax(Int))
     end
     run(get(m.mi), ntimesteps, m.indices_values)
 end
+
+#
+# N.B. run moved to modelinstance/run.jl
+#
 
 function update_scalar_parameters(mi::ModelInstance, c::Symbol)
     for x in get_connections(mi, c, :incoming)
@@ -967,7 +702,6 @@ end
 #         setfield!(c_target.Parameters, x.target_parameter_name, getfield(c_source.Variables, x.source_variable_name))
 #     end
 # end
-
 
 # function run_timestep(s, t)
 #     typeofs = typeof(s)
@@ -1003,208 +737,5 @@ function collectkw(args::Vector{Any})
     kws
 end
 
-"""
-    @defcomp name begin
 
-Define a new component.
-"""
-macro defcomp(name, ex)
-    resetvarsdef = Expr(:block)
-
-    metavardef = Expr(:block)
-    metapardef = Expr(:block)
-    metadimdef = Expr(:block)
-
-    numarrayparams = 0
-
-    for line in ex.args
-        if line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Index
-            dimensionName = line.args[1]
-
-            push!(metadimdef.args, :(metainfo.adddimension(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(dimensionName)) )))
-        elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Parameter
-            if isa(line.args[1], Symbol)
-                parameterName = line.args[1]
-                parameterType = :Number
-            elseif line.args[1].head==:(::)
-                parameterName = line.args[1].args[1]
-                parameterType = line.args[1].args[2]
-            else
-                error()
-            end
-
-            kws = collectkw(line.args[2].args)
-
-            # Get description and unit, if provided
-            description = get(kws, :description, "")
-            unit = get(kws, :unit, "")
-
-            if haskey(kws, :index)
-                parameterIndex = kws[:index].args
-
-                if length(parameterIndex)<=2 && parameterIndex[1]==:time
-                    numarrayparams += 1
-                end
-
-                pardims = Array{Any}(0)
-                for l in parameterIndex
-                    push!(pardims, l)
-                end
-
-                push!(metapardef.args, :(metainfo.set_external_parameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), $(pardims), $(description), $(unit))))
-            else
-                push!(metapardef.args, :(metainfo.set_external_parameter(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(parameterName)), $(esc(parameterType)), [], $(description), $(unit))))
-            end
-        elseif line.head==:(=) && line.args[2].head==:call && line.args[2].args[1]==:Variable
-            if isa(line.args[1], Symbol)
-                variableName = line.args[1]
-                variableType = :Number
-            elseif line.args[1].head==:(::)
-                variableName = line.args[1].args[1]
-                variableType = line.args[1].args[2]
-            else
-                error()
-            end
-
-            kws = collectkw(line.args[2].args)
-
-            # Get description and unit, if provided
-            description = get(kws, :description, "")
-            unit = get(kws, :unit, "")
-
-            if haskey(kws, :index)
-                variableIndex = kws[:index].args
-
-                vardims = Array{Any}(0)
-                for l in variableIndex
-                    push!(vardims, l)
-                end
-
-                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), $(vardims), $(description), $(unit))))
-
-                if variableType==:Number
-                    push!(resetvarsdef.args,:($(esc(Symbol("fill!")))(s.Variables.$(variableName),$(esc(Symbol("NaN"))))))
-                end
-            else
-                push!(metavardef.args, :(metainfo.addvariable(module_name(current_module()), $(Expr(:quote,name)), $(QuoteNode(variableName)), $(esc(variableType)), [], $(description), $(unit))))
-
-                if variableType==:Number
-                    push!(resetvarsdef.args,:(s.Variables.$(variableName) = $(esc(Symbol("NaN")))))
-                end
-            end
-        elseif line.head==:line
-        else
-            error("Unknown expression.")
-        end
-    end
-
-    module_def = :(eval(current_module(), :(module temporary_name end)))
-    module_def.args[3].args[1].args[2] = Symbol(string("_mimi_implementation_", name))
-
-    call_expr = Expr(:call,
-        Expr(:curly,
-            Expr(:., Expr(:., Expr(:., :Main, QuoteNode(Symbol(current_module()))), QuoteNode(Symbol(string("_mimi_implementation_", name)))), QuoteNode(Symbol(string(name,"Impl")))),
-            :T, :OFFSET, :DURATION, :FINAL
-            ),
-        :indices
-        )
-
-    callsignature = Expr(:call, Expr(:curly, Symbol(name), :T, :OFFSET, :DURATION, :FINAL), :(::Type{T}), :(::Type{Val{OFFSET}}),:(::Type{Val{DURATION}}),:(::Type{Val{FINAL}}))
-    for i in 1:numarrayparams
-        push!(call_expr.args[1].args, Symbol("OFFSET$i"))
-        push!(call_expr.args[1].args, Symbol("DURATION$i"))
-
-        push!(callsignature.args[1].args, Symbol("OFFSET$i"))
-        push!(callsignature.args[1].args, Symbol("DURATION$i"))
-        push!(callsignature.args, :(::Type{Val{$(Symbol("OFFSET$i"))}}))
-        push!(callsignature.args, :(::Type{Val{$(Symbol("DURATION$i"))}}))
-
-    end
-    push!(callsignature.args, :indices)
-    # println(call_expr)
-    # println(callsignature)
-    # println(Expr(:function, callsignature, call_expr))
-
-    x = quote
-
-        abstract type $(esc(Symbol(name))) <: Mimi.ComponentState end
-
-        import Mimi.run_timestep
-        import Mimi.init
-        import Mimi.resetvariables
-
-        function $(esc(Symbol("resetvariables")))(s::$(esc(Symbol(name))))
-            $(resetvarsdef)
-        end
-
-        metainfo.addcomponent(module_name(current_module()), $(Expr(:quote,name)))
-        $(metavardef)
-        $(metapardef)
-        $(metadimdef)
-
-        $(module_def)
-        eval($(esc(Symbol(string("_mimi_implementation_", name)))), metainfo.generate_comp_expressions(module_name(current_module()), $(Expr(:quote,name))))
-
-        # callsignature.args[1].args[1] = $esc(Symbol(name)) # how to do this?
-        $(Expr(:function, Expr(:call, Expr(:curly, esc(Symbol(name)), callsignature.args[1].args[2:end]...), callsignature.args[2:end]...), call_expr))
-
-    end
-
-    x
-end
-
-#Begin Graph Functionality section
-
-function show(io::IO, m::Model)
-    println(io, "showing model component connections:")
-    for item in enumerate(keys(m.components2))
-        c = item[2]
-        i_connections = get_connections(m,c,:incoming)
-        o_connections = get_connections(m,c,:outgoing)
-        println(io, item[1], ". ", c, " component")
-        println(io, "    incoming parameters:")
-        if length(i_connections)==0
-            println(io, "      none")
-        else
-            [println(io, "      - ",e.target_parameter_name," from ",e.source_component_name," component") for e in i_connections]
-        end
-        println(io, "    outgoing variables:")
-        if length(o_connections)==0
-            println(io, "      none")
-        else
-            [println(io, "      - ",e.source_variable_name," in ",e.target_component_name, " component") for e in o_connections]
-        end
-    end
-end
-
-function get_connections(m::Model, c::ComponentInstanceInfo, which::Symbol)
-    return get_connections(m, c.name, which)
-end
-
-function get_connections(m::Model, component_name::Symbol, which::Symbol)
-    if which==:all
-        f = e -> e.source_component_name==component_name || e.target_component_name==component_name
-    elseif which==:incoming
-        f = e -> e.target_component_name==component_name
-    elseif which==:outgoing
-        f = e -> e.source_component_name==component_name
-    else
-        error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
-    end
-    return collect(Iterators.filter(f, m.internal_parameter_connections))
-end
-
-function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbol)
-    if which==:all
-        f = e -> e.source_component_name==component_name || e.target_component_name==component_name
-    elseif which==:incoming
-        f = e -> e.target_component_name==component_name
-    elseif which==:outgoing
-        f = e -> e.source_component_name==component_name
-    else
-        error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
-    end
-    return collect(Iterators.filter(f, mi.internal_parameter_connections))
-end
-
-#End of graph section
+# N.B. graphing support moved to utils/graph.jl
