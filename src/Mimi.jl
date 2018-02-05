@@ -62,19 +62,17 @@ import
 
 include("modelinstance/mi_types.jl")
 include("modelinstance/clock.jl")
+include("modelinstance/dotoverloading.jl")
+include("modelinstance/deftimestep_macro.jl")
+include("modelinstance/run.jl")
 
 include("core/mimi_types.jl")
 include("core/timestep_arrays.jl")
-include("core/metainfo.jl")
-
-include("modelinstance/dotoverloading.jl")
-include("modelinstance/run.jl")
-include("modelinstance/build.jl")
-include("modelinstance/deftimestep_macro.jl")
-
 include("core/references.jl")
-include("core/mimi-core.jl")
+include("core/metainfo.jl")
 include("core/defcomp.jl")
+include("core/build.jl")
+include("core/mimi-core.jl")
 
 include("helpercomponents/marginalmodel.jl")
 include("helpercomponents/adder.jl")
