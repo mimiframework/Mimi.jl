@@ -1,5 +1,9 @@
 // Mimi UI
 
+/* 
+var speclist = data
+*/
+
 var speclist = 
 [
     {
@@ -297,5 +301,4 @@ var speclist =
             "height": 400,
         }
     }
-]
-
+] 

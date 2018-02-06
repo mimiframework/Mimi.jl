@@ -4,17 +4,19 @@ using DataFrames
 using JSON
 using Blink
 
-##TODO:  getparameters
+#run tutorial (included for ease of developement since tutorials need to be 
+#updated)
+
+include("one-region-model.jl")
+
+##TODO:  add parameters function to mimi_core.jl
 ##TODO:  link data with refresh properly
 ##TODO:  add conditional statements for different types of graphs
-
-#run tutorial
-include("one-region-model.jl")
 
 function explore(model)
     #get variable data
     include("buildspecs.jl")
-    data = JSON.json(getspeclist(my_model))
+    data = getspeclist(my_model)
 
     #start Blink window
     w = Blink.Window()
