@@ -1,20 +1,4 @@
-# module metainfo
 using DataStructures
-
-# export
-#     get_componentdef_variables, # deprecated
-#     ComponentDef,
-#     ComponentKey,
-#     ModelDef,
-#     addcomponent,
-#     addvariable,
-#     addparameter,
-#     adddimension,
-#     getvariables,
-#     getparameters,
-#     getdimensions,
-#     getcompdef,
-#     getcompdefs  
 
 struct ComponentKey
     module_name::Symbol
@@ -102,7 +86,7 @@ function dump_components()
 end
 
 function addcomponent(key::ComponentKey)
-    println("addcomponent($(key))")
+    println("adding component $key")
     if haskey(_compdefs, key)
         warn("Redefining component :$(key.comp_name) in module :$(key.module_name)")
     end
@@ -112,10 +96,9 @@ function addcomponent(key::ComponentKey)
     return comp
 end
 
-# Might be useful
 addcomponent(comp_name::Symbol) = addcomponent(ComponentKey(comp_name))
 
-@deprecate addcomponent(mod::Symbol, comp::Symbol) addcomponent(ComponentKey(mod, comp))
+addcomponent(mod::Symbol, comp::Symbol) = addcomponent(ComponentKey(mod, comp))
 
 #
 # Model
@@ -349,5 +332,3 @@ getexpr(comp::ComponentDef, tag::Symbol) = comp.expressions[tag]
 #     # println(compexpr)
 #     return compexpr
 # end
-
-# end # module

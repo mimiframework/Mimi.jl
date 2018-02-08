@@ -1,6 +1,3 @@
-# deprecated
-# abstract type ComponentState end
-
 struct ComponentInstanceInfo
     name::Symbol
     component_type::DataType        # TBD: components are no longer unique types, so need to redo this
@@ -72,4 +69,17 @@ mutable struct Model
         m.mi = Nullable{ModelInstance}()
         return m
     end
+end
+
+#
+# A "model" whose results are obtained by subtracting results of one model from those of another.
+#
+type MarginalModel
+    base::Model
+    marginal::Model
+    delta::Float64
+end
+
+function getindex(m::MarginalModel, component::Symbol, name::Symbol)
+    return (m.marginal[component,name].-m.base[component,name])./m.delta
 end
