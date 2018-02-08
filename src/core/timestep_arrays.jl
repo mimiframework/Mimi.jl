@@ -1,7 +1,6 @@
-################
-#  TimestepVector  #
-################
-
+#
+# TimestepVector
+#
 mutable struct TimestepVector{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 1 for the vector case
 	data::Array{T, 1}
 	function TimestepVector{T, Offset, Duration}(d::Array{T, 1}) where {T, Offset, Duration}
@@ -82,10 +81,9 @@ function Base.endof(v::TimestepVector)
 	return length(v.data)
 end
 
-################
-#  TimestepMatrix  #
-################
-
+#
+# TimestepMatrix
+#
 mutable struct TimestepMatrix{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 2 for the matrix case
 	data::Array{T, 2}
 	function TimestepMatrix{T, Offset, Duration}(d::Array{T, 2}) where {T, Offset, Duration}
