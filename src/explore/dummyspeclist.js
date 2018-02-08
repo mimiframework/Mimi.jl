@@ -1,9 +1,5 @@
 // Mimi UI
 
-/* 
-var speclist = data
-*/
-
 var speclist = 
 [
     {

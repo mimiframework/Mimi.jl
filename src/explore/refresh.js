@@ -1,6 +1,6 @@
 // Mimi UI
 
-function refresh() {
+function refresh(speclist) {
     
     // Loop over the things that we want to show in the list, add
     // one button for each element as a child to the variablelist
@@ -23,6 +23,6 @@ function openVar(evt, index) {
     
     // Plot the spec
     var spec = speclist[index]["VLspec"];
-    
+
     vegaEmbed("#vis", spec, { actions: false });
 }

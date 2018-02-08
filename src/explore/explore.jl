@@ -4,19 +4,14 @@ using DataFrames
 using JSON
 using Blink
 
-#run tutorial (included for ease of developement since tutorials need to be 
-#updated)
-
-include("one-region-model.jl")
-
-##TODO:  add parameters function to mimi_core.jl
-##TODO:  link data with refresh properly
-##TODO:  add conditional statements for different types of graphs
+##TODO (version 0.1) link data with refresh properly
+##TODO (version 0.1) decide how to plot single value parameters or values
+##TODO (version 0.2) add parameters function to mimi_core.jl
 
 function explore(model)
     #get variable data
     include("buildspecs.jl")
-    data = getspeclist(my_model)
+    speclist = getspeclist(model)
 
     #start Blink window
     w = Blink.Window()
@@ -26,5 +21,9 @@ function explore(model)
     loadfile(w, abspath("main.html"))
 
     #refresh variable list
-    @js w refresh()
+    @js w refresh($speclist)
 end
+
+#run tutorial (included for ease of developement since tutorials need to be 
+#updated)
+include("one-region-model.jl")
