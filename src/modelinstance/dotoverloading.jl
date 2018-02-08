@@ -1,4 +1,7 @@
-@generated function get_property(v::ModelInstanceComponentVariables{NAMES,TYPES}, 
+#
+# This file is deprecated, but left here for reference for now.
+#
+@generated function get_property(v::ComponentInstanceVariables{NAMES,TYPES}, 
                                  ::Val{PROPERTYNAME}) where {NAMES,TYPES,PROPERTYNAME}
     index_pos = findfirst(NAMES, PROPERTYNAME)
     index_pos==0 && error("Unknown variable name $PROPERTYNAME.")
@@ -10,7 +13,7 @@
     end
 end
 
-@generated function set_property!(v::ModelInstanceComponentVariables{NAMES,TYPES}, 
+@generated function set_property!(v::ComponentInstanceVariables{NAMES,TYPES}, 
                                   ::Val{PROPERTYNAME}, value) where {NAMES,TYPES,PROPERTYNAME}
     index_pos = findfirst(NAMES, PROPERTYNAME)
     index_pos==0 && error("Unknown variable name $PROPERTYNAME.")
@@ -22,7 +25,7 @@ end
     end
 end
 
-@generated function get_property(v::ModelInstanceComponentParameters{NAMES,TYPES}, 
+@generated function get_property(v::ComponentInstanceParameters{NAMES,TYPES}, 
                                  ::Val{PROPERTYNAME}) where {NAMES,TYPES,PROPERTYNAME}
     index_pos = findfirst(NAMES, PROPERTYNAME)
     index_pos==0 && error("Unknown variable name $PROPERTYNAME.")

@@ -4,3 +4,4 @@ docs/build/
 docs/site/
 test/tmp_testing/
 .DS_Store
+metainfo-old.jl

@@ -2,6 +2,24 @@
 # N.B. Types have been moved to mimi_types.jl
 #
 
+# TBD: test this
+"""
+    function load_comps(dirname::String="./components")
+
+Call include() on all the files in the indicated directory.
+This avoids having modelers create a long list of include()
+statements. Just put all the components in a directory.
+"""
+function load_comps(dirname::String="./components")
+    files = readdir(dirname)
+    for file in files
+        if endswith(file, ".jl")
+            pathname = joinpath(dirname, file)
+            include(pathname)
+        end
+    end
+end
+
 """
     components(m::Model)
 
@@ -11,9 +29,9 @@ function components(m::Model)
     collect(keys(m.components2))
 end
 
-# Return the MetaComponent for a given component
+# Return the ComponentDef for a given component
 function getmetainfo(m::Model, componentname::Symbol)
-    meta = metainfo.getallcomps()
+    meta = get_compdefs()
     meta_module_name = Symbol(m.components2[componentname].component_type.name.module)
     meta_component_name = m.components2[componentname].component_type.name.name
     return meta[(meta_module_name, meta_component_name)]
@@ -39,21 +57,22 @@ function variables(mi::ModelInstance, componentname::Symbol)
     return fieldnames(mi.components[componentname].Variables)
 end
 
-# helper function for setindix; used to determine if the provided time values are a uniform range.
+# helper function for setindex; used to determine if the provided time values are a uniform range.
 function isuniform(values::Vector)
-    if length(values)==1 || length(values)==2
+    if length(values) in (1, 2)
         return true
     end
 
     stepsize = values[2]-values[1]
     for i in 3:length(values)
-        if (values[i]-values[i-1]) != stepsize
+        if (values[i] - values[i-1]) != stepsize
             return false
         end
     end
 
     return true
 end
+
 """
     setindex(m::Model, name::Symbol, count::Int)
 
@@ -146,6 +165,7 @@ function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, fina
             error("Component to add before does not exist: ", before)
         end
         m.components2 = newcomponents2
+
     elseif after!=nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         after_exists = false
@@ -290,7 +310,7 @@ function checklabels(m::Model, component::Symbol, name::Symbol, p::ArrayModelPar
     end
 
     # Return early if it's a ConnectorComp so that we don't check the sizes, because they will not match.
-    if metacomp.component_name == :ConnectorCompVector || metacomp.component_name == :ConnectorCompMatrix
+    if metacomp.component_name in (:ConnectorCompVector, :ConnectorCompMatrix)
         return nothing
     end
 
@@ -545,7 +565,7 @@ end
 Return a list of all parameter names for a given component in a model m.
 """
 function get_parameter_names(m::Model, component::ComponentInstanceInfo)
-    _dict = Mimi.metainfo.getallcomps()
+    _dict = get_compdefs()
     _module = module_name(component.component_type.name.module)
     _metacomponent = _dict[(_module, component.component_type.name.name)]
     return keys(_metacomponent.parameters)
@@ -553,7 +573,7 @@ end
 
 # returns the {name:parameter} dictionary
 function get_parameters(m::Model, component::ComponentInstanceInfo)
-    _dict = Mimi.metainfo.getallcomps()
+    _dict = get_compdefs()
     _module = module_name(component.component_type.name.module)
     _metacomponent = _dict[(_module, component.component_type.name.name)]
     return _metacomponent.parameters
@@ -634,8 +654,6 @@ function getvardiminfo(mi::ModelInstance, componentname::Symbol, name::Symbol)
     return vardiminfo
 end
 
-import Base.show
-show(io::IO, a::ComponentState) = print(io, "ComponentState")
 
 """
     get_unconnected_parameters(m::Model)
@@ -717,7 +735,7 @@ function resetvariables(s)
 end
 
 function getdiminfoforvar(s, name)
-    meta = metainfo.getallcomps()
+    meta = get_compdefs()
     meta[s].variables[name].dimensions
 end
 

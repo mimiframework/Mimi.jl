@@ -1,3 +1,5 @@
+using Mimi
+
 @defcomp adder begin
     add = Parameter(index=[time])
     input = Parameter(index=[time])

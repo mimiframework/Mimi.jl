@@ -1,8 +1,9 @@
-abstract type ComponentState end
+# deprecated
+# abstract type ComponentState end
 
 struct ComponentInstanceInfo
     name::Symbol
-    component_type::DataType
+    component_type::DataType        # TBD: components are no longer unique types, so need to redo this
     offset::Int
     final::Int
 end
@@ -32,17 +33,9 @@ struct ExternalParameterConnection
     external_parameter::Symbol #name of the parameter stored in m.external_parameters
 end
 
-# RP: assuming the version in mi_types.jl supersedes this
-# struct ModelInstance
-#     components::OrderedDict{Symbol, ComponentState}
-#     internal_parameter_connections::Array{InternalParameterConnection, 1}
-#     offsets::Array{Int, 1} # in order corresponding with components
-#     final_times::Array{Int, 1}
-# end
-
 mutable struct ArrayModelParameter <: Parameter
     values
-    dims::Vector{Symbol} #if empty, we don't have the dimensions' name information
+    dims::Vector{Symbol} # if empty, we don't have the dimensions' name information
 
     function ArrayModelParameter(values, dims::Vector{Symbol})
         amp = new()
@@ -52,14 +45,17 @@ mutable struct ArrayModelParameter <: Parameter
     end
 end
 
+#
+# Provides user-facing API to ModelInstance and ModelDef
+#
 mutable struct Model
     indices_counts::Dict{Symbol,Int}
     indices_values::Dict{Symbol,Vector{Any}}
     time_labels::Vector
     external_parameters::Dict{Symbol,Parameter}
     numberType::DataType
-    internal_parameter_connections::Array{InternalParameterConnection, 1}
-    external_parameter_connections::Array{ExternalParameterConnection, 1}
+    internal_parameter_connections::Vector{InternalParameterConnection}
+    external_parameter_connections::Vector{ExternalParameterConnection}
     components2::OrderedDict{Symbol, ComponentInstanceInfo}
     mi::Nullable{ModelInstance}
 
@@ -70,8 +66,8 @@ mutable struct Model
         # m.time_labels = Vector{Any}()
         m.external_parameters = Dict{Symbol, Parameter}()
         m.numberType = numberType
-        m.internal_parameter_connections = Array{InternalParameterConnection,1}()
-        m.external_parameter_connections = Array{ExternalParameterConnection, 1}()
+        m.internal_parameter_connections = Vector{InternalParameterConnection}()
+        m.external_parameter_connections = Vector{ExternalParameterConnection}()
         m.components2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         m.mi = Nullable{ModelInstance}()
         return m

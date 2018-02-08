@@ -9,9 +9,10 @@ using MacroTools
 export
     @defcomp,
     @deftimestep,
-    ComponentState,
-    ConnectorCompMatrix,
-    ConnectorCompVector,
+    ComponentDef,
+    ComponentKey,
+    ConnectorCompMatrix,        # deprecated
+    ConnectorCompVector,        # deprecated
     MarginalModel,
     Model,
     Timestep,
@@ -19,17 +20,24 @@ export
     TimestepVector,
     addcomponent,
     adder,
+    adddimension,
+    addparameter,
     components,
     connectparameter,
     delete!,
     get_unconnected_parameters,
+    getcompdef,
+    getcompdefs,
     get_componentdef_variables,
     getdataframe,
+    getdimensions,
     getindex,
     getindexcount,
     getindexlabels,
     getindexvalues,
-    getvariable,
+    getparameters,
+    get_run_expr,
+    getvariables,
     getvpd,
     hasvalue,
     isfinaltimestep,
@@ -40,6 +48,7 @@ export
     setindex,
     set_leftover_parameters,
     setparameter,
+    set_run_expr,
     unitcheck,
     update_external_parameter,
     variables 
@@ -47,40 +56,30 @@ export
 import
     Base.getindex, Base.run, Base.show
 
-# _subdirs = ("modelinstance", "core", "helpercomponents", "utils")
-
-# for d in _subdirs
-#     if ! (d in LOAD_PATH)
-#         push!(LOAD_PATH, d)
-#     end
-# end
-
-# using modelinstance
-# using core
-# using helpercomponents
-# using utils
-
+include("core/metainfo.jl")
 include("modelinstance/mi_types.jl")
 include("modelinstance/clock.jl")
-include("modelinstance/dotoverloading.jl")
 include("modelinstance/deftimestep_macro.jl")
 include("modelinstance/run.jl")
 
 include("core/mimi_types.jl")
 include("core/timestep_arrays.jl")
 include("core/references.jl")
-include("core/metainfo.jl")
-include("core/defcomp.jl")
+include("core/defcomp2.jl")
 include("core/build.jl")
 include("core/mimi-core.jl")
 
 include("helpercomponents/marginalmodel.jl")
-include("helpercomponents/adder.jl")
-include("helpercomponents/connectorcomp.jl")
 
 include("utils/graph.jl")
 include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
+
+# Components are defined here to allow pre-compilation to work
+function __init__()
+    include("helpercomponents/adder.jl")
+    include("helpercomponents/connectorcomp.jl")   
+end
 
 end # module

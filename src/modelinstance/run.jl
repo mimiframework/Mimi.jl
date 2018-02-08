@@ -25,8 +25,13 @@ function run(mi::ModelInstance, ntimesteps, indices_values)
 
     while !finished(clock)
         for (i, (name, c)) in enumerate(components)
-            if gettime(clock) >= offsets[i] && gettime(clock) <= final_times[i]
+            if offsets[i] <= gettime(clock) <= final_times[i]
+
+                # TBD:
+                # run_timestep(::Val{c.key.module_name}, ::Val{c.key.comp_name}, 
+                #              c.parameters, c.variables, c.dimensions, gettimestep(comp_clocks[i])) 
                 run_timestep(c, gettimestep(comp_clocks[i]))
+
                 move_forward(comp_clocks[i])
             end
         end

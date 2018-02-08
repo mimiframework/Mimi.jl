@@ -1,3 +1,6 @@
+#
+# A "model" whose results are obtained by subtracting results of one model from those of another.
+#
 type MarginalModel
     base::Model
     marginal::Model

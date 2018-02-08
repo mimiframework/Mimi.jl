@@ -1,3 +1,12 @@
+# using .metainfo
+
+
+# Create the run_timestep function for this component
+function define_run_func(compdef::ComponentDef)
+    @eval($(get_run_expr(compdef)))
+end
+
+
 function add_connector_comps(m::Model, 
                              mi_components::OrderedDict{Symbol, ComponentInstanceInfo}, 
                              mi_connections::Vector{InternalParameterConnection}, 
@@ -49,7 +58,7 @@ function instantiate_variables(m::Model, mi_components::OrderedDict{Symbol, Comp
     mi_vars = Dict{Tuple{Symbol,Symbol}, Any}()
 
     for (c_name, c_val) in mi_components
-        vars = metainfo.get_componentdef_variables(c_val.component_type.name)
+        vars = get_componentdef_variables(c_val.component_type.name)
         for (vname, v) in vars
             concreteVariableType = v.datatype == Number ? m.numberType : v.datatype
             if length(v.dimensions) == 0
@@ -70,11 +79,10 @@ function instantiate_variables(m::Model, mi_components::OrderedDict{Symbol, Comp
     return mi_vars
 end
 
-
 function instantiate_components(m::Model, 
                                 mi_components::OrderedDict{Symbol, ComponentInstanceInfo},
                                 mi_connections::Vector{InternalParameterConnection}, duration)
-    builtComponents = OrderedDict{Symbol, ModelInstanceComponent}()
+    builtComponents = OrderedDict{Symbol, ComponentInstance}()
     offsets = Array{Int, 1}()
     final_times = Array{Int, 1}()
 
@@ -87,6 +95,8 @@ function instantiate_components(m::Model,
         int_connections = filter(x->x.target_component_name==c.name, mi_connections)
         int_params = Dict(x.target_parameter_name => x for x in int_connections)
 
+        # TBD: modify this to create a ComponentInstance, something like this:
+        #  ComponentInstance{ComponentInstanceVariables{VNAMES,VTYPES}, ComponentInstanceParameters{PNAMES,PTYPES}}
         constructor = Expr(:call, c.component_type, m.numberType, 
                            :(Val{$(c.offset)}), :(Val{$duration}), :(Val{$(c.final)}))
 
@@ -117,7 +127,7 @@ function instantiate_components(m::Model,
         comp = eval(eval(constructor))
         println("Comp: $comp")
 
-        # TBD: this fails because components are not ModelInstanceComponents, but are the 
+        # TBD: this fails because components are not ComponentInstances, but are the 
         # old form, e.g., ::_mimi_implementation_Foo.FooImpl{Float64,1,1,1}, ::Symbol)
         builtComponents[c.name] = comp
 
@@ -128,8 +138,13 @@ function instantiate_components(m::Model,
     return builtComponents
 end
 
-function build(m::Model)
-    #check if all parameters are set
+# build should take a ModelDef, with a convenience method for users
+# working only with Model instances, e.g., build(m::Model) = build(m.modeldef)
+function build(modeldef::ModelDef)
+end
+
+function build(m::Model)    
+    # check if all parameters are set
     unset = get_unconnected_parameters(m)
     if !isempty(unset)
         msg = "Cannot build model; the following parameters are unset: "
@@ -160,7 +175,6 @@ function build(m::Model)
     # below certainly not.
     #######################################################################
     
-    # Now loop through and instantiate each component.
     builtComponents = instantiate_components(m, mi_components, mi_connections, duration)
 
     # Make the internal parameter connections, including new hidden connections between ConnectorComps.

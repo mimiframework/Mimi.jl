@@ -1,3 +1,5 @@
+# DEPRECATED. Delete this once integration with defcomp is completed.
+
 #
 # Main> MacroTools.prewalk(replace_dots, :(p.foo[1,2] = v.bar))
 # :((get_property(p, Val(:foo)))[1, 2] = get_property(v, Val(:bar)))
@@ -24,7 +26,7 @@ function replace_dots(ex)
 end
 
 macro deftimestep(compname, ex)
-    module_name = Symbol(string(current_module()))
+    module_name = module_name(current_module())
     if ! @capture(ex, function run(args__) body__ end)
         error("Badly formatted timestep function: $ex")
     end
