@@ -1,10 +1,6 @@
 #
 #  TIMESTEP
 #
-mutable struct Timestep{Offset, Duration, Final}
-	t::Int
-end
-
 function isfirsttimestep(ts::Timestep)
 	return ts.t == 1
 end
@@ -37,16 +33,6 @@ end
 #
 #  CLOCK
 #
-mutable struct Clock
-	ts::Timestep
-
-	function Clock(offset::Int, final::Int, duration::Int)
-		clk = new()
-		clk.ts = Timestep{offset, duration, final}(1)
-		return clk
-	end
-end
-
 function gettimestep(c::Clock)
 	return c.ts
 end
@@ -67,5 +53,3 @@ end
 function finished(c::Clock)
 	return ispastfinaltimestep(c.ts)
 end
-
-# N.B. makeclock moved to run.jl since it takes a ModelInstance parameter

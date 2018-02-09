@@ -1,32 +1,4 @@
-export ComponentReference
-
-import Base.setindex!, Base.getindex
-
-# TBD: this isn't as useful as it could be, since model definition remains tedious.
-# How about this to connect parameters between components where names are the same.
-# Could even find these using set intersection.
-#
-# Instead of this:
-#   CO2cycle[:rt_g0_baseglobaltemp]   = climatetemperature[:rt_g0_baseglobaltemp]
-#   CO2cycle[:rt_g_globaltemperature] = climatetemperature[:rt_g_globaltemperature]
-#
-# We'd do:
-#   connectparameters(m, climatetemperature, CO2cycle, :rt_g0_baseglobaltemp, :rt_g_globaltemperature)
-# Might not be enough cases like this to warrant it though...
-# 
-# function connectparameters(m::Model, src_comp::Symbol, dst_comp::Symbol, names...)
-#     for name in names
-#         connectparameter(m, dst_comp, name, src_comp, name)
-#     end
-# end
-
-"""
-A container for a component, for interacting with it within a model.
-"""
-struct ComponentReference
-    m::Model
-    component::Symbol
-end
+import Base: setindex!, getindex
 
 """
 Set a component parameter as `setparameter(reference, name, value)`.
@@ -56,6 +28,10 @@ function connectparameter(target::ComponentReference, source::ComponentReference
     connectparameter(target.m, target.component, name, source.component, name)
 end
 
+#
+# TBD: VariableReference appears to be unused other than in the two methods below. 
+# Appears to be deprecated.
+#
 """
 A container for a name within a component, to improve connectparameter aesthetics.
 """

@@ -12,6 +12,7 @@ export
     @defmodel,
     ComponentDef,
     ComponentKey,
+    ComponentReference,
     MarginalModel,
     Model,
     Timestep,
@@ -55,18 +56,21 @@ export
 import
     Base.getindex, Base.run, Base.show
 
-include("core/metainfo.jl")
-include("modelinstance/mi_types.jl")
-include("modelinstance/clock.jl")
-include("modelinstance/run.jl")
+include("types/timestep.jl")
+include("types/definitions.jl")
+include("types/instances.jl")
+include("types/model.jl")
 
-include("core/mimi_types.jl")
-include("core/timestep_arrays.jl")
-include("core/references.jl")
+# After loading types, the rest can just be alphabetical
+include("core/build.jl")
+include("core/clock.jl")
+include("core/defs.jl")
 include("core/defcomp.jl")
 include("core/defmodel.jl")
-include("core/build.jl")
 include("core/mimi-core.jl")
+include("core/references.jl")
+include("core/run.jl")
+include("core/timestep_arrays.jl")
 
 include("utils/graph.jl")
 # include("utils/plotting.jl")

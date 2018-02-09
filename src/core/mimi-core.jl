@@ -779,6 +779,3 @@ function collectkw(args::Vector{Any})
 
     kws
 end
-
-
-# N.B. graphing support moved to utils/graph.jl

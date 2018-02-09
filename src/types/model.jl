@@ -1,3 +1,4 @@
+# Deprecated
 struct ComponentInstanceInfo
     name::Symbol
     # component_type::DataType        # TBD: components are no longer unique types, so need to redo this
@@ -93,4 +94,12 @@ end
 
 function getindex(m::MarginalModel, component::Symbol, name::Symbol)
     return (m.marginal[component, name] .- m.base[component, name]) ./ m.delta
+end
+
+"""
+A container for a component, for interacting with it within a model.
+"""
+struct ComponentReference
+    m::Model
+    component::Symbol
 end
