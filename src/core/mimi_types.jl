@@ -1,8 +1,17 @@
 struct ComponentInstanceInfo
     name::Symbol
-    component_type::DataType        # TBD: components are no longer unique types, so need to redo this
+    # component_type::DataType        # TBD: components are no longer unique types, so need to redo this
+    comp_def::ComponentDef
     offset::Int
     final::Int
+
+    function ComponentInstanceInfo(name::Symbol, offset::Int, final::Int)
+        self = new()
+        self.name = name
+        self.offset = offset
+        self.final = final
+        # self.comp_def = ??
+    end
 end
 
 abstract type Parameter end
@@ -18,9 +27,11 @@ struct InternalParameterConnection
     target_component_name::Symbol
     ignoreunits::Bool
     backup # either nothing, or a Symbol matching the name of the external parameter to be used as backup data
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
-        ipc = new(src_var, src_comp, target_par, target_comp, ignoreunits, backup)
-        return ipc
+
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, 
+                                         ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
+        self = new(src_var, src_comp, target_par, target_comp, ignoreunits, backup)
+        return self
     end
 end
 
@@ -35,10 +46,10 @@ mutable struct ArrayModelParameter <: Parameter
     dims::Vector{Symbol} # if empty, we don't have the dimensions' name information
 
     function ArrayModelParameter(values, dims::Vector{Symbol})
-        amp = new()
-        amp.values = values
-        amp.dims = dims
-        return amp
+        self = new()
+        self.values = values
+        self.dims = dims
+        return self
     end
 end
 
@@ -53,7 +64,7 @@ mutable struct Model
     numberType::DataType
     internal_parameter_connections::Vector{InternalParameterConnection}
     external_parameter_connections::Vector{ExternalParameterConnection}
-    components2::OrderedDict{Symbol, ComponentInstanceInfo}
+    components2::OrderedDict{Symbol, ComponentInstanceInfo}                 # TBD: rename 'components'; use ComponentKey instead of Symbol
     mi::Nullable{ModelInstance}
 
     function Model(numberType::DataType=Float64)
@@ -81,5 +92,5 @@ type MarginalModel
 end
 
 function getindex(m::MarginalModel, component::Symbol, name::Symbol)
-    return (m.marginal[component,name].-m.base[component,name])./m.delta
+    return (m.marginal[component, name] .- m.base[component, name]) ./ m.delta
 end

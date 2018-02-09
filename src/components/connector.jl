@@ -1,11 +1,5 @@
 using Mimi
 
-#
-# TODO
-# - To enable precompilation, define these types explicitly and build out the
-#   required machinery using the functional API rather than using @defcomp.
-#
-
 @defcomp Mimi.ConnectorCompVector begin
     input1 = Parameter(index = [time])
     input2 = Parameter(index = [time])
@@ -33,7 +27,7 @@ end
         for r in d.regions
             if hasvalue(p.input1, ts, r)
                 v.output[ts, r] = p.input1[ts, r]
-            elseif hasvalue(p.input2, t, r)
+            elseif hasvalue(p.input2, ts, r)
                 v.output[ts, r] = p.input2[ts, r]
             else
                 error("Neither of the inputs to ConnectorComp have data for the current timestep: $(gettime(ts)).")

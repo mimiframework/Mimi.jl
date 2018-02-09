@@ -39,9 +39,7 @@ function _replace_dots(ex)
     end
 end
 
-function _generate_run_func(comp_name, args, body)
-    module_name = Base.module_name(current_module())
-
+function _generate_run_func(module_name, comp_name, args, body)
     # wrap list of body expressions into a single expr for prewalk()
     block = Expr(:block)
     block.args = body
@@ -109,15 +107,15 @@ macro defcomp(comp_name, ex)
     debug("Component $comp_name")
 
     # Allow explicit definition of module to define component in
-    if @capture(comp_name, modname_.cmpname_)       # e.g., Mimi.adder
+    if @capture(comp_name, mod_name_.cmpname_)       # e.g., Mimi.adder
         comp_name = cmpname
     else
-        modname = Base.module_name(current_module())
+        mod_name = Base.module_name(current_module())
     end
     
     # We'll return a block of expressions that will define the component.
     # First, we add the empty component and assign it to `comp`.
-    result = quote comp = addcomponent($(QuoteNode(modname)), $(QuoteNode(comp_name))) end
+    result = quote comp = addcomponent($(QuoteNode(mod_name)), $(QuoteNode(comp_name))) end
 
     function addexpr(expr)
         push!(result.args, expr)
@@ -129,7 +127,7 @@ macro defcomp(comp_name, ex)
         if @capture(elt, function run(args__) body__ end)
             # Save the expression that will store the run_timestep function definition, and
             # translate dot notation to get/setproperty. The func is created at build time.
-            expr = _generate_run_func(comp_name, args, body)
+            expr = _generate_run_func(mod_name, comp_name, args, body)
             run_expr = :(set_run_expr(comp, $(QuoteNode(expr))))
             addexpr(run_expr)
             continue

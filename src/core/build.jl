@@ -1,6 +1,3 @@
-# using .metainfo
-
-
 # Create the run_timestep function for this component
 function define_run_func(compdef::ComponentDef)
     @eval($(get_run_expr(compdef)))
@@ -57,8 +54,8 @@ end
 function instantiate_variables(m::Model, mi_components::OrderedDict{Symbol, ComponentInstanceInfo}, duration)
     mi_vars = Dict{Tuple{Symbol,Symbol}, Any}()
 
-    for (c_name, c_val) in mi_components
-        vars = get_componentdef_variables(c_val.component_type.name)
+    for (c_name, comp_info) in mi_components
+        vars = getvariables(comp_info.component_type.name)
         for (vname, v) in vars
             concreteVariableType = v.datatype == Number ? m.numberType : v.datatype
             if length(v.dimensions) == 0
@@ -171,7 +168,7 @@ function build(m::Model)
     mi_var = instantiate_variables(m, mi_components, duration)
     
     #######################################################################
-    # TODO This is where DA gave up :) Stuff above this line might work,
+    # TBD This is where DA gave up :) Stuff above this line might work,
     # below certainly not.
     #######################################################################
     

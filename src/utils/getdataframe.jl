@@ -13,6 +13,7 @@ function getdataframe(m::Model, componentname::Symbol, name::Symbol)
     end
 end
 
+# TBD: if m holds mi, why is this functional sig necessary? Combine with method above?
 
 function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::Symbol)
     comp_type = typeof(mi.components[componentname])

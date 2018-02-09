@@ -5,15 +5,15 @@ using Plots
 Extends the Plots module to be able to take a model information parameters for
 convenience. More advanced plotting may require accessing the Plots module directly.
 """
-function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol = :time, legend = nothing, x_label::String = string(index), y_label::String = string(parameter))
+function Plots.plot(m::Model, comp_name::Symbol, parameter::Symbol ; index::Symbol = :time, legend = nothing, x_label::String = string(index), y_label::String = string(parameter))
     if isnull(m.mi)
         error("A model must be run before it can be plotted")
     end
 
-    values = m[component, parameter]
+    values = m[comp_name, parameter]
 
-    if legend==nothing && isa(values, Array) && ndims(values)==2
-        a = getindexlabels(m, component, parameter)
+    if legend == nothing && isa(values, Array) && ndims(values)==2
+        a = getindexlabels(m, comp_name, parameter)
         a = Iterators.filter(i->i!=index, a)
         legend = a[1]
     end
@@ -21,7 +21,11 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
     # Create axis labels
     units = ""
     try
-        units = getmetainfo(m, component).parameters[parameter].unit
+        comp_def = getcompdef(m, comp_name)
+        units = comp_def.parameters[parameter].unit
+
+        # was:
+        # units = getmetainfo(m, comp_name).parameters[parameter].unit
         units = " [$(units)]"
     end
 

@@ -1,25 +1,3 @@
-#
-# N.B. Types have been moved to mimi_types.jl
-#
-
-# TBD: test this
-"""
-    function load_comps(dirname::String="./components")
-
-Call include() on all the files in the indicated directory.
-This avoids having modelers create a long list of include()
-statements. Just put all the components in a directory.
-"""
-function load_comps(dirname::String="./components")
-    files = readdir(dirname)
-    for file in files
-        if endswith(file, ".jl")
-            pathname = joinpath(dirname, file)
-            include(pathname)
-        end
-    end
-end
-
 """
     components(m::Model)
 
@@ -30,12 +8,56 @@ function components(m::Model)
 end
 
 # Return the ComponentDef for a given component
+# TBD: replace with calls to getcompdef(key).
 function getmetainfo(m::Model, componentname::Symbol)
-    meta = get_compdefs()
+    meta = getcompdefs()
     meta_module_name = Symbol(m.components2[componentname].component_type.name.module)
     meta_component_name = m.components2[componentname].component_type.name.name
     return meta[(meta_module_name, meta_component_name)]
 end
+
+#
+# Convenience functions for retrieval of component elements
+#
+function getcompinfo(m::Model, comp_name::Symbol)
+    return m.components2[comp_name]
+end
+
+function getcompdef(m::Model, comp_name::Symbol)
+    comp_info = getcompinfo(m, comp_name)
+    return comp_info.comp_def
+end
+
+function getparameter(m::Model, comp_name::Symbol, param_name::Symbol)
+    comp_def = getcompdef(m, comp_name)
+    return comp_def.parameters[param_name]
+end
+
+function parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol)
+    param = getparameter(m, comp_name, param_name)
+    return param.unit
+end
+
+function parameter_dimensions(m::Model, comp_name::Symbol, param_name::Symbol)
+    param = getparameter(m, comp_name, param_name)
+    return param.dimensions
+end
+
+function getvariable(m::Model, comp_name::Symbol, param_name::Symbol)
+    comp_def = getcompdef(m, comp_name)
+    return comp_def.variables[param_name]
+end
+
+function variable_unit(m::Model, comp_name::Symbol, param_name::Symbol)
+    param = getvariable(m, comp_name, param_name)
+    return param.unit
+end
+
+function variable_dimensions(m::Model, comp_name::Symbol, param_name::Symbol)
+    param = getvariable(m, comp_name, param_name)
+    return param.dimensions
+end
+
 
 """
     variables(m::Model, componentname::Symbol)
@@ -43,8 +65,8 @@ end
 List all the variables of `componentname` in model `m`.
 """
 function variables(m::Model, componentname::Symbol)
-    c = getmetainfo(m, componentname)
-    collect(keys(c.variables))
+    comp_def = getcompdef(m, componentname)
+    return collect(keys(comp_def.variables))
 end
 
 """
@@ -92,7 +114,7 @@ Set the values of `Model`'s index `name` to `values`.
 """
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     m.indices_counts[name] = length(values)
-    if name==:time
+    if name == :time
         if !isuniform(values) # case where time values aren't uniform
             m.time_labels = values
             m.indices_values[name] = collect(1:length(values))
@@ -118,74 +140,78 @@ function setindex{T}(m::Model, name::Symbol, valuerange::Range{T})
     nothing
 end
 
+# TBD: modify this to add the component to a ModelDef instead. Model just unifies the API
+# to ModelDef and ModelInstance.
 """
-    addcomponent(m::Model, t, name::Symbol=t.name.name; before=nothing,after=nothing)
+    addcomponent(m::Model, comp_key::ComponentKey; start=nothing, final=nothing, before=nothing, after=nothing)
 
-Add a component of type t to a model.
+Add the component indicated by `key` to the model. The component is added at the end of the list unless
+one of the keywords, `start`, `final`, `before`, `after`
 """
-function addcomponent(m::Model, t, name::Symbol=t.name.name; start=nothing, final=nothing, before=nothing,after=nothing)
+function addcomponent(m::Model, comp_key::ComponentKey; start=nothing, final=nothing, before=nothing, after=nothing)
     # check that start and final are within the model's time index range
     time_index = m.indices_values[:time]
 
     if start == nothing
         start = time_index[1]
     elseif start < time_index[1]
-        error("Cannot add component ", name, " with start time before start of model's time index range.")
+        error("Cannot add component $name with start time before start of model's time index range.")
     end
 
     if final == nothing
         final = time_index[end]
     elseif final > time_index[end]
-        error("Cannot add component ", name, " with final time after end of model's time index range.")
+        error("Cannot add component $name with final time after end of model's time index range.")
     end
 
-
-    if before!=nothing && after!=nothing
+    if before != nothing && after != nothing
         error("Can only specify before or after parameter")
     end
 
-    #checking if component being added already exists
-    for i in keys(m.components2)
-        if i==name
-            error("You cannot add two components of the same name: ", i)
-        end
+    module_name = comp_key.module_name
+    comp_name   = comp_key.comp_name
+
+    # TBD: make this dict use ComponentKeys so the module name is considered, too
+    # check if component being added already exists
+    if comp_name in keys(m.components2)
+        error("You cannot add two components of the same name ($comp_name)")
     end
 
-    if before!=nothing
+    if before != nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         before_exists = false
         for i in keys(m.components2)
-            if i==before
+            if i == before
                 before_exists = true
-                newcomponents2[name] = ComponentInstanceInfo(name, t, start, final)
+                newcomponents2[comp_name] = ComponentInstanceInfo(comp_name, start, final)
             end
             newcomponents2[i] = m.components2[i]
         end
         if !before_exists
-            error("Component to add before does not exist: ", before)
+            error("Component to add before ($before) does not exist")
         end
         m.components2 = newcomponents2
 
-    elseif after!=nothing
+    elseif after != nothing
         newcomponents2 = OrderedDict{Symbol, ComponentInstanceInfo}()
         after_exists = false
         for i in keys(m.components2)
             newcomponents2[i] = m.components2[i]
-            if i==after
+            if i == after
                 after_exists = true
-                newcomponents2[name] = ComponentInstanceInfo(name, t, start, final)
+                newcomponents2[comp_name] = ComponentInstanceInfo(comp_name, start, final)
             end
         end
         if !after_exists
-            error("Component to add after does not exist: ", after)
+            error("Component to add after ($after) does not exist")
         end
         m.components2 = newcomponents2
 
     else
-        m.components2[name] = ComponentInstanceInfo(name, t, start, final)
+        m.components2[comp_name] = ComponentInstanceInfo(comp_name, start, final)
     end
     m.mi = Nullable{ModelInstance}()
-    ComponentReference(m, name)
+    ComponentReference(m, comp_name)
 end
 
 import Base.delete!
@@ -234,9 +260,9 @@ function setparameter(m::Model, component::Symbol, name::Symbol, value, dims=not
             offset = m.components2[component].offset
             duration = getduration(m.indices_values)
             T = eltype(value)
-            if length(comp_param_dims)==1
+            if length(comp_param_dims) == 1
                 values = TimestepVector{T, offset, duration}(value)
-            elseif length(comp_param_dims)==2
+            elseif length(comp_param_dims) == 2
                 values = TimestepMatrix{T, offset, duration}(value)
             else
                 values = value
@@ -340,7 +366,7 @@ end
 Adds a two dimensional time-indexed array parameter to the model.
 """
 function set_external_array_parameter(m::Model, name::Symbol, value::TimestepMatrix, dims)
-    p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
+    p = ArrayModelParameter(value, (dims != nothing)?(dims):(Vector{Symbol}()))
     m.external_parameters[name] = p
 end
 
@@ -354,7 +380,7 @@ function set_external_array_parameter(m::Model, name::Symbol, value::AbstractArr
         # Need to force a conversion (simple convert may alias in v0.6)
         value = Array{m.numberType}(value)
     end
-    p = ArrayModelParameter(value, (dims!=nothing)?(dims):(Vector{Symbol}()))
+    p = ArrayModelParameter(value, (dims != nothing)?(dims):(Vector{Symbol}()))
     m.external_parameters[name] = p
 end
 
@@ -428,9 +454,9 @@ function connectparameter(m::Model, target_component::Symbol, target_param::Symb
     offset = m.components2[target_component].offset
     duration = getduration(m.indices_values)
     T = eltype(backup)
-    if length(comp_param_dims)==1
+    if length(comp_param_dims) == 1
         values = TimestepVector{T, offset, duration}(backup)
-    elseif length(comp_param_dims)==2
+    elseif length(comp_param_dims) == 2
         values = TimestepMatrix{T, offset, duration}(backup)
     else
         values = backup
@@ -561,11 +587,12 @@ function get_set_parameters(m::Model, c::ComponentInstanceInfo)
     return union(ext_set_params, int_set_params)
 end
 
+# TBD: Should this use m, rather the global ComponentDef registry? Why is 'm' passed?
 """
 Return a list of all parameter names for a given component in a model m.
 """
 function get_parameter_names(m::Model, component::ComponentInstanceInfo)
-    _dict = get_compdefs()
+    _dict = getcompdefs()
     _module = module_name(component.component_type.name.module)
     _metacomponent = _dict[(_module, component.component_type.name.name)]
     return keys(_metacomponent.parameters)
@@ -573,10 +600,7 @@ end
 
 # returns the {name:parameter} dictionary
 function get_parameters(m::Model, component::ComponentInstanceInfo)
-    _dict = get_compdefs()
-    _module = module_name(component.component_type.name.module)
-    _metacomponent = _dict[(_module, component.component_type.name.name)]
-    return _metacomponent.parameters
+    return getparameters(component.comp_def)
 end
 
 function getindex(m::Model, component::Symbol, name::Symbol)
@@ -662,7 +686,7 @@ Return a list of tuples (componentname, parametername) of parameters
 that have not been connected to a value in the model.
 """
 function get_unconnected_parameters(m::Model)
-    unset_params = Array{Tuple{Symbol,Symbol}, 1}()
+    unset_params = Vector{Tuple{Symbol,Symbol}}()
     for (name, c) in m.components2
         params = get_parameter_names(m, c)
         set_params = get_set_parameters(m, c)
@@ -677,7 +701,8 @@ end
 
 function getduration(indices_values)
     if length(indices_values[:time])>1
-        return indices_values[:time][2]-indices_values[:time][1] #assumes that all timesteps of the model are the same length
+        # N.B. assumes that all timesteps of the model are the same length
+        return indices_values[:time][2] - indices_values[:time][1]
     else
         return 1
     end

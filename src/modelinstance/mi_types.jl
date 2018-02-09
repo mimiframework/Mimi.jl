@@ -42,14 +42,18 @@ struct ComponentInstance{TVARS <: ComponentInstanceVariables,
     vars::TVARS
     pars::TPARS
     indices
+
+    # TBD: Add these here and eliminate type ComponentInstanceInfo
+    # offset::Int
+    # final::Int
 end
 
 # This type holds the values of a built model and can actually be run.
 mutable struct ModelInstance
-    # m::ModelDef
+    # model_def::ModelDef
     components::OrderedDict{Symbol, ComponentInstance}
-    offsets::Array{Int, 1} # in order corresponding with components
-    final_times::Array{Int, 1}
+    offsets::Vector{Int}        # in order corresponding with components
+    final_times::Vector{Int}
 end
 
 function _get_index_pos(names, propname, var_or_par)
@@ -58,7 +62,12 @@ function _get_index_pos(names, propname, var_or_par)
     return index_pos
 end
 
-# This is shared by parameters' and variables' get_property method
+
+#
+# Support for dot-overloading in run_timestep functions
+#
+
+# This is shared by parameter and variable get_property methods
 function _get_property_expr(obj::ComponentInstanceData, types, index_pos)
     if types.parameters[index_pos] <: Ref
         return :(obj.vals[$index_pos][])

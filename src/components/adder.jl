@@ -4,8 +4,8 @@ using Mimi
 # is Main rather than Mimi. So we use the name Mimi.adder, which
 # sets the desired module name.
 @defcomp Mimi.adder begin
-    add = Parameter(index=[time])
-    input = Parameter(index=[time])
+    add    = Parameter(index=[time])
+    input  = Parameter(index=[time])
     output = Variable(index=[time])
 
     function run(p, v, d, t)
