@@ -45,13 +45,13 @@ function createspec_lineplot(name, df)
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
-            "schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
             "mark" => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(names(df)[1]), "type" => "temporal", "axis" => Dict("format" => "%Y" )),
+                "x" => Dict("field" => string(names(df)[1]), "type" => "temporal", "timeUnit" => "year"),                
                 "y" => Dict("field" => string(names(df)[2]), "type" => "quantitative" )
             ),
             "width" => 400,
@@ -66,7 +66,7 @@ function createspec_barplot(name, df)
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
-            "schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
@@ -87,13 +87,13 @@ function createspec_multilineplot(name, df)
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
-            "schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
             "mark" => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(names(df)[1]), "type" => "temporal", "axis" => Dict("format" => "%Y" )),
+                "x" => Dict("field" => string(names(df)[1]), "type" => "temporal", "timeUnit" => "year"),                
                 "y" => Dict("field" => string(names(df)[3]), "type" => "quantitative" ),
                 "color" => Dict("field" => string(names(df)[2]), "type" => "nominal")
             ),
@@ -108,17 +108,18 @@ function getdatapart(df, plottype::Symbol = :line)
 
     #initialize a list for the datapart
     datapart = [];
-    
+
     #loop over rows and create a dictionary for each row
     if plottype == :multiline
         for row in eachrow(df)
-            rowdata = Dict(string(names(df)[1])=> row[1], string(names(df)[3]) => row[3], 
+            rowdata = Dict(string(names(df)[1]) => Date(row[1]), string(names(df)[3]) => row[3], 
                 string(names(df)[2]) => row[2])
             push!(datapart, rowdata)
         end 
     else
         for row in eachrow(df)
-            rowdata = Dict(string(names(df)[1])=> row[1], string(names(df)[2]) => row[2])
+            rowdata = Dict(string(names(df)[1])=> Date(row[1]), string(names(df)[2]) => row[2])
+            
             push!(datapart, rowdata)
         end 
     end
