@@ -37,7 +37,6 @@ function getspeclist(model::Mimi.Model)
         #TO DO :  get all parameters of component
 
     end
-
     return allspecs
 end
 
@@ -114,12 +113,12 @@ function getdatapart(df, plottype::Symbol = :line)
     if plottype == :multiline
         for row in eachrow(df)
             rowdata = Dict(string(names(df)[1])=> row[1], string(names(df)[3]) => row[3], 
-                string(names(df)[2]) => row[2],)
+                string(names(df)[2]) => row[2])
             push!(datapart, rowdata)
         end 
     else
         for row in eachrow(df)
-            rowdata = Dict(string(names(df)[1])=> row[1], string(names(df)[2]) => row[2],)
+            rowdata = Dict(string(names(df)[1])=> row[1], string(names(df)[2]) => row[2])
             push!(datapart, rowdata)
         end 
     end

@@ -10,19 +10,16 @@ function refresh(speclist) {
         var newButton = document.createElement("button");
         newButton.setAttribute("class", "tablinks");
 
-        newButton.setAttribute("onclick", `openVar(event, '${i}')`);
+        // Return a closure with a copy of the spec that's private to the function
+        newButton.onclick = (function() {
+            var spec = speclist[i]["VLspec"];
+                
+            return function() {
+                vegaEmbed("#vis", spec, {actions: false});
+            }
+        }())
+
         newButton.appendChild(document.createTextNode(speclist[i]["name"]));
-        document.getElementById("variablelist").appendChild(newButton);
-            
+        document.getElementById("variablelist").appendChild(newButton);      
     }
-}
-
-// This is the event handler that gets called whenever someone
-// clicks one of the buttons.
-function openVar(evt, index) {
-    
-    // Plot the spec
-    var spec = speclist[index]["VLspec"];
-
-    vegaEmbed("#vis", spec, { actions: false });
 }

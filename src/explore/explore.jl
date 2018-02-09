@@ -19,7 +19,7 @@ function explore(model)
     #load main html file
     # joinpath(@__DIR__, "main.html")
     loadfile(w, abspath("main.html"))
-
+    
     #refresh variable list
     @js w refresh($speclist)
 end
