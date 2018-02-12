@@ -23,6 +23,7 @@ function explore(model)
 
     #load main html file
     # joinpath(@__DIR__, "main.html")
+    ##TODO:  how to handle this if we are no longer in this folder...
     loadfile(w, abspath("main.html"))
         
     #refresh variable list
