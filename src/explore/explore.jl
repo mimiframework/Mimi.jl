@@ -13,6 +13,7 @@ include(joinpath(@__DIR__, "01-one-region-model/one-region-model.jl"))
 
 #function to get variable data
 include("buildspecs.jl")
+include("getparameters.jl")
 
 function explore(model)
     #get variable data
