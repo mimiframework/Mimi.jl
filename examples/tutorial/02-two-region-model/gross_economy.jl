@@ -14,7 +14,7 @@ using Mimi
 end
 
 
-function timestep(state::grosseconomy, t::Int)
+function run_timestep(state::grosseconomy, t::Int)
     v = state.Variables
     p = state.Parameters
     d = state.Dimensions                        #Note that the regional dimension is defined here and parameters and variables are indexed by 'r'
