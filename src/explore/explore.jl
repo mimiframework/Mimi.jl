@@ -4,12 +4,9 @@ using DataFrames
 using JSON
 using Blink
 
-##TODO (version 0.1) decide how to plot single value parameters or values
-##TODO (version 0.2) add parameters function to mimi_core.jl
-
-#run tutorial (included for ease of developement since tutorials need to be 
-#updated)
-include(joinpath(@__DIR__, "01-one-region-model/one-region-model.jl"))
+##TODO (version 0.1) plot single values in button name
+##TODO (version 0.1) add parameters to buildspecs.jl
+##TODO (version 0.2) hierarchical list
 
 #function to get variable data
 include("buildspecs.jl")
@@ -23,9 +20,7 @@ function explore(model)
     w = Blink.Window()
 
     #load main html file
-    # joinpath(@__DIR__, "main.html")
-    ##TODO:  how to handle this if we are no longer in this folder...
-    loadfile(w, abspath("main.html"))
+    loadfile(w, joinpath(@__DIR__, "main.html"))
         
     #refresh variable list
     @js w refresh($speclist)

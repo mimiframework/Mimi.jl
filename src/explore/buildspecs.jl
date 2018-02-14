@@ -15,33 +15,54 @@ function getspeclist(model::Mimi.Model)
         for v in vars
 
             #pull information 
-            name = string(c," : ",v) #returns the name of the pair as "component:variable"
+            name = string("$c : $v") #returns the name of the pair as "component:variable"
             df = getdataframe(model, c, v) #returns the  corresponding dataframe
+            dffields = names(df)
 
             #choose type of plot
-            if names(df)[1] == :time
-                if length(names(df)) > 2
-                    spec = createspec_multilineplot(name, df)
+            if dffields[1] == :time
+                if length(dffields) > 2
+                    spec = createspec_multilineplot(name, df, dffields)
                 else
-                    spec = createspec_lineplot(name, df)
+                    spec = createspec_lineplot(name, df, dffields)
                 end
             else
-                spec = createspec_barplot(name, df)
+                spec = createspec_barplot(name, df, dffields)
             end
 
             #add to spec list
             push!(allspecs, spec) 
-
         end
 
-        #TO DO :  get all parameters of component
+        #get all parameters of component
+        params = parameters(model, c)
+        for p in params
 
+            #pull information 
+            name = string("$c : $p") #returns the name of the pair as "component:variable"
+            df = getdataframe_for_parameter(model, c, p) #returns the  corresponding dataframe
+            dffields = names(df)
+
+            #choose type of plot
+            if dffields[1] == :time
+                if length(dffields) > 2
+                    spec = createspec_multilineplot(name, df, dffields)
+                else
+                    spec = createspec_lineplot(name, df, dffields)
+                end
+            else
+                spec = createspec_barplot(name, df, dffields)
+            end
+
+            #add to spec list
+            push!(allspecs, spec) 
+        end
     end
     return allspecs
 end
 
-function createspec_lineplot(name, df)
-    datapart = getdatapart(df, :line) #returns a list of dictionaries    
+function createspec_lineplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :line) #returns a list of dictionaries    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -51,8 +72,8 @@ function createspec_lineplot(name, df)
             "data"=> Dict("values" => datapart),
             "mark" => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(names(df)[1]), "type" => "temporal", "timeUnit" => "year"),                
-                "y" => Dict("field" => string(names(df)[2]), "type" => "quantitative" )
+                "x" => Dict("field" => string(dffields[1]), "type" => "temporal", "timeUnit" => "year"),                
+                "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
             ),
             "width" => 400,
             "height" => 400 
@@ -61,8 +82,8 @@ function createspec_lineplot(name, df)
     return spec
 end
 
-function createspec_barplot(name, df)
-    datapart = getdatapart(df, :bar) #returns a list of dictionaries    
+function createspec_barplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :bar) #returns a list of dictionaries    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -72,8 +93,8 @@ function createspec_barplot(name, df)
             "data"=> Dict("values" => datapart),
             "mark" => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(names(df)[1]), "type" => "ordinal"),
-                "y" => Dict("field" => string(names(df)[2]), "type" => "quantitative" )
+                "x" => Dict("field" => string(dffields[1]), "type" => "ordinal"),
+                "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
             ),
             "width" => 400,
             "height" => 400 
@@ -82,8 +103,8 @@ function createspec_barplot(name, df)
     return spec
 end
 
-function createspec_multilineplot(name, df)
-    datapart = getdatapart(df, :multiline) #returns a list of dictionaries    
+function createspec_multilineplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :multiline) #returns a list of dictionaries    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -93,9 +114,9 @@ function createspec_multilineplot(name, df)
             "data"=> Dict("values" => datapart),
             "mark" => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(names(df)[1]), "type" => "temporal", "timeUnit" => "year"),                
-                "y" => Dict("field" => string(names(df)[3]), "type" => "quantitative" ),
-                "color" => Dict("field" => string(names(df)[2]), "type" => "nominal")
+                "x" => Dict("field" => string(dffields[1]), "type" => "temporal", "timeUnit" => "year"),                
+                "y" => Dict("field" => string(dffields[3]), "type" => "quantitative" ),
+                "color" => Dict("field" => string(dffields[2]), "type" => "nominal")
             ),
             "width" => 400,
             "height" => 400 
@@ -104,21 +125,20 @@ function createspec_multilineplot(name, df)
     return spec
 end
 
-function getdatapart(df, plottype::Symbol = :line)
+function getdatapart(df, dffields, plottype::Symbol = :line)
 
-    #initialize a list for the datapart
     datapart = [];
 
     #loop over rows and create a dictionary for each row
     if plottype == :multiline
         for row in eachrow(df)
-            rowdata = Dict(string(names(df)[1]) => Date(row[1]), string(names(df)[3]) => row[3], 
-                string(names(df)[2]) => row[2])
+            rowdata = Dict(string(dffields[1]) => Date(row[1]), string(dffields[3]) => row[3], 
+                string(dffields[2]) => row[2])
             push!(datapart, rowdata)
         end 
     else
         for row in eachrow(df)
-            rowdata = Dict(string(names(df)[1])=> Date(row[1]), string(names(df)[2]) => row[2])
+            rowdata = Dict(string(dffields[1])=> Date(row[1]), string(dffields[2]) => row[2])
             
             push!(datapart, rowdata)
         end 
