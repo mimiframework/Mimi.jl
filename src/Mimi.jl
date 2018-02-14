@@ -10,7 +10,8 @@ export
     connectparameter, setleftoverparameters, getvariable, adder, MarginalModel, ConnectorCompVector,
     ConnectorCompMatrix, getindex, getdataframe, components, variables, getvpd, unitcheck, plot, getindexcount,
     getindexvalues, getindexlabels, delete!, get_unconnected_parameters, Timestep, isfirsttimestep,
-    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter
+    isfinaltimestep, TimestepVector, TimestepMatrix, hasvalue, update_external_parameter,
+    getdataframe_for_parameter, parameters, explore # added for explore.jl
 
 
 import
@@ -26,5 +27,8 @@ include("connectorcomp.jl")
 include("references.jl")
 include("plotting.jl")
 include("lint_helper.jl")
+
+# Explorer stuff
+include("explore/explore.jl")
 
 end # module

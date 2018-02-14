@@ -1,5 +1,5 @@
 ## Mimi UI
-using Mimi
+#using Mimi
 using DataFrames
 using JSON
 using Blink
