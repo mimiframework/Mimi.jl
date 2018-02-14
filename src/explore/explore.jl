@@ -4,7 +4,6 @@ using DataFrames
 using JSON
 using Blink
 
-##TODO (version 0.1) plot single values in button name
 ##TODO (version 0.1) add parameters to buildspecs.jl
 ##TODO (version 0.2) hierarchical list
 

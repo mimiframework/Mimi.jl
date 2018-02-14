@@ -27,20 +27,32 @@ function getspeclist(model::Mimi.Model)
                     spec = createspec_lineplot(name, df, dffields)
                 end
             else
-                spec = createspec_barplot(name, df, dffields)
+                if length(df[1]) == 1
+                    value = df[1][1]
+                    name = string("$c : $v = $value")
+                    spec = createspec_singlevalue(name)
+                else
+                    spec = createspec_barplot(name, df, dffields)
+                end
             end
 
             #add to spec list
             push!(allspecs, spec) 
         end
 
-        #get all parameters of component
+        #= #get all parameters of component
         params = parameters(model, c)
         for p in params
 
             #pull information 
-            name = string("$c : $p") #returns the name of the pair as "component:variable"
+            name = string("$c : $p") #returns the name of the pair as "component:parameter"
             df = getdataframe_for_parameter(model, c, p) #returns the  corresponding dataframe
+            
+            #there are no parameters in this component
+            if typeof(df) == Float64
+                continue
+            end
+
             dffields = names(df)
 
             #choose type of plot
@@ -56,7 +68,7 @@ function getspeclist(model::Mimi.Model)
 
             #add to spec list
             push!(allspecs, spec) 
-        end
+        end =#
     end
     return allspecs
 end
@@ -121,6 +133,16 @@ function createspec_multilineplot(name, df, dffields)
             "width" => 400,
             "height" => 400 
         ),
+    )
+    return spec
+end
+
+function createspec_singlevalue(name)
+
+    datapart = [];
+    spec = Dict(
+        "name" => name, 
+        "VLspec" => Dict()
     )
     return spec
 end
