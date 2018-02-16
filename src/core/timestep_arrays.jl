@@ -1,22 +1,17 @@
 import Base: getindex, setindex!, eltype, fill!, size, indices, endof
 
+function get_timestep_instance(T, offset, duration, num_dims, value)
+	if ! (num_dims in (1, 2))
+		error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
+	end
+
+	timestep_type = num_dims == 1 ? TimestepVector : TimestepMatrix
+	return timestep_type{T, offset, duration}(value)
+end
+
 #
 # TimestepVector
 #
-mutable struct TimestepVector{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 1 for the vector case
-	data::Vector{T}
-	function TimestepVector{T, Offset, Duration}(d::Vector{T}) where {T, Offset, Duration}
-		v = new()
-		v.data = d
-		return v
-	end
-	function TimestepVector{T, Offset, Duration}(i::Int) where {T, Offset, Duration}
-		v = new()
-		v.data = Vector{T}(i)
-		return v
-	end
-end
-
 function getindex(x::TimestepVector{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}) where {T,Offset,Duration,Final}
 	return x.data[ts.t]
 end
@@ -86,20 +81,6 @@ end
 #
 # TimestepMatrix
 #
-mutable struct TimestepMatrix{T, Offset, Duration} #don't need to encode N (number of dimensions) as a type parameter because we are hardcoding it as 2 for the matrix case
-	data::Array{T, 2}
-	function TimestepMatrix{T, Offset, Duration}(d::Array{T, 2}) where {T, Offset, Duration}
-		m = new()
-		m.data = d
-		return m
-	end
-	function TimestepMatrix{T, Offset, Duration}(i::Int, j::Int) where {T, Offset, Duration}
-		m = new()
-		m.data = Array{T,2}(i, j)
-		return m
-	end
-end
-
 function getindex(x::TimestepMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, i::OT1) where {T,Offset,Duration,Final,OT1 <: Union{Int, Colon, OrdinalRange}}
 	return x.data[ts.t, i]
 end

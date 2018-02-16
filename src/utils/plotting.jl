@@ -13,7 +13,7 @@ function Plots.plot(m::Model, comp_name::Symbol, parameter::Symbol ; index::Symb
     values = m[comp_name, parameter]
 
     if legend == nothing && isa(values, Array) && ndims(values)==2
-        a = getindexlabels(m, comp_name, parameter)
+        a = indexlabels(m, comp_name, parameter)
         a = Iterators.filter(i->i!=index, a)
         legend = a[1]
     end

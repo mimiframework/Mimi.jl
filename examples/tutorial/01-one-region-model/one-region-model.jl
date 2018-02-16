@@ -78,7 +78,9 @@ end
 # setparameter(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 # connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  #Note that connectparameter was used here.
 
+println("Model has been defined. Running model...")
 run(my_model)
+println("Done.")
 
 #Check model results
 my_model[:emissions, :E]

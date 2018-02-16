@@ -3,35 +3,37 @@
 #
 using MacroTools
 
-Debug = false
+export @defcomp
+
+_Debug = false
 
 function debug(msg)
-    if Debug
+    if _Debug
         println(msg)
     end
 end
 
 #
 # Main> MacroTools.prewalk(replace_dots, :(p.foo[1,2] = v.bar))
-# :((get_property(p, Val(:foo)))[1, 2] = get_property(v, Val(:bar)))
+# :((getproperty(p, Val(:foo)))[1, 2] = getproperty(v, Val(:bar)))
 #
 # Main> MacroTools.prewalk(replace_dots, :(p.foo = v.bar[1]))
-# :(set_property!(p, Val(:foo), (get_property(v, Val(:bar)))[1]))
+# :(setproperty!(p, Val(:foo), (getproperty(v, Val(:bar)))[1]))
 #
 function _replace_dots(ex)
     debug("\nreplace_dots($ex)\n")
 
     if @capture(ex, obj_.field_ = rhs_)
-        return :(set_property!($obj, Val($(QuoteNode(field))), $rhs))
+        return :(setproperty!($obj, Val($(QuoteNode(field))), $rhs))
     
     elseif @capture(ex, obj_.field_)
-        return :(get_property($obj, Val($(QuoteNode(field)))))
+        return :(getproperty($obj, Val($(QuoteNode(field)))))
 
     elseif @capture(ex, obj_.field_[args__] = rhs_)
-        return :(get_property($obj, Val($(QuoteNode(field))))[$(args...)] = $rhs)
+        return :(getproperty($obj, Val($(QuoteNode(field))))[$(args...)] = $rhs)
 
     elseif @capture(ex, obj_.field_[args__])
-        return :(get_property($obj, Val($(QuoteNode(field))))[$(args...)])
+        return :(getproperty($obj, Val($(QuoteNode(field))))[$(args...)])
 
     else
         #debug("No dots to replace")
@@ -40,21 +42,20 @@ function _replace_dots(ex)
 end
 
 function _generate_run_func(module_name, comp_name, args, body)
-    # wrap list of body expressions into a single expr for prewalk()
-    block = Expr(:block)
-    block.args = body
-    block = MacroTools.prewalk(_replace_dots, block)
-    body = block.args
+    # replace each expression with its dot-replaced equivalent
+    body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
 
     func = :(
-        function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, $(args...))
+        # Was: function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, $(args...))
+
+        # run_timestpe must be called with a singleton instance of the given type, e.g. Main.ConnectorCompMatrix()
+        function run_timestep(::$module_name.$comp_name, $(args...))
             $(body...)
         end
     )
     debug("func: $func")
     return func
 end
-
 
 function _check_for_known_argname(name)
     if !(name in (:description, :unit, :index))
@@ -71,12 +72,12 @@ end
 # Generates an expression to construct a Variable or Parameter
 function _generate_var_or_param(elt_type, name, datatype, dimensions, desc, unit)
     func_name = elt_type == :Parameter ? :addparameter : :addvariable
-    expr = :($func_name(comp, $(QuoteNode(name)), $datatype, $dimensions, $desc, $unit))
+    expr = :($func_name($(esc(:comp)), $(QuoteNode(name)), $datatype, $dimensions, $desc, $unit))
     debug("Returning: $expr\n")
     return expr
 end
 
-function _generate_index_expr(name, args, vartype)
+function _generate_dims_expr(name, args, vartype)
     debug("  Index $name")
 
     # Args are not permitted; we attempt capture only to check syntax
@@ -89,11 +90,11 @@ function _generate_index_expr(name, args, vartype)
         error("Index $name: Type specification ($vartype) is not supported")
     end
 
-    expr = :(adddimension(comp, $(QuoteNode(name))))
+    expr = :(adddimension($(esc(:comp)), $(QuoteNode(name))))
     return expr
 end
 
-_generate_index_expr(name::Symbol) = _generate_index_expr(name, [], nothing)
+_generate_dims_expr(name::Symbol) = _generate_dims_expr(name, [], nothing)
 
 #
 # Parse a @defcomp definition, converting it into a series of function calls that
@@ -112,14 +113,24 @@ macro defcomp(comp_name, ex)
     else
         mod_name = Base.module_name(current_module())
     end
-    
+
     # We'll return a block of expressions that will define the component.
     # First, we add the empty component and assign it to `comp`.
-    result = quote comp = addcomponent($(QuoteNode(mod_name)), $(QuoteNode(comp_name))) end
+    result = quote 
+        # N.B.empty types produce singleton instances
+        type $(esc(comp_name)) <: ComponentId end     
+
+        # fails:
+        # comp = newcomponent($(esc(mod_name).esc(comp_name)))
+    end
 
     function addexpr(expr)
         push!(result.args, expr)
     end
+
+    # For some reason this was difficult to do at the higher language level
+    newcomp = Expr(:(=), :comp, Expr(:call, :newcomponent, Expr(:., mod_name, QuoteNode(comp_name))))
+    addexpr(esc(newcomp))
 
     for elt in elements
         debug("elt: $elt")
@@ -128,7 +139,7 @@ macro defcomp(comp_name, ex)
             # Save the expression that will store the run_timestep function definition, and
             # translate dot notation to get/setproperty. The func is created at build time.
             expr = _generate_run_func(mod_name, comp_name, args, body)
-            run_expr = :(set_run_expr(comp, $(QuoteNode(expr))))
+            run_expr = :(set_run_expr($(esc(:comp)), $(QuoteNode(expr))))
             addexpr(run_expr)
             continue
         end
@@ -142,7 +153,7 @@ macro defcomp(comp_name, ex)
 
         # elt_type is one of {:Variable, :Parameter, :Index}
         if elt_type == :Index
-            expr = _generate_index_expr(name, args, vartype)
+            expr = _generate_dims_expr(name, args, vartype)
             push!(known_dims, name)
             addexpr(expr)
 
@@ -178,7 +189,7 @@ macro defcomp(comp_name, ex)
                     # Add undeclared dimensions on-the-fly
                     for dim in dims
                         if ! (dim in known_dims)
-                            addexpr(_generate_index_expr(dim))
+                            addexpr(_generate_dims_expr(dim))
                             push!(known_dims, dim)
                         end
                     end
@@ -189,8 +200,7 @@ macro defcomp(comp_name, ex)
             debug("    index $dims, unit '$unit', desc '$desc'")
 
             datatype = vartype == nothing ? Number : vartype
-            expr = _generate_var_or_param(elt_type, name, datatype, dimensions, desc, unit)
-            push!(result.args, expr)
+            addexpr(_generate_var_or_param(elt_type, name, datatype, dimensions, desc, unit))
 
         else
             error("Unrecognized element type: $elt_type")

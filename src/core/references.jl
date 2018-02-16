@@ -3,54 +3,42 @@ import Base: setindex!, getindex
 """
 Set a component parameter as `setparameter(reference, name, value)`.
 """
-function setparameter(c::ComponentReference, name::Symbol, value)
-    setparameter(c.m, c.component, name, value)
+function setparameter(ref::ComponentReference, name::Symbol, value)
+    setparameter(ref.model, ref.comp_id, name, value)
 end
 
 """
 Set a component parameter as `reference[symbol] = value`.
 """
-function setindex!(c::ComponentReference, value, name::Symbol)
-    setparameter(c.m, c.component, name, value)
+function setindex!(ref::ComponentReference, value, name::Symbol)
+    setparameter(ref.model, ref.comp_id, name, value)
 end
 
 """
 Connect two components as `connectparameter(reference1, name1, reference2, name2)`.
 """
 function connectparameter(target::ComponentReference, target_name::Symbol, source::ComponentReference, source_name::Symbol)
-    connectparameter(target.m, target.component, target_name, source.component, source_name)
+    connectparameter(target.model, target.comp_id, target_name, source.comp_id, source_name)
 end
 
 """
 Connect two components as `connectparameter(reference1, reference2, name)`.
 """
 function connectparameter(target::ComponentReference, source::ComponentReference, name::Symbol)
-    connectparameter(target.m, target.component, name, source.component, name)
+    connectparameter(target.model, target.comp_id, name, source.comp_id, name)
 end
 
-#
-# TBD: VariableReference appears to be unused other than in the two methods below. 
-# Appears to be deprecated.
-#
-"""
-A container for a name within a component, to improve connectparameter aesthetics.
-"""
-struct VariableReference
-    m::Model
-    component::Symbol
-    name::Symbol
-end
 
 """
 Get a variable reference as `reference[name]`.
 """
-function getindex(c::ComponentReference, name::Symbol)
-    VariableReference(c.m, c.component, name)
+function getindex(ref::ComponentReference, name::Symbol)
+    VariableReference(ref.model, ref.comp_id, name)
 end
 
 """
 Connect two components as `reference1[name1] = reference2[name2]`.
 """
 function setindex!(target::ComponentReference, source::VariableReference, name::Symbol)
-    connectparameter(target.m, target.component, name, source.component, source.name)
+    connectparameter(target.model, target.comp_id, name, source.comp_id, source.name)
 end

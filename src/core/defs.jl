@@ -1,101 +1,99 @@
+# Component definitions are global
+const global _compdefs = Dict{ComponentId, ComponentDef}()
 
-# convenience methods
-ComponentDef(mod_name::Symbol, comp_name::Symbol) = ComponentDef(ComponentKey(mod_name, comp_name))
+# From global component registry
+compdefs() = collect(values(_compdefs))
 
-ComponentDef(comp_name::Symbol) = ComponentDef(ComponentKey(comp_name))
-
-# Component definitions are global, keyed by module and component name
-const global _compdefs = Dict{ComponentKey, ComponentDef}()
-
-getcompdefs() = _compdefs
-
-getcompdef(key) = _compdefs[key]
-
-getcompdef(mod_name::Symbol, comp_name::Symbol) = getcompdef(ComponentKey(mod_name, comp_name))
+compdef(comp_id::ComponentId) = _compdefs[comp_id]
 
 # Just renamed for clarity
-@deprecate getallcomps() getcompdefs()
+@deprecate getallcomps() compdefs()
+
+# From ModelDef
+compdefs(md::ModelDef) = values(md.comp_defs)
+
+compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
+
+reset_compdefs() = empty!(_compdefs)
+
+# Return the module object for the component was defined in
+comp_module(comp_id::ComponentId) = typeof(comp_id).name.module
+
+# Return the symbol name of the module the component was defined in
+comp_module_name(comp_id::ComponentId) = Symbol(typeof(comp_id).name.module)
+
+# Gets the name of all NamedDefs: VariableDef, ParameterDef, ComponentDef, DimensionDef
+name(def::NamedDef) = def.name
+
+#
+# TBD: this needs work
+#
+# Get the Symbol for the component ID (a type) rather than the symbol
+# the user assigned to this component. This handles "ConnectorComp$i"
+# components which are of type ConnectorCompMatrix or ...Vector.
+function comp_id_name(md::ModelDef, comp_name::Symbol) 
+    comp_def = compdef(md, comp_name)
+    return name(comp_def.comp_id)
+end
 
 function dump_components()
-    for comp in _compdefs
-        println("\n$(comp.key)")
-        for (tag, d) in ((:Variables, comp.getvariables()), (:Parameters, comp.getparameters()), (:Dimensions, comp.getdimensions()))
+    for comp in compdefs()
+        println("\n$(name(comp))")
+        for (tag, objs) in ((:Variables, variables(comp)), (:Parameters, parameters(comp)), (:Dimensions, dimensions(comp)))
             println("  $tag")
-            for (name, def) in d
-                println("    $name = $def")
+            for obj in objs
+                println("    $(obj.name) = $obj")
             end
         end
     end
 end
 
-function addcomponent(key::ComponentKey)
-    println("adding component $key")
-    if haskey(_compdefs, key)
-        warn("Redefining component :$(key.comp_name) in module :$(key.module_name)")
+"""
+    newcomponent(comp_id::ComponentId)
+
+Create an empty `ComponentDef`` to the global component registry using the given `comp_id`,
+which is a singleton instance of the class defined by @defcomp for this component. The
+empty `ComponentDef` must be populated with calls to `addvariable`, `addparameter`, etc.
+"""
+function newcomponent(comp_id::ComponentId)
+    println("new component $comp_id")
+    if haskey(_compdefs, comp_id)
+        module_name = comp_module(comp_id)
+        warn("Redefining component :$comp_id in module $module_name")
     end
 
-    comp = ComponentDef(key)
-    _compdefs[key] = comp
+    comp = ComponentDef(comp_id)
+    _compdefs[comp_id] = comp
     return comp
 end
 
-addcomponent(comp_name::Symbol) = addcomponent(ComponentKey(comp_name))
+newcomponent(::Type{T}) where {T <: ComponentId} = newcomponent(T())
 
-addcomponent(mod::Symbol, comp::Symbol) = addcomponent(ComponentKey(mod, comp))
 
-#
-# Model
-#
+import Base.delete!
 
-function addcomponent(model::ModelDef, comp::ComponentDef)
-    push!(model.comps, comp)
-    nothing
+"""
+    delete!(m::ModelDef, component::Symbol
+
+Delete a component by name from a model definition.
+"""
+function delete!(md::ModelDef, comp_name::Symbol)
+    if ! haskey(md.comp_defs, comp_name)
+        error("Cannot delete '$comp_name' from model; component does not exist.")
+    end
+
+    delete!(md.comp_defs, comp_name)
+
+    ipc_filter = x -> x.source_component_name != comp_name && x.target_component_name != comp_name
+    filter!(ipc_filter, m.internal_parameter_connections)
+
+    epc_filter = x -> x.component_name != comp_name
+    filter!(epc_filter, m.external_parameter_connections)
+
+   
 end
 
-getcompdefs(model::ModelDef) = model.comps
-
-#
-# Variables
-#
-function addvariable(comp::ComponentDef, name, datatype, dimensions, description, unit)
-    v = VariableDef(name, datatype, dimensions, description, unit)
-    comp.variables[name] = v
-    return v
-end
-
-function addvariable(key::ComponentKey, name, datatype, dimensions, description, unit)
-    addvariable(getcompdef(key), name, datatype, dimensions, description, unit)
-end
-
-@deprecate addvariable(mod::Symbol, comp::Symbol, name, datatype, dims, desc, unit) addvariable(ComponentKey(mod, comp), name, datatype, dims, desc, unit)
-
-getvariables(comp::ComponentDef) = values(comp.variables)
-
-getvariables(key::ComponentKey) = getvariables(getcompdef(key))
-
-@deprecate get_componentdef_variables(mod::Symbol, comp::Symbol) getvariables(ComponentKey(mod, comp))
-
-@deprecate get_componentdef_variables(comp_type::Type) getvariables(ComponentKey(Symbol(name.module), name.name))
-
-# RP: needed to add this. Unclear if method above is necessary, but I doubt it.
-@deprecate get_componentdef_variables(name::Any) getvariables(ComponentKey(Symbol(name.module), name.name))
-
-#
-# Parameters
-#
-function addparameter(comp::ComponentDef, name, datatype, dimensions, description, unit)
-    p = ParameterDef(name, datatype, dimensions, description, unit)
-    comp.parameters[name] = p
-    return p
-end
-
-function addparameter(key::ComponentKey, name, datatype, dimensions, description, unit)
-    addparameter(getcompdef(key), name, datatype, dimensions, description, unit)
-end
-
-@deprecate set_external_parameter(mod::Symbol, comp::Symbol, name, datatype, dims, desc, unit) addparameter(getcompdef(ComponentKey(mod, comp)), name, datatype, dims, desc, unit)
-
-getparameters(comp::ComponentDef) = values(comp.parameters)
+components(md::ModelDef) = values(md.components)
 
 #
 # Dimensions
@@ -106,160 +104,302 @@ function adddimension(comp::ComponentDef, name)
     return d
 end
 
-adddimension(key::ComponentKey, name) = adddimension(getcompdef(key), name)
+adddimension(comp_id::ComponentId, name) = adddimension(compdef(comp_id), name)
 
-@deprecate adddimension(mod::Symbol, comp::Symbol, name) adddimension(ComponentKey(mod, comp), name)
+dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 
-getdimensions(comp::ComponentDef) = values(comp.dimensions)
+# getexpr(comp::ComponentDef, tag::Symbol) = comp.expressions[tag]
 
-#
-# run_timestep function
-#
+function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
+    for dim in dims
+        if dim in keys(indexvalues(md))
+            if isa(value, NamedArray)
+                labels = names(value, findnext(dims, dim, 1))
+                dim_values = indexvalues(md, dim)
+                for i in 1:length(labels)
+                    if labels[i] != dim_values[i]
+                        error("Parameter labels for $dim dimension in $name, parameter do not match model's indices values")
+                    end
+                end
+            end
+        else
+            error("Dimension $dim in parameter $name not found in model's dimensions")
+        end
+    end
+end
 
-# Save the expression defining the run_timestep function. (It's created at build-time.)
-function set_run_expr(comp::ComponentDef, expr::Expr)
-    comp.run_expr = expr
+indexcounts(md::ModelDef) = md.index_counts
+
+indexcount(md::ModelDef, idx::Symbol) = md.index_counts[idx]
+
+indexvalues(md::ModelDef) = md.index_values
+
+indexvalue(md::ModelDef, idx::Symbol) = md.index_value[idx]
+
+timelabels(md::ModelDef) = md.time_labels
+
+# function setindex(md::ModelDef, name::Symbol, range::Range{T}) where {T}
+function setindex(md::ModelDef, name::Symbol, range::Range)
+    md.index_counts[name] = length(range)
+    md.index_values[name] = Vector(range)
+    md.time_labels = Vector()
     nothing
 end
 
-get_run_expr(comp::ComponentDef) = comp.run_expr
-
-#
-# Type expressions
-#
-function addexpr(comp::ComponentDef, tag::Symbol, expr::Expr)
-    comp.expressions[tag] = expr
+function setindex(md::ModelDef, name::Symbol, count::Int)
+    md.index_counts[name] = count
+    md.index_values[name] = collect(1:count)
+    md.time_labels = Vector()
     nothing
 end
 
-getexpr(comp::ComponentDef, tag::Symbol) = comp.expressions[tag]
+# helper function for setindex; used to determine if the provided time values are a uniform range.
+function isuniform(values::Vector)
+    # TBD: handle zero-length here or in setindex?
+
+    if length(values) in (1, 2)
+        return true
+    end
+
+    stepsize = values[2] - values[1]
+    for i in 3:length(values)
+        if (values[i] - values[i - 1]) != stepsize
+            return false
+        end
+    end
+
+    return true
+end
+
+"""
+    setindex{T}(m::Model, name::Symbol, values::Vector{T})
+
+Set the values of `Model`'s index `name` to `values`.
+"""
+function setindex(md::ModelDef, name::Symbol, values::Vector)
+# function setindex(md::ModelDef, name::Symbol, values::Vector{T}) where {T}  
+    md.index_counts[name] = length(values)
+    if name == :time
+        if ! isuniform(values) # case where time values aren't uniform
+            md.time_labels = values
+            md.index_values[name] = collect(1:length(values))
+        else # case where time values are uniform
+            md.index_values[name] = copy(values)
+            md.time_labels = Vector()
+        end
+    else
+        md.index_values[name] = copy(values)
+    end
+    nothing
+end
 
 #
-# Code generation from ComponentDef
+# Parameters
 #
-@deprecate generate_comp_expressions(mod::Symbol, comp::Symbol) genexpressions(getcompdef(ComponentKey(mod, comp)))
+function addparameter(comp::ComponentDef, name, datatype, dimensions, description, unit)
+    p = ParameterDef(name, datatype, dimensions, description, unit)
+    comp.parameters[name] = p
+    return p
+end
 
-@deprecate generate_comp_expressions(key::ComponentKey) genexpressions(getcompdef(key))
+function addparameter(comp_id::ComponentId, name, datatype, dimensions, description, unit)
+    addparameter(compdef(comp_id), name, datatype, dimensions, description, unit)
+end
 
-# TBD: Rewrite to accommodate dot-overloading approach.
-# Generate type expressions for variables, parameters, and dimensions
-# function genexpressions(comp::ComponentDef)
-#     parameters = getparameters(comp)
-#     variables  = getvariables(comp)
-#     dimensions = getdimensions(comp)
+parameters(comp_def::ComponentDef) = values(comp_def.parameters)
 
-#     comp_name = comp.key.comp_name
-#     pname = Symbol(string(comp_name, "Parameters"))
-#     vname = Symbol(string(comp_name, "Variables"))
-#     dname = Symbol(string(comp_name, "Dimensions"))
+parameter(comp_def::ComponentDef, name::Symbol) = comp_def.parameters[name]
 
-#     # TBD: note dependence on :time being first dimensions
-#     arrayparameters = collect(Iterators.filter(p->(0 < length(p.dimensions) <= 2 && p.dimensions[1] == :time), parameters))
+parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
+
+parameter(md::ModelDef, comp_id::ComponentId, param_name::Symbol) = parameter(compdef(md, comp_id), param_name)
+
+function parameter_unit(md::ModelDef, comp_id::ComponentId, param_name::Symbol)
+    param = parameter(md, comp_id, param_name)
+    return param.unit
+end
+
+function parameter_dimensions(md::ModelDef, comp_id::ComponentId, param_name::Symbol)
+    param = parameter(md, comp_id, param_name)
+    return param.dimensions
+end
+
+# TBD: might need to move more guts of ModelInstance to ModelDef
+"""
+    setparameter(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+
+Set the parameter of a component in a model to a given value. Value can by a scalar,
+an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
+the provided data, and will be used to check that they match the model's index labels.
+"""
+function setparameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+    # perform possible dimension and labels checks
+    if isa(value, NamedArray)
+        dims = dimnames(value)
+    end
+
+    if dims != nothing
+        check_parameter_dimensions(md, value, dims, param_name)
+    end
+
+    # now set the parameter
+    comp_param_dims = parameter_dimensions(md, comp_name, param_name)
     
-#     param_names = length(arrayparameters) == 0 ? [] : 
-#                   collect(Iterators.flatten([(Symbol("OFFSET$i"), Symbol("DURATION$i")) for i in 1:length(arrayparameters)]))
-             
-#     ptype_signature = :($(pname){T, $(param_names...)})
+    # array parameter case
+    if length(comp_param_dims) > 0 
+        # convert the number type and, if NamedArray, convert to Array
+        value = convert(Array{number_type(md)}, value) 
+    
+        if comp_param_dims[1] == :time
+            comp_def = compdef(md, comp_name)
+            offset = comp_def.offset                    # TBD: this exists in ModelInstance currently
+            duration = getduration(indexvalues(md))
 
-#     std_args = (:T, :OFFSET, :DURATION, :FINAL)
-#     impl_name = Symbol(string(comp_name, "Impl"))
+            T = eltype(value)
+            num_dims = length(comp_param_dims)
 
-#     impl_signature = :($impl_name{$(std_args...), $(param_names...)})
-#     impl_constructor = :($impl_signature(indices) where {$(std_args...), $(param_names...)})
+            values = num_dims == 1 ? TimestepVector{T, offset, duration}(value) :
+                    (num_dims == 2 ? TimestepMatrix{T, offset, duration}(value) : value)
+        else
+            values = value
+        end
 
-#     println("\nptype: $ptype_signature")
-#     println("\nctor: $impl_constructor")
-#     println("\nsig: $impl_signature")
+        set_external_array_parameter(md, param_name, values, dims)
 
-#     # Timestep types indexed by number of dimensions indicting their respective use
-#     timestep_types = (:TimestepVector, :TimestepMatrix)
+    else # scalar parameter case
+        set_external_scalar_parameter(md, param_name, value)
+    end
 
-#     # Define types for parameters
-#     ex = Expr(:block)
-#     i = 1
-#     for p in parameters
-#         concreteParameterType = p.datatype == Number ? :T : p.datatype
-#         dims = length(p.dimensions)
+    connectparameter(md, comp_name, param_name, param_name)
+    nothing
+end
 
-#         if dims == 0
-#             push!(ex.args, :($(p.name)::$concreteParameterType))
+#
+# Variables
+#
+variables(comp_def::ComponentDef) = values(comp_def.variables)
 
-#         # TBD: note dependence on :time being first dimensions
-#         elseif (dims in (1, 2) && p.dimensions[1] == :time)
-#             offset   = Symbol("OFFSET$i")
-#             duration = Symbol("DURATION$i")          
-#             ttype = timestep_types[dims] # TimestepVector or TimestepMatrix
-#             push!(ex.args, :($(p.name)::$ttype{$concreteParameterType, $offset, $duration}))
-#             i += 1
+variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
-#         else
-#             push!(ex.args, :($(p.name)::Array{$concreteParameterType, $dims}) )
-#         end
-#     end
+variable(md::ModelDef, comp_id::ComponentId, param_name::Symbol) = variable(compdef(md, comp_id), param_name)
 
-#     addexpr(comp, :whatever, ex)
+function variable_unit(md::ModelDef, comp_id::ComponentId, var_name::Symbol)
+    var = variable(md, comp_id, var_name)
+    return var.unit
+end
+
+function variable_dimensions(md::ModelDef, comp_id::ComponentId, var_name::Symbol)
+    var = variable(md, comp_id, var_name)
+    return var.dimensions
+end
 
 
-#     # Define type for variables
-#     ex = Expr(:block)
-#     for v in variables
-#         varname = v.name
-#         concreteVariableType = v.datatype == Number ? :T : v.datatype
-#         dims = length(v.dimensions)
+function addvariable(comp::ComponentDef, name, datatype, dimensions, description, unit)
+    v = VariableDef(name, datatype, dimensions, description, unit)
+    comp.variables[name] = v
+    return v
+end
 
-#         if dims == 0
-#             push!(ex.args, :($varname::$(concreteVariableType)))
-            
-#         # TBD: note dependence on :time being first dimensions
-#         elseif dims in (1, 2) && v.dimensions[1] == :time
-#             ttype = timestep_types[dims] # TimestepVector or TimestepMatrix
-#             push!(ex.args, :($varname::$ttype{$(concreteVariableType), OFFSET, DURATION}))
+function addvariable(comp_id::ComponentId, name, datatype, dimensions, description, unit)
+    addvariable(compdef(comp_id), name, datatype, dimensions, description, unit)
+end
 
-#         else
-#             push!(ex.args, :($varname::Array{$(concreteVariableType), $dims}))
-#         end
-#     end
+#
+# Other
+#
 
-#     # Define type for dimensions
-#     mutable struct $(Symbol(string(comp_name,"Dimensions")))
-#         $(begin
-#             x = Expr(:block)
-#             for d in dimensions
-#                 push!(x.args, :($(d.name)::UnitRange{Int}) )
-#             end
-#             x
-#         end)
+# Save the expression defining the run_timestep function. (It's eval'd at build-time.)
+function set_run_expr(comp_def::ComponentDef, expr::Expr)
+    comp_def.run_expr = expr
+    nothing
+end
 
-#         function $(Symbol(string(comp_name,"Dimensions")))(indices)
-#             s = new()
-#             $(begin
-#                 ep = Expr(:block)
-#                 for d in dimensions
-#                     push!(ep.args,:(s.$(d.name) = UnitRange{Int}(1,indices[$(QuoteNode(d.name))])))
-#                 end
-#                 ep
-#             end)
-#             return s
-#         end
-#     end
+run_expr(comp_def::ComponentDef) = comp_def.run_expr
 
-#     # Define implementation typeof
-#     mutable struct $(impl_signature) <: Main.$(Symbol(module_name)).$(Symbol(comp_name))
-#         nsteps::Int
-#         Parameters::$(ptype_signature)
-#         Variables::$(Symbol(string(comp_name,"Variables"))){T, OFFSET, DURATION, FINAL}
-#         Dimensions::$(Symbol(string(comp_name,"Dimensions")))
+#
+# Model
+#
 
-#         $(Expr(:function, impl_constructor,
-#             :(return new{$([[:T, :OFFSET, :DURATION, :FINAL]; (length(arrayparameters) == 0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))]...)}(
-#                 indices[:time],
-#                 $(ptype_signature)(),
-#                 $(Symbol(string(comp_name,"Variables"))){T, OFFSET, DURATION, FINAL}(indices),
-#                 $(Symbol(string(comp_name,"Dimensions")))(indices)
-#             ))
-#         ))
-#     end
-
-#     # println(compexpr)
-#     return compexpr
+#
+# TBD: might reinstate this if the subsequent function is moved to ModelInstance
+#
+# function addcomponent(md::ModelDef, comp::ComponentDef)
+#     md.comp_defs[comp.comp_id] = comp
+#     nothing
 # end
+
+"""
+    addcomponent(m::Model, comp::Component; start=nothing, final=nothing, before=nothing, after=nothing)
+
+Add the component indicated by `key` to the model. The component is added at the end of the list unless
+one of the keywords, `start`, `final`, `before`, `after`
+"""
+function addcomponent(md::ModelDef, comp_def::ComponentDef;
+                      start=nothing, final=nothing, before=nothing, after=nothing)
+    # check that start and final are within the model's time index range
+    time_index = indexvalues(md, :time)
+
+    if start == nothing
+        start = time_index[1]
+    elseif start < time_index[1]
+        error("Cannot add component $name with start time before start of model's time index range.")
+    end
+
+    if final == nothing
+        final = time_index[end]
+    elseif final > time_index[end]
+        error("Cannot add component $name with final time after end of model's time index range.")
+    end
+
+    if before != nothing && after != nothing
+        error("Can only specify before or after parameter")
+    end
+
+    comp_name = name(comp_def)
+
+    # Check if component being added already exists
+    if comp_name in keys(components(md))
+        error("You cannot add two components of the same abstract type ($comp_name)")
+    end
+
+    if before == nothing && after == nothing
+        # just add it to the end
+        md.comp_defs[comp_name] = ComponentInstance(comp_name, start, final)
+        return nothing
+    end
+
+    newcomponents = OrderedDict{Symbol, ComponentInstance}()    # TBD: make CompDef
+
+    if before != nothing
+        if ! haskey(md.comp_defs, before)
+            error("Component to add before ($before) does not exist")
+        end
+
+        for i in keys(md.components)
+            if i == before
+                newcomponents[comp_name] = ComponentInstance(comp_name, start, final)   # TBD: make CompDef
+            end
+            newcomponents[i] = md.components[i]
+        end
+
+    else    # after != nothing, since we've handled all other possibilities above
+        if ! haskey(md.comp_defs, after)
+            error("Component to add before ($before) does not exist")
+        end
+
+        for i in keys(m.components)
+            newcomponents[i] = md.components[i]
+            if i == after
+                newcomponents[comp_name] = ComponentInstance(comp_name, start, final)   # TBD: make CompDef
+            end
+        end
+    end
+
+    md.comp_defs = newcomponents
+    return nothing
+end
+
+function addcomponent(md::ModelDef, comp_id::ComponentId;
+                      start=nothing, final=nothing, before=nothing, after=nothing)
+    addcomponent(md, compdef(md, comp_id), start=start, final=final, before=before, after=after)
+end

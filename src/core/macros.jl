@@ -1,7 +1,17 @@
-#
-# @defmodel and supporting functions
-#
 using MacroTools
+
+export @modelegate, @defmodel
+
+
+# Delegate calls to ::Model to internal ModelInstance or ModelDe` objects.
+macro modelegate(ex)
+    if @capture(ex, fname_(varname_::Model, args__) => rhs_)
+        result = esc(:($fname($varname::Model, $(args...)) = $fname($varname.$rhs, $(args...))))
+        #println(result)
+        return result
+    end
+    error("Calls to @modelegate must be of the form 'func(m::Model, args...) => X', where X is either mi or md'. Expression was: $ex")
+end
 
 #
 # A few types of expressions are supported:
@@ -24,23 +34,27 @@ macro defmodel(model_name, ex)
 
     # We'll return a block of expressions that will define the model.
     # First, we add the empty model and assign it to the given model name.
-    result = quote $model_name = Model() end 
+    result = quote $(esc(model_name)) = Model() end 
 
     for elt in elements
-        if @capture(elt, component(comp_mod_.comp_name_) | component(comp_name_))
+        if @capture(elt, component(comp_mod_.comp_name_) | 
+                         component(comp_name_)) # | 
+                        #  component(comp_mod_.comp_name_, alias_) | 
+                        #  component(comp_name_, alias_))
+
             comp_mod = comp_mod == nothing ? curr_module : comp_mod
-            expr = :(addcomponent($model_name, ComponentKey($(QuoteNode(comp_mod)), $(QuoteNode(comp_name)))))
+            expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name)) #, alias=alias)))
 
         elseif @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_)
-            expr = :(connectparameter($model_name, 
+            expr = :(connectparameter($(esc(model_name)),
                                       $(QuoteNode(src_comp)), $(QuoteNode(src_name)),
                                       $(QuoteNode(dst_comp)), $(QuoteNode(dst_name))))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
-            expr = :(setindex($model_name, $(QuoteNode(idx_name)), $rhs))
+            expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(setparameter($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
+            expr = :(setparameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

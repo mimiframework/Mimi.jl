@@ -1,0 +1,122 @@
+# TBD: Rewrite to accommodate dot-overloading approach.
+# Generate type expressions for variables, parameters, and dimensions
+# function genexpressions(comp::ComponentDef)
+#     parameters = getparameters(comp)
+#     variables  = getvariables(comp)
+#     dimensions = getdimensions(comp)
+
+#     comp_name = comp.key.comp_name
+#     pname = Symbol(string(comp_name, "Parameters"))
+#     vname = Symbol(string(comp_name, "Variables"))
+#     dname = Symbol(string(comp_name, "Dimensions"))
+
+#     # TBD: note dependence on :time being first dimensions
+#     arrayparameters = collect(Iterators.filter(p->(0 < length(p.dimensions) <= 2 && p.dimensions[1] == :time), parameters))
+    
+#     param_names = length(arrayparameters) == 0 ? [] : 
+#                   collect(Iterators.flatten([(Symbol("OFFSET$i"), Symbol("DURATION$i")) for i in 1:length(arrayparameters)]))
+             
+#     ptype_signature = :($(pname){T, $(param_names...)})
+
+#     std_args = (:T, :OFFSET, :DURATION, :FINAL)
+#     impl_name = Symbol(string(comp_name, "Impl"))
+
+#     impl_signature = :($impl_name{$(std_args...), $(param_names...)})
+#     impl_constructor = :($impl_signature(indices) where {$(std_args...), $(param_names...)})
+
+#     println("\nptype: $ptype_signature")
+#     println("\nctor: $impl_constructor")
+#     println("\nsig: $impl_signature")
+
+#     # Timestep types indexed by number of dimensions indicting their respective use
+#     timestep_types = (:TimestepVector, :TimestepMatrix)
+
+#     # Define types for parameters
+#     ex = Expr(:block)
+#     i = 1
+#     for p in parameters
+#         concreteParameterType = p.datatype == Number ? :T : p.datatype
+#         dims = length(p.dimensions)
+
+#         if dims == 0
+#             push!(ex.args, :($(p.name)::$concreteParameterType))
+
+#         # TBD: note dependence on :time being first dimensions
+#         elseif (dims in (1, 2) && p.dimensions[1] == :time)
+#             offset   = Symbol("OFFSET$i")
+#             duration = Symbol("DURATION$i")          
+#             ttype = timestep_types[dims] # TimestepVector or TimestepMatrix
+#             push!(ex.args, :($(p.name)::$ttype{$concreteParameterType, $offset, $duration}))
+#             i += 1
+
+#         else
+#             push!(ex.args, :($(p.name)::Array{$concreteParameterType, $dims}) )
+#         end
+#     end
+
+#     addexpr(comp, :whatever, ex)
+
+
+#     # Define type for variables
+#     ex = Expr(:block)
+#     for v in variables
+#         varname = v.name
+#         concreteVariableType = v.datatype == Number ? :T : v.datatype
+#         dims = length(v.dimensions)
+
+#         if dims == 0
+#             push!(ex.args, :($varname::$(concreteVariableType)))
+            
+#         # TBD: note dependence on :time being first dimensions
+#         elseif dims in (1, 2) && v.dimensions[1] == :time
+#             ttype = timestep_types[dims] # TimestepVector or TimestepMatrix
+#             push!(ex.args, :($varname::$ttype{$(concreteVariableType), OFFSET, DURATION}))
+
+#         else
+#             push!(ex.args, :($varname::Array{$(concreteVariableType), $dims}))
+#         end
+#     end
+
+#     # Define type for dimensions
+#     mutable struct $(Symbol(string(comp_name,"Dimensions")))
+#         $(begin
+#             x = Expr(:block)
+#             for d in dimensions
+#                 push!(x.args, :($(d.name)::UnitRange{Int}) )
+#             end
+#             x
+#         end)
+
+#         function $(Symbol(string(comp_name,"Dimensions")))(indices)
+#             s = new()
+#             $(begin
+#                 ep = Expr(:block)
+#                 for d in dimensions
+#                     push!(ep.args,:(s.$(d.name) = UnitRange{Int}(1,indices[$(QuoteNode(d.name))])))
+#                 end
+#                 ep
+#             end)
+#             return s
+#         end
+#     end
+
+#     # Define implementation typeof
+#     mutable struct $(impl_signature) <: Main.$(Symbol(module_name)).$(Symbol(comp_name))
+#         nsteps::Int
+#         Parameters::$(ptype_signature)
+#         Variables::$(Symbol(string(comp_name,"Variables"))){T, OFFSET, DURATION, FINAL}
+#         Dimensions::$(Symbol(string(comp_name,"Dimensions")))
+
+#         $(Expr(:function, impl_constructor,
+#             :(return new{$([[:T, :OFFSET, :DURATION, :FINAL]; (length(arrayparameters) == 0 ? [] : collect(Iterators.flatten([(Symbol("OFFSET$i"),Symbol("DURATION$i")) for i in 1:length(arrayparameters)])))]...)}(
+#                 indices[:time],
+#                 $(ptype_signature)(),
+#                 $(Symbol(string(comp_name,"Variables"))){T, OFFSET, DURATION, FINAL}(indices),
+#                 $(Symbol(string(comp_name,"Dimensions")))(indices)
+#             ))
+#         ))
+#     end
+
+#     # println(compexpr)
+#     return compexpr
+# end

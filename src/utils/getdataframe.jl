@@ -15,50 +15,54 @@ end
 
 # TBD: if m holds mi, why is this functional sig necessary? Combine with method above?
 
-function getdataframe(m::Model, mi::ModelInstance, componentname::Symbol, name::Symbol)
-    comp_type = typeof(mi.components[componentname])
+function getdataframe(m::Model, mi::ModelInstance, comp_id::ComponentId, name::Symbol)
+    comp_inst = getcomponent(mi, comp_id)
+    comp_name = comp_name(comp_inst)
 
-    meta_module_name = Symbol(supertype(comp_type).name.module)
-    meta_component_name = Symbol(supertype(comp_type).name.name)
+    dims = indexlabels(m, comp_id, name)
+    num_dims = length(dims)
 
-    vardiminfo = getdiminfoforvar((meta_module_name,meta_component_name), name)
-
-    if length(vardiminfo)==0
-        return mi[componentname, name]
+    if num_dims == 0
+        return comp_inst[name]
     end
 
     df = DataFrame()
+    dim1 = dims[1]
 
-    values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
-    if vardiminfo[1]==:time
-        comp_start = m.components2[componentname].offset
-        comp_final = m.components2[componentname].final
+    values = (isempty(m.time_labels) || dim1 != :time ? indexvalue(m, dim1) : m.time_labels)
+
+    if dim1 == :time
+        comp_start = comp_inst.offset
+        comp_final = comp_inst.final
         start = findfirst(values, comp_start)
         final = findfirst(values, comp_final)
-        num = getspan(m, componentname)
+        num = getspan(m, comp_name)             # TBD: this is unused
     end
 
-    if length(vardiminfo)==1
-        df[vardiminfo[1]] = values
-        if vardiminfo[1]==:time
-            df[name] = vcat(repeat([NaN], inner=start-1), mi[componentname, name], repeat([NaN], inner=length(values)-final))
+    if num_dims == 1
+        df[dim1] = values
+        if dim1 == :time
+            df[name] = vcat(repeat([NaN], inner=start - 1), mi[comp_name, name], repeat([NaN], inner=length(values) - final))
         else
-            df[name] = mi[componentname, name]
+            df[name] = mi[comp_name, name]  # TBD need to fix this
         end
         return df
-    elseif length(vardiminfo)==2
-        dim2 = length(m.indices_values[vardiminfo[2]])
-        dim1 = length(m.indices_values[vardiminfo[1]])
-        df[vardiminfo[1]] = repeat(values, inner=[dim2])
-        df[vardiminfo[2]] = repeat(m.indices_values[vardiminfo[2]], outer=[dim1])
 
-        data = m[componentname, name]
-        if vardiminfo[1]==:time
-            top = fill(NaN, (start-1, dim2))
-            bottom = fill(NaN, (dim1-final, dim2))
+    elseif num_dims == 2
+        dim2 = dims[2]
+        len_dim2 = length(indexvalues(m, dim2))
+        len_dim1 = length(indexvalues(m, dim1))
+        df[dim1] = repeat(values, inner=[len_dim2])
+        df[dim2] = repeat(indexvalues(m, dim2), outer=[len_dim1])
+
+        data = m[comp_name, name]
+        if dim1 == :time
+            top = fill(NaN, (start - 1, dim2))
+            bottom = fill(NaN, (dim1 - final, dim2))
             data = vcat(top, data, bottom)
         end
-        df[name] = cat(1,[vec(data[i,:]) for i=1:dim1]...)
+
+        df[name] = cat(1, [vec(data[i, :]) for i = 1:dim1]...)
 
         return df
     else
@@ -80,7 +84,9 @@ function getdataframe(m::Model, comp_name_pairs::Pair...)
     end
 end
 
-
+#
+# TBD: eliminate redundancy in methods below and above. Distill out common functions...
+#
 function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     #Make sure tuple passed in is not empty
     if length(comp_name_pairs) == 0
@@ -91,6 +97,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     firstpair = comp_name_pairs[1]
     componentname = firstpair[1]
     name = firstpair[2]
+
     if isa(name, Tuple)
         name = name[1]
     end
@@ -100,14 +107,15 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
     end
 
     vardiminfo = getvardiminfo(mi, componentname, name)
-    num_dim = length(vardiminfo)
+    num_dims = length(vardiminfo)
 
     #Initialize dataframe depending on num dimensions
     df = DataFrame()
     values = ((isempty(m.time_labels) || vardiminfo[1]!=:time) ? m.indices_values[vardiminfo[1]] : m.time_labels)
-    if num_dim == 1
+    if num_dims == 1
         df[vardiminfo[1]] = values
-    elseif num_dim == 2
+
+    elseif num_dims == 2
         dim1 = length(m.indices_values[vardiminfo[1]])
         dim2 = length(m.indices_values[vardiminfo[2]])
         df[vardiminfo[1]] = repeat(values, inner=[dim2])

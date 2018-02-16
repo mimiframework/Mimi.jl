@@ -8,42 +8,42 @@ using Distributions
 using NamedArrays
 
 export
-    @defcomp,
-    @defmodel,
-    ComponentDef,
-    ComponentKey,
+    # @defcomp,
+    # @defmodel,
+    # ComponentDef,
+    # ComponentKey,
     ComponentReference,
     MarginalModel,
     Model,
+    ModelParameter,
     Timestep,
     TimestepMatrix,
     TimestepVector,
     addcomponent,
     adddimension,
     addparameter,
+    compdef,
+    compdefs,
     components,
     connectparameter,
     delete!,
     get_unconnected_parameters,
-    getcompdef,
-    getcompdefs,
-    get_componentdef_variables,
     getdataframe,
-    getdimensions,
+    dimensions,
     getindex,
-    getindexcount,
-    getindexlabels,
-    getindexvalues,
-    getparameters,
-    get_run_expr,
-    getvariables,
-    getvpd,
+    indexcount,
+    indexvalues,
+    parameters,
+    variables,
     hasvalue,
+    indexlabels,
     isfinaltimestep,
     isfirsttimestep,
     load_comps,
+    newcomponent,
     # plot,
     run,
+    run_expr,
     run_timestep,
     setindex,
     set_leftover_parameters,
@@ -56,21 +56,19 @@ export
 import
     Base.getindex, Base.run, Base.show
 
-include("types/timestep.jl")
-include("types/definitions.jl")
-include("types/instances.jl")
-include("types/model.jl")
+include("core/types.jl")
+include("core/macros.jl")
 
-# After loading types, the rest can just be alphabetical
+# After loading types and macros, the rest can just be alphabetical
 include("core/build.jl")
 include("core/clock.jl")
 include("core/defs.jl")
 include("core/defcomp.jl")
-include("core/defmodel.jl")
+include("core/instances.jl")
 include("core/mimi-core.jl")
 include("core/references.jl")
-include("core/run.jl")
 include("core/timestep_arrays.jl")
+include("core/model.jl")
 
 include("utils/graph.jl")
 # include("utils/plotting.jl")
