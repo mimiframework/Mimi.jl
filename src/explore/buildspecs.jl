@@ -3,11 +3,12 @@ using Mimi
 using DataFrames
 
 function getspeclist(model::Mimi.Model)
+
     #initialize the speclist
     allspecs = []
 
     #get all components of model
-    comps = components(model)
+    comps = Mimi.components(model)
     for c in comps
 
         #get all variables of component
@@ -16,21 +17,32 @@ function getspeclist(model::Mimi.Model)
 
             #pull information 
             name = string("$c : $v") #returns the name of the pair as "component:variable"
+
+            if c == :climateco2cycle && v == :cbox
+                println("this is the FUND error variable, SKIPPING ...")
+                continue
+            end 
+
             df = getdataframe(model, c, v) #returns the  corresponding dataframe
-            dffields = names(df)
 
             #choose type of plot
-            if dffields[1] == :time
-                if length(dffields) > 2
-                    spec = createspec_multilineplot(name, df, dffields)
-                else
-                    spec = createspec_lineplot(name, df, dffields)
-                end
+            #single value
+            if length(df[1]) == 1
+                value = df[1][1]
+                name = string("$c : $v = $value")
+                spec = createspec_singlevalue(name)
             else
-                if length(df[1]) == 1
-                    value = df[1][1]
-                    name = string("$c : $v = $value")
-                    spec = createspec_singlevalue(name)
+                dffields = names(df)
+                #line
+                if dffields[1] == :time
+                    #multiline
+                    if length(dffields) > 2
+                        spec = createspec_multilineplot(name, df, dffields)
+                    #single line
+                    else
+                        spec = createspec_lineplot(name, df, dffields)
+                    end
+                #bar 
                 else
                     spec = createspec_barplot(name, df, dffields)
                 end
@@ -148,7 +160,6 @@ function createspec_singlevalue(name)
 end
 
 function getdatapart(df, dffields, plottype::Symbol = :line)
-
     datapart = [];
 
     #loop over rows and create a dictionary for each row
@@ -158,10 +169,14 @@ function getdatapart(df, dffields, plottype::Symbol = :line)
                 string(dffields[2]) => row[2])
             push!(datapart, rowdata)
         end 
-    else
+    elseif plottype == :line
         for row in eachrow(df)
             rowdata = Dict(string(dffields[1])=> Date(row[1]), string(dffields[2]) => row[2])
-            
+            push!(datapart, rowdata)
+        end 
+    else
+        for row in eachrow(df)
+            rowdata = Dict(string(dffields[1])=> row[1], string(dffields[2]) => row[2])
             push!(datapart, rowdata)
         end 
     end
