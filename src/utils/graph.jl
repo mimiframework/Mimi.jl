@@ -3,37 +3,44 @@
 #
 function show(io::IO, m::Model)
     println(io, "showing model component connections:")
-    for item in enumerate(keys(m.components2))
-        c = item[2]
-        i_connections = get_connections(m,c,:incoming)
-        o_connections = get_connections(m,c,:outgoing)
-        println(io, item[1], ". ", c, " component")
+    for (i, c) in enumerate(compkeys(m.md))
+        in_conns  = get_connections(m, c, :incoming)
+        out_conns = get_connections(m, c, :outgoing)
+
+        println(io, "$i.$c component")
         println(io, "    incoming parameters:")
-        if length(i_connections) == 0
+
+        if length(in_conns) == 0
             println(io, "      none")
         else
-            [println(io, "      - ",e.target_parameter_name," from ",e.source_component_name," component") for e in i_connections]
+            for conn in in_conns
+                println(io, "      - $(conn.dst_param_name) from $(conn.src_comp_name) component")
+            end
         end
+
         println(io, "    outgoing variables:")
-        if length(o_connections) == 0
+
+        if length(out_conns) == 0
             println(io, "      none")
         else
-            [println(io, "      - ",e.source_variable_name," in ",e.target_component_name, " component") for e in o_connections]
+            for conn in out_conns
+                println(io, "      - $(conn.src_var_name) in $(conn.dst_comp_name) component")
+            end
         end
     end
 end
 
 function get_connections(m::Model, c::ComponentInstance, which::Symbol)
-    return get_connections(m, c.comp_def.key.comp_name, which)
+    return get_connections(m, name(c.comp), which)
 end
 
 function _filter_connections(conns::Vector{InternalParameterConnection}, comp_name::Symbol, which::Symbol)
     if which == :all
-        f = e -> e.source_component_name == comp_name || e.target_component_name == comp_name
+        f = obj -> obj.src_comp_name == comp_name || obj.dst_comp_name == comp_name
     elseif which == :incoming
-        f = e -> e.target_component_name == comp_name
+        f = obj -> obj.dst_comp_name == comp_name
     elseif which == :outgoing
-        f = e -> e.source_component_name == comp_name
+        f = obj -> obj.src_comp_name == comp_name
     else
         error("Invalid parameter for the 'which' argument; must be 'all' or 'incoming' or 'outgoing'.")
     end
@@ -41,10 +48,10 @@ function _filter_connections(conns::Vector{InternalParameterConnection}, comp_na
     return collect(Iterators.filter(f, conns))
 end
 
-function get_connections(m::Model, component_name::Symbol, which::Symbol)
-    return _filter_connections(m.internal_parameter_connections, component_name, which)
+function get_connections(m::Model, comp_name::Symbol, which::Symbol)
+    return _filter_connections(internal_param_conns(m.md), comp_name, which)
 end
 
-function get_connections(mi::ModelInstance, component_name::Symbol, which::Symbol)
-    return _filter_connections(mi.internal_parameter_connections, component_name, which)
+function get_connections(mi::ModelInstance, comp_name::Symbol, which::Symbol)
+    return _filter_connections(internal_param_conns(m.md), comp_name, which)
 end

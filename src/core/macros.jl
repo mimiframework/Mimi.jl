@@ -1,8 +1,5 @@
 using MacroTools
 
-export @modelegate, @defmodel
-
-
 # Delegate calls to ::Model to internal ModelInstance or ModelDe` objects.
 macro modelegate(ex)
     if @capture(ex, fname_(varname_::Model, args__) => rhs_)
@@ -37,24 +34,23 @@ macro defmodel(model_name, ex)
     result = quote $(esc(model_name)) = Model() end 
 
     for elt in elements
-        if @capture(elt, component(comp_mod_.comp_name_) | 
-                         component(comp_name_)) # | 
-                        #  component(comp_mod_.comp_name_, alias_) | 
-                        #  component(comp_name_, alias_))
+        if @capture(elt, component(comp_mod_.comp_name_)         | component(comp_name_) |
+                         component(comp_mod_.comp_name_, alias_) | component(comp_name_, alias_))
 
             comp_mod = comp_mod == nothing ? curr_module : comp_mod
-            expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name)) #, alias=alias)))
+            name = alias == nothing ? comp_name : alias
+            expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
 
         elseif @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_)
-            expr = :(connectparameter($(esc(model_name)),
-                                      $(QuoteNode(src_comp)), $(QuoteNode(src_name)),
-                                      $(QuoteNode(dst_comp)), $(QuoteNode(dst_name))))
+            expr = :(connect_parameter($(esc(model_name)),
+                                       $(QuoteNode(dst_comp)) => $(QuoteNode(dst_name)),
+                                       $(QuoteNode(src_comp)) => $(QuoteNode(src_name))))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
             expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(setparameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
+            expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

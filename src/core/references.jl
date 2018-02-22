@@ -1,44 +1,46 @@
 import Base: setindex!, getindex
 
 """
-Set a component parameter as `setparameter(reference, name, value)`.
+Set a component parameter as `set_parameter(reference, name, value)`.
 """
-function setparameter(ref::ComponentReference, name::Symbol, value)
-    setparameter(ref.model, ref.comp_id, name, value)
+function set_parameter(ref::ComponentReference, name::Symbol, value)
+    set_parameter(ref.model, ref.comp_id, name, value)
 end
 
 """
 Set a component parameter as `reference[symbol] = value`.
 """
 function setindex!(ref::ComponentReference, value, name::Symbol)
-    setparameter(ref.model, ref.comp_id, name, value)
+    set_parameter(ref.model, ref.comp_id, name, value)
 end
 
 """
-Connect two components as `connectparameter(reference1, name1, reference2, name2)`.
+Connect two components as `connect_parameter(reference1, name1, reference2, name2)`.
 """
-function connectparameter(target::ComponentReference, target_name::Symbol, source::ComponentReference, source_name::Symbol)
-    connectparameter(target.model, target.comp_id, target_name, source.comp_id, source_name)
+function connect_parameter(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)
+    connect_parameter(dst.model, dst.comp_id, dst_name, src.comp_id, src_name)
 end
 
 """
-Connect two components as `connectparameter(reference1, reference2, name)`.
+Connect two components with the same name as `connect_parameter(reference1, reference2, name)`.
 """
-function connectparameter(target::ComponentReference, source::ComponentReference, name::Symbol)
-    connectparameter(target.model, target.comp_id, name, source.comp_id, name)
+function connect_parameter(dst::ComponentReference, src::ComponentReference, name::Symbol)
+    connect_parameter(dst.model, dst.comp_id, name, src.comp_id, name)
 end
 
 
 """
-Get a variable reference as `reference[name]`.
+Get a variable reference as `comp_ref[var_name]`.
 """
-function getindex(ref::ComponentReference, name::Symbol)
-    VariableReference(ref.model, ref.comp_id, name)
+function getindex(comp_ref::ComponentReference, var_name::Symbol)
+    VariableReference(comp_ref.model, comp_ref.comp_name, var_name)
 end
 
 """
-Connect two components as `reference1[name1] = reference2[name2]`.
+Connect two components as `comp_ref[var_name] = var_ref::VariableReference`.
 """
-function setindex!(target::ComponentReference, source::VariableReference, name::Symbol)
-    connectparameter(target.model, target.comp_id, name, source.comp_id, source.name)
+function setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
+    comp_ref.model == var_ref.model || error("Can't connect variables defined in different models")
+
+    connect_parameter(comp_ref.model, comp_ref.comp_name, var_name, var_ref.comp_name, var_ref.var_name)
 end

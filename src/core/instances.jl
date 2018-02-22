@@ -2,6 +2,23 @@
 # Functions pertaining to instantiated models and their components
 #
 
+modeldef(mi::ModelInstance) = mi.md
+
+compinstance(mi::ModelInstance, name::Symbol) = mi.components[name]
+
+name(ci::ComponentInstance) = ci.comp_name
+
+"""
+    components(mi::ModelInstance)
+
+Return an iterator on the components in model instance `mi`.
+"""
+components(mi::ModelInstance) = values(mi.components)
+
+function addcomponent(mi::ModelInstance, ci::ComponentInstance) 
+    mi.components[name(ci)] = ci
+end
+
 #
 # Support for dot-overloading in run_timestep functions
 #
@@ -11,7 +28,7 @@ function _index_pos(names, propname, var_or_par)
     return index_pos
 end
 
-function _property_expr(obj::ComponentInstanceData, types, index_pos)
+function _property_expr(obj, types, index_pos)
     if types.parameters[index_pos] <: Ref
         return :(obj.values[$index_pos][])
     else
@@ -19,95 +36,44 @@ function _property_expr(obj::ComponentInstanceData, types, index_pos)
     end
 end
 
-@generated function getproperty(obj::ComponentInstanceParameters{NAMES,TYPES}, 
-                                 ::Val{PROPERTYNAME}) where {NAMES,TYPES,PROPERTYNAME}
+@generated function getproperty(obj::ComponentInstanceParameters{NAMES, TYPES}, 
+                                ::Val{PROPERTYNAME}) where {NAMES, TYPES, PROPERTYNAME}
     index_pos = _index_pos(NAMES, PROPERTYNAME, "parameter")
     return _property_expr(obj, TYPES, index_pos)
 end
 
-@generated function getproperty(obj::ComponentInstanceVariables{NAMES,TYPES}, 
-                                 ::Val{PROPERTYNAME}) where {NAMES,TYPES,PROPERTYNAME}
+@generated function getproperty(obj::ComponentInstanceVariables{NAMES, TYPES}, 
+                                ::Val{PROPERTYNAME}) where {NAMES, TYPES, PROPERTYNAME}
     index_pos = _index_pos(NAMES, PROPERTYNAME, "variable")
     return _property_expr(obj, TYPES, index_pos)
 end
 
-@generated function setproperty!(v::ComponentInstanceVariables{NAMES,TYPES}, 
-                                  ::Val{PROPERTYNAME}, value) where {NAMES,TYPES,PROPERTYNAME}
+@generated function setproperty!(obj::ComponentInstanceVariables{NAMES, TYPES}, 
+                                 ::Val{PROPERTYNAME}, value) where {NAMES, TYPES, PROPERTYNAME}
     index_pos = _index_pos(NAMES, PROPERTYNAME, "variable")
 
     if TYPES.parameters[index_pos] <: Ref
-        return :(v.values[$index_pos][] = value)
+        return :(obj.values[$index_pos][] = value)
     else
         error("You cannot override indexed variable $PROPERTYNAME.")
     end
 end
 
 # Convenience functions that can be called with a name symbol rather than Val(name)
-function getproperty(obj::ComponentInstanceParameters{NAMES,TYPES}, name::Symbol) where {NAMES,TYPES}
-    return getproperty(obj, Val(name))
-end
+get_parameter_value(ci::ComponentInstance, name::Symbol) = getproperty(ci.pars, Val(name))
 
-function getproperty(obj::ComponentInstanceVariables{NAMES,TYPES}, name::Symbol) where {NAMES,TYPES}
-    return getproperty(obj, Val(name))
-end
+get_variable_value(ci::ComponentInstance, name::Symbol)  = getproperty(ci.vars, Val(name))
 
-function setproperty!(obj::ComponentInstanceVariables{NAMES,TYPES}, name::Symbol, value) where {NAMES,TYPES}
-    return setproperty!(obj, Val(name), value)
-end
-
-
-get_parameter_value(ci::AbstractComponentInstance, name::Symbol) = getproperty(ci.pars, Val(name))
-
-get_variable_value(ci::AbstractComponentInstance, name::Symbol)  = getproperty(ci.vars, Val(name))
-
-set_variable_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.vars, Val(name), value)
-
-function getduration(index_values)
-    values = index_values[:time]
-    # N.B. assumes that all timesteps of the model are the same length
-    return length(values) > 1 ? values[2] - values[1] : 1
-end
+set_variable_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.vars, Val(name), value)
 
 #
 # TBD: relationship between ComponentInstanceVariable/Parameter and connection parameters isn't clear
 #
 # Allow values to be obtained from either parameter type using
 # one method name.
-getvalue(param::ScalarModelParameter) = param.value
+value(param::ScalarModelParameter) = param.value
 
-getvalue(param::ArrayModelParameter) = param.values
-
-
-comp_instance(mi::ModelInstance, comp_id::ComponentId) = mi.components[comp_id]
-
-# TBD: move all int/ext parameter stuff to ModelDef
-external_parameter_connections(mi::ModelInstance) = mi.external_parameter_connections
-
-internal_parameter_connections(mi::ModelInstance) = mi.internal_parameter_connections
-
-external_parameter(mi::ModelInstance, name::Symbol) = mi.external_parameters[name]
-
-external_parameter_values(mi::ModelInstance, name::Symbol) = mi.external_parameters[name].values
-
-
-function add_internal_parameter_conn(mi::ModelInstance, conn::InternalParameterConnection)
-    push!(mi.internal_parameter_connections, conn)
-end
-
-function set_external_parameter(mi::ModelInstance, name::Symbol, value::ModelParameter)
-    mi.external_parameters[name] = value
-end
-
-"""
-    components(mi::ModelInstance)
-
-Return an iterator on the components in model instance `mi`.
-"""
-components(mi::ModelInstance) = values(mi.components)
-
-getcomponent(mi::ModelInstance, comp_id::ComponentId) = mi.components[comp_id]
-
-numcomponents(mi::ModelInstance) = length(mi.components)
+value(param::ArrayModelParameter) = param.values
 
 """
 variables(mi::ModelInstance, componentname::Symbol)
@@ -115,8 +81,8 @@ variables(mi::ModelInstance, componentname::Symbol)
 List all the variables of `componentname` in the ModelInstance 'mi'.
 NOTE: this variables function does NOT take in Nullable instances
 """
-function variables(mi::ModelInstance, comp_id::ComponentId)
-    ci = mi.components[comp_id]
+function variables(mi::ModelInstance, comp_name::Symbol)
+    ci = compinstance(mi, comp_name)
     return variables(ci)
 end
 
@@ -139,16 +105,6 @@ function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
 
     else
         error("$name is not a parameter or a variable in component $comp_name.")
-    end
-end
-
-# TBD: not called. Did I delete something?
-function update_scalar_parameters(mi::ModelInstance, comp_name::Symbol)
-    for conn in get_connections(mi, comp_name, :incoming)
-        target = compdef(mi, conn.target_component_name)
-        source = compdef(mi, conn.source_component_name)
-        setproperty!(target.vars, Val(conn.target_parameter_name), 
-                     getproperty(source.vars, Val(conn.source_variable_name)))
     end
 end
 
@@ -183,70 +139,11 @@ function instantiate(comp_def::ComponentDef, par_values, var_values)
     ci = ComponentInstance{vars_type, pars_type}(comp_def, par_values, var_values)
 end
 
-"""
-    get_unconnected_parameters(m::Model)
-
-Return a list of tuples (componentname, parametername) of parameters
-that have not been connected to a value in the model.
-"""
-function get_unconnected_parameters(mi::ModelInstance)
-    unset_params = Vector{Tuple{Symbol,Symbol}}()
-    
-    for (name, c) in components(mi)
-        params = get_parameter_names(mi, c)
-        set_params = get_set_parameters(mi, c)
-        append!(unset_params, map(x->(name, x), setdiff(params, set_params)))
-    end
-
-    return unset_params
-end
-
-"""
-    set_leftover_parameters(m::Model, parameters::Dict{Any,Any})
-
-Set all the parameters in a model that don't have a value and are not connected
-to some other component to a value from a dictionary. This method assumes the dictionary
-keys are strings that match the names of unset parameters in the model.
-"""
-function set_leftover_parameters(mi::ModelInstance, parameters::Dict{String,Any})
-    parameters = Dict(lowercase(k) => v for (k, v) in parameters)
-    leftovers = get_unconnected_parameters(mi)
-    external_params = mi.external_params
-    md = mi.model_def
-
-    for (comp_name, param_name) in leftovers
-        # check whether we need to set the external parameter
-        if ! haskey(mi.external_params, param_name)
-            value = parameters[lowercase(string(param_name))]
-            param_dims = dimensions(mi, comp_name, param_name)
-            num_dims = length(param_dims)
-
-            if num_dims == 0    # scalar case
-                set_external_scalar_parameter(mi, param_name, value)
-
-            else
-                if num_dims in (1, 2) && param_dims[1] == :time   # array case
-                    value = convert(Array{md.numberType}, value)
-                    offset = indexvalues(md, :time)[1]
-                    duration = getduration(indexvalues(md))
-                    T = eltype(value)
-                    values = get_timestep_instance(T, offset, duration, num_dims, value)
-                else
-                    values = value
-                end
-                set_external_array_parameter(mi, param_name, values, nothing)
-            end
-        end
-        connectparameter(mi, comp_name, param_name, param_name)
-    end
-    nothing
-end
-
 
 function makeclock(mi::ModelInstance, ntimesteps, index_values)
     start = index_values[:time][1]
     stop = index_values[:time][min(length(index_values[:time]),ntimesteps)]
-    duration = getduration(index_values)
+    duration = duration(index_values)
     return Clock(start, stop, duration)
 end
 
@@ -257,7 +154,6 @@ function run(mi::ModelInstance, ntimesteps, index_values)
 
     for (name, c) in mi.components
         resetvariables(c)
-        # update_scalar_parameters(mi, name)        # was dropped in DA's version
         init(c)
     end
 
@@ -267,35 +163,31 @@ function run(mi::ModelInstance, ntimesteps, index_values)
     offsets = mi.offsets
     final_times = mi.final_times
 
-    # Was dropped in DA's version
-    # for i in collect(1:length(components))
-    #     c = components[i][2]
-    #     newstyle[i] = method_exists(run_timestep, (typeof(c), Timestep))
-    # end
-
     clock = makeclock(mi, ntimesteps, index_values)
-    duration = getduration(index_values)
+    duration = duration(index_values)
     comp_clocks = [Clock(offsets[i], final_times[i], duration) for i in collect(1:length(components))]
 
     while !finished(clock)
         for (i, (name, c)) in enumerate(components)
             if offsets[i] <= gettime(clock) <= final_times[i]
-
-                # was dropped in DA's version
-                # if newstyle[i]
-                #     run_timestep(c, gettimestep(comp_clocks[i]))
-                #     move_forward(comp_clocks[i])
-                # else
-                #     run_timestep(c, gettimeindex(clock)) #int version (old way)
-                # end
-
-                ts = gettimestep(comp_clocks[i])
-                
+                ts = timestep(comp_clocks[i])              
                 run_timestep(c.comp_id, c.parameters, c.variables, c.dimensions, ts)
-
-                move_forward(comp_clocks[i])
+                advance(comp_clocks[i])
             end
         end
-        move_forward(clock)
+        advance(clock)
     end
+end
+
+function run_timestep(anything, p, v, d, t)
+    t = typeof(anything)
+    println("Generic run_timestep called for $t.")
+end
+
+function init(s)
+end
+
+function resetvariables(s)
+    typeofs = typeof(s)
+    println("Generic resetvariables called for $typeofs.")
 end

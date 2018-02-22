@@ -3,23 +3,22 @@
 
 Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
 """
-function getdataframe(m::Model, componentname::Symbol, name::Symbol)
+function getdataframe(m::Model, comp_name::Symbol, name::Symbol)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
-    elseif !(name in variables(m, componentname))
-        error("Cannot get dataframe; variable $name not in component $componentname")
+    elseif !(name in variables(m, comp_name))
+        error("Cannot get dataframe; variable $name not in component $comp_name")
     else
-        return getdataframe(m, get(m.mi), componentname, name)
+        return getdataframe(m, get(m.mi), comp_name, name)
     end
 end
 
 # TBD: if m holds mi, why is this functional sig necessary? Combine with method above?
 
-function getdataframe(m::Model, mi::ModelInstance, comp_id::ComponentId, name::Symbol)
-    comp_inst = getcomponent(mi, comp_id)
-    comp_name = comp_name(comp_inst)
+function getdataframe(m::Model, mi::ModelInstance, comp_name::Symbol, name::Symbol)
+    comp_inst = compinstance(mi, comp_name)
 
-    dims = indexlabels(m, comp_id, name)
+    dims = indexlabels(m, comp_name, name)
     num_dims = length(dims)
 
     if num_dims == 0
@@ -29,14 +28,14 @@ function getdataframe(m::Model, mi::ModelInstance, comp_id::ComponentId, name::S
     df = DataFrame()
     dim1 = dims[1]
 
-    values = (isempty(m.time_labels) || dim1 != :time ? indexvalue(m, dim1) : m.time_labels)
+    values = (isempty(m.time_labels) || dim1 != :time ? indexvalues(m, dim1) : m.time_labels)
 
     if dim1 == :time
         comp_start = comp_inst.offset
         comp_final = comp_inst.final
         start = findfirst(values, comp_start)
         final = findfirst(values, comp_final)
-        num = getspan(m, comp_name)             # TBD: this is unused
+        # num = getspan(m, comp_id)             # unused
     end
 
     if num_dims == 1
@@ -139,7 +138,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                     comp_final = m.components2[componentname].final
                     start = findfirst(values, comp_start)
                     final = findfirst(values, comp_final)
-                    num = getspan(m, componentname)
+                    # num = getspan(m, componentname)   # unused
                 end
 
                 if !(length(vardiminfo) == num_dim)
@@ -174,7 +173,7 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name_pairs::Tuple)
                 comp_final = m.components2[componentname].final
                 start = findfirst(values, comp_start)
                 final = findfirst(values, comp_final)
-                num = getspan(m, componentname)
+                # num = getspan(m, componentname)       # unused
             end
 
             if !(length(vardiminfo) == num_dim)

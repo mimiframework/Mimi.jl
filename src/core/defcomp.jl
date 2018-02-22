@@ -3,8 +3,6 @@
 #
 using MacroTools
 
-export @defcomp
-
 _Debug = false
 
 function debug(msg)
@@ -48,7 +46,7 @@ function _generate_run_func(module_name, comp_name, args, body)
     func = :(
         # Was: function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, $(args...))
 
-        # run_timestpe must be called with a singleton instance of the given type, e.g. Main.ConnectorCompMatrix()
+        # run_timestep must be called with a singleton instance of the given type, e.g. Main.ConnectorCompMatrix()
         function run_timestep(::$module_name.$comp_name, $(args...))
             $(body...)
         end
@@ -90,7 +88,7 @@ function _generate_dims_expr(name, args, vartype)
         error("Index $name: Type specification ($vartype) is not supported")
     end
 
-    expr = :(adddimension($(esc(:comp)), $(QuoteNode(name))))
+    expr = :(add_dimension($(esc(:comp)), $(QuoteNode(name))))
     return expr
 end
 
@@ -114,22 +112,29 @@ macro defcomp(comp_name, ex)
         mod_name = Base.module_name(current_module())
     end
 
+    
     # We'll return a block of expressions that will define the component.
-    # First, we add the empty component and assign it to `comp`.
-    result = quote 
-        # N.B.empty types produce singleton instances
-        type $(esc(comp_name)) <: ComponentId end     
+    # First, we create an empty struct that's used as an ID for the component.
+    # Then we assign it the comp_name, which the user can use to refer to the
+    # component. N.B. Empty mutable types produce singleton instances.
 
-        # fails:
-        # comp = newcomponent($(esc(mod_name).esc(comp_name)))
+    # was:
+    # comp_type = Symbol(titlecase("$(comp_name)MimiComponent"))
+    # type $(esc(comp_name)) <: ComponentId end
+    # mutable struct $(esc(comp_type)) <: ComponentId end
+    # global const $(esc(comp_name)) = $(esc(comp_type))()
+
+    result = quote   
+        global const $(esc(comp_name)) = ComponentId($(QuoteNode(mod_name)), $(QuoteNode(comp_name)))
     end
 
     function addexpr(expr)
         push!(result.args, expr)
     end
-
-    # For some reason this was difficult to do at the higher language level
-    newcomp = Expr(:(=), :comp, Expr(:call, :newcomponent, Expr(:., mod_name, QuoteNode(comp_name))))
+    
+    # For some reason this was difficult to do at the higher language level. 
+    # This fails: :(comp = newcomponent($(esc(mod_name).esc(comp_name))))
+    newcomp = Expr(:(=), :comp, Expr(:call, :newcomponent, QuoteNode(mod_name), QuoteNode(comp_name)))
     addexpr(esc(newcomp))
 
     for elt in elements
@@ -208,4 +213,5 @@ macro defcomp(comp_name, ex)
     end
 
     return rmlines(result)
+
 end

@@ -1,10 +1,5 @@
 using DataStructures
 
-export Timestep, TimestepMatrix, TimestepVector
-export ComponentId, ComponentDef, DimensionDef, ModelDef, ParameterDef, VariableDef
-export ArrayModelParameter, ExternalParameterConnection, InternalParameterConnection, Parameter, ScalarModelParameter
-export ComponentInstance, ComponentInstanceData, ComponentInstanceParameters, ComponentInstanceVariables, ModelInstance
-
 #
 # 1. Types supporting parameterized Timestep and Clock objects
 #
@@ -23,9 +18,11 @@ mutable struct Clock
 	end
 end
 
+abstract type AbstractTimestepMatrix end
+
 # don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 1 for the vector case
-mutable struct TimestepVector{T, Offset, Duration} 
+mutable struct TimestepVector{T, Offset, Duration} <: AbstractTimestepMatrix
 	data::Vector{T}
 
     function TimestepVector{T, Offset, Duration}(d::Vector{T}) where {T, Offset, Duration}
@@ -43,7 +40,7 @@ end
 
 # don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 2 for the matrix case
-mutable struct TimestepMatrix{T, Offset, Duration} 
+mutable struct TimestepMatrix{T, Offset, Duration} <: AbstractTimestepMatrix
 	data::Array{T, 2}
 
     function TimestepMatrix{T, Offset, Duration}(d::Array{T, 2}) where {T, Offset, Duration}
@@ -54,95 +51,13 @@ mutable struct TimestepMatrix{T, Offset, Duration}
 
     function TimestepMatrix{T, Offset, Duration}(i::Int, j::Int) where {T, Offset, Duration}
 		m = new()
-		m.data = Array{T,2}(i, j)
+		m.data = Array{T, 2}(i, j)
 		return m
 	end
 end
 
 #
-# 2. Types supporting structural definition of models and their components
-#
-
-# Supertype for the singleton type created for each component by @defcomp
-abstract type ComponentId end
-
-# Indicates that the object has a `name` attribute
-abstract type NamedDef end
-
-#
-# Do we need separate equivalent types for vars and params? Just defined one as, say, DatumDef?
-#
-mutable struct VariableDef <: NamedDef
-    name::Symbol
-    datatype::DataType
-    dimensions::Array{Any}
-    description::String
-    unit::String
-end
-
-mutable struct ParameterDef <: NamedDef
-    name::Symbol
-    datatype::DataType
-    dimensions::Array{Any}
-    description::String
-    unit::String
-end
-
-mutable struct DimensionDef <: NamedDef
-    name::Symbol
-end
-
-mutable struct ComponentDef  <: NamedDef
-    name::Symbol
-    comp_id::ComponentId          # singleton instance of generated (empty) component type
-    variables::OrderedDict{Symbol, VariableDef}
-    parameters::OrderedDict{Symbol, ParameterDef}
-    dimensions::OrderedDict{Symbol, DimensionDef}
-    run_expr::Union{Void, Expr}   # the expression that will create the run function
-
-    # ComponentDefs are created "empty"; elements are subsequently added 
-    # to them via addvariable, adddimension, etc.
-    function ComponentDef(comp_id::ComponentId)
-        self = new()
-        self.name = typeof(comp_id).name.name
-        self.comp_id = comp_id
-        self.variables  = OrderedDict{Symbol, VariableDef}()
-        self.parameters = OrderedDict{Symbol, ParameterDef}() 
-        self.dimensions = OrderedDict{Symbol, DimensionDef}()
-        self.run_expr = nothing
-        return self
-    end
-end
-
-# Declarative definition of a model used to create a ModelInstance
-mutable struct ModelDef
-    # Components keyed by symbolic name, allowing a given component
-    # to occur multiple times within a model.
-    comp_defs::OrderedDict{Symbol, ComponentDef}
-
-    index_counts::Dict{Symbol, Int}
-    index_values::Dict{Symbol, Vector{Any}}
-
-    number_type::DataType
-
-    time_labels::Vector
-
-    # TBD: should be a DAG of components
-    # conns::Any 
-
-    function ModelDef(number_type=Float64)
-        self = new()
-        self.comp_defs = OrderedDict{Symbol, ComponentDef}()
-        self.index_counts = Dict{Symbol, Int}()
-        self.index_values = Dict{Symbol, Vector{Any}}()
-        self.number_type = number_type
-        self.time_labels = Vector()
-        return self
-    end
-end
-
-#
-# 3. Types supporting Parameters and their connections
+# 2. Types supporting Parameters and their connections
 #
 
 abstract type ModelParameter end
@@ -166,24 +81,129 @@ end
 abstract type Connection end
 
 struct InternalParameterConnection <: Connection
-    source_variable_name::Symbol
-    source_comp_name::Symbol
-    target_parameter_name::Symbol
-    target_comp_name::Symbol
+    src_comp_name::Symbol
+    src_var_name::Symbol
+    dst_comp_name::Symbol
+    dst_param_name::Symbol
     ignoreunits::Bool
     backup::Union{Symbol, Void} # a Symbol identifying the external param providing backup data, or nothing
 
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, target_par::Symbol, target_comp::Symbol, 
+    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, dst_par::Symbol, dst_comp::Symbol, 
                                          ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
-        self = new(src_var, src_comp, target_par, target_comp, ignoreunits, backup)
+        self = new(src_comp, src_var, dst_comp, dst_par, ignoreunits, backup)
         return self
     end
 end
 
 struct ExternalParameterConnection  <: Connection
     comp_name::Symbol
-    param_name::Symbol          # name of the parameter in the component
-    external_parameter::Symbol  # name of the parameter stored in m.external_parameters
+    param_name::Symbol      # name of the parameter in the component
+    external_param::Symbol  # name of the parameter stored in md.external_params
+end
+
+#
+# 3. Types supporting structural definition of models and their components
+#
+
+# To identify components, we create a variable with the name of the component
+# whose value is an instance of this type, e.g.
+# const global adder = ComponentId(module_name, comp_name) 
+struct ComponentId
+    module_name::Symbol
+    comp_name::Symbol
+end
+
+# Indicates that the object has a `name` attribute
+abstract type NamedDef end
+
+# Supertype for vars and params
+abstract type DatumDef <: NamedDef end
+#
+# Do we need separate equivalent types for vars and params? Just defined one as, say, DatumDef?
+#
+mutable struct VariableDef <: DatumDef
+    name::Symbol
+    datatype::DataType
+    dimensions::Array{Any}          # TBD: why isn't this just Vector{Symbol}?
+    description::String
+    unit::String
+end
+
+mutable struct ParameterDef <: DatumDef
+    name::Symbol
+    datatype::DataType
+    dimensions::Array{Any}
+    description::String
+    unit::String
+end
+
+mutable struct DimensionDef <: NamedDef
+    name::Symbol
+end
+
+mutable struct ComponentDef  <: NamedDef
+    name::Symbol
+    comp_id::ComponentId
+    variables::OrderedDict{Symbol, VariableDef}
+    parameters::OrderedDict{Symbol, ParameterDef}
+    dimensions::OrderedDict{Symbol, DimensionDef}
+    run_expr::Union{Void, Expr}   # the expression that will create the run function
+
+    start::Int
+    final::Int
+
+    # ComponentDefs are created "empty"; elements are subsequently added 
+    # to them via addvariable, add_dimension, etc.
+    function ComponentDef(comp_id::ComponentId)
+        self = new()
+        self.name = comp_id.comp_name
+        self.comp_id = comp_id
+        self.variables  = OrderedDict{Symbol, VariableDef}()
+        self.parameters = OrderedDict{Symbol, ParameterDef}() 
+        self.dimensions = OrderedDict{Symbol, DimensionDef}()
+        self.run_expr = nothing         # TBD: why not just create the func with the comp?
+        self.start = self.final = 0
+        return self
+    end
+end
+
+# Declarative definition of a model used to create a ModelInstance
+mutable struct ModelDef
+    module_name::Symbol     # the module in which this model was defined
+
+    # Components keyed by symbolic name, allowing a given component
+    # to occur multiple times within a model.
+    comp_defs::OrderedDict{Symbol, ComponentDef}
+
+    index_counts::Dict{Symbol, Int}
+    index_values::Dict{Symbol, Vector{Any}}
+
+    number_type::DataType
+    time_labels::Vector
+
+    # TBD: Should conns be Vector{Connection}, or two parameters for internal/external?
+    # Internal connections that the ModelDef will know about.
+    internal_param_conns::Vector{InternalParameterConnection}
+    external_param_conns::Vector{ExternalParameterConnection}
+    
+    external_params::Dict{Symbol, ModelParameter}
+
+    # TBD: should be a DAG of components
+    # conns::Any 
+
+    function ModelDef(number_type=Float64)
+        self = new()
+        self.module_name = module_name(current_module())
+        self.comp_defs = OrderedDict{Symbol, ComponentDef}()
+        self.index_counts = Dict{Symbol, Int}()
+        self.index_values = Dict{Symbol, Vector{Any}}()
+        self.number_type = number_type
+        self.time_labels = Vector()
+        self.internal_param_conns = Vector{InternalParameterConnection}() 
+        self.external_param_conns = Vector{ExternalParameterConnection}()
+        self.external_params = Dict{Symbol, ModelParameter}()
+        return self
+    end
 end
 
 #
@@ -203,13 +223,11 @@ struct ComponentInstanceParameters{NAMES,TYPES} <: ComponentInstanceData
     # The elements can either be of type Ref (for scalar values) or of
     # some array type
     values::TYPES
-    names::Vector
-    types::Vector
+    names::Tuple
+    types::DataType
 
     function ComponentInstanceParameters{NAMES,TYPES}(values) where {NAMES,TYPES}
-        self = new(values)
-        self.names = NAMES
-        self.types = TYPES
+        return new(values, NAMES, TYPES)
     end
 end
 
@@ -223,95 +241,98 @@ struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
     # The elements can either be of type Ref (for scalar values) or of
     # some array type
     values::TYPES
-    names::Vector
-    types::Vector
+    names::Tuple
+    types::DataType
 
     function ComponentInstanceVariables{NAMES,TYPES}(values) where {NAMES,TYPES}
-        self = new(values)
-        self.names = NAMES
-        self.types = TYPES
+        return new(values, NAMES, TYPES)
     end
 end
 
-abstract type AbstractComponentInstance end
+# deprecated
+# abstract type AbstractComponentInstance end
 
 # This type just bundles the values that are passed to `run_timestep` in
 # one structure. We don't strictly need it, but it makes things cleaner.
-struct ComponentInstance{TVARS <: ComponentInstanceVariables, 
-                         TPARS <: ComponentInstanceParameters} <: AbstractComponentInstance
+# struct ComponentInstance{TVARS <: ComponentInstanceVariables, 
+#                          TPARS <: ComponentInstanceParameters} <: AbstractComponentInstance
+#     comp_name::Symbol
+#     comp_id::ComponentId
+#     vars::TVARS
+#     pars::TPARS
+#     dimensions::Vector{Symbol}  # was "indices" previously
+
+#     offset::Int
+#     final::Int
+    
+#     function ComponentInstance{TVARS, TPARS}(comp_def::ComponentDef, var_values, par_values, 
+#                                              name=name(comp_def)) where {TVARS <: ComponentInstanceVariables, 
+#                                                                          TPARS <: ComponentInstanceParameters}
+#         self = new()
+#         self.comp_id = comp_def.comp_id
+#         self.comp_name = name
+#         self.dimensions = map(dim -> dim.name, dimensions(comp_def))
+#         self.vars = TVARS(var_values)
+#         self.pars = TPARS(par_values)
+    
+#         # TBD: see where these are set
+#         self.offset = 0
+#         self.final = 0
+#         return self
+#     end
+# end
+
+# Why does this need to be a parameterized type?
+# mutable struct ComponentInstance{T <: ComponentId} <: AbstractComponentInstance
+
+mutable struct ComponentInstance # <: AbstractComponentInstance
     comp_name::Symbol
-    comp_id::DataType           # TBDP rename comp_type and pass type rather than singleton? Make it abstract again?
-    vars::TVARS
-    pars::TPARS
+    comp_id::ComponentId
+    vars::ComponentInstanceVariables        # TBD: rename variables and parameters to be consistent with ComponentDef
+    pars::ComponentInstanceParameters
     dimensions::Vector{Symbol}  # was "indices" previously
 
     offset::Int
     final::Int
     
-    function ComponentInstance{TVARS, TPARS}(comp_def::ComponentDef, var_values, par_values, 
-                                             name=name(comp_def)) where {TVARS <: ComponentInstanceVariables, 
-                                                                         TPARS <: ComponentInstanceParameters}
+    function ComponentInstance(comp_def::ComponentDef, 
+                               vars::ComponentInstanceVariables, 
+                               pars::ComponentInstanceParameters, 
+                               name::Symbol=name(comp_def))
         self = new()
         self.comp_id = comp_def.comp_id
         self.comp_name = name
         self.dimensions = map(dim -> dim.name, dimensions(comp_def))
-        self.vars = TVARS(var_values)
-        self.pars = TPARS(par_values)
+        self.vars = vars
+        self.pars = pars
     
         # TBD: see where these are set
-        self.offset = 0
-        self.final = 0
+        self.offset = comp_def.start
+        self.final  = comp_def.final
+
         return self
     end
 end
-
-# Type alias since this is used in several places
-const ComponentInstanceDict = OrderedDict{Symbol, ComponentInstance}
 
 # This type holds the values of a built model and can actually be run.
 mutable struct ModelInstance
-    model_def::ModelDef
-    components::ComponentInstanceDict
+    md::ModelDef
 
-    # TBD: add reference to ModelDef
-    # TBD: move connection info to ModelDef
-    # TBD: Should conns be Vector{Connection}, or two parameters for internal/external?
-    internal_param_conns::Vector{InternalParameterConnection}
-    external_param_conns::Vector{ExternalParameterConnection}
-    
-    external_params::Dict{Symbol, ModelParameter}
-
+    # Ordered list of components (including hidden ConnectorComps)
+    components::OrderedDict{Symbol, ComponentInstance}
+   
     offsets::Vector{Int}        # in order corresponding with components
     final_times::Vector{Int}
 
-    function ModelInstance(md::ModelDef, comps::ComponentInstanceDict, 
-                           int_param_conns::Vector{InternalParameterConnection}, 
-                           offsets::Vector{Int}, final_times::Vector{Int})
+    function ModelInstance(md::ModelDef)
         self = new()
-        self.components = comps
-        self.internal_param_conns = int_param_conns
-        self.offsets = offsets
-        self.final_times = final_times
-
-        self.index_counts = Dict{Symbol, Int}()
-        self.index_values = Dict{Symbol, Vector{Any}}()
-
+        self.md = md
+        self.components = OrderedDict{Symbol, ComponentInstance}() 
+        offsets = Vector{Int}()
+        final_times = Vector{Int}()
         return self
     end
 end
-
-function ModelInstance(md::ModelDef)
-    mi = ModelInstance(md, ComponentInstanceDict(), Vector{InternalParameterConnection}(),
-                       Vector{Int}(), Vector{Int}())
-
-    mi.number_type = md.number_type
-
-    mi.external_params = Dict{Symbol, Parameter}()
-    mi.internal_param_conns = Vector{InternalParameterConnection}()
-    mi.external_param_conns = Vector{ExternalParameterConnection}()
-    return mi
-end
-
 
 #
 # 5. User-facing Model types providing a simplified API to model definitions and instances.
@@ -321,17 +342,14 @@ end
 # Provides user-facing API to ModelInstance and ModelDef
 #
 mutable struct Model
-    number_type::DataType  # TBD: move this to ModelDef?
-
     md::ModelDef
     mi::Nullable{ModelInstance}
 
     function Model(number_type::DataType=Float64)
-        m = new()
-        m.number_type = number_type        
-        m.md = ModelDef()
-        m.mi = Nullable{ModelInstance}()
-        return m
+        self = new()
+        self.md = ModelDef(number_type)
+        self.mi = Nullable{ModelInstance}()
+        return self
     end
 end
 
@@ -344,8 +362,8 @@ struct MarginalModel
     delta::Float64
 end
 
-function getindex(m::MarginalModel, comp_id::ComponentId, name::Symbol)
-    return (m.marginal[comp_id, name] .- m.base[comp_id, name]) ./ m.delta
+function getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
+    return (mm.marginal[comp_name, name] .- mm.base[comp_name, name]) ./ mm.delta
 end
 
 #
@@ -357,7 +375,7 @@ A container for a component, for interacting with it within a model.
 """
 struct ComponentReference
     model::Model
-    comp_id::ComponentId
+    comp_name::Symbol
 end
 
 #
@@ -365,11 +383,11 @@ end
 # Appears to be deprecated.
 #
 """
-A container for a name within a component, to improve connectparameter aesthetics.
+A container for a variable within a component, to improve connect_parameter aesthetics,
+by supporting subscripting notation via getindex & setindex .
 """
 struct VariableReference
     model::Model
-    comp_id::ComponentId
-    name::Symbol
+    comp_name::Symbol
+    var_name::Symbol
 end
-

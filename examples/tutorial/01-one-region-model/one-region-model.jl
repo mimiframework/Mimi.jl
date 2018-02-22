@@ -45,17 +45,17 @@ end
     component(emissions)
 
     # Set parameters for the grosseconomy component
-    grosseconomy.l = [(1. + 0.015)^t *6404 for t in 1:20]
+    grosseconomy.l = [(1. + 0.015)^t * 6404 for t in 1:20]
     grosseconomy.tfp = [(1 + 0.065)^t * 3.57 for t in 1:20]
-    grosseconomy.s = ones(20).* 0.22
+    grosseconomy.s = ones(20) * 0.22
     grosseconomy.depk = 0.1
     grosseconomy.k0 = 130.
     grosseconomy.share = 0.3
 
     # Set parameters for the emissions component
-    emissions.sigma = [(1. - 0.05)^t *0.58 for t in 1:20]
+    emissions.sigma = [(1. - 0.05)^t * 0.58 for t in 1:20]
 
-    # Connect pararamters
+    # Connect parameters
     emissions.YGROSS => grosseconomy.YGROSS
 end
 
@@ -76,7 +76,7 @@ end
 
 # #Set parameters for the emissions component
 # setparameter(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-# connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  #Note that connectparameter was used here.
+# connectparameter(my_model, grosseconomy => :YGROSS, emissions => :YGROSS)
 
 println("Model has been defined. Running model...")
 run(my_model)

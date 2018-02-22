@@ -75,11 +75,13 @@ With the `run` function inside the `@defcomp` macro, we are able to modify the c
 
 In the previous version of Mimi, components were named by a pair of symbols indicating the module the component was defined in, and the name of the component. Each component was also a newly generated custom type.
 
-In the new version, all components are represented by a single parameterized type, `ComponentDef`. The component is identified by an empty concrete type of the given name, that is a subtype of `ComponentId`. Empty immutable types are singletons in Julia: calling the constructor for the type always returns the same instance. Since these instances are unique, and because their names must be unique in any module, they can serve as component identifiers. Since all components are subtypes of `ComponentId`, this supertype is used in the signature of many functions dealing with components.
+In the new version, component definitions are represented by a single type, `ComponentDef`. The `@defcomp` macro creates both a type and a variable associated with each component definition. **This change requires that models be defined in their own package to avoid namespace collisions.**
 
-The name `ComponentId` was chosen for this type to emphasize that it is an empty struct used only to identify components. Actual component information is available in `ComponentDef` or `ComponentInstance`.
+* For each component, an empty mutable struct that is a subtype of `ComponentId` is created. It's name is composed of the titlecased component name with "Component" appended. For example, the type generated for the built-in "adder" component type "AdderMimiComponent". All components are subtypes of `ComponentId`, so this supertype is used in the signature of many functions dealing with components. The name `ComponentId` was chosen for this type to emphasize that it is an empty struct used only as an identifier: actual component information is held in `ComponentDef` and `ComponentInstance` objects.
 
-Now, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated type, e.g., `Mimi.grosseconomy`.
+* In addition to the type, a global constant is defined with the name provided to `@defcomp`. The value of this variable is the singleton instance for the corresponding generated type. Note that calling the constructor for an empty mutable struct the type always returns the same instance. Since these instances are unique, and because their names are guaranteed to be unique in any module, they can serve as global component identifiers. 
+
+Now, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated global constant, e.g., `Mimi.grosseconomy`.
 
 
 ## 3. New macro `@defmodel`
@@ -160,6 +162,17 @@ To simplify naming, I propose the following rules:
 * Put spaces around all operators: write `if a == b`, not `if a==b`
 
 * Define local variables to hold values used repeatedly. Use a short, meaningful name rather a single letter.
+
+
+#### Move toward functional programming
+
+The "coin of the realm" in julia is functional programming with multiple-dispatch. Defining accessor functions for data types (rather than directly accessing fields) provides a useful layer of indirection that improves code maintainability.
+
+* If you directly access fields of a type all throughout the code, changing internal representations becomes much more costly in terms of effort. If all accesses to the field are mediated by a functional interface, only one function needs to change.
+
+* With functional interfaces, it is very easy to delegate function calls to instances held within an object. This can't be done easily when directly accesssing a type's field.
+
+* Functional APIs were implemented throughout the code while sorting the functionality coded in the `Model` type into the types `ModelDel` and `ModelInstance`.
 
 
 ### Simplification of idioms
