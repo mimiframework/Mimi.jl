@@ -3,8 +3,10 @@ using DataFrames
 using JSON
 using Blink
 
-##TODO (version 0.1) FUND error variable and time-out
 ##TODO (version 0.1) add parameters to buildspecs.jl
+##TODO (version 0.1) transition away from BLINK
+##TODO (version 0.1) handle FUND cbox variable
+##TODO (version 0.1) deal with the time out on FUND
 ##TODO (version 0.2) hierarchical list
 
 #function to get variable data
