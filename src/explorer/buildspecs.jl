@@ -1,6 +1,7 @@
 ## Mimi UI
 using Mimi
 using DataFrames
+using JSON 
 
 function getspeclist(model::Mimi.Model)
 
@@ -18,12 +19,15 @@ function getspeclist(model::Mimi.Model)
             #pull information 
             name = string("$c : $v") #returns the name of the pair as "component:variable"
 
-            if c == :climateco2cycle && v == :cbox
-                println("this is the FUND error variable, SKIPPING ...")
+            #catch errors 
+            try df = getdataframe(model, c, v) #returns the  corresponding dataframe
+            catch
+                println("could not convert ", name, " to dataframe, skippping ...")
                 continue
-            end 
-
-            df = getdataframe(model, c, v) #returns the  corresponding dataframe
+            end
+            
+            #return the  corresponding dataframe
+            df = getdataframe(model, c, v) 
 
             #choose type of plot
             #single value

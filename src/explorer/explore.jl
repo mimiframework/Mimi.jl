@@ -19,6 +19,7 @@ function explore(model)
         
     #refresh variable list
     @js w refresh($speclist)
+
 end
 
 

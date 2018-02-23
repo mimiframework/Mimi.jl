@@ -18,13 +18,14 @@
     background-color: inherit;
     color: black;
     padding: 22px 16px;
-    height: 20px;
+    height: 5%;
     width: 100%;
     border: none;
     outline: none;
     text-align: left;
     cursor: pointer;
     transition: 0.3s;
+    overflow-y: visible;
 }
 
 /* Change background color of buttons on hover */
