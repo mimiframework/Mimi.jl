@@ -52,7 +52,7 @@ function getspeclist(model::Mimi.Model)
             push!(allspecs, spec) 
         end
 
-        #= #get all parameters of component
+        #get all parameters of component
         params = parameters(model, c)
         for p in params
 
@@ -68,21 +68,35 @@ function getspeclist(model::Mimi.Model)
             dffields = names(df)
 
             #choose type of plot
-            if dffields[1] == :time
-                if length(dffields) > 2
-                    spec = createspec_multilineplot(name, df, dffields)
-                else
-                    spec = createspec_lineplot(name, df, dffields)
-                end
+            #single value
+            if length(df[1]) == 1
+                value = df[1][1]
+                name = string("$c : $v = $value")
+                spec = createspec_singlevalue(name)
             else
-                spec = createspec_barplot(name, df, dffields)
+                dffields = names(df)
+                #line
+                if dffields[1] == :time
+                    #multiline
+                    if length(dffields) > 2
+                        spec = createspec_multilineplot(name, df, dffields)
+                    #single line
+                    else
+                        spec = createspec_lineplot(name, df, dffields)
+                    end
+                #bar 
+                else
+                    spec = createspec_barplot(name, df, dffields)
+                end
             end
 
             #add to spec list
             push!(allspecs, spec) 
-        end =#
+        end 
     end
-    return allspecs
+
+    #return sorted list
+    return sort(allspecs, by = x -> lowercase(x["name"]))
 end
 
 function createspec_lineplot(name, df, dffields)
