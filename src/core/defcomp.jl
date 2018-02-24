@@ -44,10 +44,7 @@ function _generate_run_func(module_name, comp_name, args, body)
     body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
 
     func = :(
-        # Was: function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, $(args...))
-
-        # run_timestep must be called with a singleton instance of the given type, e.g. Main.ConnectorCompMatrix()
-        function run_timestep(::$module_name.$comp_name, $(args...))
+        function run_timestep($comp_name, $(args...))
             $(body...)
         end
     )
@@ -113,28 +110,21 @@ macro defcomp(comp_name, ex)
     end
 
     
-    # We'll return a block of expressions that will define the component.
-    # First, we create an empty struct that's used as an ID for the component.
-    # Then we assign it the comp_name, which the user can use to refer to the
-    # component. N.B. Empty mutable types produce singleton instances.
-
-    # was:
-    # comp_type = Symbol(titlecase("$(comp_name)MimiComponent"))
-    # type $(esc(comp_name)) <: ComponentId end
-    # mutable struct $(esc(comp_type)) <: ComponentId end
-    # global const $(esc(comp_name)) = $(esc(comp_type))()
-
+    # We'll return a block of expressions that will define the component. First,
+    # Firstsave the ComponentId to a variable with the same name as the component.
     result = quote   
         global const $(esc(comp_name)) = ComponentId($(QuoteNode(mod_name)), $(QuoteNode(comp_name)))
     end
 
+    # helper function used in loop below
     function addexpr(expr)
         push!(result.args, expr)
     end
     
     # For some reason this was difficult to do at the higher language level. 
     # This fails: :(comp = newcomponent($(esc(mod_name).esc(comp_name))))
-    newcomp = Expr(:(=), :comp, Expr(:call, :newcomponent, QuoteNode(mod_name), QuoteNode(comp_name)))
+    # newcomp = Expr(:(=), :comp, Expr(:call, :newcomponent, QuoteNode(mod_name), QuoteNode(comp_name)))
+    newcomp = :(comp = newcomponent($comp_name))
     addexpr(esc(newcomp))
 
     for elt in elements
@@ -142,7 +132,8 @@ macro defcomp(comp_name, ex)
 
         if @capture(elt, function run(args__) body__ end)
             # Save the expression that will store the run_timestep function definition, and
-            # translate dot notation to get/setproperty. The func is created at build time.
+            # translate dot notation to get/setproperty. The func is created at build time so
+            # it's created in the Mimi package.
             expr = _generate_run_func(mod_name, comp_name, args, body)
             run_expr = :(set_run_expr($(esc(:comp)), $(QuoteNode(expr))))
             addexpr(run_expr)
@@ -214,4 +205,61 @@ macro defcomp(comp_name, ex)
 
     return rmlines(result)
 
+end
+
+#
+# A few types of expressions are supported:
+# 1. component(name)
+# 2. dst_cmp.name = ex::Expr
+# 3. src_comp.name => dst_comp.name
+# 4. index[time] = 2050:5:2100
+#
+macro defmodel(model_name, ex)
+    @capture(ex, elements__)
+
+    curr_module = Base.module_name(current_module())
+
+    # Allow explicit definition of module to define model in
+    if @capture(model_name, module_name_.model_)       # e.g., Mimi.adder
+        model_name = model
+    else
+        module_name = curr_module
+    end
+
+    # We'll return a block of expressions that will define the model.
+    # First, we add the empty model and assign it to the given model name.
+    result = quote $(esc(model_name)) = Model() end 
+
+    for elt in elements
+        if @capture(elt, component(comp_mod_.comp_name_)         | component(comp_name_) |
+                         component(comp_mod_.comp_name_, alias_) | component(comp_name_, alias_))
+
+            comp_mod = comp_mod == nothing ? curr_module : comp_mod
+            name = alias == nothing ? comp_name : alias
+            expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
+
+        elseif @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_)
+            expr = :(connect_parameter($(esc(model_name)),
+                                       $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
+                                       $(QuoteNode(src_comp)), $(QuoteNode(src_name))))
+
+        elseif @capture(elt, index[idx_name_] = rhs_)
+            expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
+
+        elseif @capture(elt, comp_name_.param_name_ = rhs_)
+            expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
+
+        else
+            # Pass through anything else to allow the user to define intermediate vars, etc.
+            println("Passing through: $elt")
+            expr = elt
+        end
+
+        push!(result.args, expr)
+    end
+
+    # Finally, add a call to create connector components in the new ModelDef
+    push!(result.args, :(add_connector_comps!($(esc(model_name)))))
+
+    return result
 end

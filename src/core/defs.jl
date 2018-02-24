@@ -28,10 +28,18 @@ compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
 
 reset_compdefs() = empty!(_compdefs)
 
+start_year(comp_def::ComponentDef) = comp_def.start     # TBD: rename this start_year
+
+end_year(comp_def::ComponentDef) = comp_def.final       # TBD: rename this end_year
+
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
 
 compname(comp_id::ComponentId) = comp_id.comp_name
+
+function show(io::IO, comp_id::ComponentId)
+    print(io, "$(comp_id.module_name).$(comp_id.comp_name)")
+end
 
 # Gets the name of all NamedDefs: VariableDef, whereDef, ComponentDef, DimensionDef
 name(def::NamedDef) = def.name
@@ -54,20 +62,17 @@ function dump_components()
 end
 
 """
-    newcomponent(module_name::Symbol, comp_name::Symbol)
+    newcomponent(comp_id::ComponentId)
 
-Create an empty `ComponentDef`` to the global component registry with a comp_id created
-from `module_name` and `comp_name`. The empty `ComponentDef` must be populated with 
-calls to `addvariable`, `addparameter`, etc.
+Create an empty `ComponentDef`` to the global component registry with the given
+`comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
+`addparameter`, etc.
 """
-function newcomponent(module_name::Symbol, comp_name::Symbol)
-    full_name = "$(module_name).$(comp_name)"
-    comp_id = ComponentId(module_name, comp_name)
-
+function newcomponent(comp_id::ComponentId)
     if haskey(_compdefs, comp_id)
-        warn("Redefining component $full_name")
+        warn("Redefining component $comp_id")
     else
-        println("new component $full_name")
+        println("new component $comp_id)
     end
 
     comp_def = ComponentDef(comp_id)
@@ -113,16 +118,15 @@ dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 # Functions shared by VariableDef and ParameterDef (both <: DatumDef)
 dimensions(def::DatumDef) = def.dimensions
 
-dimensions(param::ArrayModelParameter) = param.dimensions
+dimcount(def::DatumDef) = length(def.dimensions)
+
+dimcount(def::DatumDef) = length(def.dimensions)
 
 datatype(def::DatumDef) = def.datatype
-
-datatype(md::ModelDef, def::DatumDef) = def.datatype == Number ? number_type(md) : def.datatype
 
 description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
-
 
 duration(md::ModelDef) = duration(indexvalues(md))
 
@@ -233,7 +237,13 @@ parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
 
 parameter_names(comp_def::ComponentDef) = [name(param) for param in parameters(comp_def)]
 
-parameter(comp_def::ComponentDef, name::Symbol) = comp_def.parameters[name]
+function parameter(comp_def::ComponentDef, name::Symbol) 
+    try
+        return comp_def.parameters[name]
+    catch
+        error("Parameter $name was not found in component $(comp_def.name)")
+    end
+end
 
 parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
 
@@ -307,7 +317,13 @@ end
 #
 variables(comp_def::ComponentDef) = values(comp_def.variables)
 
-variable(comp_def::ComponentDef, name::Symbol) = comp_def.variables[name]
+function variable(comp_def::ComponentDef, name::Symbol)
+    try
+        return comp_def.variables[name]
+    catch
+        error("Variable $name was not found in component $(comp_def.name)")
+    end
+end
 
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
@@ -348,15 +364,20 @@ function getspan(md::ModelDef, comp_name::Symbol)
     return Int((final - start) / duration + 1)
 end
 
-# Could be deprecated if expression is just emitted as part of @defcomp.
 # Save the expression defining the run_timestep function. (It's eval'd at build-time.)
 function set_run_expr(comp_def::ComponentDef, expr::Expr)
     comp_def.run_expr = expr
     nothing
 end
 
-# Could be deprecated as above.
 run_expr(comp_def::ComponentDef) = comp_def.run_expr
+
+function set_funcs_generated(md::ModelDef, value::Bool)
+    md.funcs_generated = value
+end
+
+funcs_generated(md::ModelDef) = md.funcs_generated
+
 
 function set_run_period!(comp_def::ComponentDef, start, final)
     comp_def.start = start
@@ -441,6 +462,6 @@ end
 
 function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol;
                       start=nothing, final=nothing, before=nothing, after=nothing)
-    println("Adding component $(comp_id.module_name).$(comp_id.comp_name) as :$comp_name")
+    println("Adding component $comp_id as :$comp_name")
     addcomponent(md, compdef(comp_id), comp_name, start=start, final=final, before=before, after=after)
 end

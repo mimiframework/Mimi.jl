@@ -6,6 +6,8 @@ modeldef(mi::ModelInstance) = mi.md
 
 compinstance(mi::ModelInstance, name::Symbol) = mi.components[name]
 
+compdef(ci::ComponentInstance) = compdef(ci.comp_id)
+
 name(ci::ComponentInstance) = ci.comp_name
 
 """
@@ -17,6 +19,9 @@ components(mi::ModelInstance) = values(mi.components)
 
 function addcomponent(mi::ModelInstance, ci::ComponentInstance) 
     mi.components[name(ci)] = ci
+
+    push!(mi.offsets, ci.offset)
+    push!(mi.final_times, ci.final)
 end
 
 #
@@ -60,20 +65,32 @@ end
 end
 
 # Convenience functions that can be called with a name symbol rather than Val(name)
-get_parameter_value(ci::ComponentInstance, name::Symbol) = getproperty(ci.pars, Val(name))
+function get_parameter_value(ci::ComponentInstance, name::Symbol)
+    try 
+        return getproperty(ci.pars, Val(name))
+    catch
+        error("Component $(ci.comp_id) has no parameter named $name")
+    end
+end
 
-get_variable_value(ci::ComponentInstance, name::Symbol)  = getproperty(ci.vars, Val(name))
+function get_variable_value(ci::ComponentInstance, name::Symbol)
+    try
+        return getproperty(ci.vars, Val(name))
+    catch
+        error("Component $(ci.comp_id) has no variable named $name")
+    end
+end
 
-set_variable_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.vars, Val(name), value)
+set_parameter_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.pars, Val(name), value)
 
-#
-# TBD: relationship between ComponentInstanceVariable/Parameter and connection parameters isn't clear
-#
-# Allow values to be obtained from either parameter type using
-# one method name.
+set_variable_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.vars, Val(name), value)
+
+# Allow values to be obtained from either parameter type using one method name.
 value(param::ScalarModelParameter) = param.value
 
-value(param::ArrayModelParameter) = param.values
+value(param::ArrayModelParameter)  = param.values
+
+dimensions(obj::ArrayModelParameter) = obj.dimensions
 
 """
 variables(mi::ModelInstance, componentname::Symbol)
@@ -86,12 +103,14 @@ function variables(mi::ModelInstance, comp_name::Symbol)
     return variables(ci)
 end
 
+variables(ci::ComponentInstance) = variables(ci.comp_id)
+
 function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
     if !(comp_name in keys(mi.components))
         error("Component does not exist in current model")
     end
     
-    comp_def = getcomp(mi, comp_name)
+    comp_def = compdef(mi, comp_name)
     vars = comp_def.vars
     pars = comp_def.pars
 
@@ -109,42 +128,45 @@ function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
 end
 
 """
-    indexcount(mi::ModelInstance, idx::Symbol)
+    indexcount(mi::ModelInstance, idx_name::Symbol)
 
-Returns the size of index `idx`` in model instance `mi`.
+Returns the size of index `idx_name`` in model instance `mi`.
 """
-indexcount(mi::ModelInstance, idx::Symbol) = mi.index_counts[idx]
+indexcount(mi::ModelInstance, idx_name::Symbol) = mi.index_counts[idx_name]
 
 """
     indexvalues(m::Model, i::Symbol)
 
 Return the values of index i in model m.
 """
-indexvalues(mi::ModelInstance, idx::Symbol) = mi.index_values[idx]
-
-
-function instantiate(comp_def::ComponentDef, par_values, var_values)
-    vars = variables(comp_def)
-    pars = parameters(comp_def)
-
-    # TBD: could store these types for faster instantiation in multi-trial analyses]
-    pnames = map(obj -> obj.name, pars)
-    vnames = map(obj -> obj.name, vars)
-    ptypes = map(obj -> obj.datatype, pars)
-    vtypes = map(obj -> obj.datatype, vars)
-
-    pars_type = ComponentInstanceVariables{pnames, ptypes}
-    vars_type = ComponentInstanceParameters{vnames, vtypes}
-
-    ci = ComponentInstance{vars_type, pars_type}(comp_def, par_values, var_values)
+function indexvalues(mi::ModelInstance, idx_name::Symbol)
+    try
+        return mi.index_values[idx_name]
+    catch
+        error("Index $idx_name was not found in model.")
+    end
 end
 
-
-function makeclock(mi::ModelInstance, ntimesteps, index_values)
+function make_clock(mi::ModelInstance, ntimesteps, index_values)
     start = index_values[:time][1]
     stop = index_values[:time][min(length(index_values[:time]),ntimesteps)]
     duration = duration(index_values)
     return Clock(start, stop, duration)
+end
+
+function reset_variables(ci::ComponentInstance)
+    println("reset_variables($(ci.comp_id))")
+end
+
+function init(ci::ComponentInstance)
+    println("init($(ci.comp_id))")
+    reset_variables(ci)
+end
+
+function run_timestep(ci::ComponentInstance, comp_clock::Clock)
+    ts = timestep(comp_clock)
+    run_timestep(ci.comp_id, ci.parameters, ci.variables, ci.dimensions, ts)
+    advance(comp_clock)
 end
 
 function run(mi::ModelInstance, ntimesteps, index_values)
@@ -152,42 +174,23 @@ function run(mi::ModelInstance, ntimesteps, index_values)
         error("Cannot run the model: no components have been created.")
     end
 
-    for (name, c) in mi.components
-        resetvariables(c)
-        init(c)
-    end
+    components = collect(components(mi))
+    map(init, components)
 
-    # components = [x for x in mi.components]
-    components = collect(values(mi.components))
-    newstyle = Vector{Bool}(length(components))
-    offsets = mi.offsets
-    final_times = mi.final_times
+    starts = mi.offsets
+    stops  = mi.final_times
 
-    clock = makeclock(mi, ntimesteps, index_values)
     duration = duration(index_values)
-    comp_clocks = [Clock(offsets[i], final_times[i], duration) for i in collect(1:length(components))]
+    comp_clocks = [Clock(starts[i], stops[i], duration) for i in 1:length(components)]
+    
+    clock = make_clock(mi, ntimesteps, index_values)
 
-    while !finished(clock)
-        for (i, (name, c)) in enumerate(components)
-            if offsets[i] <= gettime(clock) <= final_times[i]
-                ts = timestep(comp_clocks[i])              
-                run_timestep(c.comp_id, c.parameters, c.variables, c.dimensions, ts)
-                advance(comp_clocks[i])
+    while ! finished(clock)
+        for (ci, start, stop, comp_clock) in zip(components, starts, stops, comp_clocks)
+            if within(clock, start, stop)
+                run_timestep(ci, comp_clock)
             end
         end
         advance(clock)
     end
-end
-
-function run_timestep(anything, p, v, d, t)
-    t = typeof(anything)
-    println("Generic run_timestep called for $t.")
-end
-
-function init(s)
-end
-
-function resetvariables(s)
-    typeofs = typeof(s)
-    println("Generic resetvariables called for $typeofs.")
 end

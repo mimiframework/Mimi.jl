@@ -1,9 +1,21 @@
-import Base: delete!
-
 #
 # User facing struct that unifies a ModelDef and a ModelInstance and delegates
 # function calls to one or the other as appropriate.
 #
+using MacroTools
+
+import Base: delete!
+
+# Simplify delegation of calls to ::Model to internal ModelInstance or ModelDelegate objects.
+macro modelegate(ex)
+    if @capture(ex, fname_(varname_::Model, args__) => rhs_)
+        result = esc(:($fname($varname::Model, $(args...)) = $fname($varname.$rhs, $(args...))))
+        #println(result)
+        return result
+    end
+    error("Calls to @modelegate must be of the form 'func(m::Model, args...) => X', where X is either mi or md'. Expression was: $ex")
+end
+
 
 modeldef(m::Model) = m.md
 
@@ -25,16 +37,41 @@ modelinstance(m::Model) = m.mi
 
 @modelegate unconnected_params(m::Model) => md
 
+@modelegate add_connector_comps!(m::Model) => md
+
 # Forget any previously built model instance (i.e., after changing the model def).
 # This should be called by all functions that modify the Model's underlying ModelDef.
 function decache(m::Model)
-    m.mi = Nullable{ModelInstance}()
+    m.mi = nothing
 end
 
-function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}; 
+function connect_parameter(m::Model, 
+                           dst_comp_name::Symbol, dst_param_name::Symbol, 
+                           src_comp_name::Symbol, src_var_name::Symbol;
                            ignoreunits::Bool = false)
-    connect_parameter(m.md, dst, src; ignoreunits=ignoreunits)
-    decache(m)
+    connect_parameter(m.md, dst_comp_name, dst_param_name, src_comp_name, src_var_name; ignoreunits=ignoreunits)
+end
+
+"""
+    connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
+
+Bind the parameter of one component to a variable in another component.
+"""
+function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol};
+                           ignoreunits::Bool = false)
+    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], ignoreunits=ignoreunits)
+end
+
+# TBD: combine these method signatures by defaulting backup::Union{Void,Array}=nothing
+
+"""
+    connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
+
+Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
+"""
+function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+                           backup::Array; ignoreunits::Bool = false)
+    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits = ignoreunits)
 end
 
 function set_external_param(m::Model, name::Symbol, value::ModelParameter)
@@ -50,6 +87,14 @@ end
 function set_leftover_params(m::Model, parameters::Dict{String,Any})
     set_leftover_params(m.md, parameters)
     decache(m)
+end
+
+
+function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+                      start=nothing, final=nothing, before=nothing, after=nothing)
+    addcomponent(m.md, comp_id, comp_name, start=start, final=final, before=before, after=after)
+    decache(m)
+    return ComponentReference(m, comp_name)
 end
 
 """
@@ -78,11 +123,39 @@ List all the components in model `m`.
 
 @modelegate indexvalues(m::Model, idx::Symbol) => md
 
-function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      start=nothing, final=nothing, before=nothing, after=nothing)
-    addcomponent(m.md, comp_id, comp_name, start=start, final=final, before=before, after=after)
-    decache(m)
-    return ComponentReference(m, comp_name)
+"""
+    getdatum(m::Model, comp_def::ComponentDef, item::Symbol)
+
+Return a VariableDef or ParameterDef for `item` in the given component.
+"""
+function getdatum(m::Model, comp_def::ComponentDef, item::Symbol)
+    if haskey(comp_def.variables, item)
+        return comp_def.variables[item]
+
+    elseif haskey(comp_def.parameters, item)
+        return comp_def.parameters[item]
+    else
+        error("Cannot access data item; $name is not a variable or a parameter in component $component.")
+    end
+end
+
+getdatum(m::Model, comp_name::Symbol, item::Symbol) = getdatum(compdef(m, comp_name), item)
+
+getdatum(m::Model, comp_id::ComponentId, item::Symbol) = getdatum(m, compdef(comp_id), item)
+
+
+"""
+    indexlabels(m::Model, component::Symbol, name::Symbol)
+
+Return the index labels of the variable or parameter in the given component.
+"""
+function indexlabels(m::Model, comp_name::Symbol, datum_name::Symbol)
+    datum = getdatum(m, comp_name, datum_name)
+    return datum.dimensions
+end
+
+function getindex(m::Model, component::Symbol, name::Symbol)
+    return getindex(m.mi, component, name)
 end
 
 """
@@ -207,9 +280,10 @@ function run(m::Model; ntimesteps=typemax(Int))
         error("Cannot run a model with no components.")
     end
 
-    if isnull(m.mi)
-        m.mi = Nullable{ModelInstance}(build!(m))
+    if m.mi == nothing
+        m.mi = build(m)
     end
 
-    run(get(m.mi), ntimesteps, indexvalues(m))
+    println("Running model...")
+    run(m.mi, ntimesteps, indexvalues(m))
 end

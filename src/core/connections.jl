@@ -66,19 +66,19 @@ end
 
 Bind the parameter of one component to a variable in another component.
 """
-function connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_var_name::Symbol, 
-                                         src_comp_name::Symbol, src_param_name::Symbol; 
+function connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_param_name::Symbol, 
+                                         src_comp_name::Symbol, src_var_name::Symbol; 
                                          ignoreunits::Bool = false)
     # Check the units, if provided
-    if ! ignoreunits && ! _verify_units(parameter_unit(md, src_comp_name, src_param_name), 
-                                         variable_unit(md, dst_comp_name, dst_var_name))
+    if ! ignoreunits && ! _verify_units(variable_unit(md, src_comp_name, src_var_name), 
+                                        parameter_unit(md, dst_comp_name, dst_param_name))
         error("Units of $src_component.$src_var_name do not match $dst_component.$dst_param_name.")
     end
 
     # remove any existing connections for this dst component and parameter
-    disconnect(md, src_comp_name, src_param_name)
+    disconnect(md, src_comp_name, src_var_name)
 
-    curr = InternalParameterConnection(src_param_name, src_comp_name, dst_var_name, dst_comp_name, ignoreunits)
+    curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_param_name, ignoreunits)
     add_internal_param_conn(md, curr)
 
     return nothing
@@ -91,7 +91,7 @@ function connect_parameter(md::ModelDef,
     # If value is a NamedArray, we can check if the labels match
     if isa(backup, NamedArray)
         dims = dimnames(backup)
-        check_parameter_dimensions(md, backup, dims, dst_param_name)       # TBD: check that dst_param is the right thing to use
+        check_parameter_dimensions(md, backup, dims, dst_param_name)
     else
         dims = nothing
     end
@@ -109,7 +109,7 @@ function connect_parameter(md::ModelDef,
     dst_dims  = dimensions(dst_param)
 
     backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-    off = offset(dst_param)
+    off = offset(dst_comp_def)
     dur = duration(md)
     T = eltype(backup)
 
@@ -214,7 +214,7 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
                 else
                     values = value
                 end
-                set_external_array_param(mi, param_name, values, nothing)
+                set_external_array_param(md, param_name, values, nothing)
             end
         end
         connect_parameter(md, comp_name, param_name, param_name)
@@ -226,7 +226,13 @@ external_param_conns(md::ModelDef) = md.external_param_conns
 
 internal_param_conns(md::ModelDef) = md.internal_param_conns
 
-external_param(md::ModelDef, name::Symbol) = md.external_params[name]
+function external_param(md::ModelDef, name::Symbol)
+    try
+        return md.external_params[name]
+    catch
+        error("$name not found in external parameter list")
+    end
+end
 
 external_param_values(md::ModelDef, name::Symbol) = md.external_params[name].values
 
@@ -290,4 +296,51 @@ function set_external_scalar_param(md::ModelDef, name::Symbol, value::Any)
     end
     p = ScalarModelParameter(value)
     set_external_param(md, name, p)
+end
+
+
+function add_connector_comps!(md::ModelDef)
+    conns = md.internal_param_conns
+
+    for comp_def in compdefs(md)
+        comp_name = name(comp_def)
+
+        # first need to see if we need to add any connector components for this component
+        internal_conns  = filter(x -> x.dst_comp_name == comp_name, internal_param_conns(md))
+        need_conn_comps = filter(x -> x.backup != nothing, internal_conns)
+
+        # println("Need connectors comps: $need_conn_comps")
+
+        for (i, conn) in enumerate(need_conn_comps)
+            push!(md.backups, conn.backup)
+
+            num_dims = length(size(external_param(md, conn.backup)))
+
+            if ! (num_dims in (1, 2))
+                error("Connector components for parameters with > 2 dimensions are not implemented.")
+            end
+
+            # Fetch the definition of the appropriate connector commponent
+            conn_name = num_dims == 1 ? :ConnectorCompVector : :ConnectorCompMatrix
+            conn_comp_def = compdef(conn_name)
+            conn_comp_name = connector_comp_name(i)
+
+            println("addcomponent($(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
+
+            # Add the connector component before the user-defined component that required it
+            addcomponent(md, conn_comp_def, conn_comp_name, before=comp_name)
+           
+            # add a connection between src_component and the ConnectorComp
+            push!(conns, InternalParameterConnection(conn.src_comp_name, conn.src_var_name,
+                                                     conn_comp_name, :input1, 
+                                                     conn.ignoreunits))
+
+            # add a connection between ConnectorComp and dst_component
+            push!(conns, InternalParameterConnection(conn_comp_name, :output, 
+                                                     conn.dst_comp_name, conn.dst_param_name, 
+                                                     conn.ignoreunits))
+        end
+    end
+
+    return nothing
 end

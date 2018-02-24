@@ -34,6 +34,7 @@ export
     TimestepVector,
     VariableDef,
     addcomponent,
+    add_connector_comps!,
     add_dimension,
     addparameter,
     compdef,
@@ -70,25 +71,23 @@ export
     set_parameter,
     unconnected_params,
     unit,
-    update_external_param,
+    # update_external_param,
     variables
 
 import
     Base.getindex, Base.run, Base.show
 
 include("core/types.jl")
-include("core/macros.jl")
 
 # After loading types and macros, the rest can just be alphabetical
 include("core/build.jl")
-include("core/clock.jl")
 include("core/connections.jl")
 include("core/defs.jl")
 include("core/defcomp.jl")
 include("core/instances.jl")
-include("core/mimi-core.jl")
+# include("core/mimi-core.jl")
 include("core/references.jl")
-include("core/timestep_arrays.jl")
+include("core/time.jl")
 include("core/model.jl")
 
 include("utils/graph.jl")

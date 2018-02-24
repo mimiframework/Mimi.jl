@@ -1,28 +1,25 @@
 """
-    getdataframe(m::Model, componentname::Symbol, name::Symbol)
+    getdataframe(m::Model, comp_name::Symbol, var_name::Symbol)
 
 Return the values for variable `name` in `componentname` of model `m` as a DataFrame.
 """
-function getdataframe(m::Model, comp_name::Symbol, name::Symbol)
-    if isnull(m.mi)
-        error("Cannot get dataframe, model has not been built yet")
-    elseif !(name in variables(m, comp_name))
-        error("Cannot get dataframe; variable $name not in component $comp_name")
-    else
-        return getdataframe(m, get(m.mi), comp_name, name)
+function getdataframe(m::Model, comp_name::Symbol, var_name::Symbol)
+    mi = m.mi
+
+    if mi == nothing
+        error("Cannot get dataframe; model has not been built yet")
+
+    elseif !(var_name in variables(m, comp_name))
+        error("Cannot get dataframe; variable $var_name not in component $comp_name")
     end
-end
 
-# TBD: if m holds mi, why is this functional sig necessary? Combine with method above?
-
-function getdataframe(m::Model, mi::ModelInstance, comp_name::Symbol, name::Symbol)
     comp_inst = compinstance(mi, comp_name)
 
-    dims = indexlabels(m, comp_name, name)
+    dims = indexlabels(m, comp_name, var_name)
     num_dims = length(dims)
 
     if num_dims == 0
-        return comp_inst[name]
+        return comp_inst[var_name]
     end
 
     df = DataFrame()
@@ -41,9 +38,9 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name::Symbol, name::Symb
     if num_dims == 1
         df[dim1] = values
         if dim1 == :time
-            df[name] = vcat(repeat([NaN], inner=start - 1), mi[comp_name, name], repeat([NaN], inner=length(values) - final))
+            df[var_name] = vcat(repeat([NaN], inner=start - 1), mi[comp_name, var_name], repeat([NaN], inner=length(values) - final))
         else
-            df[name] = mi[comp_name, name]  # TBD need to fix this
+            df[var_name] = mi[comp_name, var_name]  # TBD need to fix this
         end
         return df
 
@@ -54,14 +51,14 @@ function getdataframe(m::Model, mi::ModelInstance, comp_name::Symbol, name::Symb
         df[dim1] = repeat(values, inner=[len_dim2])
         df[dim2] = repeat(indexvalues(m, dim2), outer=[len_dim1])
 
-        data = m[comp_name, name]
+        data = m[comp_name, var_name]
         if dim1 == :time
             top = fill(NaN, (start - 1, dim2))
             bottom = fill(NaN, (dim1 - final, dim2))
             data = vcat(top, data, bottom)
         end
 
-        df[name] = cat(1, [vec(data[i, :]) for i = 1:dim1]...)
+        df[var_name] = cat(1, [vec(data[i, :]) for i = 1:dim1]...)
 
         return df
     else
@@ -79,7 +76,7 @@ function getdataframe(m::Model, comp_name_pairs::Pair...)
     if isnull(m.mi)
         error("Cannot get dataframe, model has not been built yet")
     else
-        return getdataframe(m, get(m.mi), comp_name_pairs)
+        return getdataframe(m, m.mi, comp_name_pairs)
     end
 end
 

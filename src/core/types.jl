@@ -88,7 +88,7 @@ struct InternalParameterConnection <: Connection
     ignoreunits::Bool
     backup::Union{Symbol, Void} # a Symbol identifying the external param providing backup data, or nothing
 
-    function InternalParameterConnection(src_var::Symbol, src_comp::Symbol, dst_par::Symbol, dst_comp::Symbol, 
+    function InternalParameterConnection(src_comp::Symbol, src_var::Symbol, dst_comp::Symbol, dst_par::Symbol,
                                          ignoreunits::Bool, backup::Union{Symbol, Void}=nothing)
         self = new(src_comp, src_var, dst_comp, dst_par, ignoreunits, backup)
         return self
@@ -149,8 +149,8 @@ mutable struct ComponentDef  <: NamedDef
     dimensions::OrderedDict{Symbol, DimensionDef}
     run_expr::Union{Void, Expr}   # the expression that will create the run function
 
-    start::Int
-    final::Int
+    start::Int  # TBD: rename start_year
+    final::Int  # TBD: rename end_year
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension, etc.
@@ -185,8 +185,13 @@ mutable struct ModelDef
     # Internal connections that the ModelDef will know about.
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
-    
+
+    # Names of external params that the ConnectorComps will use as their :input2 parameters.
+    backups::Vector{Symbol}
+
     external_params::Dict{Symbol, ModelParameter}
+
+    funcs_generated::Bool
 
     # TBD: should be a DAG of components
     # conns::Any 
@@ -202,6 +207,8 @@ mutable struct ModelDef
         self.internal_param_conns = Vector{InternalParameterConnection}() 
         self.external_param_conns = Vector{ExternalParameterConnection}()
         self.external_params = Dict{Symbol, ModelParameter}()
+        self.backups = Vector{ComponentDef}()
+        self.funcs_generated = false
         return self
     end
 end
@@ -227,7 +234,8 @@ struct ComponentInstanceParameters{NAMES,TYPES} <: ComponentInstanceData
     types::DataType
 
     function ComponentInstanceParameters{NAMES,TYPES}(values) where {NAMES,TYPES}
-        return new(values, NAMES, TYPES)
+        # println("comp inst params:\n  values=$values\n\n  names=$NAMES\n\n  types=$TYPES\n\n")
+        return new(Tuple(values), NAMES, TYPES)
     end
 end
 
@@ -245,7 +253,8 @@ struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
     types::DataType
 
     function ComponentInstanceVariables{NAMES,TYPES}(values) where {NAMES,TYPES}
-        return new(values, NAMES, TYPES)
+        # println("comp inst vars:\n  values=$values\n\n  names=$NAMES\n\n  types=$TYPES\n\n")
+        return new(Tuple(values), NAMES, TYPES)
     end
 end
 
@@ -320,6 +329,8 @@ mutable struct ModelInstance
 
     # Ordered list of components (including hidden ConnectorComps)
     components::OrderedDict{Symbol, ComponentInstance}
+
+    conns::Vector{InternalParameterConnection}  # or should this be in ModelDef?
    
     offsets::Vector{Int}        # in order corresponding with components
     final_times::Vector{Int}
@@ -328,8 +339,9 @@ mutable struct ModelInstance
         self = new()
         self.md = md
         self.components = OrderedDict{Symbol, ComponentInstance}() 
-        offsets = Vector{Int}()
-        final_times = Vector{Int}()
+        self.conns = Vector{InternalParameterConnection}()
+        self.offsets = Vector{Int}()
+        self.final_times = Vector{Int}()
         return self
     end
 end
@@ -343,12 +355,12 @@ end
 #
 mutable struct Model
     md::ModelDef
-    mi::Nullable{ModelInstance}
+    mi::Union{Void, ModelInstance}
 
     function Model(number_type::DataType=Float64)
         self = new()
         self.md = ModelDef(number_type)
-        self.mi = Nullable{ModelInstance}()
+        self.mi = nothing
         return self
     end
 end

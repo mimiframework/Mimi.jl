@@ -3,36 +3,36 @@ module oneregion
 using Mimi
 
 @defcomp grosseconomy begin
-    YGROSS  = Variable(index=[time])    #Gross output
-    K       = Variable(index=[time])    #Capital
-    l       = Parameter(index=[time])   #Labor
-    tfp     = Parameter(index=[time])   #Total factor productivity
-    s       = Parameter(index=[time])   #Savings rate
-    depk    = Parameter()               #Depreciation rate on capital - Note that it has no time index
-    k0      = Parameter()               #Initial level of capital
-    share   = Parameter()               #Capital share
+    YGROSS  = Variable(index=[time])    # Gross output
+    K       = Variable(index=[time])    # Capital
+    l       = Parameter(index=[time])   # Labor
+    tfp     = Parameter(index=[time])   # Total factor productivity
+    s       = Parameter(index=[time])   # Savings rate
+    depk    = Parameter()               # Depreciation rate on capital - Note that it has no time index
+    k0      = Parameter()               # Initial level of capital
+    share   = Parameter()               # Capital share
 
     function run(p, v, d, t::Int)
-        #Define an equation for K
+        # Define an equation for K
         if t == 1
-            v.K[t]  = p.k0  #Note the use of v. and p. to distinguish between variables and parameters
+            v.K[t]  = p.k0  # Note the use of v. and p. to distinguish between variables and parameters
         else
             v.K[t]  = (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
         end
 
-        #Define an equation for YGROSS
+        # Define an equation for YGROSS
         v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)
     end
 end
 
 @defcomp emissions begin
-    E       = Variable(index=[time])    #Total greenhouse gas emissions
-    sigma   = Parameter(index=[time])   #Emissions output ratio
-    YGROSS  = Parameter(index=[time])   #Gross output - Note that YGROSS is now a parameter
+    E       = Variable(index=[time])    # Total greenhouse gas emissions
+    sigma   = Parameter(index=[time])   # Emissions output ratio
+    YGROSS  = Parameter(index=[time])   # Gross output - Note that YGROSS is now a parameter
 
     function run(p, v, d, t::Int)
-        #Define an eqation for E
-        v.E[t] = p.YGROSS[t] * p.sigma[t]   #Note the p. in front of YGROSS
+        # Define an eqation for E
+        v.E[t] = p.YGROSS[t] * p.sigma[t]   # Note the p. in front of YGROSS
     end
 end
 
@@ -56,7 +56,7 @@ end
     emissions.sigma = [(1. - 0.05)^t * 0.58 for t in 1:20]
 
     # Connect parameters
-    emissions.YGROSS => grosseconomy.YGROSS
+    grosseconomy.YGROSS => emissions.YGROSS
 end
 
 # my_model = Model()
@@ -78,11 +78,11 @@ end
 # setparameter(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 # connectparameter(my_model, grosseconomy => :YGROSS, emissions => :YGROSS)
 
-println("Model has been defined. Running model...")
+println("Model has been defined.")
 run(my_model)
 println("Done.")
 
-#Check model results
+# Check model results
 my_model[:emissions, :E]
 
 end # module
