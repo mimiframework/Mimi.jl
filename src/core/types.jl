@@ -175,7 +175,7 @@ mutable struct ModelDef
     # to occur multiple times within a model.
     comp_defs::OrderedDict{Symbol, ComponentDef}
 
-    index_counts::Dict{Symbol, Int}
+    index_counts::Dict{Symbol, Int}             # TBD: move these to ModelInstance
     index_values::Dict{Symbol, Vector{Any}}
 
     number_type::DataType
@@ -294,6 +294,10 @@ mutable struct ModelInstance
 
     conns::Vector{InternalParameterConnection}  # or should this be in ModelDef?
    
+    # TBD: move these from ModelDef?
+    # index_counts::Dict{Symbol, Int}
+    # index_values::Dict{Symbol, Vector{Any}}
+
     first_years::Vector{Int}        # in order corresponding with components
     final_years::Vector{Int}
 

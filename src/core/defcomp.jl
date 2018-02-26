@@ -55,7 +55,7 @@ function _generate_run_func(module_name, comp_name, args, body)
     func = :(
         function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
                               p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
-                              d::Vector{Symbol}, t::Int)
+                              d::Dict{Symbol, Vector{Any}}, t::Int)
             $(body...)
         end
     )
@@ -258,7 +258,7 @@ macro defmodel(model_name, ex)
             expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
+            expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

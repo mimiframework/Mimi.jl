@@ -276,6 +276,7 @@ end
 Add an array type parameter to the model.
 """
 function set_external_array_param(md::ModelDef, name::Symbol, value::AbstractArray, dims)
+    numtype = md.number_type
     
     if !(typeof(value) <: Array{numtype})
         numtype = number_type(md)

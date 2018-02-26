@@ -1,8 +1,9 @@
 using Mimi
-include("region_parameters.jl")
 include("two-region-model.jl")
 
-run1 = run_my_model()
+using tworegion
+
+run(my_model)
 
 #Check results
-run1[:emissions, :E_Global]
+my_model[:emissions, :E_Global]

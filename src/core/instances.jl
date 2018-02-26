@@ -196,13 +196,17 @@ function init(ci::ComponentInstance)
     reset_variables(ci)
 end
 
-function run_timestep(ci::ComponentInstance, clock::Clock)
-    t = timeindex(clock)
+function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     module_name = compmodule(ci.comp_id)
     comp_name = compname(ci.comp_id)
+    
+    pars = ci.pars
+    vars = ci.vars
+    dims = indexvalues(mi.md)
+    t    = timeindex(clock)
 
     # required since we eval the run_func on the fly
-    Base.invokelatest(run_timestep, (Val(module_name), Val(comp_name), ci.pars, ci.vars, ci.dimensions, t)...)
+    Base.invokelatest(run_timestep, (Val(module_name), Val(comp_name), pars, vars, dims, t)...)
     advance(clock)
 end
 
@@ -226,7 +230,7 @@ function run(mi::ModelInstance, ntimesteps, index_values)
     while ! finished(clock)
         for (ci, first, final, comp_clock) in zip(comp_instances, firsts, finals, comp_clocks)
             if between_years(clock, first, final)
-                run_timestep(ci, comp_clock)
+                run_timestep(mi, ci, comp_clock)
             end
         end
         advance(clock)

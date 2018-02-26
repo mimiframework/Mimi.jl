@@ -76,10 +76,15 @@ end
 #     (Mimi.add_connector_comps)(my_model)
 # end
 
+export my_model
+
+end # module
+
+
+
+using oneregion
+
 run(my_model)
 
 # Check model results
-result = my_model[:emissions, :E]
-println("emissions.E: $result")
-
-end # module
+my_model[:emissions, :E]
