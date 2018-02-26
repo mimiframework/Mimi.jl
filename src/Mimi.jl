@@ -29,6 +29,6 @@ include("plotting.jl")
 include("lint_helper.jl")
 
 # Explorer stuff
-include("explore/explore.jl")
+include("explorer/explore.jl")
 
 end # module
