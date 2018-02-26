@@ -1,42 +1,45 @@
 #
 # Graph Functionality
 #
-function show(io::IO, m::Model)
-    println(io, "showing model component connections:")
-    for (i, c) in enumerate(compkeys(m.md))
-        in_conns  = get_connections(m, c, :incoming)
-        out_conns = get_connections(m, c, :outgoing)
 
-        println(io, "$i.$c component")
-        println(io, "    incoming parameters:")
 
-        if length(in_conns) == 0
-            println(io, "      none")
-        else
-            for conn in in_conns
-                println(io, "      - $(conn.dst_param_name) from $(conn.src_comp_name) component")
-            end
-        end
+function _show_conns(io, m, comp_name, which::Symbol)
+    datumtype = which == :incoming ? "parameters" : "variables"
+    println(io, "   $which $datumtype:")
 
-        println(io, "    outgoing variables:")
+    conns = get_connections(m, comp_name, which)
 
-        if length(out_conns) == 0
-            println(io, "      none")
-        else
-            for conn in out_conns
-                println(io, "      - $(conn.src_var_name) in $(conn.dst_comp_name) component")
+    if length(conns) == 0
+        println(io, "      none")
+    else
+        for conn in conns
+            if which == :incoming
+                println(io, "      - $(conn.src_comp_name).$(conn.dst_par_name)")
+            else
+                println(io, "      - $(conn.dst_comp_name).$(conn.src_var_name)")
             end
         end
     end
 end
 
-function get_connections(m::Model, c::ComponentInstance, which::Symbol)
-    return get_connections(m, name(c.comp), which)
+function show(io::IO, m::Model)
+    println(io, "Model component connections:")
+
+    for (i, comp_name) in enumerate(compkeys(m.md))
+        comp_def = compdef(m.md, comp_name)
+        println(io, "$i. $(comp_def.comp_id) as :$(comp_def.name)")
+        _show_conns(io, m, comp_name, :incoming)
+        _show_conns(io, m, comp_name, :outgoing)
+    end
+end
+
+function get_connections(m::Model, ci::ComponentInstance, which::Symbol)
+    return get_connections(m, name(ci.comp), which)
 end
 
 function _filter_connections(conns::Vector{InternalParameterConnection}, comp_name::Symbol, which::Symbol)
     if which == :all
-        f = obj -> obj.src_comp_name == comp_name || obj.dst_comp_name == comp_name
+        f = obj -> (obj.src_comp_name == comp_name || obj.dst_comp_name == comp_name)
     elseif which == :incoming
         f = obj -> obj.dst_comp_name == comp_name
     elseif which == :outgoing
@@ -53,5 +56,5 @@ function get_connections(m::Model, comp_name::Symbol, which::Symbol)
 end
 
 function get_connections(mi::ModelInstance, comp_name::Symbol, which::Symbol)
-    return _filter_connections(internal_param_conns(m.md), comp_name, which)
+    return _filter_connections(internal_param_conns(mi.md), comp_name, which)
 end

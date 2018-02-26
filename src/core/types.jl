@@ -11,9 +11,9 @@ end
 mutable struct Clock
 	ts::Timestep
 
-	function Clock(offset::Int, final::Int, duration::Int)
+	function Clock(first_year::Int, final_year::Int, duration::Int)
 		self = new()
-		self.ts = Timestep{offset, duration, final}(1)
+		self.ts = Timestep{first_year, duration, final_year}(1)
 		return self
 	end
 end
@@ -84,7 +84,7 @@ struct InternalParameterConnection <: Connection
     src_comp_name::Symbol
     src_var_name::Symbol
     dst_comp_name::Symbol
-    dst_param_name::Symbol
+    dst_par_name::Symbol
     ignoreunits::Bool
     backup::Union{Symbol, Void} # a Symbol identifying the external param providing backup data, or nothing
 
@@ -149,8 +149,8 @@ mutable struct ComponentDef  <: NamedDef
     dimensions::OrderedDict{Symbol, DimensionDef}
     run_expr::Union{Void, Expr}   # the expression that will create the run function
 
-    start::Int  # TBD: rename start_year
-    final::Int  # TBD: rename end_year
+    first_year::Int
+    final_year::Int
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension, etc.
@@ -162,7 +162,7 @@ mutable struct ComponentDef  <: NamedDef
         self.parameters = OrderedDict{Symbol, ParameterDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
         self.run_expr = nothing         # TBD: why not just create the func with the comp?
-        self.start = self.final = 0
+        self.first_year = self.final_year = 0
         return self
     end
 end
@@ -258,51 +258,15 @@ struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
     end
 end
 
-# deprecated
-# abstract type AbstractComponentInstance end
-
-# This type just bundles the values that are passed to `run_timestep` in
-# one structure. We don't strictly need it, but it makes things cleaner.
-# struct ComponentInstance{TVARS <: ComponentInstanceVariables, 
-#                          TPARS <: ComponentInstanceParameters} <: AbstractComponentInstance
-#     comp_name::Symbol
-#     comp_id::ComponentId
-#     vars::TVARS
-#     pars::TPARS
-#     dimensions::Vector{Symbol}  # was "indices" previously
-
-#     offset::Int
-#     final::Int
-    
-#     function ComponentInstance{TVARS, TPARS}(comp_def::ComponentDef, var_values, par_values, 
-#                                              name=name(comp_def)) where {TVARS <: ComponentInstanceVariables, 
-#                                                                          TPARS <: ComponentInstanceParameters}
-#         self = new()
-#         self.comp_id = comp_def.comp_id
-#         self.comp_name = name
-#         self.dimensions = map(dim -> dim.name, dimensions(comp_def))
-#         self.vars = TVARS(var_values)
-#         self.pars = TPARS(par_values)
-    
-#         # TBD: see where these are set
-#         self.offset = 0
-#         self.final = 0
-#         return self
-#     end
-# end
-
-# Why does this need to be a parameterized type?
-# mutable struct ComponentInstance{T <: ComponentId} <: AbstractComponentInstance
-
-mutable struct ComponentInstance # <: AbstractComponentInstance
+mutable struct ComponentInstance
     comp_name::Symbol
     comp_id::ComponentId
     vars::ComponentInstanceVariables        # TBD: rename variables and parameters to be consistent with ComponentDef
     pars::ComponentInstanceParameters
     dimensions::Vector{Symbol}  # was "indices" previously
 
-    offset::Int
-    final::Int
+    first_year::Int
+    final_year::Int
     
     function ComponentInstance(comp_def::ComponentDef, 
                                vars::ComponentInstanceVariables, 
@@ -314,10 +278,8 @@ mutable struct ComponentInstance # <: AbstractComponentInstance
         self.dimensions = map(dim -> dim.name, dimensions(comp_def))
         self.vars = vars
         self.pars = pars
-    
-        # TBD: see where these are set
-        self.offset = comp_def.start
-        self.final  = comp_def.final
+        self.first_year = comp_def.first_year
+        self.final_year = comp_def.final_year
 
         return self
     end
@@ -332,16 +294,16 @@ mutable struct ModelInstance
 
     conns::Vector{InternalParameterConnection}  # or should this be in ModelDef?
    
-    offsets::Vector{Int}        # in order corresponding with components
-    final_times::Vector{Int}
+    first_years::Vector{Int}        # in order corresponding with components
+    final_years::Vector{Int}
 
     function ModelInstance(md::ModelDef)
         self = new()
         self.md = md
         self.components = OrderedDict{Symbol, ComponentInstance}() 
         self.conns = Vector{InternalParameterConnection}()
-        self.offsets = Vector{Int}()
-        self.final_times = Vector{Int}()
+        self.first_years = Vector{Int}()
+        self.final_years = Vector{Int}()
         return self
     end
 end
@@ -392,7 +354,7 @@ end
 
 #
 # TBD: VariableReference appears to be unused other than in an unused setindex! method.
-# Appears to be deprecated.
+# Deprecated, or for user API?
 #
 """
 A container for a variable within a component, to improve connect_parameter aesthetics,

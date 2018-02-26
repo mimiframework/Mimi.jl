@@ -50,7 +50,7 @@ I'd like to consider merging the two connection types since the only functional 
 
 #### ComponentInstanceData
 
-`ComponentInstanceVariables` and `ComponentInstanceParameters` are parameterized types that are subtypes of `ComponentInstanceData`. The names and types of the variables or parameters are encoded into the type information; the struct proper contains only the values.
+`ComponentInstanceVariables` and `ComponentInstanceParameters` are parameterized types that are subtypes of `ComponentInstanceData`. The names and types of the variables or parameters are encoded into the type information; the struct proper contains only the parameter or variable values.
 
 
 ## 2. Changes to `@defcomp`
@@ -61,7 +61,7 @@ The `@defcomp` macro has been substantially simplified by relying on MacroTools.
 
 ### Dot-overloading
 
-The `run_timestep` function has been moved inside the `@defcomp` macro. It is now named simply `run`, and takes four arguments: parameters, variables, dimensions, and time.
+The `run_timestep` function has been moved inside the `@defcomp` macro. It is now named simply `run` (at least in the macro; a function called `run_timestep` is still generated) and takes four arguments: parameters, variables, dimensions, and time.
 
 ```
     function run(p, v, d, t::Int)
@@ -69,20 +69,14 @@ The `run_timestep` function has been moved inside the `@defcomp` macro. It is no
     end
 ```
 
-With the `run` function inside the `@defcomp` macro, we are able to modify the code to translate references like `p.gdp` and assignments like `v.foo = 3` to use new `@generated` functions `getproperty` and `setproperty`, which compile down to direct array access operations on the `vals` field of parameter and variable instances.
+With the `run` function inside the `@defcomp` macro, we are able to modify the code to translate references like `p.gdp` and assignments like `v.foo = 3` to use new `@generated` functions `getproperty` and `setproperty`, which compile down to direct array access operations on the `values` field of parameter and variable instances.
 
 ### Component naming
 
 In the previous version of Mimi, components were named by a pair of symbols indicating the module the component was defined in, and the name of the component. Each component was also a newly generated custom type.
 
-In the new version, component definitions are represented by a single type, `ComponentDef`. The `@defcomp` macro creates both a type and a variable associated with each component definition. **This change requires that models be defined in their own package to avoid namespace collisions.**
-
-* For each component, an empty mutable struct that is a subtype of `ComponentId` is created. It's name is composed of the titlecased component name with "Component" appended. For example, the type generated for the built-in "adder" component type "AdderMimiComponent". All components are subtypes of `ComponentId`, so this supertype is used in the signature of many functions dealing with components. The name `ComponentId` was chosen for this type to emphasize that it is an empty struct used only as an identifier: actual component information is held in `ComponentDef` and `ComponentInstance` objects.
-
-* In addition to the type, a global constant is defined with the name provided to `@defcomp`. The value of this variable is the singleton instance for the corresponding generated type. Note that calling the constructor for an empty mutable struct the type always returns the same instance. Since these instances are unique, and because their names are guaranteed to be unique in any module, they can serve as global component identifiers. 
-
-Now, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated global constant, e.g., `Mimi.grosseconomy`.
-
+In the new version, component definitions are represented by the same (i.e., not generated) type, `ComponentDef`. The `@defcomp` macro creates a global variable with the name provided to `@defcomp` which holds a new type of object, `ComponentId`, which holds the symbol names of the module and component. Now, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated global constant, e.g., `Mimi.grosseconomy`.
+ **This change requires that models be defined in their own package to avoid namespace collisions.**
 
 ## 3. New macro `@defmodel`
 
@@ -156,6 +150,14 @@ To simplify naming, I propose the following rules:
  2. Exceptions to rule 1 include naming pairs of get/set functions like `getproperty` and `setproperty`, or whenever the name isn't clear without "get".
 
  3. Use underscores to separate words for names exceeding 2 words or 12 characters. These limits are arbitrary (and we might choose other ones), but a rule like this makes the code more predictable and legible. (Note that eliminating the "get" prefix means less need for underscores.)
+
+ I have also modified names that were unclear or poorly matched:
+
+ * In connections, `source` and `target` have become `src` and `dst` ("target" wasn't clear)
+
+* In Timestep types and related uses, `offset` and `start` (both are used) have become `start_year`, and `final` 
+  has become `end_year`. "Offset" wasn't clear; and `start` / `final` were mis-matched noun / adjective.)
+
 
 #### Readabiiity
 

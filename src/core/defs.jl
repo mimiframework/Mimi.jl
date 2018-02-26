@@ -28,9 +28,9 @@ compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
 
 reset_compdefs() = empty!(_compdefs)
 
-start_year(comp_def::ComponentDef) = comp_def.start     # TBD: rename this start_year
+first_year(comp_def::ComponentDef) = comp_def.first_year
 
-end_year(comp_def::ComponentDef) = comp_def.final       # TBD: rename this end_year
+first(comp_def::ComponentDef) = comp_def.first
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -72,7 +72,7 @@ function newcomponent(comp_id::ComponentId)
     if haskey(_compdefs, comp_id)
         warn("Redefining component $comp_id")
     else
-        println("new component $comp_id)
+        println("new component $comp_id")
     end
 
     comp_def = ComponentDef(comp_id)
@@ -117,8 +117,6 @@ dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 
 # Functions shared by VariableDef and ParameterDef (both <: DatumDef)
 dimensions(def::DatumDef) = def.dimensions
-
-dimcount(def::DatumDef) = length(def.dimensions)
 
 dimcount(def::DatumDef) = length(def.dimensions)
 
@@ -290,14 +288,14 @@ function set_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
         value = convert(Array{number_type(md)}, value) 
     
         if comp_param_dims[1] == :time
-            offset = comp_def.start                    # TBD: check that this is correct
+            first = first_year(comp_def)
             dur = duration(md)
 
             T = eltype(value)
             num_dims = length(comp_param_dims)
 
-            values = num_dims == 1 ? TimestepVector{T, offset, dur}(value) :
-                    (num_dims == 2 ? TimestepMatrix{T, offset, dur}(value) : value)
+            values = num_dims == 1 ? TimestepVector{T, first, dur}(value) :
+                    (num_dims == 2 ? TimestepMatrix{T, first, dur}(value) : value)
         else
             values = value
         end
@@ -359,9 +357,9 @@ end
 function getspan(md::ModelDef, comp_name::Symbol)
     duration = duration(md)
     comp_def = comp_def(md, comp_name)
-    start = comp_def.offset
-    final = comp_def.final
-    return Int((final - start) / duration + 1)
+    first = first_year(comp_def)
+    final = first(comp_def)
+    return Int((final - first) / duration + 1)
 end
 
 # Save the expression defining the run_timestep function. (It's eval'd at build-time.)
@@ -379,9 +377,9 @@ end
 funcs_generated(md::ModelDef) = md.funcs_generated
 
 
-function set_run_period!(comp_def::ComponentDef, start, final)
-    comp_def.start = start
-    comp_def.final = final
+function set_run_period!(comp_def::ComponentDef, first_year, final_year)
+    comp_def.first_year = first_year
+    comp_def.final_year = final_year
     return nothing
 end
 

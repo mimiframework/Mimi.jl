@@ -8,6 +8,8 @@ compinstance(mi::ModelInstance, name::Symbol) = mi.components[name]
 
 compdef(ci::ComponentInstance) = compdef(ci.comp_id)
 
+# compdef(mi::ModelInstance, name::Symbol) = compdef(mi.components[name].comp_id)
+
 name(ci::ComponentInstance) = ci.comp_name
 
 """
@@ -20,8 +22,8 @@ components(mi::ModelInstance) = values(mi.components)
 function addcomponent(mi::ModelInstance, ci::ComponentInstance) 
     mi.components[name(ci)] = ci
 
-    push!(mi.offsets, ci.offset)
-    push!(mi.final_times, ci.final)
+    push!(mi.first_years, ci.first_year)
+    push!(mi.final_years, ci.final_year)
 end
 
 #
@@ -29,15 +31,22 @@ end
 #
 function _index_pos(names, propname, var_or_par)
     index_pos = findfirst(names, propname)
+    # println("findfirst($names, $propname) returned $index_pos")
+
     index_pos == 0 && error("Unknown $var_or_par name $propname.")
     return index_pos
 end
 
 function _property_expr(obj, types, index_pos)
+    T = types.parameters[index_pos]
+    # println("_property_expr() index_pos: $index_pos, T: $T")
+
     if types.parameters[index_pos] <: Ref
-        return :(obj.values[$index_pos][])
+        ex = :(obj.values[$index_pos][])
+        # println("Returning $ex")
+        return ex
     else
-        return :(obj.values[$index_pos])
+        return :(obj.values[$index_pos])        # TBD: May be deprecated
     end
 end
 
@@ -53,14 +62,29 @@ end
     return _property_expr(obj, TYPES, index_pos)
 end
 
+
+@generated function setproperty!(obj::ComponentInstanceParameters{NAMES, TYPES}, 
+                                 ::Val{PROPERTYNAME}, value) where {NAMES, TYPES, PROPERTYNAME}
+    index_pos = _index_pos(NAMES, PROPERTYNAME, "parameter")
+
+    if TYPES.parameters[index_pos] <: Ref       # TBD: test can go away if everything is a ref
+        return :(obj.values[$index_pos][] = value)
+    else
+        return :(obj.values[$index_pos] = value)
+        # T = TYPES.parameters[index_pos]
+        # error("You cannot override indexed parameter $PROPERTYNAME::$T.")
+    end
+end
+
 @generated function setproperty!(obj::ComponentInstanceVariables{NAMES, TYPES}, 
                                  ::Val{PROPERTYNAME}, value) where {NAMES, TYPES, PROPERTYNAME}
     index_pos = _index_pos(NAMES, PROPERTYNAME, "variable")
 
-    if TYPES.parameters[index_pos] <: Ref
+    if TYPES.variables[index_pos] <: Ref       # TBD: test can go away if everything is a ref
         return :(obj.values[$index_pos][] = value)
     else
-        error("You cannot override indexed variable $PROPERTYNAME.")
+        T = TYPES.variables[index_pos]
+        error("You cannot override indexed variable $PROPERTYNAME::$T.")
     end
 end
 
@@ -68,16 +92,25 @@ end
 function get_parameter_value(ci::ComponentInstance, name::Symbol)
     try 
         return getproperty(ci.pars, Val(name))
-    catch
-        error("Component $(ci.comp_id) has no parameter named $name")
+    catch err
+        if isa(err, KeyError)
+            error("Component $(ci.comp_id) has no parameter named $name")
+        else
+            rethrow(err)
+        end
     end
 end
 
 function get_variable_value(ci::ComponentInstance, name::Symbol)
     try
+        # println("Getting $name from $(ci.vars)")
         return getproperty(ci.vars, Val(name))
-    catch
-        error("Component $(ci.comp_id) has no variable named $name")
+    catch err
+        if isa(err, KeyError)
+            error("Component $(ci.comp_id) has no variable named $name")
+        else
+            rethrow(err)
+        end
     end
 end
 
@@ -110,13 +143,13 @@ function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
         error("Component does not exist in current model")
     end
     
-    comp_def = compdef(mi, comp_name)
-    vars = comp_def.vars
-    pars = comp_def.pars
+    comp_inst = compinstance(mi, comp_name)
+    vars = comp_inst.vars
+    pars = comp_inst.pars
 
     if name in pars.names
         value = getproperty(pars, Val(name))
-        return isa(value, PklVector) || isa(v.value, TimestepMatrix) ? value.data : value
+        return isa(value, PklVector) || isa(value, TimestepMatrix) ? value.data : value
 
     elseif name in vars.names
         value = getproperty(vars, Val(name))
@@ -148,10 +181,10 @@ function indexvalues(mi::ModelInstance, idx_name::Symbol)
 end
 
 function make_clock(mi::ModelInstance, ntimesteps, index_values)
-    start = index_values[:time][1]
-    stop = index_values[:time][min(length(index_values[:time]),ntimesteps)]
-    duration = duration(index_values)
-    return Clock(start, stop, duration)
+    first = index_values[:time][1]
+    final = index_values[:time][min(length(index_values[:time]), ntimesteps)]
+    ts_length = duration(index_values)
+    return Clock(first, final, ts_length)
 end
 
 function reset_variables(ci::ComponentInstance)
@@ -163,10 +196,14 @@ function init(ci::ComponentInstance)
     reset_variables(ci)
 end
 
-function run_timestep(ci::ComponentInstance, comp_clock::Clock)
-    ts = timestep(comp_clock)
-    run_timestep(ci.comp_id, ci.parameters, ci.variables, ci.dimensions, ts)
-    advance(comp_clock)
+function run_timestep(ci::ComponentInstance, clock::Clock)
+    t = timeindex(clock)
+    module_name = compmodule(ci.comp_id)
+    comp_name = compname(ci.comp_id)
+
+    # required since we eval the run_func on the fly
+    Base.invokelatest(run_timestep, (Val(module_name), Val(comp_name), ci.pars, ci.vars, ci.dimensions, t)...)
+    advance(clock)
 end
 
 function run(mi::ModelInstance, ntimesteps, index_values)
@@ -174,20 +211,21 @@ function run(mi::ModelInstance, ntimesteps, index_values)
         error("Cannot run the model: no components have been created.")
     end
 
-    components = collect(components(mi))
-    map(init, components)
+    comp_instances = collect(components(mi))
+    map(init, comp_instances)
 
-    starts = mi.offsets
-    stops  = mi.final_times
+    firsts = mi.first_years
+    finals = mi.final_years
 
-    duration = duration(index_values)
-    comp_clocks = [Clock(starts[i], stops[i], duration) for i in 1:length(components)]
+    ts_length = duration(index_values)
+    # comp_clocks = [Clock(firsts[i], finals[i], ts_length) for i in 1:length(comp_instances)]
+    comp_clocks = [Clock(first, final, ts_length) for (first, final) in zip(firsts, finals)]
     
     clock = make_clock(mi, ntimesteps, index_values)
 
     while ! finished(clock)
-        for (ci, start, stop, comp_clock) in zip(components, starts, stops, comp_clocks)
-            if within(clock, start, stop)
+        for (ci, first, final, comp_clock) in zip(comp_instances, firsts, finals, comp_clocks)
+            if between_years(clock, first, final)
                 run_timestep(ci, comp_clock)
             end
         end

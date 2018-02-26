@@ -55,8 +55,8 @@ function finished(c::Clock)
 	return past_final_timestep(c.ts)
 end
 
-function within(c::Clock, start::Int, stop::Int)
-	return start <= gettime(c) <= stop
+function between_years(c::Clock, first::Int, final::Int)
+	return first <= gettime(c) <= final
 end
 
 #

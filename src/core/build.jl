@@ -1,6 +1,8 @@
 # Create the run_timestep function for this component
 function _eval_run_func(compdef::ComponentDef)
-    @eval($(run_expr(compdef)))
+    expr = run_expr(compdef)
+    println("\n@eval($expr)\n")
+    @eval($expr)
 end
 
 function _eval_run_funcs(md::ModelDef)
@@ -13,22 +15,40 @@ end
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function instance_datatype(md::ModelDef, def::DatumDef, start_year::Int)
+#
+# TBD: store everything in Refs, including both scalars and arrays.
+# This makes the tuple writable: we can update the refs, just not change the tuple.
+# Tuple{[typeof(obj) for obj in t]...}(t)
+
+function instance_datatype(md::ModelDef, def::DatumDef, first_year::Int)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dimcount(def)
 
     if num_dims == 0
-        return Ref{dtype}
+        T = dtype
 
     elseif dims[1] != :time
-        return Array{dtype, num_dims}
+        T = Array{dtype, num_dims}
+        # return Array{dtype, num_dims}
     
     else
         step_size = duration(md)
         ts_type = num_dims == 1 ? TimestepVector : TimestepMatrix
-        return ts_type{dtype, start_year, step_size}       
+        T = ts_type{dtype, first_year, step_size}
+        # return ts_type{dtype, first_year, step_size}       
     end
+
+    # println("instance_datatype($def) returning $T")
+    return T
+end
+
+# TBD: store everything in Refs, including both scalars and arrays.
+# This makes the tuple writable: we can update the refs, just not change the tuple.
+# Tuple{[typeof(obj) for obj in t]...}(t)
+function instance_datatype_ref(md::ModelDef, def::DatumDef, first_year::Int)
+    T = instance_datatype(md::ModelDef, def::DatumDef, first_year::Int)
+    return Ref{T}
 end
 
 # Return the parameterized types for parameters and variables for 
@@ -37,13 +57,13 @@ function _datum_types(md::ModelDef, comp_def::ComponentDef)
     var_defs = variables(comp_def)
     par_defs = parameters(comp_def)
 
-    start_year = comp_def.start
+    first_year = comp_def.first_year
 
     vnames = Tuple([name(vdef) for vdef in var_defs])
     pnames = Tuple([name(pdef) for pdef in par_defs])
 
-    vtypes = Tuple{[instance_datatype(md, vdef, start_year) for vdef in var_defs]...}
-    ptypes = Tuple{[instance_datatype(md, pdef, start_year) for pdef in par_defs]...}
+    vtypes = Tuple{[instance_datatype_ref(md, vdef, first_year) for vdef in var_defs]...}
+    ptypes = Tuple{[instance_datatype_ref(md, pdef, first_year) for pdef in par_defs]...}
 
     # println("_datum_types:\n  vtypes=$vtypes\n  ptypes=$ptypes\n")
 
@@ -54,40 +74,43 @@ function _datum_types(md::ModelDef, comp_def::ComponentDef)
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-function instantiate_datum(md::ModelDef, def::DatumDef, offset)
-    inst_type = instance_datatype(md, def, offset)
+function instantiate_datum(md::ModelDef, def::DatumDef, first_year::Int)
+    dtype = instance_datatype(md, def, first_year)
     dims = dimensions(def)
     num_dims = length(dims)
     
+    # println("instantiate_datum(md, def: $def) : dims: $dims, dtype: $dtype")
+
     if num_dims == 0
-        value = inst_type()
+        value = dtype(0)
 
     elseif dims[1] != :time
         # TODO Handle unnamed indices properly
         dim_counts = [indexcount(md, i) for i in dims]
-        value = inst_type(dim_counts...)
+        value = dtype(dim_counts...)
 
     elseif num_dims == 1
-        value = inst_type(indexcount(md, :time))
+        value = dtype(indexcount(md, :time))
 
     else
-        value = inst_type(indexcount(md, :time), indexcount(md, dims[2]))
+        value = dtype(indexcount(md, :time), indexcount(md, dims[2]))
     end
 
-    return value
+    # println("returning Ref{$dtype}($value)\n\n")
+    return Ref{dtype}(value)
 end
 
 # Instantiate a single component
 function instantiate_component(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    offset = comp_def.start
+    first_year = comp_def.first_year
     
     (vars_type, pars_type) = _datum_types(md, comp_def)
     
-    var_vals = [instantiate_datum(md, vdef, offset) for vdef in variables(comp_def)]
-    par_vals = [instantiate_datum(md, pdef, offset) for pdef in parameters(comp_def)]
+    var_vals = [instantiate_datum(md, vdef, first_year) for vdef in variables(comp_def)]
+    par_vals = [instantiate_datum(md, pdef, first_year) for pdef in parameters(comp_def)]
 
-    #println("instantiate_component:\n  vtype: $vars_type\n\n  ptype: $pars_type\n\n  vvals: $var_vals\n\n  pvals: $par_vals\n\n")
+    # println("instantiate_component:\n  vtype: $vars_type\n\n  ptype: $pars_type\n\n  vvals: $var_vals\n\n  pvals: $par_vals\n\n")
 
     comp_inst = ComponentInstance(comp_def, vars_type(var_vals), pars_type(par_vals), comp_name)
     return comp_inst
@@ -131,16 +154,16 @@ function build(md::ModelDef)
 
     # Make the internal parameter connections, including hidden connections between ConnectorComps.
     for ipc in internal_param_conns(md)
-        println("ipc: $ipc")
+        # println("ipc: $ipc")
         src_comp_inst = comps[ipc.src_comp_name]
         dst_comp_inst = comps[ipc.dst_comp_name]
-        value = get_parameter_value(src_comp_inst, ipc.src_var_name)    # TBD: should this be a Variable instead?
-        set_parameter_value(dst_comp_inst, ipc.dst_param_name, value)
+        value = get_variable_value(src_comp_inst, ipc.src_var_name)    # TBD: should this be a Variable instead?
+        set_parameter_value(dst_comp_inst, ipc.dst_par_name, value)
     end
 
     # Make the external parameter connections.
     for ext in external_param_conns(md)
-        param = external_param(md, ext.external_parameter)
+        param = external_param(md, ext.external_param)
         comp = comps[ext.comp_name]
         set_parameter_value(comp, ext.param_name, value(param))
     end

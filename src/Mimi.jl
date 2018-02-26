@@ -34,7 +34,7 @@ export
     TimestepVector,
     VariableDef,
     addcomponent,
-    add_connector_comps!,
+    add_connector_comps,
     add_dimension,
     addparameter,
     compdef,

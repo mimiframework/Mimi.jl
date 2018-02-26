@@ -37,7 +37,7 @@ modelinstance(m::Model) = m.mi
 
 @modelegate unconnected_params(m::Model) => md
 
-@modelegate add_connector_comps!(m::Model) => md
+@modelegate add_connector_comps(m::Model) => md
 
 # Forget any previously built model instance (i.e., after changing the model def).
 # This should be called by all functions that modify the Model's underlying ModelDef.
@@ -46,10 +46,10 @@ function decache(m::Model)
 end
 
 function connect_parameter(m::Model, 
-                           dst_comp_name::Symbol, dst_param_name::Symbol, 
+                           dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol;
                            ignoreunits::Bool = false)
-    connect_parameter(m.md, dst_comp_name, dst_param_name, src_comp_name, src_var_name; ignoreunits=ignoreunits)
+    connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name; ignoreunits=ignoreunits)
 end
 
 """

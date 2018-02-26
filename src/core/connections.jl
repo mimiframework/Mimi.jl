@@ -2,7 +2,7 @@
 Removes any parameter connections for a given parameter in a given component.
 """
 function disconnect(md::ModelDef, comp_name::Symbol, param_name::Symbol)
-    filter!(x -> !(x.dst_comp_name == comp_name && x.dst_param_name == param_name), internal_param_conns(md))
+    filter!(x -> !(x.dst_comp_name == comp_name && x.dst_par_name == param_name), internal_param_conns(md))
     filter!(x -> !(x.comp_name == comp_name && x.param_name == param_name), external_param_conns(md))
 end
 
@@ -31,9 +31,11 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
         return nothing
     end
 
+    index_values = indexvalues(md)
+
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol) 
-            if length(indexvalues(md, dim)) != size(ext_param.values)[i]
+            if length(index_values[dim]) != size(ext_param.values)[i]
                 error("Mismatched data size for a parameter connection. Component: $component, Parameter: $param_name")
             end
         end
@@ -62,36 +64,36 @@ function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, 
 end
 
 """
-    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_param_name::Symbol, src_comp_name::Symbol, src_var::Symbol; ignoreunits::Bool=false)
+    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var::Symbol; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component.
 """
-function connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_param_name::Symbol, 
+function connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
                                          src_comp_name::Symbol, src_var_name::Symbol; 
                                          ignoreunits::Bool = false)
     # Check the units, if provided
     if ! ignoreunits && ! _verify_units(variable_unit(md, src_comp_name, src_var_name), 
-                                        parameter_unit(md, dst_comp_name, dst_param_name))
-        error("Units of $src_component.$src_var_name do not match $dst_component.$dst_param_name.")
+                                       parameter_unit(md, dst_comp_name, dst_par_name))
+        error("Units of $src_component.$src_var_name do not match $dst_component.$dst_par_name.")
     end
 
     # remove any existing connections for this dst component and parameter
     disconnect(md, src_comp_name, src_var_name)
 
-    curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_param_name, ignoreunits)
+    curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits)
     add_internal_param_conn(md, curr)
 
     return nothing
 end
 
 function connect_parameter(md::ModelDef, 
-                           dst_comp_name::Symbol, dst_param_name::Symbol, 
+                           dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
                            backup::Array; ignoreunits::Bool = false)
     # If value is a NamedArray, we can check if the labels match
     if isa(backup, NamedArray)
         dims = dimnames(backup)
-        check_parameter_dimensions(md, backup, dims, dst_param_name)
+        check_parameter_dimensions(md, backup, dims, dst_par_name)
     else
         dims = nothing
     end
@@ -105,11 +107,11 @@ function connect_parameter(md::ModelDef,
     src_comp_def = compdef(md, src_comp_name)
 
     # some other check for second dimension??
-    dst_param = parameter(dst_comp_def, dst_param_name)
+    dst_param = parameter(dst_comp_def, dst_par_name)
     dst_dims  = dimensions(dst_param)
 
     backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-    off = offset(dst_comp_def)
+    first = first_year(dst_comp_def)
     dur = duration(md)
     T = eltype(backup)
 
@@ -117,15 +119,15 @@ function connect_parameter(md::ModelDef,
 
     if dim_count in (1, 2)
         ts_type = dim_count == 1 ? TimestepVector : TimestepMatrix
-        values = ts_type{T, off, dur}(backup)
+        values = ts_type{T, first, dur}(backup)
     else
         values = backup
     end
 
-    set_external_array_param(md, dst_param_name, values, dims)
+    set_external_array_param(md, dst_par_name, values, dims)
 
     # Use the non-backup method to handle the rest
-    connect_parameter(md, dst_comp_name, dst_param_name, src_comp_name, src_var_name, ignoreunits)
+    connect_parameter(md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, ignoreunits)
 
     return nothing
 end
@@ -158,7 +160,7 @@ function connected_params(md::ModelDef, comp_name::Symbol)
     ext_set_params = map(x->x.param_name, ext_connections)
 
     int_connections = Iterators.filter(x -> x.dst_comp_name == comp_name, internal_param_conns(md))
-    int_set_params = map(x->x.dst_param_name, int_connections)
+    int_set_params = map(x->x.dst_par_name, int_connections)
 
     return union(ext_set_params, int_set_params)
 end
@@ -207,10 +209,10 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.numberType}, value)
-                    offset = indexvalues(md, :time)[1]
+                    first_year = indexvalues(md, :time)[1]
                     duration = duration(md)
                     T = eltype(value)
-                    values = get_timestep_instance(T, offset, duration, num_dims, value)
+                    values = get_timestep_instance(T, first_year, duration, num_dims, value)
                 else
                     values = value
                 end
@@ -299,14 +301,14 @@ function set_external_scalar_param(md::ModelDef, name::Symbol, value::Any)
 end
 
 
-function add_connector_comps!(md::ModelDef)
-    conns = md.internal_param_conns
+function add_connector_comps(md::ModelDef)
+     conns = md.internal_param_conns        # we modify this, so we don't use functional API
 
     for comp_def in compdefs(md)
         comp_name = name(comp_def)
 
         # first need to see if we need to add any connector components for this component
-        internal_conns  = filter(x -> x.dst_comp_name == comp_name, internal_param_conns(md))
+        internal_conns  = filter(x -> x.dst_comp_name == comp_name, conns)
         need_conn_comps = filter(x -> x.backup != nothing, internal_conns)
 
         # println("Need connectors comps: $need_conn_comps")
@@ -325,9 +327,8 @@ function add_connector_comps!(md::ModelDef)
             conn_comp_def = compdef(conn_name)
             conn_comp_name = connector_comp_name(i)
 
-            println("addcomponent($(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
-
             # Add the connector component before the user-defined component that required it
+            println("add_connector_comps: addcomponent(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
             addcomponent(md, conn_comp_def, conn_comp_name, before=comp_name)
            
             # add a connection between src_component and the ConnectorComp
@@ -337,7 +338,7 @@ function add_connector_comps!(md::ModelDef)
 
             # add a connection between ConnectorComp and dst_component
             push!(conns, InternalParameterConnection(conn_comp_name, :output, 
-                                                     conn.dst_comp_name, conn.dst_param_name, 
+                                                     conn.dst_comp_name, conn.dst_par_name, 
                                                      conn.ignoreunits))
         end
     end

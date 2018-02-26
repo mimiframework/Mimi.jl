@@ -40,11 +40,22 @@ function _replace_dots(ex)
 end
 
 function _generate_run_func(module_name, comp_name, args, body)
+
+    if length(args) != 4
+        error("Can't generate run_timestep; requires 4 arguments but got $args")
+    end
+
     # replace each expression with its dot-replaced equivalent
     body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
 
+    # add types to the parameters  
+    # TBD: probably not helpful unless Val{module}, Val{compname} included in def and call
+    (p, v, d, t) = args
+
     func = :(
-        function run_timestep($comp_name, $(args...))
+        function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
+                              p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
+                              d::Vector{Symbol}, t::Int)
             $(body...)
         end
     )
@@ -259,7 +270,7 @@ macro defmodel(model_name, ex)
     end
 
     # Finally, add a call to create connector components in the new ModelDef
-    push!(result.args, :(add_connector_comps!($(esc(model_name)))))
+    push!(result.args, :(add_connector_comps($(esc(model_name)))))
 
     return result
 end
