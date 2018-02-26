@@ -568,13 +568,13 @@ function update_external_parameter(m::Model, name::Symbol, value)
 end
 
 """
-    setleftoverparameters(m::Model, parameters::Dict{Any,Any})
+    setleftoverparameters(m::Model, parameters::Dict)
 
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
 keys are strings that match the names of unset parameters in the model.
 """
-function setleftoverparameters(m::Model, parameters::Dict{String,Any})
+function setleftoverparameters(m::Model, parameters::Dict)
     parameters = Dict(lowercase(k)=>v for (k, v) in parameters)
     leftovers = get_unconnected_parameters(m)
     for (comp, p) in leftovers
