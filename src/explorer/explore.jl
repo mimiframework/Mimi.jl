@@ -19,11 +19,11 @@ function explore(model)
     end
 
     #load main html file
-    mainpath = joinpath(@__DIR__, "assets", "main.html")
-    w = Window(app, URI('${mainpath}'))
+    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\", "/")
+    w = Window(app, URI("file:///$(mainpath)"))
 
     #refresh variable list
-    result = run(app, refresh(speclistJSON))
+    result = run(w, "refresh($speclistJSON)")
     
 end
 
