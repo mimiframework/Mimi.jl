@@ -20,40 +20,38 @@ function getspeclist(model::Mimi.Model)
             name = string("$c : $v") #returns the name of the pair as "component:variable"
 
             #catch errors 
-            try df = getdataframe(model, c, v) #returns the  corresponding dataframe
+            try
+                df = getdataframe(model, c, v) #returns the  corresponding dataframe
+
+                #choose type of plot
+                #single value
+                if length(df[1]) == 1
+                    value = df[1][1]
+                    name = string("$c : $v = $value")
+                    spec = createspec_singlevalue(name)
+                else
+                    dffields = names(df)
+                    #line
+                    if dffields[1] == :time
+                        #multiline
+                        if length(dffields) > 2
+                            spec = createspec_multilineplot(name, df, dffields)
+                        #single line
+                        else
+                            spec = createspec_lineplot(name, df, dffields)
+                        end
+                    #bar
+                    else
+                        spec = createspec_barplot(name, df, dffields)
+                    end
+                end
+
+                #add to spec list
+                push!(allspecs, spec)
             catch
                 println("could not convert ", name, " to dataframe, skippping ...")
                 continue
             end
-            
-            #return the  corresponding dataframe
-            df = getdataframe(model, c, v) 
-
-            #choose type of plot
-            #single value
-            if length(df[1]) == 1
-                value = df[1][1]
-                name = string("$c : $v = $value")
-                spec = createspec_singlevalue(name)
-            else
-                dffields = names(df)
-                #line
-                if dffields[1] == :time
-                    #multiline
-                    if length(dffields) > 2
-                        spec = createspec_multilineplot(name, df, dffields)
-                    #single line
-                    else
-                        spec = createspec_lineplot(name, df, dffields)
-                    end
-                #bar 
-                else
-                    spec = createspec_barplot(name, df, dffields)
-                end
-            end
-
-            #add to spec list
-            push!(allspecs, spec) 
         end
 
         #get all parameters of component
@@ -65,7 +63,7 @@ function getspeclist(model::Mimi.Model)
             df = getdataframe_for_parameter(model, c, p) #returns the  corresponding dataframe
             
             #there are no parameters in this component
-            if typeof(df) == Float64
+            if isa(df, Number)
                 continue
             end
 
@@ -133,7 +131,7 @@ function createspec_barplot(name, df, dffields)
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
-            "mark" => "line",
+            "mark" => "bar",
             "encoding" => Dict(
                 "x" => Dict("field" => string(dffields[1]), "type" => "ordinal"),
                 "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
