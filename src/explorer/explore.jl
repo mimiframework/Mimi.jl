@@ -3,6 +3,8 @@ using DataFrames
 using JSON
 using Electron
 
+global app
+
 #function to get variable data
 include("buildspecs.jl")
 include("getparameters.jl")
@@ -20,6 +22,7 @@ function explore(model)
 
     #load main html file
     mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\", "/")
+    println(mainpath)
     w = Window(app, URI("file:///$(mainpath)"))
 
     #refresh variable list

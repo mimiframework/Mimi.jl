@@ -49,7 +49,7 @@ function getspeclist(model::Mimi.Model)
                 #add to spec list
                 push!(allspecs, spec)
             catch
-                println("could not convert ", name, " to dataframe, skippping ...")
+                println("could not convert ", name, " to dataframe, skipping ...")
                 continue
             end
         end
@@ -62,39 +62,36 @@ function getspeclist(model::Mimi.Model)
             name = string("$c : $p") #returns the name of the pair as "component:parameter"
             df = getdataframe_for_parameter(model, c, p) #returns the  corresponding dataframe
             
-            #there are no parameters in this component
-            if isa(df, Number)
-                continue
-            end
-
-            dffields = names(df)
-
-            #choose type of plot
-            #single value
-            if length(df[1]) == 1
-                value = df[1][1]
-                name = string("$c : $v = $value")
-                spec = createspec_singlevalue(name)
-            else
+            if !isa(df, Number) #check if there any parameters in this component
                 dffields = names(df)
-                #line
-                if dffields[1] == :time
-                    #multiline
-                    if length(dffields) > 2
-                        spec = createspec_multilineplot(name, df, dffields)
-                    #single line
-                    else
-                        spec = createspec_lineplot(name, df, dffields)
-                    end
-                #bar 
+                
+                #choose type of plot
+                #single value
+                if length(df[1]) == 1
+                    value = df[1][1]
+                    name = string("$c : $v = $value")
+                    spec = createspec_singlevalue(name)
                 else
-                    spec = createspec_barplot(name, df, dffields)
+                    dffields = names(df)
+                    #line
+                    if dffields[1] == :time
+                        #multiline
+                        if length(dffields) > 2
+                            spec = createspec_multilineplot(name, df, dffields)
+                        #single line
+                        else
+                            spec = createspec_lineplot(name, df, dffields)
+                        end
+                    #bar 
+                    else
+                        spec = createspec_barplot(name, df, dffields)
+                    end
                 end
-            end
-
-            #add to spec list
-            push!(allspecs, spec) 
-        end 
+    
+                #add to spec list
+                push!(allspecs, spec) 
+            end 
+        end  
     end
 
     #return sorted list

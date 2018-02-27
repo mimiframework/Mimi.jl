@@ -5,7 +5,7 @@
 .tab {
     float: left;
     border: 1px solid #ccc;
-    background-color: #f1f1f1;
+    background-color: #FFFFFF;
     width: 30%;
     height: 100%;
     overflow-y: auto;
@@ -18,7 +18,7 @@
     background-color: inherit;
     color: black;
     padding: 22px 16px;
-    height: 5%;
+    height: 2.5%;
     width: 100%;
     border: none;
     outline: none;
@@ -53,7 +53,7 @@
 
 .graphic {
     border: 1px solid #ccc;
-    background-color: #f1f1f1;
+    background-color: #FFFFFF;
     width: 100%;
     height: 100%;
 
