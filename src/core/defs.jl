@@ -470,3 +470,41 @@ function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol;
     println("Adding component $comp_id as :$comp_name")
     addcomponent(md, compdef(comp_id), comp_name, start=start, final=final, before=before, after=after)
 end
+
+import Base.copy
+
+"""
+    copy(md::ModelDef)
+
+Create a shallow copy of a ModelDef object.
+"""
+function copy(md::ModelDef)
+    mdcopy = ModelDef(md.number_type)
+    mdcopy.module_name = md.module_name
+    
+    merge!(mdcopy.comp_defs, md.comp_defs)
+    merge!(mdcopy.index_counts, md.index_counts)
+
+    # copy the values rather than the entire vector
+    for (key, val) in md.index_values
+        mdcopy.index_values[key] = copy(md.index_values[key])
+    end
+
+    mdcopy.time_labels = copy(md.time_labels)
+
+    # These are vectors of immutable structs, so we can copy them safely
+    mdcopy.internal_param_conns = copy(md.internal_param_conns)
+    mdcopy.external_param_conns = copy(md.external_param_conns)
+
+    # Names of external params that the ConnectorComps will use as their :input2 parameters.
+    mdcopy.backups = copy(md.backups)
+
+    external_params = Dict{Symbol, ModelParameter}()
+    for (key, obj) in md.external_params
+        external_params[key] = obj isa ScalarModelParameter ? ScalarModelParameter(obj.value) : ArrayModelParameter(obj.values, obj.dimensions)
+    end
+    mdcopy.external_params = external_params
+    mdcopy.funcs_generated = md.funcs_generated
+    mdcopy.sorted_comps == md.sorted_comps == nothing ? nothing : copy(md.sorted_comps)    
+    return mdcopy
+end

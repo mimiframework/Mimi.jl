@@ -1,4 +1,5 @@
 using DataStructures
+using LightGraphs
 
 #
 # 1. Types supporting parameterized Timestep and Clock objects
@@ -195,8 +196,7 @@ mutable struct ModelDef
 
     funcs_generated::Bool
 
-    # TBD: should be a DAG of components
-    # conns::Any 
+    sorted_comps::Union{Void, Vector{Symbol}}
 
     function ModelDef(number_type=Float64)
         self = new()
@@ -211,6 +211,7 @@ mutable struct ModelDef
         self.external_params = Dict{Symbol, ModelParameter}()
         self.backups = Vector{ComponentDef}()
         self.funcs_generated = false
+        self.sorted_comps = nothing
         return self
     end
 end

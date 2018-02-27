@@ -39,6 +39,7 @@ export
     addparameter,
     compdef,
     compdefs,
+    compkeys,
     components,
     connect_parameter,
     connected_params,

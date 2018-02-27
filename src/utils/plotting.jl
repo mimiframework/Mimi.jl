@@ -67,7 +67,7 @@ Warning: due to limitations in Julia's implementation of regex (or limits in my
 understanding of Julia's implementation of regex), cannot handle camelcase strings
 with more than 2 consecutive capitals, e.g. fileInTXTFormat -> File In T X T Format
 """
-function prettifystring(s::String)
+function prettifystring_OLD(s::String)
     if contains(s, "_")
         # Snake Case
         s = replace(s, r"_", s" ")
@@ -88,5 +88,26 @@ function prettifystring(s::String)
     # Return our string, minus the trailing space that was added
     return to_ret[1:length(to_ret) - 1]
 end
+
+"""
+Accepts a camelcase or snakecase string, and makes it human-readable
+e.g. camelCase -> Camel Case; snake_case -> Snake Case
+"""
+function prettifystring(s::String)
+    s = replace(s, r"_", s" ")
+    s = replace(s, r"([a-z])([A-Z])",  s"\1 \2")
+    s = replace(s, r"([A-Z]+)([A-Z])", s"\1 \2")        # handle case of consecutive caps by splitting last from rest
+
+    # Capitalize the first letter of each word
+    s_arr = split(s)
+
+    for (i, word) in enumerate(s_arr)
+        s_arr[i] = "$(uppercase(word[1]))$(word[2:length(word)])"
+    end
+
+    # Return our string
+    return join(s_arr, " ")
+end
+
 
 # End plotting section

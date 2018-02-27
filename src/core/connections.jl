@@ -224,9 +224,9 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
     nothing
 end
 
-external_param_conns(md::ModelDef) = md.external_param_conns
-
 internal_param_conns(md::ModelDef) = md.internal_param_conns
+
+external_param_conns(md::ModelDef) = md.external_param_conns
 
 function external_param(md::ModelDef, name::Symbol)
     try
@@ -236,11 +236,11 @@ function external_param(md::ModelDef, name::Symbol)
     end
 end
 
-external_param_values(md::ModelDef, name::Symbol) = md.external_params[name].values
-
 function add_internal_param_conn(md::ModelDef, conn::InternalParameterConnection)
     push!(md.internal_param_conns, conn)
 end
+
+external_param_values(md::ModelDef, name::Symbol) = md.external_params[name].values
 
 function add_external_param_conn(md::ModelDef, conn::ExternalParameterConnection)
     push!(md.external_param_conns, conn)
@@ -344,5 +344,93 @@ function add_connector_comps(md::ModelDef)
         end
     end
 
+    # Save the sorted component order for processing
+    md.sorted_comps = _topological_sort(md)
     return nothing
+end
+
+
+#
+# Support for automatic ordering of components
+#
+
+"""
+    dependencies(md::ModelDef, comp_name::Symbol)
+
+Return the set of component names that `comp_name` depends one, i.e.,
+sources for which `comp_name` is the destination of an internal connection.
+"""
+function dependencies(md::ModelDef, comp_name::Symbol)
+    conns = internal_param_conns(md)
+    deps = Set(c.src_comp_name for c in conns if c.dst_comp_name == comp_name)
+    return deps
+end
+
+# Psuedo-node to ensure that all components have at
+# least one dependency so we can walk the graph.
+global const START = :__START__
+
+"""
+    _topological_sort(md::ModelDef)
+
+Build a directed acyclic graph referencing the positions of the 
+components in the OrderedDict, tracing dependencies to create the DAG.
+Perform a topological sort on the graph for the given model and
+return a vector of component names in the order that will ensure
+dependencies are processed prior to dependent components.
+"""
+function _topological_sort(md::ModelDef)
+    comp_names = collect(compkeys(md))
+    
+    # insert the "start" pseudo component at the front
+    insert!(comp_names, 1, :__START__)
+    graph = DiGraph(length(comp_names))
+
+    comp_dict = Dict(name => num for (num, name) in enumerate(comp_names))
+
+    for (comp_name, comp_num) in comp_dict
+        for dep_name in dependencies(md, comp_name)
+            add_edge!(graph, comp_dict[dep_name], comp_num)
+        end
+    end
+
+    if (! is_directed(graph))
+        error("Component graph contains a cycle")
+    end
+
+    count = length(comp_names)
+    visited = Vector{Bool}(count)
+    visited[:] = false
+    visited[1] = true
+
+    result = Vector{Symbol}()
+
+    # recursive function to visit nodes in order of dependence
+    function visit(i)
+        if visited[i]
+            outs = outneighbors(graph, i)
+            if all(visited[outs])
+                return
+            end
+            # println("outs: $outs")
+            if length(outs) > 0
+                map(visit, outs)
+            end
+        else
+            ins = inneighbors(graph, i)
+            # println("ins: $ins")
+            
+            if all(visited[ins])
+                push!(result, comp_names[i])
+                visited[i] = true
+            else
+                # println("visiting ins $ins")
+                # work backwards to visit dependencies
+                map(visit, ins)
+            end
+        end
+    end
+
+    map(visit, 2:count)
+    return result
 end

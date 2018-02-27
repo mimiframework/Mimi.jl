@@ -129,7 +129,10 @@ end
 
 function build(m::Model)
     println("Building model...")
-    m.mi = build(m.md)
+
+    # Reference a copy in the ModelInstance to avoid changes underfoot
+    m.mi = build(copy(m.md))
+
     return m.mi
 end
 
