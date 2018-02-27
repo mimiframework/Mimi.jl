@@ -177,17 +177,17 @@ function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
     vars = comp_inst.vars
     pars = comp_inst.pars
 
-    if name in pars.names
-        value = getproperty(pars, Val(name))
-        return isa(value, PklVector) || isa(value, TimestepMatrix) ? value.data : value
-
-    elseif name in vars.names
-        value = getproperty(vars, Val(name))
-        return isa(value, TimestepVector) || isa(value, TimestepMatrix) ? value.data : value
-
+    if name in vars.names
+        which = vars
+    elseif name in pars.names
+        which = pars
     else
         error("$name is not a parameter or a variable in component $comp_name.")
     end
+
+    value = getproperty(which, Val(name))
+    # return isa(value, PklVector) || isa(value, TimestepMatrix) ? value.data : value
+    return isa(value, AbstractTimestepMatrix) ? value.data : value
 end
 
 """
