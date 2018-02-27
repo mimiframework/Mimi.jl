@@ -329,7 +329,7 @@ function add_connector_comps(md::ModelDef)
             conn_comp_name = connector_comp_name(i)
 
             # Add the connector component before the user-defined component that required it
-            println("add_connector_comps: addcomponent(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
+            # println("add_connector_comps: addcomponent(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
             addcomponent(md, conn_comp_def, conn_comp_name, before=comp_name)
            
             # add a connection between src_component and the ConnectorComp

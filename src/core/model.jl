@@ -124,11 +124,11 @@ List all the components in model `m`.
 @modelegate indexvalues(m::Model, idx::Symbol) => md
 
 """
-    getdatum(m::Model, comp_def::ComponentDef, item::Symbol)
+    _getdatumdef(comp_def::ComponentDef, item::Symbol)
 
 Return a VariableDef or ParameterDef for `item` in the given component.
 """
-function getdatum(m::Model, comp_def::ComponentDef, item::Symbol)
+function _getdatumdef(comp_def::ComponentDef, item::Symbol)
     if haskey(comp_def.variables, item)
         return comp_def.variables[item]
 
@@ -139,9 +139,9 @@ function getdatum(m::Model, comp_def::ComponentDef, item::Symbol)
     end
 end
 
-getdatum(m::Model, comp_name::Symbol, item::Symbol) = getdatum(compdef(m, comp_name), item)
+_getdatumdef(m::Model, comp_name::Symbol, item::Symbol) = _getdatumdef(compdef(m.md, comp_name), item)
 
-getdatum(m::Model, comp_id::ComponentId, item::Symbol) = getdatum(m, compdef(comp_id), item)
+# _getdatumdef(m::Model, comp_id::ComponentId, item::Symbol) = _getdatumdef(m.md, compdef(comp_id), item)
 
 
 """
@@ -150,7 +150,7 @@ getdatum(m::Model, comp_id::ComponentId, item::Symbol) = getdatum(m, compdef(com
 Return the index labels of the variable or parameter in the given component.
 """
 function indexlabels(m::Model, comp_name::Symbol, datum_name::Symbol)
-    datum = getdatum(m, comp_name, datum_name)
+    datum = _getdatumdef(m, comp_name, datum_name)
     return datum.dimensions
 end
 

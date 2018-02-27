@@ -7,19 +7,27 @@ Return the values for variable `name` in `componentname` of model `m` as a DataF
 """
 function getdataframe(m::Model, comp_name::Symbol, var_name::Symbol)
     mi = m.mi
+    md = m.md
 
     if mi == nothing
         error("Cannot get dataframe; model has not been built yet")
+    end
 
-    elseif !(var_name in variables(m, comp_name))
-        error("Cannot get dataframe; variable $var_name not in component $comp_name")
+    dims = nothing
+
+    try
+        dims = indexlabels(m, comp_name, var_name)
+    catch err
+        if err isa KeyError
+            error("Cannot get dataframe; variable $var_name not in component $comp_name")
+        else
+            rethrow(err)
+        end
     end
 
     comp_inst = compinstance(mi, comp_name)
 
-    dims = indexlabels(m, comp_name, var_name)
     num_dims = length(dims)
-
     if num_dims == 0
         return comp_inst[var_name]
     end
@@ -27,7 +35,7 @@ function getdataframe(m::Model, comp_name::Symbol, var_name::Symbol)
     df = DataFrame()
     dim1 = dims[1]
 
-    values = (isempty(m.time_labels) || dim1 != :time ? indexvalues(m, dim1) : m.time_labels)
+    values = (isempty(md.time_labels) || dim1 != :time ? indexvalues(m, dim1) : md.time_labels)
 
     if dim1 == :time
         comp_first = comp_inst.first_year
@@ -66,7 +74,7 @@ function getdataframe(m::Model, comp_name::Symbol, var_name::Symbol)
 
         return df
     else
-        error("Not yet implemented")
+        error("Dataframes with 0 or > 2 dimensions are not yet implemented")
     end
 end
 

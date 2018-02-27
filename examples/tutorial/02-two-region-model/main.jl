@@ -1,5 +1,6 @@
 using Mimi
-include("two-region-model.jl")
+
+include(joinpath(@__DIR__, "two-region-model.jl"))
 
 using tworegion
 

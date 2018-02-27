@@ -49,7 +49,6 @@ function _generate_run_func(module_name, comp_name, args, body)
     body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
 
     # add types to the parameters  
-    # TBD: probably not helpful unless Val{module}, Val{compname} included in def and call
     (p, v, d, t) = args
 
     func = :(
@@ -59,7 +58,30 @@ function _generate_run_func(module_name, comp_name, args, body)
             $(body...)
         end
     )
-    debug("func: $func")
+    debug("run_timestep func: $func")
+    return func
+end
+
+function _generate_init_func(module_name, comp_name, args, body)
+
+    if length(args) != 3
+        error("Can't generate init function; requires 3 arguments but got $args")
+    end
+
+    # replace each expression with its dot-replaced equivalent
+    body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
+
+    # add types to the parameters  
+    (p, v, d) = args
+
+    func = :(
+        function init(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
+                      p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
+                      d::Dict{Symbol, Vector{Any}})
+            $(body...)
+        end
+    )
+    debug("init func: $func")
     return func
 end
 
@@ -148,6 +170,13 @@ macro defcomp(comp_name, ex)
             expr = _generate_run_func(mod_name, comp_name, args, body)
             run_expr = :(set_run_expr($(esc(:comp)), $(QuoteNode(expr))))
             addexpr(run_expr)
+            continue
+        end
+
+        if @capture(elt, function init(args__) body__ end)
+            expr = _generate_init_func(mod_name, comp_name, args, body)
+            init_expr = :(set_init_expr($(esc(:comp)), $(QuoteNode(expr))))
+            addexpr(init_expr)
             continue
         end
 

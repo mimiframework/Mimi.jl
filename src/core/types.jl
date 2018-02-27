@@ -147,7 +147,8 @@ mutable struct ComponentDef  <: NamedDef
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
-    run_expr::Union{Void, Expr}   # the expression that will create the run function
+    run_expr::Union{Void, Expr}   # the expression that will create the run_timestep function
+    init_expr::Union{Void, Expr}  # the expression that will create the init function
 
     first_year::Int
     final_year::Int
@@ -161,7 +162,8 @@ mutable struct ComponentDef  <: NamedDef
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
-        self.run_expr = nothing         # TBD: why not just create the func with the comp?
+        self.run_expr   = nothing
+        self.init_expr  = nothing
         self.first_year = self.final_year = 0
         return self
     end
@@ -175,7 +177,7 @@ mutable struct ModelDef
     # to occur multiple times within a model.
     comp_defs::OrderedDict{Symbol, ComponentDef}
 
-    index_counts::Dict{Symbol, Int}             # TBD: move these to ModelInstance
+    index_counts::Dict{Symbol, Int}
     index_values::Dict{Symbol, Vector{Any}}
 
     number_type::DataType
@@ -294,10 +296,6 @@ mutable struct ModelInstance
 
     conns::Vector{InternalParameterConnection}  # or should this be in ModelDef?
    
-    # TBD: move these from ModelDef?
-    # index_counts::Dict{Symbol, Int}
-    # index_values::Dict{Symbol, Vector{Any}}
-
     first_years::Vector{Int}        # in order corresponding with components
     final_years::Vector{Int}
 

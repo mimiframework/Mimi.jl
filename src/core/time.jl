@@ -78,6 +78,25 @@ end
 start_year(obj::AbstractTimestepMatrix) = offset(obj)
 
 #
+# AbstractTimestepMatrix -- methods that apply to both matrix and vectors
+#
+function fill!(obj::AbstractTimestepMatrix, value)
+	fill!(obj.data, value)
+end
+
+function size(obj::AbstractTimestepMatrix)
+	return size(obj.data)
+end
+
+function size(obj::AbstractTimestepMatrix, i::Int)
+	return size(obj.data, i)
+end
+
+function eltype(obj::AbstractTimestepMatrix)
+	return eltype(obj.data)
+end
+
+#
 # TimestepVector
 #
 function getindex(x::TimestepVector{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}) where {T,Offset,Duration,Final}
@@ -102,14 +121,6 @@ function offset(v::TimestepVector{T, Offset, Duration}) where {T,Offset,Duration
 	return Offset
 end
 
-function eltype(v::TimestepVector)
-	return eltype(v.data)
-end
-
-function fill!(v::TimestepVector, x)
-	fill!(v.data, x)
-end
-
 function setindex!(v::TimestepVector{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final}) where {T,Offset,Duration,Final}
 	setindex!(v.data, a, ts.t)
 end
@@ -121,14 +132,6 @@ end
 
 function setindex!(v::TimestepVector{T, offset, duration}, a, i::OT) where {T,offset,duration,OT <: Union{Int, Colon, OrdinalRange}}
 	setindex!(v.data, a, i)
-end
-
-function size(v::TimestepVector)
-	return size(v.data)
-end
-
-function size(v::TimestepVector, i::Int)
-	return size(v.data, i)
 end
 
 # method where the vector and the timestep have the same offset
@@ -182,22 +185,6 @@ end
 
 function offset(v::TimestepMatrix{T, Offset, Duration}) where {T,Offset,Duration}
 	return Offset
-end
-
-function eltype(v::TimestepMatrix)
-	return eltype(v.data)
-end
-
-function fill!(m::TimestepMatrix, x)
-	fill!(m.data, x)
-end
-
-function size(m::TimestepMatrix)
-	return size(m.data)
-end
-
-function size(m::TimestepMatrix, i::Int)
-	return size(m.data, i)
 end
 
 # method where the vector and the timestep have the same offset

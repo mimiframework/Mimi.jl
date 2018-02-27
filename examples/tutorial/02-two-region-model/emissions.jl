@@ -19,4 +19,8 @@ using Mimi                                          #Make sure to call Mimi agai
             v.E_Global[t] = sum(v.E[t,:])
         end
     end
+
+    function init(p, v, d)
+        println("Called init function for emissions component")
+    end
 end

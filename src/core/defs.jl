@@ -370,6 +370,13 @@ end
 
 run_expr(comp_def::ComponentDef) = comp_def.run_expr
 
+function set_init_expr(comp_def::ComponentDef, expr::Expr)
+    comp_def.init_expr = expr
+    nothing
+end
+
+init_expr(comp_def::ComponentDef) = comp_def.init_expr
+
 function set_funcs_generated(md::ModelDef, value::Bool)
     md.funcs_generated = value
 end
@@ -454,7 +461,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     end
 
     md.comp_defs = newcomponents
-    println("md.comp_defs: $(md.comp_defs)")
+    # println("md.comp_defs: $(md.comp_defs)")
     return nothing
 end
 

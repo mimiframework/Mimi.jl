@@ -17,7 +17,7 @@ using Mimi
     # Note that the regional dimension is defined in d and parameters and variables are indexed by 'r'
 
         # Define an equation for K
-        for r in d[:regions]             # TBD: simplify syntax
+        for r in d.regions
             if t == 1
                 v.K[t,r] = p.k0[r]
             else
@@ -26,7 +26,7 @@ using Mimi
         end
 
         # Define an equation for YGROSS
-        for r in d[:regions]
+        for r in d.regions
             v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
         end
     end

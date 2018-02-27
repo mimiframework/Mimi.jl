@@ -45,47 +45,77 @@ function _property_expr(obj, types, index_pos)
         ex = :(obj.values[$index_pos][])
         # println("Returning $ex")
         return ex
+
+    # TBD: deprecated if we keep Refs for everything
     else
-        return :(obj.values[$index_pos])        # TBD: May be deprecated
+        return :(obj.values[$index_pos])
     end
 end
 
+# Fallback get & set property funcs that revert to dot notation
+@generated function getproperty(obj, ::Val{PROPERTY}) where {PROPERTY}
+    return :(obj.PROPERTY)
+end
+
+@generated function setproperty(obj, ::Val{PROPERTY}, value) where {PROPERTY}
+    return :(obj.PROPERTY = value)
+end
+
+# TBD: This kludge and will be revised when we address indexing more generally.
+# Special case support for Dicts so we can use dot notation on dimensions dict.
+# The run() func passes a reference to md.index_values as the "d" parameter.
+# Here we return a range representing the indices into that list of values.
+@generated function getproperty(obj::Dict, ::Val{PROPERTY}) where {PROPERTY}
+    return :(1:length(obj[PROPERTY]))
+end
+
+# Setting/getting parameter and variable values
 @generated function getproperty(obj::ComponentInstanceParameters{NAMES, TYPES}, 
-                                ::Val{PROPERTYNAME}) where {NAMES, TYPES, PROPERTYNAME}
-    index_pos = _index_pos(NAMES, PROPERTYNAME, "parameter")
+                                ::Val{PROPERTY}) where {NAMES, TYPES, PROPERTY}
+    index_pos = _index_pos(NAMES, PROPERTY, "parameter")
     return _property_expr(obj, TYPES, index_pos)
 end
 
 @generated function getproperty(obj::ComponentInstanceVariables{NAMES, TYPES}, 
-                                ::Val{PROPERTYNAME}) where {NAMES, TYPES, PROPERTYNAME}
-    index_pos = _index_pos(NAMES, PROPERTYNAME, "variable")
+                                ::Val{PROPERTY}) where {NAMES, TYPES, PROPERTY}
+    index_pos = _index_pos(NAMES, PROPERTY, "variable")
     return _property_expr(obj, TYPES, index_pos)
 end
 
 
 @generated function setproperty!(obj::ComponentInstanceParameters{NAMES, TYPES}, 
-                                 ::Val{PROPERTYNAME}, value) where {NAMES, TYPES, PROPERTYNAME}
-    index_pos = _index_pos(NAMES, PROPERTYNAME, "parameter")
+                                 ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
+    index_pos = _index_pos(NAMES, PROPERTY, "parameter")
 
-    if TYPES.parameters[index_pos] <: Ref       # TBD: test can go away if everything is a ref
-        return :(obj.values[$index_pos][] = value)
-    else
-        return :(obj.values[$index_pos] = value)
-        # T = TYPES.parameters[index_pos]
-        # error("You cannot override indexed parameter $PROPERTYNAME::$T.")
-    end
+    return :(obj.values[$index_pos][] = value)
+
+    #
+    # TBD: now that everything is a Ref, this isn't necessary, but still need to catch this error!
+    #
+    # if TYPES.parameters[index_pos] <: Ref
+    #     return :(obj.values[$index_pos][] = value)
+    # else
+    #     return :(obj.values[$index_pos] = value)
+    #     # T = TYPES.parameters[index_pos]
+    #     # error("You cannot override indexed parameter $PROPERTY::$T.")
+    # end
 end
 
 @generated function setproperty!(obj::ComponentInstanceVariables{NAMES, TYPES}, 
-                                 ::Val{PROPERTYNAME}, value) where {NAMES, TYPES, PROPERTYNAME}
-    index_pos = _index_pos(NAMES, PROPERTYNAME, "variable")
+                                 ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
+    index_pos = _index_pos(NAMES, PROPERTY, "variable")
 
-    if TYPES.variables[index_pos] <: Ref       # TBD: test can go away if everything is a ref
-        return :(obj.values[$index_pos][] = value)
-    else
-        T = TYPES.variables[index_pos]
-        error("You cannot override indexed variable $PROPERTYNAME::$T.")
-    end
+    return :(obj.values[$index_pos][] = value)
+
+    #
+    # TBD: now that everything is a Ref, this isn't necessary, but still need to catch this error!
+    #
+    # if TYPES.variables[index_pos] <: Ref
+    #     return :(obj.values[$index_pos][] = value)
+    # else
+    #     T = TYPES.variables[index_pos]
+    #     error("You cannot override indexed variable $PROPERTY::$T.")
+    # end
 end
 
 # Convenience functions that can be called with a name symbol rather than Val(name)
@@ -188,12 +218,43 @@ function make_clock(mi::ModelInstance, ntimesteps, index_values)
 end
 
 function reset_variables(ci::ComponentInstance)
-    println("reset_variables($(ci.comp_id))")
+    # println("reset_variables($(ci.comp_id))")
+    vars = ci.vars
+
+    for (name, ref) in zip(vars.names, vars.types.parameters)
+        # Everything is held in a Ref{}, so get the parameters to that...
+        T = ref.parameters[1]
+        value = getproperty(vars, Val(name))
+
+        if (T <: AbstractTimestepMatrix || T <: AbstractMatrix) && eltype(value) <: AbstractFloat
+            fill!(value, NaN)
+
+        elseif T <: AbstractFloat
+            setproperty(vars, Val(name), NaN)
+        end
+    end
 end
 
-function init(ci::ComponentInstance)
-    println("init($(ci.comp_id))")
+function init(mi::ModelInstance)
+    for ci in components(mi)
+        init(mi, ci)
+    end
+end
+
+function init(mi::ModelInstance, ci::ComponentInstance)
     reset_variables(ci)
+
+    comp_def = compdef(mi.md, ci.comp_name)
+
+    if init_expr(comp_def) != nothing
+        module_name = compmodule(ci.comp_id)
+        comp_name = ci.comp_name
+        pars = ci.pars
+        vars = ci.vars
+        dims = indexvalues(mi.md)
+
+        Base.invokelatest(init, (Val(module_name), Val(comp_name), pars, vars, dims)...)
+    end
 end
 
 function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
@@ -215,9 +276,6 @@ function run(mi::ModelInstance, ntimesteps, index_values)
         error("Cannot run the model: no components have been created.")
     end
 
-    comp_instances = collect(components(mi))
-    map(init, comp_instances)
-
     firsts = mi.first_years
     finals = mi.final_years
 
@@ -226,6 +284,10 @@ function run(mi::ModelInstance, ntimesteps, index_values)
     comp_clocks = [Clock(first, final, ts_length) for (first, final) in zip(firsts, finals)]
     
     clock = make_clock(mi, ntimesteps, index_values)
+
+    init(mi)    # call module's (or fallback) init function
+
+    comp_instances = components(mi)
 
     while ! finished(clock)
         for (ci, first, final, comp_clock) in zip(comp_instances, firsts, finals, comp_clocks)
