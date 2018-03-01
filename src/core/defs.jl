@@ -28,9 +28,7 @@ compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
 
 reset_compdefs() = empty!(_compdefs)
 
-first_year(comp_def::ComponentDef) = comp_def.first_year
-
-first(comp_def::ComponentDef) = comp_def.first
+start_period(comp_def::ComponentDef) = comp_def.start
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -126,9 +124,9 @@ description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
 
-duration(md::ModelDef) = duration(indexvalues(md))
+step_size(md::ModelDef) = step_size(indexvalues(md))
 
-function duration(index_values::Dict{Symbol, Vector{Any}})
+function step_size(index_values::Dict{Symbol, Vector{Any}})
     values = index_values[:time]
     # N.B. assumes that all timesteps of the model are the same length
     return length(values) > 1 ? values[2] - values[1] : 1
@@ -243,6 +241,8 @@ function parameter(comp_def::ComponentDef, name::Symbol)
     end
 end
 
+external_params(md::ModelDef) = md.external_params
+
 parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
 
 """
@@ -288,19 +288,20 @@ function set_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
         value = convert(Array{number_type(md)}, value) 
     
         if comp_param_dims[1] == :time
-            first = first_year(comp_def)
-            dur = duration(md)
+            start = start_period(comp_def)
+            dur = step_size(md)
 
             T = eltype(value)
             num_dims = length(comp_param_dims)
 
-            values = num_dims == 1 ? TimestepVector{T, first, dur}(value) :
-                    (num_dims == 2 ? TimestepMatrix{T, first, dur}(value) : value)
+            values = num_dims == 1 ? TimestepVector{T, start, dur}(value) :
+                    (num_dims == 2 ? TimestepMatrix{T, start, dur}(value) : value)
         else
             values = value
         end
 
-        set_external_array_param(md, param_name, values, dims)
+        # println("set_parameter: dims=$dims, comp_param_dims=$comp_param_dims")
+        set_external_array_param(md, param_name, values, comp_param_dims)
 
     else # scalar parameter case
         set_external_scalar_param(md, param_name, value)
@@ -355,11 +356,11 @@ end
 
 # Return the number of timesteps a given component in a model will run for.
 function getspan(md::ModelDef, comp_name::Symbol)
-    duration = duration(md)
     comp_def = comp_def(md, comp_name)
-    first = first_year(comp_def)
-    final = first(comp_def)
-    return Int((final - first) / duration + 1)
+    start = start_period(comp_def)
+    stop  = stop_period(comp_def)
+    step  = step_size(md)
+    return Int((stop - start) / step + 1)
 end
 
 # Save the expression defining the run_timestep function. (It's eval'd at build-time.)
@@ -384,9 +385,9 @@ end
 funcs_generated(md::ModelDef) = md.funcs_generated
 
 
-function set_run_period!(comp_def::ComponentDef, first_year, final_year)
-    comp_def.first_year = first_year
-    comp_def.final_year = final_year
+function set_run_period!(comp_def::ComponentDef, start, stop)
+    comp_def.start = start
+    comp_def.stop = stop
     return nothing
 end
 
@@ -474,9 +475,35 @@ end
 import Base.copy
 
 """
+    copy_external_params(md::ModelDef)
+
+Make copies of ModelParameter subtypes representing external parameters. 
+This is used both in the copy() function below, and in the MCS subsystem 
+to restore values between trials.
+"""
+function copy_external_params(md::ModelDef)
+    external_params = Dict{Symbol, ModelParameter}()
+
+    for (key, obj) in md.external_params
+        external_params[key] = obj isa ScalarModelParameter ? ScalarModelParameter(obj.value) : ArrayModelParameter(copy(obj.values), obj.dimensions)
+    end
+
+    return external_params
+end
+
+function copy(obj::TimestepVector{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
+    return TimestepVector{T, FirstPeriod, Duration}(copy(obj.data))
+end
+
+function copy(obj::TimestepMatrix{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
+    return TimestepMatrix{T, FirstPeriod, Duration}(copy(obj.data))
+end
+
+"""
     copy(md::ModelDef)
 
-Create a shallow copy of a ModelDef object.
+Create a copy of a ModelDef object that is not entirely shallow, nor completely deep.
+The aim is to copy the full structure, reusing referernces to immutable elements.
 """
 function copy(md::ModelDef)
     mdcopy = ModelDef(md.number_type)
@@ -499,12 +526,10 @@ function copy(md::ModelDef)
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     mdcopy.backups = copy(md.backups)
 
-    external_params = Dict{Symbol, ModelParameter}()
-    for (key, obj) in md.external_params
-        external_params[key] = obj isa ScalarModelParameter ? ScalarModelParameter(obj.value) : ArrayModelParameter(obj.values, obj.dimensions)
-    end
-    mdcopy.external_params = external_params
+    mdcopy.external_params = copy_external_params(md)
+
     mdcopy.funcs_generated = md.funcs_generated
-    mdcopy.sorted_comps == md.sorted_comps == nothing ? nothing : copy(md.sorted_comps)    
+    mdcopy.sorted_comps = md.sorted_comps == nothing ? nothing : copy(md.sorted_comps)    
+    
     return mdcopy
 end

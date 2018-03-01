@@ -155,8 +155,8 @@ To simplify naming, I propose the following rules:
 
  * In connections, `source` and `target` have become `src` and `dst` ("target" wasn't clear)
 
-* In Timestep types and related uses, `offset` and `start` (both are used) have become `start_year`, and `final` 
-  has become `end_year`. "Offset" wasn't clear; and `start` / `final` were mis-matched noun / adjective.)
+* In Timestep types and related uses, `offset` and `start` (both are used) have become `start_period`, and `final` 
+  has become `end_period`. "Offset" wasn't clear; and `start` / `final` were mis-matched noun / adjective.)
 
 
 #### Readabiiity

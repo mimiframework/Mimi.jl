@@ -29,6 +29,8 @@ modelinstance(m::Model) = m.mi
 
 @modelegate internal_param_conns(m::Model) => md
 
+@modelegate external_params(m::Model) => md
+
 @modelegate external_param(m::Model, name::Symbol) => md
 
 @modelegate external_param_values(m::Model, name::Symbol) => md
@@ -110,7 +112,7 @@ List all the components in model `m`.
 
 @modelegate timelabels(m::Model) => md
 
-@modelegate duration(m::Model) => md
+@modelegate step_size(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
 @modelegate getspan(m::Model, comp_name::Symbol) => md

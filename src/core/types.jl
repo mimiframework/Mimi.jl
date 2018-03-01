@@ -5,34 +5,85 @@ using LightGraphs
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
-mutable struct Timestep{Offset, Duration, Final}
+mutable struct Timestep{Start, Step, Stop}
 	t::Int
+end
+
+# TBD: Consider renaming and simplifying this
+mutable struct TimestepNew
+    start::Int      # the first year/month etc. that is relevant
+    step::Int       # interval between periods, for constant timesteps
+    stop::Int       # the final year/month etc. that is relevant
+    current::Int    # the current period
+
+    function TimestepNew(start::Int, step::Int, stop::Int, current::Int=1)
+        self = new(start, step, stop)
+        self.current = current
+        return self
+    end
 end
 
 mutable struct Clock
 	ts::Timestep
 
-	function Clock(first_year::Int, final_year::Int, duration::Int)
+	function Clock(start::Int, step::Int, stop::Int)
 		self = new()
-		self.ts = Timestep{first_year, duration, final_year}(1)
+		self.ts = Timestep{start, step, stop}(1)
 		return self
 	end
 end
+
+# TBD: consider using this merged type
+mutable struct TimestepArray{T, N}
+    start::Int
+    step::Int
+	data::Array{T, N}
+
+    function TimestepArray{T, N}(start::Int, step::Int, data::Array{T, N}) where {T, N}
+		self = new(start, step, data)
+		return self
+	end
+
+    function TimestepArray{T, N}(start::Int, step::Int, dims::Int...) where {T, N}
+        num_dims = length(dims)
+        
+        if num_dims != N
+            error("TimestepArray: number of dimensions ($num_dims) does not match declared value of N ($N)")
+        end
+
+        if ! num_dims in (1, 2)
+            error("TimestepArray supports only 1 or 2 dimensions currently.")
+        end
+
+        data = Array{T, N}(dims...)
+		self = new(start, step, data)
+		self.data = Vector{T}(i)
+		return self
+	end
+end
+
+# TBD: Pseudo-constructors for consolidated version
+# TimestepVector(start::Int, len::Int, data::Array{T, 1}) where T = TimestepArray{T, 1}(start, len, data)
+# TimestepMatrix(start::Int, len::Int, data::Array{T, 2}) where T = TimestepArray{T, 2}(start, len, data)
+
+# TimestepVector(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 1}(start, len, dims...)
+# TimestepMatrix(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 2}(start, len, dims...)
+
 
 abstract type AbstractTimestepMatrix end
 
 # don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 1 for the vector case
-mutable struct TimestepVector{T, Offset, Duration} <: AbstractTimestepMatrix
+mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix
 	data::Vector{T}
 
-    function TimestepVector{T, Offset, Duration}(d::Vector{T}) where {T, Offset, Duration}
+    function TimestepVector{T, Start, Step}(d::Vector{T}) where {T, Start, Step}
 		v = new()
 		v.data = d
 		return v
 	end
 
-    function TimestepVector{T, Offset, Duration}(i::Int) where {T, Offset, Duration}
+    function TimestepVector{T, Start, Step}(i::Int) where {T, Start, Step}
 		v = new()
 		v.data = Vector{T}(i)
 		return v
@@ -41,16 +92,16 @@ end
 
 # don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 2 for the matrix case
-mutable struct TimestepMatrix{T, Offset, Duration} <: AbstractTimestepMatrix
+mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix
 	data::Array{T, 2}
 
-    function TimestepMatrix{T, Offset, Duration}(d::Array{T, 2}) where {T, Offset, Duration}
+    function TimestepMatrix{T, Start, Step}(d::Array{T, 2}) where {T, Start, Step}
 		m = new()
 		m.data = d
 		return m
 	end
 
-    function TimestepMatrix{T, Offset, Duration}(i::Int, j::Int) where {T, Offset, Duration}
+    function TimestepMatrix{T, Start, Step}(i::Int, j::Int) where {T, Start, Step}
 		m = new()
 		m.data = Array{T, 2}(i, j)
 		return m
@@ -70,18 +121,11 @@ end
 mutable struct ArrayModelParameter <: ModelParameter
     values
     dimensions::Vector{Symbol} # if empty, we don't have the dimensions' name information
-
-    function ArrayModelParameter(values, dims::Vector{Symbol})
-        self = new()
-        self.values = values
-        self.dimensions = dims
-        return self
-    end
 end
 
-abstract type Connection end
+abstract type AbstractConnection end
 
-struct InternalParameterConnection <: Connection
+struct InternalParameterConnection <: AbstractConnection
     src_comp_name::Symbol
     src_var_name::Symbol
     dst_comp_name::Symbol
@@ -96,7 +140,7 @@ struct InternalParameterConnection <: Connection
     end
 end
 
-struct ExternalParameterConnection  <: Connection
+struct ExternalParameterConnection  <: AbstractConnection
     comp_name::Symbol
     param_name::Symbol      # name of the parameter in the component
     external_param::Symbol  # name of the parameter stored in md.external_params
@@ -151,8 +195,8 @@ mutable struct ComponentDef  <: NamedDef
     run_expr::Union{Void, Expr}   # the expression that will create the run_timestep function
     init_expr::Union{Void, Expr}  # the expression that will create the init function
 
-    first_year::Int
-    final_year::Int
+    start::Int
+    stop::Int
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension, etc.
@@ -165,7 +209,7 @@ mutable struct ComponentDef  <: NamedDef
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
         self.run_expr   = nothing
         self.init_expr  = nothing
-        self.first_year = self.final_year = 0
+        self.start = self.stop = 0
         return self
     end
 end
@@ -184,7 +228,7 @@ mutable struct ModelDef
     number_type::DataType
     time_labels::Vector
 
-    # TBD: Should conns be Vector{Connection}, or two parameters for internal/external?
+    # TBD: Should conns be Vector{AbstractConnection}, or two parameters for internal/external?
     # Internal connections that the ModelDef will know about.
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
@@ -268,8 +312,8 @@ mutable struct ComponentInstance
     pars::ComponentInstanceParameters
     dimensions::Vector{Symbol}  # was "indices" previously
 
-    first_year::Int
-    final_year::Int
+    start::Int
+    stop::Int
     
     function ComponentInstance(comp_def::ComponentDef, 
                                vars::ComponentInstanceVariables, 
@@ -281,8 +325,8 @@ mutable struct ComponentInstance
         self.dimensions = map(dim -> dim.name, dimensions(comp_def))
         self.vars = vars
         self.pars = pars
-        self.first_year = comp_def.first_year
-        self.final_year = comp_def.final_year
+        self.start = comp_def.start
+        self.stop = comp_def.stop
 
         return self
     end
@@ -297,16 +341,16 @@ mutable struct ModelInstance
 
     conns::Vector{InternalParameterConnection}  # or should this be in ModelDef?
    
-    first_years::Vector{Int}        # in order corresponding with components
-    final_years::Vector{Int}
+    starts::Vector{Int}        # in order corresponding with components
+    stops::Vector{Int}
 
     function ModelInstance(md::ModelDef)
         self = new()
         self.md = md
         self.components = OrderedDict{Symbol, ComponentInstance}() 
         self.conns = Vector{InternalParameterConnection}()
-        self.first_years = Vector{Int}()
-        self.final_years = Vector{Int}()
+        self.starts = Vector{Int}()
+        self.stops = Vector{Int}()
         return self
     end
 end

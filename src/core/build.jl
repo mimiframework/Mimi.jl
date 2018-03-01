@@ -14,7 +14,7 @@ end
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::DatumDef, first_year::Int)
+function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dimcount(def)
@@ -27,18 +27,18 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first_year::Int)
         # return Array{dtype, num_dims}
     
     else
-        step_size = duration(md)
+        step = step_size(md)
         ts_type = num_dims == 1 ? TimestepVector : TimestepMatrix
-        T = ts_type{dtype, first_year, step_size}
-        # return ts_type{dtype, first_year, step_size}       
+        T = ts_type{dtype, start, step}
+        # return ts_type{dtype, start, step}       
     end
 
     # println("_instance_datatype($def) returning $T")
     return T
 end
 
-function _instance_datatype_ref(md::ModelDef, def::DatumDef, first_year::Int)
-    T = _instance_datatype(md::ModelDef, def::DatumDef, first_year::Int)
+function _instance_datatype_ref(md::ModelDef, def::DatumDef, start::Int)
+    T = _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     return Ref{T}
 end
 
@@ -48,13 +48,13 @@ function _datum_types(md::ModelDef, comp_def::ComponentDef)
     var_defs = variables(comp_def)
     par_defs = parameters(comp_def)
 
-    first_year = comp_def.first_year
+    start = comp_def.start
 
     vnames = Tuple([name(vdef) for vdef in var_defs])
     pnames = Tuple([name(pdef) for pdef in par_defs])
 
-    vtypes = Tuple{[_instance_datatype_ref(md, vdef, first_year) for vdef in var_defs]...}
-    ptypes = Tuple{[_instance_datatype_ref(md, pdef, first_year) for pdef in par_defs]...}
+    vtypes = Tuple{[_instance_datatype_ref(md, vdef, start) for vdef in var_defs]...}
+    ptypes = Tuple{[_instance_datatype_ref(md, pdef, start) for pdef in par_defs]...}
 
     # println("_datum_types:\n  vtypes=$vtypes\n  ptypes=$ptypes\n")
 
@@ -65,8 +65,8 @@ function _datum_types(md::ModelDef, comp_def::ComponentDef)
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-function _instantiate_datum(md::ModelDef, def::DatumDef, first_year::Int)
-    dtype = _instance_datatype(md, def, first_year)
+function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
+    dtype = _instance_datatype(md, def, start)
     dims = dimensions(def)
     num_dims = length(dims)
     
@@ -98,12 +98,12 @@ Instantiate a component and return the resulting ComponentInstance.
 """
 function instantiate_component(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    first_year = comp_def.first_year
+    start = comp_def.start
     
     (vars_type, pars_type) = _datum_types(md, comp_def)
     
-    var_vals = [_instantiate_datum(md, vdef, first_year) for vdef in variables(comp_def)]
-    par_vals = [_instantiate_datum(md, pdef, first_year) for pdef in parameters(comp_def)]
+    var_vals = [_instantiate_datum(md, vdef, start) for vdef in variables(comp_def)]
+    par_vals = [_instantiate_datum(md, pdef, start) for pdef in parameters(comp_def)]
 
     # println("instantiate_component:\n  vtype: $vars_type\n\n  ptype: $pars_type\n\n  vvals: $var_vals\n\n  pvals: $par_vals\n\n")
 

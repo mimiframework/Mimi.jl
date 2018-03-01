@@ -111,20 +111,20 @@ function connect_parameter(md::ModelDef,
     dst_dims  = dimensions(dst_param)
 
     backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-    first = first_year(dst_comp_def)
-    dur = duration(md)
+    start = start(dst_comp_def)
+    step = step_size(md)
     T = eltype(backup)
 
     dim_count = length(dst_dims)
 
     if dim_count in (1, 2)
         ts_type = dim_count == 1 ? TimestepVector : TimestepMatrix
-        values = ts_type{T, first, dur}(backup)
+        values = ts_type{T, start, step}(backup)
     else
         values = backup
     end
 
-    set_external_array_param(md, dst_par_name, values, dims)
+    set_external_array_param(md, dst_par_name, values, dst_dims)
 
     # Use the non-backup method to handle the rest
     connect_parameter(md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, ignoreunits)
@@ -209,14 +209,14 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.numberType}, value)
-                    first_year = indexvalues(md, :time)[1]
-                    duration = duration(md)
+                    start = indexvalues(md, :time)[1]
+                    step = step_size(md)
                     T = eltype(value)
-                    values = get_timestep_instance(T, first_year, duration, num_dims, value)
+                    values = get_timestep_instance(T, start, step, num_dims, value)
                 else
                     values = value
                 end
-                set_external_array_param(md, param_name, values, nothing)
+                set_external_array_param(md, param_name, values, param_dims)
             end
         end
         connect_parameter(md, comp_name, param_name, param_name)
@@ -256,6 +256,7 @@ end
 Adds a one dimensional time-indexed array parameter to the model.
 """
 function set_external_array_param(md::ModelDef, name::Symbol, value::TimestepVector, dims)
+    println("set_external_array_param: dims=$dims, setting dims to [:time]")
     param = ArrayModelParameter(value, [:time])
     set_external_param(md, name, param)
 end

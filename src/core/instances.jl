@@ -22,8 +22,8 @@ components(mi::ModelInstance) = values(mi.components)
 function addcomponent(mi::ModelInstance, ci::ComponentInstance) 
     mi.components[name(ci)] = ci
 
-    push!(mi.first_years, ci.first_year)
-    push!(mi.final_years, ci.final_year)
+    push!(mi.starts, ci.start)
+    push!(mi.stops, ci.stop)
 end
 
 #
@@ -211,10 +211,10 @@ function indexvalues(mi::ModelInstance, idx_name::Symbol)
 end
 
 function make_clock(mi::ModelInstance, ntimesteps, index_values)
-    first = index_values[:time][1]
-    final = index_values[:time][min(length(index_values[:time]), ntimesteps)]
-    ts_length = duration(index_values)
-    return Clock(first, final, ts_length)
+    start = index_values[:time][1]
+    stop  = index_values[:time][min(length(index_values[:time]), ntimesteps)]
+    step  = step_size(index_values)
+    return Clock(start, step, stop)
 end
 
 function reset_variables(ci::ComponentInstance)
@@ -276,12 +276,12 @@ function run(mi::ModelInstance, ntimesteps, index_values)
         error("Cannot run the model: no components have been created.")
     end
 
-    firsts = mi.first_years
-    finals = mi.final_years
+    starts = mi.starts
+    stops = mi.stops
+    step  = step_size(index_values)
 
-    ts_length = duration(index_values)
-    # comp_clocks = [Clock(firsts[i], finals[i], ts_length) for i in 1:length(comp_instances)]
-    comp_clocks = [Clock(first, final, ts_length) for (first, final) in zip(firsts, finals)]
+    # comp_clocks = [Clock(starts[i], stops[i], step) for i in 1:length(comp_instances)]
+    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
     
     clock = make_clock(mi, ntimesteps, index_values)
 
@@ -290,8 +290,8 @@ function run(mi::ModelInstance, ntimesteps, index_values)
     comp_instances = components(mi)
 
     while ! finished(clock)
-        for (ci, first, final, comp_clock) in zip(comp_instances, firsts, finals, comp_clocks)
-            if between_years(clock, first, final)
+        for (ci, start, stop, comp_clock) in zip(comp_instances, starts, stops, comp_clocks)
+            if start <= gettime(clock) <= stop
                 run_timestep(mi, ci, comp_clock)
             end
         end

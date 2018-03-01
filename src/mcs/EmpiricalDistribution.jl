@@ -2,13 +2,13 @@ using Distributions
 using CSV
 import Base: quantile, rand, rand!, mean, std, var
 
-struct EmpiricalDistribution
-    values::Vector{T} where T
+struct EmpiricalDistribution{T}
+    values::Vector{T}
     dist::Distribution
 
     # N.B. This doesn't copy the vector, so caller must, if required
     function EmpiricalDistribution(values::Vector{T}) where T
-        return new(values, DiscreteUniform(1, length(values)))
+        return new{T}(values, DiscreteUniform(1, length(values)))
     end
 end
 

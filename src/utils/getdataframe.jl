@@ -26,18 +26,18 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     values = (isempty(md.time_labels) || dim1 != :time ? indexvalues(m, dim1) : md.time_labels)
 
     if dim1 == :time
-        comp_first = comp_inst.first_year
-        comp_final = comp_inst.final_year
+        comp_start = comp_inst.start
+        comp_stop = comp_inst.stop
 
-        first = findfirst(values, comp_first)
-        final = findfirst(values, comp_final)
+        start = findfirst(values, comp_start)
+        stop  = findfirst(values, comp_stop)
     end
 
     if num_dims == 1
         df[dim1] = values
         if dim1 == :time
-            df[item_name] = vcat(repeat([NaN], inner = first - 1), mi[comp_name, item_name], 
-                                repeat([NaN], inner = length(values) - final))
+            df[item_name] = vcat(repeat([NaN], inner = start - 1), mi[comp_name, item_name], 
+                                repeat([NaN], inner = length(values) - stop))
         else
             df[item_name] = mi[comp_name, item_name]  # TBD need to fix this?
         end
@@ -52,8 +52,8 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
 
         data = m[comp_name, item_name]
         if dim1 == :time
-            top    = fill(NaN, (first - 1, dim2))
-            bottom = fill(NaN, (dim1 - final, dim2))
+            top    = fill(NaN, (start - 1, dim2))
+            bottom = fill(NaN, (dim1 - stop, dim2))
             data = vcat(top, data, bottom)
         end
 

@@ -1,35 +1,34 @@
 #
 #  TIMESTEP
 #
-function gettime{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
-	return Offset + (ts.t - 1) * Duration
+function gettime{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+	return Start + (ts.t - 1) * Step
 end
 
-function is_first_timestep(ts::Timestep)
+function is_start(ts::Timestep)
 	return ts.t == 1
 end
 
-# for users to tell when they are on the final timestep
-function is_final_timestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
-	return gettime(ts) == Final
+# indicates when at final timestep
+function is_stop{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+	return gettime(ts) == Stop
 end
 
 # used to determine when a clock is finished
-function past_final_timestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
-	return gettime(ts) > Final
+function finished{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+	return gettime(ts) > Stop
 end
 
-function next_timestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final})
-	if past_final_timestep(ts)
-		error("Cannot get next timestep, this is final timestep.")
+function next_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+	if finished(ts)
+			error("Cannot get next timestep, this is final timestep.")
 	end
-	return Timestep{Offset, Duration, Final}(ts.t + 1)
+	return Timestep{Start, Step, Stop}(ts.t + 1)
 end
 
-function new_timestep{Offset, Duration, Final}(ts::Timestep{Offset, Duration, Final}, newoffset::Int)
-	return Timestep{newoffset, Duration, Final}(Int64(ts.t + (Offset-newoffset)/Duration))
+function new_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop}, new_start::Int)
+	return Timestep{new_start, Step, Stop}(Int64(ts.t + (Start - new_start) / Step))
 end
-
 
 #
 #  CLOCK
@@ -52,11 +51,7 @@ function advance(c::Clock)
 end
 
 function finished(c::Clock)
-	return past_final_timestep(c.ts)
-end
-
-function between_years(c::Clock, first::Int, final::Int)
-	return first <= gettime(c) <= final
+	return finished(c.ts)
 end
 
 #
@@ -65,17 +60,14 @@ end
 #
 import Base: getindex, setindex!, eltype, fill!, size, indices, endof
 
-function get_timestep_instance(T, offset, duration, num_dims, value)
-	if ! (num_dims in (1, 2))
-		error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
+function get_timestep_instance(T, start, step, num_dims, value)
+	if !(num_dims in (1, 2))
+			error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
 	end
 
 	timestep_type = num_dims == 1 ? TimestepVector : TimestepMatrix
-	return timestep_type{T, offset, duration}(value)
+	return timestep_type{T, start, step}(value)
 end
-
-# TBD: eliminate this after global renaming
-start_year(obj::AbstractTimestepMatrix) = offset(obj)
 
 #
 # AbstractTimestepMatrix -- methods that apply to both matrix and vectors
@@ -96,53 +88,70 @@ function eltype(obj::AbstractTimestepMatrix)
 	return eltype(obj.data)
 end
 
+const IntColonRange = Union{Int, Colon, OrdinalRange}
+
+const ColonRange    = Union{Colon, OrdinalRange}
+
 #
 # TimestepVector
 #
-function getindex(x::TimestepVector{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}) where {T,Offset,Duration,Final}
+function getindex(x::TimestepVector{T, Start, Step}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
 	return x.data[ts.t]
 end
 
-function getindex(x::TimestepVector{T, d_offset, Duration}, ts::Timestep{t_offset, Duration, Final}) where {T,d_offset,Duration,t_offset,Final}
-	t = Int64(ts.t + (t_offset - d_offset) / Duration)
+function getindex(x::TimestepVector{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}) where {T, d_start, Step, t_start, Stop}
+	t = Int64(ts.t + (t_start - d_start) / Step)
 	return x.data[t]
 end
 
 # int indexing version for old style components
-function getindex(x::TimestepVector{T, Offset, Duration}, i::OT1) where {T,Offset,Duration,OT1 <: Union{Int, Colon, OrdinalRange}}
-	return x.data[i]
+function getindex(x::TimestepVector{T, Start, Step}, i::Int) where {T, Start, Step}
+   	return x.data[i]
 end
 
-function indices(x::TimestepVector{T, Offset, Duration}) where {T,Offset,Duration}
-	return (Offset:Duration:(Offset + (length(x.data) - 1) * Duration), )
+# Handle expressions 1:end as 1:0 since the expression :(1:end) is difficult to manipulate
+function getindex(x::TimestepVector{T, Start, Step}, rng::ColonRange) where {T, Start, Step}
+	return rng.stop == 0 ? x.data[rng.start:end] : x.data[rng]
 end
 
-function offset(v::TimestepVector{T, Offset, Duration}) where {T,Offset,Duration}
-	return Offset
+function indices(x::TimestepVector{T, Start, Step}) where {T, Start, Step}
+	return (Start:Step:(Start + (length(x.data) - 1) * Step), )
 end
 
-function setindex!(v::TimestepVector{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final}) where {T,Offset,Duration,Final}
-	setindex!(v.data, a, ts.t)
+function start_period(v::TimestepVector{T, Start, Step}) where {T, Start, Step}
+	return Start
 end
 
-function setindex!(v::TimestepVector{T, d_offset, Duration}, a, ts::Timestep{t_offset, Duration, Final}) where {T,d_offset,Duration,t_offset,Final}
-	t = Int64(ts.t + (t_offset - d_offset)/Duration)
-	setindex!(v.data, a, t)
+function setindex!(v::TimestepVector{T, Start, Step}, val, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
+	setindex!(v.data, val, ts.t)
 end
 
-function setindex!(v::TimestepVector{T, offset, duration}, a, i::OT) where {T,offset,duration,OT <: Union{Int, Colon, OrdinalRange}}
-	setindex!(v.data, a, i)
+function setindex!(v::TimestepVector{T, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}) where {T, d_start, Step, t_start, Stop}
+	t = Int64(ts.t + (t_start - d_start) / Step)
+	setindex!(v.data, val, t)
 end
 
-# method where the vector and the timestep have the same offset
-function hasvalue(v::TimestepVector{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}) where {T,Offset,Duration,Final}
+function setindex!(v::TimestepVector{T, start, duration}, val, i::Int) where {T, start, duration}
+	setindex!(v.data, val, i)
+end
+
+function setindex!(v::TimestepVector{T, start, duration}, val, rng::ColonRange) where {T, start, duration}
+	if rng.stop == 0
+		rng = rng.start:length(v.data)
+	end
+
+	setindex!(v.data, val, rng)
+end
+
+# method where the vector and the timestep have the same start period
+function hasvalue(v::TimestepVector{T, Start, Step}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
 	return 1 <= ts.t <= size(v, 1)
 end
 
-# method where they have different offsets
-function hasvalue(v::TimestepVector{T, Offset1, Duration}, ts::Timestep{Offset2, Duration, Final}) where {T,Offset1,Offset2,Duration,Final}
+# method where they have different start periods
+function hasvalue(v::TimestepVector{T, Start1, Step}, ts::Timestep{Start2, Step, Stop}) where {T, Start1, Start2, Step, Stop}
 	t = gettime(ts)
-	return Offset1 <= t <= (Offset1 + (size(v, 1) - 1) * Duration)
+	return Start1 <= t <= (Start1 + (size(v, 1) - 1) * Step)
 end
 
 function endof(v::TimestepVector)
@@ -152,48 +161,83 @@ end
 #
 # TimestepMatrix
 #
-function getindex(x::TimestepMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, i::OT1) where {T,Offset,Duration,Final,OT1 <: Union{Int, Colon, OrdinalRange}}
-	return x.data[ts.t, i]
+function getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, i::Int) where {T, Start, Step, Stop}
+	return mat.data[ts.t, i]
 end
 
-function getindex(x::TimestepMatrix{T, d_offset, Duration}, ts::Timestep{t_offset, Duration, Final}, i::OT1) where {T,d_offset,Duration,t_offset,Final,OT1 <: Union{Int, Colon, OrdinalRange}}
-	t = Int64(ts.t + (t_offset - d_offset)/Duration)
-	return x.data[t, i]
+function getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, rng::ColonRange) where {T, Start, Step, Stop}
+	return rng.stop == 0 ? mat.data[ts.t, rng.start:end] : mat.data[ts.t, rng]
 end
 
-# int indexing version for old style components
-function getindex(x::TimestepMatrix{T, Offset, Duration}, t::OT1, i::OT2) where {T,Offset,Duration,OT1 <: Union{Int, Colon, OrdinalRange},OT2 <: Union{Int, Colon, OrdinalRange}}
-	return x.data[t, i]
+
+function getindex(mat::TimestepMatrix{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}, i::Int) where {T, d_start, Step, t_start, Stop}
+	t = Int64(ts.t + (t_start - d_start) / Step)
+	return mat.data[t, i]
 end
 
-function setindex!(m::TimestepMatrix{T, Offset, Duration}, a, ts::Timestep{Offset, Duration, Final}, j::OT1) where {T,Offset,Duration,Final,OT1 <: Union{Int, Colon, OrdinalRange}}
-	setindex!(m.data, a, ts.t, j)
+function getindex(mat::TimestepMatrix{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}, rng::ColonRange) where {T, d_start, Step, t_start, Stop}
+	t = Int64(ts.t + (t_start - d_start) / Step)
+	return rng.stop == 0 ? mat.data[t, rng.start:end] : mat.data[ts.t, rng]
 end
 
-function setindex!(m::TimestepMatrix{T, d_offset, Duration}, a, ts::Timestep{t_offset, Duration, Final}, j::OT1) where {T,d_offset,Duration,t_offset,Final,OT1 <: Union{Int, Colon, OrdinalRange}}
-	t = Int64(ts.t + (t_offset - d_offset) / Duration)
-	setindex!(m.data, a, t, j)
+# int indexing version supports old style components
+function getindex(mat::TimestepMatrix{T, Start, Step}, dim1::IntColonRange, dim2::IntColonRange) where {T, Start, Step}
+	data = mat.data
+	if isa(dim1, Range) && dim1.stop == 0
+		dim1 = dim1.start:size(data, 1)
+	end
+
+	if isa(dim2, Range) && dim2.stop == 0
+		dim2 = dim2.start:size(data, 2)
+	end
+
+	return data[dim1, dim2]
 end
 
-function setindex!(m::TimestepMatrix{T, offset, duration}, a, i::OT1, j::OT2) where {T,offset,duration,OT1 <: Union{Int, Colon, OrdinalRange},OT2 <: Union{Int, Colon, OrdinalRange}}
-	setindex!(m.data, a, i, j)
+function setindex!(mat::TimestepMatrix{T, Start, Step}, val, ts::Timestep{Start, Step, Stop}, dim::IntColonRange) where {T, Start, Step, Stop}
+	if isa(dim, Range) && dim1.stop == 0
+		dim = dim.start:size(mat.data, 2)
+	end
+	setindex!(mat.data, val, ts.t, dim)
 end
 
-function indices(x::TimestepMatrix{T, Offset, Duration}) where {T,Offset,Duration}
-	return (Offset:Duration:(Offset + (size(x.data)[1] - 1) * Duration), 1:size(x.data)[2])
+function setindex!(mat::TimestepMatrix{T, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}, dim::IntColonRange) where {T, d_start, Step, t_start, Stop}
+	if isa(dim, Range) && dim1.stop == 0
+		dim = dim.start:size(mat.data, 2)
+	end
+	
+	t = Int64(ts.t + (t_start - d_start) / Step)
+	setindex!(mat.data, val, t, dim)
 end
 
-function offset(v::TimestepMatrix{T, Offset, Duration}) where {T,Offset,Duration}
-	return Offset
+function setindex!(mat::TimestepMatrix{T, Start, Step}, val, dim1::IntColonRange, dim2::IntColonRange) where {T, Start, Step}
+	data = mat.data
+	if isa(dim1, Range) && dim1.stop == 0
+		dim1 = dim1.start:size(data, 1)
+	end
+
+	if isa(dim2, Range) && dim2.stop == 0
+		dim2 = dim2.start:size(data, 2)
+	end	
+
+	setindex!(data, val, dim1, dim2)
 end
 
-# method where the vector and the timestep have the same offset
-function hasvalue(m::TimestepMatrix{T, Offset, Duration}, ts::Timestep{Offset, Duration, Final}, j::Int) where {T,Offset,Duration,Final}
-	return 1 <= ts.t <= size(m, 1) && 1 <= j <= size(m, 2)
+function indices(mat::TimestepMatrix{T, Start, Step}) where {T, Start, Step}
+	return (Start:Step:(Start + (size(mat.data, 1) - 1) * Step), 1:size(mat.data, 2))
 end
 
-# method where they have different offsets
-function hasvalue(m::TimestepMatrix{T, Offset1, Duration}, ts::Timestep{Offset2, Duration, Final}, j::Int) where {T,Offset1,Offset2,Duration,Final}
+function start_period(mat::TimestepMatrix{T, Start, Step}) where {T, Start, Step}
+	return Start
+end
+
+# method where the vector and the timestep have the same start period
+function hasvalue(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, j::Int) where {T, Start, Step, Stop}
+	return 1 <= ts.t <= size(mat, 1) && 1 <= j <= size(mat, 2)
+end
+
+# method where they have different start periods
+function hasvalue(mat::TimestepMatrix{T, Start1, Step}, ts::Timestep{Start2, Step, Stop}, j::Int) where {T, Start1, Start2, Step, Stop}
 	t = gettime(ts)
-	return Offset1 <= t <= (Offset1 + (size(m, 1) - 1) * Duration) && 1 <= j <= size(m, 2)
+	return Start1 <= t <= (Start1 + (size(mat, 1) - 1) * Step) && 1 <= j <= size(mat, 2)
 end

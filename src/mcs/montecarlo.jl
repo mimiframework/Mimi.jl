@@ -8,14 +8,20 @@
 #
 # Implements the Latin Hypercube Sampling technique as described by Iman and Conover, 1982,
 # including correlation control both for no correlation or for a specified rank correlation
-# matrix for the sampled parameters.
+# matrix for the sampled parameters. Original python version was heavily modified from
+# http://nullege.com/codes/show/src@m@o@model-builder-HEAD@Bayes@lhs.py
 #
-# Heavily modified from http://nullege.com/codes/show/src@m@o@model-builder-HEAD@Bayes@lhs.py
 using CSV
 using StatsBase
 using DataFrames
 using Distributions
 using MacroTools
+
+export 
+    @defmcs, generate_trials!, get_random_variable, lhs, lhs_amend!, run_mcs, save_trial_data,
+    AbstractRandomVariable, RandomVariable, TransformSpec, CorrelationSpec,
+    MonteCarloSimulation
+
 
 # Add missing constructor. [Yes, this is Type Piracy; this obvious constructor
 # definition will be deleted here after it is added to DataFrames proper.]
@@ -25,38 +31,14 @@ function DataFrames.DataFrame(m::Matrix{T}, cnames::AbstractArray{Symbol,1}) whe
     return df
 end
 
-abstract type AbstractRandomVariable end
-
 """
-Global dictionary of random variables. This global will disappear eventually,
-as the dictionary will be defined per model.
-
-N.B. We can't declare this Dict{Symbol, RandomVariable} since this would
-require a forward type declaration, which isn't possible currently. Thus
-the definition of AbstractRandomVariable.
+Global dictionary of random variables. This may will disappear eventually,
+as the dictionary could be defined per model.
 """
-global const rvDict = Dict{Symbol, AbstractRandomVariable}()
+global const rvDict = Dict{Symbol, RandomVariable}()
 
 function get_random_variable(name::Symbol)
     return rvDict[name]
-end
-
-"""
-A RandomVariable can be "assigned" to different model parameters. Its
-value can be used directly or applied by adding to, or multiplying by, 
-reference values for the indicated parameter. Note that the distribution
-must be instantiated, e.g., call as RandomVariable(:foo, Normal()), not
-RandomVariable(:foo, Normal).
-"""
-struct RandomVariable <: AbstractRandomVariable
-    name::Symbol
-    dist::Distribution   
-
-    function RandomVariable(name::Symbol, dist::Distribution)
-        self = new(name, dist)
-        rvDict[name] = self
-        return self
-    end
 end
 
 """
@@ -204,47 +186,11 @@ function lhs_amend!(df::DataFrame, rvlist::Vector{RandomVariable}, trials::Int)
     return nothing
 end
 
-const CorrelationSpec = Tuple{Symbol, Symbol, Float64}
-
-# const TransformSpec = Tuple{Symbol, Symbol, Symbol, Any}    # (paramname, {=,+=,*=}, rvname)
-
-struct TransformSpec
-    paramname::Symbol
-    op::Symbol
-    rvname::Symbol
-    dims::Vector{Any}
-
-    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{Any})
-        if ! (op in (:(=), :(+=), :(*=)))
-            error("Valid operators are =, +=, and *= (got $op)")
-        end
-        return new(paramname, op, rvname, dims)
-    end
-    
-end
 
 function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol)
     return TransformSpec(paramname, op, rvname, [])
 end
 
-"""
-Holds all the data that defines a Monte Carlo simulation.
-"""
-mutable struct MonteCarloSimulation
-    trials::Int64
-    rvlist::Vector{RandomVariable}
-    translist::Vector{TransformSpec}
-    corrlist::Union{Vector{CorrelationSpec}, Void}
-    savelist::Vector{Any}
-    data::DataFrame
-
-    function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
-                                  translist::Vector{TransformSpec}, 
-                                  corrlist::Union{Vector{CorrelationSpec}, Void},
-                                  savelist::Vector{Any})
-        return new(0, rvlist, translist, corrlist, savelist, DataFrame())
-    end
-end
 
 """
     correlation_matrix(mcs::MonteCarloSimulation)
@@ -296,7 +242,6 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int64; filename::St
     end
 end
 
-
 macro defmcs(expr)
     @capture(expr, elements__)
     _rvs::Vector{RandomVariable} = []
@@ -306,7 +251,6 @@ macro defmcs(expr)
 
     # distill into a function since it's called from two branches below
     function saverv(rvname, distname, distargs)
-        println("saverv($rvname, $distname, $distargs)")
         args = Tuple(distargs)
         push!(_rvs, RandomVariable(rvname, eval(distname)(args...)))
     end
@@ -369,12 +313,17 @@ macro defmcs(expr)
                     # println("Arg: $arg")
                     if @capture(arg, i_Int)  # scalar (must be integer)
                         dim = i
-                    elseif @capture(arg, i_Int:j_Int)  # range
-                        dim = i:j
+
+                    elseif @capture(arg, first_Int:last_)   # last can be an int or 'end', which is converted to 0
+                        last = last == :end ? 0 : last
+                        dim = first:last
+
                     elseif @capture(arg, s_Symbol)
                         dim = s
+
                     elseif isa(arg, Expr) && arg.head == :tuple  # tuple of Symbols (@capture didn't work...)
                         dim = arg.args
+
                     else
                         error("Unrecognized stochastic parameter specification: $arg")
                     end
@@ -393,34 +342,109 @@ macro defmcs(expr)
 end
 
 """
-    perturb_parameters(mi::ModelInstance, mcs::MonteCarloSimulation, trialnum::Int64)
+    _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
 
-TBD:
+Modify the stochastic parameters using the values drawn for trial `trialnum`.
 """
-function perturb_parameters(mi::ModelInstance, mcs::MonteCarloSimulation, trialnum::Int64)
-    if trialnum > length(mcs.trials)
-        error("Attempted to run trial $trial, but only $(mcs.trials) trials are defined")
+function _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
+    if trialnum > mcs.trials
+        error("Attempted to run trial $trialnum, but only $(mcs.trials) trials are defined")
     end
 
+    md = m.md       # the "main" ModelDef has the starting values for external params
+    mi = m.mi
+
+    # overwrite mi's copy of external params so we perturb unperturbed values
+    mi.md.external_params = ext_params = external_params(md)
+
     rvlist = mcs.rvlist
-    df = mcs.data
+    trialdata = mcs.data[trialnum, :]
 
-    # MI needs ref back to Model
-    extparams = mi.model.external_parameters       # Dict{global_name, Union{ScalarModelParameter,ArrayModelParameter}}
+    for trans in mcs.translist
+        rvname = trans.rvname
+        op     = trans.op
+        pname  = trans.paramname
+        dims   = trans.dims
 
-    for (paramspec, op, rvname) in mcs.transforms
+        if ! (op in (:(=), :(*=), :(+=)))
+            error("Unknown op ($op) for applying random values in MCS")
+        end
+        
+        param = ext_params[pname]
+        num_pdims = param isa ScalarModelParameter ? 0 : length(dimensions(param))
 
+        num_dims = length(dims)
+        if num_pdims != num_dims
+            error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions; MCS has $num_dims")
+        end
+
+        rvalue = trialdata[rvname]
+        pvalue = value(param)
+
+        println("$(pname)$(dims) $op $rvalue")
+
+        if param isa ScalarModelParameter
+            if op == :(=)
+                param.value = rvalue
+
+            elseif op == :(*=)
+                param.value *= rvalue
+
+            else
+                param.value += rvalue
+            end
+
+        else    # ArrayModelParameter           
+            if op == :(=)
+                pvalue[dims...] = rvalue
+
+            elseif op == :(*=)
+                pvalue[dims...] .*= rvalue
+
+            else
+                pvalue[dims...] .+= rvalue
+            end
+        end
+    end
+end
+
+function save_results(m::Model, mcs::MonteCarloSimulation)
+    # dirname = mcs.output_dir == nothing
+    for var_name in mcs.savelist
+        println("Need to save $var_name")
     end
 end
 
 """
-    runmcs(mi::ModelInstance, mcs::MonteCarloSimulation, trials::Vector{Int64})
+    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64}, Range{Int64}}; ntimesteps=typemax(Int))
 
-Run the indicated trials.
-TBD: Have MonteCarloSimulation store a reference to Model?
+Run the indicated trial numbers, where the model is run for `ntimesteps`, if specified, or to 
+the maximum defined time period otherswise.
 """
-function runmcs(mi::ModelInstance, mcs::MonteCarloSimulation, trials::Vector{Int64})
-    for trialnum in trials
-        perturb_parameters(mi, mcs, trialnum)
+function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64}, Range{Int64}}; 
+                 ntimesteps=typemax(Int), output_dir=nothing)
+    if m.mi == nothing
+        build(m)
     end
+
+    if output_dir != nothing
+        mcs.output_dir = output_dir
+    end
+
+    for trialnum in trials
+        println("\nRunning trial $trialnum ...")
+        _perturb_parameters(m, mcs, trialnum)
+        run(m, ntimesteps=ntimesteps)
+        save_results(m, mcs)
+    end
+end
+
+"""
+    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int64=mcs.trials; ntimesteps=typemax(Int))
+
+Run the indicated number of trials, where the model is run for `ntimesteps`, if specified, or to 
+the maximum defined time period otherswise.
+"""
+function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int64=mcs.trials; ntimesteps=typemax(Int))
+    return run_mcs(m, mcs, 1:trials, ntimesteps=ntimesteps)
 end
