@@ -150,7 +150,8 @@ function createspec_multilineplot(name, df, dffields)
             "encoding" => Dict(
                 "x" => Dict("field" => string(dffields[1]), "type" => "temporal", "timeUnit" => "year"),                
                 "y" => Dict("field" => string(dffields[3]), "type" => "quantitative" ),
-                "color" => Dict("field" => string(dffields[2]), "type" => "nominal")
+                "color" => Dict("field" => string(dffields[2]), "type" => "nominal", 
+                    "scale" => Dict("scheme" => "category20b"))
             ),
             "width" => 400,
             "height" => 400 
