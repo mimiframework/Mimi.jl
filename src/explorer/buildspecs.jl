@@ -1,9 +1,6 @@
 ## Mimi UI
-using Mimi
-using DataFrames
-using JSON 
 
-function getspeclist(model::Mimi.Model)
+function getspeclist(model::Model)
 
     #initialize the speclist
     allspecs = []
