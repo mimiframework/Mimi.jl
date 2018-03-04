@@ -88,9 +88,7 @@ function eltype(obj::AbstractTimestepMatrix)
 	return eltype(obj.data)
 end
 
-const IntColonRange = Union{Int, Colon, OrdinalRange}
-
-const ColonRange    = Union{Colon, OrdinalRange}
+const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 
 #
 # TimestepVector
@@ -105,13 +103,8 @@ function getindex(x::TimestepVector{T, d_start, Step}, ts::Timestep{t_start, Ste
 end
 
 # int indexing version for old style components
-function getindex(x::TimestepVector{T, Start, Step}, i::Int) where {T, Start, Step}
+function getindex(x::TimestepVector{T, Start, Step}, i::AnyIndex) where {T, Start, Step}
    	return x.data[i]
-end
-
-# Handle expressions 1:end as 1:0 since the expression :(1:end) is difficult to manipulate
-function getindex(x::TimestepVector{T, Start, Step}, rng::ColonRange) where {T, Start, Step}
-	return rng.stop == 0 ? x.data[rng.start:end] : x.data[rng]
 end
 
 function indices(x::TimestepVector{T, Start, Step}) where {T, Start, Step}
@@ -131,16 +124,8 @@ function setindex!(v::TimestepVector{T, d_start, Step}, val, ts::Timestep{t_star
 	setindex!(v.data, val, t)
 end
 
-function setindex!(v::TimestepVector{T, start, duration}, val, i::Int) where {T, start, duration}
+function setindex!(v::TimestepVector{T, start, duration}, val, i::AnyIndex) where {T, start, duration}
 	setindex!(v.data, val, i)
-end
-
-function setindex!(v::TimestepVector{T, start, duration}, val, rng::ColonRange) where {T, start, duration}
-	if rng.stop == 0
-		rng = rng.start:length(v.data)
-	end
-
-	setindex!(v.data, val, rng)
 end
 
 # method where the vector and the timestep have the same start period
@@ -161,66 +146,31 @@ end
 #
 # TimestepMatrix
 #
-function getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, i::Int) where {T, Start, Step, Stop}
+function getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop}
 	return mat.data[ts.t, i]
 end
 
-function getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, rng::ColonRange) where {T, Start, Step, Stop}
-	return rng.stop == 0 ? mat.data[ts.t, rng.start:end] : mat.data[ts.t, rng]
-end
-
-
-function getindex(mat::TimestepMatrix{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}, i::Int) where {T, d_start, Step, t_start, Stop}
+function getindex(mat::TimestepMatrix{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}, i::AnyIndex) where {T, d_start, Step, t_start, Stop}
 	t = Int64(ts.t + (t_start - d_start) / Step)
 	return mat.data[t, i]
 end
 
-function getindex(mat::TimestepMatrix{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}, rng::ColonRange) where {T, d_start, Step, t_start, Stop}
-	t = Int64(ts.t + (t_start - d_start) / Step)
-	return rng.stop == 0 ? mat.data[t, rng.start:end] : mat.data[ts.t, rng]
-end
-
 # int indexing version supports old style components
-function getindex(mat::TimestepMatrix{T, Start, Step}, dim1::IntColonRange, dim2::IntColonRange) where {T, Start, Step}
-	data = mat.data
-	if isa(dim1, Range) && dim1.stop == 0
-		dim1 = dim1.start:size(data, 1)
-	end
-
-	if isa(dim2, Range) && dim2.stop == 0
-		dim2 = dim2.start:size(data, 2)
-	end
-
-	return data[dim1, dim2]
+function getindex(mat::TimestepMatrix{T, Start, Step}, idx1::AnyIndex, idx2::AnyIndex) where {T, Start, Step}
+	return mat.data[idx1, idx2]
 end
 
-function setindex!(mat::TimestepMatrix{T, Start, Step}, val, ts::Timestep{Start, Step, Stop}, dim::IntColonRange) where {T, Start, Step, Stop}
-	if isa(dim, Range) && dim1.stop == 0
-		dim = dim.start:size(mat.data, 2)
-	end
-	setindex!(mat.data, val, ts.t, dim)
+function setindex!(mat::TimestepMatrix{T, Start, Step}, val, ts::Timestep{Start, Step, Stop}, idx::AnyIndex) where {T, Start, Step, Stop}
+	setindex!(mat.data, val, ts.t, idx)
 end
 
-function setindex!(mat::TimestepMatrix{T, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}, dim::IntColonRange) where {T, d_start, Step, t_start, Stop}
-	if isa(dim, Range) && dim1.stop == 0
-		dim = dim.start:size(mat.data, 2)
-	end
-	
+function setindex!(mat::TimestepMatrix{T, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}, idx::AnyIndex) where {T, d_start, Step, t_start, Stop}
 	t = Int64(ts.t + (t_start - d_start) / Step)
-	setindex!(mat.data, val, t, dim)
+	setindex!(mat.data, val, t, idx)
 end
 
-function setindex!(mat::TimestepMatrix{T, Start, Step}, val, dim1::IntColonRange, dim2::IntColonRange) where {T, Start, Step}
-	data = mat.data
-	if isa(dim1, Range) && dim1.stop == 0
-		dim1 = dim1.start:size(data, 1)
-	end
-
-	if isa(dim2, Range) && dim2.stop == 0
-		dim2 = dim2.start:size(data, 2)
-	end	
-
-	setindex!(data, val, dim1, dim2)
+function setindex!(mat::TimestepMatrix{T, Start, Step}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, Start, Step}
+	setindex!(mat.data, val, idx1, idx2)
 end
 
 function indices(mat::TimestepMatrix{T, Start, Step}) where {T, Start, Step}

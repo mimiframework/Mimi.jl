@@ -21,6 +21,6 @@ using Mimi                                          # Make sure to call Mimi aga
     end
 
     function init(p, v, d)
-        println("Called init function for emissions component")
+        # println("Called init function for emissions component")
     end
 end

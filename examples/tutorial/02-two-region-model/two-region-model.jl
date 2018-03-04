@@ -13,7 +13,7 @@ export my_model
     index[time] = 2015:5:2110
     
     # Note that the regions of your model must be specified here
-    index[regions] = ["Region1", "Region2", "Region3"]  
+    index[regions] = [:Region1, :Region2, :Region3]  
 
     # Order matters here. If the emissions component were defined first, the model would not run.
     component(grosseconomy)

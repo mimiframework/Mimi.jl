@@ -109,7 +109,50 @@ mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix
 end
 
 #
-# 2. Types supporting Parameters and their connections
+# 2. Dimensions
+#
+const DimensionKey = Union{Int64, String, Symbol}
+
+const DimensionKeyVector = Union{Vector{Int64}, Vector{String}, Vector{Symbol}}
+
+abstract type AbstractDimension end
+
+struct Dimension <: AbstractDimension
+    # dict::OrderedDict{DimensionKey, Int64}
+    dict::OrderedDict
+    key_type::DataType
+
+    function Dimension(keys::Vector)
+        # dict = OrderedDict{DimensionKey, Int64}(collect(zip(keys, 1:length(keys))))
+        key_type = eltype(keys)
+        dict = OrderedDict{key_type, Int64}(collect(zip(keys, 1:length(keys))))
+        return new(dict, key_type)
+    end
+
+    function Dimension(rng::Range)
+        # keys::DimensionKeyVector = collect(rng)
+        return Dimension(collect(rng))
+    end
+
+    # Support Dimension(:foo, :bar, :baz)
+    function Dimension(keys...)
+        # vector::DimensionKeyVector = [key for key in keys]
+        vector = [key for key in keys]
+        return Dimension(vector)
+    end
+end
+
+#
+# Simple optimization for ranges since indices are computable.
+# Unclear whether this is really any better than simply using 
+# a dict for all cases. Might scrap this in the end.
+#
+mutable struct RangeDimension <: AbstractDimension
+    range::Range
+ end
+
+#
+# 3. Types supporting Parameters and their connections
 #
 
 abstract type ModelParameter end
@@ -147,7 +190,7 @@ struct ExternalParameterConnection  <: AbstractConnection
 end
 
 #
-# 3. Types supporting structural definition of models and their components
+# 4. Types supporting structural definition of models and their components
 #
 
 # To identify components, we create a variable with the name of the component
@@ -222,11 +265,21 @@ mutable struct ModelDef
     # to occur multiple times within a model.
     comp_defs::OrderedDict{Symbol, ComponentDef}
 
+    # TBD: replace this trio of structures with the Dimension type
+    # - replace setindex(m, name, values) with set_dimension(m, name, keys)
+    # - change run() to get the model's Dict{Symbol, Dimension}
+    # - fix copy(md::ModelDef) (see notes there)
+    # - indexcounts() => dim_counts(md) = Dict([name => length(value) for (name, value) in md.dimensions])
+    # - indexvalues() => dim_keys(md) = Dict([name => value for (name, value) in md.dimensions])
+    # - timelabels() => keys(dimension(m, :time))
+    #      Though better to do: dim = dimension(md, :time); v = values(dim); k = keys(dim); l = length(dim)
     index_counts::Dict{Symbol, Int}
     index_values::Dict{Symbol, Vector{Any}}
+    # time_labels::Vector
+
+    dimensions::Dict{Symbol, Dimension}
 
     number_type::DataType
-    time_labels::Vector
 
     # TBD: Should conns be Vector{AbstractConnection}, or two parameters for internal/external?
     # Internal connections that the ModelDef will know about.
@@ -248,12 +301,13 @@ mutable struct ModelDef
         self.comp_defs = OrderedDict{Symbol, ComponentDef}()
         self.index_counts = Dict{Symbol, Int}()
         self.index_values = Dict{Symbol, Vector{Any}}()
+        self.dimensions = Dict{Symbol, Dimension}()
         self.number_type = number_type
-        self.time_labels = Vector()
+        # self.time_labels = Vector()
         self.internal_param_conns = Vector{InternalParameterConnection}() 
         self.external_param_conns = Vector{ExternalParameterConnection}()
         self.external_params = Dict{Symbol, ModelParameter}()
-        self.backups = Vector{ComponentDef}()
+        self.backups = Vector{Symbol}()
         self.funcs_generated = false
         self.sorted_comps = nothing
         return self
@@ -261,7 +315,7 @@ mutable struct ModelDef
 end
 
 #
-# 4. Types supporting instantiated models and their components
+# 5. Types supporting instantiated models and their components
 #
 
 # Supertype for variables and parameters in component instances
@@ -356,7 +410,7 @@ mutable struct ModelInstance
 end
 
 #
-# 5. User-facing Model types providing a simplified API to model definitions and instances.
+# 6. User-facing Model types providing a simplified API to model definitions and instances.
 #
 
 #
@@ -388,7 +442,7 @@ function getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
 end
 
 #
-# 6. Reference types provide more convenient syntax for interrogating Components
+# 7. Reference types provide more convenient syntax for interrogating Components
 #
 
 """

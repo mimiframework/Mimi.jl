@@ -15,33 +15,7 @@
 #
 using DataStructures
 
-export Dimension, DimensionKey, DimensionKeyVector
-
-const DimensionKey = Union{Int64, String, Symbol}
-
-const DimensionKeyVector = Union{Vector{Int64}, Vector{String}, Vector{Symbol}}
-
-abstract type AbstractDimension end
-
-struct Dimension <: AbstractDimension
-    dict::OrderedDict{DimensionKey, Int64}
-
-    function Dimension(keys::DimensionKeyVector)
-        dict = OrderedDict{DimensionKey, Int64}(collect(zip(keys, 1:length(keys))))
-        return new(dict)
-    end
-end
-
-function Dimension(r::Range)
-    keys::DimensionKeyVector = collect(r)
-    return Dimension(keys)
-end
-
-# Support Dimension(:foo, :bar, :baz)
-function Dimension(keys...)
-    vector::DimensionKeyVector = [key for key in keys]
-    return Dimension(vector)
-end
+key_type(dim::Dimension) = dim.key_type
 
 #
 # Iteration and basic dictionary methods are delegated to the internal dict
@@ -56,21 +30,27 @@ done(dim::Dimension, state) = done(dim.dict, state)
 keys(dim::Dimension)   = keys(dim.dict)
 values(dim::Dimension) = values(dim.dict)
 
-get(dim::Dimension, key::DimensionKey, default::Any) = get(dim.dict, key, default)
+get(dim::Dimension, key::Union{Number, Symbol, String}, default::Any) = get(dim.dict, key, default)
 
-getindex(dim::Dimension, key::DimensionKey) = getindex(dim.dict, key)
+# getindex(dim::Dimension, key::Union{Array{T,1} where T, Range, Tuple}) = getindex(dim.dict, key)
+
+getindex(dim::Dimension, key::Colon) = collect(values(dim.dict))
 
 # Support dim[[:foo, :bar, :baz]], dim[(:foo, :bar, :baz)], and dim[2010:2020]
-getindex(dim::AbstractDimension, keys::Union{DimensionKeyVector, Tuple, Range}) = [get(dim.dict, key, 0) for key in keys]
+getindex(dim::AbstractDimension, keys::Union{Vector{T} where T, Tuple, Range}) = [getindex(dim.dict, key) for key in keys]
 
 getindex(dim::AbstractDimension, keys...) = getindex(dim, keys)
 
 #
-# Global registry for Dimension instances
+# Global registry for Dimension instances. 
+# Might not need this once stored in ModelDef.
 # 
 global const _dimension_registry = Dict{Symbol, AbstractDimension}()
 
 function register_dimension(name::Symbol, dim::AbstractDimension)
+    if haskey(_dimension_registry, name)
+        warn("Redefining index $name")
+    end
     _dimension_registry[name] = dim
     return nothing
 end
@@ -79,16 +59,10 @@ function retrieve_dimension(name::Symbol)
     return _dimension_registry[name]
 end
 
+retrieve_dimensions(names::Vector{Symbol}) = map(retrieve_dimension, names)
+
 registered_dimensions() = collect(keys(_dimension_registry))
 
-#
-# Simple optimization for ranges since indices are computable.
-# Unclear whether this is really any better than simply using 
-# a dict for all cases. Might scrap this in the end.
-#
-mutable struct RangeDimension <: AbstractDimension
-    range::Range
- end
 
 length(dim::RangeDimension) = length(dim.range)
 start(dim::RangeDimension)  = start(dim.range)

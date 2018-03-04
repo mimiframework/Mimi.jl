@@ -24,13 +24,11 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
 
     elseif dims[1] != :time
         T = Array{dtype, num_dims}
-        # return Array{dtype, num_dims}
     
     else
         step = step_size(md)
         ts_type = num_dims == 1 ? TimestepVector : TimestepMatrix
         T = ts_type{dtype, start, step}
-        # return ts_type{dtype, start, step}       
     end
 
     # println("_instance_datatype($def) returning $T")
@@ -74,17 +72,20 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
 
     if num_dims == 0
         value = dtype(0)
+        
+    # TBD: This is necessary only if first dims[1] :time, otherwise "else" handles it, too
+    elseif num_dims == 1        
+        value = dtype(dim_count(md, :time))
 
-    elseif dims[1] != :time
-        # TODO Handle unnamed indices properly
-        dim_counts = [indexcount(md, i) for i in dims]
-        value = dtype(dim_counts...)
+    else # if dims[1] != :time  # TBD: this can be collapsed with final "else" clause"
+        # TBD: Handle unnamed indices properly
+        counts = dim_counts(md, Vector{Symbol}(dims))
+        value = dtype(counts...)
 
-    elseif num_dims == 1
-        value = dtype(indexcount(md, :time))
-
-    else
-        value = dtype(indexcount(md, :time), indexcount(md, dims[2]))
+    # else
+    #     # value = dtype(indexcount(md, :time), indexcount(md, dims[2]))
+    #     counts = dim_counts(md, [:time, dims[2]])
+    #     value = dtype(counts...)
     end
 
     # println("returning Ref{$dtype}($value)\n\n")
@@ -127,6 +128,33 @@ function instantiate_components(mi::ModelInstance)
     return nothing
 end
 
+"""
+    connect_external_params(mi::ModelInstance)
+
+Make the external parameter connections. This is broken out so it
+can be called in the MCS system to point to updated parameters.
+"""
+function connect_external_params(mi::ModelInstance)
+    md = mi.md
+    comps = mi.components
+    backups = md.backups
+
+    for ext in external_param_conns(md)
+        param = external_param(md, ext.external_param)
+        comp = comps[ext.comp_name]
+        set_parameter_value(comp, ext.param_name, value(param))
+    end
+
+    # Make the external parameter connections for the hidden ConnectorComps.
+    # Connect each :input2 to its associated backup value.
+    for i in 1:length(backups)
+        comp_name = connector_comp_name(i)
+        param = external_param(md, backups[i])
+        comp_inst = comps[comp_name]
+        set_parameter_value(comp_inst, :input2, value(param))
+    end
+end
+
 function build(m::Model)
     println("Building model...")
 
@@ -153,7 +181,6 @@ function build(md::ModelDef)
     instantiate_components(mi)
 
     comps = mi.components
-    backups = md.backups
 
     # Make the internal parameter connections, including hidden connections between ConnectorComps.
     for ipc in internal_param_conns(md)
@@ -165,19 +192,7 @@ function build(md::ModelDef)
     end
 
     # Make the external parameter connections.
-    for ext in external_param_conns(md)
-        param = external_param(md, ext.external_param)
-        comp = comps[ext.comp_name]
-        set_parameter_value(comp, ext.param_name, value(param))
-    end
-
-    # Make the external parameter connections for the hidden ConnectorComps: connect each :input2 to its associated backup value.
-    for i in 1:length(backups)
-        comp_name = connector_comp_name(i)
-        param = external_param(md, backups[i])
-        comp_inst = comps[comp_name]
-        set_parameter_value(comp_inst, :input2, value(param))
-    end
+    connect_external_params(mi)
 
     return mi
 end

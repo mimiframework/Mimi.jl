@@ -1,3 +1,5 @@
+import Base: copy, haskey
+
 # Global component registry: @defcomp stores component definitions here
 global const _compdefs = Dict{ComponentId, ComponentDef}()
 
@@ -124,23 +126,28 @@ description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
 
-step_size(md::ModelDef) = step_size(indexvalues(md))
+# step_size(md::ModelDef) = step_size(indexvalues(md))
 
-function step_size(index_values::Dict{Symbol, Vector{Any}})
+function step_size(md::ModelDef)
+    # N.B. assumes that all timesteps of the model are the same length
+    keys = dim_keys(md, :time) # keys are, e.g., the years the model runs
+    return length(keys) > 1 ? keys[2] - keys[1] : 1
+end
+
+function step_size(index_values::Dict{Symbol, Vector})
     values = index_values[:time]
     # N.B. assumes that all timesteps of the model are the same length
     return length(values) > 1 ? values[2] - values[1] : 1
 end
 
-
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
-        if dim in keys(indexvalues(md))
+        if dim in dim_keys(md)
             if isa(value, NamedArray)
                 labels = names(value, findnext(dims, dim, 1))
-                dim_values = indexvalues(md, dim)
+                dim_vals = dim_values(md, dim)
                 for i in 1:length(labels)
-                    if labels[i] != dim_values[i]
+                    if labels[i] != dim_vals[i]
                         error("Labels for dimension $dim in parameter $name do not match model's index values")
                     end
                 end
@@ -151,28 +158,38 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
     end
 end
 
-indexcounts(md::ModelDef) = md.index_counts
+# indexcounts(md::ModelDef) = md.index_counts
+# indexcount(md::ModelDef, idx::Symbol) = md.index_counts[idx]
+# indexvalues(md::ModelDef) = md.index_values
+# indexvalues(md::ModelDef, idx::Symbol) = md.index_values[idx]
 
-indexcount(md::ModelDef, idx::Symbol) = md.index_counts[idx]
+# New approach
+dimensions(md::ModelDef) = md.dimensions
+dimensions(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
+dimension(md::ModelDef, name::Symbol) = md.dimensions[name]
 
-indexvalues(md::ModelDef) = md.index_values
+dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dimensions(md)])
+dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dimensions(md, dims)]
+dim_count(md::ModelDef, name::Symbol) = length(dimension(md, name))
 
-indexvalues(md::ModelDef, idx::Symbol) = md.index_values[idx]
+dim_key_dict(md::ModelDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(md)])
+dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 
-timelabels(md::ModelDef) = md.time_labels
+dim_values(md::ModelDef, name::Symbol) = values(dimension(md, name))
+dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dimensions(md)])
 
-function setindex(md::ModelDef, name::Symbol, range::Range)
-    md.index_counts[name] = length(range)
-    md.index_values[name] = Vector(range)
-    md.time_labels = Vector()
-    nothing
-end
+timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
 
-function setindex(md::ModelDef, name::Symbol, count::Int)
-    md.index_counts[name] = count
-    md.index_values[name] = collect(1:count)
-    md.time_labels = Vector()
-    nothing
+haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
+
+function set_dimension(md::ModelDef, name::Symbol, keys::Union{Vector, Tuple, Range})    
+    if haskey(md, name)
+        warn("Redefining dimension :$name")
+    end
+
+    dim = Dimension(keys)
+    md.dimensions[name] = dim
+    return dim
 end
 
 # helper function for setindex; used to determine if the provided time values are a uniform range.
@@ -193,26 +210,47 @@ function isuniform(values::Vector)
     return true
 end
 
-"""
-    setindex{T}(m::Model, name::Symbol, values::Vector{T})
+# """
+#     setindex(m::Model, name::Symbol, values::Vector)
 
-Set the values of `Model`'s index `name` to `values`.
-"""
-function setindex(md::ModelDef, name::Symbol, values::Vector)
-    md.index_counts[name] = length(values)
-    if name == :time
-        if ! isuniform(values) # case where time values aren't uniform
-            md.time_labels = values
-            md.index_values[name] = collect(1:length(values))
-        else # case where time values are uniform
-            md.index_values[name] = copy(values)
-            md.time_labels = Vector()
-        end
-    else
-        md.index_values[name] = copy(values)
-    end
-    nothing
-end
+# Set the values of `ModelDef`'s index `name` to `values`.
+# """
+# function setindex(md::ModelDef, name::Symbol, values::Vector)
+#     md.index_counts[name] = length(values)
+#     values = copy(values)
+
+#     if name == :time
+#         if ! isuniform(values) # case where time values aren't uniform
+#             md.index_values[name] = collect(1:length(values))
+#             md.time_labels = values
+#         else # case where time values are uniform
+#             md.index_values[name] = values
+#             md.time_labels = Vector()
+#         end
+#     else
+#         md.index_values[name] = values
+#     end
+
+#     register_dimension(name, Dimension(values))
+
+#     nothing
+# end
+
+# """
+#     setindex(m::Model, name::Symbol, range::Range)
+
+# Set the values of `ModelDef`'s index `name` to the values indicted by `range`.
+# """
+# function setindex(md::ModelDef, name::Symbol, range::Range)
+#     md.index_counts[name] = length(range)
+#     md.index_values[name] = Vector(range)
+#     md.time_labels = Vector()
+
+#     register_dimension(name, Dimension(range))
+#     nothing
+# end
+
+# setindex(md::ModelDef, name::Symbol, count::Int) = setindex(md, name, 1:count)
 
 #
 # Parameters
@@ -395,15 +433,15 @@ end
 # Model
 #
 """
-    addcomponent(md::ModelDef, comp_def::ComponentDef; start=nothing, final=nothing, before=nothing, after=nothing)
+    addcomponent(md::ModelDef, comp_def::ComponentDef; start=nothing, stop=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_id` to the model. The component is added at the end of the list unless
-one of the keywords, `start`, `final`, `before`, `after`
+one of the keywords, `start`, `stop`, `before`, `after`
 """
 function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
-                      start=nothing, final=nothing, before=nothing, after=nothing)
-    # check that start and final are within the model's time index range
-    time_index = indexvalues(md, :time)
+                      start=nothing, stop=nothing, before=nothing, after=nothing)
+    # check that start and stop are within the model's time index range
+    time_index = dim_keys(md, :time)
 
     if start == nothing
         start = time_index[1]
@@ -411,10 +449,10 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         error("Cannot add component $name with start time before start of model's time index range.")
     end
 
-    if final == nothing
-        final = time_index[end]
-    elseif final > time_index[end]
-        error("Cannot add component $name with final time after end of model's time index range.")
+    if stop == nothing
+        stop = time_index[end]
+    elseif stop > time_index[end]
+        error("Cannot add component $name with stop time after end of model's time index range.")
     end
 
     if before != nothing && after != nothing
@@ -427,7 +465,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     end
 
     if before == nothing && after == nothing
-        set_run_period!(comp_def, start, final)
+        set_run_period!(comp_def, start, stop)
         md.comp_defs[comp_name] = comp_def   # just add it to the end
         return nothing
     end
@@ -441,7 +479,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 
         for i in compkeys(md)
             if i == before
-                set_run_period!(comp_def, start, final)
+                set_run_period!(comp_def, start, stop)
                 newcomponents[comp_name] = comp_def
             end
             newcomponents[i] = md.comp_defs[i]
@@ -455,7 +493,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         for i in compkeys(md)
             newcomponents[i] = md.comp_defs[i]
             if i == after
-                set_run_period!(comp_def, start, final)
+                set_run_period!(comp_def, start, stop)
                 newcomponents[comp_name] = comp_def
             end
         end
@@ -467,12 +505,10 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 end
 
 function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol;
-                      start=nothing, final=nothing, before=nothing, after=nothing)
+                      start=nothing, stop=nothing, before=nothing, after=nothing)
     println("Adding component $comp_id as :$comp_name")
-    addcomponent(md, compdef(comp_id), comp_name, start=start, final=final, before=before, after=after)
+    addcomponent(md, compdef(comp_id), comp_name, start=start, stop=stop, before=before, after=after)
 end
-
-import Base.copy
 
 """
     copy_external_params(md::ModelDef)
@@ -480,7 +516,9 @@ import Base.copy
 Make copies of ModelParameter subtypes representing external parameters. 
 This is used both in the copy() function below, and in the MCS subsystem 
 to restore values between trials.
+
 """
+# TBD: this doesn't exactly do what we want because connections still point to old storage.
 function copy_external_params(md::ModelDef)
     external_params = Dict{Symbol, ModelParameter}()
 
@@ -510,14 +548,15 @@ function copy(md::ModelDef)
     mdcopy.module_name = md.module_name
     
     merge!(mdcopy.comp_defs, md.comp_defs)
-    merge!(mdcopy.index_counts, md.index_counts)
-
-    # copy the values rather than the entire vector
-    for (key, val) in md.index_values
-        mdcopy.index_values[key] = copy(md.index_values[key])
-    end
-
-    mdcopy.time_labels = copy(md.time_labels)
+    
+    # TBD: replace this chunk with copy of Dimensions dict
+    # mdcopy.time_labels = copy(md.time_labels)
+    # merge!(mdcopy.index_counts, md.index_counts)
+    # for (key, val) in md.index_values
+    #     # copy the values rather than the entire vector
+    #     mdcopy.index_values[key] = copy(md.index_values[key])
+    # end
+    mdcopy.dimensions = deepcopy(md.dimensions)
 
     # These are vectors of immutable structs, so we can copy them safely
     mdcopy.internal_param_conns = copy(md.internal_param_conns)

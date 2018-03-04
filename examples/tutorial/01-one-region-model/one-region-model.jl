@@ -62,16 +62,16 @@ end
 # Above macro yields this:
 # quote
 #     my_model = (Mimi.Model)()
-#     (Mimi.setindex)(my_model, :time, 2015:5:2110)
+#     (Mimi.set_dimension)(my_model, :time, 2015:5:2110)
 #     (Mimi.addcomponent)(my_model, Main.grosseconomy, :grosseconomy)
 #     (Mimi.addcomponent)(my_model, Main.emissions, :emissions)
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :l, [(1.0 + 0.015) ^ #48#t * 6404 for #48#t = 1:20])
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :tfp, [(1 + 0.065) ^ #48#t * 3.57 for #48#t = 1:20])
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :s, (Mimi.ones)(20) * 0.22)
+#     (Mimi.set_parameter)(my_model, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
+#     (Mimi.set_parameter)(my_model, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
+#     (Mimi.set_parameter)(my_model, :grosseconomy, :s, ones(20) * 0.22)
 #     (Mimi.set_parameter)(my_model, :grosseconomy, :depk, 0.1)
 #     (Mimi.set_parameter)(my_model, :grosseconomy, :k0, 130.0)
 #     (Mimi.set_parameter)(my_model, :grosseconomy, :share, 0.3)
-#     (Mimi.set_parameter)(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ #48#t * 0.58 for #48#t = 1:20])
+#     (Mimi.set_parameter)(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
 #     (Mimi.connect_parameter)(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 #     (Mimi.add_connector_comps)(my_model)
 # end

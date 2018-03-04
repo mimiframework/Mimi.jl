@@ -31,11 +31,12 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
         return nothing
     end
 
-    index_values = indexvalues(md)
+    # index_values = indexvalues(md)
 
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol) 
-            if length(index_values[dim]) != size(ext_param.values)[i]
+            # if length(index_values[dim]) != size(ext_param.values)[i]
+            if dim_count(md, dim) != size(ext_param.values)[i]
                 error("Mismatched data size for a parameter connection. Component: $component, Parameter: $param_name")
             end
         end
@@ -209,7 +210,8 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.numberType}, value)
-                    start = indexvalues(md, :time)[1]
+                    # start = indexvalues(md, :time)[1]
+                    start = dim_values(md, :time)[1]
                     step = step_size(md)
                     T = eltype(value)
                     values = get_timestep_instance(T, start, step, num_dims, value)

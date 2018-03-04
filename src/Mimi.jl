@@ -20,6 +20,9 @@ export
     ComponentInstanceVariables, 
     ComponentReference,
     DimensionDef, 
+    Dimension, 
+    # DimensionKey, 
+    # DimensionKeyVector,
     ExternalParameterConnection, 
     InternalParameterConnection, 
     MarginalModel,
@@ -85,14 +88,13 @@ include("core/build.jl")
 include("core/connections.jl")
 include("core/defs.jl")
 include("core/defcomp.jl")
+include("core/dimensions.jl")
 include("core/instances.jl")
 include("core/references.jl")
 include("core/time.jl")
 include("core/model.jl")
 
-include("mcs/mcs_types.jl")
-include("mcs/EmpiricalDistribution.jl")
-include("mcs/montecarlo.jl")
+include("mcs/mcs.jl")
 
 include("utils/graph.jl")
 # include("utils/plotting.jl")

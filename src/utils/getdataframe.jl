@@ -7,8 +7,8 @@ Load a DataFrame from the variable or parameter `item_name` in component `comp_n
 nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 """
 function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Void,DataFrame}=nothing)
-    md = m.md
     mi = m.mi
+    md = mi.md
     comp_inst = compinstance(mi, comp_name)
 
     dims = indexlabels(m, comp_name, item_name)
@@ -21,23 +21,26 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     end
 
     num_dims = length(dims)
+    if ! (num_dims in (1,2))
+        error("Can't create a dataframe from scalar value :$item_name")
+    end
+
     dim1 = dims[1]
 
-    values = (isempty(md.time_labels) || dim1 != :time ? indexvalues(m, dim1) : md.time_labels)
+    time_labels = timelabels(md)
+    # values = (isempty(time_labels) || dim1 != :time ? indexvalues(m, dim1) : time_labels)
+    values = (isempty(time_labels) || dim1 != :time ? dim_keys(md, dim1) : time_labels)
 
     if dim1 == :time
-        comp_start = comp_inst.start
-        comp_stop = comp_inst.stop
-
-        start = findfirst(values, comp_start)
-        stop  = findfirst(values, comp_stop)
+        start = findfirst(values, comp_inst.start)
+        stop  = findfirst(values, comp_inst.stop)
     end
 
     if num_dims == 1
         df[dim1] = values
         if dim1 == :time
-            df[item_name] = vcat(repeat([NaN], inner = start - 1), mi[comp_name, item_name], 
-                                repeat([NaN], inner = length(values) - stop))
+            df[item_name] = vcat(repeat([NaN], inner=start - 1), mi[comp_name, item_name], 
+                                 repeat([NaN], inner=length(values) - stop))
         else
             df[item_name] = mi[comp_name, item_name]  # TBD need to fix this?
         end
@@ -45,19 +48,19 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
 
     elseif num_dims == 2
         dim2 = dims[2]
-        len_dim2 = length(indexvalues(m, dim2))
-        len_dim1 = length(indexvalues(m, dim1))
+        len_dim1 = dim_count(md, dim1)
+        len_dim2 = dim_count(md, dim2)
         df[dim1] = repeat(values, inner = [len_dim2])
-        df[dim2] = repeat(indexvalues(m, dim2), outer = [len_dim1])
+        df[dim2] = repeat(dim_keys(md, dim2), outer = [len_dim1])
 
         data = m[comp_name, item_name]
         if dim1 == :time
-            top    = fill(NaN, (start - 1, dim2))
-            bottom = fill(NaN, (dim1 - stop, dim2))
+            top    = fill(NaN, start - 1, len_dim2)
+            bottom = fill(NaN, len_dim1 - stop, len_dim2)
             data = vcat(top, data, bottom)
         end
 
-        df[item_name] = cat(1, [vec(data[i, :]) for i = 1:dim1]...)
+        df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...)
 
         return df
     else

@@ -93,8 +93,8 @@ end
 
 
 function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      start=nothing, final=nothing, before=nothing, after=nothing)
-    addcomponent(m.md, comp_id, comp_name, start=start, final=final, before=before, after=after)
+                      start=nothing, stop=nothing, before=nothing, after=nothing)
+    addcomponent(m.md, comp_id, comp_name, start=start, stop=stop, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
 end
@@ -137,7 +137,7 @@ function _getdatumdef(comp_def::ComponentDef, item::Symbol)
     elseif haskey(comp_def.parameters, item)
         return comp_def.parameters[item]
     else
-        error("Cannot access data item; $name is not a variable or a parameter in component $component.")
+        error("Cannot access data item; :$item is not a variable or a parameter in component $(comp_def.comp_id).")
     end
 end
 
@@ -179,6 +179,8 @@ function setindex(m::Model, name::Symbol, count::Int)
     setindex(m.md, name, count)
     decache(m)
 end
+
+@modelegate set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range}) => md
 
 function setindex{T}(m::Model, name::Symbol, values::Vector{T})
     setindex(m.md, name, values)
@@ -286,6 +288,7 @@ function run(m::Model; ntimesteps=typemax(Int))
         m.mi = build(m)
     end
 
-    println("Running model...")
-    run(m.mi, ntimesteps, indexvalues(m))
+    # println("Running model...")
+    # run(m.mi, ntimesteps, indexvalues(m))
+    run(m.mi, ntimesteps, dim_key_dict(m.mi))
 end

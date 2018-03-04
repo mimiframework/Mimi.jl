@@ -155,6 +155,8 @@ value(param::ArrayModelParameter)  = param.values
 
 dimensions(obj::ArrayModelParameter) = obj.dimensions
 
+dimensions(obj::ScalarModelParameter) = []
+
 """
 variables(mi::ModelInstance, componentname::Symbol)
 
@@ -168,7 +170,7 @@ end
 
 variables(ci::ComponentInstance) = variables(ci.comp_id)
 
-function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
+function getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     if !(comp_name in keys(mi.components))
         error("Component does not exist in current model")
     end
@@ -177,38 +179,41 @@ function getindex(mi::ModelInstance, comp_name::Symbol, name::Symbol)
     vars = comp_inst.vars
     pars = comp_inst.pars
 
-    if name in vars.names
+    if datum_name in vars.names
         which = vars
-    elseif name in pars.names
+    elseif datum_name in pars.names
         which = pars
     else
-        error("$name is not a parameter or a variable in component $comp_name.")
+        error("$datum_name is not a parameter or a variable in component $comp_name.")
     end
 
-    value = getproperty(which, Val(name))
+    value = getproperty(which, Val(datum_name))
     # return isa(value, PklVector) || isa(value, TimestepMatrix) ? value.data : value
     return isa(value, AbstractTimestepMatrix) ? value.data : value
 end
 
-"""
-    indexcount(mi::ModelInstance, idx_name::Symbol)
+# """
+#     indexcount(mi::ModelInstance, idx_name::Symbol)
 
-Returns the size of index `idx_name`` in model instance `mi`.
-"""
-indexcount(mi::ModelInstance, idx_name::Symbol) = mi.index_counts[idx_name]
+# Returns the size of index `idx_name`` in model instance `mi`.
+# """
+# indexcount(mi::ModelInstance, idx_name::Symbol) = indexcounts(mi.md, idx_name)
 
 """
-    indexvalues(m::Model, i::Symbol)
+    dim_count(mi::ModelInstance, dim_name::Symbol)
 
-Return the values of index i in model m.
+Returns the size of index `dim_name`` in model instance `mi`.
 """
-function indexvalues(mi::ModelInstance, idx_name::Symbol)
-    try
-        return mi.index_values[idx_name]
-    catch
-        error("Index $idx_name was not found in model.")
-    end
-end
+dim_count(mi::ModelInstance, dim_name::Symbol) = dim_count(mi.md, dim_name)
+
+dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
+
+# """
+#     indexvalues(mi::ModelInstance, idx_name::Symbol)
+
+# Return the values of index `idx_name` in model instance `mi`.
+# """
+# indexvalues(mi::ModelInstance, idx_name::Symbol) = indexvalues(mi.md, idx_name)
 
 function make_clock(mi::ModelInstance, ntimesteps, index_values)
     start = index_values[:time][1]
@@ -251,7 +256,8 @@ function init(mi::ModelInstance, ci::ComponentInstance)
         comp_name = ci.comp_name
         pars = ci.pars
         vars = ci.vars
-        dims = indexvalues(mi.md)
+        # dims = indexvalues(mi.md)
+        dims = dim_value_dict(mi.md)
 
         Base.invokelatest(init, (Val(module_name), Val(comp_name), pars, vars, dims)...)
     end
@@ -263,7 +269,8 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     
     pars = ci.pars
     vars = ci.vars
-    dims = indexvalues(mi.md)
+    # dims = indexvalues(mi.md)
+    dims = dim_value_dict(mi.md)
     t    = timeindex(clock)
 
     # required since we eval the run_func on the fly

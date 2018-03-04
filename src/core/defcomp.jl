@@ -54,7 +54,7 @@ function _generate_run_func(module_name, comp_name, args, body)
     func = :(
         function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
                               p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
-                              d::Dict{Symbol, Vector{Any}}, t::Int)
+                              d::Dict{Symbol, Vector{Int}}, t::Int)
             $(body...)
         end
     )
@@ -77,7 +77,7 @@ function _generate_init_func(module_name, comp_name, args, body)
     func = :(
         function init(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
                       p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
-                      d::Dict{Symbol, Vector{Any}})
+                      d::Dict{Symbol, Vector{Int}})
             $(body...)
         end
     )
@@ -247,13 +247,15 @@ macro defcomp(comp_name, ex)
 
 end
 
-#
-# A few types of expressions are supported:
-# 1. component(name)
-# 2. dst_cmp.name = ex::Expr
-# 3. src_comp.name => dst_comp.name
-# 4. index[time] = 2050:5:2100
-#
+"""
+    defmodel(model_name::Symbol, ex::Expr)
+
+Define a Mimi model. The following types of expressions are supported:
+1. component(name)                          # add comp to model
+2. dst_component.name = ex::Expr            # provide a value for a parameter
+3. src_component.name => dst_component.name # connect a variable to a parameter
+4. index[name] = iterable-of-values         # define values for an index
+"""
 macro defmodel(model_name, ex)
     @capture(ex, elements__)
 
@@ -284,7 +286,11 @@ macro defmodel(model_name, ex)
                                        $(QuoteNode(src_comp)), $(QuoteNode(src_name))))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
-            expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
+            expr = :(set_dimension($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
+            
+            # TBD: remove these lines in favor of the above
+            # push!(result.args, expr)
+            # expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
             expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))

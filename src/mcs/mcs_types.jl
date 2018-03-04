@@ -11,7 +11,7 @@ struct RandomVariable
 
     function RandomVariable(name::Symbol, dist::Distribution)
         self = new(name, dist)
-        rvDict[name] = self
+        _rvDict[name] = self
         return self
     end
 end
@@ -28,6 +28,10 @@ struct TransformSpec
         end
         return new(paramname, op, rvname, dims)
     end 
+
+    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol)
+        return TransformSpec(paramname, op, rvname, [])
+    end
 end
 
 const CorrelationSpec = Tuple{Symbol, Symbol, Float64}
@@ -40,14 +44,15 @@ mutable struct MonteCarloSimulation
     rvlist::Vector{RandomVariable}
     translist::Vector{TransformSpec}
     corrlist::Union{Vector{CorrelationSpec}, Void}
-    savelist::Vector{Any}
+    savelist::Vector{Tuple}
     data::DataFrame
-    output_dir::String
+    results::Union{Dict{Tuple, DataFrame}, Void}
+    output_dir::Union{String, Void}
 
     function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
                                   translist::Vector{TransformSpec}, 
                                   corrlist::Union{Vector{CorrelationSpec}, Void},
-                                  savelist::Vector{Any})
-        return new(0, rvlist, translist, corrlist, savelist, DataFrame())
+                                  savelist::Vector{Tuple})
+        return new(0, rvlist, translist, corrlist, savelist, DataFrame(), nothing, nothing)
     end
 end
