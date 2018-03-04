@@ -111,6 +111,8 @@ end
 #
 # 2. Dimensions
 #
+
+# TBD: eliminate these type aliases?
 const DimensionKey = Union{Int64, String, Symbol}
 
 const DimensionKeyVector = Union{Vector{Int64}, Vector{String}, Vector{Symbol}}

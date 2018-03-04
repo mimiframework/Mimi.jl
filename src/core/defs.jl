@@ -134,8 +134,7 @@ function step_size(md::ModelDef)
     return length(keys) > 1 ? keys[2] - keys[1] : 1
 end
 
-function step_size(index_values::Dict{Symbol, Vector})
-    values = index_values[:time]
+function step_size(values::Vector{Int})
     # N.B. assumes that all timesteps of the model are the same length
     return length(values) > 1 ? values[2] - values[1] : 1
 end

@@ -45,23 +45,23 @@ getindex(dim::AbstractDimension, keys...) = getindex(dim, keys)
 # Global registry for Dimension instances. 
 # Might not need this once stored in ModelDef.
 # 
-global const _dimension_registry = Dict{Symbol, AbstractDimension}()
+# global const _dimension_registry = Dict{Symbol, AbstractDimension}()
 
-function register_dimension(name::Symbol, dim::AbstractDimension)
-    if haskey(_dimension_registry, name)
-        warn("Redefining index $name")
-    end
-    _dimension_registry[name] = dim
-    return nothing
-end
+# function register_dimension(name::Symbol, dim::AbstractDimension)
+#     if haskey(_dimension_registry, name)
+#         warn("Redefining index $name")
+#     end
+#     _dimension_registry[name] = dim
+#     return nothing
+# end
 
-function retrieve_dimension(name::Symbol)
-    return _dimension_registry[name]
-end
+# function retrieve_dimension(name::Symbol)
+#     return _dimension_registry[name]
+# end
 
-retrieve_dimensions(names::Vector{Symbol}) = map(retrieve_dimension, names)
+# retrieve_dimensions(names::Vector{Symbol}) = map(retrieve_dimension, names)
 
-registered_dimensions() = collect(keys(_dimension_registry))
+# registered_dimensions() = collect(keys(_dimension_registry))
 
 
 length(dim::RangeDimension) = length(dim.range)

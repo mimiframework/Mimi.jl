@@ -208,6 +208,8 @@ dim_count(mi::ModelInstance, dim_name::Symbol) = dim_count(mi.md, dim_name)
 
 dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 
+dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
+
 # """
 #     indexvalues(mi::ModelInstance, idx_name::Symbol)
 
@@ -215,10 +217,10 @@ dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 # """
 # indexvalues(mi::ModelInstance, idx_name::Symbol) = indexvalues(mi.md, idx_name)
 
-function make_clock(mi::ModelInstance, ntimesteps, index_values)
-    start = index_values[:time][1]
-    stop  = index_values[:time][min(length(index_values[:time]), ntimesteps)]
-    step  = step_size(index_values)
+function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
+    start = time_keys[1]
+    stop  = time_keys[min(length(time_keys), ntimesteps)]
+    step  = step_size(time_keys)
     return Clock(start, step, stop)
 end
 
@@ -271,26 +273,28 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     vars = ci.vars
     # dims = indexvalues(mi.md)
     dims = dim_value_dict(mi.md)
-    t    = timeindex(clock)
+    t = timeindex(clock)
 
     # required since we eval the run_func on the fly
     Base.invokelatest(run_timestep, (Val(module_name), Val(comp_name), pars, vars, dims, t)...)
     advance(clock)
 end
 
-function run(mi::ModelInstance, ntimesteps, index_values)
+function run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
+             dim_keys::Union{Void, Dict{Symbol, Vector{T} where T}}=nothing)
     if length(mi.components) == 0
         error("Cannot run the model: no components have been created.")
     end
 
+    dim_keys = dim_keys == nothing ? dim_key_dict(mi) : dim_keys
+
     starts = mi.starts
     stops = mi.stops
-    step  = step_size(index_values)
+    step  = step_size(dim_keys[:time])
 
-    # comp_clocks = [Clock(starts[i], stops[i], step) for i in 1:length(comp_instances)]
     comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
     
-    clock = make_clock(mi, ntimesteps, index_values)
+    clock = make_clock(mi, ntimesteps, dim_keys[:time])
 
     init(mi)    # call module's (or fallback) init function
 

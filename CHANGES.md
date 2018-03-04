@@ -188,9 +188,9 @@ end
 
 generate_trials!(mcs, 20, filename="/tmp/trialdata.csv")
 
-# run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
-
+# Run trials 1:4, and save results to the indicated directory
 run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
+# run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
 
 ## 5. Code cleanup

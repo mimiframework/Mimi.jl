@@ -214,8 +214,12 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64
 
     clear_results(mcs)
 
+    # Compute how often to print a "Running trial ..." message.
+    count = length(trials)
+    divisor = (count < 50 ? 1 : (count < 500 ? 10 : 100))
+
     for trialnum in trials
-        trialnum % 100 == 0 && println("Running trial $trialnum ")
+        trialnum % divisor == 0 && println("Running trial $trialnum ")
         _perturb_parameters(m, mcs, trialnum)
 
         pre_trial_func  != nothing && pre_trial_func(m, mcs, trialnum)

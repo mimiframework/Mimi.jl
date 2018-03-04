@@ -258,7 +258,7 @@ end
 Adds a one dimensional time-indexed array parameter to the model.
 """
 function set_external_array_param(md::ModelDef, name::Symbol, value::TimestepVector, dims)
-    println("set_external_array_param: dims=$dims, setting dims to [:time]")
+    # println("set_external_array_param: dims=$dims, setting dims to [:time]")
     param = ArrayModelParameter(value, [:time])
     set_external_param(md, name, param)
 end

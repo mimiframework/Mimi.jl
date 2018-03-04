@@ -279,7 +279,7 @@ end
 
 Run model `m` once.
 """
-function run(m::Model; ntimesteps=typemax(Int))
+function run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}=nothing)
     if numcomponents(m) == 0
         error("Cannot run a model with no components.")
     end
@@ -290,5 +290,5 @@ function run(m::Model; ntimesteps=typemax(Int))
 
     # println("Running model...")
     # run(m.mi, ntimesteps, indexvalues(m))
-    run(m.mi, ntimesteps, dim_key_dict(m.mi))
+    run(m.mi, ntimesteps, dim_keys)
 end
