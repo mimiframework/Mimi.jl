@@ -14,7 +14,7 @@ function getspeclist(model::Model)
         for v in vars
 
             #pull information 
-            name = string("$c : $v") #returns the name of the pair as "component:variable"
+            name = "$c : $v" #returns the name of the pair as "component:variable"
 
             #catch errors 
             try
@@ -24,7 +24,7 @@ function getspeclist(model::Model)
                 #single value
                 if length(df[1]) == 1
                     value = df[1][1]
-                    name = string("$c : $v = $value")
+                    name = "$c : $v = $value"
                     spec = createspec_singlevalue(name)
                 else
                     dffields = names(df)
@@ -47,7 +47,6 @@ function getspeclist(model::Model)
                 push!(allspecs, spec)
             catch
                 println("could not convert ", name, " to dataframe, skipping ...")
-                continue
             end
         end
 
@@ -56,7 +55,7 @@ function getspeclist(model::Model)
         for p in params
 
             #pull information 
-            name = string("$c : $p") #returns the name of the pair as "component:parameter"
+            name = "$c : $p" #returns the name of the pair as "component:parameter"
             df = getdataframe_for_parameter(model, c, p) #returns the  corresponding dataframe
             
             if !isa(df, Number) #check if there any parameters in this component
@@ -66,7 +65,7 @@ function getspeclist(model::Model)
                 #single value
                 if length(df[1]) == 1
                     value = df[1][1]
-                    name = string("$c : $v = $value")
+                    name = "$c : $v = $value"
                     spec = createspec_singlevalue(name)
                 else
                     dffields = names(df)

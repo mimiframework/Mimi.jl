@@ -1,6 +1,6 @@
 ## Mimi UI
 
-global app
+global app = nothing
 
 #function to get variable data
 include("buildspecs.jl")
@@ -13,7 +13,7 @@ function explore(model)
     speclistJSON = JSON.json(speclist)
 
     #start Electron app
-    if !isdefined(:app)
+    if app == nothing
         global app = Application()
     end
 
