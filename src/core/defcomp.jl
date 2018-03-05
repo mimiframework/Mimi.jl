@@ -155,9 +155,9 @@ macro defcomp(comp_name, ex)
     end
     
     # For some reason this was difficult to do at the higher language level. 
-    # This fails: :(comp = newcomponent($(esc(mod_name).esc(comp_name))))
-    # newcomp = Expr(:(=), :comp, Expr(:call, :newcomponent, QuoteNode(mod_name), QuoteNode(comp_name)))
-    newcomp = :(comp = newcomponent($comp_name))
+    # This fails: :(comp = new_component($(esc(mod_name).esc(comp_name))))
+    # newcomp = Expr(:(=), :comp, Expr(:call, :new_component, QuoteNode(mod_name), QuoteNode(comp_name)))
+    newcomp = :(comp = new_component($comp_name))
     addexpr(esc(newcomp))
 
     for elt in elements

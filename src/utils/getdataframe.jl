@@ -11,7 +11,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     md = mi.md
     comp_inst = compinstance(mi, comp_name)
 
-    dims = indexlabels(m, comp_name, item_name)
+    dims = dimensions(m, comp_name, item_name)
 
     # Create a new df if one was not passed in
     df = df == nothing ? DataFrame() : df
@@ -114,7 +114,7 @@ function getdataframe(m::Model, comp_name_pairs::Tuple)
         error("Name of variable or parameter $item_name in component $comp_name was neither a Tuple nor a Symbol.")
     end
    
-    dims = indexlabels(m, comp_name, item_name)
+    dims = dimensions(m, comp_name, item_name)
     num_dims = length(dims)
     
     df = nothing
@@ -126,7 +126,7 @@ function getdataframe(m::Model, comp_name_pairs::Tuple)
         end
 
         for item_name in item_names
-            next_dims = indexlabels(m, comp_name, item_name)
+            next_dims = dimensions(m, comp_name, item_name)
             if length(next_dims) != num_dims
                 error("Cannot get DataFrame: Variable or parameter $item_name in component $comp_name has different number of dimensions")
             end

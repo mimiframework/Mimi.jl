@@ -62,13 +62,13 @@ function dump_components()
 end
 
 """
-    newcomponent(comp_id::ComponentId)
+    new_component(comp_id::ComponentId)
 
 Create an empty `ComponentDef`` to the global component registry with the given
 `comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
 `addparameter`, etc.
 """
-function newcomponent(comp_id::ComponentId)
+function new_component(comp_id::ComponentId)
     if haskey(_compdefs, comp_id)
         warn("Redefining component $comp_id")
     else
@@ -106,9 +106,8 @@ end
 # Dimensions
 #
 function add_dimension(comp::ComponentDef, name)
-    d = DimensionDef(name)
-    comp.dimensions[name] = d
-    return d
+    comp.dimensions[name] = dim_def = DimensionDef(name)
+    return dim_def
 end
 
 add_dimension(comp_id::ComponentId, name) = add_dimension(compdef(comp_id), name)
@@ -193,9 +192,13 @@ end
 
 # helper function for setindex; used to determine if the provided time values are a uniform range.
 function isuniform(values::Vector)
-    # TBD: handle zero-length here or in setindex?
+    num_values = length(values)
 
-    if length(values) in (1, 2)
+    if num_values == 0
+        return false
+    end
+
+    if num_values in (1, 2)
         return true
     end
 
@@ -469,7 +472,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         return nothing
     end
 
-    newcomponents = OrderedDict{Symbol, ComponentDef}
+    new_comps = OrderedDict{Symbol, ComponentDef}
 
     if before != nothing
         if ! hascomp(md, before)
@@ -479,9 +482,9 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         for i in compkeys(md)
             if i == before
                 set_run_period!(comp_def, start, stop)
-                newcomponents[comp_name] = comp_def
+                new_comps[comp_name] = comp_def
             end
-            newcomponents[i] = md.comp_defs[i]
+            new_comps[i] = md.comp_defs[i]
         end
 
     else    # after != nothing, since we've handled all other possibilities above
@@ -490,15 +493,15 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         end
 
         for i in compkeys(md)
-            newcomponents[i] = md.comp_defs[i]
+            new_comps[i] = md.comp_defs[i]
             if i == after
                 set_run_period!(comp_def, start, stop)
-                newcomponents[comp_name] = comp_def
+                new_comps[comp_name] = comp_def
             end
         end
     end
 
-    md.comp_defs = newcomponents
+    md.comp_defs = new_comps
     # println("md.comp_defs: $(md.comp_defs)")
     return nothing
 end
@@ -517,7 +520,6 @@ This is used both in the copy() function below, and in the MCS subsystem
 to restore values between trials.
 
 """
-# TBD: this doesn't exactly do what we want because connections still point to old storage.
 function copy_external_params(md::ModelDef)
     external_params = Dict{Symbol, ModelParameter}()
 
@@ -548,13 +550,6 @@ function copy(md::ModelDef)
     
     merge!(mdcopy.comp_defs, md.comp_defs)
     
-    # TBD: replace this chunk with copy of Dimensions dict
-    # mdcopy.time_labels = copy(md.time_labels)
-    # merge!(mdcopy.index_counts, md.index_counts)
-    # for (key, val) in md.index_values
-    #     # copy the values rather than the entire vector
-    #     mdcopy.index_values[key] = copy(md.index_values[key])
-    # end
     mdcopy.dimensions = deepcopy(md.dimensions)
 
     # These are vectors of immutable structs, so we can copy them safely

@@ -47,24 +47,11 @@ function decache(m::Model)
     m.mi = nothing
 end
 
-function connect_parameter(m::Model, 
-                           dst_comp_name::Symbol, dst_par_name::Symbol, 
-                           src_comp_name::Symbol, src_var_name::Symbol;
-                           ignoreunits::Bool = false)
-    connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name; ignoreunits=ignoreunits)
+function connect_parameter(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
+                           src_comp_name::Symbol, src_var_name::Symbol, 
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
+    connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; ignoreunits=ignoreunits)
 end
-
-"""
-    connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
-
-Bind the parameter of one component to a variable in another component.
-"""
-function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol};
-                           ignoreunits::Bool = false)
-    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], ignoreunits=ignoreunits)
-end
-
-# TBD: combine these method signatures by defaulting backup::Union{Void,Array}=nothing
 
 """
     connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -72,7 +59,7 @@ end
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Array; ignoreunits::Bool = false)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
     connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits = ignoreunits)
 end
 
@@ -117,14 +104,6 @@ List all the components in model `m`.
 # Return the number of timesteps a given component in a model will run for.
 @modelegate getspan(m::Model, comp_name::Symbol) => md
 
-@modelegate indexcounts(m::Model) => md
-
-@modelegate indexcount(m::Model, idx::Symbol) => md
-
-@modelegate indexvalues(m::Model) => md
-
-@modelegate indexvalues(m::Model, idx::Symbol) => md
-
 """
     _getdatumdef(comp_def::ComponentDef, item::Symbol)
 
@@ -143,47 +122,58 @@ end
 
 _getdatumdef(m::Model, comp_name::Symbol, item::Symbol) = _getdatumdef(compdef(m.md, comp_name), item)
 
-# _getdatumdef(m::Model, comp_id::ComponentId, item::Symbol) = _getdatumdef(m.md, compdef(comp_id), item)
+"""
+    dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol)
 
+Return the dimension names for the variable or parameter in the given component.
+"""
+dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol) = dimensions(_getdatumdef(comp_def, datum_name))
 
 """
-    indexlabels(m::Model, component::Symbol, name::Symbol)
+    dimensions(m::Model, comp_name::Symbol, datum_name::Symbol)
 
-Return the index labels of the variable or parameter in the given component.
+Return the dimension names for the variable or parameter in the given component.
 """
-function indexlabels(m::Model, comp_name::Symbol, datum_name::Symbol)
-    datum = _getdatumdef(m, comp_name, datum_name)
-    return datum.dimensions
-end
+dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, compdef(m, comp_name), datum_name)
 
-function getindex(m::Model, component::Symbol, name::Symbol)
-    return getindex(m.mi, component, name)
-end
+
+# TBD: this allows access of the form my_model[:grosseconomy, :tfp]
+# It is not related to dimensions!
+@modelegate getindex(m::Model, comp_name::Symbol, dim_name::Symbol) => mi
+
+# """
+#     setindex(m::Model, name::Symbol, valuerange::Range)
+
+# Set the values of `Model` dimension `name` to the values in the given `range`.
+# """
+# function setindex(m::Model, name::Symbol, range::Range)
+#     setindex(m.md, name, range)
+#     decache(m)
+# end
+
+# """
+#     setindex(m::Model, name::Symbol, count::Int)
+
+# Set the values of `Model` dimension `name` to integers 1 through `count`.
+# """
+# function setindex(m::Model, name::Symbol, count::Int)
+#     setindex(m.md, name, count)
+#     decache(m)
+# end
+
+# function setindex{T}(m::Model, name::Symbol, values::Vector{T})
+#     setindex(m.md, name, values)
+#     decache(m)
+# end
 
 """
-    setindex(m::Model, name::Symbol, valuerange::Range)
+    set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
 
-Set the values of `Model`'s index `name` to the values in the given `range`.
+Set the values of `Model` dimension `name` to integers 1 through `count`, if keys is
+an integer; or to the values in the vector or range if keys is either of those types.
 """
-function setindex(m::Model, name::Symbol, range::Range)
-    setindex(m.md, name, range)
-    decache(m)
-end
-
-"""
-    setindex(m::Model, name::Symbol, count::Int)
-
-Set the values of `Model`'s' index `name` to integers 1 through `count`.
-"""
-function setindex(m::Model, name::Symbol, count::Int)
-    setindex(m.md, name, count)
-    decache(m)
-end
-
-@modelegate set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range}) => md
-
-function setindex{T}(m::Model, name::Symbol, values::Vector{T})
-    setindex(m.md, name, values)
+function set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+    set_dimension(m.md, name, keys)
     decache(m)
 end
 

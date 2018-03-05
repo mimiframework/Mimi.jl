@@ -9,7 +9,7 @@ function getdf(m::Model, comp_name::Symbol, datum_name::Symbol)
         df = DataFrame(a, [datum_name])
 
     else
-        dim_names = indexlabels(m, comp_name, datum_name)
+        dim_names = dimensions(m, comp_name, datum_name)
         num_dims = length(dim_names)
 
         if dim_names[1] == :time
@@ -28,7 +28,7 @@ function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int6
     for datum_key in mcs.savelist
         # println("\nStoring trial results for $datum_key")
         (comp_name, datum_name) = datum_key
-        dims = indexlabels(m, comp_name, datum_name)
+        dims = dimensions(m, comp_name, datum_name)
         results = mcs.results
         
         

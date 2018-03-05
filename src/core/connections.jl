@@ -65,13 +65,52 @@ function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, 
 end
 
 """
-    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var::Symbol; ignoreunits::Bool=false)
+    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component.
 """
-function connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
-                                         src_comp_name::Symbol, src_var_name::Symbol; 
-                                         ignoreunits::Bool = false)
+function connect_parameter(md::ModelDef, 
+                           dst_comp_name::Symbol, dst_par_name::Symbol, 
+                           src_comp_name::Symbol, src_var_name::Symbol, 
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
+    if backup != nothing
+        # If value is a NamedArray, we can check if the labels match
+        if isa(backup, NamedArray)
+            dims = dimnames(backup)
+            check_parameter_dimensions(md, backup, dims, dst_par_name)
+        else
+            dims = nothing
+        end
+
+        # Check that the backup value is the right size
+        if getspan(md, dst_comp_name) != size(backup)[1]
+            error("Backup data must span the whole length of the component.")
+        end
+
+        dst_comp_def = compdef(md, dst_comp_name)
+        src_comp_def = compdef(md, src_comp_name)
+
+        # some other check for second dimension??
+        dst_param = parameter(dst_comp_def, dst_par_name)
+        dst_dims  = dimensions(dst_param)
+
+        backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
+        start = start(dst_comp_def)
+        step = step_size(md)
+        T = eltype(backup)
+
+        dim_count = length(dst_dims)
+
+        if dim_count in (1, 2)
+            ts_type = dim_count == 1 ? TimestepVector : TimestepMatrix
+            values = ts_type{T, start, step}(backup)
+        else
+            values = backup
+        end
+
+        set_external_array_param(md, dst_par_name, values, dst_dims)
+    end
+
     # Check the units, if provided
     if ! ignoreunits && ! _verify_units(variable_unit(md, src_comp_name, src_var_name), 
                                        parameter_unit(md, dst_comp_name, dst_par_name))
@@ -87,69 +126,13 @@ function connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Sy
     return nothing
 end
 
-function connect_parameter(md::ModelDef, 
-                           dst_comp_name::Symbol, dst_par_name::Symbol, 
-                           src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Array; ignoreunits::Bool = false)
-    # If value is a NamedArray, we can check if the labels match
-    if isa(backup, NamedArray)
-        dims = dimnames(backup)
-        check_parameter_dimensions(md, backup, dims, dst_par_name)
-    else
-        dims = nothing
-    end
-
-    # Check that the backup value is the right size
-    if getspan(md, dst_comp_name) != size(backup)[1]
-        error("Backup data must span the whole length of the component.")
-    end
-
-    dst_comp_def = compdef(md, dst_comp_name)
-    src_comp_def = compdef(md, src_comp_name)
-
-    # some other check for second dimension??
-    dst_param = parameter(dst_comp_def, dst_par_name)
-    dst_dims  = dimensions(dst_param)
-
-    backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-    start = start(dst_comp_def)
-    step = step_size(md)
-    T = eltype(backup)
-
-    dim_count = length(dst_dims)
-
-    if dim_count in (1, 2)
-        ts_type = dim_count == 1 ? TimestepVector : TimestepMatrix
-        values = ts_type{T, start, step}(backup)
-    else
-        values = backup
-    end
-
-    set_external_array_param(md, dst_par_name, values, dst_dims)
-
-    # Use the non-backup method to handle the rest
-    connect_parameter(md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, ignoreunits)
-
-    return nothing
-end
-
 """
-    connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}; ignoreunits::Bool=false)
-
-Bind the parameter of one component to a variable in another component.
-"""
-function connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}; 
-                           ignoreunits::Bool = false)
-    connect_parameter(md, dst[1], dst[2], src[1], src[2]; ignoreunits = ignoreunits)
-end
-
-"""
-    connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
+    connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Array; ignoreunits::Bool = false)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
     connect_parameter(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits = ignoreunits)
 end
 

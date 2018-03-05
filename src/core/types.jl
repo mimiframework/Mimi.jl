@@ -9,7 +9,7 @@ mutable struct Timestep{Start, Step, Stop}
 	t::Int
 end
 
-# TBD: Consider renaming and simplifying this
+# TBD: Consider renaming and simplifying this. (Not currently used.)
 mutable struct TimestepNew
     start::Int      # the first year/month etc. that is relevant
     step::Int       # interval between periods, for constant timesteps
@@ -33,7 +33,7 @@ mutable struct Clock
 	end
 end
 
-# TBD: consider using this merged type
+# TBD: consider using this merged type in place of TimestepVector/TimestepMatrix
 mutable struct TimestepArray{T, N}
     start::Int
     step::Int
@@ -111,34 +111,24 @@ end
 #
 # 2. Dimensions
 #
-
-# TBD: eliminate these type aliases?
-const DimensionKey = Union{Int64, String, Symbol}
-
-const DimensionKeyVector = Union{Vector{Int64}, Vector{String}, Vector{Symbol}}
-
 abstract type AbstractDimension end
 
 struct Dimension <: AbstractDimension
-    # dict::OrderedDict{DimensionKey, Int64}
     dict::OrderedDict
     key_type::DataType
 
     function Dimension(keys::Vector)
-        # dict = OrderedDict{DimensionKey, Int64}(collect(zip(keys, 1:length(keys))))
         key_type = eltype(keys)
         dict = OrderedDict{key_type, Int64}(collect(zip(keys, 1:length(keys))))
         return new(dict, key_type)
     end
 
     function Dimension(rng::Range)
-        # keys::DimensionKeyVector = collect(rng)
         return Dimension(collect(rng))
     end
 
     # Support Dimension(:foo, :bar, :baz)
     function Dimension(keys...)
-        # vector::DimensionKeyVector = [key for key in keys]
         vector = [key for key in keys]
         return Dimension(vector)
     end
@@ -222,7 +212,7 @@ end
 mutable struct ParameterDef <: DatumDef
     name::Symbol
     datatype::DataType
-    dimensions::Array{Any}
+    dimensions::Array{Any}          # TBD: why isn't this just Vector{Symbol}?
     description::String
     unit::String
 end
@@ -268,7 +258,6 @@ mutable struct ModelDef
     comp_defs::OrderedDict{Symbol, ComponentDef}
 
     # TBD: replace this trio of structures with the Dimension type
-    # - replace setindex(m, name, values) with set_dimension(m, name, keys)
     # - change run() to get the model's Dict{Symbol, Dimension}
     # - fix copy(md::ModelDef) (see notes there)
     # - indexcounts() => dim_counts(md) = Dict([name => length(value) for (name, value) in md.dimensions])

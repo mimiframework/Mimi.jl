@@ -13,7 +13,7 @@ function Plots.plot(m::Model, comp_name::Symbol, parameter::Symbol ; index::Symb
     values = m[comp_name, parameter]
 
     if legend == nothing && isa(values, Array) && ndims(values)==2
-        a = indexlabels(m, comp_name, parameter)
+        a = dimensions(m, comp_name, parameter)
         a = Iterators.filter(i->i!=index, a)
         legend = a[1]
     end
@@ -21,7 +21,7 @@ function Plots.plot(m::Model, comp_name::Symbol, parameter::Symbol ; index::Symb
     # Create axis labels
     units = ""
     try
-        comp_def = getcompdef(m, comp_name)
+        comp_def = compdef(m, comp_name)
         units = comp_def.parameters[parameter].unit
 
         # was:
