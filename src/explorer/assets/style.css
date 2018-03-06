@@ -6,7 +6,7 @@
     float: left;
     border: 1px solid #ccc;
     background-color: #FFFFFF;
-    width: 30%;
+    width: 35%;
     height: 100%;
     overflow-y: auto;
 }
@@ -46,7 +46,7 @@
     float: left;
     padding: 0px 12px;
     border: 1px solid #ccc;
-    width: 70%;
+    width: 65%;
     border-left: none;
     height: 100%;
 }

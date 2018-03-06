@@ -6,7 +6,7 @@ global app
 include("buildspecs.jl")
 include("getparameters.jl")
 
-function explore(model)
+function explore(model; title = "Electron")
     
     #get variable data
     speclist = getspeclist(model)
@@ -20,10 +20,13 @@ function explore(model)
     #load main html file
     mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\", "/")
 
+    #window options
+    windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
+
     if is_windows()
-        w = Window(app, URI("file:///$(mainpath)"))
+        w = Window(app, URI("file:///$(mainpath)"), options = windowopts)
     else
-        w = Window(app, URI("file://$(mainpath)"))
+        w = Window(app, URI("file://$(mainpath)"), options = windowopts)
     end
 
     #refresh variable list
