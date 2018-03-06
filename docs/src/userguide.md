@@ -233,3 +233,13 @@ result2 = instance2[:Comp, :Var]
 ```
 
 Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.
+
+###  The explorer UI
+
+The `explore` function allows the user to view and explore the variables and parameters of a model run.  To invoke the explorer UI, simply call the function `explore` with the model run as the single parameter, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
+
+```julia
+run1 = run(my_model)
+explore(run1)
+
+```
