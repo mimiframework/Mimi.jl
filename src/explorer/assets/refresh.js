@@ -5,6 +5,8 @@ function refresh(speclist) {
     // Loop over the things that we want to show in the list, add
     // one button for each element as a child to the variablelist div
 
+    var element = document.getElementById("variablelist");
+
     for (var i in speclist) {
 
         var newButton = document.createElement("button");
@@ -20,6 +22,6 @@ function refresh(speclist) {
         }())
 
         newButton.appendChild(document.createTextNode(speclist[i]["name"]));
-        document.getElementById("variablelist").appendChild(newButton);
+        element.appendChild(newButton);
     }
 }
