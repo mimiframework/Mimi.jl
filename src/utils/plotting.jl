@@ -1,4 +1,3 @@
-# Begin plotting section
 using Plots
 
 """
@@ -108,6 +107,3 @@ function prettifystring(s::String)
     # Return our string
     return join(s_arr, " ")
 end
-
-
-# End plotting section

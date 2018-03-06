@@ -49,8 +49,9 @@ end
 
 function connect_parameter(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
-    connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; ignoreunits=ignoreunits)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
+                      ignoreunits=ignoreunits, offset=offset)
 end
 
 """
@@ -59,8 +60,8 @@ end
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
-    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits = ignoreunits)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits)
 end
 
 function set_external_param(m::Model, name::Symbol, value::ModelParameter)

@@ -273,6 +273,8 @@ macro defmodel(model_name, ex)
     result = quote $(esc(model_name)) = Model() end 
 
     for elt in elements
+        offset = 0
+
         if @capture(elt, component(comp_mod_.comp_name_)         | component(comp_name_) |
                          component(comp_mod_.comp_name_, alias_) | component(comp_name_, alias_))
 
@@ -280,10 +282,15 @@ macro defmodel(model_name, ex)
             name = alias == nothing ? comp_name : alias
             expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
 
-        elseif @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_)
+        elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||
+                @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_))
+            if (arg != nothing && (! @capture(arg, t - offset_) || offset <= 0))
+                error("Subscripted connection source must have subscript [t - x] where x is an integer > 0")
+            end
+
             expr = :(connect_parameter($(esc(model_name)),
                                        $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
-                                       $(QuoteNode(src_comp)), $(QuoteNode(src_name))))
+                                       $(QuoteNode(src_comp)), $(QuoteNode(src_name)), offset=$(esc(offset))))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
             expr = :(set_dimension($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
@@ -298,7 +305,7 @@ macro defmodel(model_name, ex)
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.
             println("Passing through: $elt")
-            expr = elt
+            expr = esc(elt)
         end
 
         push!(result.args, expr)

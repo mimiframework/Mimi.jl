@@ -54,11 +54,11 @@ end
 
 # Fallback get & set property funcs that revert to dot notation
 @generated function getproperty(obj, ::Val{PROPERTY}) where {PROPERTY}
-    return :(obj.PROPERTY)
+    return :(obj.$PROPERTY)
 end
 
-@generated function setproperty(obj, ::Val{PROPERTY}, value) where {PROPERTY}
-    return :(obj.PROPERTY = value)
+@generated function setproperty!(obj, ::Val{PROPERTY}, value) where {PROPERTY}
+    return :(obj.$PROPERTY = value)
 end
 
 # TBD: This kludge and will be revised when we address indexing more generally.
@@ -237,7 +237,7 @@ function reset_variables(ci::ComponentInstance)
             fill!(value, NaN)
 
         elseif T <: AbstractFloat
-            setproperty(vars, Val(name), NaN)
+            setproperty!(vars, Val(name), NaN)
         end
     end
 end

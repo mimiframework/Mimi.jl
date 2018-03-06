@@ -71,8 +71,8 @@ Bind the parameter of one component to a variable in another component.
 """
 function connect_parameter(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
-                           src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
+                           src_comp_name::Symbol, src_var_name::Symbol,
+                           backup::Union{Void, Array}=nothing; offset::Int=nothing, ignoreunits::Bool=false)
     if backup != nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
@@ -120,7 +120,7 @@ function connect_parameter(md::ModelDef,
     # remove any existing connections for this dst component and parameter
     disconnect(md, src_comp_name, src_var_name)
 
-    curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits)
+    curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
     add_internal_param_conn(md, curr)
 
     return nothing
@@ -348,7 +348,8 @@ sources for which `comp_name` is the destination of an internal connection.
 """
 function dependencies(md::ModelDef, comp_name::Symbol)
     conns = internal_param_conns(md)
-    deps = Set(c.src_comp_name for c in conns if c.dst_comp_name == comp_name)
+    # For the purposes of the DAG, we don't treat dependencies on [t-1] as an ordering constraint
+    deps = Set(c.src_comp_name for c in conns if (c.dst_comp_name == comp_name && c.offset == 0))
     return deps
 end
 

@@ -1,29 +1,5 @@
 using CSV
 
-# new version
-function getdf(m::Model, comp_name::Symbol, datum_name::Symbol)
-    value = m[comp_name, datum_name]    # may be scalar, vector, or 2D matrix
-    if value isa Number
-        a = Array{typeof(value)}(1, 1)
-        a[1, 1] = value
-        df = DataFrame(a, [datum_name])
-
-    else
-        dim_names = dimensions(m, comp_name, datum_name)
-        num_dims = length(dim_names)
-
-        if dim_names[1] == :time
-            
-        end
-
-        if num_dims == 1
-
-        else
-        end
-    end
-    return df
-end
-
 function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
     for datum_key in mcs.savelist
         # println("\nStoring trial results for $datum_key")
