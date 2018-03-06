@@ -108,8 +108,8 @@ function createspec_lineplot(name, df, dffields)
                 "x" => Dict("field" => string(dffields[1]), "type" => "temporal", "timeUnit" => "year"),                
                 "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
             ),
-            "width" => 500,
-            "height" => 500 
+            "width" => 450,
+            "height" => 450 
         ),
     )
     return spec
@@ -129,8 +129,8 @@ function createspec_barplot(name, df, dffields)
                 "x" => Dict("field" => string(dffields[1]), "type" => "ordinal"),
                 "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
             ),
-            "width" => 500,
-            "height" => 500 
+            "width" => 450,
+            "height" => 450 
         ),
     )
     return spec
@@ -152,8 +152,8 @@ function createspec_multilineplot(name, df, dffields)
                 "color" => Dict("field" => string(dffields[2]), "type" => "nominal", 
                     "scale" => Dict("scheme" => "category20b"))
             ),
-            "width" => 500,
-            "height" => 500 
+            "width" => 450,
+            "height" => 450 
         ),
     )
     return spec
