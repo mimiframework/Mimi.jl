@@ -1,5 +1,3 @@
-using Mimi
-
 """
 parameters(m::Model, componentname::Symbol)
 
