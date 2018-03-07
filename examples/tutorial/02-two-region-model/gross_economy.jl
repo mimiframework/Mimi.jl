@@ -12,7 +12,6 @@ using Mimi
     k0      = Parameter(index=[regions])        #Initial level of capital
     share   = Parameter()                       #Capital share
 
-
     function run(p, v, d, t)
     # Note that the regional dimension is defined in d and parameters and variables are indexed by 'r'
 

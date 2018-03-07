@@ -6,6 +6,8 @@ using DataStructures
 using DataFrames
 using Distributions
 using NamedArrays
+using JSON 
+using Electron
 
 export
     @defcomp,

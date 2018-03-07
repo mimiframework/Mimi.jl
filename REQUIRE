@@ -7,3 +7,5 @@ NamedArrays 0.5.3
 Plots 0.11.0
 MacroTools 0.4.0
 LightGraphs 0.12.0
+Electron 0.1.1
+JSON 0.17.1
