@@ -23,11 +23,8 @@ function explore(model; title = "Electron")
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
 
-    if is_windows()
-        w = Window(app, URI("file:///$(mainpath)"), options = windowopts)
-    else
-        w = Window(app, URI("file://$(mainpath)"), options = windowopts)
-    end
+    slashes = is_windows() ? "///" : "//"
+    w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
 
     #refresh variable list
     result = run(w, "refresh($speclistJSON)")
