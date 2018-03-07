@@ -82,6 +82,10 @@ function Base.endof(v::TimestepVector)
 	return length(v.data)
 end
 
+function Base.length(v::TimestepVector)
+	return length(v.data)
+end
+
 ################
 #  TimestepMatrix  #
 ################
