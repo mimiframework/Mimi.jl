@@ -22,16 +22,13 @@ struct TransformSpec
     rvname::Symbol
     dims::Vector{Any}
 
-    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{Any})
+    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{Any}=[])
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
+   
         return new(paramname, op, rvname, dims)
     end 
-
-    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol)
-        return TransformSpec(paramname, op, rvname, [])
-    end
 end
 
 const CorrelationSpec = Tuple{Symbol, Symbol, Float64}

@@ -108,7 +108,7 @@ List all the components in model `m`.
 """
     _getdatumdef(comp_def::ComponentDef, item::Symbol)
 
-Return a VariableDef or ParameterDef for `item` in the given component.
+Return a DatumDef for `item` in the given component.
 """
 function _getdatumdef(comp_def::ComponentDef, item::Symbol)
     if haskey(comp_def.variables, item)
@@ -142,31 +142,6 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, comp
 # It is not related to dimensions!
 @modelegate getindex(m::Model, comp_name::Symbol, dim_name::Symbol) => mi
 
-# """
-#     setindex(m::Model, name::Symbol, valuerange::Range)
-
-# Set the values of `Model` dimension `name` to the values in the given `range`.
-# """
-# function setindex(m::Model, name::Symbol, range::Range)
-#     setindex(m.md, name, range)
-#     decache(m)
-# end
-
-# """
-#     setindex(m::Model, name::Symbol, count::Int)
-
-# Set the values of `Model` dimension `name` to integers 1 through `count`.
-# """
-# function setindex(m::Model, name::Symbol, count::Int)
-#     setindex(m.md, name, count)
-#     decache(m)
-# end
-
-# function setindex{T}(m::Model, name::Symbol, values::Vector{T})
-#     setindex(m.md, name, values)
-#     decache(m)
-# end
-
 """
     set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
 
@@ -184,7 +159,6 @@ end
 
 @modelegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-# TBD: this might not be right...
 parameter(m::Model, comp_def::ComponentDef, param_name::Symbol) = parameter(comp_def, param_name)
 
 parameter(m::Model, comp_name::Symbol, param_name::Symbol) = parameter(m, compdef(m, comp_name), param_name)
@@ -282,4 +256,54 @@ function run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}=noth
     # println("Running model...")
     # run(m.mi, ntimesteps, indexvalues(m))
     run(m.mi, ntimesteps, dim_keys)
+end
+
+#
+# TBD: This function is not currently used anywhere (and not tested!) Is it still needed?
+#
+"""
+    update_external_param(m::Model, name::Symbol, value)
+
+Update the value of an external model parameter, referenced by name.
+"""
+function update_external_param(m::Model, name::Symbol, value)
+    if !(name in keys(m.external_params))
+        error("Cannot update parameter; $name not found in model's external parameters.")
+    end
+
+    param = m.external_params[name]
+
+    if isa(param, ScalarModelParameter)
+        if !(typeof(value) <: typeof(param.value))
+            try
+                value = convert(typeof(param.value), value)
+            catch e
+                error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+            end
+        elseif size(value) != size(param.value)
+            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
+        else
+            param.value = value
+        end
+
+    else # ArrayModelParameter
+        if !(typeof(value) <: AbstractArray)
+            error("Cannot update an array parameter $name with a scalar value.")
+        elseif size(value) != size(param.values)
+            error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
+        elseif !(eltype(value) <: eltype(param.values))
+            try
+                value = convert(Array{eltype(param.values)}, value)
+            catch e
+                error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
+            end
+        else # perform the update
+            if isa(param.values, TimestepVector) || isa(param.values, TimestepMatrix)
+                param.values.data = value
+            else
+                param.values = value
+            end
+        end
+    end
+    m.mi = nothing
 end

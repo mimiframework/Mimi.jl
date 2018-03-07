@@ -61,12 +61,11 @@ end
     return :(obj.$PROPERTY = value)
 end
 
-# TBD: This kludge and will be revised when we address indexing more generally.
-# Special case support for Dicts so we can use dot notation on dimensions dict.
+# Special case support for Dicts so we can use dot notation on dimension.
 # The run() func passes a reference to md.index_values as the "d" parameter.
 # Here we return a range representing the indices into that list of values.
 @generated function getproperty(obj::Dict, ::Val{PROPERTY}) where {PROPERTY}
-    return :(1:length(obj[PROPERTY]))
+    return :(obj[PROPERTY])
 end
 
 # Setting/getting parameter and variable values
@@ -121,7 +120,7 @@ end
 # Convenience functions that can be called with a name symbol rather than Val(name)
 function get_parameter_value(ci::ComponentInstance, name::Symbol)
     try 
-        return getproperty(ci.pars, Val(name))
+        return getproperty(ci.parameters, Val(name))
     catch err
         if isa(err, KeyError)
             error("Component $(ci.comp_id) has no parameter named $name")
@@ -133,8 +132,8 @@ end
 
 function get_variable_value(ci::ComponentInstance, name::Symbol)
     try
-        # println("Getting $name from $(ci.vars)")
-        return getproperty(ci.vars, Val(name))
+        # println("Getting $name from $(ci.variables)")
+        return getproperty(ci.variables, Val(name))
     catch err
         if isa(err, KeyError)
             error("Component $(ci.comp_id) has no variable named $name")
@@ -144,9 +143,9 @@ function get_variable_value(ci::ComponentInstance, name::Symbol)
     end
 end
 
-set_parameter_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.pars, Val(name), value)
+set_parameter_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, Val(name), value)
 
-set_variable_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.vars, Val(name), value)
+set_variable_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.variables, Val(name), value)
 
 # Allow values to be obtained from either parameter type using one method name.
 value(param::ScalarModelParameter) = param.value
@@ -176,8 +175,8 @@ function getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     end
     
     comp_inst = compinstance(mi, comp_name)
-    vars = comp_inst.vars
-    pars = comp_inst.pars
+    vars = comp_inst.variables
+    pars = comp_inst.parameters
 
     if datum_name in vars.names
         which = vars
@@ -226,7 +225,7 @@ end
 
 function reset_variables(ci::ComponentInstance)
     # println("reset_variables($(ci.comp_id))")
-    vars = ci.vars
+    vars = ci.variables
 
     for (name, ref) in zip(vars.names, vars.types.parameters)
         # Everything is held in a Ref{}, so get the parameters to that...
@@ -256,9 +255,8 @@ function init(mi::ModelInstance, ci::ComponentInstance)
     if init_expr(comp_def) != nothing
         module_name = compmodule(ci.comp_id)
         comp_name = ci.comp_name
-        pars = ci.pars
-        vars = ci.vars
-        # dims = indexvalues(mi.md)
+        pars = ci.parameters
+        vars = ci.variables
         dims = dim_value_dict(mi.md)
 
         Base.invokelatest(init, (Val(module_name), Val(comp_name), pars, vars, dims)...)
@@ -269,9 +267,8 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     module_name = compmodule(ci.comp_id)
     comp_name = compname(ci.comp_id)
     
-    pars = ci.pars
-    vars = ci.vars
-    # dims = indexvalues(mi.md)
+    pars = ci.parameters
+    vars = ci.variables
     dims = dim_value_dict(mi.md)
     t = timeindex(clock)
 

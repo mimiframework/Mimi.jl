@@ -34,33 +34,33 @@ mutable struct Clock
 end
 
 # TBD: consider using this merged type in place of TimestepVector/TimestepMatrix
-mutable struct TimestepArray{T, N}
-    start::Int
-    step::Int
-	data::Array{T, N}
+# mutable struct TimestepArray{T, N}
+#     start::Int
+#     step::Int
+# 	data::Array{T, N}
 
-    function TimestepArray{T, N}(start::Int, step::Int, data::Array{T, N}) where {T, N}
-		self = new(start, step, data)
-		return self
-	end
+#     function TimestepArray{T, N}(start::Int, step::Int, data::Array{T, N}) where {T, N}
+# 		self = new(start, step, data)
+# 		return self
+# 	end
 
-    function TimestepArray{T, N}(start::Int, step::Int, dims::Int...) where {T, N}
-        num_dims = length(dims)
+#     function TimestepArray{T, N}(start::Int, step::Int, dims::Int...) where {T, N}
+#         num_dims = length(dims)
         
-        if num_dims != N
-            error("TimestepArray: number of dimensions ($num_dims) does not match declared value of N ($N)")
-        end
+#         if num_dims != N
+#             error("TimestepArray: number of dimensions ($num_dims) does not match declared value of N ($N)")
+#         end
 
-        if ! num_dims in (1, 2)
-            error("TimestepArray supports only 1 or 2 dimensions currently.")
-        end
+#         if ! num_dims in (1, 2)
+#             error("TimestepArray supports only 1 or 2 dimensions currently.")
+#         end
 
-        data = Array{T, N}(dims...)
-		self = new(start, step, data)
-		self.data = Vector{T}(i)
-		return self
-	end
-end
+#         data = Array{T, N}(dims...)
+# 		self = new(start, step, data)
+# 		self.data = Vector{T}(i)
+# 		return self
+# 	end
+# end
 
 # TBD: Pseudo-constructors for consolidated version
 # TimestepVector(start::Int, len::Int, data::Array{T, 1}) where T = TimestepArray{T, 1}(start, len, data)
@@ -70,11 +70,11 @@ end
 # TimestepMatrix(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 2}(start, len, dims...)
 
 
-abstract type AbstractTimestepMatrix end
+abstract type AbstractTimestepMatrix{T, Start, Step} end
 
-# don't need to encode N (number of dimensions) as a type parameter because we 
+# We don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 1 for the vector case
-mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix
+mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
 	data::Vector{T}
 
     function TimestepVector{T, Start, Step}(d::Vector{T}) where {T, Start, Step}
@@ -90,9 +90,9 @@ mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix
 	end
 end
 
-# don't need to encode N (number of dimensions) as a type parameter because we 
+# We don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 2 for the matrix case
-mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix
+mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
 	data::Array{T, 2}
 
     function TimestepMatrix{T, Start, Step}(d::Array{T, 2}) where {T, Start, Step}
@@ -198,24 +198,16 @@ end
 abstract type NamedDef end
 
 # Supertype for vars and params
-abstract type DatumDef <: NamedDef end
-#
-# Do we need separate equivalent types for vars and params? Just defined one as, say, DatumDef?
-#
-mutable struct VariableDef <: DatumDef
-    name::Symbol
-    datatype::DataType
-    dimensions::Array{Any}          # TBD: why isn't this just Vector{Symbol}?
-    description::String
-    unit::String
-end
+# abstract type DatumDef <: NamedDef end
 
-mutable struct ParameterDef <: DatumDef
+# The same structure is used for variables and parameters
+mutable struct DatumDef <: NamedDef
     name::Symbol
     datatype::DataType
-    dimensions::Array{Any}          # TBD: why isn't this just Vector{Symbol}?
+    dimensions::Vector{Any}
     description::String
     unit::String
+    datum_type::Symbol          # :parameter or :variable
 end
 
 mutable struct DimensionDef <: NamedDef
@@ -225,8 +217,8 @@ end
 mutable struct ComponentDef  <: NamedDef
     name::Symbol
     comp_id::ComponentId
-    variables::OrderedDict{Symbol, VariableDef}
-    parameters::OrderedDict{Symbol, ParameterDef}
+    variables::OrderedDict{Symbol, DatumDef}
+    parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
     run_expr::Union{Void, Expr}   # the expression that will create the run_timestep function
     init_expr::Union{Void, Expr}  # the expression that will create the init function
@@ -240,8 +232,8 @@ mutable struct ComponentDef  <: NamedDef
         self = new()
         self.name = comp_id.comp_name
         self.comp_id = comp_id
-        self.variables  = OrderedDict{Symbol, VariableDef}()
-        self.parameters = OrderedDict{Symbol, ParameterDef}() 
+        self.variables  = OrderedDict{Symbol, DatumDef}()
+        self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
         self.run_expr   = nothing
         self.init_expr  = nothing
@@ -257,17 +249,6 @@ mutable struct ModelDef
     # Components keyed by symbolic name, allowing a given component
     # to occur multiple times within a model.
     comp_defs::OrderedDict{Symbol, ComponentDef}
-
-    # TBD: replace this trio of structures with the Dimension type
-    # - change run() to get the model's Dict{Symbol, Dimension}
-    # - fix copy(md::ModelDef) (see notes there)
-    # - indexcounts() => dim_counts(md) = Dict([name => length(value) for (name, value) in md.dimensions])
-    # - indexvalues() => dim_keys(md) = Dict([name => value for (name, value) in md.dimensions])
-    # - timelabels() => keys(dimension(m, :time))
-    #      Though better to do: dim = dimension(md, :time); v = values(dim); k = keys(dim); l = length(dim)
-    index_counts::Dict{Symbol, Int}
-    index_values::Dict{Symbol, Vector{Any}}
-    # time_labels::Vector
 
     dimensions::Dict{Symbol, Dimension}
 
@@ -291,11 +272,8 @@ mutable struct ModelDef
         self = new()
         self.module_name = module_name(current_module())
         self.comp_defs = OrderedDict{Symbol, ComponentDef}()
-        self.index_counts = Dict{Symbol, Int}()
-        self.index_values = Dict{Symbol, Vector{Any}}()
         self.dimensions = Dict{Symbol, Dimension}()
         self.number_type = number_type
-        # self.time_labels = Vector()
         self.internal_param_conns = Vector{InternalParameterConnection}() 
         self.external_param_conns = Vector{ExternalParameterConnection}()
         self.external_params = Dict{Symbol, ModelParameter}()
@@ -354,8 +332,8 @@ end
 mutable struct ComponentInstance
     comp_name::Symbol
     comp_id::ComponentId
-    vars::ComponentInstanceVariables        # TBD: rename variables and parameters to be consistent with ComponentDef
-    pars::ComponentInstanceParameters
+    variables::ComponentInstanceVariables
+    parameters::ComponentInstanceParameters
     dimensions::Vector{Symbol}  # was "indices" previously
 
     start::Int
@@ -369,8 +347,8 @@ mutable struct ComponentInstance
         self.comp_id = comp_def.comp_id
         self.comp_name = name
         self.dimensions = map(dim -> dim.name, dimensions(comp_def))
-        self.vars = vars
-        self.pars = pars
+        self.variables = vars
+        self.parameters = pars
         self.start = comp_def.start
         self.stop = comp_def.stop
 

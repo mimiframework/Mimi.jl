@@ -63,6 +63,7 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::String=mcs.ou
 end
 
 function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
+    mkpath(dirname(filename), 0o770)   # ensure that the specified path exists
     CSV.write(filename, mcs.data)
     return nothing
 end
@@ -115,8 +116,8 @@ function _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int6
         end
         
         param = ext_params[pname]
-        pdims = dimensions(param)
-        num_pdims = param isa ScalarModelParameter ? 0 : length(pdims)
+        pdims = dimensions(param)   # returns [] for scalar parameters
+        num_pdims = length(pdims)
 
         num_dims = length(tdims)
         if num_pdims != num_dims

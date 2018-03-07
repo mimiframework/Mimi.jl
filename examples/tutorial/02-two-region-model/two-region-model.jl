@@ -6,9 +6,7 @@ include("region_parameters.jl")
 include("gross_economy.jl")
 include("emissions.jl")
 
-export my_model
-
-@defmodel my_model begin
+@defmodel tutorial begin
 
     index[time] = 2015:5:2110
     

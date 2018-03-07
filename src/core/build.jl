@@ -73,7 +73,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
     if num_dims == 0
         value = dtype(0)
         
-    # TBD: This is necessary only if first dims[1] :time, otherwise "else" handles it, too
+    # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1        
         value = dtype(dim_count(md, :time))
 

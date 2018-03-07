@@ -1,9 +1,9 @@
 using Mimi
 using Distributions
 
-include("examples/tutorial/02-two-region-model/main.jl")
+include("../../examples/tutorial/02-two-region-model/main.jl")
 
-m = tworegion.my_model
+m = tworegion.tutorial
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -39,9 +39,11 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-generate_trials!(mcs, 20, filename="/tmp/trialdata.csv")
+N = 100
 
-# Run trials 1:4, and save results to the indicated directory
-run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
+generate_trials!(mcs, N, filename="/tmp/trialdata.csv")
 
-# run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
+# Run trials 1:N, and save results to the indicated directory
+run_mcs(m, mcs, N, output_dir="/tmp/Mimi")
+
+# run_mcs(m, mcs, N, post_trial_func=print_result, output_dir="/tmp/Mimi")

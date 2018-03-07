@@ -11,6 +11,12 @@ function debug(msg)
     end
 end
 
+# Store a list of built-in components so we can suppress messages about creating them
+# TBD: and (later) suppress their return in the list of components at the user level.
+const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
+
+is_builtin(module_name, comp_name) = (module_name == :Main && comp_name in built_in_comps)
+
 #
 # Main> MacroTools.prewalk(replace_dots, :(p.foo[1,2] = v.bar))
 # :((getproperty(p, Val(:foo)))[1, 2] = getproperty(v, Val(:bar)))
@@ -157,7 +163,8 @@ macro defcomp(comp_name, ex)
     # For some reason this was difficult to do at the higher language level. 
     # This fails: :(comp = new_component($(esc(mod_name).esc(comp_name))))
     # newcomp = Expr(:(=), :comp, Expr(:call, :new_component, QuoteNode(mod_name), QuoteNode(comp_name)))
-    newcomp = :(comp = new_component($comp_name))
+    verbose = ! is_builtin(mod_name, comp_name)
+    newcomp = :(comp = new_component($comp_name, $verbose))
     addexpr(esc(newcomp))
 
     for elt in elements
@@ -294,10 +301,6 @@ macro defmodel(model_name, ex)
 
         elseif @capture(elt, index[idx_name_] = rhs_)
             expr = :(set_dimension($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
-            
-            # TBD: remove these lines in favor of the above
-            # push!(result.args, expr)
-            # expr = :(setindex($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
             expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))

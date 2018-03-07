@@ -41,7 +41,7 @@ function show(io::IO, comp_id::ComponentId)
     print(io, "$(comp_id.module_name).$(comp_id.comp_name)")
 end
 
-# Gets the name of all NamedDefs: VariableDef, whereDef, ComponentDef, DimensionDef
+# Gets the name of all NamedDefs: DatumDef, ComponentDef, DimensionDef
 name(def::NamedDef) = def.name
 
 number_type(md::ModelDef) = md.number_type
@@ -68,11 +68,13 @@ Create an empty `ComponentDef`` to the global component registry with the given
 `comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
 `addparameter`, etc.
 """
-function new_component(comp_id::ComponentId)
-    if haskey(_compdefs, comp_id)
-        warn("Redefining component $comp_id")
-    else
-        println("new component $comp_id")
+function new_component(comp_id::ComponentId, verbose::Bool=true)
+    if verbose
+        if haskey(_compdefs, comp_id)
+            warn("Redefining component $comp_id")
+        else
+            println("new component $comp_id")
+        end
     end
 
     comp_def = ComponentDef(comp_id)
@@ -114,7 +116,6 @@ add_dimension(comp_id::ComponentId, name) = add_dimension(compdef(comp_id), name
 
 dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 
-# Functions shared by VariableDef and ParameterDef (both <: DatumDef)
 dimensions(def::DatumDef) = def.dimensions
 
 dimcount(def::DatumDef) = length(def.dimensions)
@@ -156,12 +157,6 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
     end
 end
 
-# indexcounts(md::ModelDef) = md.index_counts
-# indexcount(md::ModelDef, idx::Symbol) = md.index_counts[idx]
-# indexvalues(md::ModelDef) = md.index_values
-# indexvalues(md::ModelDef, idx::Symbol) = md.index_values[idx]
-
-# New approach
 dimensions(md::ModelDef) = md.dimensions
 dimensions(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
 dimension(md::ModelDef, name::Symbol) = md.dimensions[name]
@@ -212,53 +207,11 @@ function isuniform(values::Vector)
     return true
 end
 
-# """
-#     setindex(m::Model, name::Symbol, values::Vector)
-
-# Set the values of `ModelDef`'s index `name` to `values`.
-# """
-# function setindex(md::ModelDef, name::Symbol, values::Vector)
-#     md.index_counts[name] = length(values)
-#     values = copy(values)
-
-#     if name == :time
-#         if ! isuniform(values) # case where time values aren't uniform
-#             md.index_values[name] = collect(1:length(values))
-#             md.time_labels = values
-#         else # case where time values are uniform
-#             md.index_values[name] = values
-#             md.time_labels = Vector()
-#         end
-#     else
-#         md.index_values[name] = values
-#     end
-
-#     register_dimension(name, Dimension(values))
-
-#     nothing
-# end
-
-# """
-#     setindex(m::Model, name::Symbol, range::Range)
-
-# Set the values of `ModelDef`'s index `name` to the values indicted by `range`.
-# """
-# function setindex(md::ModelDef, name::Symbol, range::Range)
-#     md.index_counts[name] = length(range)
-#     md.index_values[name] = Vector(range)
-#     md.time_labels = Vector()
-
-#     register_dimension(name, Dimension(range))
-#     nothing
-# end
-
-# setindex(md::ModelDef, name::Symbol, count::Int) = setindex(md, name, 1:count)
-
 #
 # Parameters
 #
 function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
-    p = ParameterDef(name, datatype, dimensions, description, unit)
+    p = DatumDef(name, datatype, dimensions, description, unit, :parameter)
     comp_def.parameters[name] = p
     return p
 end
@@ -380,7 +333,7 @@ end
 
 # Add a variable to a ComponentDef
 function addvariable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
-    v = VariableDef(name, datatype, dimensions, description, unit)
+    v = DatumDef(name, datatype, dimensions, description, unit, :variable)
     comp_def.variables[name] = v
     return v
 end

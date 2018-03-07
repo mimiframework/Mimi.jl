@@ -1,52 +1,12 @@
 using DataFrames
 
 """
-    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol) # , df::Union{Void,DataFrame}=nothing)
+    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol), df::Union{Void,DataFrame}=nothing)
 
 Load a DataFrame from the variable or parameter `item_name` in component `comp_name`. If `df` is
 nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 """
-function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol) #, df::Union{Void,DataFrame}=nothing)
-    mi = m.mi
-    md = mi.md
-
-    dims = dimensions(m, comp_name, item_name)
-    num_dims = length(dims)
-    if num_dims == 0
-        error("Can't create a dataframe from scalar value :$item_name")
-    end
-
-    # if df != nothing && haskey(df.colindex, item_name)
-    #     error("An item named $item_name already exists in this DataFrame")
-    # end
-
-    if ! (num_dims in (1, 2))
-        error("DataFrames with > 2 dimensions are not yet supported")
-    end
-
-    # Create a new df if one was not passed in
-    # df = df == nothing ? DataFrame() : df
-
-    data = m[comp_name, item_name]
-    dim1 = dims[1]
-    keys1 = dim_keys(md, dim1)
-
-    if num_dims == 1
-        df = DataFrame()
-        df[dim1] = keys1
-        df[item_name] = data
-    else
-        keys2 = dim_keys(md, dims[2])
-        df = DataFrame(data)
-        names!(df, keys2)
-        df[dim1] = dim_keys(md, dim1)
-        df = stack(df, keys2)           # convert to long form
-    end
-
-    return df
-end
-
-function _load_dataframe_OLD(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Void,DataFrame}=nothing)
+function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Void,DataFrame}=nothing)
     mi = m.mi
     md = mi.md
     comp_inst = compinstance(mi, comp_name)
@@ -108,6 +68,57 @@ function _load_dataframe_OLD(m::Model, comp_name::Symbol, item_name::Symbol, df:
     else
         error("DataFrames with 0 or > 2 dimensions are not yet implemented")
     end
+end
+
+# TBD: this version relies on DataFrame to convert the data to long form, but it doesn't work yet.
+"""
+    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol) # , df::Union{Void,DataFrame}=nothing)
+
+Load a DataFrame from the variable or parameter `item_name` in component `comp_name`. If `df` is
+nothing, a new DataFrame is allocated. Returns the populated DataFrame.
+"""
+function _load_dataframe_NEW(m::Model, comp_name::Symbol, item_name::Symbol) #, df::Union{Void,DataFrame}=nothing)
+    mi = m.mi
+    md = mi.md
+
+    dims = dimensions(m, comp_name, item_name)
+    num_dims = length(dims)
+    if num_dims == 0
+        error("Can't create a dataframe from scalar value :$item_name")
+    end
+
+    # if df != nothing && haskey(df.colindex, item_name)
+    #     error("An item named $item_name already exists in this DataFrame")
+    # end
+
+    if ! (num_dims in (1, 2))
+        error("DataFrames with > 2 dimensions are not yet supported")
+    end
+
+    # Create a new df if one was not passed in
+    # df = df == nothing ? DataFrame() : df
+
+    data = m[comp_name, item_name]
+    dim1 = dims[1]
+    keys1 = dim_keys(md, dim1)
+
+    if num_dims == 1
+        if length(keys1) != length(data)
+            println("Data: $data")
+            error("$comp_name.$item_name: length of keys $(length(keys1)) != length data $(length(data))")
+        end
+        df = DataFrame()
+        df[dim1] = keys1
+        df[item_name] = data
+    else
+        keys2 = dim_keys(md, dims[2])
+        df = DataFrame(data)
+        names!(df, keys2)
+        df[dim1] = dim_keys(md, dim1)
+        df = stack(df, keys2)           # convert to long form
+    end
+
+    return df
 end
 
 """

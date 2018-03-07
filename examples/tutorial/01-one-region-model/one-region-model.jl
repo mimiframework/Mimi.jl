@@ -36,7 +36,7 @@ end
     end
 end
 
-@defmodel my_model begin
+@defmodel tutorial begin
 
     index[time] = 2015:5:2110
 
@@ -61,30 +61,29 @@ end
 
 # Above macro yields this:
 # quote
-#     my_model = (Mimi.Model)()
-#     (Mimi.set_dimension)(my_model, :time, 2015:5:2110)
-#     (Mimi.addcomponent)(my_model, Main.grosseconomy, :grosseconomy)
-#     (Mimi.addcomponent)(my_model, Main.emissions, :emissions)
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :s, ones(20) * 0.22)
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :depk, 0.1)
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :k0, 130.0)
-#     (Mimi.set_parameter)(my_model, :grosseconomy, :share, 0.3)
-#     (Mimi.set_parameter)(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
-#     (Mimi.connect_parameter)(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-#     (Mimi.add_connector_comps)(my_model)
+#     tutorial = (Mimi.Model)()
+#     (Mimi.set_dimension)(tutorial, :time, 2015:5:2110)
+#     (Mimi.addcomponent)(tutorial, Main.grosseconomy, :grosseconomy)
+#     (Mimi.addcomponent)(tutorial, Main.emissions, :emissions)
+#     (Mimi.set_parameter)(tutorial, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
+#     (Mimi.set_parameter)(tutorial, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
+#     (Mimi.set_parameter)(tutorial, :grosseconomy, :s, ones(20) * 0.22)
+#     (Mimi.set_parameter)(tutorial, :grosseconomy, :depk, 0.1)
+#     (Mimi.set_parameter)(tutorial, :grosseconomy, :k0, 130.0)
+#     (Mimi.set_parameter)(tutorial, :grosseconomy, :share, 0.3)
+#     (Mimi.set_parameter)(tutorial, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
+#     (Mimi.connect_parameter)(tutorial, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+#     (Mimi.add_connector_comps)(tutorial)
 # end
-
-export my_model
 
 end # module
 
 
-
 using oneregion
 
-run(my_model)
+m = oneregion.tutorial
 
-# Check model results
-my_model[:emissions, :E]
+run(m)
+
+# Show model results
+getdataframe(m, :emissions, :E)

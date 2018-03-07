@@ -56,7 +56,6 @@ end
 
 #
 # TimestepMatrix and TimestepVector
-# TBD: combine these to avoid some duplication?
 #
 import Base: getindex, setindex!, eltype, fill!, size, indices, endof
 
@@ -70,7 +69,7 @@ function get_timestep_instance(T, start, step, num_dims, value)
 end
 
 #
-# AbstractTimestepMatrix -- methods that apply to both matrix and vectors
+# AbstractTimestepMatrix -- methods that apply to both matrix and vector variants
 #
 function fill!(obj::AbstractTimestepMatrix, value)
 	fill!(obj.data, value)
@@ -88,6 +87,10 @@ function eltype(obj::AbstractTimestepMatrix)
 	return eltype(obj.data)
 end
 
+function start_period(v::AbstractTimestepMatrix{T, Start, Step}) where {T, Start, Step}
+	return Start
+end
+
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 
 #
@@ -102,17 +105,13 @@ function getindex(x::TimestepVector{T, d_start, Step}, ts::Timestep{t_start, Ste
 	return x.data[t]
 end
 
-# int indexing version for old style components
+# int indexing version supports old style components
 function getindex(x::TimestepVector{T, Start, Step}, i::AnyIndex) where {T, Start, Step}
    	return x.data[i]
 end
 
 function indices(x::TimestepVector{T, Start, Step}) where {T, Start, Step}
 	return (Start:Step:(Start + (length(x.data) - 1) * Step), )
-end
-
-function start_period(v::TimestepVector{T, Start, Step}) where {T, Start, Step}
-	return Start
 end
 
 function setindex!(v::TimestepVector{T, Start, Step}, val, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
@@ -175,10 +174,6 @@ end
 
 function indices(mat::TimestepMatrix{T, Start, Step}) where {T, Start, Step}
 	return (Start:Step:(Start + (size(mat.data, 1) - 1) * Step), 1:size(mat.data, 2))
-end
-
-function start_period(mat::TimestepMatrix{T, Start, Step}) where {T, Start, Step}
-	return Start
 end
 
 # method where the vector and the timestep have the same start period

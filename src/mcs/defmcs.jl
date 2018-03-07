@@ -1,4 +1,12 @@
 using MacroTools
+       
+# For generating symbols that work as dataframe column names
+global _rvnum = 0
+
+function _make_rvname(name)
+    global _rvnum += 1
+    return Symbol("$(name)_$(_rvnum)")
+end
 
 macro defmcs(expr)
     let # to make vars local to each macro invocation
@@ -7,7 +15,7 @@ macro defmcs(expr)
         local _transforms::Vector{TransformSpec} = []
         local _saves::Vector{Tuple} = []
 
-        # distill into a function since it's called from two branches below
+        # distilled into a function since it's called from two branches below
         function saverv(rvname, distname, distargs)
             args = Tuple(distargs)
             push!(_rvs, RandomVariable(rvname, eval(distname)(args...)))
@@ -50,11 +58,11 @@ macro defmcs(expr)
                     @capture(elt, extvar_ += distname_(distargs__)) ||
                     @capture(elt, extvar_ *= distname_(distargs__)))
 
-                    # For "anonymous" RVs, e.g., ext_var2[2010:2100, :] *= Uniform(0.8, 1.2), we
-                # gensym a name and process it as a named RV (as above), then use the generated
-                # symbol. This keeps the structure consistent internally.
+                # For "anonymous" RVs, e.g., ext_var2[2010:2100, :] *= Uniform(0.8, 1.2), we
+                # gensym a name based on the external var name and process it as a named RV.
                 if rvname == nothing
-                    rvname = gensym("rv")
+                    param_name = @capture(extvar, name_[args__]) ? name : extvar
+                    rvname = _make_rvname(param_name)
                     saverv(rvname, distname, distargs)
                 end
 
@@ -109,6 +117,7 @@ macro defmcs(expr)
                         push!(dims, dim)
                         # println("dims = $dims")
                     end
+
                     push!(_transforms, TransformSpec(name, op, rvname, dims))
                 else
                     push!(_transforms, TransformSpec(extvar, op, rvname))

@@ -4,7 +4,9 @@ include(joinpath(@__DIR__, "two-region-model.jl"))
 
 using tworegion
 
-run(my_model)
+m = tworegion.tutorial
 
-#Check results
-my_model[:emissions, :E_Global]
+run(m)
+
+# show results
+getdataframe(m, :emissions, :E_Global)
