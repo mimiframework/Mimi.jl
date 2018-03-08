@@ -32,7 +32,7 @@ end
     YGROSS  = Parameter(index=[time])   #Gross output - Note that YGROSS is now a parameter
 end
 
-function timestep(state::emissions, t::Int)
+function run_timestep(state::emissions, t::Int)
     v = state.Variables
     p = state.Parameters
 
