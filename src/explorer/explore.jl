@@ -4,12 +4,11 @@ global app = nothing
 
 #function to get variable data
 include("buildspecs.jl")
-include("getparameters.jl")
 
 function explore(model; title = "Electron")
     
     #get variable data
-    speclist = getspeclist(model)
+    speclist = spec_list(model)
     speclistJSON = JSON.json(speclist)
 
     #start Electron app

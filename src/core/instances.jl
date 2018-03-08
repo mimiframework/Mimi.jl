@@ -157,17 +157,23 @@ dimensions(obj::ArrayModelParameter) = obj.dimensions
 dimensions(obj::ScalarModelParameter) = []
 
 """
-variables(mi::ModelInstance, componentname::Symbol)
+    variables(mi::ModelInstance, comp_name::Symbol)
 
-List all the variables of `componentname` in the ModelInstance 'mi'.
-NOTE: this variables function does NOT take in Nullable instances
+Return the `ComponentInstanceVariables` for `comp_name` in ModelInstance 'mi'.
 """
-function variables(mi::ModelInstance, comp_name::Symbol)
-    ci = compinstance(mi, comp_name)
-    return variables(ci)
-end
+variables(mi::ModelInstance, comp_name::Symbol) = variables(compinstance(mi, comp_name))
 
-variables(ci::ComponentInstance) = variables(ci.comp_id)
+variables(ci::ComponentInstance) = ci.variables
+
+"""
+    parameters(mi::ModelInstance, comp_name::Symbol)
+
+Return the `ComponentInstanceParameters` for `comp_name` in ModelInstance 'mi'.
+"""
+parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, comp_name))
+
+parameters(ci::ComponentInstance) = ci.parameters
+
 
 function getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     if !(comp_name in keys(mi.components))

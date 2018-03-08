@@ -1,101 +1,72 @@
-## Mimi UI
+# # Mimi UI
 
-function getspeclist(model::Model)
+function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dimensions(m, comp_name, item_name)
+    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
+end
 
-    #initialize the speclist
-    allspecs = []
+# Generate the VegaLite spec for a variable or parameter
+function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dimensions(m, comp_name, item_name)
 
-    #get all components of model
-    comps = Mimi.components(model)
-    for c in comps
+    try
+        # choose type of plot
+        # single value
+        if length(dims) == 0
+            value = m[comp_name, item_name]
+            name = "$comp_name : $item_name = $value"
+            spec = createspec_singlevalue(name)
+        else
+            name = "$comp_name : $item_name"          # the name of the pair as "component:variable"
+            df = getdataframe(m, comp_name, item_name)
 
-        #get all variables of component
-        vars = variables(model, c)
-        for v in vars
+            dffields = map(string, names(df))         # convert to string once before creating specs
 
-            #pull information 
-            name = "$c : $v" #returns the name of the pair as "component:variable"
-
-            #catch errors 
-            try
-                df = getdataframe(model, c, v) #returns the  corresponding dataframe
-
-                #choose type of plot
-                #single value
-                if length(df[1]) == 1
-                    value = df[1][1]
-                    name = "$c : $v = $value"
-                    spec = createspec_singlevalue(name)
+            if dffields[1] == "time"
+                if length(dffields) > 2
+                    # plot multilines
+                    spec = createspec_multilineplot(name, df, dffields)
                 else
-                    dffields = names(df)
-                    #line
-                    if dffields[1] == :time
-                        #multiline
-                        if length(dffields) > 2
-                            spec = createspec_multilineplot(name, df, dffields)
-                        #single line
-                        else
-                            spec = createspec_lineplot(name, df, dffields)
-                        end
-                    #bar
-                    else
-                        spec = createspec_barplot(name, df, dffields)
-                    end
+                    # single line
+                    spec = createspec_lineplot(name, df, dffields)
                 end
-
-                #add to spec list
-                push!(allspecs, spec)
-            catch
-                println("could not convert ", name, " to dataframe, skipping ...")
+            else
+                # bar
+                spec = createspec_barplot(name, df, dffields)
             end
         end
 
-        #get all parameters of component
-        params = parameters(model, c)
-        for p in params
+        return spec
+        
+    catch err
+        println("could not convert $comp_name.$item_name to DataFrame, skipping ...")
+        rethrow(err)
+    end
+end
 
-            #pull information 
-            name = "$c : $p" #returns the name of the pair as "component:parameter"
-            df = getdataframe_for_parameter(model, c, p) #returns the  corresponding dataframe
-            
-            if !isa(df, Number) #check if there any parameters in this component
-                dffields = names(df)
-                
-                #choose type of plot
-                #single value
-                if length(df[1]) == 1
-                    value = df[1][1]
-                    name = "$c : $v = $value"
-                    spec = createspec_singlevalue(name)
-                else
-                    dffields = names(df)
-                    #line
-                    if dffields[1] == :time
-                        #multiline
-                        if length(dffields) > 2
-                            spec = createspec_multilineplot(name, df, dffields)
-                        #single line
-                        else
-                            spec = createspec_lineplot(name, df, dffields)
-                        end
-                    #bar 
-                    else
-                        spec = createspec_barplot(name, df, dffields)
-                    end
-                end
-    
-                #add to spec list
-                push!(allspecs, spec) 
-            end 
-        end  
+# Create VegaLite specs for each variable and parameter in the model
+function spec_list(model::Model)
+    allspecs = []
+
+    for comp_name in map(name, compdefs(model))
+        items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
+
+        for item_name in items
+            spec = _spec_for_item(model, comp_name, item_name)
+            push!(allspecs, spec) 
+        end
     end
 
-    #return sorted list
+    # return sorted list
     return sort(allspecs, by = x -> lowercase(x["name"]))
 end
 
+# So we can control these in one place...
+global const _plot_width  = 450
+global const _plot_height = 450
+
 function createspec_lineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :line) #returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :line) # returns a list of dictionaries    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -105,18 +76,18 @@ function createspec_lineplot(name, df, dffields)
             "data"=> Dict("values" => datapart),
             "mark" => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(dffields[1]), "type" => "temporal", "timeUnit" => "year"),                
-                "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
+                "x" => Dict("field" => dffields[1], "type" => "temporal", "timeUnit" => "year"),                
+                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
             ),
-            "width" => 450,
-            "height" => 450 
+            "width"  => _plot_width,
+            "height" => _plot_height 
         ),
     )
     return spec
 end
 
 function createspec_barplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :bar) #returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :bar) # returns a list of dictionaries    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -126,34 +97,34 @@ function createspec_barplot(name, df, dffields)
             "data"=> Dict("values" => datapart),
             "mark" => "bar",
             "encoding" => Dict(
-                "x" => Dict("field" => string(dffields[1]), "type" => "ordinal"),
-                "y" => Dict("field" => string(dffields[2]), "type" => "quantitative" )
+                "x" => Dict("field" => dffields[1], "type" => "ordinal"),
+                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
             ),
-            "width" => 450,
-            "height" => 450 
+            "width"  => _plot_width,
+            "height" => _plot_height 
         ),
     )
     return spec
 end
 
 function createspec_multilineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :multiline) #returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :multiline) # returns a list of dictionaries    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
-            "data"=> Dict("values" => datapart),
-            "mark" => "line",
+            "data"  => Dict("values" => datapart),
+            "mark"  => "line",
             "encoding" => Dict(
-                "x" => Dict("field" => string(dffields[1]), "type" => "temporal", "timeUnit" => "year"),                
-                "y" => Dict("field" => string(dffields[3]), "type" => "quantitative" ),
-                "color" => Dict("field" => string(dffields[2]), "type" => "nominal", 
-                    "scale" => Dict("scheme" => "category20"))
+                "x"     => Dict("field" => dffields[1], "type" => "temporal", "timeUnit" => "year"),                
+                "y"     => Dict("field" => dffields[3], "type" => "quantitative" ),
+                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                "scale" => Dict("scheme" => "category20"))
             ),
-            "width" => 450,
-            "height" => 450 
+            "width"  => _plot_width,
+            "height" => _plot_height
         ),
     )
     return spec
@@ -169,26 +140,27 @@ function createspec_singlevalue(name)
     return spec
 end
 
-function getdatapart(df, dffields, plottype::Symbol = :line)
+function getdatapart(df, dffields, plottype::Symbol)
     datapart = [];
 
-    #loop over rows and create a dictionary for each row
-    if plottype == :multiline
+    # loop over rows and create a dictionary for each row
+    if plottype == :multiline || plottype == :line
         for row in eachrow(df)
-            rowdata = Dict(string(dffields[1]) => Date(row[1]), string(dffields[3]) => row[3], 
-                string(dffields[2]) => row[2])
-            push!(datapart, rowdata)
-        end 
-    elseif plottype == :line
-        for row in eachrow(df)
-            rowdata = Dict(string(dffields[1])=> Date(row[1]), string(dffields[2]) => row[2])
+            rowdata = Dict(dffields[1] => Date(row[1]), 
+                           dffields[2] => row[2])
+
+            if plottype == :multiline
+                rowdata[dffields[3]] = row[3] 
+            end
             push!(datapart, rowdata)
         end 
     else
         for row in eachrow(df)
-            rowdata = Dict(string(dffields[1])=> row[1], string(dffields[2]) => row[2])
+            rowdata = Dict(dffields[1] => row[1], 
+                           dffields[2] => row[2])
             push!(datapart, rowdata)
         end 
     end
+
     return datapart
 end

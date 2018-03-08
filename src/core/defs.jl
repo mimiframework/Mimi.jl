@@ -210,6 +210,9 @@ end
 #
 # Parameters
 #
+
+external_params(md::ModelDef) = md.external_params
+
 function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
     p = DatumDef(name, datatype, dimensions, description, unit, :parameter)
     comp_def.parameters[name] = p
@@ -224,7 +227,16 @@ parameters(comp_def::ComponentDef) = values(comp_def.parameters)
 
 parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
 
+"""
+    parameter_names(md::ModelDef, comp_name::Symbol)
+
+Return a list of all parameter names for a given component in a model def.
+"""
+parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
+
 parameter_names(comp_def::ComponentDef) = [name(param) for param in parameters(comp_def)]
+
+parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
 
 function parameter(comp_def::ComponentDef, name::Symbol) 
     try
@@ -233,15 +245,6 @@ function parameter(comp_def::ComponentDef, name::Symbol)
         error("Parameter $name was not found in component $(comp_def.name)")
     end
 end
-
-external_params(md::ModelDef) = md.external_params
-
-parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
-
-"""
-Return a list of all parameter names for a given component in a model def.
-"""
-parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
 function parameter_unit(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     param = parameter(md, comp_name, param_name)
@@ -272,20 +275,17 @@ function set_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    # now set the parameter
     comp_param_dims = parameter_dimensions(md, comp_name, param_name)
+    num_dims = length(comp_param_dims)
     
-    # array parameter case
     if length(comp_param_dims) > 0 
         # convert the number type and, if NamedArray, convert to Array
-        value = convert(Array{number_type(md)}, value) 
-    
+        value = convert(Array{number_type(md), num_dims}, value)
+   
         if comp_param_dims[1] == :time
+            T = eltype(value)
             start = start_period(comp_def)
             dur = step_size(md)
-
-            T = eltype(value)
-            num_dims = length(comp_param_dims)
 
             values = num_dims == 1 ? TimestepVector{T, start, dur}(value) :
                     (num_dims == 2 ? TimestepMatrix{T, start, dur}(value) : value)
@@ -293,7 +293,6 @@ function set_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
             values = value
         end
 
-        # println("set_parameter: dims=$dims, comp_param_dims=$comp_param_dims")
         set_external_array_param(md, param_name, values, comp_param_dims)
 
     else # scalar parameter case
@@ -320,6 +319,16 @@ end
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
 variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(md, comp_name), var_name)
+
+"""
+    variable_names(md::ModelDef, comp_name::Symbol)
+
+Return a list of all variable names for a given component in a model def.
+"""
+variable_names(md::ModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
+
+variable_names(comp_def::ComponentDef) = [name(var) for var in variables(comp_def)]
+
 
 function variable_unit(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     var = variable(md, comp_name, var_name)
@@ -461,7 +470,7 @@ end
 
 function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol;
                       start=nothing, stop=nothing, before=nothing, after=nothing)
-    println("Adding component $comp_id as :$comp_name")
+    # println("Adding component $comp_id as :$comp_name")
     addcomponent(md, compdef(comp_id), comp_name, start=start, stop=stop, before=before, after=after)
 end
 

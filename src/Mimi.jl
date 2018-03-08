@@ -27,6 +27,7 @@ export
     delete!,
     description,
     dimensions,
+    explore,
     getdataframe,
     get_parameter_value,
     get_variable_value,
@@ -58,9 +59,8 @@ include("core/instances.jl")
 include("core/references.jl")
 include("core/time.jl")
 include("core/model.jl")
-
+include("explorer/explore.jl")
 include("mcs/mcs.jl")
-
 include("utils/graph.jl")
 # include("utils/plotting.jl")
 include("utils/getdataframe.jl")

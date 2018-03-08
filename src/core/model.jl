@@ -155,6 +155,8 @@ end
 
 @modelegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
 
+@modelegate parameter_names(m::Model, comp_name::Symbol) => md
+
 @modelegate parameter_dimensions(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
 @modelegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
@@ -163,10 +165,12 @@ parameter(m::Model, comp_def::ComponentDef, param_name::Symbol) = parameter(comp
 
 parameter(m::Model, comp_name::Symbol, param_name::Symbol) = parameter(m, compdef(m, comp_name), param_name)
 
-function parameters(m::Model, comp_name::Symbol)
-    comp_def = compdef(m, comp_name)
-    return collect(keys(comp_def.parameters))
-end
+"""
+    parameters(m::Model, comp_name::Symbol)
+
+Return a list of the parameter definitions for `comp_name` in model `m`.
+"""
+parameters(m::Model, comp_name::Symbol) = parameters(compdef(m, comp_name))
 
 function variable(m::Model, comp_name::Symbol, param_name::Symbol)
     comp_def = compdef(m, comp_id)
@@ -186,13 +190,11 @@ end
 """
     variables(m::Model, comp_name::Symbol)
 
-List all the variables of `comp_name` in model `m`.
+Return a list of the variable definitions for `comp_name` in model `m`.
 """
-function variables(m::Model, comp_name::Symbol)
-    comp_def = compdef(m, comp_name)
-    return collect(keys(comp_def.variables))
-end
+variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 
+@modelegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
     set_external_array_param(m::Model, name::Symbol, value::AbstractTimestepMatrix, dims)
