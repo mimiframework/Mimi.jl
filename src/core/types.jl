@@ -423,10 +423,6 @@ struct ComponentReference
     comp_name::Symbol
 end
 
-#
-# TBD: VariableReference appears to be unused other than in an unused setindex! method.
-# Deprecated, or for user API?
-#
 """
 A container for a variable within a component, to improve connect_parameter aesthetics,
 by supporting subscripting notation via getindex & setindex .

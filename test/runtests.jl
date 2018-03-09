@@ -10,8 +10,10 @@ using Base.Test
         "mult_getdataframe", "timesteparrays", "timesteps", "connectorcomp"
     )
 
-    # override to test just current module
-    tests = ["metainfo"]
+    # override to test just specific modules
+    good = ("metainfo", "references", "units")
+    
+    tests = ("model_structure",)
 
     for name in tests
         filename = "test_$(name).jl"

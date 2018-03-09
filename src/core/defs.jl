@@ -118,7 +118,7 @@ dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 
 dimensions(def::DatumDef) = def.dimensions
 
-dimcount(def::DatumDef) = length(def.dimensions)
+dim_count(def::DatumDef) = length(def.dimensions)
 
 datatype(def::DatumDef) = def.datatype
 
@@ -308,15 +308,17 @@ end
 #
 variables(comp_def::ComponentDef) = values(comp_def.variables)
 
-function variable(comp_def::ComponentDef, name::Symbol)
+variables(comp_id::ComponentId) = variables(compdef(comp_id))
+
+function variable(comp_def::ComponentDef, var_name::Symbol)
     try
-        return comp_def.variables[name]
+        return comp_def.variables[var_name]
     catch
-        error("Variable $name was not found in component $(comp_def.name)")
+        error("Variable $var_name was not found in component $(comp_def.comp_id)")
     end
 end
 
-variables(comp_id::ComponentId) = variables(compdef(comp_id))
+variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), var_name)
 
 variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(md, comp_name), var_name)
 
@@ -396,14 +398,19 @@ end
 #
 # Model
 #
+
+const VoidSymbol = Union{Void, Symbol}
+
 """
     addcomponent(md::ModelDef, comp_def::ComponentDef; start=nothing, stop=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_id` to the model. The component is added at the end of the list unless
-one of the keywords, `start`, `stop`, `before`, `after`
+Add the component indicated by `comp_def` to the model. The component is added at the end of 
+the list unless one of the keywords, `start`, `stop`, `before`, `after`. If the `comp_name`
+differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
 function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
-                      start=nothing, stop=nothing, before=nothing, after=nothing)
+                      start::VoidSymbol=nothing, stop::VoidSymbol=nothing, 
+                      before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # check that start and stop are within the model's time index range
     time_index = dim_keys(md, :time)
 
@@ -428,13 +435,19 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         error("Cannot add two components of the same name ($comp_name)")
     end
 
+    # Create a shallow copy of the original but with the new name
+    if compname(comp_def.comp_id) != comp_name
+        comp_def = copy_comp_def(comp_def, comp_name)
+    end        
+
+    set_run_period!(comp_def, start, stop)
+
     if before == nothing && after == nothing
-        set_run_period!(comp_def, start, stop)
         md.comp_defs[comp_name] = comp_def   # just add it to the end
         return nothing
     end
 
-    new_comps = OrderedDict{Symbol, ComponentDef}
+    new_comps = OrderedDict{Symbol, ComponentDef}()
 
     if before != nothing
         if ! hascomp(md, before)
@@ -443,7 +456,6 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 
         for i in compkeys(md)
             if i == before
-                set_run_period!(comp_def, start, stop)
                 new_comps[comp_name] = comp_def
             end
             new_comps[i] = md.comp_defs[i]
@@ -457,7 +469,6 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         for i in compkeys(md)
             new_comps[i] = md.comp_defs[i]
             if i == after
-                set_run_period!(comp_def, start, stop)
                 new_comps[comp_name] = comp_def
             end
         end
@@ -468,11 +479,32 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     return nothing
 end
 
-function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol;
-                      start=nothing, stop=nothing, before=nothing, after=nothing)
+function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+                      start::VoidSymbol=nothing, stop::VoidSymbol=nothing, 
+                      before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
     addcomponent(md, compdef(comp_id), comp_name, start=start, stop=stop, before=before, after=after)
 end
+
+"""
+Create a mostly-shallow copy of `comp_def`, but make a deep copy of its
+ComponentId so we can rename the copy without affecting the original.
+"""
+function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
+    comp_id = ComponentId(comp_def.comp_id.module_name, comp_name)
+    obj     = ComponentDef(comp_id)
+
+    obj.variables  = comp_def.variables
+    obj.parameters = comp_def.parameters
+    obj.dimensions = comp_def.dimensions
+    obj.run_expr   = comp_def.run_expr
+    obj.init_expr  = comp_def.init_expr
+    obj.start      = comp_def.start
+    obj.stop       = comp_def.stop
+
+    return obj
+end
+
 
 """
     copy_external_params(md::ModelDef)

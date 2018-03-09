@@ -17,7 +17,7 @@ connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
-    num_dims = dimcount(def)
+    num_dims = dim_count(def)
 
     if num_dims == 0
         T = dtype

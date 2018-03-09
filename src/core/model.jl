@@ -60,8 +60,8 @@ end
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
-    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 function set_external_param(m::Model, name::Symbol, value::ModelParameter)
@@ -173,7 +173,7 @@ Return a list of the parameter definitions for `comp_name` in model `m`.
 parameters(m::Model, comp_name::Symbol) = parameters(compdef(m, comp_name))
 
 function variable(m::Model, comp_name::Symbol, param_name::Symbol)
-    comp_def = compdef(m, comp_id)
+    comp_def = compdef(m, comp_name)
     return comp_def.variables[param_name]
 end
 

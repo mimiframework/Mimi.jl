@@ -7,7 +7,7 @@ function disconnect(md::ModelDef, comp_name::Symbol, param_name::Symbol)
 end
 
 # Default string, string unit check function
-function _verify_units(one::AbstractString, two::AbstractString)
+function verify_units(one::AbstractString, two::AbstractString)
     # True if and only if they match
     return one == two
 end
@@ -72,7 +72,7 @@ Bind the parameter of one component to a variable in another component.
 function connect_parameter(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol,
-                           backup::Union{Void, Array}=nothing; offset::Int=nothing, ignoreunits::Bool=false)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     if backup != nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
@@ -112,9 +112,9 @@ function connect_parameter(md::ModelDef,
     end
 
     # Check the units, if provided
-    if ! ignoreunits && ! _verify_units(variable_unit(md, src_comp_name, src_var_name), 
+    if ! ignoreunits && ! verify_units(variable_unit(md, src_comp_name, src_var_name), 
                                        parameter_unit(md, dst_comp_name, dst_par_name))
-        error("Units of $src_component.$src_var_name do not match $dst_component.$dst_par_name.")
+        error("Units of $src_comp_name.$src_var_name do not match $dst_comp_name.$dst_par_name.")
     end
 
     # remove any existing connections for this dst component and parameter
@@ -132,8 +132,8 @@ end
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool = false)
-    connect_parameter(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits = ignoreunits)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_parameter(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 """

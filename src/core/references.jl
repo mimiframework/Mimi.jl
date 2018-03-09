@@ -37,7 +37,7 @@ function getindex(comp_ref::ComponentReference, var_name::Symbol)
 end
 
 """
-Connect two components as `comp_ref[var_name] = var_ref::VariableReference`.
+Connect two components as `comp_ref[var_name] = var_ref`.
 """
 function setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
     comp_ref.model == var_ref.model || error("Can't connect variables defined in different models")

@@ -147,10 +147,9 @@ macro defcomp(comp_name, ex)
     else
         mod_name = Base.module_name(current_module())
     end
-
     
     # We'll return a block of expressions that will define the component. First,
-    # Firstsave the ComponentId to a variable with the same name as the component.
+    # save the ComponentId to a variable with the same name as the component.
     result = quote   
         global const $(esc(comp_name)) = ComponentId($(QuoteNode(mod_name)), $(QuoteNode(comp_name)))
     end

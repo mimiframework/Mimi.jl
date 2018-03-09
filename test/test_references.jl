@@ -1,33 +1,37 @@
-#using Base.Test
+module TestReferences
+
+using Base.Test
 using Mimi
 
 @defcomp Foo begin
     input = Parameter()
     intermed = Variable(index=[time])
+    
+    function run(p, v, d, t)
+        v.intermed[t] = p.input
+    end
 end
-
-function run_timestep(c::Foo, tt::Int)
-    c.Variables.intermed[tt] = c.Parameters.input
-end
-
+    
 @defcomp Bar begin
     intermed = Parameter(index=[time])
     output = Variable(index=[time])
+    
+    function run(p, v, d, t)
+        v.output[t] = p.intermed[t]
+    end
 end
 
-function run_timestep(c::Bar, tt::Int)
-    c.Variables.output[tt] = c.Parameters.intermed[tt]
+@defmodel m begin
+    index[time] = [1]
+    component(Foo)
+    component(Bar)
+
+    Foo.input = 3.14
+    Foo.intermed => Bar.intermed
 end
-
-m = Model()
-setindex(m, :time, 1)
-foo = addcomponent(m, Foo)
-bar = addcomponent(m, Bar)
-
-foo[:input] = 3.14
-bar[:intermed] = foo[:intermed]
-# connectparameter(m, :Bar, :intermed, :Foo, :intermed)
 
 run(m)
 
-# @test m[:Bar, :output][1] == 3.14
+@test m[:Bar, :output][1] == 3.14
+
+end
