@@ -32,9 +32,9 @@ values(dim::Dimension) = values(dim.dict)
 
 get(dim::Dimension, key::Union{Number, Symbol, String}, default::Any) = get(dim.dict, key, default)
 
-# getindex(dim::Dimension, key::Union{Array{T,1} where T, Range, Tuple}) = getindex(dim.dict, key)
-
 getindex(dim::Dimension, key::Colon) = collect(values(dim.dict))
+
+getindex(dim::AbstractDimension, key::Union{Number, Symbol, String}) = getindex(dim.dict, key)
 
 # Support dim[[:foo, :bar, :baz]], dim[(:foo, :bar, :baz)], and dim[2010:2020]
 getindex(dim::AbstractDimension, keys::Union{Vector{T} where T, Tuple, Range}) = [getindex(dim.dict, key) for key in keys]

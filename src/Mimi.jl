@@ -36,7 +36,7 @@ export
     name,
     new_component,
     parameters,
-    # plot,
+    plot,
     run,
     set_dimension,
     set_leftover_params,
@@ -62,7 +62,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-# include("utils/plotting.jl")
+include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 

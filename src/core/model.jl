@@ -106,11 +106,11 @@ List all the components in model `m`.
 @modelegate getspan(m::Model, comp_name::Symbol) => md
 
 """
-    _getdatumdef(comp_def::ComponentDef, item::Symbol)
+    datumdef(comp_def::ComponentDef, item::Symbol)
 
 Return a DatumDef for `item` in the given component.
 """
-function _getdatumdef(comp_def::ComponentDef, item::Symbol)
+function datumdef(comp_def::ComponentDef, item::Symbol)
     if haskey(comp_def.variables, item)
         return comp_def.variables[item]
 
@@ -121,14 +121,14 @@ function _getdatumdef(comp_def::ComponentDef, item::Symbol)
     end
 end
 
-_getdatumdef(m::Model, comp_name::Symbol, item::Symbol) = _getdatumdef(compdef(m.md, comp_name), item)
+datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
 """
     dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol)
 
 Return the dimension names for the variable or parameter in the given component.
 """
-dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol) = dimensions(_getdatumdef(comp_def, datum_name))
+dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
 
 """
     dimensions(m::Model, comp_name::Symbol, datum_name::Symbol)
