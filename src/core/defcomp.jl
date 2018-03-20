@@ -58,12 +58,13 @@ function _generate_run_func(module_name, comp_name, args, body)
     (p, v, d, t) = args
 
     func = :(
-        function run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
-                              p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
-                              d::Dict{Symbol, Vector{Int}}, t::Int)
+        function Mimi.run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
+                                   p::Mimi.ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
+                                   d::Dict{Symbol, Vector{Int}}, t::Int)
             $(body...)
         end
     )
+    func = esc(func)
     debug("run_timestep func: $func")
     return func
 end
@@ -81,12 +82,13 @@ function _generate_init_func(module_name, comp_name, args, body)
     (p, v, d) = args
 
     func = :(
-        function init(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
-                      p::ComponentInstanceParameters, v::ComponentInstanceVariables, 
-                      d::Dict{Symbol, Vector{Int}})
+        function Mimi.init(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
+                           p::Mimi.ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
+                           d::Dict{Symbol, Vector{Int}})
             $(body...)
         end
     )
+    func = esc(func)
     debug("init func: $func")
     return func
 end
@@ -137,7 +139,7 @@ _generate_dims_expr(name::Symbol) = _generate_dims_expr(name, [], nothing)
 #
 macro defcomp(comp_name, ex)
     known_dims = Set{Symbol}()
-    
+
     @capture(ex, elements__)
     debug("Component $comp_name")
 
@@ -150,7 +152,7 @@ macro defcomp(comp_name, ex)
     
     # We'll return a block of expressions that will define the component. First,
     # save the ComponentId to a variable with the same name as the component.
-    result = quote   
+    result = quote
         global const $(esc(comp_name)) = ComponentId($(QuoteNode(mod_name)), $(QuoteNode(comp_name)))
     end
 
@@ -168,21 +170,18 @@ macro defcomp(comp_name, ex)
 
     for elt in elements
         debug("elt: $elt")
+       
+        if @capture(elt, function fname_(args__) body__ end) 
+            if fname == :run_timestep
+                # Save the expression that will store the run_timestep function definition, and
+                # translate dot notation to get/setproperty. The func is created at build time so
+                # it's created in the Mimi package.
+                expr = _generate_run_func(mod_name, comp_name, args, body)
+            else fname == :init
+                expr = _generate_init_func(mod_name, comp_name, args, body)
+            end
 
-        if @capture(elt, function run(args__) body__ end)
-            # Save the expression that will store the run_timestep function definition, and
-            # translate dot notation to get/setproperty. The func is created at build time so
-            # it's created in the Mimi package.
-            expr = _generate_run_func(mod_name, comp_name, args, body)
-            run_expr = :(set_run_expr($(esc(:comp)), $(QuoteNode(expr))))
-            addexpr(run_expr)
-            continue
-        end
-
-        if @capture(elt, function init(args__) body__ end)
-            expr = _generate_init_func(mod_name, comp_name, args, body)
-            init_expr = :(set_init_expr($(esc(:comp)), $(QuoteNode(expr))))
-            addexpr(init_expr)
+            addexpr(expr)
             continue
         end
 
@@ -249,7 +248,7 @@ macro defcomp(comp_name, ex)
         end
     end
 
-    return rmlines(result)
+    return result
 
 end
 
@@ -299,10 +298,10 @@ macro defmodel(model_name, ex)
                                        $(QuoteNode(src_comp)), $(QuoteNode(src_name)), offset=$(esc(offset))))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
-            expr = :(set_dimension($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
+            expr = :(set_dimension!($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(set_parameter($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
+            expr = :(set_parameter!($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

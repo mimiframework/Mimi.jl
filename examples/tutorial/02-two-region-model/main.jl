@@ -1,12 +1,8 @@
 using Mimi
 
-include(joinpath(@__DIR__, "two-region-model.jl"))
+include("two-region-model.jl")
 
-using tworegion
-
-m = tworegion.tutorial
-
-run(m)
+run(model)
 
 # show results
-getdataframe(m, :emissions, :E_Global)
+getdataframe(model, :emissions, :E_Global)

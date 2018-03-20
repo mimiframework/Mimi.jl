@@ -5,7 +5,7 @@ using Mimi
     input2 = Parameter(index = [time])
     output =  Variable(index = [time])
 
-    function run(p, v, d, ts)
+    function run_timestep(p, v, d, ts)
         if hasvalue(p.input1, ts)
             v.output[ts] = p.input1[ts]
         elseif hasvalue(p.input2, ts)
@@ -23,7 +23,7 @@ end
     input2 = Parameter(index = [time, regions])
     output =  Variable(index = [time, regions])
 
-    function run(p, v, d, ts)
+    function run_timestep(p, v, d, ts)
         for r in d.regions
             if hasvalue(p.input1, ts, r)
                 v.output[ts, r] = p.input1[ts, r]

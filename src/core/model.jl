@@ -4,8 +4,6 @@
 #
 using MacroTools
 
-import Base: delete!
-
 # Simplify delegation of calls to ::Model to internal ModelInstance or ModelDelegate objects.
 macro modelegate(ex)
     if @capture(ex, fname_(varname_::Model, args__) => rhs_)
@@ -64,8 +62,8 @@ function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol
     connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
-function set_external_param(m::Model, name::Symbol, value::ModelParameter)
-    set_external_param(m.md, name, value)
+function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
+    set_external_param!(m.md, name, value)
     decache(m)
 end
 
@@ -74,8 +72,8 @@ function add_internal_param_conn(m::Model, conn::InternalParameterConnection)
     decache(m)
 end
 
-function set_leftover_params(m::Model, parameters::Dict{String,Any})
-    set_leftover_params(m.md, parameters)
+function set_leftover_params!(m::Model, parameters::Dict{String,Any})
+    set_leftover_params!(m.md, parameters)
     decache(m)
 end
 
@@ -143,13 +141,13 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, comp
 @modelegate getindex(m::Model, comp_name::Symbol, dim_name::Symbol) => mi
 
 """
-    set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
 
 Set the values of `Model` dimension `name` to integers 1 through `count`, if keys is
 an integer; or to the values in the vector or range if keys is either of those types.
 """
-function set_dimension(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
-    set_dimension(m.md, name, keys)
+function set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+    set_dimension!(m.md, name, keys)
     decache(m)
 end
 
@@ -197,32 +195,22 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @modelegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    set_external_array_param(m::Model, name::Symbol, value::AbstractTimestepMatrix, dims)
+    set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractTimestepMatrix}, dims)
 
-Adds a one or two dimensional time-indexed array parameter to the model.
+Adds a one or two dimensional (optionally, time-indexed) array parameter to the model.
 """
-function set_external_array_param(m::Model, name::Symbol, value::AbstractTimestepMatrix, dims)
-    set_external_array_param(m.md, name, value, dims)
+function set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractTimestepMatrix}, dims)
+    set_external_array_param!(m.md, name, value, dims)
     decache(m)
 end
 
 """
-    set_external_array_param(m::Model, name::Symbol, value::AbstractArray, dims)
-
-Add an array type parameter to the model.
-"""
-function set_external_array_param(m::Model, name::Symbol, value::AbstractArray, dims)
-    set_external_array_param(m.md, name, value, dims)
-    decache(m)
-end
-
-"""
-    set_external_scalar_param(m::Model, name::Symbol, value::Any)
+    set_external_scalar_param!(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter to the model.
 """
-function set_external_scalar_param(m::Model, name::Symbol, value::Any)
-    set_external_array_param(m.md, name, value)
+function set_external_scalar_param!(m::Model, name::Symbol, value::Any)
+    set_external_array_param!(m.md, name, value)
     decache(m)
 end
 
@@ -231,13 +219,13 @@ end
 
 Delete a component by name from a models' ModelDef, and nullify the ModelInstance.
 """
-function delete!(m::Model, comp_name::Symbol)
+function Base.delete!(m::Model, comp_name::Symbol)
     delete!(m.md, comp_name)
     decache(m)
 end
 
-function set_parameter(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    set_parameter(m.md, comp_name, param_name, value, dims)    
+function set_parameter!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+    set_parameter!(m.md, comp_name, param_name, value, dims)    
     decache(m)
 end
 

@@ -7,7 +7,7 @@ using Mimi
     input  = Parameter(index=[time])
     output = Variable(index=[time])
 
-    function run(p, v, d, t)
+    function run_timestep(p, v, d, t)
         v.output[t] = p.input[t] + p.add[t]
     end
 end

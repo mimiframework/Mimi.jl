@@ -1,6 +1,3 @@
-using DataStructures
-using LightGraphs
-
 #
 # 1. Types supporting parameterized Timestep and Clock objects
 #
@@ -68,7 +65,6 @@ end
 
 # TimestepVector(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 1}(start, len, dims...)
 # TimestepMatrix(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 2}(start, len, dims...)
-
 
 abstract type AbstractTimestepMatrix{T, Start, Step} end
 

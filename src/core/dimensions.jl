@@ -20,66 +20,41 @@ key_type(dim::Dimension) = dim.key_type
 #
 # Iteration and basic dictionary methods are delegated to the internal dict
 #
-import Base: length, start, next, done, keys, values, get, getindex
+Base.length(dim::Dimension)      = length(dim.dict)
+Base.start(dim::Dimension)       = start(dim.dict)
+Base.next(dim::Dimension, state) = next(dim.dict, state)
+Base.done(dim::Dimension, state) = done(dim.dict, state)
 
-length(dim::Dimension)      = length(dim.dict)
-start(dim::Dimension)       = start(dim.dict)
-next(dim::Dimension, state) = next(dim.dict, state)
-done(dim::Dimension, state) = done(dim.dict, state)
+Base.keys(dim::Dimension)   = keys(dim.dict)
+Base.values(dim::Dimension) = values(dim.dict)
 
-keys(dim::Dimension)   = keys(dim.dict)
-values(dim::Dimension) = values(dim.dict)
+Base.get(dim::Dimension, key::Union{Number, Symbol, String}, default::Any) = get(dim.dict, key, default)
 
-get(dim::Dimension, key::Union{Number, Symbol, String}, default::Any) = get(dim.dict, key, default)
+Base.getindex(dim::Dimension, key::Colon) = collect(values(dim.dict))
 
-getindex(dim::Dimension, key::Colon) = collect(values(dim.dict))
-
-getindex(dim::AbstractDimension, key::Union{Number, Symbol, String}) = getindex(dim.dict, key)
+Base.getindex(dim::AbstractDimension, key::Union{Number, Symbol, String}) = getindex(dim.dict, key)
 
 # Support dim[[:foo, :bar, :baz]], dim[(:foo, :bar, :baz)], and dim[2010:2020]
-getindex(dim::AbstractDimension, keys::Union{Vector{T} where T, Tuple, Range}) = [getindex(dim.dict, key) for key in keys]
+Base.getindex(dim::AbstractDimension, keys::Union{Vector{T} where T, Tuple, Range}) = [getindex(dim.dict, key) for key in keys]
 
-getindex(dim::AbstractDimension, keys...) = getindex(dim, keys)
+Base.getindex(dim::AbstractDimension, keys...) = getindex(dim, keys)
 
-#
-# Global registry for Dimension instances. 
-# Might not need this once stored in ModelDef.
-# 
-# global const _dimension_registry = Dict{Symbol, AbstractDimension}()
+Base.length(dim::RangeDimension) = length(dim.range)
+Base.start(dim::RangeDimension)  = start(dim.range)
+Base.next(dim::RangeDimension, state) = next(dim.range, state)
+Base.done(dim::RangeDimension, state) = done(dim.range, state)
 
-# function register_dimension(name::Symbol, dim::AbstractDimension)
-#     if haskey(_dimension_registry, name)
-#         warn("Redefining index $name")
-#     end
-#     _dimension_registry[name] = dim
-#     return nothing
-# end
-
-# function retrieve_dimension(name::Symbol)
-#     return _dimension_registry[name]
-# end
-
-# retrieve_dimensions(names::Vector{Symbol}) = map(retrieve_dimension, names)
-
-# registered_dimensions() = collect(keys(_dimension_registry))
-
-
-length(dim::RangeDimension) = length(dim.range)
-start(dim::RangeDimension)  = start(dim.range)
-next(dim::RangeDimension, state) = next(dim.range, state)
-done(dim::RangeDimension, state) = done(dim.range, state)
-
-keys(dim::RangeDimension)   = collect(dim.range)
-values(dim::RangeDimension) = collect(1:length(dim.range))
+Base.keys(dim::RangeDimension)   = collect(dim.range)
+Base.values(dim::RangeDimension) = collect(1:length(dim.range))
 
 #
 # Compute the index of a "key" (e.g., a year) in the range. 
 #
-function get(dim::RangeDimension, key::Int64, default::Any=0) 
+function Base.get(dim::RangeDimension, key::Int64, default::Any=0) 
     r = dim.range
     i = key - r.start
     return i == 0 ? 1 : (i % r.step != 0 ? default : 1 + div(i, r.step))
 end
 
 # Support dim[[2010, 2020, 2030]], dim[(:foo, :bar, :baz)], and dim[2010:2050]
-getindex(dim::RangeDimension, keys::Union{Vector{Int64}, Tuple, Range}) = [get(dim, key, 0) for key in keys]
+Base.getindex(dim::RangeDimension, keys::Union{Vector{Int64}, Tuple, Range}) = [get(dim, key, 0) for key in keys]

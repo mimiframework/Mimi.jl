@@ -1,16 +1,3 @@
-# Create the run_timestep or init function for this component
-function _eval_funcs(comp_def::ComponentDef)
-    @eval($(run_expr(comp_def)))
-    @eval($(init_expr(comp_def)))
-end
-
-function _eval_funcs(md::ModelDef)
-    if ! funcs_generated(md)
-        map(_eval_funcs, compdefs(md))
-        set_funcs_generated(md, true)
-    end
-end
-
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
@@ -156,11 +143,8 @@ function connect_external_params(mi::ModelInstance)
 end
 
 function build(m::Model)
-    println("Building model...")
-
     # Reference a copy in the ModelInstance to avoid changes underfoot
     m.mi = build(copy(m.md))
-
     return m.mi
 end
 
@@ -175,7 +159,8 @@ function build(md::ModelDef)
         error(msg)
     end
 
-    _eval_funcs(md)
+    # Changed this to emit functions directly from @defcomp
+    # _eval_funcs(md)
 
     mi = ModelInstance(md)
     instantiate_components(mi)

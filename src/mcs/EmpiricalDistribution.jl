@@ -1,6 +1,5 @@
 using Distributions
 using CSV
-import Base: quantile, rand, rand!, mean, std, var
 
 struct EmpiricalDistribution{T}
     values::Vector{T}
@@ -29,29 +28,29 @@ end
 # Delegate a few functions that we require in our application. 
 # No need to be exhaustive here.
 #
-function mean(d::EmpiricalDistribution)
+function Base.mean(d::EmpiricalDistribution)
     return mean(d.values)
 end
 
-function std(d::EmpiricalDistribution)
+function Base.std(d::EmpiricalDistribution)
     return std(d.values)
 end
 
-function var(d::EmpiricalDistribution)
+function Base.var(d::EmpiricalDistribution)
     return var(d.values)
 end
 
-function quantile(d::EmpiricalDistribution, args...)
+function Base.quantile(d::EmpiricalDistribution, args...)
     indices = quantile(d.dist, args...)
     return d.values[indices]
 end
 
-function rand(d::EmpiricalDistribution, args...)
+function Base.rand(d::EmpiricalDistribution, args...)
     indices = rand(d.dist, args...)
     return d.values[indices]
 end
 
-function rand!(d::EmpiricalDistribution, args...)
+function Base.rand!(d::EmpiricalDistribution, args...)
     indices = rand!(d.dist, args...)
     return d.values[indices]
 end

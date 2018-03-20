@@ -1,5 +1,3 @@
-using Mimi                                          # Make sure to call Mimi again
-
 @defcomp emissions begin
     regions     = Index()                           # The regions index must be specified for each component
 
@@ -8,7 +6,7 @@ using Mimi                                          # Make sure to call Mimi aga
     sigma       = Parameter(index=[time, regions])  # Emissions output ratio
     YGROSS      = Parameter(index=[time, regions])  # Gross output - Note that YGROSS is now a parameter
 
-    function run(p, v, d, t)
+    function run_timestep(p, v, d, t)
         # Define an equation for E
         for r in d.regions
             v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
@@ -20,7 +18,6 @@ using Mimi                                          # Make sure to call Mimi aga
         end
     end
 
-    function init(p, v, d)
-        # println("Called init function for emissions component")
-    end
+    # function init(p, v, d)
+    # end
 end

@@ -56,7 +56,7 @@ I'd like to consider merging the two connection types since the only functional 
 
 ### Macro simplification
 
-The `@defcomp` macro has been substantially simplified by relying on MacroTools.jl and by avoiding the construction of expressions using the "lower" syntactic form. The macro now operates by producing a fairly simple sequence of function calls.
+The `@defcomp` macro has been substantially simplified by relying on MacroTools.jl and by avoiding the construction of expressions using the "lower" syntactic form (i.e., the LISP-like form with `expr.head` and `expr.args`). The macro now operates by producing a fairly simple sequence of function calls.
 
 ### Dot-overloading
 
@@ -74,8 +74,7 @@ With the `run` function inside the `@defcomp` macro, we are able to modify the c
 
 In the previous version of Mimi, components were named by a pair of symbols indicating the module the component was defined in, and the name of the component. Each component was also a newly generated custom type.
 
-In the new version, component definitions are represented by the same (i.e., not generated) type, `ComponentDef`. The `@defcomp` macro creates a global variable with the name provided to `@defcomp` which holds a new type of object, `ComponentId`, which holds the symbol names of the module and component. Now, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated global constant, e.g., `Mimi.grosseconomy`.
- **This change requires that models be defined in their own package to avoid namespace collisions.**
+In the new version, component definitions are represented by the same (i.e., not generated) type, `ComponentDef`. The `@defcomp` macro creates a global variable with the name provided to `@defcomp` which holds a new type of object, `ComponentId`, which holds the symbol names of the module and component. Now, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated global constant, e.g., `Mimi.grosseconomy`. Note that models can be defined in their own module to avoid namespace collisions.
 
 ## 3. New macro `@defmodel`
 
@@ -125,76 +124,7 @@ quote
 end
 ```
 
-## 4. Monte Carlo Simulation support
-
-The revised code includes MCS support via the `@defmcs` macro and a few function calls.
-
-### @defmcs macro
-
-The `@defmcs` allows you to define random variables (RVs) that draw values from distributions,
-and to apply them to external parameters. There are three modes of "application":
-1. Replace default values with values from the RV
-2. Replace default values with the sum of the original default values and a value from the RV
-3. Replace default values with the product of the original default values and a value from the RV
-
-Full documentation will be available in "docs/src/montecarlo.md" once this branch is merged with master.
-
-### Example
-
-The following example is available in `"Mimi.jl/src/mcs/test_mcs.jl"` in the `dot-overloading` branch.
-
-```
-using Mimi
-using Distributions
-
-include("examples/tutorial/02-two-region-model/main.jl")
-
-m = tworegion.my_model
-
-mcs = @defmcs begin
-    # Define random variables. The rv() is required to disambiguate an
-    # RV definition name = Dist(args...) from application of a distribution
-    # to an external parameter. Naming RVs is required only when defining
-    # correlations or sharing a single RV across multiple parameters.
-    rv(name1) = Normal(1, 0.2)
-    rv(name2) = Uniform(0.75, 1.25)
-    rv(name3) = LogNormal(20, 4)
-
-    # define (approximate) rank correlations
-    name1:name2 = 0.7
-    name1:name3 = 0.5
-
-    # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
-    sigma[:, Region1] *= name2
-
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
-
-    # indicate which parameters to save for each model run. Specify
-    # a parameter name or [later] some slice of its data, similar to the
-    # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, 
-         emissions.E, emissions.E_Global)
-end
-
-# Optional user functions can be called just before or after a trial is run
-function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
-    println("$(ci.comp_id).E_Global: $value")
-end
-
-# Generate trial data for all RVs and (optionally) save to a file
-generate_trials!(mcs, 1000, filename="/tmp/trialdata.csv")
-
-# Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
-
-# Same thing but with a post-trial function
-run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
-```
-
-## 5. Pre-compilation and built-in components
+## 4. Pre-compilation and built-in components
 
 To get `__precompile__()` to work required moving the creation of "helper" components to an `__init__()` method in Mimi.jl, which is run automatically after Mimi loads. It defines the two "built-in" components, from `adder.jl` and `connector.jl` in the `components` subdirectory.
 

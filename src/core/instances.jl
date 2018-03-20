@@ -238,7 +238,7 @@ function reset_variables(ci::ComponentInstance)
         T = ref.parameters[1]
         value = getproperty(vars, Val(name))
 
-        if (T <: AbstractTimestepMatrix || T <: AbstractMatrix) && eltype(value) <: AbstractFloat
+        if (T <: AbstractArray || T <: AbstractTimestepMatrix) && eltype(value) <: AbstractFloat
             fill!(value, NaN)
 
         elseif T <: AbstractFloat
@@ -253,20 +253,20 @@ function init(mi::ModelInstance)
     end
 end
 
+# Catch all for components without init methods
+init(module_name, comp_name, p::ComponentInstanceParameters, 
+    v::Mimi.ComponentInstanceVariables, d::Dict{Symbol, Vector{Int}}) = nothing
+
 function init(mi::ModelInstance, ci::ComponentInstance)
     reset_variables(ci)
+    module_name = compmodule(ci.comp_id)
+    comp_name = ci.comp_name
 
-    comp_def = compdef(mi.md, ci.comp_name)
+    pars = ci.parameters
+    vars = ci.variables
+    dims = dim_value_dict(mi.md)
 
-    if init_expr(comp_def) != nothing
-        module_name = compmodule(ci.comp_id)
-        comp_name = ci.comp_name
-        pars = ci.parameters
-        vars = ci.variables
-        dims = dim_value_dict(mi.md)
-
-        Base.invokelatest(init, (Val(module_name), Val(comp_name), pars, vars, dims)...)
-    end
+    init(Val(module_name), Val(comp_name), pars, vars, dims)
 end
 
 function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
@@ -278,8 +278,7 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     dims = dim_value_dict(mi.md)
     t = timeindex(clock)
 
-    # required since we eval the run_func on the fly
-    Base.invokelatest(run_timestep, (Val(module_name), Val(comp_name), pars, vars, dims, t)...)
+    run_timestep(Val(module_name), Val(comp_name), pars, vars, dims, t)
     advance(clock)
 end
 

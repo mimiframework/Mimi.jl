@@ -2,12 +2,14 @@ __precompile__(false)
 
 module Mimi
 
-using DataStructures
 using DataFrames
+using DataStructures
 using Distributions
-using NamedArrays
-using JSON 
 using Electron
+using JSON 
+using LightGraphs
+using MetaGraphs
+using NamedArrays
 
 export
     @defcomp,
@@ -27,8 +29,10 @@ export
     delete!,
     description,
     dimensions,
+    disconnect!,
     explore,
     getdataframe,
+    getproperty,
     get_parameter_value,
     get_variable_value,
     load_comps,
@@ -37,10 +41,13 @@ export
     new_component,
     parameters,
     plot,
+    plot_comp_graph,
     run,
-    set_dimension,
-    set_leftover_params,
-    set_parameter,
+    run_timestep,
+    set_dimension!,
+    set_leftover_params!,
+    set_parameter!,
+    setproperty!,
     unit,
     variables
 

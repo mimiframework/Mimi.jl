@@ -6,7 +6,7 @@ using Base.Test
 using Mimi
 
 import Mimi: 
-    add_connector_comps, connect_parameter, unconnected_params, set_dimension, 
+    add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
     reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count
 
 reset_compdefs()
@@ -55,7 +55,7 @@ end
 # end
 
 m = Model()
-set_dimension(m, :time, 2015:5:2100)
+set_dimension!(m, :time, 2015:5:2100)
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)

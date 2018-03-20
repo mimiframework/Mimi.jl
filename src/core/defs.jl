@@ -1,5 +1,3 @@
-import Base: copy, haskey
-
 # Global component registry: @defcomp stores component definitions here
 global const _compdefs = Dict{ComponentId, ComponentDef}()
 
@@ -37,7 +35,7 @@ compmodule(comp_id::ComponentId) = comp_id.module_name
 
 compname(comp_id::ComponentId) = comp_id.comp_name
 
-function show(io::IO, comp_id::ComponentId)
+function Base.show(io::IO, comp_id::ComponentId)
     print(io, "$(comp_id.module_name).$(comp_id.comp_name)")
 end
 
@@ -82,15 +80,12 @@ function new_component(comp_id::ComponentId, verbose::Bool=true)
     return comp_def
 end
 
-
-import Base.delete!
-
 """
     delete!(m::ModelDef, component::Symbol
 
 Delete a component by name from a model definition.
 """
-function delete!(md::ModelDef, comp_name::Symbol)
+function Base.delete!(md::ModelDef, comp_name::Symbol)
     if ! haskey(md.comp_defs, comp_name)
         error("Cannot delete '$comp_name' from model; component does not exist.")
     end
@@ -173,9 +168,9 @@ dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim
 
 timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
 
-haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
+Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
-function set_dimension(md::ModelDef, name::Symbol, keys::Union{Vector, Tuple, Range})    
+function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Vector, Tuple, Range})    
     if haskey(md, name)
         warn("Redefining dimension :$name")
     end
@@ -257,13 +252,13 @@ function parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbo
 end
 
 """
-    set_parameter(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+    set_parameter!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
 Set the parameter of a component in a model to a given value. Value can by a scalar,
 an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
 the provided data, and will be used to check that they match the model's index labels.
 """
-function set_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     comp_def = compdef(md, comp_name)
 
     # perform possible dimension and labels checks
@@ -293,10 +288,10 @@ function set_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
             values = value
         end
 
-        set_external_array_param(md, param_name, values, comp_param_dims)
+        set_external_array_param!(md, param_name, values, comp_param_dims)
 
     else # scalar parameter case
-        set_external_scalar_param(md, param_name, value)
+        set_external_scalar_param!(md, param_name, value)
     end
 
     connect_parameter(md, comp_name, param_name, param_name)
@@ -505,7 +500,6 @@ function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
     return obj
 end
 
-
 """
     copy_external_params(md::ModelDef)
 
@@ -524,11 +518,11 @@ function copy_external_params(md::ModelDef)
     return external_params
 end
 
-function copy(obj::TimestepVector{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
+function Base.copy(obj::TimestepVector{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
     return TimestepVector{T, FirstPeriod, Duration}(copy(obj.data))
 end
 
-function copy(obj::TimestepMatrix{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
+function Base.copy(obj::TimestepMatrix{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
     return TimestepMatrix{T, FirstPeriod, Duration}(copy(obj.data))
 end
 
@@ -538,7 +532,7 @@ end
 Create a copy of a ModelDef object that is not entirely shallow, nor completely deep.
 The aim is to copy the full structure, reusing referernces to immutable elements.
 """
-function copy(md::ModelDef)
+function Base.copy(md::ModelDef)
     mdcopy = ModelDef(md.number_type)
     mdcopy.module_name = md.module_name
     

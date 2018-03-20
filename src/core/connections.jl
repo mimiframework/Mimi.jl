@@ -1,7 +1,7 @@
 """
 Removes any parameter connections for a given parameter in a given component.
 """
-function disconnect(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+function disconnect!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     filter!(x -> !(x.dst_comp_name == comp_name && x.dst_par_name == param_name), internal_param_conns(md))
     filter!(x -> !(x.comp_name == comp_name && x.param_name == param_name), external_param_conns(md))
 end
@@ -56,7 +56,7 @@ function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, 
         _check_labels(md, comp_def, param_name, ext_param)
     end
 
-    disconnect(md, comp_name, param_name)
+    disconnect!(md, comp_name, param_name)
 
     conn = ExternalParameterConnection(comp_name, param_name, ext_param_name)
     add_external_param_conn(md, conn)
@@ -108,7 +108,7 @@ function connect_parameter(md::ModelDef,
             values = backup
         end
 
-        set_external_array_param(md, dst_par_name, values, dst_dims)
+        set_external_array_param!(md, dst_par_name, values, dst_dims)
     end
 
     # Check the units, if provided
@@ -118,7 +118,7 @@ function connect_parameter(md::ModelDef,
     end
 
     # remove any existing connections for this dst component and parameter
-    disconnect(md, src_comp_name, src_var_name)
+    disconnect!(md, src_comp_name, src_var_name)
 
     curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
     add_internal_param_conn(md, curr)
@@ -169,13 +169,13 @@ function unconnected_params(md::ModelDef)
 end
 
 """
-    set_leftover_params(m::Model, parameters::Dict{Any,Any})
+    set_leftover_params!(m::Model, parameters::Dict{Any,Any})
 
 Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
 keys are strings that match the names of unset parameters in the model.
 """
-function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
+function set_leftover_params!(md::ModelDef, parameters::Dict{String,Any})
     parameters = Dict(lowercase(k) => v for (k, v) in parameters)
     leftovers = unconnected_params(md)
     external_params = md.external_params
@@ -188,7 +188,7 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
             num_dims = length(param_dims)
 
             if num_dims == 0    # scalar case
-                set_external_scalar_param(md, param_name, value)
+                set_external_scalar_param!(md, param_name, value)
 
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
@@ -201,7 +201,7 @@ function set_leftover_params(md::ModelDef, parameters::Dict{String,Any})
                 else
                     values = value
                 end
-                set_external_array_param(md, param_name, values, param_dims)
+                set_external_array_param!(md, param_name, values, param_dims)
             end
         end
         connect_parameter(md, comp_name, param_name, param_name)
@@ -216,8 +216,12 @@ external_param_conns(md::ModelDef) = md.external_param_conns
 function external_param(md::ModelDef, name::Symbol)
     try
         return md.external_params[name]
-    catch
-        error("$name not found in external parameter list")
+    catch err
+        if err isa KeyError
+            error("$name not found in external parameter list")
+        else
+            rethrow(err)
+        end
     end
 end
 
@@ -231,37 +235,37 @@ function add_external_param_conn(md::ModelDef, conn::ExternalParameterConnection
     push!(md.external_param_conns, conn)
 end
 
-function set_external_param(md::ModelDef, name::Symbol, value::ModelParameter)
+function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     md.external_params[name] = value
 end
 
 """
-    set_external_array_param(md::ModelDef, name::Symbol, value::TimestepVector, dims)
+    set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
 
 Adds a one dimensional time-indexed array parameter to the model.
 """
-function set_external_array_param(md::ModelDef, name::Symbol, value::TimestepVector, dims)
-    # println("set_external_array_param: dims=$dims, setting dims to [:time]")
+function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
+    # println("set_external_array_param!: dims=$dims, setting dims to [:time]")
     param = ArrayModelParameter(value, [:time])
-    set_external_param(md, name, param)
+    set_external_param!(md, name, param)
 end
 
 """
-    set_external_array_param(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
+    set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
 
 Adds a two dimensional time-indexed array parameter to the model.
 """
-function set_external_array_param(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
+function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
-    set_external_param(md, name, param)
+    set_external_param!(md, name, param)
 end
 
 """
-    set_external_array_param(m::Model, name::Symbol, value::AbstractArray, dims)
+    set_external_array_param!(m::Model, name::Symbol, value::AbstractArray, dims)
 
 Add an array type parameter to the model.
 """
-function set_external_array_param(md::ModelDef, name::Symbol, value::AbstractArray, dims)
+function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractArray, dims)
     numtype = md.number_type
     
     if !(typeof(value) <: Array{numtype})
@@ -270,21 +274,21 @@ function set_external_array_param(md::ModelDef, name::Symbol, value::AbstractArr
         value = Array{numtype}(value)
     end
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
-    set_external_param(md, name, param)
+    set_external_param!(md, name, param)
 end
 
 """
-    set_external_scalar_param(md::ModelDef, name::Symbol, value::Any)
+    set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
 
 Add a scalar type parameter to the model.
 """
-function set_external_scalar_param(md::ModelDef, name::Symbol, value::Any)
+function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
     if typeof(value) <: AbstractArray
         numtype = number_type(md)
         value = convert(Array{numtype}, value)
     end
     p = ScalarModelParameter(value)
-    set_external_param(md, name, p)
+    set_external_param!(md, name, p)
 end
 
 
@@ -332,6 +336,7 @@ function add_connector_comps(md::ModelDef)
 
     # Save the sorted component order for processing
     md.sorted_comps = _topological_sort(md)
+
     return nothing
 end
 
@@ -353,9 +358,36 @@ function dependencies(md::ModelDef, comp_name::Symbol)
     return deps
 end
 
-# Psuedo-node to ensure that all components have at
-# least one dependency so we can walk the graph.
-global const START = :__START__
+"""
+    comp_graph(md::ModelDef)
+
+Return a MetaGraph containing a directed (LightGraph) graph of the components of 
+ModelDef `md`. Each vertex has a :name property with its component name.
+"""
+function comp_graph(md::ModelDef)
+    comp_names = collect(compkeys(md))
+    graph = MetaDiGraph()
+
+    for comp_name in comp_names
+        add_vertex!(graph, :name, comp_name)
+    end
+
+    set_indexing_prop!(graph, :name)
+   
+    for comp_name in comp_names
+        for dep_name in dependencies(md, comp_name)
+            src = graph[dep_name,  :name]
+            dst = graph[comp_name, :name]
+            add_edge!(graph, src, dst)
+        end
+    end
+
+    if is_cyclic(graph)
+        error("Component graph contains a cycle")
+    end
+
+    return graph
+end
 
 """
     _topological_sort(md::ModelDef)
@@ -367,57 +399,8 @@ return a vector of component names in the order that will ensure
 dependencies are processed prior to dependent components.
 """
 function _topological_sort(md::ModelDef)
-    comp_names = collect(compkeys(md))
-    
-    # insert the "start" pseudo component at the front
-    insert!(comp_names, 1, :__START__)
-    graph = DiGraph(length(comp_names))
-
-    comp_dict = Dict(name => num for (num, name) in enumerate(comp_names))
-
-    for (comp_name, comp_num) in comp_dict
-        for dep_name in dependencies(md, comp_name)
-            add_edge!(graph, comp_dict[dep_name], comp_num)
-        end
-    end
-
-    if (! is_directed(graph))
-        error("Component graph contains a cycle")
-    end
-
-    count = length(comp_names)
-    visited = Vector{Bool}(count)
-    visited[:] = false
-    visited[1] = true
-
-    result = Vector{Symbol}()
-
-    # recursive function to visit nodes in order of dependence
-    function visit(i)
-        if visited[i]
-            outs = outneighbors(graph, i)
-            if all(visited[outs])
-                return
-            end
-            # println("outs: $outs")
-            if length(outs) > 0
-                map(visit, outs)
-            end
-        else
-            ins = inneighbors(graph, i)
-            # println("ins: $ins")
-            
-            if all(visited[ins])
-                push!(result, comp_names[i])
-                visited[i] = true
-            else
-                # println("visiting ins $ins")
-                # work backwards to visit dependencies
-                map(visit, ins)
-            end
-        end
-    end
-
-    map(visit, 2:count)
-    return result
+    graph = comp_graph(md)
+    ordered = topological_sort_by_dfs(graph)
+    names = map(i -> graph[i, :name], ordered)
+    return names
 end

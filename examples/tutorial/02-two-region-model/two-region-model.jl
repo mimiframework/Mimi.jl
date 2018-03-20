@@ -1,12 +1,10 @@
-module tworegion
-
 using Mimi
 
 include("region_parameters.jl")
 include("gross_economy.jl")
 include("emissions.jl")
 
-@defmodel tutorial begin
+@defmodel model begin
 
     index[time] = 2015:5:2110
     
@@ -31,5 +29,3 @@ include("emissions.jl")
     # Connect parameters
     grosseconomy.YGROSS => emissions.YGROSS
 end
-
-end # module
