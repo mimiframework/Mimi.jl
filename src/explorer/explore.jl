@@ -21,7 +21,6 @@ function explore(model; title = "Electron")
 
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
-
     slashes = is_windows() ? "///" : "//"
     w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
 

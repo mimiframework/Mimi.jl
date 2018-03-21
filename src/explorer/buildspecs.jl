@@ -1,4 +1,4 @@
-# # Mimi UI
+## Mimi UI
 
 function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
@@ -10,28 +10,25 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
 
     try
-        # choose type of plot
-        # single value
+        # Control flow logic selects the correct plot type based on dimensions
+        # and dataframe fields
         if length(dims) == 0
             value = m[comp_name, item_name]
             name = "$comp_name : $item_name = $value"
             spec = createspec_singlevalue(name)
         else
-            name = "$comp_name : $item_name"          # the name of the pair as "component:variable"
+            name = "$comp_name : $item_name"          # the name is needed for the list label
             df = getdataframe(m, comp_name, item_name)
 
             dffields = map(string, names(df))         # convert to string once before creating specs
 
-            if dffields[1] == "time"
+            if dffields[1] == "time" # a 'time' field necessitates a line plot
                 if length(dffields) > 2
-                    # plot multilines
                     spec = createspec_multilineplot(name, df, dffields)
                 else
-                    # single line
                     spec = createspec_lineplot(name, df, dffields)
                 end
             else
-                # bar
                 spec = createspec_barplot(name, df, dffields)
             end
         end
@@ -57,7 +54,7 @@ function spec_list(model::Model)
         end
     end
 
-    # return sorted list
+    # Return sorted list so that the UI list of items will be in alphabetical order 
     return sort(allspecs, by = x -> lowercase(x["name"]))
 end
 
