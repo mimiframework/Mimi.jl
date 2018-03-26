@@ -36,7 +36,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         return spec
         
     catch err
-        println("could not convert $comp_name.$item_name to DataFrame, skipping ...")
+        println("could not convert $comp_name.$item_name to DataFrame for explorer")
         rethrow(err)
     end
 end
@@ -45,12 +45,15 @@ end
 function spec_list(model::Model)
     allspecs = []
 
-    for comp_name in map(name, compdefs(model))
+    for comp_name in map(name, compdefs(model)) 
         items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
 
         for item_name in items
-            spec = _spec_for_item(model, comp_name, item_name)
-            push!(allspecs, spec) 
+            try
+                spec = _spec_for_item(model, comp_name, item_name)
+                push!(allspecs, spec) 
+            catch
+            end
         end
     end
 
