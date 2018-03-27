@@ -30,6 +30,7 @@ export
     datatype,
     delete!,
     description,
+    dimension,
     dimensions,
     disconnect!,
     explore,

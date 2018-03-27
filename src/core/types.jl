@@ -392,6 +392,11 @@ mutable struct Model
         self.mi = nothing
         return self
     end
+
+    # Create a copy of a model, e.g., to create marginal models
+    function Model(m::Model)
+        return new(copy(m.md), nothing)
+    end
 end
 
 #
@@ -401,6 +406,10 @@ struct MarginalModel
     base::Model
     marginal::Model
     delta::Float64
+
+    function MarginalModel(base::Model; delta::Float64=1.0)
+        return new(base, Model(base), delta)
+    end
 end
 
 function getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)

@@ -486,14 +486,18 @@ Create a mostly-shallow copy of `comp_def`, but make a deep copy of its
 ComponentId so we can rename the copy without affecting the original.
 """
 function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
-    comp_id = ComponentId(comp_def.comp_id.module_name, comp_name)
+    comp_id = comp_def.comp_id
     obj     = ComponentDef(comp_id)
+
+    # Use the comp_id as is, since this identifies the run_timestep function, but
+    # use an alternate name to reference it in the model's component list.
+    obj.name = comp_name
 
     obj.variables  = comp_def.variables
     obj.parameters = comp_def.parameters
     obj.dimensions = comp_def.dimensions
-    obj.run_expr   = comp_def.run_expr
-    obj.init_expr  = comp_def.init_expr
+    obj.run_expr   = comp_def.run_expr      # TBD: deprecated
+    obj.init_expr  = comp_def.init_expr     # TBD: deprecated
     obj.start      = comp_def.start
     obj.stop       = comp_def.stop
 

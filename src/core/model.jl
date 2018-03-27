@@ -135,6 +135,7 @@ Return the dimension names for the variable or parameter in the given component.
 """
 dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, compdef(m, comp_name), datum_name)
 
+@modelegate dimension(m::Model, dim_name::Symbol) => md
 
 # TBD: this allows access of the form my_model[:grosseconomy, :tfp]
 # It is not related to dimensions!
