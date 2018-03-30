@@ -56,14 +56,14 @@ I'd like to consider merging the two connection types since the only functional 
 
 ### Macro simplification
 
-The `@defcomp` macro has been substantially simplified by relying on MacroTools.jl and by avoiding the construction of expressions using the "lower" syntactic form. The macro now operates by producing a fairly simple sequence of function calls.
+The `@defcomp` macro has been substantially simplified by relying on MacroTools.jl and by avoiding the construction of expressions using Abstract Syntax Tree form. The macro now operates by producing a fairly simple sequence of function calls.
 
 ### Dot-overloading
 
 The `run_timestep` function has been moved inside the `@defcomp` macro. It is now named simply `run` (at least in the macro; a function called `run_timestep` is still generated) and takes four arguments: parameters, variables, dimensions, and time.
 
 ```
-    function run(p, v, d, t::Int)
+    function run(p, v, d, t)
        ...
     end
 ```

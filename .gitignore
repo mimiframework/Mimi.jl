@@ -2,5 +2,4 @@
 *.jl.mem
 docs/build/
 docs/site/
-test/tmp_testing/
 .DS_Store

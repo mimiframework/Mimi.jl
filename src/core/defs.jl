@@ -362,27 +362,6 @@ function getspan(md::ModelDef, comp_name::Symbol)
     return Int((stop - start) / step + 1)
 end
 
-# Save the expression defining the run_timestep function. (It's eval'd at build-time.)
-function set_run_expr(comp_def::ComponentDef, expr::Expr)
-    comp_def.run_expr = expr
-    nothing
-end
-
-run_expr(comp_def::ComponentDef) = comp_def.run_expr
-
-function set_init_expr(comp_def::ComponentDef, expr::Expr)
-    comp_def.init_expr = expr
-    nothing
-end
-
-init_expr(comp_def::ComponentDef) = comp_def.init_expr
-
-function set_funcs_generated(md::ModelDef, value::Bool)
-    md.funcs_generated = value
-end
-
-funcs_generated(md::ModelDef) = md.funcs_generated
-
 
 function set_run_period!(comp_def::ComponentDef, start, stop)
     comp_def.start = start
@@ -431,6 +410,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     end
 
     # Create a shallow copy of the original but with the new name
+    # TBD: Why do we need to make a copy here? Sort this out.
     if compname(comp_def.comp_id) != comp_name
         comp_def = copy_comp_def(comp_def, comp_name)
     end        
@@ -496,8 +476,6 @@ function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
     obj.variables  = comp_def.variables
     obj.parameters = comp_def.parameters
     obj.dimensions = comp_def.dimensions
-    obj.run_expr   = comp_def.run_expr      # TBD: deprecated
-    obj.init_expr  = comp_def.init_expr     # TBD: deprecated
     obj.start      = comp_def.start
     obj.stop       = comp_def.stop
 
@@ -550,10 +528,8 @@ function Base.copy(md::ModelDef)
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     mdcopy.backups = copy(md.backups)
-
     mdcopy.external_params = copy_external_params(md)
 
-    mdcopy.funcs_generated = md.funcs_generated
     mdcopy.sorted_comps = md.sorted_comps == nothing ? nothing : copy(md.sorted_comps)    
     
     return mdcopy

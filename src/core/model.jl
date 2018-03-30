@@ -138,8 +138,8 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, comp
 @modelegate dimension(m::Model, dim_name::Symbol) => md
 
 # TBD: this allows access of the form my_model[:grosseconomy, :tfp]
-# It is not related to dimensions!
-@modelegate getindex(m::Model, comp_name::Symbol, dim_name::Symbol) => mi
+# It is not related to indices or dimensions.
+@modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
     set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
@@ -171,18 +171,18 @@ Return a list of the parameter definitions for `comp_name` in model `m`.
 """
 parameters(m::Model, comp_name::Symbol) = parameters(compdef(m, comp_name))
 
-function variable(m::Model, comp_name::Symbol, param_name::Symbol)
+function variable(m::Model, comp_name::Symbol, var_name::Symbol)
     comp_def = compdef(m, comp_name)
-    return comp_def.variables[param_name]
+    return comp_def.variables[var_name]
 end
 
-function variable_unit(m::Model, comp_name::Symbol, param_name::Symbol)
-    var = variable(m, comp_id, param_name)
+function variable_unit(m::Model, comp_name::Symbol, var_name::Symbol)
+    var = variable(m, comp_id, var_name)
     return var.unit
 end
 
-function variable_dimensions(m::Model, comp_name::Symbol, param_name::Symbol)
-    var = variable(m, comp_id, param_name)
+function variable_dimensions(m::Model, comp_name::Symbol, var_name::Symbol)
+    var = variable(m, comp_id, var_name)
     return var.dimensions
 end
 
@@ -235,7 +235,7 @@ end
 
 Run model `m` once.
 """
-function run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}=nothing)
+function Base.run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}=nothing)
     if numcomponents(m) == 0
         error("Cannot run a model with no components.")
     end

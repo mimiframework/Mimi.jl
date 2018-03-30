@@ -216,9 +216,6 @@ mutable struct ComponentDef  <: NamedDef
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
-    run_expr::Union{Void, Expr}   # the expression that will create the run_timestep function
-    init_expr::Union{Void, Expr}  # the expression that will create the init function
-
     start::Int
     stop::Int
 
@@ -231,8 +228,6 @@ mutable struct ComponentDef  <: NamedDef
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
-        self.run_expr   = nothing
-        self.init_expr  = nothing
         self.start = self.stop = 0
         return self
     end
@@ -260,8 +255,6 @@ mutable struct ModelDef
 
     external_params::Dict{Symbol, ModelParameter}
 
-    funcs_generated::Bool
-
     sorted_comps::Union{Void, Vector{Symbol}}
 
     function ModelDef(number_type=Float64)
@@ -274,7 +267,6 @@ mutable struct ModelDef
         self.external_param_conns = Vector{ExternalParameterConnection}()
         self.external_params = Dict{Symbol, ModelParameter}()
         self.backups = Vector{Symbol}()
-        self.funcs_generated = false
         self.sorted_comps = nothing
         return self
     end
@@ -412,7 +404,7 @@ struct MarginalModel
     end
 end
 
-function getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
+function Base.getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
     return (mm.marginal[comp_name, name] .- mm.base[comp_name, name]) ./ mm.delta
 end
 

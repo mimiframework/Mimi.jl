@@ -13,7 +13,6 @@ using NamedArrays
 
 export
     @defcomp,
-    @defmodel,
     @modelegate,
     MarginalModel,
     Model,
@@ -28,7 +27,6 @@ export
     components,
     connect_parameter,
     datatype,
-    delete!,
     description,
     dimension,
     dimensions,
@@ -45,7 +43,6 @@ export
     parameters,
     plot,
     plot_comp_graph,
-    run,
     run_timestep,
     set_dimension!,
     set_leftover_params!,
@@ -53,9 +50,6 @@ export
     setproperty!,
     unit,
     variables
-
-import
-    Base.getindex, Base.run, Base.show
 
 include("core/types.jl")
 

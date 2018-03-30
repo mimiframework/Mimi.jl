@@ -37,6 +37,8 @@ function _index_pos(names, propname, var_or_par)
     return index_pos
 end
 
+# TBD: Allow assignment only to array slices, not entire arrays,
+# and eliminate the ref for arrays.
 function _property_expr(obj, types, index_pos)
     T = types.parameters[index_pos]
     # println("_property_expr() index_pos: $index_pos, T: $T")
@@ -64,6 +66,7 @@ end
 # Special case support for Dicts so we can use dot notation on dimension.
 # The run() func passes a reference to md.index_values as the "d" parameter.
 # Here we return a range representing the indices into that list of values.
+# TBD: Need to revise this in v0.7 so we don't affect all Dicts.
 @generated function getproperty(obj::Dict, ::Val{PROPERTY}) where {PROPERTY}
     return :(obj[PROPERTY])
 end
@@ -175,7 +178,7 @@ parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, c
 parameters(ci::ComponentInstance) = ci.parameters
 
 
-function getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
+function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     if !(comp_name in keys(mi.components))
         error("Component does not exist in current model")
     end
@@ -282,7 +285,7 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     advance(clock)
 end
 
-function run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
+function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
              dim_keys::Union{Void, Dict{Symbol, Vector{T} where T}}=nothing)
     if length(mi.components) == 0
         error("Cannot run the model: no components have been created.")
