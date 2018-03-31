@@ -19,9 +19,9 @@ modeldef(m::Model) = m.md
 
 modelinstance(m::Model) = m.mi
 
-@modelegate number_type(m::Model) => md
+@modelegate compinstance(m::Model, name::Symbol) => mi
 
-@modelegate compinstance(m::Model, name::Symbol) => md
+@modelegate number_type(m::Model) => md
 
 @modelegate external_param_conns(m::Model) => md
 

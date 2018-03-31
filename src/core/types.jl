@@ -351,7 +351,7 @@ mutable struct ModelInstance
     # Ordered list of components (including hidden ConnectorComps)
     components::OrderedDict{Symbol, ComponentInstance}
 
-    conns::Vector{InternalParameterConnection}  # or should this be in ModelDef?
+    # conns::Vector{InternalParameterConnection}  # deprecated
    
     starts::Vector{Int}        # in order corresponding with components
     stops::Vector{Int}
@@ -360,7 +360,10 @@ mutable struct ModelInstance
         self = new()
         self.md = md
         self.components = OrderedDict{Symbol, ComponentInstance}() 
-        self.conns = Vector{InternalParameterConnection}()
+        
+        # deprecated; use self.md.internal_parameter_connections
+        # self.conns = Vector{InternalParameterConnection}()    
+        
         self.starts = Vector{Int}()
         self.stops = Vector{Int}()
         return self

@@ -120,8 +120,8 @@ function connect_parameter(md::ModelDef,
     # remove any existing connections for this dst component and parameter
     disconnect!(md, src_comp_name, src_var_name)
 
-    curr = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
-    add_internal_param_conn(md, curr)
+    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
+    add_internal_param_conn(md, conn)
 
     return nothing
 end

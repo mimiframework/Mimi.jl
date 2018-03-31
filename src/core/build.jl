@@ -159,9 +159,6 @@ function build(md::ModelDef)
         error(msg)
     end
 
-    # Changed this to emit functions directly from @defcomp
-    # _eval_funcs(md)
-
     mi = ModelInstance(md)
     instantiate_components(mi)
 

@@ -15,7 +15,7 @@ reset_compdefs()
     varA = Variable(index=[time])
     parA = Parameter()
     
-    function run(p, v, d, t::Int)
+    function run_timestep(p, v, d, t)
         println("A.run($t)")
         v.varA[t] = p.parA
         println("varA[t] = $(v.varA[t])")
@@ -25,8 +25,8 @@ end
 @defcomp B begin
     varB = Variable()
 
-    function run(p, v, d, t::Int)
-        println("B.run($t)")
+    function run_timestep(p, v, d, t)
+        println("\nB.run($t)")
 
         if t < 10
             v.varB = 1
@@ -42,17 +42,12 @@ end
     varC = Variable()
     parC = Parameter()
 
-    function run(p, v, d, t::Int)
+    function run_timestep(p, v, d, t)
         println("C.run($t)")
         v.varC = p.parC
         println("varC = $(v.varC)")
     end
 end
-
-# @defmodel m begin
-#     index[time] = 2015:5:2100
-#     component(A)
-# end
 
 m = Model()
 set_dimension!(m, :time, 2015:5:2100)
@@ -60,6 +55,7 @@ set_dimension!(m, :time, 2015:5:2100)
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
 addcomponent(m, C, after=:B)
+# Component order is B -> C -> A.
 
 connect_parameter(m, :A, :parA, :C, :varC)
 
@@ -67,10 +63,9 @@ unconn = unconnected_params(m)
 @test length(unconn) == 1
 @test unconn[1] == (:C, :parC)
 
-connect_parameter(m, :C=>:parC, :B=>:varB)
+connect_parameter(m, :C => :parC, :B => :varB)
 
 @test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
-
 
 @test numcomponents(m.md) == 3
 
@@ -81,11 +76,6 @@ connect_parameter(m, :C=>:parC, :B=>:varB)
 @test get_connections(m, :B, :outgoing)[1].dst_comp_name == :C
 
 @test length(get_connections(m, :A, :all)) == 1
-
-#connect_parameter(m, :A, :parA, :C, :varC)
-#connect_parameter(m, :C, :parC, :B, :varB)      # TBD: don't create redundant connection!
-
-@test length(internal_param_conns(m)) == 3
 
 @test length(unconnected_params(m)) == 0
 
@@ -126,11 +116,11 @@ end
 ################################
 
 @test_throws ErrorException delete!(m, :D)
-@test length(m.internal_parameter_connections) == 2
+@test length(m.md.internal_param_conns) == 2
 delete!(m, :A)
-@test length(m.internal_parameter_connections) == 1
-@test !(:A in components(m))
-@test length(components(m)) == 2
+@test length(m.md.internal_param_conns) == 1
+@test !(:A in compdefs(m))
+@test length(compdefs(m)) == 2
 
 #######################################
 #   Test check for unset parameters   #
