@@ -4,7 +4,7 @@ include("region_parameters.jl")
 include("gross_economy.jl")
 include("emissions.jl")
 
-@defmodel model begin
+@Mimi.defmodel model begin
 
     index[time] = 2015:5:2110
     

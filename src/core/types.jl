@@ -143,6 +143,21 @@ mutable struct RangeDimension <: AbstractDimension
 # 3. Types supporting Parameters and their connections
 #
 
+# For storing references to scalar values that can be safely shared
+mutable struct Scalar{T}
+    value::T
+
+    function Scalar{T}(value::T) where {T <: Number}
+        new(value)
+    end
+end
+
+Scalar(value) = Scalar{typeof(value)}(value)
+
+Base.convert(::Type{Scalar{T}}, value::Number) where {T} = Scalar{T}(T(value))
+
+Base.convert(::Type{T}, s::Scalar{T}) where {T <: Number} = s.value
+
 abstract type ModelParameter end
 
 mutable struct ScalarModelParameter <: ModelParameter

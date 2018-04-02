@@ -34,7 +34,7 @@ end
     end
 end
 
-@defmodel model begin
+@Mimi.defmodel model begin
 
     index[time] = 2015:5:2110
 

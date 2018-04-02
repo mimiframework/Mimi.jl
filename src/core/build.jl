@@ -7,7 +7,7 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     num_dims = dim_count(def)
 
     if num_dims == 0
-        T = dtype
+        T = Scalar{dtype}
 
     elseif dims[1] != :time
         T = Array{dtype, num_dims}
@@ -59,7 +59,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
 
     if num_dims == 0
         value = dtype(0)
-        
+      
     # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1        
         value = dtype(dim_count(md, :time))
@@ -169,8 +169,13 @@ function build(md::ModelDef)
         # println("ipc: $ipc")
         src_comp_inst = comps[ipc.src_comp_name]
         dst_comp_inst = comps[ipc.dst_comp_name]
-        value = get_variable_value(src_comp_inst, ipc.src_var_name)
-        set_parameter_value(dst_comp_inst, ipc.dst_par_name, value)
+
+        # value = get_variable_value(src_comp_inst, ipc.src_var_name)
+        # set_parameter_value(dst_comp_inst, ipc.dst_par_name, value)
+
+        # TBD: Might not be necessary if using Ref{Vector} for scalars
+        ref = get_variable_ref(src_comp_inst, ipc.src_var_name)
+        set_parameter_ref(dst_comp_inst, ipc.dst_par_name, ref)
     end
 
     # Make the external parameter connections.

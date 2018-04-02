@@ -12,40 +12,33 @@ import Mimi:
 reset_compdefs()
 
 @defcomp A begin
-    varA = Variable(index=[time])
-    parA = Parameter()
+    varA::Int = Variable(index=[time])
+    parA::Int = Parameter()
     
     function run_timestep(p, v, d, t)
-        println("A.run($t)")
         v.varA[t] = p.parA
-        println("varA[t] = $(v.varA[t])")
     end
 end
 
 @defcomp B begin
-    varB = Variable()
+    varB::Int = Variable()
 
     function run_timestep(p, v, d, t)
-        println("\nB.run($t)")
-
         if t < 10
             v.varB = 1
         else
             v.varB = 10
         end
-        println("varB = $(v.varB)")
     end
 end
 
 
 @defcomp C begin
-    varC = Variable()
-    parC = Parameter()
+    varC::Int = Variable()
+    parC::Int = Parameter()
 
     function run_timestep(p, v, d, t)
-        println("C.run($t)")
         v.varC = p.parC
-        println("varC = $(v.varC)")
     end
 end
 
@@ -103,7 +96,8 @@ end
 @test m[:A, :parA] == 10
 @test_throws ErrorException m[:A, :xx]
 
-a = dim_keys(m, :time)
+time = dimension(m, :time)
+a = collect(keys(time))
 for i in 1:18
     @test a[i] == 2010 + 5*i
 end

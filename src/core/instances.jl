@@ -43,14 +43,19 @@ function _property_expr(obj, types, index_pos)
     T = types.parameters[index_pos]
     # println("_property_expr() index_pos: $index_pos, T: $T")
 
-    if types.parameters[index_pos] <: Ref
-        ex = :(obj.values[$index_pos][])
+    if T <: Ref
+        if T.parameters[1] <: Scalar
+            ex = :(obj.values[$index_pos][].value) # dereference Scalar instance
+        else
+            ex = :(obj.values[$index_pos][])
+        end
+        # ex = :(obj.values[$index_pos][])
         # println("Returning $ex")
         return ex
 
     # TBD: deprecated if we keep Refs for everything
-    else
-        return :(obj.values[$index_pos])
+    # else
+    #     return :(obj.values[$index_pos])
     end
 end
 
@@ -88,8 +93,9 @@ end
 @generated function setproperty!(obj::ComponentInstanceParameters{NAMES, TYPES}, 
                                  ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
     index_pos = _index_pos(NAMES, PROPERTY, "parameter")
-
-    return :(obj.values[$index_pos][] = value)
+    T = TYPES.parameters[index_pos].parameters[1]   # get down to the Scalar{xxx}
+    return T <: Scalar ? :(obj.values[$index_pos][].value = value) : :(obj.values[$index_pos][] = value)   
+    # return :(obj.values[$index_pos][] = value)
 
     #
     # TBD: now that everything is a Ref, this isn't necessary, but still need to catch this error!
@@ -106,8 +112,10 @@ end
 @generated function setproperty!(obj::ComponentInstanceVariables{NAMES, TYPES}, 
                                  ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
     index_pos = _index_pos(NAMES, PROPERTY, "variable")
-
-    return :(obj.values[$index_pos][] = value)
+    T = TYPES.parameters[index_pos].parameters[1]
+    # println("setproperty!(TYPES: $TYPES, T: $T, value: $value)")
+    return T <: Scalar ? :(obj.values[$index_pos][].value = value) : :(obj.values[$index_pos][] = value)   
+    # return :(obj.values[$index_pos][] = value)
 
     #
     # TBD: now that everything is a Ref, this isn't necessary, but still need to catch this error!
@@ -118,6 +126,39 @@ end
     #     T = TYPES.variables[index_pos]
     #     error("You cannot override indexed variable $PROPERTY::$T.")
     # end
+end
+
+#########################################################################
+# TBD: I think the problem is that build() needs to copy the Ref, not the
+# value stored by the ref, thereby sharing storage between vars/params. 
+# Not sure why this is working at all, frankly.
+#
+# Define get_parameter/variable_ref and set_parameter/variable_ref and
+# call these from the internal_parameter_connection loop in build().
+#########################################################################
+
+function get_parameter_ref(ci::ComponentInstance, name::Symbol)
+    pars = ci.parameters
+    index_pos = _index_pos(pars.names, name, "parameter")
+    return ci.parameters.values[index_pos]
+end
+
+function get_variable_ref(ci::ComponentInstance, name::Symbol)
+    vars = ci.variables
+    index_pos = _index_pos(vars.names, name, "variable")
+    return vars.values[index_pos]
+end
+
+function set_parameter_ref(ci::ComponentInstance, name::Symbol, ref::Ref)
+    pars = ci.parameters
+    index_pos = _index_pos(pars.names, name, "parameter")
+    ci.parameters.values[index_pos].x = ref.x
+end
+
+function set_variable_ref(ci::ComponentInstance, name::Symbol, ref::Ref)
+    vars = ci.variables
+    index_pos = _index_pos(vars.names, name, "variable")
+    vars.values[index_pos].x = ref.x
 end
 
 # Convenience functions that can be called with a name symbol rather than Val(name)
