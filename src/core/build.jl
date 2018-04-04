@@ -152,10 +152,8 @@ function build(md::ModelDef)
     # check if all parameters are set
     not_set = unconnected_params(md)
     if ! isempty(not_set)
-        msg = "Cannot build model; the following parameters are not set: "
-        for p in not_set
-            msg = string(msg, p, " ")
-        end
+        params = join(not_set, " ")
+        msg = "Cannot build model; the following parameters are not set: $params"
         error(msg)
     end
 
@@ -191,9 +189,14 @@ function create_marginal_model(base::Model, delta::Float64)
         build(base)
     end
 
-    marginal = Model(base)
-    build(marginal)
+    # marginal = Model(base)
+    # build(marginal)
 
     # Create a marginal model, which shares the internal ModelDef between base and marginal
     mm = MarginalModel(base, delta)
+end
+
+function Base.run(mm::MarginalModel, ntimesteps::Int=typemax(Int))
+    run(mm.base, ntimesteps=ntimesteps)
+    run(mm.marginal, ntimesteps=ntimesteps)
 end
