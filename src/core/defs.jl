@@ -461,6 +461,13 @@ function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp
     addcomponent(md, compdef(comp_id), comp_name, start=start, stop=stop, before=before, after=after)
 end
 
+function replace_component(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+                           start::VoidSymbol=nothing, stop::VoidSymbol=nothing,
+                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+    delete!(md, comp_name)
+    addcomponent(md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)
+end
+
 """
 Create a mostly-shallow copy of `comp_def`, but make a deep copy of its
 ComponentId so we can rename the copy without affecting the original.
@@ -512,7 +519,7 @@ end
     copy(md::ModelDef)
 
 Create a copy of a ModelDef object that is not entirely shallow, nor completely deep.
-The aim is to copy the full structure, reusing referernces to immutable elements.
+The aim is to copy the full structure, reusing references to immutable elements.
 """
 function Base.copy(md::ModelDef)
     mdcopy = ModelDef(md.number_type)
@@ -522,7 +529,7 @@ function Base.copy(md::ModelDef)
     
     mdcopy.dimensions = deepcopy(md.dimensions)
 
-    # These are vectors of immutable structs, so we can copy them safely
+    # These are vectors of immutable structs, so we can (shallow) copy them safely
     mdcopy.internal_param_conns = copy(md.internal_param_conns)
     mdcopy.external_param_conns = copy(md.external_param_conns)
 

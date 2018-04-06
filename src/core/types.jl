@@ -365,20 +365,14 @@ mutable struct ModelInstance
 
     # Ordered list of components (including hidden ConnectorComps)
     components::OrderedDict{Symbol, ComponentInstance}
-
-    # conns::Vector{InternalParameterConnection}  # deprecated
-   
+  
     starts::Vector{Int}        # in order corresponding with components
     stops::Vector{Int}
 
     function ModelInstance(md::ModelDef)
         self = new()
         self.md = md
-        self.components = OrderedDict{Symbol, ComponentInstance}() 
-        
-        # deprecated; use self.md.internal_parameter_connections
-        # self.conns = Vector{InternalParameterConnection}()    
-        
+        self.components = OrderedDict{Symbol, ComponentInstance}()    
         self.starts = Vector{Int}()
         self.stops = Vector{Int}()
         return self
@@ -397,10 +391,7 @@ mutable struct Model
     mi::Union{Void, ModelInstance}
 
     function Model(number_type::DataType=Float64)
-        self = new()
-        self.md = ModelDef(number_type)
-        self.mi = nothing
-        return self
+        return new(ModelDef(number_type), nothing)
     end
 
     # Create a copy of a model, e.g., to create marginal models
@@ -417,7 +408,7 @@ struct MarginalModel
     marginal::Model
     delta::Float64
 
-    function MarginalModel(base::Model; delta::Float64=1.0)
+    function MarginalModel(base::Model, delta::Float64=1.0)
         return new(base, Model(base), delta)
     end
 end

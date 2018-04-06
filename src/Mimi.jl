@@ -1,4 +1,4 @@
-__precompile__(false)
+__precompile__()
 
 module Mimi
 
@@ -26,6 +26,7 @@ export
     compkeys,
     components,
     connect_parameter,
+    create_marginal_model,
     datatype,
     description,
     dimension,
@@ -36,6 +37,7 @@ export
     getproperty,
     get_parameter_value,
     get_variable_value,
+    interpolate,
     load_comps,
     modeldef,
     name,
@@ -43,6 +45,7 @@ export
     parameters,
     plot,
     plot_comp_graph,
+    replace_component,
     run_timestep,
     set_dimension!,
     set_leftover_params!,
@@ -69,7 +72,7 @@ include("utils/graph.jl")
 include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
-
+include("utils/misc.jl")
 
 """
     load_comps(dirname::String="./components")

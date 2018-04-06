@@ -1,5 +1,3 @@
-using CSV
-
 function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
     for datum_key in mcs.savelist
         # println("\nStoring trial results for $datum_key")

@@ -2,6 +2,7 @@
 Removes any parameter connections for a given parameter in a given component.
 """
 function disconnect!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+    # println("disconnect!($comp_name, $param_name)")
     filter!(x -> !(x.dst_comp_name == comp_name && x.dst_par_name == param_name), internal_param_conns(md))
     filter!(x -> !(x.comp_name == comp_name && x.param_name == param_name), external_param_conns(md))
 end
@@ -79,6 +80,10 @@ function connect_parameter(md::ModelDef,
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol,
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+
+    # remove any existing connections for this dst parameter
+    disconnect!(md, dst_comp_name, dst_par_name)
+
     if backup != nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
@@ -123,9 +128,7 @@ function connect_parameter(md::ModelDef,
         error("Units of $src_comp_name.$src_var_name do not match $dst_comp_name.$dst_par_name.")
     end
 
-    # remove any existing connections for this dst component and parameter
-    disconnect!(md, src_comp_name, src_var_name)
-
+    # println("connect($src_comp_name.$src_var_name => $dst_comp_name.$dst_par_name)")
     conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
     add_internal_param_conn(md, conn)
 

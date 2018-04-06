@@ -85,6 +85,15 @@ function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.
     return ComponentReference(m, comp_name)
 end
 
+function replace_component(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+                           start::VoidSymbol=nothing, stop::VoidSymbol=nothing,
+                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+    replace_component(m.md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)
+    decache(m)
+    return ComponentReference(m, comp_name)
+end
+
+
 """
     components(m::Model)
 
@@ -241,11 +250,10 @@ function Base.run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}
     end
 
     if m.mi == nothing
-        m.mi = build(m)
+        build(m)
     end
 
     # println("Running model...")
-    # run(m.mi, ntimesteps, indexvalues(m))
     run(m.mi, ntimesteps, dim_keys)
 end
 
@@ -296,5 +304,5 @@ function update_external_param(m::Model, name::Symbol, value)
             end
         end
     end
-    m.mi = nothing
+    decache(m)
 end

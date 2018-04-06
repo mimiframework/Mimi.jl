@@ -11,9 +11,6 @@
 # matrix for the sampled parameters. Original python version was heavily modified from
 # http://nullege.com/codes/show/src@m@o@model-builder-HEAD@Bayes@lhs.py
 #
-using StatsBase
-using DataFrames
-using Distributions
 
 # Add missing constructor. [Yes, this is Type Piracy; this obvious constructor
 # definition will be deleted here after it is added to DataFrames proper.]

@@ -1,5 +1,3 @@
-using MacroTools
-       
 # For generating symbols that work as dataframe column names
 global _rvnum = 0
 

@@ -128,15 +128,6 @@ end
     # end
 end
 
-#########################################################################
-# TBD: I think the problem is that build() needs to copy the Ref, not the
-# value stored by the ref, thereby sharing storage between vars/params. 
-# Not sure why this is working at all, frankly.
-#
-# Define get_parameter/variable_ref and set_parameter/variable_ref and
-# call these from the internal_parameter_connection loop in build().
-#########################################################################
-
 function get_parameter_ref(ci::ComponentInstance, name::Symbol)
     pars = ci.parameters
     index_pos = _index_pos(pars.names, name, "parameter")

@@ -1,8 +1,3 @@
-using Distributions
-using StatsBase
-using CSV
-using ExcelReaders
-
 struct EmpiricalDistribution{T}
     values::Vector{T}
     weights::ProbabilityWeights

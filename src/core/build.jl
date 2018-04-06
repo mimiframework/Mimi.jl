@@ -145,7 +145,7 @@ end
 function build(m::Model)
     # Reference a copy in the ModelInstance to avoid changes underfoot
     m.mi = build(copy(m.md))
-    return m.mi
+    return nothing
 end
 
 function build(md::ModelDef)
@@ -164,14 +164,12 @@ function build(md::ModelDef)
 
     # Make the internal parameter connections, including hidden connections between ConnectorComps.
     for ipc in internal_param_conns(md)
-        # println("ipc: $ipc")
         src_comp_inst = comps[ipc.src_comp_name]
         dst_comp_inst = comps[ipc.dst_comp_name]
 
         # value = get_variable_value(src_comp_inst, ipc.src_var_name)
         # set_parameter_value(dst_comp_inst, ipc.dst_par_name, value)
 
-        # TBD: Might not be necessary if using Ref{Vector} for scalars
         ref = get_variable_ref(src_comp_inst, ipc.src_var_name)
         set_parameter_ref(dst_comp_inst, ipc.dst_par_name, ref)
     end
@@ -182,15 +180,12 @@ function build(md::ModelDef)
     return mi
 end
 
-function create_marginal_model(base::Model, delta::Float64)
+function create_marginal_model(base::Model, delta::Float64=1.0)
     # Make sure the base has a ModelInstance before we copy since this
     # copies the ModelDef to avoid being affected by later changes.
     if base.mi == nothing
         build(base)
     end
-
-    # marginal = Model(base)
-    # build(marginal)
 
     # Create a marginal model, which shares the internal ModelDef between base and marginal
     mm = MarginalModel(base, delta)

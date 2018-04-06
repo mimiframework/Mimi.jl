@@ -1,3 +1,10 @@
+using CSV
+using DataFrames
+using Distributions
+using ExcelReaders
+using MacroTools
+using StatsBase
+
 include("mcs_types.jl")
 include("defmcs.jl")
 include("EmpiricalDistribution.jl")
