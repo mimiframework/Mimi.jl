@@ -31,8 +31,8 @@ end
 
 """
 EmpiricalDistribution(file::Union{AbstractString, IO}, 
-                               value_col::Union{Symbol, String, Int64},
-                               prob_col::Union{Void, Symbol, String, Int64}=nothing)
+                      value_col::Union{Symbol, String, Int64},
+                      prob_col::Union{Void, Symbol, String, Int64}=nothing)
 
 Load empirical values from a CSV or XLS(X) file and generate a distribution. 
 
@@ -44,8 +44,8 @@ If an XLS or XLSX file is given, the `value_col` and `prob_col` should be fully 
 Excel data ranges, e.g., "Sheet1!A2:A1002", indicating the values to extract from the file.
 """
 function EmpiricalDistribution(filename::AbstractString,
-                               value_col::Union{Symbol, String, Int64},
-                               prob_col::Union{Void, Symbol, String, Int64}=nothing;
+                               value_col::Union{Symbol, AbstractString, Int64},
+                               prob_col::Union{Void, Symbol, AbstractString, Int64}=nothing;
                                value_type::DataType=Any)
     probs = nothing
 

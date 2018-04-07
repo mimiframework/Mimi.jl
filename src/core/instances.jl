@@ -232,13 +232,6 @@ function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     return isa(value, AbstractTimestepMatrix) ? value.data : value
 end
 
-# """
-#     indexcount(mi::ModelInstance, idx_name::Symbol)
-
-# Returns the size of index `idx_name`` in model instance `mi`.
-# """
-# indexcount(mi::ModelInstance, idx_name::Symbol) = indexcounts(mi.md, idx_name)
-
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
 
@@ -249,13 +242,6 @@ dim_count(mi::ModelInstance, dim_name::Symbol) = dim_count(mi.md, dim_name)
 dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
-
-# """
-#     indexvalues(mi::ModelInstance, idx_name::Symbol)
-
-# Return the values of index `idx_name` in model instance `mi`.
-# """
-# indexvalues(mi::ModelInstance, idx_name::Symbol) = indexvalues(mi.md, idx_name)
 
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
     start = time_keys[1]
@@ -288,7 +274,7 @@ function init(mi::ModelInstance)
     end
 end
 
-# Catch all for components without init methods
+# Fall-back for components without init methods
 init(module_name, comp_name, p::ComponentInstanceParameters, 
     v::Mimi.ComponentInstanceVariables, d::Dict{Symbol, Vector{Int}}) = nothing
 

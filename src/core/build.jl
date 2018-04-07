@@ -55,27 +55,19 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
     dims = dimensions(def)
     num_dims = length(dims)
     
-    # println("_instantiate_datum(md, def: $def) : dims: $dims, dtype: $dtype")
-
     if num_dims == 0
         value = dtype(0)
       
     # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
-    elseif num_dims == 1        
+    elseif num_dims == 1 && dims[1] == :time
         value = dtype(dim_count(md, :time))
 
     else # if dims[1] != :time  # TBD: this can be collapsed with final "else" clause"
         # TBD: Handle unnamed indices properly
         counts = dim_counts(md, Vector{Symbol}(dims))
         value = dtype(counts...)
-
-    # else
-    #     # value = dtype(indexcount(md, :time), indexcount(md, dims[2]))
-    #     counts = dim_counts(md, [:time, dims[2]])
-    #     value = dtype(counts...)
     end
 
-    # println("returning Ref{$dtype}($value)\n\n")
     return Ref{dtype}(value)
 end
 
