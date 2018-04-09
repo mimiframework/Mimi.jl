@@ -22,3 +22,29 @@ function interpolate(values, ts=10)
     newvalues[end] = values[end]
     return newvalues
 end
+
+"""
+    read_params(f, range::String, count::Int, sheet::String="Base")
+
+Get parameters from DICE2010 excel sheet.
+
+`range`` is a single cell or a range of cells in the excel sheet.
+  Must be a cell reference of the form "A27" or a range "B56:B77".
+
+`count`` is the length of the time dimension; ignored if range 
+   refers to a single cell.
+
+`sheet`` is the name of the worksheet in the Excel file to read from.
+  Defaults to "Base".
+
+Examples:   
+    values = read_params(f, "B15:BI15", 40)   # read only the first 40 values
+
+    value = read_params(f, "A27", sheet="Parameters")
+    value = read_params(f, "A27:A27", sheet="Parameters") # same as above
+"""
+function read_params(f, range::String, T::Int=60; sheet::String="Base")
+    data = readxl(f, "$sheet\!$range")
+    parts = split(range, ":")
+    return (length(parts) == 1 || parts[1] == parts[2]) ? data : Vector{Float64}(data[1:T])
+end
