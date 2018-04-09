@@ -28,13 +28,13 @@ end
 
 Get parameters from DICE2010 excel sheet.
 
-`range`` is a single cell or a range of cells in the excel sheet.
+`range` is a single cell or a range of cells in the excel sheet.
   Must be a cell reference of the form "A27" or a range "B56:B77".
 
-`count`` is the length of the time dimension; ignored if range 
+`count` is the length of the time dimension; ignored if range 
    refers to a single cell.
 
-`sheet`` is the name of the worksheet in the Excel file to read from.
+`sheet` is the name of the worksheet in the Excel file to read from.
   Defaults to "Base".
 
 Examples:   
