@@ -1,33 +1,46 @@
+module TestUnits
+
 using Base.Test
 using Mimi
 
-# Try directly using unitcheck
-@test unitcheck("kg", "kg")
-@test !unitcheck("kg", "MT")
-@test !unitcheck("kg", "")
+import Mimi: verify_units, connect_parameter, ComponentReference
+
+# Try directly using verify_units
+@test verify_units("kg", "kg")
+@test !verify_units("kg", "MT")
+@test !verify_units("kg", "")
 
 # Create a model with some matching and some mis-matching units
-@defcomp FooUnits begin
+@defcomp Foo begin
     output = Variable(unit="kg")
 end
 
-@defcomp BarUnits begin
+@defcomp Bar begin
     input = Parameter(unit="MT")
 end
 
-@defcomp BazUnits begin
+@defcomp Baz begin
     input = Parameter(unit="kg")
 end
 
-m = Model()
-setindex(m, :time, 1)
-foo = addcomponent(m, FooUnits)
-bar = addcomponent(m, BarUnits)
-baz = addcomponent(m, BazUnits)
+@defmodel m begin
+    index[time] = [1]
+    component(Foo)
+    component(Bar)
+    component(Baz)
+end
+
+foo = ComponentReference(m, :Foo)
+bar = ComponentReference(m, :Bar)
+baz = ComponentReference(m, :Baz)
 
 # Check that we cannot connect foo and bar...
 @test_throws ErrorException bar[:input] = foo[:output]
+
 # ...unless we pass ignoreunits=true
-connectparameter(m, :BarUnits, :input,  :FooUnits, :output, ignoreunits=true)
+connect_parameter(m, :Bar, :input,  :Foo, :output, ignoreunits=true)
+
 # But we can connect foo and baz
 baz[:input] = foo[:output]
+
+end # module

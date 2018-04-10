@@ -1,28 +1,31 @@
+using Mimi
+
+include("region_parameters.jl")
 include("gross_economy.jl")
 include("emissions.jl")
 
-function run_my_model()
+@Mimi.defmodel model begin
 
-    my_model = Model()
+    index[time] = 2015:5:2110
+    
+    # Note that the regions of your model must be specified here
+    index[regions] = [:Region1, :Region2, :Region3]  
 
-    setindex(my_model, :time, collect(2015:5:2110))
-    setindex(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
+    # Order matters here. If the emissions component were defined first, the model would not run.
+    component(grosseconomy)
+    component(emissions)
 
-    addcomponent(my_model, grosseconomy)
-    addcomponent(my_model, emissions)
+    # Set parameters for the grosseconomy component
+    grosseconomy.l     = l
+    grosseconomy.tfp   = tfp
+    grosseconomy.s     = s
+    grosseconomy.depk  = depk
+    grosseconomy.k0    = k0
+    grosseconomy.share = 0.3
 
-    setparameter(my_model, :grosseconomy, :l, l)
-    setparameter(my_model, :grosseconomy, :tfp, tfp)
-    setparameter(my_model, :grosseconomy, :s, s)
-    setparameter(my_model, :grosseconomy, :depk,depk)
-    setparameter(my_model, :grosseconomy, :k0, k0)
-    setparameter(my_model, :grosseconomy, :share, 0.3)
+    # Set parameters for the emissions component
+    emissions.sigma = sigma
 
-    #set parameters for emissions component
-    setparameter(my_model, :emissions, :sigma, sigma)
-    connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-
-    run(my_model)
-    return(my_model)
-
+    # Connect parameters
+    grosseconomy.YGROSS => emissions.YGROSS
 end

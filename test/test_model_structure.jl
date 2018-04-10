@@ -1,93 +1,89 @@
+module TestModelStructure
+
 #tests the framework of components and connections
 
 using Base.Test
 using Mimi
 
+import Mimi: 
+    add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
+    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count
+
+reset_compdefs()
+
 @defcomp A begin
-  varA = Variable(index=[time])
-  parA = Parameter()
+    varA::Int = Variable(index=[time])
+    parA::Int = Parameter()
+    
+    function run_timestep(p, v, d, t)
+        v.varA[t] = p.parA
+    end
 end
 
 @defcomp B begin
-  varB = Variable()
+    varB::Int = Variable()
+
+    function run_timestep(p, v, d, t)
+        if t < 10
+            v.varB = 1
+        else
+            v.varB = 10
+        end
+    end
 end
 
+
 @defcomp C begin
-  varC = Variable()
-  parC = Parameter()
+    varC::Int = Variable()
+    parC::Int = Parameter()
+
+    function run_timestep(p, v, d, t)
+        v.varC = p.parC
+    end
 end
 
 m = Model()
-setindex(m, :time, 2015:5:2100)
+set_dimension!(m, :time, 2015:5:2100)
 
 addcomponent(m, A)
 addcomponent(m, B, before=:A)
-@test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
 addcomponent(m, C, after=:B)
+# Component order is B -> C -> A.
 
-@test length(get_unconnected_parameters(m))==2
+connect_parameter(m, :A, :parA, :C, :varC)
 
-connectparameter(m, :A, :parA, :C, :varC)
-connectparameter(m, :A=>:parA, :B=>:varB)
+unconn = unconnected_params(m)
+@test length(unconn) == 1
+@test unconn[1] == (:C, :parC)
 
-@test get_unconnected_parameters(m)[1]==(:C,:parC)
+connect_parameter(m, :C => :parC, :B => :varB)
 
-@test length(m.components2)==3
-@test length(m.internal_parameter_connections)==1
-@test Mimi.get_connections(m, :A, :incoming)[1].source_component_name == :B
-@test length(Mimi.get_connections(m, :B, :incoming)) == 0
-@test Mimi.get_connections(m, :B, :outgoing)[1].target_component_name == :A
-@test length(Mimi.get_connections(m, :A, :all)) == 1
+@test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
 
-#connectparameter(m, :A, :parA, :C, :varC)
-connectparameter(m, :C, :parC, :B, :varB)
-@test length(m.internal_parameter_connections)==2
+@test numcomponents(m.md) == 3
 
-@test length(Mimi.get_unconnected_parameters(m))==0
+@test length(internal_param_conns(m)) == 2
+@test get_connections(m, :A, :incoming)[1].src_comp_name == :C
+
+@test length(get_connections(m, :B, :incoming)) == 0
+@test get_connections(m, :B, :outgoing)[1].dst_comp_name == :C
+
+@test length(get_connections(m, :A, :all)) == 1
+
+@test length(unconnected_params(m)) == 0
 
 #############################################
 #  Tests for connecting scalar parameters   #
 #############################################
 
-function run_timestep(s::C, t::Int)
-    v = s.Variables
-    p = s.Parameters
-    d = s.Dimensions
-
-    if t==1
-        v.varC = 1
-    elseif t==10
-        v.varC = 10
-    end
-end
-
-function run_timestep(s::B, t::Int)
-    v = s.Variables
-    p = s.Parameters
-    d = s.Dimensions
-
-    if t==1
-        v.varB = 1
-    elseif t==10
-        v.varB = 10
-    end
-end
-
-function run_timestep(s::A, t::Int)
-    v = s.Variables
-    p = s.Parameters
-    d = s.Dimensions
-
-    v.varA[t] = p.parA
-end
-
+add_connector_comps(m)
 run(m)
 
-for t in range(1, 9)
+for t in 1:9
     @test m[:A, :varA][t] == 1
 end
 
-for t in range(10, m.indices_counts[:time]-10)
+for t in 10:dim_count(m.md, :time)
     @test m[:A, :varA][t] == 10
 end
 
@@ -95,29 +91,30 @@ end
 #   tests for indexing   #
 ##########################
 
+@test dim_count(m.md, :time) == 18
+
 @test m[:A, :parA] == 10
 @test_throws ErrorException m[:A, :xx]
 
-@test getindexcount(m, :time) == 18
-
-a = getindexvalues(m, :time)
-for i in range(1,18)
+time = dimension(m, :time)
+a = collect(keys(time))
+for i in 1:18
     @test a[i] == 2010 + 5*i
 end
 
-@test getindexlabels(m, :A, :varA)[1] == :time
-@test length(getindexlabels(m, :A, :parA)) == 0
+@test dimensions(m, :A, :varA)[1] == :time
+@test length(dimensions(m, :A, :parA)) == 0
 
 ################################
 #  tests for delete! function  #
 ################################
 
 @test_throws ErrorException delete!(m, :D)
-@test length(m.internal_parameter_connections)==2
+@test length(m.md.internal_param_conns) == 2
 delete!(m, :A)
-@test length(m.internal_parameter_connections)==1
-@test !(:A in components(m))
-@test length(components(m))==2
+@test length(m.md.internal_param_conns) == 1
+@test !(:A in compdefs(m))
+@test length(compdefs(m)) == 2
 
 #######################################
 #   Test check for unset parameters   #
@@ -130,3 +127,6 @@ end
 
 addcomponent(m, D)
 @test_throws ErrorException Mimi.build(m)
+
+
+end # module

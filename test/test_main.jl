@@ -1,6 +1,8 @@
 using Base.Test
 using Mimi
-using DataFrames
+# using DataFrames
+
+Mimi.reset_compdefs()
 
 @defcomp foo1 begin
     index1 = Index()
@@ -12,40 +14,53 @@ using DataFrames
     var1 = Variable()
     var2 = Variable(index=[time])
     var3 = Variable(index=[time,index1])
-    var4::Bool = Variable(index=[3])
-    var5 = Variable(index=[index1,4])
+
+    idx3 = Index()
+    idx4 = Index()
+    var4::Bool = Variable(index=[idx3])
+    var5 = Variable(index=[index1, idx4])
 end
 
-@test length(Mimi.metainfo.getallcomps())==4 # four because of adder component and two connector components
+@defmodel x1 begin
+    index[index1] = [:USA, :EU27, :CHI, :IND, :BRA, :ROW]
+    index[time] = 2010:2100
+    index[idx3] = 1:3
+    index[idx4] = 1:4
+    component(foo1)
+end
+
+@test length(compdefs()) == 4 # four because of adder component and two connector components
 
 # x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
-x1 = foo1(Float64, Val{1}, Val{1}, Val{10}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
+# x1 = foo1(Float64, Val{1}, Val{1}, Val{10}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
 
-@test x1.Dimensions.index1.start == 1
-@test x1.Dimensions.index1.stop == 3
+@test length(Mimi.dimension(x1.md, :index1)) == 6
 
 # Check variable types
-@test isa(x1.Variables.var1, Float64)
+@test isa(Mimi.variable(foo1, :var1), Float64)
 @test isa(x1.Variables.var2.data, Array{Float64,1})
 @test isa(x1.Variables.var3.data, Array{Float64,2})
 @test isa(x1.Variables.var4, Array{Bool,1})
 @test isa(x1.Variables.var5, Array{Float64,2})
 
 # Check variable sizes
-@test size(x1.Variables.var2,1)==10
-@test size(x1.Variables.var3)==(10,3)
-@test size(x1.Variables.var4,1)==3
-@test size(x1.Variables.var5)==(3,4)
+@test size(x1.Variables.var2, 1) == 10
+@test size(x1.Variables.var3) == (10,3)
+@test size(x1.Variables.var4, 1) == 3
+@test size(x1.Variables.var5) == (3,4)
 
-resetvariables(x1)
-
-# Check all variables are defaulted
-@test isnan(x1.Variables.var1)
 
 @test_throws MethodError x1.Parameters.par1 = Array{Float64}(1,2)
 
 x1.Parameters.par1 = 5.0
 @test x1.Parameters.par1 == 5.0
+
+build(x1)
+ci = compinstance(x1, :foo1)
+reset_variables(ci)
+
+# Check all variables are defaulted
+@test isnan(x1.Variables.var1)
 
 m = Model()
 setindex(m, :time, 20)

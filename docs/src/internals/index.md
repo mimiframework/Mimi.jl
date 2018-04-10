@@ -32,5 +32,6 @@ We are retaining the distinction between (i) descriptive objects that define the
 TBD. (David to implement initial version.)
 
 ## Graphical User Interface
-TBD. (By Lisa?)
+* ````explorer```` function produces a simple graphical user interface that can be used to view the variables and
+parameters of a model instance.
 
