@@ -72,7 +72,7 @@ function add_internal_param_conn(m::Model, conn::InternalParameterConnection)
     decache(m)
 end
 
-function set_leftover_params!(m::Model, parameters::Dict{String,Any})
+function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     set_leftover_params!(m.md, parameters)
     decache(m)
 end

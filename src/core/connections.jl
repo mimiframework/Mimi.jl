@@ -184,7 +184,7 @@ Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
 keys are strings that match the names of unset parameters in the model.
 """
-function set_leftover_params!(md::ModelDef, parameters::Dict{String,Any})
+function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(lowercase(k) => v for (k, v) in parameters)
     leftovers = unconnected_params(md)
     external_params = md.external_params

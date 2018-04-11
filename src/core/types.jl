@@ -2,44 +2,27 @@
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
-mutable struct Timestep{Start, Step, Stop}
-	t::Int
-end
-
-# TBD: Consider renaming and simplifying this. (Not currently used.)
-mutable struct TimestepNew
-    start::Int      # the first year/month etc. that is relevant
-    step::Int       # interval between periods, for constant timesteps
-    stop::Int       # the final year/month etc. that is relevant
-    current::Int    # the current period
-
-    function TimestepNew(start::Int, step::Int, stop::Int, current::Int=1)
-        self = new(start, step, stop)
-        self.current = current
-        return self
-    end
+struct Timestep{Start, Step, Stop}
+    t::Int
 end
 
 mutable struct Clock
 	ts::Timestep
 
 	function Clock(start::Int, step::Int, stop::Int)
-		self = new()
-		self.ts = Timestep{start, step, stop}(1)
-		return self
+		return new(Timestep{start, step, stop}(1))
 	end
 end
 
 # TBD: consider using this merged type in place of TimestepVector/TimestepMatrix
-# mutable struct TimestepArray{T, N}
+# struct TimestepArray{T, N}
 #     start::Int
 #     step::Int
 # 	data::Array{T, N}
 
 #     function TimestepArray{T, N}(start::Int, step::Int, data::Array{T, N}) where {T, N}
-# 		self = new(start, step, data)
-# 		return self
-# 	end
+# 		return new(start, step, data)
+# 	  end
 
 #     function TimestepArray{T, N}(start::Int, step::Int, dims::Int...) where {T, N}
 #         num_dims = length(dims)
@@ -53,9 +36,7 @@ end
 #         end
 
 #         data = Array{T, N}(dims...)
-# 		self = new(start, step, data)
-# 		self.data = Vector{T}(i)
-# 		return self
+# 		  return new(start, step, data)
 # 	end
 # end
 
@@ -70,37 +51,29 @@ abstract type AbstractTimestepMatrix{T, Start, Step} end
 
 # We don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 1 for the vector case
-mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
+struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
 	data::Vector{T}
 
     function TimestepVector{T, Start, Step}(d::Vector{T}) where {T, Start, Step}
-		v = new()
-		v.data = d
-		return v
+		return new(d)
 	end
 
     function TimestepVector{T, Start, Step}(i::Int) where {T, Start, Step}
-		v = new()
-		v.data = Vector{T}(i)
-		return v
+		return new(Vector{T}(i))
 	end
 end
 
 # We don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 2 for the matrix case
-mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
+struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
 	data::Array{T, 2}
 
     function TimestepMatrix{T, Start, Step}(d::Array{T, 2}) where {T, Start, Step}
-		m = new()
-		m.data = d
-		return m
+		return new(d)
 	end
 
     function TimestepMatrix{T, Start, Step}(i::Int, j::Int) where {T, Start, Step}
-		m = new()
-		m.data = Array{T, 2}(i, j)
-		return m
+		return new(Array{T, 2}(i, j))
 	end
 end
 
