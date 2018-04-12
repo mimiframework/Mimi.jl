@@ -201,7 +201,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
-                    value = convert(Array{md.numberType}, value)
+                    value = convert(Array{md.number_type}, value)
                     # start = indexvalues(md, :time)[1]
                     start = dim_values(md, :time)[1]
                     step = step_size(md)
