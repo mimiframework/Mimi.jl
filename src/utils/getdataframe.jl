@@ -136,3 +136,34 @@ function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
     df = _load_dataframe(m, comp_name, item_name)
     return df
 end
+
+"""
+    getdataframe(m::Model, comp_name::Symbol, pairs::Pair...)
+
+Return a DataFrame with values for the given variables or parameters 
+indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
+If more than one pair is provided, all must refer to items with the same
+dimensions, which are used to join the respective item values.
+"""
+function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)  
+    (comp_name1, item_name1) = pairs[1]
+    dims = dimensions(m, comp_name1, item_name1)
+    df = getdataframe(m, comp_name1, item_name1)
+
+    for (comp_name, item_name) in pairs[2:end]
+        next_dims = dimensions(m, comp_name, item_name)
+        if dims != next_dims
+            error("Can't create DataFrame from items with different dimensions ($comp_name1.$item_name1: $dims vs $comp_name.$item_name: $next_dims)")
+        end
+        result = getdataframe(m, comp_name, item_name)
+        df = hcat(df, result[[item_name]])      # [[xx]] retrieves a 1 column DataFrame
+    end
+
+    return df
+end
+
+function getdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
+    comp_name = pair.first
+    expanded = [comp_name => param_name for param_name in pair.second]
+    return getdataframe(m, expanded...)
+end

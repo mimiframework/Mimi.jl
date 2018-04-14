@@ -6,7 +6,7 @@ compdefs() = collect(values(_compdefs))
 compdef(comp_id::ComponentId) = _compdefs[comp_id]
 
 function compdef(comp_name::Symbol)
-    matches = collect(filter(obj -> name(obj) == comp_name, values(_compdefs)))
+    matches = collect(Iterators.filter(obj -> name(obj) == comp_name, values(_compdefs)))
     count = length(matches)
 
     if count == 1
@@ -26,9 +26,18 @@ hascomp(md::ModelDef, comp_name::Symbol) = haskey(md.comp_defs, comp_name)
 
 compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
 
-reset_compdefs() = empty!(_compdefs)
+function reset_compdefs(reload_builtins=true)
+    empty!(_compdefs)
+
+    if reload_builtins
+        compdir = joinpath(dirname(@__FILE__), "..", "components")
+        load_comps(compdir)
+    end
+end
 
 start_period(comp_def::ComponentDef) = comp_def.start
+
+stop_period(comp_def::ComponentDef) = comp_def.stop
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -113,6 +122,8 @@ dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 
 dimensions(def::DatumDef) = def.dimensions
 
+dimensions(comp_def::ComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
+
 dim_count(def::DatumDef) = length(def.dimensions)
 
 datatype(def::DatumDef) = def.datatype
@@ -136,10 +147,10 @@ end
 
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
-        if dim in dim_keys(md)
+        if haskey(md, dim)
             if isa(value, NamedArray)
                 labels = names(value, findnext(dims, dim, 1))
-                dim_vals = dim_values(md, dim)
+                dim_vals = dim_keys(md, dim)
                 for i in 1:length(labels)
                     if labels[i] != dim_vals[i]
                         error("Labels for dimension $dim in parameter $name do not match model's index values")
@@ -170,7 +181,7 @@ timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
 
 Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Vector, Tuple, Range})    
+function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
     if haskey(md, name)
         warn("Redefining dimension :$name")
     end
@@ -273,9 +284,13 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
     comp_param_dims = parameter_dimensions(md, comp_name, param_name)
     num_dims = length(comp_param_dims)
     
-    if length(comp_param_dims) > 0 
+    if length(comp_param_dims) > 0
+        comp_def = compdef(md, comp_name)
+        data_type = datatype(parameter(comp_def, param_name))
+        dtype = data_type == Number ? number_type(md) : data_type
+
         # convert the number type and, if NamedArray, convert to Array
-        value = convert(Array{number_type(md), num_dims}, value)
+        value = convert(Array{dtype, num_dims}, value)
    
         if comp_param_dims[1] == :time
             T = eltype(value)
@@ -355,7 +370,7 @@ end
 
 # Return the number of timesteps a given component in a model will run for.
 function getspan(md::ModelDef, comp_name::Symbol)
-    comp_def = comp_def(md, comp_name)
+    comp_def = compdef(md, comp_name)
     start = start_period(comp_def)
     stop  = stop_period(comp_def)
     step  = step_size(md)
@@ -372,7 +387,7 @@ end
 #
 # Model
 #
-
+const VoidInt    = Union{Void, Int}
 const VoidSymbol = Union{Void, Symbol}
 
 """
@@ -383,7 +398,7 @@ the list unless one of the keywords, `start`, `stop`, `before`, `after`. If the 
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
 function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
-                      start::VoidSymbol=nothing, stop::VoidSymbol=nothing, 
+                      start::VoidInt=nothing, stop::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # check that start and stop are within the model's time index range
     time_index = dim_keys(md, :time)
@@ -455,14 +470,14 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 end
 
 function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      start::VoidSymbol=nothing, stop::VoidSymbol=nothing, 
+                      start::VoidInt=nothing, stop::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
     addcomponent(md, compdef(comp_id), comp_name, start=start, stop=stop, before=before, after=after)
 end
 
 function replace_component(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           start::VoidSymbol=nothing, stop::VoidSymbol=nothing,
+                           start::VoidInt=nothing, stop::VoidInt=nothing,
                            before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     delete!(md, comp_name)
     addcomponent(md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)

@@ -59,8 +59,8 @@ function _generate_run_func(module_name, comp_name, args, body)
 
     func = :(
         function Mimi.run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
-                                   p::Mimi.ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
-                                   d::Dict{Symbol, Vector{Int}}, t::Int)
+                                   $(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
+                                   $(d)::Dict{Symbol, Vector{Int}}, $(t))
             $(body...)
         end
     )
@@ -83,8 +83,8 @@ function _generate_init_func(module_name, comp_name, args, body)
 
     func = :(
         function Mimi.init(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
-                           p::Mimi.ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
-                           d::Dict{Symbol, Vector{Int}})
+                           $(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
+                           $(d)::Dict{Symbol, Vector{Int}})
             $(body...)
         end
     )
@@ -173,12 +173,11 @@ macro defcomp(comp_name, ex)
        
         if @capture(elt, function fname_(args__) body__ end) 
             if fname == :run_timestep
-                # Save the expression that will store the run_timestep function definition, and
-                # translate dot notation to get/setproperty. The func is created at build time so
-                # it's created in the Mimi package.
                 expr = _generate_run_func(mod_name, comp_name, args, body)
-            else fname == :init
+            elseif fname == :init
                 expr = _generate_init_func(mod_name, comp_name, args, body)
+            else
+                error("@defcomp can contain only these functions: init(p, v, d) and run_timestep(p, v, d, t)")
             end
 
             addexpr(expr)
@@ -186,7 +185,7 @@ macro defcomp(comp_name, ex)
         end
 
         if ! @capture(elt, (name_::vartype_ | name_) = elt_type_(args__))
-            error("Element syntax error: $elt")
+            error("Element syntax error: $elt")           
         end
 
         # vartype = vartype == nothing ? ::Float64 : vartype

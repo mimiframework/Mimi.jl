@@ -19,7 +19,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
     if !(eltype(ext_param.values) <: datatype(param_def))
         t1 = eltype(ext_param.values)
         t2 = datatype(param_def)
-        error("Mismatched datatype of parameter connection:\n   Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
+        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
 
     comp_dims  = dimensions(param_def)
@@ -28,7 +28,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
     if ! isempty(param_dims) && size(param_dims) != size(comp_dims)
         d1 = size(comp_dims)
         d2 = size(param_dims)
-        error("Mismatched dimensions of parameter connection:\n   Component: $(comp_def.comp_id) ($d1), Parameter: $param_name ($d2)")
+        error("Mismatched dimensions of parameter connection: Component: $(comp_def.comp_id) ($d1), Parameter: $param_name ($d2)")
     end
 
     # Don't check sizes for ConnectorComps since they won't match.
@@ -44,7 +44,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
             if dim_count(md, dim) != size(ext_param.values)[i]
                 n1 = dim_count(md, dim)
                 n2 = size(ext_param.values)[i]
-                error("Mismatched data size for a parameter connection:\n   $(comp_def.comp_id): dim :$dim has $n1 elements; parameter :$param_name has $n2 elements.")
+                error("Mismatched data size for a parameter connection: $(comp_def.comp_id): dim :$dim has $n1 elements; parameter :$param_name has $n2 elements.")
             end
         end
     end
@@ -106,7 +106,7 @@ function connect_parameter(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        start = start(dst_comp_def)
+        start = start_period(dst_comp_def)
         step = step_size(md)
         T = eltype(backup)
 
@@ -291,10 +291,6 @@ end
 Add a scalar type parameter to the model.
 """
 function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
-    if typeof(value) <: AbstractArray
-        numtype = number_type(md)
-        value = convert(Array{numtype}, value)
-    end
     p = ScalarModelParameter(value)
     set_external_param!(md, name, p)
 end

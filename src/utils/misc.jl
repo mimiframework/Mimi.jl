@@ -23,28 +23,53 @@ function interpolate(values, ts=10)
     return newvalues
 end
 
+# """
+# Accepts a camelcase or snakecase string, and makes it human-readable
+# e.g. camelCase -> Camel Case; snake_case -> Snake Case
+# Warning: due to limitations in Julia's implementation of regex (or limits in my
+# understanding of Julia's implementation of regex), cannot handle camelcase strings
+# with more than 2 consecutive capitals, e.g. fileInTXTFormat -> File In T X T Format
+# """
+# function prettifystring_OLD(s::String)
+#     if contains(s, "_")
+#         # Snake Case
+#         s = replace(s, r"_", s" ")
+#     else
+#         # Camel Case
+#         s = replace(s, r"([a-z])([A-Z])", s"\1 \2")
+#         s = replace(s, r"([A-Z])([A-Z])", s"\1 \2")
+#     end
+
+#     # Capitalize the first letter of each word
+#     s_arr = split(s)
+#     to_ret = ""
+#     for word in s_arr
+#         word_caps = "$(uppercase(word[1]))$(word[2:length(word)])"
+#         to_ret = "$(to_ret)$(word_caps) "
+#     end
+
+#     # Return our string, minus the trailing space that was added
+#     return to_ret[1:length(to_ret) - 1]
+# end
+
 """
-    read_params(f, range::String, count::Int, sheet::String="Base")
-
-Get parameters from DICE2010 excel sheet.
-
-`range` is a single cell or a range of cells in the excel sheet.
-  Must be a cell reference of the form "A27" or a range "B56:B77".
-
-`count` is the length of the time dimension; ignored if range 
-   refers to a single cell.
-
-`sheet` is the name of the worksheet in the Excel file to read from.
-  Defaults to "Base".
-
-Examples:   
-    values = read_params(f, "B15:BI15", 40)   # read only the first 40 values
-
-    value = read_params(f, "A27", sheet="Parameters")
-    value = read_params(f, "A27:A27", sheet="Parameters") # same as above
+Accepts a camelcase or snakecase string, and makes it human-readable
+e.g. camelCase -> Camel Case; snake_case -> Snake Case
 """
-function read_params(f, range::String, T::Int=60; sheet::String="Base")
-    data = readxl(f, "$sheet\!$range")
-    parts = split(range, ":")
-    return (length(parts) == 1 || parts[1] == parts[2]) ? data : Vector{Float64}(data[1:T])
+function prettify(s::String)
+    s = replace(s, r"_", s" ")
+    s = replace(s, r"([a-z])([A-Z])",  s"\1 \2")
+    s = replace(s, r"([A-Z]+)([A-Z])", s"\1 \2")        # handle case of consecutive caps by splitting last from rest
+
+    # Capitalize the first letter of each word
+    s_arr = split(s)
+
+    for (i, word) in enumerate(s_arr)
+        s_arr[i] = "$(uppercase(word[1]))$(word[2:length(word)])"
+    end
+
+    # Return our string
+    return join(s_arr, " ")
 end
+
+prettify(s::Symbol) = prettify(string(s))

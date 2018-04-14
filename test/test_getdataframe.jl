@@ -7,45 +7,40 @@ my_model = Model()
 @defcomp testcomp1 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
-end
-
-function run_timestep(tc1::testcomp1, t::Int)
-    v = tc1.Variables
-    p = tc1.Parameters
-    v.var1[t] = p.par1[t]
+    
+    function run_timestep(p, v, d, t)
+        v.var1[t] = p.par1[t]
+    end
 end
 
 @defcomp testcomp2 begin
     var2 = Variable(index=[time])
     par2 = Parameter(index=[time])
-end
-
-function run_timestep(tc1::testcomp2, t::Int)
-    v = tc1.Variables
-    p = tc1.Parameters
-    v.var2[t] = p.par2[t]
+    
+    function run_timestep(p, v, d, t)
+        v.var2[t] = p.par2[t]
+    end
 end
 
 @defcomp testcomp3 begin
     var3 = Variable(index=[time])
     par3 = Parameter(index=[time])
-end
-
-function run_timestep(tc1::testcomp3, t::Int)
-    v = tc1.Variables
-    p = tc1.Parameters
-    v.var3[t] = p.par3[t]
+    
+    function run_timestep(p, v, d, t)
+        v.var3[t] = p.par3[t]
+    end
 end
 
 par = collect(2015:5:2110)
 
-setindex(my_model, :time, collect(2015:5:2110))
+set_dimension!(my_model, :time, 2015:5:2110)
 addcomponent(my_model, testcomp1)
-setparameter(my_model, :testcomp1, :par1, par)
+set_parameter!(my_model, :testcomp1, :par1, par)
 run(my_model)
 
-#Regular getdataframe
+# Regular getdataframe
 dataframe = getdataframe(my_model, :testcomp1, :var1)
 @test(dataframe[2] == par)
-#Test trying to getdataframe from component that does not exist
+
+# Test trying to getdataframe from component that does not exist
 @test_throws ErrorException getdataframe(my_model, :testcomp1, :var2)

@@ -262,8 +262,11 @@ function reset_variables(ci::ComponentInstance)
         if (T <: AbstractArray || T <: AbstractTimestepMatrix) && eltype(value) <: AbstractFloat
             fill!(value, NaN)
 
-        elseif T <: AbstractFloat
+        elseif T <: AbstractFloat || (T <: Scalar && T.parameters[1] <: AbstractFloat)            
             setproperty!(vars, Val(name), NaN)
+
+        elseif (T <: Scalar)    # integer or bool
+            setproperty!(vars, Val(name), 0)
         end
     end
 end

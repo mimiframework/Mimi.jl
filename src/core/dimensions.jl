@@ -4,7 +4,8 @@
 # Arrays in Mimi. A Dimension can be declared one of several ways:
 # dim = Dimension(:foo, :bar, :baz)      # varargs
 # dim = Dimension([:foo, :bar, :baz])    # Vector
-# dim = Dimension(2010:2100)             # Range or S
+# dim = Dimension(2010:2100)             # Range
+# dim = Dimension(4)                     # Same as 1:4
 #
 # Similarly, values can be referenced several ways:
 # value  = Dimension[:foo]               # single lookup

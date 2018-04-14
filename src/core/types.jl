@@ -51,7 +51,7 @@ abstract type AbstractTimestepMatrix{T, Start, Step} end
 
 # We don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 1 for the vector case
-struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
+mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
 	data::Vector{T}
 
     function TimestepVector{T, Start, Step}(d::Vector{T}) where {T, Start, Step}
@@ -65,7 +65,7 @@ end
 
 # We don't need to encode N (number of dimensions) as a type parameter because we 
 # are hardcoding it as 2 for the matrix case
-struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
+mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
 	data::Array{T, 2}
 
     function TimestepMatrix{T, Start, Step}(d::Array{T, 2}) where {T, Start, Step}
@@ -95,6 +95,8 @@ struct Dimension <: AbstractDimension
     function Dimension(rng::Range)
         return Dimension(collect(rng))
     end
+
+    Dimension(i::Int) = Dimension(1:i)
 
     # Support Dimension(:foo, :bar, :baz)
     function Dimension(keys...)
@@ -188,7 +190,7 @@ abstract type NamedDef end
 mutable struct DatumDef <: NamedDef
     name::Symbol
     datatype::DataType
-    dimensions::Vector{Any}
+    dimensions::Vector{Symbol}
     description::String
     unit::String
     datum_type::Symbol          # :parameter or :variable

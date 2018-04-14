@@ -13,18 +13,14 @@ using Base.Test
     y = Variable(index=[time, regions])
     x = Parameter(index=[time, regions])
 
-end
-
-function run_timestep(state::compA, t::Int)
-    v = state.Variables
-    p = state.Parameters
-    d = state.Dimensions
-
-    for r in d.regions
-        v.y[t, r] = p.x[t, r]
+    
+    function run_timestep(p, v, d, t)
+        for r in d.regions
+            v.y[t, r] = p.x[t, r]
+        end
     end
 end
-
+    
 x = Array{Float64}(20,3)
 for t in 1:20
     x[t,1] = 1
@@ -34,6 +30,7 @@ end
 
 region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
+
 x2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
     x2[t,"Region1"] = 1
@@ -42,16 +39,16 @@ for t in time_labels
 end
 
 model1 = Model()
-setindex(model1, :time, collect(2015:5:2110))
-setindex(model1, :regions, ["Region1", "Region2", "Region3"])
+set_dimension!(model1, :time, time_labels)
+set_dimension!(model1, :regions, region_labels)
 addcomponent(model1, compA)
-setparameter(model1, :compA, :x, x)
+set_parameter!(model1, :compA, :x, x)
 
 model2 = Model()
-setindex(model2, :time, collect(2015:5:2110))
-setindex(model2, :regions, ["Region1", "Region2", "Region3"])
+set_dimension!(model2, :time, time_labels)
+set_dimension!(model2, :regions, region_labels)
 addcomponent(model2, compA)
-setparameter(model2, :compA, :x, x2) # should perform parameter dimension check
+set_parameter!(model2, :compA, :x, x2) # should perform parameter dimension check
 
 run(model1)
 run(model2)
@@ -80,26 +77,21 @@ end
     depk    = Parameter(index=[regions])        #Depreciation rate on capital - Note that it only has a region index
     k0      = Parameter(index=[regions])        #Initial level of capital
     share   = Parameter()                       #Capital share
-end
-
-
-function run_timestep(state::grosseconomy, t::Int)
-    v = state.Variables
-    p = state.Parameters
-    d = state.Dimensions                        #Note that the regional dimension is defined here and parameters and variables are indexed by 'r'
-
-    #Define an equation for K
-    for r in d.regions
-        if t == 1
-            v.K[t,r] = p.k0[r]
-        else
-            v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
+    
+    function run_timestep(p, v, d, t)
+        #Define an equation for K
+        for r in d.regions
+            if t == 1
+                v.K[t,r] = p.k0[r]
+            else
+                v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
+            end
         end
-    end
-
-    #Define an equation for YGROSS
-    for r in d.regions
-        v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
+        
+        #Define an equation for YGROSS
+        for r in d.regions
+            v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
+        end
     end
 end
 
@@ -111,22 +103,17 @@ end
     E_Global    = Variable(index=[time])            #Global emissions (sum of regional emissions)
     sigma       = Parameter(index=[time, regions])  #Emissions output ratio
     YGROSS      = Parameter(index=[time, regions])  #Gross output - Note that YGROSS is now a parameter
-end
-
-
-function run_timestep(state::emissions, t::Int)
-    v = state.Variables
-    p = state.Parameters
-    d = state.Dimensions
-
-    #Define an eqation for E
-    for r in d.regions
-        v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
-    end
-
-    #Define an equation for E_Global
-    for r in d.regions
-        v.E_Global[t] = sum(v.E[t,:])
+    
+    function run_timestep(p, v, d, t)
+        #Define an eqation for E
+        for r in d.regions
+            v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
+        end
+        
+        #Define an equation for E_Global
+        for r in d.regions
+            v.E_Global[t] = sum(v.E[t,:])
+        end
     end
 end
 
@@ -167,22 +154,22 @@ function run_my_model()
 
     my_model = Model()
 
-    setindex(my_model, :time, collect(2015:5:2110))
-    setindex(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
+    set_dimension!(my_model, :time, collect(2015:5:2110))
+    set_dimension!(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
     addcomponent(my_model, grosseconomy)
     addcomponent(my_model, emissions)
 
-    setparameter(my_model, :grosseconomy, :l, l)
-    setparameter(my_model, :grosseconomy, :tfp, tfp)
-    setparameter(my_model, :grosseconomy, :s, s)
-    setparameter(my_model, :grosseconomy, :depk, depk)
-    setparameter(my_model, :grosseconomy, :k0, k0)
-    setparameter(my_model, :grosseconomy, :share, 0.3)
+    set_parameter!(my_model, :grosseconomy, :l, l)
+    set_parameter!(my_model, :grosseconomy, :tfp, tfp)
+    set_parameter!(my_model, :grosseconomy, :s, s)
+    set_parameter!(my_model, :grosseconomy, :depk, depk)
+    set_parameter!(my_model, :grosseconomy, :k0, k0)
+    set_parameter!(my_model, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    setparameter(my_model, :emissions, :sigma, sigma2)
-    connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    set_parameter!(my_model, :emissions, :sigma, sigma2)
+    connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model)
     return(my_model)
@@ -230,22 +217,22 @@ function run_my_model2()
 
     my_model2 = Model()
 
-    setindex(my_model2, :time, collect(2015:5:2110))
-    setindex(my_model2, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
+    set_dimension!(my_model2, :time, collect(2015:5:2110))
+    set_dimension!(my_model2, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
     addcomponent(my_model2, grosseconomy)
     addcomponent(my_model2, emissions)
 
-    setparameter(my_model2, :grosseconomy, :l, l2)
-    setparameter(my_model2, :grosseconomy, :tfp, tfp2)
-    setparameter(my_model2, :grosseconomy, :s, s2)
-    setparameter(my_model2, :grosseconomy, :depk,depk2)
-    setparameter(my_model2, :grosseconomy, :k0, k02)
-    setparameter(my_model2, :grosseconomy, :share, 0.3)
+    set_parameter!(my_model2, :grosseconomy, :l, l2)
+    set_parameter!(my_model2, :grosseconomy, :tfp, tfp2)
+    set_parameter!(my_model2, :grosseconomy, :s, s2)
+    set_parameter!(my_model2, :grosseconomy, :depk,depk2)
+    set_parameter!(my_model2, :grosseconomy, :k0, k02)
+    set_parameter!(my_model2, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    setparameter(my_model2, :emissions, :sigma, sigma2)
-    connectparameter(my_model2, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    set_parameter!(my_model2, :emissions, :sigma, sigma2)
+    connect_parameter(my_model2, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model2)
     return(my_model2)
@@ -270,14 +257,14 @@ end
 
 
 ######################################################
-#  setparameter option with list of dimension names  #
+#  set_parameter! option with list of dimension names  #
 ######################################################
 
 model3 = Model()
-setindex(model3, :time, collect(2015:5:2110))
-setindex(model3, :regions, ["Region1", "Region2", "Region3"])
+set_dimension!(model3, :time, collect(2015:5:2110))
+set_dimension!(model3, :regions, ["Region1", "Region2", "Region3"])
 addcomponent(model3, compA)
-setparameter(model3, :compA, :x, x, [:time, :regions])
+set_parameter!(model3, :compA, :x, x, [:time, :regions])
 run(model3)
 
 for t in range(1, length(time_labels))

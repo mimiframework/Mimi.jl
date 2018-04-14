@@ -2,6 +2,8 @@ using Mimi
 using NamedArrays
 using Base.Test
 
+Mimi.reset_compdefs()
+
 #####################################
 #  LARGER MULTIREGIONAL TEST (2/3)  #
 #####################################
@@ -18,26 +20,21 @@ using Base.Test
     depk    = Parameter(index=[regions])        #Depreciation rate on capital - Note that it only has a region index
     k0      = Parameter(index=[regions])        #Initial level of capital
     share   = Parameter()                       #Capital share
-end
-
-
-function run_timestep(state::grosseconomy, t::Int)
-    v = state.Variables
-    p = state.Parameters
-    d = state.Dimensions                        #Note that the regional dimension is defined here and parameters and variables are indexed by 'r'
-
-    #Define an equation for K
-    for r in d.regions
-        if t == 1
-            v.K[t,r] = p.k0[r]
-        else
-            v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
+    
+    function run_timestep(p, v, d, t)
+        #Define an equation for K
+        for r in d.regions
+            if t == 1
+                v.K[t,r] = p.k0[r]
+            else
+                v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
+            end
         end
-    end
-
-    #Define an equation for YGROSS
-    for r in d.regions
-        v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
+        
+        #Define an equation for YGROSS
+        for r in d.regions
+            v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
+        end
     end
 end
 
@@ -49,22 +46,17 @@ end
     E_Global    = Variable(index=[time])            #Global emissions (sum of regional emissions)
     sigma       = Parameter(index=[time, regions])  #Emissions output ratio
     YGROSS      = Parameter(index=[time, regions])  #Gross output - Note that YGROSS is now a parameter
-end
-
-
-function run_timestep(state::emissions, t::Int)
-    v = state.Variables
-    p = state.Parameters
-    d = state.Dimensions
-
-    #Define an eqation for E
-    for r in d.regions
-        v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
-    end
-
-    #Define an equation for E_Global
-    for r in d.regions
-        v.E_Global[t] = sum(v.E[t,:])
+    
+    function run_timestep(p, v, d, t)
+        #Define an eqation for E
+        for r in d.regions
+            v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
+        end
+        
+        #Define an equation for E_Global
+        for r in d.regions
+            v.E_Global[t] = sum(v.E[t,:])
+        end
     end
 end
 
@@ -105,26 +97,25 @@ function run_my_model()
 
     my_model = Model()
 
-    setindex(my_model, :time, collect(2015:5:2110))
-    setindex(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
+    set_dimension!(my_model, :time, collect(2015:5:2110))
+    set_dimension!(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
     addcomponent(my_model, grosseconomy)
     addcomponent(my_model, emissions)
 
-    setparameter(my_model, :grosseconomy, :l, l)
-    setparameter(my_model, :grosseconomy, :tfp, tfp)
-    setparameter(my_model, :grosseconomy, :s, s)
-    setparameter(my_model, :grosseconomy, :depk,depk)
-    setparameter(my_model, :grosseconomy, :k0, k0)
-    setparameter(my_model, :grosseconomy, :share, 0.3)
+    set_parameter!(my_model, :grosseconomy, :l, l)
+    set_parameter!(my_model, :grosseconomy, :tfp, tfp)
+    set_parameter!(my_model, :grosseconomy, :s, s)
+    set_parameter!(my_model, :grosseconomy, :depk,depk)
+    set_parameter!(my_model, :grosseconomy, :k0, k0)
+    set_parameter!(my_model, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    setparameter(my_model, :emissions, :sigma, sigma2)
-    connectparameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    set_parameter!(my_model, :emissions, :sigma, sigma2)
+    connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model)
     return(my_model)
-
 end
 
 
@@ -165,12 +156,12 @@ end
 
 run1 = run_my_model()
 
-expanded_get_dataframe = Mimi.getdataframe(run1, :grosseconomy =>(:YGROSS, :K))
-curr_get_dataframe = Mimi.getdataframe(run1, :grosseconomy, :YGROSS)
+expanded_get_dataframe = getdataframe(run1, :grosseconomy =>(:YGROSS, :K))
+curr_get_dataframe = getdataframe(run1, :grosseconomy, :YGROSS)
 @test(expanded_get_dataframe[3] == curr_get_dataframe[3])
 
-expanded_get_dataframe = Mimi.getdataframe(run1, :grosseconomy => :YGROSS, :emissions => :E)
-curr_get_dataframe = Mimi.getdataframe(run1, :emissions, :E)
+expanded_get_dataframe = getdataframe(run1, :grosseconomy => :YGROSS, :emissions => :E)
+curr_get_dataframe = getdataframe(run1, :emissions, :E)
 @test(expanded_get_dataframe[4] == curr_get_dataframe[3])
 
 
@@ -178,25 +169,23 @@ curr_get_dataframe = Mimi.getdataframe(run1, :emissions, :E)
 ## MORE TESTS ###
 #################
 my_model = Model()
-setindex(my_model, :time, collect(2015:5:2110))
+set_dimension!(my_model, :time, collect(2015:5:2110))
 
 #Testing that you cannot add two components of the same name
 @defcomp testcomp1 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
-end
-
-function run_timestep(tc1::testcomp1, t::Int)
-    v = tc1.Variables
-    p = tc1.Parameters
-    v.var1[t] = p.par1[t]
+    
+    function run_timestep(p, v, d, t)
+        v.var1[t] = p.par1[t]
+    end
 end
 
 
 par = collect(2015:5:2110)
 addcomponent(my_model, testcomp1)
 
-setparameter(my_model, :testcomp1, :par1, par)
+set_parameter!(my_model, :testcomp1, :par1, par)
 run(my_model)
 
 #Regular getdataframe

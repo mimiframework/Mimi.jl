@@ -2,6 +2,11 @@ using Plots
 using GraphPlot
 using Compose
 
+# Remove this if plotting.jl is once again included in Mimi.jl. (It was removed
+# because Plots causing pre-compilation to fail, and this file is optional.)
+using Mimi:
+    datumdef, prettify
+
 """
 Extends the Plots module to be able to take a model information parameters for
 convenience. More advanced plotting may require accessing the Plots module directly.
@@ -52,7 +57,7 @@ function Plots.plot(m::Model, comp_name::Symbol, datum_name::Symbol;
     if length(dims) == 1
         indices = collect(values(dim))
         xticks = (indices, dim_keys)
-        plt = bar(indices, data, xlabel=x_label, xticks=xticks, ylabel=y_label, legend=:none)
+        plt = Plots.bar(indices, data, xlabel=x_label, xticks=xticks, ylabel=y_label, legend=:none)
 
     elseif legend == nothing
         # Assume that we are only plotting one line (i.e. it's not split up by regions)
@@ -74,58 +79,6 @@ function Plots.plot(m::Model, comp_name::Symbol, datum_name::Symbol;
 
     return plt
 end
-
-# """
-# Accepts a camelcase or snakecase string, and makes it human-readable
-# e.g. camelCase -> Camel Case; snake_case -> Snake Case
-# Warning: due to limitations in Julia's implementation of regex (or limits in my
-# understanding of Julia's implementation of regex), cannot handle camelcase strings
-# with more than 2 consecutive capitals, e.g. fileInTXTFormat -> File In T X T Format
-# """
-# function prettifystring_OLD(s::String)
-#     if contains(s, "_")
-#         # Snake Case
-#         s = replace(s, r"_", s" ")
-#     else
-#         # Camel Case
-#         s = replace(s, r"([a-z])([A-Z])", s"\1 \2")
-#         s = replace(s, r"([A-Z])([A-Z])", s"\1 \2")
-#     end
-
-#     # Capitalize the first letter of each word
-#     s_arr = split(s)
-#     to_ret = ""
-#     for word in s_arr
-#         word_caps = "$(uppercase(word[1]))$(word[2:length(word)])"
-#         to_ret = "$(to_ret)$(word_caps) "
-#     end
-
-#     # Return our string, minus the trailing space that was added
-#     return to_ret[1:length(to_ret) - 1]
-# end
-
-"""
-Accepts a camelcase or snakecase string, and makes it human-readable
-e.g. camelCase -> Camel Case; snake_case -> Snake Case
-"""
-function prettify(s::String)
-    s = replace(s, r"_", s" ")
-    s = replace(s, r"([a-z])([A-Z])",  s"\1 \2")
-    s = replace(s, r"([A-Z]+)([A-Z])", s"\1 \2")        # handle case of consecutive caps by splitting last from rest
-
-    # Capitalize the first letter of each word
-    s_arr = split(s)
-
-    for (i, word) in enumerate(s_arr)
-        s_arr[i] = "$(uppercase(word[1]))$(word[2:length(word)])"
-    end
-
-    # Return our string
-    return join(s_arr, " ")
-end
-
-prettify(s::Symbol) = prettify(string(s))
-
 
 function _open_file(filename)
     if is_apple()

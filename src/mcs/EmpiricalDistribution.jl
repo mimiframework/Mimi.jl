@@ -1,6 +1,5 @@
-try 
-    # we can use this if available, or not...
-    import ExcelReaders
+try
+    using ExcelReaders
 end
 
 struct EmpiricalDistribution{T}
