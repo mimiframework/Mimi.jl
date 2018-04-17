@@ -1,12 +1,14 @@
 julia 0.6.1
+CSVFiles 0.5.1
+DataFrames 0.8.4
 DataStructures 0.4.6
 Distributions 0.11.0
-DataFrames 0.8.4
 Documenter 0.9.0
-NamedArrays 0.5.3
-Plots 0.11.0
-MacroTools 0.4.0
-LightGraphs 0.12.0
-MetaGraphs 0.4.0
 Electron 0.1.1
+FileIO 0.7.0
 JSON 0.17.1
+LightGraphs 0.12.0
+MacroTools 0.4.0
+MetaGraphs 0.4.0
+NamedArrays 0.5.3
+StatsBase

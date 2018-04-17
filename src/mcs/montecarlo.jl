@@ -56,13 +56,13 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::String=mcs.ou
         results_df = mcs.results[datum_key]
         println("Writing $comp_name.$datum_name to $filename")
         # showcols(results_df)
-        CSV.write(filename, results_df)
+        save(filename, results_df)
     end
 end
 
 function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
     mkpath(dirname(filename), 0o770)   # ensure that the specified path exists
-    CSV.write(filename, mcs.data)
+    save(filename, mcs.data)
     return nothing
 end
 
@@ -169,6 +169,10 @@ Reset all MCS results storage to `nothing`.
 function clear_results(mcs::MonteCarloSimulation)
     mcs.results = Dict{Tuple, DataFrame}()
 end
+
+# TBD: create options to 
+# 1. run MCS on a vector of models, using same RV draws on each
+# 2. 
 
 """
     run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64}, Range{Int64}}; ntimesteps=typemax(Int), pretrial_func=nothing, posttrial_func=nothing)

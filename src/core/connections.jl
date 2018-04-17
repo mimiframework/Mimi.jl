@@ -205,8 +205,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                     # start = indexvalues(md, :time)[1]
                     start = first(dim_values(md, :time))
                     step = step_size(md)
-                    T = eltype(value)
-                    values = get_timestep_instance(T, start, step, num_dims, value)
+                    values = get_timestep_instance(eltype(value), start, step, num_dims, value)
                 else
                     values = value
                 end
