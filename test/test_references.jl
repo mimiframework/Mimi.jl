@@ -7,7 +7,7 @@ using Mimi
     input = Parameter()
     intermed = Variable(index=[time])
     
-    function run(p, v, d, t)
+    function run_timestep(p, v, d, t)
         v.intermed[t] = p.input
     end
 end
@@ -16,12 +16,12 @@ end
     intermed = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run(p, v, d, t)
+    function run_timestep(p, v, d, t)
         v.output[t] = p.intermed[t]
     end
 end
 
-@defmodel m begin
+@Mimi.defmodel m begin
     index[time] = [1]
     component(Foo)
     component(Bar)

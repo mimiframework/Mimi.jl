@@ -14,7 +14,7 @@ using Mimi
     over_baseoverlap = Variable(unit="W/m2")
     over = Variable(index=[time],unit="W/m2")
 
-    function run(p, v, d, t)
+    function run_timestep(p, v, d, t)
         #from p.16 in Hope 2009
         if t==1
             #calculate baseline forcing overlap in first time period
@@ -26,7 +26,7 @@ using Mimi
     end
 end
 
-@defmodel test_model begin
+@Mimi.defmodel test_model begin
     index[time] = 2010:2100
     component(ch4forcing1)
     component(ch4forcing1, ch4forcing2) # add another one with a different name
@@ -35,26 +35,9 @@ end
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
-#
-# Macro expands to essentially these lines
-#
-
-# adddimension(c2, :time)
-
-# addparameter(c2, :c_N2Oconcentration, Number, Symbol[:time], "", "ppbv")
-# addparameter(c2, :c_CH4concentration, Number, Symbol[:time], "", "ppbv")
-# addparameter(c2, :f0_CH4baseforcing, Number, Symbol[], "", "W/m2")
-# addparameter(c2, :fslope_CH4forcingslope, Number, Symbol[], "", "W/m2")
-# addparameter(c2, :c0_baseN2Oconc, Number, Symbol[], "", "ppbv")
-# addparameter(c2, :c0_baseCH4conc, Number, Symbol[], "", "ppbv")
-
-# addvariable(c2, :f_CH4forcing, Number, Symbol[:time], "", "W/m2")
-# addvariable(c2, :over_baseoverlap, Number, Symbol[], "", "W/m2")
-# addvariable(c2, :over, Number, Symbol[:time], "", "W/m2")
-
-
 @test c2.comp_id.module_name == :MyModel
-@test c2.comp_id.comp_name == :ch4forcing2
+@test c2.comp_id.comp_name == :ch4forcing1
+@test c2.name == :ch4forcing2
 
 vars = Mimi.variable_names(c2)
 @test length(vars) == 3

@@ -1,3 +1,7 @@
+try
+    using ExcelReaders
+end
+
 struct EmpiricalDistribution{T}
     values::Vector{T}
     weights::ProbabilityWeights
@@ -48,15 +52,21 @@ function EmpiricalDistribution(filename::AbstractString,
                                prob_col::Union{Void, Symbol, AbstractString, Int64}=nothing;
                                value_type::DataType=Any)
     probs = nothing
+    ext = splitext(lowercase(filename))[2]
 
-    if endswith(lowercase(filename), ".csv")
-        df = CSV.read(filename)
+    if ext == ".csv"
+        df = DataFrame(load(filename))
         values = isa(value_col, Symbol) ? df[value_col] : df.columns[value_col]
         
         if prob_col != nothing
             probs = isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col]
         end
-    else
+    elseif ext in (".xls", ".xlsx", ".xlsm")
+
+        if Pkg.installed("ExcelReaders") == nothing
+            error("""You must install ExcelReaders to read Excel files: run Pkg.add("ExcelReaders")""")
+        end
+        
         f = openxl(filename)
         data = readxl(f, value_col)
         values = Vector{value_type}(data[:,1])
@@ -65,6 +75,8 @@ function EmpiricalDistribution(filename::AbstractString,
             data = readxl(f, prob_col)
             probs = Vector{Float64}(data[:,1])
         end
+    else
+        error("Unrecognized file extension '$ext'. Must be .csv, .xls, .xlsx, or .xlsm")
     end
     return EmpiricalDistribution(values, probs)
 end

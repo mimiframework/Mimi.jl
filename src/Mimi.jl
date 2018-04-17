@@ -43,8 +43,8 @@ export
     name,
     new_component,
     parameters,
-    plot,
-    plot_comp_graph,
+    # plot,
+    # plot_comp_graph,
     replace_component,
     run_timestep,
     set_dimension!,
@@ -69,7 +69,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-include("utils/plotting.jl")
+# include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")

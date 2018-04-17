@@ -19,7 +19,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
     if !(eltype(ext_param.values) <: datatype(param_def))
         t1 = eltype(ext_param.values)
         t2 = datatype(param_def)
-        error("Mismatched datatype of parameter connection:\n   Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
+        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
 
     comp_dims  = dimensions(param_def)
@@ -28,7 +28,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
     if ! isempty(param_dims) && size(param_dims) != size(comp_dims)
         d1 = size(comp_dims)
         d2 = size(param_dims)
-        error("Mismatched dimensions of parameter connection:\n   Component: $(comp_def.comp_id) ($d1), Parameter: $param_name ($d2)")
+        error("Mismatched dimensions of parameter connection: Component: $(comp_def.comp_id) ($d1), Parameter: $param_name ($d2)")
     end
 
     # Don't check sizes for ConnectorComps since they won't match.
@@ -44,7 +44,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
             if dim_count(md, dim) != size(ext_param.values)[i]
                 n1 = dim_count(md, dim)
                 n2 = size(ext_param.values)[i]
-                error("Mismatched data size for a parameter connection:\n   $(comp_def.comp_id): dim :$dim has $n1 elements; parameter :$param_name has $n2 elements.")
+                error("Mismatched data size for a parameter connection: $(comp_def.comp_id): dim :$dim has $n1 elements; parameter :$param_name has $n2 elements.")
             end
         end
     end
@@ -106,7 +106,7 @@ function connect_parameter(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        start = start(dst_comp_def)
+        start = start_period(dst_comp_def)
         step = step_size(md)
         T = eltype(backup)
 
@@ -184,7 +184,7 @@ Set all the parameters in a model that don't have a value and are not connected
 to some other component to a value from a dictionary. This method assumes the dictionary
 keys are strings that match the names of unset parameters in the model.
 """
-function set_leftover_params!(md::ModelDef, parameters::Dict{String,Any})
+function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(lowercase(k) => v for (k, v) in parameters)
     leftovers = unconnected_params(md)
     external_params = md.external_params
@@ -201,12 +201,11 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{String,Any})
 
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
-                    value = convert(Array{md.numberType}, value)
+                    value = convert(Array{md.number_type}, value)
                     # start = indexvalues(md, :time)[1]
                     start = dim_values(md, :time)[1]
                     step = step_size(md)
-                    T = eltype(value)
-                    values = get_timestep_instance(T, start, step, num_dims, value)
+                    values = get_timestep_instance(eltype(value), start, step, num_dims, value)
                 else
                     values = value
                 end
@@ -292,10 +291,6 @@ end
 Add a scalar type parameter to the model.
 """
 function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
-    if typeof(value) <: AbstractArray
-        numtype = number_type(md)
-        value = convert(Array{numtype}, value)
-    end
     p = ScalarModelParameter(value)
     set_external_param!(md, name, p)
 end

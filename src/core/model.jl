@@ -72,7 +72,7 @@ function add_internal_param_conn(m::Model, conn::InternalParameterConnection)
     decache(m)
 end
 
-function set_leftover_params!(m::Model, parameters::Dict{String,Any})
+function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     set_leftover_params!(m.md, parameters)
     decache(m)
 end
@@ -80,7 +80,7 @@ end
 
 function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                       start=nothing, stop=nothing, before=nothing, after=nothing)
-    addcomponent(m.md, comp_id, comp_name, start=start, stop=stop, before=before, after=after)
+    addcomponent(m.md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
 end
@@ -131,18 +131,11 @@ end
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
 """
-    dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol)
-
-Return the dimension names for the variable or parameter in the given component.
-"""
-dimensions(m::Model, comp_def::ComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
-
-"""
     dimensions(m::Model, comp_name::Symbol, datum_name::Symbol)
 
 Return the dimension names for the variable or parameter in the given component.
 """
-dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, compdef(m, comp_name), datum_name)
+dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(m, comp_name), datum_name)
 
 @modelegate dimension(m::Model, dim_name::Symbol) => md
 
@@ -156,7 +149,7 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(m, comp
 Set the values of `Model` dimension `name` to integers 1 through `count`, if keys is
 an integer; or to the values in the vector or range if keys is either of those types.
 """
-function set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
     set_dimension!(m.md, name, keys)
     decache(m)
 end
@@ -258,7 +251,7 @@ function Base.run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}
 end
 
 #
-# TBD: This function is not currently used anywhere (and not tested!) Is it still needed?
+# TBD: This function is not currently used only in test/test_parametertypes. Is it still needed?
 #
 """
     update_external_param(m::Model, name::Symbol, value)
@@ -266,14 +259,15 @@ end
 Update the value of an external model parameter, referenced by name.
 """
 function update_external_param(m::Model, name::Symbol, value)
-    if !(name in keys(m.external_params))
+    ext_params = external_params(m)
+    if ! haskey(ext_params, name)
         error("Cannot update parameter; $name not found in model's external parameters.")
     end
 
-    param = m.external_params[name]
+    param = ext_params[name]
 
     if isa(param, ScalarModelParameter)
-        if !(typeof(value) <: typeof(param.value))
+        if ! (value isa typeof(param.value))
             try
                 value = convert(typeof(param.value), value)
             catch e

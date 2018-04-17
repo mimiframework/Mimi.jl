@@ -2,31 +2,33 @@ using Base.Test
 using Mimi
 using Plots
 
-@test Mimi.prettifystring("camelCaseBasic") == "Camel Case Basic"
-@test Mimi.prettifystring("camelWithAOneLetterWord") == "Camel With A One Letter Word"
-@test Mimi.prettifystring("snake_case_basic") == "Snake Case Basic"
-@test Mimi.prettifystring("_snake__case__weird_") == "Snake Case Weird"
+include("../src/utils/plotting.jl")
+
+@test Mimi.prettify("camelCaseBasic") == "Camel Case Basic"
+@test Mimi.prettify("camelWithAOneLetterWord") == "Camel With A One Letter Word"
+@test Mimi.prettify("snake_case_basic") == "Snake Case Basic"
+@test Mimi.prettify("_snake__case__weird_") == "Snake Case Weird"
 
 @defcomp Foo begin
     input = Parameter()
     intermed = Variable(index=[time])
-end
-
-function run_timestep(c::Foo, tt::Int)
-    c.Variables.intermed[tt] = c.Parameters.input
+    
+    function run_timestep(p, v, d, t)
+        v.intermed[t] = p.input
+    end
 end
 
 @defcomp Bar begin
     intermed = Parameter(index=[time])
     output = Variable(index=[time])
-end
-
-function run_timestep(c::Bar, tt::Int)
-    c.Variables.output[tt] = c.Parameters.intermed[tt]
+    
+    function run_timestep(p, v, d, t)
+        v.output[t] = p.intermed[t]
+    end
 end
 
 m = Model()
-setindex(m, :time, 1)
+set_dimension!(m, :time, 1)
 foo = addcomponent(m, Foo)
 bar = addcomponent(m, Bar)
 
@@ -35,4 +37,6 @@ bar[:intermed] = foo[:intermed]
 #connectparameter(m, :Bar, :intermed, :Foo, :intermed)
 
 run(m)
+
+include("../src/utils/plotting.jl")
 Plots.plot(m, :Bar, :output)

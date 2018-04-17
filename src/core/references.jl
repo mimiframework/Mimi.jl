@@ -2,14 +2,14 @@
 Set a component parameter as `set_parameter!(reference, name, value)`.
 """
 function set_parameter!(ref::ComponentReference, name::Symbol, value)
-    set_parameter!(ref.model, ref.comp_id, name, value)
+    set_parameter!(ref.model, ref.comp_name, name, value)
 end
 
 """
 Set a component parameter as `reference[symbol] = value`.
 """
 function Base.setindex!(ref::ComponentReference, value, name::Symbol)
-    set_parameter!(ref.model, ref.comp_id, name, value)
+    set_parameter!(ref.model, ref.comp_name, name, value)
 end
 
 """
