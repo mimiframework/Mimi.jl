@@ -203,7 +203,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
                     # start = indexvalues(md, :time)[1]
-                    start = dim_values(md, :time)[1]
+                    start = first(dim_values(md, :time))
                     step = step_size(md)
                     values = get_timestep_instance(eltype(value), start, step, num_dims, value)
                 else
