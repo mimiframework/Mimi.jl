@@ -174,7 +174,7 @@ dim_count(md::ModelDef, name::Symbol) = length(dimension(md, name))
 dim_key_dict(md::ModelDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(md)])
 dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 
-dim_values(md::ModelDef, name::Symbol) = values(dimension(md, name))
+dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
 dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dimensions(md)])
 
 timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
