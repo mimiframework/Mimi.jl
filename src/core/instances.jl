@@ -44,13 +44,18 @@ function _property_expr(obj, types, index_pos)
     # println("_property_expr() index_pos: $index_pos, T: $T")
 
     if T <: Ref
-        if T.parameters[1] <: Scalar
-            ex = :(obj.values[$index_pos][].value) # dereference Scalar instance
+        ref_type = T.parameters[1]
+        # println("_property_expr: ref_type: $ref_type")
+        
+        if ref_type <: Scalar
+            value_type = ref_type.parameters[1]
+            # println("_property_expr: scalar value_type: $value_type")
+            ex = :(obj.values[$index_pos][].value::$(value_type)) # dereference Scalar instance
         else
-            ex = :(obj.values[$index_pos][])
+            ex = :(obj.values[$index_pos][]::$(ref_type))
         end
         # ex = :(obj.values[$index_pos][])
-        # println("Returning $ex")
+        # println("_property_expr returning $ex")
         return ex
 
     # TBD: deprecated if we keep Refs for everything
@@ -304,28 +309,11 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
 
     run_timestep(Val(module_name), Val(comp_name), pars, vars, dims, t)
     advance(clock)
+    nothing
 end
 
-function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
-             dim_keys::Union{Void, Dict{Symbol, Vector{T} where T}}=nothing)
-    if length(mi.components) == 0
-        error("Cannot run the model: no components have been created.")
-    end
-
-    dim_keys = dim_keys == nothing ? dim_key_dict(mi) : dim_keys
-
-    starts = mi.starts
-    stops = mi.stops
-    step  = step_size(dim_keys[:time])
-
-    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
-    
-    clock = make_clock(mi, ntimesteps, dim_keys[:time])
-
-    init(mi)    # call module's (or fallback) init function
-
-    comp_instances = components(mi)
-
+function _run_components(mi::ModelInstance, comp_instances::Vector{ComponentInstance}, clock::Clock,
+                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock})
     while ! finished(clock)
         for (ci, start, stop, comp_clock) in zip(comp_instances, starts, stops, comp_clocks)
             if start <= gettime(clock) <= stop
@@ -334,4 +322,27 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         end
         advance(clock)
     end
+end
+
+function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
+                  dimkeys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+    if length(mi.components) == 0
+        error("Cannot run the model: no components have been created.")
+    end
+
+    t::Vector{Int} = dimkeys == nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
+
+    starts = mi.starts
+    stops = mi.stops
+    step  = step_size(t)
+
+    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
+    
+    clock = make_clock(mi, ntimesteps, t)
+
+    init(mi)    # call module's (or fallback) init function
+
+    comp_instances = collect(components(mi))
+
+    _run_components(mi, comp_instances, clock, starts, stops, comp_clocks)
 end

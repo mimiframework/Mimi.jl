@@ -51,11 +51,11 @@ Base.values(dim::RangeDimension) = collect(1:length(dim.range))
 #
 # Compute the index of a "key" (e.g., a year) in the range. 
 #
-function Base.get(dim::RangeDimension, key::Int64, default::Any=0) 
+function Base.get(dim::RangeDimension, key::Int, default::Any=0) 
     r = dim.range
     i = key - r.start
     return i == 0 ? 1 : (i % r.step != 0 ? default : 1 + div(i, r.step))
 end
 
 # Support dim[[2010, 2020, 2030]], dim[(:foo, :bar, :baz)], and dim[2010:2050]
-Base.getindex(dim::RangeDimension, keys::Union{Vector{Int64}, Tuple, Range}) = [get(dim, key, 0) for key in keys]
+Base.getindex(dim::RangeDimension, keys::Union{Vector{Int}, Tuple, Range}) = [get(dim, key, 0) for key in keys]

@@ -237,7 +237,8 @@ end
 
 Run model `m` once.
 """
-function Base.run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}=nothing)
+function Base.run(m::Model; ntimesteps::Int=typemax(Int), 
+                  dim_keys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if numcomponents(m) == 0
         error("Cannot run a model with no components.")
     end
@@ -248,6 +249,7 @@ function Base.run(m::Model; ntimesteps=typemax(Int), dim_keys::Union{Void, Dict}
 
     # println("Running model...")
     run(m.mi, ntimesteps, dim_keys)
+    nothing
 end
 
 #

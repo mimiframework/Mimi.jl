@@ -60,8 +60,10 @@ function _generate_run_func(module_name, comp_name, args, body)
     func = :(
         function Mimi.run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
                                    $(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
-                                   $(d)::Dict{Symbol, Vector{Int}}, $(t))
+                                   $(d)::Dict{Symbol, Vector{Int}}, $(t)::Union{Int, Mimi.Timestep})
             $(body...)
+            
+            return nothing
         end
     )
     func = esc(func)

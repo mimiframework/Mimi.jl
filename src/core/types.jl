@@ -14,39 +14,6 @@ mutable struct Clock
 	end
 end
 
-# TBD: consider using this merged type in place of TimestepVector/TimestepMatrix
-# struct TimestepArray{T, N}
-#     start::Int
-#     step::Int
-# 	data::Array{T, N}
-
-#     function TimestepArray{T, N}(start::Int, step::Int, data::Array{T, N}) where {T, N}
-# 		return new(start, step, data)
-# 	  end
-
-#     function TimestepArray{T, N}(start::Int, step::Int, dims::Int...) where {T, N}
-#         num_dims = length(dims)
-        
-#         if num_dims != N
-#             error("TimestepArray: number of dimensions ($num_dims) does not match declared value of N ($N)")
-#         end
-
-#         if ! num_dims in (1, 2)
-#             error("TimestepArray supports only 1 or 2 dimensions currently.")
-#         end
-
-#         data = Array{T, N}(dims...)
-# 		  return new(start, step, data)
-# 	end
-# end
-
-# TBD: Pseudo-constructors for consolidated version
-# TimestepVector(start::Int, len::Int, data::Array{T, 1}) where T = TimestepArray{T, 1}(start, len, data)
-# TimestepMatrix(start::Int, len::Int, data::Array{T, 2}) where T = TimestepArray{T, 2}(start, len, data)
-
-# TimestepVector(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 1}(start, len, dims...)
-# TimestepMatrix(start::Int, len::Int, T::DataType, dims::Int...) = TimestepArray{T, 2}(start, len, dims...)
-
 abstract type AbstractTimestepMatrix{T, Start, Step} end
 
 # We don't need to encode N (number of dimensions) as a type parameter because we 
@@ -82,24 +49,26 @@ end
 #
 abstract type AbstractDimension end
 
+const DimensionKeyTypes   = Union{AbstractString, Symbol, Int}
+const DimensionRangeTypes = Union{UnitRange{Int}, StepRange{Int, Int}}
+
 struct Dimension <: AbstractDimension
-    dict::OrderedDict
+    dict::OrderedDict{DimensionKeyTypes, Int}
     key_type::DataType
 
-    function Dimension(keys::Vector)
-        key_type = eltype(keys)
-        dict = OrderedDict{key_type, Int64}(collect(zip(keys, 1:length(keys))))
-        return new(dict, key_type)
+    function Dimension(keys::Vector{T}) where T <: DimensionKeyTypes
+        dict = OrderedDict{T, Int}(collect(zip(keys, 1:length(keys))))
+        return new(dict, T)
     end
 
-    function Dimension(rng::Range)
+    function Dimension(rng::DimensionRangeTypes)
         return Dimension(collect(rng))
     end
 
     Dimension(i::Int) = Dimension(1:i)
 
     # Support Dimension(:foo, :bar, :baz)
-    function Dimension(keys...)
+    function Dimension(keys::T...) where T <: DimensionKeyTypes
         vector = [key for key in keys]
         return Dimension(vector)
     end
@@ -110,8 +79,8 @@ end
 # Unclear whether this is really any better than simply using 
 # a dict for all cases. Might scrap this in the end.
 #
-mutable struct RangeDimension <: AbstractDimension
-    range::Range
+mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
+    range::T
  end
 
 #
@@ -135,14 +104,27 @@ Base.convert(::Type{T}, s::Scalar{T}) where {T <: Number} = s.value
 
 abstract type ModelParameter end
 
-mutable struct ScalarModelParameter <: ModelParameter
-    value
+mutable struct ScalarModelParameter{T} <: ModelParameter
+    value::T
+
+    function ScalarModelParameter{T}(value::T) where {T <: Number}
+        new(value)
+    end
 end
 
-mutable struct ArrayModelParameter <: ModelParameter
-    values
+ScalarModelParameter(value) = ScalarModelParameter{typeof(value)}(value)
+
+mutable struct ArrayModelParameter{T} <: ModelParameter
+    values::T
     dimensions::Vector{Symbol} # if empty, we don't have the dimensions' name information
+
+    function ArrayModelParameter{T}(values::T, dims::Vector{Symbol}) where T
+        new(values, dims)
+    end
 end
+
+ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(value)}(value, dims)
+
 
 abstract type AbstractConnection end
 
@@ -279,7 +261,7 @@ struct ComponentInstanceParameters{NAMES,TYPES} <: ComponentInstanceData
     # The elements can either be of type Ref (for scalar values) or of
     # some array type
     values::TYPES
-    names::Tuple
+    names::NTuple{N, Symbol} where N
     types::DataType
 
     function ComponentInstanceParameters{NAMES,TYPES}(values) where {NAMES,TYPES}
@@ -298,7 +280,7 @@ struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
     # The elements can either be of type Ref (for scalar values) or of
     # some array type
     values::TYPES
-    names::Tuple
+    names::NTuple{N, Symbol} where N
     types::DataType
 
     function ComponentInstanceVariables{NAMES,TYPES}(values) where {NAMES,TYPES}
@@ -312,7 +294,7 @@ mutable struct ComponentInstance
     comp_id::ComponentId
     variables::ComponentInstanceVariables
     parameters::ComponentInstanceParameters
-    dimensions::Vector{Symbol}  # was "indices" previously
+    dimensions::Vector{Symbol}
 
     start::Int
     stop::Int

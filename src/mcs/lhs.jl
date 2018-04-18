@@ -104,7 +104,7 @@ function _get_percentiles(trials::Int)
 end
 
 """
-    lhs(rvlist::Vector{RandomVariable}, trials::Int64; corrmatrix::Union{Matrix{Float64},Void}=nothing, asDataFrame::Bool=true)
+    lhs(rvlist::Vector{RandomVariable}, trials::Int; corrmatrix::Union{Matrix{Float64},Void}=nothing, asDataFrame::Bool=true)
              
 Produce an array or DataFrame of 'trials' rows of values for the given parameter
 list, respecting the correlation matrix 'corrmatrix' if one is specified, using Latin
@@ -130,7 +130,7 @@ skip: (list of params)) Parameters to process later because they are
 
 Returns DataFrame with `trials` rows of values for the `rvlist`.
 """
-function lhs(rvlist::Vector{RandomVariable}, trials::Int64; 
+function lhs(rvlist::Vector{RandomVariable}, trials::Int; 
              corrmatrix::Union{Matrix{Float64},Void}=nothing,
              asDataFrame::Bool=true)
 
