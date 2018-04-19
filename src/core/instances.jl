@@ -54,7 +54,7 @@ function _property_expr(obj, types, index_pos)
         else
             ex = :(obj.values[$index_pos][]::$(ref_type))
         end
-        # ex = :(obj.values[$index_pos][])
+ 
         # println("_property_expr returning $ex")
         return ex
 
@@ -74,7 +74,7 @@ end
 end
 
 # Special case support for Dicts so we can use dot notation on dimension.
-# The run() func passes a reference to md.index_values as the "d" parameter.
+# The run() func passes a Dict of dimensions by name as the "d" parameter.
 # Here we return a range representing the indices into that list of values.
 # TBD: Need to revise this in v0.7 so we don't affect all Dicts.
 @generated function getproperty(obj::Dict, ::Val{PROPERTY}) where {PROPERTY}
@@ -283,19 +283,14 @@ function init(mi::ModelInstance)
 end
 
 # Fall-back for components without init methods
-init(module_name, comp_name, p::ComponentInstanceParameters, 
-    v::Mimi.ComponentInstanceVariables, d::Dict{Symbol, Vector{Int}}) = nothing
+init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
+     d::Union{Void, Dict}) = nothing
 
 function init(mi::ModelInstance, ci::ComponentInstance)
     reset_variables(ci)
     module_name = compmodule(ci.comp_id)
-    comp_name = ci.comp_name
 
-    pars = ci.parameters
-    vars = ci.variables
-    dims = dim_value_dict(mi.md)
-
-    init(Val(module_name), Val(comp_name), pars, vars, dims)
+    init(Val(module_name), Val(ci.comp_name), ci.parameters, ci.variables, ci.dim_dict)
 end
 
 function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
@@ -304,7 +299,7 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     
     pars = ci.parameters
     vars = ci.variables
-    dims = dim_value_dict(mi.md)
+    dims = ci.dim_dict
     t = timeindex(clock)
 
     run_timestep(Val(module_name), Val(comp_name), pars, vars, dims, t)

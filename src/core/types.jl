@@ -294,7 +294,7 @@ mutable struct ComponentInstance
     comp_id::ComponentId
     variables::ComponentInstanceVariables
     parameters::ComponentInstanceParameters
-    dimensions::Vector{Symbol}
+    dim_dict::Union{Void, Dict{Symbol, Vector{Int}}}
 
     start::Int
     stop::Int
@@ -306,7 +306,7 @@ mutable struct ComponentInstance
         self = new()
         self.comp_id = comp_def.comp_id
         self.comp_name = name
-        self.dimensions = map(dim -> dim.name, dimensions(comp_def))
+        self.dim_dict = nothing     # set in "build" stage
         self.variables = vars
         self.parameters = pars
         self.start = comp_def.start
