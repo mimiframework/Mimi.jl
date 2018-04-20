@@ -247,7 +247,7 @@ function getbar(cols, dffields)
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")                
-        append!(datasb, string(Date(cols[1][i])))
+        append!(datasb, string(cols[1][i]))
         append!(datasb, "\"")                
         append!(datasb, ",")     
                 
