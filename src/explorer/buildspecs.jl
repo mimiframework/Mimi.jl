@@ -161,9 +161,7 @@ function getdatapart(df, dffields, plottype::Symbol)
         datastring = getbar(cols, dffields)
     end
 
-    append!(sb, datastring);
-    append!(sb, "]")
-
+    append!(sb, datastring * "]");
     datapart = String(sb)
 
     return JSON.JSONText(datapart)
@@ -174,32 +172,21 @@ function getmultiline(cols, dffields)
     datasb = StringBuilder()
     numrows = length(cols[1])
     for i = 1:numrows
-        append!(datasb, "{") #start of dictionary
 
-        append!(datasb, "\"") #start of time field
+        append!(datasb, "{\"") #start of dictionary
         append!(datasb, dffields[1]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
-        append!(datasb, "\"")                
+        append!(datasb, "\":\"")                      
         append!(datasb, string(Date(cols[1][i])))
-        append!(datasb, "\"")                
-        append!(datasb, ",")  
-        
-        append!(datasb, "\"") #start of nominal field
+        append!(datasb, "\",\"")                        
         append!(datasb, dffields[2]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
-        append!(datasb, "\"")           
+        append!(datasb, "\":\"")                 
         append!(datasb, string(cols[2][i]))
-        append!(datasb, "\"")           
-        append!(datasb, ",")  
-        
-        append!(datasb, "\"") #start of value field
+        append!(datasb, "\",\"")           
         append!(datasb, dffields[3]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
+        append!(datasb, "\":")        
         append!(datasb, string(cols[3][i]))
         append!(datasb, "}") #end of dictionary
+        
         if i != numrows
             append!(datasb, ",")
         end  
@@ -211,23 +198,17 @@ function getline(cols, dffields)
     datasb = StringBuilder()
     numrows = length(cols[1])
     for i = 1:numrows
-        append!(datasb, "{") #start of dictionary
 
-        append!(datasb, "\"") #start of time field
+        append!(datasb, "{\"")  #start of dictionary
         append!(datasb, dffields[1]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
-        append!(datasb, "\"")                
+        append!(datasb, "\":\"")                      
         append!(datasb, string(Date(cols[1][i])))
-        append!(datasb, "\"")                
-        append!(datasb, ",")     
-        
-        append!(datasb, "\"") #start of value field
+        append!(datasb, "\",\"")                
         append!(datasb, dffields[2]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
+        append!(datasb, "\":")        
         append!(datasb, string(cols[2][i]))
         append!(datasb, "}") #end of dictionary
+
         if i != numrows
             append!(datasb, ",")
         end
@@ -240,24 +221,17 @@ function getbar(cols, dffields)
     datasb = StringBuilder()
     numrows = length(cols[1])
     for i = 1:numrows
-        append!(datasb, "{") #start of dictionary
 
-        append!(datasb, "\"") #start of first field
+        append!(datasb, "{\"") #start of dictionary
         append!(datasb, dffields[1]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
-        append!(datasb, "\"")                
+        append!(datasb, "\":\"")                      
         append!(datasb, string(cols[1][i]))
-        append!(datasb, "\"")                
-        append!(datasb, ",")     
-                
-        append!(datasb, "\"") #start of value field
+        append!(datasb, "\",\"")                
         append!(datasb, dffields[2]) 
-        append!(datasb, "\"")        
-        append!(datasb, ":")
+        append!(datasb, "\":")        
         append!(datasb, string(cols[2][i]))
-  
         append!(datasb, "}") #end of dictionary
+
         if i != numrows
             append!(datasb, ",")
         end
