@@ -130,6 +130,7 @@ function createspec_multilineplot(name, df, dffields)
     return spec
 end
 
+## TODO 1:  does this datapart need to be JSONText?
 function createspec_singlevalue(name)
 
     datapart = [];
@@ -140,6 +141,9 @@ function createspec_singlevalue(name)
     return spec
 end
 
+## TODO 2:  Make sure date transfers properly 
+## TODO 3:  Make sure that the "\"" escapes properly 
+
 function getdatapart(df, dffields, plottype::Symbol)
 
     sb = StringBuilder()
@@ -147,10 +151,10 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     # loop over rows and create a dictionary for each row
     if plottype == :multiline
-        cols = (df.columns[1], df.columns[2])
+        cols = (df.columns[1], df.columns[2], df.columns[3])
         datastring = getmultiline(cols, dffields)
     elseif plottype == :line
-        cols = (df.columns[1], df.columns[2], df.columns[3])
+        cols = (df.columns[1], df.columns[2])
         datastring = getline(cols, dffields)
     else
         cols = (df.columns[1], df.columns[2])
@@ -162,7 +166,7 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     datapart = String(sb)
 
-    return JSONText(datapart)
+    return JSON.JSONText(datapart)
 end
 
 function getmultiline(cols, dffields)
@@ -171,29 +175,35 @@ function getmultiline(cols, dffields)
     for i = 1:numrows
         append!(datasb, "{") #start of dictionary
 
-        append!(datasb, "\"") #start of date field
+        append!(datasb, "\"") #start of time field
         append!(datasb, dffields[1]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][1]))
+        append!(datasb, string(cols[1][i]))
         append!(datasb, "\"")     
+        append!(datasb, ",")  
         
         append!(datasb, "\"") #start of value field
         append!(datasb, dffields[2]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][2]))
+        append!(datasb, string(cols[2][i]))
         append!(datasb, "\"")  
-
+        append!(datasb, ",")  
+        
         append!(datasb, "\"") #start of categorical field
         append!(datasb, dffields[3]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][3]))
-        append!(datasb, "\"")    
+        append!(datasb, string(cols[3][i]))
+        append!(datasb, "\"")  
+        append!(datasb, "}") #end of dictionary
+        if i != numrows
+            append!(datasb, ",")
+        end  
     end
     return String(datasb)
 end
@@ -204,23 +214,28 @@ function getline(cols, dffields)
     for i = 1:numrows
         append!(datasb, "{") #start of dictionary
 
-        append!(datasb, "\"") #start of date field
+        append!(datasb, "\"") #start of time field
         append!(datasb, dffields[1]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][1]))
+        append!(datasb, string(cols[1][i]))
         append!(datasb, "\"")     
+        append!(datasb, ",")     
         
         append!(datasb, "\"") #start of value field
         append!(datasb, dffields[2]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][2]))
+        append!(datasb, string(cols[2][i]))
         append!(datasb, "\"")  
-   
+        append!(datasb, "}") #end of dictionary
+        if i != numrows
+            append!(datasb, ",")
+        end
     end
+    
     return String(datasb)
 end
 
@@ -235,35 +250,22 @@ function getbar(cols, dffields)
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][1]))
+        append!(datasb, string(cols[1][i]))
         append!(datasb, "\"")     
-        
+        append!(datasb, ",")     
+                
         append!(datasb, "\"") #start of value field
         append!(datasb, dffields[2]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
         append!(datasb, "\"")   
-        append!(datasb, string(cols[i][2]))
+        append!(datasb, string(cols[2][i]))
         append!(datasb, "\"")  
   
+        append!(datasb, "}") #end of dictionary
+        if i != numrows
+            append!(datasb, ",")
+        end
     end
     return String(datasb)
 end
-
-#=     if plottype == :multiline || plottype == :line
-        for row in eachrow(df)
-            rowdata = Dict(dffields[1] => Date(row[1]), 
-                           dffields[2] => row[2])
-
-            if plottype == :multiline
-                rowdata[dffields[3]] = row[3] 
-            end
-            push!(datapart, rowdata)
-        end 
-    else
-        for row in eachrow(df)
-            rowdata = Dict(dffields[1] => row[1], 
-                           dffields[2] => row[2])
-            push!(datapart, rowdata)
-        end  
-    end =#
