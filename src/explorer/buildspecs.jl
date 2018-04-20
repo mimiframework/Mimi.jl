@@ -36,7 +36,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         return spec
         
     catch err
-        println("could not convert $comp_name.$item_name to DataFrame for explorer")
+        println("spec conversion failed for $comp_name.$item_name")
         rethrow(err)
     end
 end
@@ -66,7 +66,7 @@ global const _plot_width  = 450
 global const _plot_height = 450
 
 function createspec_lineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :line) # returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -87,7 +87,7 @@ function createspec_lineplot(name, df, dffields)
 end
 
 function createspec_barplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :bar) # returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :bar) #returns JSONtext type     
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -108,7 +108,7 @@ function createspec_barplot(name, df, dffields)
 end
 
 function createspec_multilineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :multiline) # return JSONtext type 
+    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -141,8 +141,8 @@ function createspec_singlevalue(name)
     return spec
 end
 
-## TODO 2:  Make sure date transfers properly 
-## TODO 3:  Make sure that the "\"" escapes properly 
+## TODO 2:  Ok with dependency on StringBuilders?
+## TODO 3:  Why is mcs breaking?
 
 function getdatapart(df, dffields, plottype::Symbol)
 
@@ -169,6 +169,7 @@ function getdatapart(df, dffields, plottype::Symbol)
     return JSON.JSONText(datapart)
 end
 
+
 function getmultiline(cols, dffields)
     datasb = StringBuilder()
     numrows = length(cols[1])
@@ -179,27 +180,25 @@ function getmultiline(cols, dffields)
         append!(datasb, dffields[1]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
-        append!(datasb, string(cols[1][i]))
-        append!(datasb, "\"")     
+        append!(datasb, "\"")                
+        append!(datasb, string(Date(cols[1][i])))
+        append!(datasb, "\"")                
         append!(datasb, ",")  
         
-        append!(datasb, "\"") #start of value field
+        append!(datasb, "\"") #start of nominal field
         append!(datasb, dffields[2]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
+        append!(datasb, "\"")           
         append!(datasb, string(cols[2][i]))
-        append!(datasb, "\"")  
+        append!(datasb, "\"")           
         append!(datasb, ",")  
         
-        append!(datasb, "\"") #start of categorical field
+        append!(datasb, "\"") #start of value field
         append!(datasb, dffields[3]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
         append!(datasb, string(cols[3][i]))
-        append!(datasb, "\"")  
         append!(datasb, "}") #end of dictionary
         if i != numrows
             append!(datasb, ",")
@@ -218,18 +217,16 @@ function getline(cols, dffields)
         append!(datasb, dffields[1]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
-        append!(datasb, string(cols[1][i]))
-        append!(datasb, "\"")     
+        append!(datasb, "\"")                
+        append!(datasb, string(Date(cols[1][i])))
+        append!(datasb, "\"")                
         append!(datasb, ",")     
         
         append!(datasb, "\"") #start of value field
         append!(datasb, dffields[2]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
         append!(datasb, string(cols[2][i]))
-        append!(datasb, "\"")  
         append!(datasb, "}") #end of dictionary
         if i != numrows
             append!(datasb, ",")
@@ -249,18 +246,16 @@ function getbar(cols, dffields)
         append!(datasb, dffields[1]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
-        append!(datasb, string(cols[1][i]))
-        append!(datasb, "\"")     
+        append!(datasb, "\"")                
+        append!(datasb, string(Date(cols[1][i])))
+        append!(datasb, "\"")                
         append!(datasb, ",")     
                 
         append!(datasb, "\"") #start of value field
         append!(datasb, dffields[2]) 
         append!(datasb, "\"")        
         append!(datasb, ":")
-        append!(datasb, "\"")   
         append!(datasb, string(cols[2][i]))
-        append!(datasb, "\"")  
   
         append!(datasb, "}") #end of dictionary
         if i != numrows
