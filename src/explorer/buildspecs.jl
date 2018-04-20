@@ -108,7 +108,7 @@ function createspec_barplot(name, df, dffields)
 end
 
 function createspec_multilineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :multiline) # returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :multiline) # return JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -141,10 +141,116 @@ function createspec_singlevalue(name)
 end
 
 function getdatapart(df, dffields, plottype::Symbol)
-    datapart = [];
+
+    sb = StringBuilder()
+    append!(sb, "[");
 
     # loop over rows and create a dictionary for each row
-    if plottype == :multiline || plottype == :line
+    if plottype == :multiline
+        cols = (df.columns[1], df.columns[2])
+        datastring = getmultiline(cols, dffields)
+    elseif plottype == :line
+        cols = (df.columns[1], df.columns[2], df.columns[3])
+        datastring = getline(cols, dffields)
+    else
+        cols = (df.columns[1], df.columns[2])
+        datastring = getbar(cols, dffields)
+    end
+
+    append!(sb, datastring);
+    append!(sb, "]")
+
+    datapart = String(sb)
+
+    return JSONText(datapart)
+end
+
+function getmultiline(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+        append!(datasb, "{") #start of dictionary
+
+        append!(datasb, "\"") #start of date field
+        append!(datasb, dffields[1]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][1]))
+        append!(datasb, "\"")     
+        
+        append!(datasb, "\"") #start of value field
+        append!(datasb, dffields[2]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][2]))
+        append!(datasb, "\"")  
+
+        append!(datasb, "\"") #start of categorical field
+        append!(datasb, dffields[3]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][3]))
+        append!(datasb, "\"")    
+    end
+    return String(datasb)
+end
+
+function getline(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+        append!(datasb, "{") #start of dictionary
+
+        append!(datasb, "\"") #start of date field
+        append!(datasb, dffields[1]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][1]))
+        append!(datasb, "\"")     
+        
+        append!(datasb, "\"") #start of value field
+        append!(datasb, dffields[2]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][2]))
+        append!(datasb, "\"")  
+   
+    end
+    return String(datasb)
+end
+
+function getbar(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+        append!(datasb, "{") #start of dictionary
+
+        append!(datasb, "\"") #start of first field
+        append!(datasb, dffields[1]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][1]))
+        append!(datasb, "\"")     
+        
+        append!(datasb, "\"") #start of value field
+        append!(datasb, dffields[2]) 
+        append!(datasb, "\"")        
+        append!(datasb, ":")
+        append!(datasb, "\"")   
+        append!(datasb, string(cols[i][2]))
+        append!(datasb, "\"")  
+  
+    end
+    return String(datasb)
+end
+
+#=     if plottype == :multiline || plottype == :line
         for row in eachrow(df)
             rowdata = Dict(dffields[1] => Date(row[1]), 
                            dffields[2] => row[2])
@@ -159,8 +265,5 @@ function getdatapart(df, dffields, plottype::Symbol)
             rowdata = Dict(dffields[1] => row[1], 
                            dffields[2] => row[2])
             push!(datapart, rowdata)
-        end 
-    end
-
-    return datapart
-end
+        end  
+    end =#
