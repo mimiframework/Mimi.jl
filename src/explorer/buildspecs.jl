@@ -173,19 +173,9 @@ function getmultiline(cols, dffields)
     numrows = length(cols[1])
     for i = 1:numrows
 
-        append!(datasb, "{\"") #start of dictionary
-        append!(datasb, dffields[1]) 
-        append!(datasb, "\":\"")                      
-        append!(datasb, string(Date(cols[1][i])))
-        append!(datasb, "\",\"")                        
-        append!(datasb, dffields[2]) 
-        append!(datasb, "\":\"")                 
-        append!(datasb, string(cols[2][i]))
-        append!(datasb, "\",\"")           
-        append!(datasb, dffields[3]) 
-        append!(datasb, "\":")        
-        append!(datasb, string(cols[3][i]))
-        append!(datasb, "}") #end of dictionary
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
+            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
+            * dffields[3] * "\":" * string(cols[3][i]) * "}")
         
         if i != numrows
             append!(datasb, ",")
@@ -198,16 +188,8 @@ function getline(cols, dffields)
     datasb = StringBuilder()
     numrows = length(cols[1])
     for i = 1:numrows
-
-        append!(datasb, "{\"")  #start of dictionary
-        append!(datasb, dffields[1]) 
-        append!(datasb, "\":\"")                      
-        append!(datasb, string(Date(cols[1][i])))
-        append!(datasb, "\",\"")                
-        append!(datasb, dffields[2]) 
-        append!(datasb, "\":")        
-        append!(datasb, string(cols[2][i]))
-        append!(datasb, "}") #end of dictionary
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) 
+            * "\",\"" * dffields[2] * "\":" * string(cols[2][i]) * "}") 
 
         if i != numrows
             append!(datasb, ",")
@@ -222,15 +204,8 @@ function getbar(cols, dffields)
     numrows = length(cols[1])
     for i = 1:numrows
 
-        append!(datasb, "{\"") #start of dictionary
-        append!(datasb, dffields[1]) 
-        append!(datasb, "\":\"")                      
-        append!(datasb, string(cols[1][i]))
-        append!(datasb, "\",\"")                
-        append!(datasb, dffields[2]) 
-        append!(datasb, "\":")        
-        append!(datasb, string(cols[2][i]))
-        append!(datasb, "}") #end of dictionary
+        append!(datasb, "{\"" * dffields[1] * "\":\"" * string(cols[1][i]) *
+            "\",\"" * dffields[2] * "\":" * string(cols[2][i]) * "}") #end of dictionary
 
         if i != numrows
             append!(datasb, ",")
