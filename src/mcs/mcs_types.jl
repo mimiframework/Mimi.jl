@@ -37,7 +37,7 @@ const CorrelationSpec = Tuple{Symbol, Symbol, Float64}
 Holds all the data that defines a Monte Carlo simulation.
 """
 mutable struct MonteCarloSimulation
-    trials::Int64
+    trials::Int
     rvlist::Vector{RandomVariable}
     translist::Vector{TransformSpec}
     corrlist::Union{Vector{CorrelationSpec}, Void}

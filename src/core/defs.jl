@@ -136,13 +136,13 @@ unit(def::DatumDef) = def.unit
 
 function step_size(md::ModelDef)
     # N.B. assumes that all timesteps of the model are the same length
-    keys = dim_keys(md, :time) # keys are, e.g., the years the model runs
+    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years the model runs
     return length(keys) > 1 ? keys[2] - keys[1] : 1
 end
 
 function step_size(values::Vector{Int})
     # N.B. assumes that all timesteps of the model are the same length
-    return length(values) > 1 ? values[2] - values[1] : 1
+     return length(values) > 1 ? values[2] - values[1] : 1
 end
 
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)

@@ -1,4 +1,4 @@
-function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
+function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     for datum_key in mcs.savelist
         # println("\nStoring trial results for $datum_key")
         (comp_name, datum_name) = datum_key
@@ -67,11 +67,11 @@ function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
 end
 
 """
-    generate_trials!(mcs::MonteCarloSimulation, trials::Int64; filename::String="")
+    generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="")
 
 Generate the given number of trials for the given MonteCarloSimulation instance.
 """
-function generate_trials!(mcs::MonteCarloSimulation, trials::Int64; filename::String="")
+function generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="")
     corrmatrix = correlation_matrix(mcs)
     mcs.data = lhs(mcs.rvlist, trials, corrmatrix=corrmatrix)
     mcs.trials = trials
@@ -83,11 +83,11 @@ end
 
 # TBD: precompute as much of this as possible to get it out of the MCS trial loop
 """
-    _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
+    _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
 
 Modify the stochastic parameters using the values drawn for trial `trialnum`.
 """
-function _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int64)
+function _perturb_parameters(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     if trialnum > mcs.trials
         error("Attempted to run trial $trialnum, but only $(mcs.trials) trials are defined")
     end
@@ -175,14 +175,14 @@ end
 # 2. 
 
 """
-    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64}, Range{Int64}}; ntimesteps=typemax(Int), pretrial_func=nothing, posttrial_func=nothing)
+    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int}, Range{Int}}; ntimesteps=typemax(Int), pretrial_func=nothing, posttrial_func=nothing)
 
 Run the indicated trial numbers, where the model is run for `ntimesteps`, if specified, or to 
 the maximum defined time period otherswise. If `pretrial_func` or `posttrial_func` are defined,
 the designated functions are called just before or after (respectively) running the trial. The 
-functions must have the signature fn(m::Model, mcs::MonteCarloSimulation, trialnum::Int64).
+functions must have the signature fn(m::Model, mcs::MonteCarloSimulation, trialnum::Int).
 """
-function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64}, Range{Int64}}; 
+function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int}, Range{Int}}; 
                  ntimesteps=typemax(Int), output_dir=nothing, 
                  pre_trial_func=nothing, post_trial_func=nothing)
     if m.mi == nothing
@@ -214,12 +214,12 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int64
 end
 
 """
-    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int64=mcs.trials; ntimesteps=typemax(Int))
+    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int=mcs.trials; ntimesteps=typemax(Int))
 
 Run the indicated number of trials, where the model is run for `ntimesteps`, if specified, or to 
 the maximum defined time period otherswise.
 """
-function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int64=mcs.trials; 
+function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int=mcs.trials; 
                  ntimesteps=typemax(Int), output_dir=nothing, 
                  pre_trial_func=nothing, post_trial_func=nothing)
     return run_mcs(m, mcs, 1:trials, ntimesteps=ntimesteps, output_dir=output_dir, 

@@ -44,13 +44,18 @@ function _property_expr(obj, types, index_pos)
     # println("_property_expr() index_pos: $index_pos, T: $T")
 
     if T <: Ref
-        if T.parameters[1] <: Scalar
-            ex = :(obj.values[$index_pos][].value) # dereference Scalar instance
+        ref_type = T.parameters[1]
+        # println("_property_expr: ref_type: $ref_type")
+        
+        if ref_type <: Scalar
+            value_type = ref_type.parameters[1]
+            # println("_property_expr: scalar value_type: $value_type")
+            ex = :(obj.values[$index_pos][].value::$(value_type)) # dereference Scalar instance
         else
-            ex = :(obj.values[$index_pos][])
+            ex = :(obj.values[$index_pos][]::$(ref_type))
         end
-        # ex = :(obj.values[$index_pos][])
-        # println("Returning $ex")
+ 
+        # println("_property_expr returning $ex")
         return ex
 
     # TBD: deprecated if we keep Refs for everything
@@ -69,7 +74,7 @@ end
 end
 
 # Special case support for Dicts so we can use dot notation on dimension.
-# The run() func passes a reference to md.index_values as the "d" parameter.
+# The run() func passes a Dict of dimensions by name as the "d" parameter.
 # Here we return a range representing the indices into that list of values.
 # TBD: Need to revise this in v0.7 so we don't affect all Dicts.
 @generated function getproperty(obj::Dict, ::Val{PROPERTY}) where {PROPERTY}
@@ -278,19 +283,14 @@ function init(mi::ModelInstance)
 end
 
 # Fall-back for components without init methods
-init(module_name, comp_name, p::ComponentInstanceParameters, 
-    v::Mimi.ComponentInstanceVariables, d::Dict{Symbol, Vector{Int}}) = nothing
+init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
+     d::Union{Void, Dict}) = nothing
 
 function init(mi::ModelInstance, ci::ComponentInstance)
     reset_variables(ci)
     module_name = compmodule(ci.comp_id)
-    comp_name = ci.comp_name
 
-    pars = ci.parameters
-    vars = ci.variables
-    dims = dim_value_dict(mi.md)
-
-    init(Val(module_name), Val(comp_name), pars, vars, dims)
+    init(Val(module_name), Val(ci.comp_name), ci.parameters, ci.variables, ci.dim_dict)
 end
 
 function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
@@ -299,33 +299,16 @@ function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
     
     pars = ci.parameters
     vars = ci.variables
-    dims = dim_value_dict(mi.md)
+    dims = ci.dim_dict
     t = timeindex(clock)
 
     run_timestep(Val(module_name), Val(comp_name), pars, vars, dims, t)
     advance(clock)
+    nothing
 end
 
-function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
-             dim_keys::Union{Void, Dict{Symbol, Vector{T} where T}}=nothing)
-    if length(mi.components) == 0
-        error("Cannot run the model: no components have been created.")
-    end
-
-    dim_keys = dim_keys == nothing ? dim_key_dict(mi) : dim_keys
-
-    starts = mi.starts
-    stops = mi.stops
-    step  = step_size(dim_keys[:time])
-
-    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
-    
-    clock = make_clock(mi, ntimesteps, dim_keys[:time])
-
-    init(mi)    # call module's (or fallback) init function
-
-    comp_instances = components(mi)
-
+function _run_components(mi::ModelInstance, comp_instances::Vector{ComponentInstance}, clock::Clock,
+                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock})
     while ! finished(clock)
         for (ci, start, stop, comp_clock) in zip(comp_instances, starts, stops, comp_clocks)
             if start <= gettime(clock) <= stop
@@ -334,4 +317,27 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         end
         advance(clock)
     end
+end
+
+function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
+                  dimkeys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+    if length(mi.components) == 0
+        error("Cannot run the model: no components have been created.")
+    end
+
+    t::Vector{Int} = dimkeys == nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
+
+    starts = mi.starts
+    stops = mi.stops
+    step  = step_size(t)
+
+    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
+    
+    clock = make_clock(mi, ntimesteps, t)
+
+    init(mi)    # call module's (or fallback) init function
+
+    comp_instances = collect(components(mi))
+
+    _run_components(mi, comp_instances, clock, starts, stops, comp_clocks)
 end

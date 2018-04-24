@@ -35,8 +35,8 @@ end
 
 """
 EmpiricalDistribution(file::Union{AbstractString, IO}, 
-                      value_col::Union{Symbol, String, Int64},
-                      prob_col::Union{Void, Symbol, String, Int64}=nothing)
+                      value_col::Union{Symbol, String, Int},
+                      prob_col::Union{Void, Symbol, String, Int}=nothing)
 
 Load empirical values from a CSV or XLS(X) file and generate a distribution. 
 
@@ -48,8 +48,8 @@ If an XLS or XLSX file is given, the `value_col` and `prob_col` should be fully 
 Excel data ranges, e.g., "Sheet1!A2:A1002", indicating the values to extract from the file.
 """
 function EmpiricalDistribution(filename::AbstractString,
-                               value_col::Union{Symbol, AbstractString, Int64},
-                               prob_col::Union{Void, Symbol, AbstractString, Int64}=nothing;
+                               value_col::Union{Symbol, AbstractString, Int},
+                               prob_col::Union{Void, Symbol, AbstractString, Int}=nothing;
                                value_type::DataType=Any)
     probs = nothing
     ext = splitext(lowercase(filename))[2]
@@ -59,7 +59,7 @@ function EmpiricalDistribution(filename::AbstractString,
         values = isa(value_col, Symbol) ? df[value_col] : df.columns[value_col]
         
         if prob_col != nothing
-            probs = isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col]
+            probs = Vector{Float64}(isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col])
         end
     elseif ext in (".xls", ".xlsx", ".xlsm")
 
@@ -68,12 +68,12 @@ function EmpiricalDistribution(filename::AbstractString,
         end
         
         f = openxl(filename)
-        data = readxl(f, value_col)
-        values = Vector{value_type}(data[:,1])
+        data = Array{value_type, 2}(readxl(f, value_col))
+        values = data[:, 1]
 
         if prob_col != nothing
-            data = readxl(f, prob_col)
-            probs = Vector{Float64}(data[:,1])
+            data = Array{Float64, 2}(readxl(f, prob_col))
+            probs = data[:, 1]
         end
     else
         error("Unrecognized file extension '$ext'. Must be .csv, .xls, .xlsx, or .xlsm")

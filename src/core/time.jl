@@ -27,7 +27,7 @@ function next_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
 end
 
 function new_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop}, new_start::Int)
-	return Timestep{new_start, Step, Stop}(Int64(ts.t + (Start - new_start) / Step))
+	return Timestep{new_start, Step, Stop}(Int(ts.t + (Start - new_start) / Step))
 end
 
 #
@@ -99,7 +99,7 @@ function Base.getindex(x::TimestepVector{T, Start, Step}, ts::Timestep{Start, St
 end
 
 function Base.getindex(x::TimestepVector{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}) where {T, d_start, Step, t_start, Stop}
-	t = Int64(ts.t + (t_start - d_start) / Step)
+	t = Int(ts.t + (t_start - d_start) / Step)
 	return x.data[t]
 end
 
@@ -117,7 +117,7 @@ function Base.setindex!(v::TimestepVector{T, Start, Step}, val, ts::Timestep{Sta
 end
 
 function Base.setindex!(v::TimestepVector{T, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}) where {T, d_start, Step, t_start, Stop}
-	t = Int64(ts.t + (t_start - d_start) / Step)
+	t = Int(ts.t + (t_start - d_start) / Step)
 	setindex!(v.data, val, t)
 end
 
@@ -148,7 +148,7 @@ function Base.getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, 
 end
 
 function Base.getindex(mat::TimestepMatrix{T, d_start, Step}, ts::Timestep{t_start, Step, Stop}, i::AnyIndex) where {T, d_start, Step, t_start, Stop}
-	t = Int64(ts.t + (t_start - d_start) / Step)
+	t = Int(ts.t + (t_start - d_start) / Step)
 	return mat.data[t, i]
 end
 
@@ -162,7 +162,7 @@ function Base.setindex!(mat::TimestepMatrix{T, Start, Step}, val, ts::Timestep{S
 end
 
 function Base.setindex!(mat::TimestepMatrix{T, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}, idx::AnyIndex) where {T, d_start, Step, t_start, Stop}
-	t = Int64(ts.t + (t_start - d_start) / Step)
+	t = Int(ts.t + (t_start - d_start) / Step)
 	setindex!(mat.data, val, t, idx)
 end
 

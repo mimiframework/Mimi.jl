@@ -62,7 +62,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
     elseif num_dims == 1 && dims[1] == :time
         value = dtype(dim_count(md, :time))
 
-    else # if dims[1] != :time  # TBD: this can be collapsed with final "else" clause"
+    else # if dims[1] != :time
         # TBD: Handle unnamed indices properly
         counts = dim_counts(md, Vector{Symbol}(dims))
         value = dtype(counts...)
@@ -153,6 +153,12 @@ function build(md::ModelDef)
     instantiate_components(mi)
 
     comps = mi.components
+
+    # Save dimension dictionary with which we call run_timestep
+    dim_dict = dim_value_dict(mi.md)
+    for ci in values(comps)
+        ci.dim_dict = dim_dict
+    end
 
     # Make the internal parameter connections, including hidden connections between ConnectorComps.
     for ipc in internal_param_conns(md)
