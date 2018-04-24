@@ -24,7 +24,7 @@ end
 
 function _instance_datatype_ref(md::ModelDef, def::DatumDef, start::Int)
     T = _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
-    return Ref{T}
+    return Base.RefValue{T}
 end
 
 # Return the parameterized types for parameters and variables for 
@@ -68,8 +68,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
         value = dtype(counts...)
     end
 
-    T = typeof(value)
-    return Ref{T}(value)
+    return Base.RefValue{dtype}(value)
 end
 
 """
