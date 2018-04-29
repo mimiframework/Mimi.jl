@@ -16,6 +16,11 @@ This guide is organized into six main sections for understanding how to use Mimi
 ## Defining Components
 
 Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components.
+
+A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
+
+The user must define a run_timestep function for each component. 
+
 We define a component in the following way:
 
 ```julia
@@ -31,27 +36,19 @@ using Mimi
   d = Parameter(index = [time])
   e = Parameter(index = [time, regions])
   f = Parameter(index = [regions])
-end
-```
-A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example above. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' above. They can be two dimensional such as variable 'B' and parameter 'e' above. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` above.
 
-The user must define a run_timestep function for each component. That looks like the following:
+  function run_timestep(p, v, d, t)
 
-```julia
-function run_timestep(c::MyComponentName, t::Timestep)
-  params = c.Parameters
-  vars = c.Variables
-  dims = c.Dimensions
-
-  vars.A[t] = params.c + params.d[t]
-  for r in dims.regions
-    vars.B[t, r] = params.f[r] * params.e[t, r]
+    vars.A[t] = params.c + params.d[t]
+    for r in dims.regions
+      vars.B[t, r] = params.f[r] * params.e[t, r]
+    end
   end
 end
 
 ```
 
-The run_timestep function is responsible for calculating values for each variable in that component. The first argument to the function is a 'ComponentState', a type whose name matches the component you defined. The second argument is a Timestep, which represents which timestep the model is at each time the function gets called. Note that the component state (the first argument) has fields for the Parameters, Variables, and Dimensions of that component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.
+The run_timestep function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of that component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is a Timestep, which represents which timestep the model is at each time the function gets called. 
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
@@ -61,36 +58,42 @@ The first step in constructing a model is to set the values for each index of th
 
 ```julia
 mymodel = Model()
-setindex(mymodel, :time, 1850:2200)
-setindex(mymodel, :regions, ["USA", "EU", "LATAM"])
+set_dimension!(mymodel, :time, 1850:2200)
+set_dimension!(mymodel, :regions, ["USA", "EU", "LATAM"])
 
 ```
 
 The next step is to add components to the model. This is done by the following syntax:
 
 ```julia
-addcomponent(mymodel, :ComponentA, :GDP)
-addcomponent(mymodel, :ComponentB; start=2010)
-addcomponent(mymodel, :ComponentC; start=2010, final=2100)
+addcomponent(mymodel, ComponentA, :GDP)
+addcomponent(mymodel, ComponentB, :ComponentB; start=2010)
+addcomponent(mymodel, ComponentC, :ComponentC; start=2010, final=2100)
 
 ```
 
-The first argument to addcomponent is the model, the second is the name of the component type. If an optional second symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in setindex.
+The first argument to addcomponent is the model, the second is the name of the component defined by `@defcomp`, and the third the component name. If an optional second symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in set_dimension!.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
 To make an external connection, the syntax is as follows:
 
 ```julia
-setparameter(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
-setparameter(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
+set_parameter!(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
+set_parameter!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
 
 ```
 
 To make an internal connection:
 
 ```julia
-connectparameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
+connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
+
+```
+
+To finish connecting components:
+```julia
+add_connector_comps(mymodel)
 
 ```
 
@@ -193,7 +196,7 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 
 ### Updating an external parameter
 
-When `setparameter` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
+When `set_parameter!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
 
 ```julia
 update_external_parameter(mymodel, :parametername, newvalues)
@@ -206,7 +209,7 @@ Note: newvalues must be the same size and type (or be able to convert to the typ
 In larger models it can be beneficial to set some of the external parameters using a dictionary of values. To do this, use the following function:
 
 ```julia
-setleftoverparameters(mymodel, parameters)
+set_leftover_params!(mymodel, parameters)
 ```
 
 Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters.
