@@ -9,7 +9,7 @@ The name is probably an acronym for "Modular Integrated Modeling Interface", but
 You might want to use a multivariate distribution to capture the
 covariance between estimated coefficient parameters.  For example, an estimated
 polynomial can be represented as a multivariate Normal distribution,
-with a variance-covariance matrix.  Do use this, define the parameter
+with a variance-covariance matrix.  To use this, define the parameter
 in the component with a vector type, like here:
 ```
 @defcomp example begin
