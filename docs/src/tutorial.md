@@ -1,10 +1,10 @@
--# Tutorial
+# Tutorial
 
 ## Constructing A One-Region Model
 
 In this example, we will construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy will involve creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
 
-There are two main steps to creating a component, both within the  `@defcomp` model which defines a component:
+There are two main steps to creating a component, both within the  `@defcomp` macro which defines a component:
 
 * List the parameters and variables.
 * Use the run_timestep function `run_timestep(p, v, d, t)` to set the equations of that component.
@@ -15,14 +15,14 @@ Starting with the economy component, each variable and parameter is listed. If e
 using Mimi
 
 @defcomp grosseconomy begin
-	YGROSS	= Variable(index=[time])		#Gross output
-	K	= Variable(index=[time])		#Capital
-	l	= Parameter(index=[time])		#Labor
-	tfp	= Parameter(index=[time])		#Total factor productivity
-	s	= Parameter(index=[time])		#Savings rate
-	depk	= Parameter()		#Depreciation rate on capital - Note that it has no time index
-	k0	= Parameter()		#Initial level of capital
-	share	= Parameter()		#Capital share
+	YGROSS	= Variable(index=[time])	#Gross output
+	K	= Variable(index=[time])	#Capital
+	l	= Parameter(index=[time])	#Labor
+	tfp	= Parameter(index=[time])	#Total factor productivity
+	s	= Parameter(index=[time])	#Savings rate
+	depk	= Parameter()			#Depreciation rate on capital - Note that it has no time index
+	k0	= Parameter()			#Initial level of capital
+	share	= Parameter()			#Capital share
 
 ```
 
@@ -30,10 +30,10 @@ Next, the run_timestep function must be defined along with the various equations
 
 ```julia
 	function run_timestep(p, v, d, t)
-
 		#Define an equation for K
 		if t == 1
-			v.K[t] 	= p.k0	#Note the use of v. and p. to distinguish between variables and parameters
+			#Note the use of v. and p. to distinguish between variables and parameters
+			v.K[t] 	= p.k0	
 		else
 			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
 		end
@@ -48,7 +48,7 @@ Next, the the component for greenhouse gas emissions must be created.  Although 
 
 ```julia
 @defcomp emissions begin
-	E 		= Variable(index=[time])	#Total greenhouse gas emissions
+	E 	= Variable(index=[time])	#Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	#Emissions output ratio
 	YGROSS	= Parameter(index=[time])	#Gross output - Note that YGROSS is now a parameter
 
@@ -83,7 +83,8 @@ m = Model()
 
 set_dimension!(m, :time, collect(2015:5:2110))
 
-addcomponent(my_model, grosseconomy, :grosseconomy)  #Order matters here. If the emissions component were defined first, the model would not run.
+#Order matters here. If the emissions component were defined first, the model would not run.
+addcomponent(my_model, grosseconomy, :grosseconomy)  
 addcomponent(my_model, emissions, :emissions)
 
 #Set parameters for the grosseconomy component
@@ -96,13 +97,18 @@ set_parameter!(my_model, :grosseconomy, :share, 0.3)
 
 #Set parameters for the emissions component
 set_parameter!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  #Note that connectparameter was used here.
+#Note that connectparameter was used here.
+connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
 
-#Complete connectinos
+#Complete connections
 add_connector_comps(m)
 
 end #end module
 
+```
+Now we can run the model and examine the results:
+
+```julia
 #Run model
 using my_model
 run(m)
@@ -112,6 +118,7 @@ m[:emissions, :E]
 
 #Observe model result graphs
 explore(m)
+
 ```
 
 ## Constructing A Multi-Region Model
@@ -130,20 +137,21 @@ To create a three-regional model, we will again start by constructing the grosse
 using Mimi
 
 @defcomp grosseconomy begin
-	regions = Index()		#Note that a regional index is defined here
+	regions = Index()	#Note that a regional index is defined here
 
-	YGROSS	= Variable(index=[time, regions])		#Gross output
-	K 	= Variable(index=[time, regions])		#Capital
-	l 	= Parameter(index=[time, regions])		#Labor
-	tfp = Parameter(index=[time, regions]) 		#Total factor productivity
-	s 	= Parameter(index=[time, regions])		#Savings rate
-	depk	= Parameter(index=[regions])		#Depreciation rate on capital - Note that it only has a region index
-	k0	= Parameter(index=[regions])		#Initial level of capital
-	share	= Parameter()		#Capital share
+	YGROSS	= Variable(index=[time, regions])	#Gross output
+	K 	= Variable(index=[time, regions])	#Capital
+	l 	= Parameter(index=[time, regions])	#Labor
+	tfp	= Parameter(index=[time, regions])	#Total factor productivity
+	s 	= Parameter(index=[time, regions])	#Savings rate
+	depk	= Parameter(index=[regions])	#Depreciation rate on capital - Note that it only has a region index
+	k0	= Parameter(index=[regions])	#Initial level of capital
+	share	= Parameter()	#Capital share
 
 	function run_timestep(p, v, d, t)
 		
-		#Note that the regional dimension is used below and parameters and variables are indexed by 'r'
+		#Note that the regional dimension is used below and parameters and 
+		variables are indexed by 'r'
 
 		#Define an equation for K
 		for r in d.regions
@@ -168,10 +176,10 @@ Save this component as _**gross_economy.jl**_
 using Mimi	#Make sure to call Mimi again
 
 @defcomp emissions begin
-	regions	=		Index()	#The regions index must be specified for each component
+	regions	=	Index()	#The regions index must be specified for each component
 
 	E		= Variable(index=[time, regions])	#Total greenhouse gas emissions
-	E_Global		= Variable(index=[time])	#Global emissions (sum of regional emissions)
+	E_Global	= Variable(index=[time])	#Global emissions (sum of regional emissions)
 	sigma		= Parameter(index=[time, regions])	#Emissions output ratio
 	YGROSS		= Parameter(index=[time, regions])	#Gross output - Note that YGROSS is now a parameter
 
@@ -228,7 +236,7 @@ end
 ```
 Save this file as _**region_parameters.jl**_
 
-The final step is to create a module and run our model.
+The final step is to create a module.
 
 ```julia
 module my_model

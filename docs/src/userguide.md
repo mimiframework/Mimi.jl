@@ -38,17 +38,17 @@ using Mimi
   f = Parameter(index = [regions])
 
   function run_timestep(p, v, d, t)
-
     vars.A[t] = params.c + params.d[t]
     for r in dims.regions
       vars.B[t, r] = params.f[r] * params.e[t, r]
     end
   end
+
 end
 
 ```
 
-The run_timestep function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of that component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is a Timestep, which represents which timestep the model is at each time the function gets called. 
+The run_timestep function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is a Timestep, which represents which timestep the model is at each time the function gets called. 
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
@@ -72,7 +72,7 @@ addcomponent(mymodel, ComponentC, :ComponentC; start=2010, final=2100)
 
 ```
 
-The first argument to addcomponent is the model, the second is the name of the component defined by `@defcomp`, and the third the component name. If an optional second symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in set_dimension!.
+The first argument to addcomponent is the model, the second is the name of the component defined by `@defcomp`, and the third the component symbol. The third symbol will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in set_dimension!.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
