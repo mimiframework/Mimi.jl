@@ -97,8 +97,8 @@ set_parameter!(my_model, :grosseconomy, :share, 0.3)
 
 #Set parameters for the emissions component
 set_parameter!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-#Note that connectparameter was used here.
 connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
+#Note that connect_parameter was used here.
 
 #Complete connections
 add_connector_comps(m)
@@ -179,7 +179,7 @@ using Mimi	#Make sure to call Mimi again
 	regions	=	Index()	#The regions index must be specified for each component
 
 	E		= Variable(index=[time, regions])	#Total greenhouse gas emissions
-	E_Global	= Variable(index=[time])	#Global emissions (sum of regional emissions)
+	E_Global		= Variable(index=[time])	#Global emissions (sum of regional emissions)
 	sigma		= Parameter(index=[time, regions])	#Emissions output ratio
 	YGROSS		= Parameter(index=[time, regions])	#Gross output - Note that YGROSS is now a parameter
 
