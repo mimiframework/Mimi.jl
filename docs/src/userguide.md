@@ -67,12 +67,12 @@ The next step is to add components to the model. This is done by the following s
 
 ```julia
 addcomponent(mymodel, ComponentA, :GDP)
-addcomponent(mymodel, ComponentB, :ComponentB; start=2010)
-addcomponent(mymodel, ComponentC, :ComponentC; start=2010, final=2100)
+addcomponent(mymodel, ComponentB; start=2010)
+addcomponent(mymodel, ComponentC; start=2010, final=2100)
 
 ```
 
-The first argument to addcomponent is the model, the second is the name of the component defined by `@defcomp`, and the third the component symbol. The third symbol will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in set_dimension!.
+This call assigns the module name (first argument) and component name (second argument) to a variable named the same as the component name passed to `@defcomp`.  If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in set_dimension!.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
