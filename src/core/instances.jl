@@ -293,16 +293,13 @@ function init(mi::ModelInstance, ci::ComponentInstance)
     init(Val(module_name), Val(ci.comp_name), ci.parameters, ci.variables, ci.dim_dict)
 end
 
-function run_timestep(mi::ModelInstance, ci::ComponentInstance, clock::Clock)
-    module_name = compmodule(ci.comp_id)
-    comp_name = compname(ci.comp_id)
-    
+function run_timestep(::Val{TM}, ::Val{TC}, ci::ComponentInstance, clock::Clock) where {TM,TC} 
     pars = ci.parameters
     vars = ci.variables
     dims = ci.dim_dict
     t = timeindex(clock)
 
-    run_timestep(Val(module_name), Val(comp_name), pars, vars, dims, t)
+    run_timestep(Val(TM), Val(TC), pars, vars, dims, t)
     advance(clock)
     nothing
 end
@@ -312,7 +309,9 @@ function _run_components(mi::ModelInstance, comp_instances::Vector{ComponentInst
     while ! finished(clock)
         for (ci, start, stop, comp_clock) in zip(comp_instances, starts, stops, comp_clocks)
             if start <= gettime(clock) <= stop
-                run_timestep(mi, ci, comp_clock)
+                module_name = compmodule(ci.comp_id)
+                comp_name = compname(ci.comp_id)
+                run_timestep(Val(module_name), Val(comp_name), ci, comp_clock)
             end
         end
         advance(clock)
