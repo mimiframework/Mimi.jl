@@ -289,21 +289,21 @@ struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
     end
 end
 
-mutable struct ComponentInstance
+mutable struct ComponentInstance{TV<:ComponentInstanceVariables,TP<:ComponentInstanceParameters}
     comp_name::Symbol
     comp_id::ComponentId
-    variables::ComponentInstanceVariables
-    parameters::ComponentInstanceParameters
+    variables::TV
+    parameters::TP
     dim_dict::Union{Void, Dict{Symbol, Vector{Int}}}
 
     start::Int
     stop::Int
     
-    function ComponentInstance(comp_def::ComponentDef, 
-                               vars::ComponentInstanceVariables, 
-                               pars::ComponentInstanceParameters, 
-                               name::Symbol=name(comp_def))
-        self = new()
+    function ComponentInstance{TV,TP}(comp_def::ComponentDef, 
+                               vars::TV, 
+                               pars::TP, 
+                               name::Symbol=name(comp_def)) where {TV<:ComponentInstanceVariables,TP<:ComponentInstanceParameters}
+        self = new{TV, TP}()
         self.comp_id = comp_def.comp_id
         self.comp_name = name
         self.dim_dict = nothing     # set in "build" stage

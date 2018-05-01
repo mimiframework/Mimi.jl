@@ -87,7 +87,10 @@ function instantiate_component(md::ModelDef, comp_def::ComponentDef)
 
     # println("instantiate_component:\n  vtype: $vars_type\n\n  ptype: $pars_type\n\n  vvals: $var_vals\n\n  pvals: $par_vals\n\n")
 
-    comp_inst = ComponentInstance(comp_def, vars_type(var_vals), pars_type(par_vals), comp_name)
+    v = vars_type(var_vals)
+    p = pars_type(par_vals)
+
+    comp_inst = ComponentInstance{typeof(v), typeof(p)}(comp_def, v, p, comp_name)
     return comp_inst
 end
 
