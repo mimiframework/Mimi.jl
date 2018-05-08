@@ -66,30 +66,10 @@ function get_timestep_instance(T, start, step, num_dims, value)
 	return timestep_type{T, start, step}(value)
 end
 
-#
-# AbstractTimestepMatrix -- methods that apply to both matrix and vector variants
-#
-function Base.fill!(obj::AbstractTimestepMatrix, value)
-	fill!(obj.data, value)
-end
-
-function Base.size(obj::AbstractTimestepMatrix)
-	return size(obj.data)
-end
-
-function Base.size(obj::AbstractTimestepMatrix, i::Int)
-	return size(obj.data, i)
-end
-
-function Base.eltype(obj::AbstractTimestepMatrix)
-	return eltype(obj.data)
-end
-
-function start_period(v::AbstractTimestepMatrix{T, Start, Step}) where {T, Start, Step}
-	return Start
-end
-
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
+
+# TBD: can it be reduced to this?
+# const AnyIndex = Union{Int, Range}
 
 #
 # TimestepVector
@@ -125,20 +105,11 @@ function Base.setindex!(v::TimestepVector{T, start, duration}, val, i::AnyIndex)
 	setindex!(v.data, val, i)
 end
 
-# method where the vector and the timestep have the same start period
-function hasvalue(v::TimestepVector{T, Start, Step}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
-	return 1 <= ts.t <= size(v, 1)
-end
-
-# method where they have different start periods
-function hasvalue(v::TimestepVector{T, Start1, Step}, ts::Timestep{Start2, Step, Stop}) where {T, Start1, Start2, Step, Stop}
-	t = gettime(ts)
-	return Start1 <= t <= (Start1 + (size(v, 1) - 1) * Step)
-end
-
-function Base.endof(v::TimestepVector)
+function Base.length(v::TimestepVector)
 	return length(v.data)
 end
+
+Base.endof(v::TimestepVector) = length(v)
 
 #
 # TimestepMatrix
@@ -170,17 +141,81 @@ function Base.setindex!(mat::TimestepMatrix{T, Start, Step}, val, idx1::AnyIndex
 	setindex!(mat.data, val, idx1, idx2)
 end
 
-function Base.indices(mat::TimestepMatrix{T, Start, Step}) where {T, Start, Step}
-	return (Start:Step:(Start + (size(mat.data, 1) - 1) * Step), 1:size(mat.data, 2))
+#
+# TimestepArray methods
+#
+Base.fill!(obj::TimestepArray, value) = fill!(obj.data, value)
+
+Base.size(obj::TimestepArray) = size(obj.data)
+
+Base.size(obj::TimestepArray, i::Int) = size(obj.data, i)
+
+Base.ndims(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = N
+
+Base.eltype(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = T
+
+start_period(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = Start
+
+end_period(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = (Start + (size(obj, 1) - 1) * Step)
+
+step_size(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = Step
+
+# TimestepArray and Timestep have the same Start and Step
+function Base.getindex(arr::TimestepArray{T, N, Start, Step}, ts::Timestep{Start, Step, Stop}, idxs::AnyIndex...) where {T, N, Start, Step, Stop}
+	return arr.data[ts.t, idxs...]
 end
 
-# method where the vector and the timestep have the same start period
-function hasvalue(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, j::Int) where {T, Start, Step, Stop}
-	return 1 <= ts.t <= size(mat, 1) && 1 <= j <= size(mat, 2)
+# TimestepArray and Timestep have different Start dates
+function Base.getindex(arr::TimestepArray{T, N, d_start, Step}, ts::Timestep{t_start, Step, Stop}, idxs::AnyIndex...) where {T, N, d_start, Step, t_start, Stop}
+	t = Int(ts.t + (t_start - d_start) / Step)
+	return arr.data[t, idxs...]
 end
 
-# method where they have different start periods
-function hasvalue(mat::TimestepMatrix{T, Start1, Step}, ts::Timestep{Start2, Step, Stop}, j::Int) where {T, Start1, Start2, Step, Stop}
-	t = gettime(ts)
-	return Start1 <= t <= (Start1 + (size(mat, 1) - 1) * Step) && 1 <= j <= size(mat, 2)
+# TimestepArray and Timestep have the same Start and Step
+function Base.setindex!(arr::TimestepArray{T, N, Start, Step}, val, ts::Timestep{Start, Step, Stop}, idxs::AnyIndex...) where {T, N, Start, Step, Stop}
+	setindex!(arr.data, val, ts.t, idxs...)
+end
+
+# TimestepArray and Timestep have different Start dates
+function Base.setindex!(arr::TimestepArray{T, N, d_start, Step}, val, ts::Timestep{t_start, Step, Stop}, idxs::AnyIndex...) where {T, N, d_start, Step, t_start, Stop}
+	t = Int(ts.t + (t_start - d_start) / Step)
+	setindex!(arr.data, val, t, idxs...)
+end
+
+# Old-style: first index is Int or Range, rather than a Timestep
+function Base.getindex(arr::TimestepArray{T, N, Start, Step}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, Start, Step}
+	return arr.data[idx1, idx2, idxs...]
+end
+
+# Old-style: first index is Int or Range, rather than a Timestep
+function Base.setindex!(arr::TimestepArray{T, N, Start, Step}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, Start, Step}
+	setindex!(arr.data, val, idx1, idx2, idxs...)
+end
+
+function Base.indices(arr::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step}
+	idxs = [1:size(arr, i) for i in 2:ndims(arr)]
+	stop = end_period(arr)
+	return (Start:Step:stop, idxs...)
+end
+
+# Legacy integer case
+function hasvalue(arr::TimestepArray{T, N, Start, Step}, t::Int) where {T, N, Start, Step}
+	return 1 <= t <= size(arr, 1)
+end
+
+# Array and timestep have the same start period and step
+function hasvalue(arr::TimestepArray{T, N, Start, Step}, ts::Timestep{Start, Step, Stop}) where {T, N, Start, Step, Stop}
+	return 1 <= ts.t <= size(arr, 1)
+end
+
+# Array and Timestep have different start periods but same step
+function hasvalue(arr::TimestepArray{T, N, Start1, Step}, ts::Timestep{Start2, Step, Stop}) where {T, N, Start1, Start2, Step, Stop}
+	return Start1 <= gettime(ts) <= end_period(arr)
+end
+
+# Array and Timestep different start periods, validating all dimensions
+function hasvalue(arr::TimestepArray{T, N, Start1, Step}, 
+				  ts::Timestep{Start2, Step, Stop}, 
+				  idxs::Int...) where {T, N, Start1, Start2, Step, Stop}
+	return Start1 <= gettime(ts) <= end_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
 end

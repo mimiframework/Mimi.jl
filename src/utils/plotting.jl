@@ -5,7 +5,7 @@ using Compose
 # Remove this if plotting.jl is once again included in Mimi.jl. (It was removed
 # because Plots causing pre-compilation to fail, and this file is optional.)
 using Mimi:
-    datumdef, prettify
+    datumdef, prettify, TimestepArray
 
 """
 Extends the Plots module to be able to take a model information parameters for
@@ -14,7 +14,7 @@ convenience. More advanced plotting may require accessing the Plots module direc
 function Plots.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
                     dim_name::Union{Void, Symbol} = nothing, legend=nothing, 
                     x_label=nothing, y_label=nothing)
-    if isnull(m.mi)
+    if m.mi == nothing
         error("A model must be run before it can be plotted")
     end
 
@@ -26,7 +26,7 @@ function Plots.plot(m::Model, comp_name::Symbol, datum_name::Symbol;
 
     if dim_name == nothing
         dim_name = dims[1]
-    elseif ! dim_name in dims
+    elseif ! (dim_name in dims)
         error("$comp_name.$datum_name has no dimension named $dim_name")
     end
 

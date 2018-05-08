@@ -37,6 +37,7 @@ export
     getproperty,
     get_parameter_value,
     get_variable_value,
+    hasvalue,
     interpolate,
     load_comps,
     modeldef,
@@ -56,7 +57,7 @@ export
 
 include("core/types.jl")
 
-# After loading types and macros, the rest can just be alphabetical
+# After loading types, the rest can just be alphabetical
 include("core/build.jl")
 include("core/connections.jl")
 include("core/defs.jl")
@@ -69,7 +70,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-# include("utils/plotting.jl")
+include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
