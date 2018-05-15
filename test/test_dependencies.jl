@@ -11,9 +11,14 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-"https://github.com/davidanthoff/fund.jl/archive/774a8c382b44de83601ae25b425cddc6c3a449a1.zip",
-"https://github.com/anthofflab/mimi-rice-2010.jl/archive/d10a6687d77eba56d658817815d3edaadc1cb115.zip"
+    "https://github.com/lrennels/fund/commit/60b9239483100c4bdf8762c00f9f96e723bf984f.zip",
+    "https://github.com/lrennels/mimi-dice-2010.jl/commit/7135cb0a747677db2d63dc91faed5cd881d57cdf.zip"
 ]
+#= 
+#old links
+["https://github.com/davidanthoff/fund.jl/archive/774a8c382b44de83601ae25b425cddc6c3a449a1.zip",
+"https://github.com/anthofflab/mimi-rice-2010.jl/archive/d10a6687d77eba56d658817815d3edaadc1cb115.zip"
+] =#
 
 function run_dependency_tests(dependencies=dependencies)
     #list of failed tests to build as you go
