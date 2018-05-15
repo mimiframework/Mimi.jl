@@ -13,46 +13,48 @@ using NamedArrays
 
 export
     @defcomp,
-    @modelegate,
+    @modelegate, # Don't export
     MarginalModel,
     Model,
-    addcomponent,
-    add_connector_comps,
-    add_dimension,
-    addparameter,
-    compdef,
-    compdefs,
-    compinstance,
-    compkeys,
+    addcomponent, # push!, add_component!, add_component, addcomp!, add!; could also have multiple functions like insert!, push! etc. instead of before after keywords
+    add_connector_comps, # Don't export
+    add_dimension, # Don't export
+    addparameter, # Don't export
+    compdef, # Don't export
+    compdefs, # Don't export
+    compinstance, # Don't export
+    compkeys, # Don't export
     components,
-    connect_parameter,
+    connect_parameter, # connect!, bind, assign, link; ! yes or no; frontrunner: connect!
     create_marginal_model,
-    datatype,
-    description,
-    dimension,
-    dimensions,
-    disconnect!,
+    datatype, # Don't export
+    description, # Don't export
+    dimension, # Don't export
+    dimensions, # Don't export
+    disconnect!, # disconnect_parameter!; frontrunner: disconnect!
     explore,
-    getdataframe,
-    getproperty,
-    get_parameter_value,
-    get_variable_value,
-    interpolate,
-    load_comps,
-    modeldef,
-    name,
-    new_component,
+    getdataframe, # Table for now
+    getproperty, # Don't export
+    get_parameter_value, # Don't export
+    get_variable_value, # Don't export
+    interpolate, # Don't export, move to contrib or something
+    load_comps, # Don't export
+    modeldef, # Don't export
+    name, # Don't export
+    new_component, # Don't export
     parameters,
     # plot,
     # plot_comp_graph,
-    replace_component,
-    run_timestep,
-    set_dimension!,
-    set_leftover_params!,
-    set_parameter!,
-    setproperty!,
-    unit,
-    variables
+    replace_component, # Add !, comp vs, component, replace!
+    run_timestep, # Don't export
+    set_dimension!, # Think hard about axis-dimension-index-blabla
+    set_leftover_params!, # Rethink in general
+    set_parameter!, # Just make parameter match other parts
+    setproperty!, # Don't export
+    unit, # Don't export
+    variables # Just make sure it matches vars vs variables
+
+    # delete! for comps
 
 include("core/types.jl")
 
