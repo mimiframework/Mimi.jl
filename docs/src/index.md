@@ -22,6 +22,9 @@ For more complete setup instructions, follow the [Installation Guide](@ref).
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl) (currently in closed beta)
 * [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/) (currently in closed beta)
 * [Mimi-PAGE.jl](https://github.com/anthofflab/mimi-page.jl/) (currently in closed beta)
+<<<<<<< HEAD
 * [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl) (CH4 parts currently in closed beta)
 * [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl) (CH4 parts currently in closed beta)
 * [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed beta)
+=======
+>>>>>>> 5005005e95666bc168118f53ae854cd7aa8caf1d
