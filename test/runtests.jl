@@ -32,7 +32,7 @@ end
     include("test_parameter_labels.jl")
 
     @info("test_parametertypes.jl")
-    include("test_parametertypes.jl")
+    include("test_parametertypes.jl") #fails currently, see comments and commented tests
 
     @info("test_marginal_models.jl")
     include("test_marginal_models.jl")
