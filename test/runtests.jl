@@ -31,8 +31,9 @@ end
     @info("test_parameter_labels.jl")
     include("test_parameter_labels.jl")
 
+    #fails currently, see comments and commented out tests
     @info("test_parametertypes.jl")
-    include("test_parametertypes.jl") #fails currently, see comments and commented tests
+    include("test_parametertypes.jl") 
 
     @info("test_marginal_models.jl")
     include("test_marginal_models.jl")
@@ -55,6 +56,7 @@ end
     @info("test_getdataframe.jl")
     include("test_getdataframe.jl")
 
+    #fails currently, see comments and commented out tests
     @info("test_mult_getdataframe.jl")        
     include("test_mult_getdataframe.jl")    
 

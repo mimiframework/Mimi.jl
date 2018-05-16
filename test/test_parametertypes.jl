@@ -72,7 +72,7 @@ update_external_param(m, :d, 5) # should work, will convert to float
 update_external_param(m, :e, [4,5,6,7])
 
 # THIS FAILS:  haven't set f yet because of errors above
-# @test length(extpars) == 6
+#@test length(extpars) == 6
 @test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
 @test typeof(extpars[:d].value) == Float64
 @test typeof(extpars[:e].values) == Array{Float64, 1}
