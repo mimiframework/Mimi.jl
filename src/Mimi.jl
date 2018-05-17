@@ -11,7 +11,6 @@ using LightGraphs
 using MetaGraphs
 using NamedArrays
 using StringBuilders
-using TableTraits
 
 export
     @defcomp,
