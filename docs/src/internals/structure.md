@@ -76,6 +76,8 @@ In the previous version of Mimi, components were named by a pair of symbols indi
 
 In the new version, all component definitions are represented by one type, `ComponentDef`. The `@defcomp` macro creates a global variable with the name provided to `@defcomp` which holds a new type of object, `ComponentId`, which holds the symbol names of the module and component. The name of the model given in the `@defcomp` macro invocation becomes a variable holding the `ComponentId`. Thus, instead of referring to a component as, say, `(:Mimi, :grosseconomy)`, you refer to it by its associated global constant, e.g., `Mimi.grosseconomy`. Note that models can be defined in their own module to avoid namespace collisions.
 
+![Object structure](figs/MimiModelArchitecture-v1.png)
+
 ## 3. New macro `@defmodel`
 
 The `@defmodel` macro provides simplified syntax for model creation, eliminating many redundant parameters. For example, you can write:
