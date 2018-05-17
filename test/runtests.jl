@@ -7,7 +7,6 @@ macro info(msg)
     :(Base.println_with_color(:light_blue, $msg, bold=true))
 end
 
-
 @testset "Mimi" begin
 
     @info("test_main.jl")
@@ -59,7 +58,6 @@ end
     @info("test_getdataframe.jl")
     include("test_getdataframe.jl")
 
-    #fails currently, see comments and commented out tests
     @info("test_mult_getdataframe.jl")        
     include("test_mult_getdataframe.jl")    
 
