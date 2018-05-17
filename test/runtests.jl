@@ -24,9 +24,7 @@ end
     @info("test_model_structure.jl")
     include("test_model_structure.jl")
 
-    #temporarily commented out the Plots.jl dependencies, and removed Plots.jl
-    #and GraphPlot.jl from REQUIRE file, were causing precompilation problems for 
-    #run_dependencies.jl
+    #commented out line calling Plots, want to remove this dependency
     @info("test_tools.jl")
     include("test_tools.jl")
 

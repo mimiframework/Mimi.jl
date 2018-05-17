@@ -38,4 +38,5 @@ bar[:intermed] = foo[:intermed]
 
 run(m)
 
+#For now remove dependency on plots
 #Plots.plot(m, :Bar, :output)

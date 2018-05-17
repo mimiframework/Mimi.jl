@@ -33,10 +33,7 @@ set_parameter!(m, :MyComp, :b, 1:101)
 set_parameter!(m, :MyComp, :c, [4,5,6])
 set_parameter!(m, :MyComp, :d, .5)
 set_parameter!(m, :MyComp, :e, [1,2,3,4])
-
-# THIS FAILS: Cannot `convert` an object of type Array{Float64,2} to an object 
-# of type Mimi.ScalarModelParameter{Array{Float64,2}}
-#set_parameter!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
+set_parameter!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
 # THIS FAILS: Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}} != Array{Float64,2}
 #set_parameter!(m, :MyComp, :f, reshape(1:16, 4, 4))
@@ -49,16 +46,14 @@ extpars = external_params(m)
 @test isa(extpars[:d], ScalarModelParameter)
 @test isa(extpars[:e], ArrayModelParameter)
 
-# THIS FAILS:  haven't set f yet because of errors above
-#@test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
+@test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
 @test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
 @test typeof(extpars[:b].values) == TimestepVector{Float64, 2000, 1}
 @test typeof(extpars[:c].values) == Array{Float64, 1}
 @test typeof(extpars[:d].value) == Float64
 @test typeof(extpars[:e].values) == Array{Float64, 1}
-# THIS FAILS:  haven't set f yet because of errors above
-#@test typeof(extpars[:f].value) == Array{Float64, 2}
+@test typeof(extpars[:f].value) == Array{Float64, 2}
 
 # test updating parameters
 @test_throws ErrorException update_external_param(m, :a, 5) #expects an array
@@ -73,7 +68,7 @@ update_external_param(m, :d, 5) # should work, will convert to float
 update_external_param(m, :e, [4,5,6,7])
 
 # THIS FAILS:  haven't set f yet because of errors above
-#@test length(extpars) == 6
+@test length(extpars) == 6
 @test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
 @test typeof(extpars[:d].value) == Float64
 @test typeof(extpars[:e].values) == Array{Float64, 1}
