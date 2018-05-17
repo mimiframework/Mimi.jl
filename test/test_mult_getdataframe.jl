@@ -161,9 +161,7 @@ run1 = run_my_model()
 
 expanded_get_dataframe = getdataframe(run1, :grosseconomy =>(:YGROSS, :K))
 curr_get_dataframe = getdataframe(run1, :grosseconomy, :YGROSS)
-
-#THIS FAILS (ERROR: There was an error during testing)
-# @test(expanded_get_dataframe[3] == curr_get_dataframe[3])
+@test(expanded_get_dataframe[3] == curr_get_dataframe[3])
 
 expanded_get_dataframe = getdataframe(run1, :grosseconomy => :YGROSS, :emissions => :E)
 curr_get_dataframe = getdataframe(run1, :emissions, :E)
