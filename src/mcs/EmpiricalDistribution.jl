@@ -1,6 +1,8 @@
-try
-    using ExcelReaders
-end
+using FileIO
+using ExcelFiles
+using IterableTables
+using IteratorInterfaceExtensions
+using DataFrames
 
 struct EmpiricalDistribution{T}
     values::Vector{T}
@@ -59,24 +61,23 @@ function EmpiricalDistribution(filename::AbstractString,
         values = isa(value_col, Symbol) ? df[value_col] : df.columns[value_col]
         
         if prob_col != nothing
-            probs = Vector{Float64}(isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col])
+            probs = Vector{value_type}(isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col])
         end
     elseif ext in (".xls", ".xlsx", ".xlsm")
 
-        if Pkg.installed("ExcelReaders") == nothing
-            error("""You must install ExcelReaders to read Excel files: run Pkg.add("ExcelReaders")""")
+        function read_column(filename, colspec)
+            xlfile = load(filename, colspec, header=false, colnames=[:value]) 
+            values = Vector{value_type}(map(obj->obj.value, getiterator(xlfile)))
+            return values
         end
-        
-        f = openxl(filename)
-        data = Array{value_type, 2}(readxl(f, value_col))
-        values = data[:, 1]
+
+        values = read_column(filename, value_col)
 
         if prob_col != nothing
-            data = Array{Float64, 2}(readxl(f, prob_col))
-            probs = data[:, 1]
+            probs = read_column(filename, prob_col)
         end
     else
-        error("Unrecognized file extension '$ext'. Must be .csv, .xls, .xlsx, or .xlsm")
+        error("Unrecognized file extension '$ext'. Must be .csv, .xlsx, or .xlsm")
     end
     return EmpiricalDistribution(values, probs)
 end
