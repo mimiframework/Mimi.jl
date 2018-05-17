@@ -10,6 +10,7 @@ using JSON
 using LightGraphs
 using MetaGraphs
 using NamedArrays
+using StringBuilders
 
 export
     @defcomp,

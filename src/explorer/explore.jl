@@ -2,7 +2,7 @@
 
 global app = nothing
 
-#function to get variable data
+#include functions and modules
 include("buildspecs.jl")
 
 function explore(model; title = "Electron")

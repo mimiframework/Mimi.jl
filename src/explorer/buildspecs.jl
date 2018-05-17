@@ -36,7 +36,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         return spec
         
     catch err
-        println("could not convert $comp_name.$item_name to DataFrame for explorer")
+        println("spec conversion failed for $comp_name.$item_name")
         rethrow(err)
     end
 end
@@ -66,7 +66,7 @@ global const _plot_width  = 450
 global const _plot_height = 450
 
 function createspec_lineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :line) # returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -87,7 +87,7 @@ function createspec_lineplot(name, df, dffields)
 end
 
 function createspec_barplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :bar) # returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :bar) #returns JSONtext type     
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -108,7 +108,7 @@ function createspec_barplot(name, df, dffields)
 end
 
 function createspec_multilineplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :multiline) # returns a list of dictionaries    
+    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -130,6 +130,7 @@ function createspec_multilineplot(name, df, dffields)
     return spec
 end
 
+## TODO 1:  does this datapart need to be JSONText?
 function createspec_singlevalue(name)
 
     datapart = [];
@@ -140,27 +141,75 @@ function createspec_singlevalue(name)
     return spec
 end
 
+## TODO 2:  Ok with dependency on StringBuilders?
+## TODO 3:  Why is mcs breaking?
+
 function getdatapart(df, dffields, plottype::Symbol)
-    datapart = [];
+
+    sb = StringBuilder()
+    append!(sb, "[");
 
     # loop over rows and create a dictionary for each row
-    if plottype == :multiline || plottype == :line
-        for row in eachrow(df)
-            rowdata = Dict(dffields[1] => Date(row[1]), 
-                           dffields[2] => row[2])
-
-            if plottype == :multiline
-                rowdata[dffields[3]] = row[3] 
-            end
-            push!(datapart, rowdata)
-        end 
+    if plottype == :multiline
+        cols = (df.columns[1], df.columns[2], df.columns[3])
+        datastring = getmultiline(cols, dffields)
+    elseif plottype == :line
+        cols = (df.columns[1], df.columns[2])
+        datastring = getline(cols, dffields)
     else
-        for row in eachrow(df)
-            rowdata = Dict(dffields[1] => row[1], 
-                           dffields[2] => row[2])
-            push!(datapart, rowdata)
-        end 
+        cols = (df.columns[1], df.columns[2])
+        datastring = getbar(cols, dffields)
     end
 
-    return datapart
+    append!(sb, datastring * "]");
+    datapart = String(sb)
+
+    return JSON.JSONText(datapart)
+end
+
+
+function getmultiline(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
+            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
+            * dffields[3] * "\":" * string(cols[3][i]) * "}")
+        
+        if i != numrows
+            append!(datasb, ",")
+        end  
+    end
+    return String(datasb)
+end
+
+function getline(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) 
+            * "\",\"" * dffields[2] * "\":" * string(cols[2][i]) * "}") 
+
+        if i != numrows
+            append!(datasb, ",")
+        end
+    end
+    
+    return String(datasb)
+end
+
+function getbar(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+
+        append!(datasb, "{\"" * dffields[1] * "\":\"" * string(cols[1][i]) *
+            "\",\"" * dffields[2] * "\":" * string(cols[2][i]) * "}") #end of dictionary
+
+        if i != numrows
+            append!(datasb, ",")
+        end
+    end
+    return String(datasb)
 end
