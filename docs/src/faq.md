@@ -9,7 +9,7 @@ The name is probably an acronym for "Modular Integrated Modeling Interface", but
 You might want to use a multivariate distribution to capture the
 covariance between estimated coefficient parameters.  For example, an estimated
 polynomial can be represented as a multivariate Normal distribution,
-with a variance-covariance matrix.  Do use this, define the parameter
+with a variance-covariance matrix.  To use this, define the parameter
 in the component with a vector type, like here:
 ```
 @defcomp example begin
@@ -47,12 +47,12 @@ If you want to get a reference to a component after the `addcomponent` call has 
 mycomponent = ComponentReference(model, :MyComponent)
 ```
 
-You can use this component reference in place of the `setparameter` and `connectparameter` calls.
+You can use this component reference in place of the `set_parameter!` and `connect_parameter` calls.
 
-## References in place of `setparameter`
+## References in place of `set_parameter!`
 
-The line `setparameter(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
+The line `set_parameter!(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
 
-## References in place of `connectparameter`
+## References in place of `connect_parameter`
 
-The line `connectparameter(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.
+The line `connect_parameter(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.
