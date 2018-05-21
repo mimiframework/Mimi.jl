@@ -62,7 +62,6 @@ end
 
 We can now use Mimi to construct a model that binds the `grosseconomy` and `emissions` components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.
 
-* For simplicity, create a `module` within which you will construct your model.
 * Once the model is defined, `set_dimension!` is used to set the length and interval of the time step.
 * We then use `addcomponent` to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.
 * Next, `set_parameter!` is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using `set_parameter!` two different times. The syntax is `set_parameter!(model_name, :component_name, :parameter_name, value)`
@@ -84,8 +83,8 @@ m = Model()
 set_dimension!(m, :time, collect(2015:5:2110))
 
 #Order matters here. If the emissions component were defined first, the model would not run.
-addcomponent(my_model, grosseconomy, :grosseconomy)  
-addcomponent(my_model, emissions, :emissions)
+addcomponent(my_model, grosseconomy)  
+addcomponent(my_model, emissions)
 
 #Set parameters for the grosseconomy component
 set_parameter!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
@@ -254,8 +253,8 @@ m = Model()
 set_dimension!(m, :time, collect(2015:5:2110))
 set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 #Note that the regions of your model must be specified here
 
-addcomponent(m, grosseconomy, :grosseconomy)
-addcomponent(m, emissions, :emissions)
+addcomponent(m, grosseconomy)
+addcomponent(m, emissions)
 
 set_parameter!(m, :grosseconomy, :l, l)
 set_parameter!(m, :grosseconomy, :tfp, tfp)
