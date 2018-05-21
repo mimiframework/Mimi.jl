@@ -297,8 +297,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
             start = start_period(comp_def)
             dur = step_size(md)
 
-            values = num_dims == 1 ? TimestepVector{T, start, dur}(value) :
-                    (num_dims == 2 ? TimestepMatrix{T, start, dur}(value) : value)
+            values = num_dims == 0 ? value : TimestepArray{T, num_dims, start, dur}(value)
         else
             values = value
         end

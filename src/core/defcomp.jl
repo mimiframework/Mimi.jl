@@ -46,29 +46,37 @@ function _replace_dots(ex)
 end
 
 function _generate_run_func(module_name, comp_name, args, body)
-
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
+    end
+
+    (p, v, d, t) = args
+
+    if @capture(t, tname_::ttype_)
+        if ttype == :Timestep
+            ttype = :(Mimi.Timestep)
+        end
+        t = tname
+    else
+        ttype = :Int
     end
 
     # replace each expression with its dot-replaced equivalent
     body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
 
-    # add types to the parameters  
-    (p, v, d, t) = args
+    # Generate unique function name for each component so we can store a function pointer.
+    # (At least in julia 0.6, methods cannot be invoked directly.)
+    funcname = Symbol("run_timestep_$(module_name)_$(comp_name)")
 
     func = :(
-        function Mimi.run_timestep(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
-                                   $(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
-                                   $(d)::Dict{Symbol, Vector{Int}}, $(t)::Union{Int, Mimi.Timestep})
+        function $(funcname)($(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
+                             $(d)::Dict{Symbol, Vector{Int}}, $(t)::$(ttype))
             $(body...)
             
             return nothing
         end
     )
-    func = esc(func)
-    debug("run_timestep func: $func")
-    return func
+    return esc(func)
 end
 
 function _generate_init_func(module_name, comp_name, args, body)
@@ -176,6 +184,7 @@ macro defcomp(comp_name, ex)
         if @capture(elt, function fname_(args__) body__ end) 
             if fname == :run_timestep
                 expr = _generate_run_func(mod_name, comp_name, args, body)
+
             elseif fname == :init
                 expr = _generate_init_func(mod_name, comp_name, args, body)
             else

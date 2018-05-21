@@ -139,8 +139,7 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 
 @modelegate dimension(m::Model, dim_name::Symbol) => md
 
-# TBD: this allows access of the form my_model[:grosseconomy, :tfp]
-# It is not related to indices or dimensions.
+# Allow access of the form my_model[:grosseconomy, :tfp]
 @modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
@@ -198,11 +197,11 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @modelegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractTimestepMatrix}, dims)
+    set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 
 Adds a one or two dimensional (optionally, time-indexed) array parameter to the model.
 """
-function set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractTimestepMatrix}, dims)
+function set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
     set_external_array_param!(m.md, name, value, dims)
     decache(m)
 end
@@ -293,7 +292,7 @@ function update_external_param(m::Model, name::Symbol, value)
                 error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
             end
         else # perform the update
-            if isa(param.values, TimestepVector) || isa(param.values, TimestepMatrix)
+            if param.values isa TimestepArray
                 param.values.data = value
             else
                 param.values = value

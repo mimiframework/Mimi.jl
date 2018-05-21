@@ -14,39 +14,21 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     
     else
         step = step_size(md)
-        ts_type = num_dims == 1 ? TimestepVector : TimestepMatrix
-        T = ts_type{dtype, start, step}
+        T = TimestepArray{dtype, num_dims, start, step}
     end
 
     # println("_instance_datatype($def) returning $T")
     return T
 end
 
-function _instance_datatype_ref(md::ModelDef, def::DatumDef, start::Int)
-    T = _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
-    return Base.RefValue{T}
-end
-
-# Return the parameterized types for parameters and variables for 
-# the given component.
-function _datum_types(md::ModelDef, comp_def::ComponentDef)
-    var_defs = variables(comp_def)
-    par_defs = parameters(comp_def)
-
-    start = comp_def.start
-
+function _vars_type(md::ModelDef, comp_def::ComponentDef)
+    var_defs = variables(comp_def)    
     vnames = Tuple([name(vdef) for vdef in var_defs])
-    pnames = Tuple([name(pdef) for pdef in par_defs])
-
-    vtypes = Tuple{[_instance_datatype_ref(md, vdef, start) for vdef in var_defs]...}
-    ptypes = Tuple{[_instance_datatype_ref(md, pdef, start) for pdef in par_defs]...}
-
-    # println("_datum_types:\n  vtypes=$vtypes\n  ptypes=$ptypes\n")
-
-    vars_type = ComponentInstanceVariables{vnames, vtypes}
-    pars_type = ComponentInstanceParameters{pnames, ptypes}
     
-    return (vars_type, pars_type)
+    start = comp_def.start
+    vtypes = Tuple{[_instance_datatype(md, vdef, start) for vdef in var_defs]...}
+
+    return ComponentInstanceVariables{vnames, vtypes}
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
@@ -60,6 +42,8 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
       
     # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1 && dims[1] == :time
+        # t = dimension(md, :time)
+        # value = dtype(length(t[start:end]))
         value = dtype(dim_count(md, :time))
 
     else # if dims[1] != :time
@@ -68,71 +52,34 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
         value = dtype(counts...)
     end
 
-    return Base.RefValue{dtype}(value)
+    return value
 end
 
 """
-    instantiate_component(md::ModelDef, comp_def::ComponentDef)
+_instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
-Instantiate a component and return the resulting ComponentInstance.
+Instantiate a component and its variables (but not its parameters). Return 
+the resulting ComponentInstance.
 """
-function instantiate_component(md::ModelDef, comp_def::ComponentDef)
+function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
     start = comp_def.start
+    vtype = _vars_type(md, comp_def)
     
-    (vars_type, pars_type) = _datum_types(md, comp_def)
-    
-    var_vals = [_instantiate_datum(md, vdef, start) for vdef in variables(comp_def)]
-    par_vals = [_instantiate_datum(md, pdef, start) for pdef in parameters(comp_def)]
-
-    # println("instantiate_component:\n  vtype: $vars_type\n\n  ptype: $pars_type\n\n  vvals: $var_vals\n\n  pvals: $par_vals\n\n")
-
-    comp_inst = ComponentInstance(comp_def, vars_type(var_vals), pars_type(par_vals), comp_name)
-    
-    return comp_inst
+    vals = [_instantiate_datum(md, def, start) for def in variables(comp_def)]
+    return vtype(vals)
 end
 
-"""
-    instantiate_components(mi::ModelInstance)
+# Save a reference to the model's dimension dictionary to make it 
+# available in calls to run_timestep.
+function save_dim_dict_reference(mi::ModelInstance)
+    dim_dict = dim_value_dict(mi.md)
 
-Instantiate all components and add the ComponentInstances to `mi.`
-"""
-function instantiate_components(mi::ModelInstance)
-    md = modeldef(mi)
-    
-    # loop over components, including new ConnectorComps, in order.
-    for comp_def in compdefs(md)
-        comp_inst = instantiate_component(md, comp_def)
-        addcomponent(mi, comp_inst)
+    for ci in values(mi.components)
+        ci.dim_dict = dim_dict
     end
+
     return nothing
-end
-
-"""
-    connect_external_params(mi::ModelInstance)
-
-Make the external parameter connections. This is broken out so it
-can be called in the MCS system to point to updated parameters.
-"""
-function connect_external_params(mi::ModelInstance)
-    md = mi.md
-    comps = mi.components
-    backups = md.backups
-
-    for ext in external_param_conns(md)
-        param = external_param(md, ext.external_param)
-        comp = comps[ext.comp_name]
-        set_parameter_value(comp, ext.param_name, value(param))
-    end
-
-    # Make the external parameter connections for the hidden ConnectorComps.
-    # Connect each :input2 to its associated backup value.
-    for i in 1:length(backups)
-        comp_name = connector_comp_name(i)
-        param = external_param(md, backups[i])
-        comp_inst = comps[comp_name]
-        set_parameter_value(comp_inst, :input2, value(param))
-    end
 end
 
 function build(m::Model)
@@ -150,32 +97,64 @@ function build(md::ModelDef)
         error(msg)
     end
 
-    mi = ModelInstance(md)
-    instantiate_components(mi)
-
-    comps = mi.components
-
-    # Save dimension dictionary with which we call run_timestep
-    dim_dict = dim_value_dict(mi.md)
-    for ci in values(comps)
-        ci.dim_dict = dim_dict
+    var_dict = Dict{Symbol, Any}()                 # collect all var defs and
+    par_dict = Dict{Symbol, Dict{Symbol, Any}}()   # store par values as we go
+  
+    comp_defs = compdefs(md)
+    for comp_def in comp_defs
+        comp_name = name(comp_def)
+        var_dict[comp_name] = _instantiate_component_vars(md, comp_def)
+        par_dict[comp_name] = Dict()  # param value keyed by param name
     end
 
-    # Make the internal parameter connections, including hidden connections between ConnectorComps.
+    # Iterate over connections to create parameters, referencing storage in vars   
     for ipc in internal_param_conns(md)
-        src_comp_inst = comps[ipc.src_comp_name]
-        dst_comp_inst = comps[ipc.dst_comp_name]
+        comp_name = ipc.src_comp_name      
 
-        # value = get_variable_value(src_comp_inst, ipc.src_var_name)
-        # set_parameter_value(dst_comp_inst, ipc.dst_par_name, value)
-
-        ref = get_variable_ref(src_comp_inst, ipc.src_var_name)
-        set_parameter_ref(dst_comp_inst, ipc.dst_par_name, ref)
+        vars = var_dict[comp_name]
+        var_value_obj = get_property_obj(vars, ipc.src_var_name)
+        
+        par_values = par_dict[ipc.dst_comp_name]
+        par_values[ipc.dst_par_name] = var_value_obj
+    end
+    
+    for ext in external_param_conns(md)
+        comp_name = ext.comp_name
+        param = external_param(md, ext.external_param)
+        par_values = par_dict[comp_name]
+        val = value(param)
+        par_values[ext.param_name] = val isa Number ? Scalar(val) : val
     end
 
-    # Make the external parameter connections.
-    connect_external_params(mi)
+    # Make the external parameter connections for the hidden ConnectorComps.
+    # Connect each :input2 to its associated backup value.
+    for (i, backup) in enumerate(md.backups)
+        comp_name = connector_comp_name(i)
+        param = external_param(md, backups)
 
+        par_values = par_dict[comp_name]
+        par_values[:input2] = value(param)
+    end
+
+    mi = ModelInstance(md)
+
+    # instantiate parameters
+    for comp_def in comp_defs
+        comp_name = name(comp_def)
+
+        vars = var_dict[comp_name]
+        
+        par_values = par_dict[comp_name]
+        pnames = Tuple(parameter_names(comp_def))
+        pvals  = [par_values[pname] for pname in pnames]
+        ptypes = Tuple{map(typeof, pvals)...}
+        pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
+
+        ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
+        addcomponent(mi, ci)
+    end
+
+    save_dim_dict_reference(mi)
     return mi
 end
 

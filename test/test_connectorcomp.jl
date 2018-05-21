@@ -10,7 +10,7 @@ using Base.Test
     y = Parameter()
     z = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, ts::Timestep)
         v.z[ts] = p.x[ts] + p.y
     end
 end
@@ -19,7 +19,7 @@ end
     a = Parameter()
     b = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts)        
+    function run_timestep(p, v, d, ts::Timestep)
         v.b[ts] = p.a * ts.t
     end
 end
@@ -45,12 +45,10 @@ run(m)
 
 @test length(m[:ShortComponent, :b]) == 901
 @test length(m[:MyConnector, :input1]) == 901
-@test length(m[:MyConnector, :input2]) ==  100
+@test length(m[:MyConnector, :input2]) ==  1001 # TBD: was 100 -- accidental deletion or...?
 @test length(m[:LongComponent, :z]) == 1001
 
-for i in 1:900
-    @test m[:ShortComponent, :b][i] == 2*i
-end
+@test all([m[:ShortComponent, :b][i] == 2*i for i in 1:900])
 
 b = getdataframe(m, :ShortComponent, :b)
 @test size(b) == (1001, 2)
@@ -72,7 +70,7 @@ run(model2)
 
 @test length(model2[:ShortComponent, :b]) == 6
 @test length(model2[:LongComponent, :z]) == 11
-@test length(components(model2)) == 2
+@test length(components(model2.mi)) == 2
 
 #-------------------------------------
 #  A Short component that ends early
@@ -80,7 +78,7 @@ run(model2)
 
 model3 = Model()
 set_dimension!(model3, :time, 2000:2010)
-addcomponent(model3, ShortComponent; final=2005)
+addcomponent(model3, ShortComponent; stop=2005)
 addcomponent(model3, LongComponent)
 
 set_parameter!(model3, :ShortComponent, :a, 2.)
@@ -91,12 +89,12 @@ run(model3)
 
 @test length(model3[:ShortComponent, :b]) == 6
 @test length(model3[:LongComponent, :z]) == 11
-@test length(components(model3)) == 2
+@test length(components(model3.mi)) == 2
 
 b2 = getdataframe(model3, :ShortComponent, :b)
 @test size(b2) == (11,2)
-[(@test b2[:b][i]==2*i) for i in 1:6]
-[(@test isnan(b2[:b][i])) for i in 7:11]
+@test all([b2[:b][i] == 2*i for i in 1:6])
+@test all([isnan(b2[:b][i]) for i in 7:11])
 
 #------------------------------------------------------
 #  A model that requires multiregional ConnectorComps
@@ -108,7 +106,7 @@ b2 = getdataframe(model3, :ShortComponent, :b)
     x = Parameter(index = [time, regions])
     out = Variable(index = [time, regions])
     
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, ts::Timestep)
         for r in d.regions
             v.out[ts, r] = p.x[ts, r]
         end
@@ -121,7 +119,7 @@ end
     a = Parameter(index=[regions])
     b = Variable(index=[time, regions])
     
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, ts::Timestep)
         for r in d.regions
             v.b[ts, r] = ts.t + p.a[r]
         end

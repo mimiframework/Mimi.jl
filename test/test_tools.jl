@@ -28,7 +28,7 @@ end
 end
 
 m = Model()
-set_dimension!(m, :time, 1)
+set_dimension!(m, :time, 2)
 foo = addcomponent(m, Foo)
 bar = addcomponent(m, Bar)
 
@@ -38,5 +38,4 @@ bar[:intermed] = foo[:intermed]
 
 run(m)
 
-include("../src/utils/plotting.jl")
 Plots.plot(m, :Bar, :output)
