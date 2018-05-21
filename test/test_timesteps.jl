@@ -2,7 +2,7 @@ using Mimi
 using Base.Test
 
 import Mimi:
-    Timestep, TimestepVector, TimestepMatrix, next_timestep, new_timestep, 
+    Timestep, TimestepVector, TimestepMatrix, TimestepArray, next_timestep, new_timestep, 
     hasvalue, is_start, is_stop, gettime
 
 ###################################

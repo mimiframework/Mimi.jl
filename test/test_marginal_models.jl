@@ -1,6 +1,8 @@
 using Mimi
 using Base.Test
 
+reset_compdefs()
+
 @defcomp compA begin
     varA = Variable(index=[time])
     parA = Parameter(index=[time])

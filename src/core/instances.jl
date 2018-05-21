@@ -8,8 +8,6 @@ compinstance(mi::ModelInstance, name::Symbol) = mi.components[name]
 
 compdef(ci::ComponentInstance) = compdef(ci.comp_id)
 
-# compdef(mi::ModelInstance, name::Symbol) = compdef(mi.components[name].comp_id)
-
 name(ci::ComponentInstance) = ci.comp_name
 
 """
@@ -37,31 +35,20 @@ function _index_pos(names, propname, var_or_par)
     return index_pos
 end
 
-# TBD: Allow assignment only to array slices, not entire arrays,
-# and eliminate the ref for arrays.
+# TBD: Allow assignment only to array slices, not entire arrays
 function _property_expr(obj, types, index_pos)
     T = types.parameters[index_pos]
     # println("_property_expr() index_pos: $index_pos, T: $T")
-
-    if T <: Ref
-        ref_type = T.parameters[1]
-        # println("_property_expr: ref_type: $ref_type")
-        
-        if ref_type <: Scalar
-            value_type = ref_type.parameters[1]
-            # println("_property_expr: scalar value_type: $value_type")
-            ex = :(obj.values[$index_pos][].value::$(value_type)) # dereference Scalar instance
-        else
-            ex = :(obj.values[$index_pos][]::$(ref_type))
-        end
- 
-        # println("_property_expr returning $ex")
-        return ex
-
-    # TBD: deprecated if we keep Refs for everything
-    # else
-    #     return :(obj.values[$index_pos])
+   
+    if T <: Scalar
+        value_type = T.parameters[1]
+        ex = :(obj.values[$index_pos].value::$(value_type)) # dereference Scalar instance
+    else
+        ex = :(obj.values[$index_pos])
     end
+
+    # println("_property_expr returning $ex")
+    return ex
 end
 
 # Fallback get & set property funcs that revert to dot notation
@@ -94,67 +81,40 @@ end
     return _property_expr(obj, TYPES, index_pos)
 end
 
+# Shouldn't set the parameter itself, just the value (for Scalar objs) or array slice
 
 @generated function setproperty!(obj::ComponentInstanceParameters{NAMES, TYPES}, 
                                  ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
     index_pos = _index_pos(NAMES, PROPERTY, "parameter")
-    T = TYPES.parameters[index_pos].parameters[1]   # get down to the Scalar{xxx}
-    return T <: Scalar ? :(obj.values[$index_pos][].value = value) : :(obj.values[$index_pos][] = value)   
-    # return :(obj.values[$index_pos][] = value)
+    T = TYPES.parameters[index_pos]
 
-    #
-    # TBD: now that everything is a Ref, this isn't necessary, but still need to catch this error!
-    #
-    # if TYPES.parameters[index_pos] <: Ref
-    #     return :(obj.values[$index_pos][] = value)
-    # else
-    #     return :(obj.values[$index_pos] = value)
-    #     # T = TYPES.parameters[index_pos]
-    #     # error("You cannot override indexed parameter $PROPERTY::$T.")
-    # end
+    if T <: Scalar
+        return :(obj.values[$index_pos].value = value)
+    else
+        error("You cannot override indexed parameter $PROPERTY::$T.")
+        # return :(obj.values[$index_pos] = value)
+    end
 end
 
 @generated function setproperty!(obj::ComponentInstanceVariables{NAMES, TYPES}, 
                                  ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
     index_pos = _index_pos(NAMES, PROPERTY, "variable")
-    T = TYPES.parameters[index_pos].parameters[1]
-    # println("setproperty!(TYPES: $TYPES, T: $T, value: $value)")
-    return T <: Scalar ? :(obj.values[$index_pos][].value = value) : :(obj.values[$index_pos][] = value)   
-    # return :(obj.values[$index_pos][] = value)
+    T = TYPES.parameters[index_pos]
 
-    #
-    # TBD: now that everything is a Ref, this isn't necessary, but still need to catch this error!
-    #
-    # if TYPES.variables[index_pos] <: Ref
-    #     return :(obj.values[$index_pos][] = value)
-    # else
-    #     T = TYPES.variables[index_pos]
-    #     error("You cannot override indexed variable $PROPERTY::$T.")
-    # end
+    if T <: Scalar
+        return :(obj.values[$index_pos].value = value)
+    else
+        error("You cannot override indexed variable $PROPERTY::$T.")
+        # return :(obj.values[$index_pos] = value)
+    end
 end
 
-function get_parameter_ref(ci::ComponentInstance, name::Symbol)
-    pars = ci.parameters
-    index_pos = _index_pos(pars.names, name, "parameter")
-    return ci.parameters.values[index_pos]
-end
-
-function get_variable_ref(ci::ComponentInstance, name::Symbol)
-    vars = ci.variables
-    index_pos = _index_pos(vars.names, name, "variable")
-    return vars.values[index_pos]
-end
-
-function set_parameter_ref(ci::ComponentInstance, name::Symbol, ref::Ref)
-    pars = ci.parameters
-    index_pos = _index_pos(pars.names, name, "parameter")
-    ci.parameters.values[index_pos].x = ref.x
-end
-
-function set_variable_ref(ci::ComponentInstance, name::Symbol, ref::Ref)
-    vars = ci.variables
-    index_pos = _index_pos(vars.names, name, "variable")
-    vars.values[index_pos].x = ref.x
+# Get the object stored for the given variable, not the value of the variable.
+# This is used in the model building process to connect internal parameters.
+function get_property_obj(obj::ComponentInstanceVariables{NAMES, TYPES}, 
+                          name::Symbol) where {NAMES, TYPES}
+    index_pos = _index_pos(NAMES, name, "variable")
+    return obj.values[index_pos]
 end
 
 # Convenience functions that can be called with a name symbol rather than Val(name)
@@ -217,7 +177,7 @@ parameters(ci::ComponentInstance) = ci.parameters
 
 function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     if !(comp_name in keys(mi.components))
-        error("Component does not exist in current model")
+        error("Component :$comp_name does not exist in current model")
     end
     
     comp_inst = compinstance(mi, comp_name)
@@ -234,7 +194,7 @@ function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
 
     value = getproperty(which, Val(datum_name))
     # return isa(value, PklVector) || isa(value, TimestepMatrix) ? value.data : value
-    return isa(value, AbstractTimestepMatrix) ? value.data : value
+    return value isa TimestepArray ? value.data : value
 end
 
 """
@@ -259,12 +219,10 @@ function reset_variables(ci::ComponentInstance)
     # println("reset_variables($(ci.comp_id))")
     vars = ci.variables
 
-    for (name, ref) in zip(vars.names, vars.types.parameters)
-        # Everything is held in a Ref{}, so get the parameters to that...
-        T = ref.parameters[1]
+    for (name, T) in zip(vars.names, vars.types.parameters)
         value = getproperty(vars, Val(name))
 
-        if (T <: AbstractArray || T <: AbstractTimestepMatrix) && eltype(value) <: AbstractFloat
+        if (T <: AbstractArray || T <: TimestepArray) && eltype(value) <: AbstractFloat
             fill!(value, NaN)
 
         elseif T <: AbstractFloat || (T <: Scalar && T.parameters[1] <: AbstractFloat)            
@@ -276,15 +234,16 @@ function reset_variables(ci::ComponentInstance)
     end
 end
 
+# Fall-back for components without init methods
+function init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, d::Union{Void, Dict})
+    nothing
+end
+
 function init(mi::ModelInstance)
     for ci in components(mi)
         init(mi, ci)
     end
 end
-
-# Fall-back for components without init methods
-init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, 
-     d::Union{Void, Dict}) = nothing
 
 function init(mi::ModelInstance, ci::ComponentInstance)
     reset_variables(ci)
@@ -293,29 +252,34 @@ function init(mi::ModelInstance, ci::ComponentInstance)
     init(Val(module_name), Val(ci.comp_name), ci.parameters, ci.variables, ci.dim_dict)
 end
 
-function run_timestep(::Val{TM}, ::Val{TC}, ci::ComponentInstance, clock::Clock) where {TM,TC} 
+function run_timestep(ci::ComponentInstance, clock::Clock)
+    if ci.run_timestep == nothing
+        return
+    end
+
     pars = ci.parameters
     vars = ci.variables
     dims = ci.dim_dict
-    t = timeindex(clock)
+    t = ci.useIntegerTime ? timeindex(clock) : clock.ts
 
-    run_timestep(Val(TM), Val(TC), pars, vars, dims, t)
+    ci.run_timestep(pars, vars, dims, t)
     advance(clock)
     nothing
 end
 
-function _run_components(mi::ModelInstance, comp_instances::Vector{ComponentInstance}, clock::Clock,
+function _run_components(mi::ModelInstance, clock::Clock,
                          starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock})
+    comp_instances = components(mi)
+    
     while ! finished(clock)
         for (ci, start, stop, comp_clock) in zip(comp_instances, starts, stops, comp_clocks)
             if start <= gettime(clock) <= stop
-                module_name = compmodule(ci.comp_id)
-                comp_name = compname(ci.comp_id)
-                run_timestep(Val(module_name), Val(comp_name), ci, comp_clock)
+                run_timestep(ci, comp_clock)
             end
         end
         advance(clock)
     end
+    nothing
 end
 
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
@@ -336,7 +300,6 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     init(mi)    # call module's (or fallback) init function
 
-    comp_instances = collect(components(mi))
-
-    _run_components(mi, comp_instances, clock, starts, stops, comp_clocks)
+    _run_components(mi, clock, starts, stops, comp_clocks)
+    nothing
 end

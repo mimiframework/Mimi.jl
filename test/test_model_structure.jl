@@ -79,13 +79,11 @@ connect_parameter(m, :C => :parC, :B => :varB)
 add_connector_comps(m)
 run(m)
 
-for t in 1:9
-    @test m[:A, :varA][t] == 1
-end
 
-for t in 10:dim_count(m.md, :time)
-    @test m[:A, :varA][t] == 10
-end
+@test all([m[:A, :varA][t] == 1 for t in 1:9])
+
+@test all([m[:A, :varA][t] == 10 for t in 10:dim_count(m.md, :time)])
+
 
 ##########################
 #   tests for indexing   #
@@ -98,9 +96,7 @@ end
 
 time = dimension(m, :time)
 a = collect(keys(time))
-for i in 1:18
-    @test a[i] == 2010 + 5*i
-end
+@test all([a[i] == 2010 + 5*i for i in 1:18])
 
 @test dimensions(m, :A, :varA)[1] == :time
 @test length(dimensions(m, :A, :parA)) == 0
