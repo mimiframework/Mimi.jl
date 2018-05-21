@@ -36,7 +36,7 @@ set_parameter!(m, :MyComp, :e, [1,2,3,4])
 set_parameter!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
 # THIS FAILS: Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}} != Array{Float64,2}
-# set_parameter!(m, :MyComp, :f, reshape(1:16, 4, 4))
+#set_parameter!(m, :MyComp, :f, reshape(1:16, 4, 4))
 
 extpars = external_params(m)
 
@@ -45,6 +45,7 @@ extpars = external_params(m)
 @test isa(extpars[:c], ArrayModelParameter)
 @test isa(extpars[:d], ScalarModelParameter)
 @test isa(extpars[:e], ArrayModelParameter)
+
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
 @test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
@@ -66,6 +67,7 @@ update_external_param(m, :d, 5) # should work, will convert to float
 @test_throws ErrorException update_external_param(m, :e, ones(10)) #wrong size
 update_external_param(m, :e, [4,5,6,7])
 
+# THIS FAILS:  haven't set f yet because of errors above
 @test length(extpars) == 6
 @test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
 @test typeof(extpars[:d].value) == Float64

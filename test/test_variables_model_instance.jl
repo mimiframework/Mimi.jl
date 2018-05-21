@@ -1,6 +1,11 @@
 using Mimi
 using Base.Test
 
+import Mimi: 
+    reset_compdefs
+
+reset_compdefs()
+
 my_model = Model()
 
 @defcomp testcomp1 begin

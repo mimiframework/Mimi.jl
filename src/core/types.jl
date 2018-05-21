@@ -14,42 +14,30 @@ mutable struct Clock
 	end
 end
 
-abstract type AbstractTimestepMatrix{T, Start, Step} end
+mutable struct TimestepArray{T, N, Start, Step}
+	data::Array{T, N}
 
-# We don't need to encode N (number of dimensions) as a type parameter because we 
-# are hardcoding it as 1 for the vector case
-mutable struct TimestepVector{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
-	data::Vector{T}
-
-    function TimestepVector{T, Start, Step}(d::Vector{T}) where {T, Start, Step}
+    function TimestepArray{T, N, Start, Step}(d::Array{T, N}) where {T, N, Start, Step}
 		return new(d)
 	end
 
-    function TimestepVector{T, Start, Step}(i::Int) where {T, Start, Step}
-		return new(Vector{T}(i))
+    function TimestepArray{T, N, Start, Step}(lengths::Int...) where {T, N, Start, Step}
+		return new(Array{T, N}(lengths...))
 	end
 end
 
-# We don't need to encode N (number of dimensions) as a type parameter because we 
-# are hardcoding it as 2 for the matrix case
-mutable struct TimestepMatrix{T, Start, Step} <: AbstractTimestepMatrix{T, Start, Step}
-	data::Array{T, 2}
-
-    function TimestepMatrix{T, Start, Step}(d::Array{T, 2}) where {T, Start, Step}
-		return new(d)
-	end
-
-    function TimestepMatrix{T, Start, Step}(i::Int, j::Int) where {T, Start, Step}
-		return new(Array{T, 2}(i, j))
-	end
-end
+# Since these are the most common cases, we define methods (in time.jl)
+# specific to these type aliases, avoiding some of the inefficiencies
+# associated with an arbitrary number of dimensions.
+const TimestepMatrix{T, Start, Step} = TimestepArray{T, 2, Start, Step}
+const TimestepVector{T, Start, Step} = TimestepArray{T, 1, Start, Step}
 
 #
 # 2. Dimensions
 #
 abstract type AbstractDimension end
 
-const DimensionKeyTypes   = Union{AbstractString, Symbol, Int}
+const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}
 const DimensionRangeTypes = Union{UnitRange{Int}, StepRange{Int, Int}}
 
 struct Dimension <: AbstractDimension
@@ -107,7 +95,7 @@ abstract type ModelParameter end
 mutable struct ScalarModelParameter{T} <: ModelParameter
     value::T
 
-    function ScalarModelParameter{T}(value::T) where {T <: Number}
+    function ScalarModelParameter{T}(value::T) where T
         new(value)
     end
 end
@@ -205,7 +193,7 @@ mutable struct ComponentDef  <: NamedDef
     end
 end
 
-# Declarative definition of a model used to create a ModelInstance
+# Declarative definition of a model, used to create a ModelInstance
 mutable struct ModelDef
     module_name::Symbol     # the module in which this model was defined
 
@@ -217,8 +205,6 @@ mutable struct ModelDef
 
     number_type::DataType
 
-    # TBD: Should conns be Vector{AbstractConnection}, or two parameters for internal/external?
-    # Internal connections that the ModelDef will know about.
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
 
@@ -289,28 +275,49 @@ struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
     end
 end
 
-mutable struct ComponentInstance{TV<:ComponentInstanceVariables,TP<:ComponentInstanceParameters}
+mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
     comp_name::Symbol
     comp_id::ComponentId
     variables::TV
     parameters::TP
-    dim_dict::Union{Void, Dict{Symbol, Vector{Int}}}
+    dim_dict::Dict{Symbol, Vector{Int}}
 
     start::Int
     stop::Int
-    
-    function ComponentInstance{TV,TP}(comp_def::ComponentDef, 
-                               vars::TV, 
-                               pars::TP, 
-                               name::Symbol=name(comp_def)) where {TV<:ComponentInstanceVariables,TP<:ComponentInstanceParameters}
+
+    run_timestep::Union{Void, Function}
+    useIntegerTime::Bool
+
+    function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
+                               vars::TV, pars::TP, 
+                               name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
+                                                                   TP <: ComponentInstanceParameters}
         self = new{TV, TP}()
-        self.comp_id = comp_def.comp_id
+        self.comp_id = comp_id = comp_def.comp_id
         self.comp_name = name
-        self.dim_dict = nothing     # set in "build" stage
+        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
         self.variables = vars
         self.parameters = pars
         self.start = comp_def.start
         self.stop = comp_def.stop
+        self.useIntegerTime = true
+
+        comp_module = eval(Main, comp_id.module_name)
+
+        # the try/catch allows components with no run_timestep function (as in some of our test cases)
+        self.run_timestep = func = try eval(comp_module, Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)")) end
+
+        if func != nothing
+            meths = methods(func)
+            meth = meths.ms[1]
+            arg_types = meth.sig.parameters
+
+            # This is used to determine type of time argument to pass to run_timestep
+            time_type = arg_types[length(arg_types)]
+            if time_type <: Timestep
+                self.useIntegerTime = false
+            end
+        end
 
         return self
     end

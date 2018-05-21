@@ -1,6 +1,11 @@
 using Mimi
 using Base.Test
 
+import Mimi: 
+    reset_compdefs
+
+reset_compdefs()
+
 my_model = Model()
 
 #Testing that you cannot add two components of the same name
@@ -44,3 +49,33 @@ dataframe = getdataframe(my_model, :testcomp1, :var1)
 
 # Test trying to getdataframe from component that does not exist
 @test_throws ErrorException getdataframe(my_model, :testcomp1, :var2)
+
+#
+# Test with > 2 dimensions
+#
+new_model = Model()
+
+@defcomp testcomp4 begin
+    par1 = Parameter(index=[time, regions, rates])
+    var3 = Variable(index=[time])
+    
+    function run_timestep(p, v, d, t)
+    end
+end
+
+years   = 2015:5:2020
+regions = [:reg1, :reg2]
+rates   = [0.025, 0.05]
+
+set_dimension!(new_model, :time, years)
+set_dimension!(new_model, :regions, regions)
+set_dimension!(new_model, :rates, rates)
+
+data = Array{Int}(length(years), length(regions), length(rates))
+data[:] = 1:(length(years) * length(regions) * length(rates))
+
+addcomponent(new_model, testcomp4)
+set_parameter!(new_model, :testcomp4, :par1, data)
+
+# TBD: This doesn't work; needs TimestepArray or the like to handle > 2 dimensions
+# run(new_model)

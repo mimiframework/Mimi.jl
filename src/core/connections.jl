@@ -111,13 +111,7 @@ function connect_parameter(md::ModelDef,
         T = eltype(backup)
 
         dim_count = length(dst_dims)
-
-        if dim_count in (1, 2)
-            ts_type = dim_count == 1 ? TimestepVector : TimestepMatrix
-            values = ts_type{T, start, step}(backup)
-        else
-            values = backup
-        end
+        values = dim_count == 0 ? backup : TimestepArray{T, dim_count, start, step}(backup)
 
         set_external_array_param!(md, dst_par_name, values, dst_dims)
     end
@@ -149,11 +143,8 @@ end
 Return list of parameters that have been set for component c in model m.
 """
 function connected_params(md::ModelDef, comp_name::Symbol)
-    ext_connections = Iterators.filter(x -> x.comp_name == comp_name, external_param_conns(md))
-    ext_set_params = map(x->x.param_name, ext_connections)
-
-    int_connections = Iterators.filter(x -> x.dst_comp_name == comp_name, internal_param_conns(md))
-    int_set_params = map(x->x.dst_par_name, int_connections)
+    ext_set_params = map(x->x.param_name,   external_param_conns(md, comp_name))
+    int_set_params = map(x->x.dst_par_name, internal_param_conns(md, comp_name))
 
     return union(ext_set_params, int_set_params)
 end
@@ -221,6 +212,16 @@ internal_param_conns(md::ModelDef) = md.internal_param_conns
 
 external_param_conns(md::ModelDef) = md.external_param_conns
 
+# Find internal param conns to a given destination component
+function internal_param_conns(md::ModelDef, dst_comp_name::Symbol)
+    return filter(x->x.dst_comp_name == dst_comp_name, internal_param_conns(md))
+end
+
+# Find external param conns for a given comp
+function external_param_conns(md::ModelDef, comp_name::Symbol)
+    return filter(x -> x.comp_name == comp_name, external_param_conns(md))
+end
+
 function external_param(md::ModelDef, name::Symbol)
     try
         return md.external_params[name]
@@ -254,7 +255,7 @@ Adds a one dimensional time-indexed array parameter to the model.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
     # println("set_external_array_param!: dims=$dims, setting dims to [:time]")
-    param = ArrayModelParameter(value, [:time])
+    param = ArrayModelParameter(value, [:time])  # must be :time
     set_external_param!(md, name, param)
 end
 
@@ -264,6 +265,11 @@ end
 Adds a two dimensional time-indexed array parameter to the model.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
+    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    set_external_param!(md, name, param)
+end
+
+function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end

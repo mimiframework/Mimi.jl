@@ -23,40 +23,15 @@ function interpolate(values::Vector{T}, ts::Int=10) where T <: Union{Float64, In
     return newvalues
 end
 
-# """
-# Accepts a camelcase or snakecase string, and makes it human-readable
-# e.g. camelCase -> Camel Case; snake_case -> Snake Case
-# Warning: due to limitations in Julia's implementation of regex (or limits in my
-# understanding of Julia's implementation of regex), cannot handle camelcase strings
-# with more than 2 consecutive capitals, e.g. fileInTXTFormat -> File In T X T Format
-# """
-# function prettifystring_OLD(s::String)
-#     if contains(s, "_")
-#         # Snake Case
-#         s = replace(s, r"_", s" ")
-#     else
-#         # Camel Case
-#         s = replace(s, r"([a-z])([A-Z])", s"\1 \2")
-#         s = replace(s, r"([A-Z])([A-Z])", s"\1 \2")
-#     end
-
-#     # Capitalize the first letter of each word
-#     s_arr = split(s)
-#     to_ret = ""
-#     for word in s_arr
-#         word_caps = "$(uppercase(word[1]))$(word[2:length(word)])"
-#         to_ret = "$(to_ret)$(word_caps) "
-#     end
-
-#     # Return our string, minus the trailing space that was added
-#     return to_ret[1:length(to_ret) - 1]
-# end
+# MacroTools has a "prettify", so we have to import to "extend"
+# even though our function is unrelated. This seems unfortunate.
+import MacroTools.prettify
 
 """
 Accepts a camelcase or snakecase string, and makes it human-readable
 e.g. camelCase -> Camel Case; snake_case -> Snake Case
 """
-function prettify(s::String)
+function MacroTools.prettify(s::String)
     s = replace(s, r"_", s" ")
     s = replace(s, r"([a-z])([A-Z])",  s"\1 \2")
     s = replace(s, r"([A-Z]+)([A-Z])", s"\1 \2")        # handle case of consecutive caps by splitting last from rest

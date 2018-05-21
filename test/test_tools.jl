@@ -1,8 +1,8 @@
 using Base.Test
 using Mimi
-using Plots
+#using Plots
 
-include("../src/utils/plotting.jl")
+#include("../src/utils/plotting.jl")
 
 @test Mimi.prettify("camelCaseBasic") == "Camel Case Basic"
 @test Mimi.prettify("camelWithAOneLetterWord") == "Camel With A One Letter Word"
@@ -28,7 +28,7 @@ end
 end
 
 m = Model()
-set_dimension!(m, :time, 1)
+set_dimension!(m, :time, 2)
 foo = addcomponent(m, Foo)
 bar = addcomponent(m, Bar)
 
@@ -38,5 +38,5 @@ bar[:intermed] = foo[:intermed]
 
 run(m)
 
-include("../src/utils/plotting.jl")
-Plots.plot(m, :Bar, :output)
+#For now remove dependency on plots
+#Plots.plot(m, :Bar, :output)

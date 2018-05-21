@@ -2,6 +2,9 @@ using Mimi
 using NamedArrays
 using Base.Test
 
+import Mimi: 
+    reset_compdefs
+
 Mimi.reset_compdefs()
 
 #####################################
