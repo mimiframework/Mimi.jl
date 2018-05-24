@@ -11,9 +11,11 @@ mcs = @defmcs begin
     # to an external parameter. This makes the (less common) naming of an
     # RV slightly more burdensome, but it's only required when defining
     # correlations or sharing an RV across parameters.
-    rv(name1) = Normal(1, 0.2)
+    rv(name1) = EmpiricalDist()Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
+    rv(name4)
+
 
     # define correlations
     name1:name2 = 0.7
@@ -39,11 +41,19 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
+addcomponent(m,grosseconomy, :grosseconomy)
+
 N = 100
 
 generate_trials!(mcs, N, filename="/tmp/trialdata.csv")
 
+generate_trials(mcs, samples=load("foo.csv"))
+
 # Run trials 1:N, and save results to the indicated directory
-run_mcs(m, mcs, N, output_dir="/tmp/Mimi")
+run_mcs([:foo=>m1,:bar=>m2], output_vars=[:foo=>[:grosseconomy=>[:bar,:bar2,:bar3], :comp2=>:var2], :bar=>[]], mcs, N, output_dir="/tmp/Mimi")
+run_mcs(m1, output_vars=[:grosseconomy=>:asf, :foo=>:bar], mcs, N, output_dir="/tmp/Mimi")
+run_mcs(mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], mcs, N, output_dir="/tmp/Mimi")
+run_mcs(mm, output_vars=[(:base,:compname,:varname), (:)], mcs, N, output_dir="/tmp/Mimi")
+run_mcs(m, output_vars=[(:base,:compname,:varname), (:)], mcs, N, output_dir="/tmp/Mimi")
 
 # run_mcs(m, mcs, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
