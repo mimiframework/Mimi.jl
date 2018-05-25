@@ -6,12 +6,27 @@ struct Timestep{Start, Step, Stop}
     t::Int
 end
 
+# TODO:  create a new struct called Variable Timestep (done)
+struct VariableTimestep{Start, Steps, Stop}
+    i::Int
+    current::Int 
+end
+
 mutable struct Clock
 	ts::Timestep
 
 	function Clock(start::Int, step::Int, stop::Int)
 		return new(Timestep{start, step, stop}(1))
 	end
+end
+
+# TODO:  create new Clock struct for Variable Timestep (done)
+mutable struct VariableClock
+    ts::VariableTimestep
+    
+    function VariableClock(start::Int, steps::NTuple{N, Int} where N, stop::Int)
+        return new(VariableTimestep{start, steps, stop}(1, start))
+    end
 end
 
 mutable struct TimestepArray{T, N, Start, Step}

@@ -5,8 +5,19 @@ function gettime{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
 	return Start + (ts.t - 1) * Step
 end
 
+# TODO:  new gettime function for Variable Timestep (done)
+function gettime{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
+	return ts.current
+end
+
+# indicates when at first timestep
 function is_start(ts::Timestep)
 	return ts.t == 1
+end
+
+# TODO:  new is_start function for Variable Timestep (done)
+function is_start(ts::VariableTimestep)
+	return ts.i == 1
 end
 
 # indicates when at final timestep
@@ -14,9 +25,19 @@ function is_stop{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
 	return gettime(ts) == Stop
 end
 
+# TODO:  new is_stop function for Variable Timestep (done)
+function is_stop{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
+	return gettime(ts) == Stop 
+end
+
 # used to determine when a clock is finished
 function finished{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
 	return gettime(ts) > Stop
+end
+
+# TODO:  new finished function for Variable Timestep (done)
+function finished{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
+	return gettime(ts) > stop
 end
 
 function next_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
@@ -26,14 +47,29 @@ function next_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
 	return Timestep{Start, Step, Stop}(ts.t + 1)
 end
 
+# TODO:  new next_timestep function for Variable Timestep (done)
+function next_timestep{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
+	if finished(ts)
+		error("Cannot get next timestep, this is final timestep.")
+	end
+	return Timestep{Start, Steps, Stop}(ts.t + 1, ts.current + step[ts.t])		
+end
+
 function new_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop}, new_start::Int)
 	return Timestep{new_start, Step, Stop}(Int(ts.t + (Start - new_start) / Step))
 end
 
+# TODO:  new new_timestep function for Variable Clock
+
 #
 #  CLOCK
 #
+
 function timestep(c::Clock)
+	return c.ts
+end
+
+function timestep(c::VariableClock)
 	return c.ts
 end
 
@@ -41,7 +77,15 @@ function timeindex(c::Clock)
 	return c.ts.t
 end
 
+function timeindex(c::VariableClock)
+	return c.ts.i
+end
+
 function gettime(c::Clock)
+	return gettime(c.ts)
+end
+
+function gettime(c::VariableClock)
 	return gettime(c.ts)
 end
 
@@ -50,13 +94,23 @@ function advance(c::Clock)
 	nothing
 end
 
+function advance(c::VariableClock)
+	c.ts = next_timestep(c.ts)
+	nothing
+end
+
 function finished(c::Clock)
+	return finished(c.ts)
+end
+
+function finished(c::VariableClock)
 	return finished(c.ts)
 end
 
 #
 # TimestepMatrix and TimestepVector
 #
+
 function get_timestep_instance(T, start, step, num_dims, value)
 	if !(num_dims in (1, 2))
 			error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
@@ -74,6 +128,7 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 #
 # TimestepVector
 #
+
 function Base.getindex(x::TimestepVector{T, Start, Step}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
 	return x.data[ts.t]
 end
@@ -114,6 +169,9 @@ Base.endof(v::TimestepVector) = length(v)
 #
 # TimestepMatrix
 #
+
+# TODO:  new TimestepMatrix functions for Variable Timestep
+
 function Base.getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop}
 	return mat.data[ts.t, i]
 end
