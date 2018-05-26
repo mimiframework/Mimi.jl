@@ -1,4 +1,4 @@
-# General ODO:
+# General TODO:
 # 1.  Change the names of timesteps to AbstractTimestep, FixedTimestep, and
 # VariableTimestep (as of now FixedTimstep is just called Timestep) 
 # 2.  Change Start, Stop to First, Last, which are more logical names in

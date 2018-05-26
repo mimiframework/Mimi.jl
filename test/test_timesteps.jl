@@ -2,22 +2,35 @@ using Mimi
 using Base.Test
 
 import Mimi:
-    Timestep, TimestepVector, TimestepMatrix, TimestepArray, next_timestep, new_timestep, 
-    hasvalue, is_start, is_stop, gettime
+    AbstractTimestep, Timestep, VariableTimestep, TimestepVector, 
+    TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_start, is_stop, 
+    gettime
 
-###################################
-#  Test basic timestep functions  #
-###################################
+#####################################################
+#  Test basic timestep functions for Fixed Timestep #
+#####################################################
 
 t = Timestep{1850, 10, 3000}(1)
 @test is_start(t)
 t1 = next_timestep(t)
-t2 = new_timestep(t1, 1860)
-@test is_start(t2)
-t3 = new_timestep(t2, 1840)
-@test t3.t == 3
+#t2 = new_timestep(t1, 1860)
+#@test is_start(t2)
+#t3 = new_timestep(t2, 1840)
+#@test t3.t == 3
 
 t = Timestep{2000, 1, 2050}(51)
+@test is_stop(t)
+t = next_timestep(t)
+@test_throws ErrorException next_timestep(t)
+
+########################################################
+#  Test basic timestep functions for Variable Timestep #
+########################################################
+
+t = VariableTimestep{1850, (10, 10, 10, 10, 10, 100, 100, 100, 100, 100, 100), 2400}()
+@test is_start(t)
+
+t = VariableTimestep{2000, (10, 20, 30, 40, 50), 2100}(5)
 @test is_stop(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)
