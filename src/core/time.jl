@@ -1,65 +1,50 @@
 #
 #  TIMESTEP
 #
-function gettime{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+
+# General TODO:  We may want to type specialize the functions in the TIMESTEP
+# section below for performance reasons.
+
+function gettime(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return Start + (ts.t - 1) * Step
 end
 
-# TODO:  new gettime function for Variable Timestep (done)
-function gettime{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
+function gettime(ts::VariableTimestep)
 	return ts.current
 end
 
-# indicates when at first timestep
-function is_start(ts::Timestep)
+function is_start(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
-# TODO:  new is_start function for Variable Timestep (done)
-function is_start(ts::VariableTimestep)
-	return ts.i == 1
-end
-
-# indicates when at final timestep
-function is_stop{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+# NOTE:  this function is not used internally, so we may want to deprecate it ... 
+# look into where it might be used within models?
+function is_stop(ts::AbstractTimestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) == Stop
 end
 
-# TODO:  new is_stop function for Variable Timestep (done)
-function is_stop{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
-	return gettime(ts) == Stop 
-end
-
-# used to determine when a clock is finished
-function finished{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+function finished(ts::AbstractTimestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) > Stop
 end
 
-# TODO:  new finished function for Variable Timestep (done)
-function finished{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
-	return gettime(ts) > stop
-end
-
-function next_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop})
+function next_timestep(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 	if finished(ts)
 			error("Cannot get next timestep, this is final timestep.")
 	end
 	return Timestep{Start, Step, Stop}(ts.t + 1)
 end
 
-# TODO:  new next_timestep function for Variable Timestep (done)
-function next_timestep{Start, Steps, Stop}(ts::VariableTimestep{Start, Steps, Stop})
+function next_timestep(ts::VariableTimestep{Start, Steps, Stop}) where {Start, Steps, Stop}
 	if finished(ts)
 		error("Cannot get next timestep, this is final timestep.")
 	end
-	return Timestep{Start, Steps, Stop}(ts.t + 1, ts.current + step[ts.t])		
+	return VariableTimestep{Start, Steps, Stop}(ts.t + 1, ts.current + Steps[ts.t])		
 end
 
-function new_timestep{Start, Step, Stop}(ts::Timestep{Start, Step, Stop}, new_start::Int)
-	return Timestep{new_start, Step, Stop}(Int(ts.t + (Start - new_start) / Step))
-end
-
-# TODO:  new new_timestep function for Variable Clock
+# NOTE:  This funcion is not used internally, and the arithmetic is possible wrong.  
+# function new_timestep(ts::Timestep{Start, Step, Stop}, new_start::Int) where {Start, Step, Stop}
+# 	return Timestep{new_start, Step, Stop}(Int(ts.t + (Start - new_start) / Step))
+# end
 
 #
 #  CLOCK
@@ -69,23 +54,11 @@ function timestep(c::Clock)
 	return c.ts
 end
 
-function timestep(c::VariableClock)
-	return c.ts
-end
-
 function timeindex(c::Clock)
 	return c.ts.t
 end
 
-function timeindex(c::VariableClock)
-	return c.ts.i
-end
-
 function gettime(c::Clock)
-	return gettime(c.ts)
-end
-
-function gettime(c::VariableClock)
 	return gettime(c.ts)
 end
 
@@ -94,18 +67,14 @@ function advance(c::Clock)
 	nothing
 end
 
-function advance(c::VariableClock)
-	c.ts = next_timestep(c.ts)
-	nothing
-end
-
 function finished(c::Clock)
 	return finished(c.ts)
 end
 
-function finished(c::VariableClock)
-	return finished(c.ts)
-end
+# ------------------------------------------------------------------------------
+# TODO:  All functions below this point must be evaluated to see if they need
+# to be edited or enhanced to work with Variable Timestep
+# ------------------------------------------------------------------------------
 
 #
 # TimestepMatrix and TimestepVector
@@ -170,8 +139,6 @@ Base.endof(v::TimestepVector) = length(v)
 # TimestepMatrix
 #
 
-# TODO:  new TimestepMatrix functions for Variable Timestep
-
 function Base.getindex(mat::TimestepMatrix{T, Start, Step}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop}
 	return mat.data[ts.t, i]
 end
@@ -202,6 +169,7 @@ end
 #
 # TimestepArray methods
 #
+
 Base.fill!(obj::TimestepArray, value) = fill!(obj.data, value)
 
 Base.size(obj::TimestepArray) = size(obj.data)
@@ -216,6 +184,7 @@ start_period(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = 
 
 end_period(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = (Start + (size(obj, 1) - 1) * Step)
 
+# needs to be rethought for variable timestep length
 step_size(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = Step
 
 # TimestepArray and Timestep have the same Start and Step

@@ -1,30 +1,42 @@
+# General ODO:
+# 1.  Change the names of timesteps to AbstractTimestep, FixedTimestep, and
+# VariableTimestep (as of now FixedTimstep is just called Timestep) 
+# 2.  Change Start, Stop to First, Last, which are more logical names in
+# context
+
 #
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
-struct Timestep{Start, Step, Stop}
+abstract type AbstractTimestep{Start, Step, Stop} end
+
+struct Timestep{Start, Step, Stop} <: AbstractTimestep{Start, Step, Stop}
     t::Int
 end
 
-# TODO:  create a new struct called Variable Timestep (done)
-struct VariableTimestep{Start, Steps, Stop}
-    i::Int
+struct VariableTimestep{Start, Steps, Stop} <: AbstractTimestep{Start, Steps, Stop}
+    t::Int
     current::Int 
+
+    function VariableTimestep{Start, Steps, Stop}(t::Int = 1, current::Int = Start) where {Start, Steps, Stop}
+        if t > 1
+            current::Int = Start + sum(Steps[1:t-1]) 
+        end
+        return new(t, current)
+    end
 end
 
+# TODO:  As of now the Clock is not parameterized, although we may want to do so in 
+# in order to improve performance.  The concern here is whether we always know
+# what type of Clock we are using when we create a Clock.  
 mutable struct Clock
-	ts::Timestep
+	ts::AbstractTimestep
 
 	function Clock(start::Int, step::Int, stop::Int)
 		return new(Timestep{start, step, stop}(1))
-	end
-end
-
-# TODO:  create new Clock struct for Variable Timestep (done)
-mutable struct VariableClock
-    ts::VariableTimestep
+    end
     
-    function VariableClock(start::Int, steps::NTuple{N, Int} where N, stop::Int)
+    function Clock(start::Int, steps::NTuple{N, Int} where N, stop::Int)
         return new(VariableTimestep{start, steps, stop}(1, start))
     end
 end
@@ -329,7 +341,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
 
             # This is used to determine type of time argument to pass to run_timestep
             time_type = arg_types[length(arg_types)]
-            if time_type <: Timestep
+
+            if time_type <: AbstractTimestep
                 self.useIntegerTime = false
             end
         end
