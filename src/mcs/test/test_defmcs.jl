@@ -1,9 +1,15 @@
 using Mimi
 using Distributions
+using Query
+using Plots
+using DataFrames
+using IterTools
 
-include("../../examples/tutorial/02-two-region-model/main.jl")
+Mimi.reset_compdefs()
 
-m = tworegion.tutorial
+include("../../../examples/tutorial/02-two-region-model/main.jl")
+
+m = model
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -22,14 +28,14 @@ mcs = @defmcs begin
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
     sigma[:, Region1] *= name2
-
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+
+    depk[:] *= Uniform(0.7, 1.3)
 
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, 
-         emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
 # Optionally, user functions can be called just before or after a trial is run
@@ -39,11 +45,44 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-N = 100
+N = 1000
 
-generate_trials!(mcs, N, filename="/tmp/trialdata.csv")
+generate_trials!(mcs, N, filename="/tmp/Mimi/trialdata.csv")
 
 # Run trials 1:N, and save results to the indicated directory
 run_mcs(m, mcs, N, output_dir="/tmp/Mimi")
 
 # run_mcs(m, mcs, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
+
+function show_E_Global(year::Int; bins=40)
+    df = @from i in E_Global begin
+             @where i.time == year
+             @select i
+             @collect DataFrame
+        end
+    histogram(df[:E_Global], bins=bins, 
+              title="Distribution of global emissions in $year",
+              xlabel="Emissions")
+end
+
+#
+# Test new loop capability
+#
+
+#
+# Save a pointer to the generated function in the mcs struct
+# Also save an optional context::Any that caller can use as needed
+#
+function my_loop_func(m::Model, mcs::MonteCarloSimulation,    # required args
+                      scen::Symbol, rate::Float64)            # user-defined args
+    # Do stuff with mcs and tuple values to set up model
+    println("scen:$scen, rate:$rate")
+end
+
+# Pass as a tuple of pairs
+run_mcs(m, mcs, 10;
+        output_dir="/tmp/Mimi",
+        loop_func=my_loop_func, 
+        loop_args=[:scen => [:low, :med, :high],
+                   :rate => [0.015, 0.03, 0.05]])
+ 

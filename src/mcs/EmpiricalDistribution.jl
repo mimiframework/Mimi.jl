@@ -1,7 +1,3 @@
-try
-    using ExcelReaders
-end
-
 struct EmpiricalDistribution{T}
     values::Vector{T}
     weights::ProbabilityWeights
@@ -33,58 +29,36 @@ struct EmpiricalDistribution{T}
     end
 end
 
-"""
-EmpiricalDistribution(file::Union{AbstractString, IO}, 
-                      value_col::Union{Symbol, String, Int},
-                      prob_col::Union{Void, Symbol, String, Int}=nothing)
+# """
+# EmpiricalDistribution(obj::Any,
+#                       value_col::Union{Symbol, String, Int},
+#                       prob_col::Union{Void, Symbol, String, Int}=nothing;
+#                       value_type::DataType=Any)
 
-Load empirical values from a CSV or XLS(X) file and generate a distribution. 
+# Load empirical values from an object returned by load() and generate a distribution. 
+# Typical usage might be:
 
-For CSV files, `value_col` identifies by the column name or integer index for the values 
-to use, and the optional `prob_col` identifies the column name or integer index for the
-probabilities to use. If not provide, equal probabilities are assumed for each value.
+# `d = EmpiricalDistribution(load("foo.xlsx", otherpars=...), :valcolname, :probcolname)`
 
-If an XLS or XLSX file is given, the `value_col` and `prob_col` should be fully specified
-Excel data ranges, e.g., "Sheet1!A2:A1002", indicating the values to extract from the file.
-"""
-function EmpiricalDistribution(filename::AbstractString,
-                               value_col::Union{Symbol, AbstractString, Int},
-                               prob_col::Union{Void, Symbol, AbstractString, Int}=nothing;
-                               value_type::DataType=Any)
-    probs = nothing
-    ext = splitext(lowercase(filename))[2]
+# The `value_col` identifies by the column name or integer index for the values 
+# to use, and the optional `prob_col` identifies the column name or integer index for the
+# probabilities to use. If `prob_col` is not provide, equal probabilities are assumed 
+# for each value.
+# """
+# function EmpiricalDistribution(obj::Any,
+#                                value_col::Union{Symbol, AbstractString, Int},
+#                                prob_col::Union{Void, Symbol, AbstractString, Int}=nothing;
+#                                value_type::DataType=Any)
+#     probs = nothing
 
-    if ext == ".csv"
-        df = DataFrame(load(filename))
-        values = isa(value_col, Symbol) ? df[value_col] : df.columns[value_col]
+#     values = isa(value_col, Symbol) ? df[value_col] : df.columns[value_col]
         
-        if prob_col != nothing
-            probs = Vector{Float64}(isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col])
-        end
-    elseif ext in (".xls", ".xlsx", ".xlsm")
+#     if prob_col != nothing
+#         probs = Vector{Float64}(isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col])
+#     end
 
-        if Pkg.installed("ExcelReaders") == nothing
-            error("""You must install ExcelReaders to read Excel files: run Pkg.add("ExcelReaders")""")
-        end
-        
-        f = openxl(filename)
-        data = Array{value_type, 2}(readxl(f, value_col))
-        values = data[:, 1]
-
-        if prob_col != nothing
-            data = Array{Float64, 2}(readxl(f, prob_col))
-            probs = data[:, 1]
-        end
-    else
-        error("Unrecognized file extension '$ext'. Must be .csv, .xls, .xlsx, or .xlsm")
-    end
-    return EmpiricalDistribution(values, probs)
-end
-
-# If a column is not identified, use the first column.
-function EmpiricalDistribution(filename::AbstractString)
-    return EmpiricalDistribution(filename, 1)
-end
+#     return EmpiricalDistribution(values, probs)
+# end
 
 #
 # Delegate a few functions that we require in our application. 

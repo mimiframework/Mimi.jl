@@ -1,4 +1,5 @@
 using Mimi
+include("../../../wip/load_empirical_dist.jl")
 
-path = joinpath(dirname(@__FILE__), "RB-ECS-distribution.xls")
-d = Mimi.EmpiricalDistribution(path, "Sheet1!A2:A1001", "Sheet1!B2:B1001")
+excel_file = joinpath(@__DIR__, "RB-ECS-distribution.xls")
+d = load_empirical_dist(excel_file, "Sheet1!A2:A1001", "Sheet1!B2:B1001")
