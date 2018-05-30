@@ -1,4 +1,5 @@
 using IterTools
+using ProgressMeter
 
 function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     for datum_key in mcs.savelist
@@ -39,7 +40,7 @@ function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
         end
     end
 end
-
+ 
 """
     save_trial_results(mcs::MonteCarloSimulation, output_dir::String)
 
@@ -64,12 +65,40 @@ function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
     return nothing
 end
 
+# TBD: store rvlist and corrlist in src, or just in mcs?
+# TBD: generate a NamedTuple for the set of RVs?
+# TBD: Modify lhs() to return an array of SampleStore{T} instances
+function get_trial_data(mcs::MonteCarloSimulation, trialnum::Int)
+    rvlist = mcs.rvlist
+
+    if mcs.corrlist == nothing
+        # If no correlations, just grab the next value from each RV
+        values = [rv.dist.rand() for rv in rvlist]
+    else
+        if ! mcs.generated
+            # TBD: should only generate data for correlated vars or using LHS.
+            # First time through, generate all trial data to enable correlations
+            mcs.data = lhs(rvlist, mcs.trials, corrmatrix=correlation_matrix(mcs))
+            mcs.generated = true
+        end
+
+        df = mcs.data
+        values = [df[trialnum, col] for col in 1:size(df, 2)]
+    end
+
+    return mcs.nt_type(values...)
+end
+
 """
     generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="")
 
 Generate the given number of trials for the given MonteCarloSimulation instance.
 """
-function generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="")
+function generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="",
+                          sampling::Symbol=:lhs)
+
+    # TBD: distinguish :lhs from :random sampling
+
     corrmatrix = correlation_matrix(mcs)
     mcs.data = lhs(mcs.rvlist, trials, corrmatrix=corrmatrix)
     mcs.trials = trials
@@ -159,7 +188,6 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, trans::Tra
     end
 end
 
-# TBD: precompute as much of this as possible to get it out of the MCS trial loop
 """
     _perturb_params!(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
 
@@ -170,11 +198,13 @@ function _perturb_params!(md::ModelDef, mcs::MonteCarloSimulation, trialnum::Int
         error("Attempted to run trial $trialnum, but only $(mcs.trials) trials are defined")
     end
 
+    # trialdata = _get_trial_data(mcs)  # returns a NamedTuple
     trialdata = mcs.data[trialnum, :]
 
     for trans in mcs.translist        
         param = external_param(md, trans.paramname)
         rvalue = trialdata[1, trans.rvname]
+        # rvalue = getfield(trialdata, trans.rvname)
         _perturb_param!(param, md, trans, rvalue)
     end
 end
@@ -232,6 +262,12 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int},
         seqs = [arg.second for arg in loop_args]
         arg_tuples = product(seqs...)
     end
+    
+    nscenarios = length(arg_tuples)
+    ntrials = length(trials)
+    total_runs = nscenarios * ntrials
+    counter = 1
+    p = Progress(total_runs, counter, "Running $ntrials trials for $nscenarios scenarios...")
 
     for tup in arg_tuples
 
@@ -250,13 +286,8 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int},
         # Save the params to be perturbed so we can reset them after each trial
         original_values = _copy_mcs_params(mcs, md)
 
-        # Compute how often to print a "Running trial ..." message.
-        count = length(trials)
-        divisor = (count < 50 ? 1 : (count < 500 ? 10 : 100))
-        
         for (i, trialnum) in enumerate(trials)
-            i % divisor == 0 && println("Running trial $trialnum ")
-            _perturb_params!(md, mcs, trialnum)
+            _perturb_params!(md, mcs, trialnum) # TBD: any need to pass trialnum?
 
             pre_trial_func  == nothing || pre_trial_func(m, mcs, trialnum)
             run(m, ntimesteps=ntimesteps)
@@ -264,6 +295,9 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int},
 
             _restore_params!(md, mcs, original_values)
             store_trial_results(m, mcs, trialnum)
+
+            counter += 1
+            ProgressMeter.update!(p, counter)
         end
 
         if output_dir != nothing

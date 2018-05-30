@@ -11,14 +11,7 @@
 # matrix for the sampled parameters. Original python version was heavily modified from
 # http://nullege.com/codes/show/src@m@o@model-builder-HEAD@Bayes@lhs.py
 #
-
-# Add missing constructor. [Yes, this is Type Piracy; this obvious constructor
-# definition will be deleted here after it is added to DataFrames proper.]
-function DataFrames.DataFrame(m::Matrix{T}, cnames::AbstractArray{Symbol,1}) where T
-    df = DataFrame(m)
-    names!(df, cnames)
-    return df
-end
+import StatsBase
 
 """
     rank_corr_coef(m::Matrix{Float64})

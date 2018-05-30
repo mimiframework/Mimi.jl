@@ -5,12 +5,6 @@ using Plots
 using DataFrames
 using IterTools
 
-Mimi.reset_compdefs()
-
-include("../../../examples/tutorial/02-two-region-model/main.jl")
-
-m = model
-
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
@@ -38,6 +32,12 @@ mcs = @defmcs begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
+Mimi.reset_compdefs()
+
+include("../../../examples/tutorial/02-two-region-model/main.jl")
+
+m = model
+
 # Optionally, user functions can be called just before or after a trial is run
 function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
@@ -45,12 +45,22 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-N = 1000
+N = 10000
 
 generate_trials!(mcs, N, filename="/tmp/Mimi/trialdata.csv")
 
 # Run trials 1:N, and save results to the indicated directory
 run_mcs(m, mcs, N, output_dir="/tmp/Mimi")
+
+# From MCS discussion 5/23/2018
+# generate_trials(mcs, samples=load("foo.csv"))
+#
+# run_mcs([:foo=>m1,:bar=>m2], output_vars=[:foo=>[:grosseconomy=>[:bar,:bar2,:bar3], :comp2=>:var2], :bar=>[]], mcs, N, output_dir="/tmp/Mimi")
+# run_mcs(m1, output_vars=[:grosseconomy=>:asf, :foo=>:bar], mcs, N, output_dir="/tmp/Mimi")
+# run_mcs(mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], mcs, N, output_dir="/tmp/Mimi")
+# run_mcs(mm, output_vars=[(:base,:compname,:varname), (:)], mcs, N, output_dir="/tmp/Mimi")
+# run_mcs(m, output_vars=[(:base,:compname,:varname), (:)], mcs, N, output_dir="/tmp/Mimi")
+
 
 # run_mcs(m, mcs, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
 
