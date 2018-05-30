@@ -66,5 +66,5 @@ end
 @test goodDicts == length(s)
 
 #4.  explore
-explore(m)
+w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
