@@ -8,8 +8,6 @@ import Mimi:
     getmultiline, getline, getbar, _spec_for_item, spec_list, explore, 
     getdataframe
 
-
-# define a model to test
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
     b = Parameter(index=[time])
@@ -60,4 +58,32 @@ s = spec_list(m)
 
 #4.  explore
 w = explore(m, title = "Testing Window")
+@test typeof(w) == Electron.Window
+
+@defcomp MyComp2 begin
+
+    a = Parameter(index = [regions, four, five])
+    x = Variable(index=[time, regions])
+    
+    function run_timestep(p, v, d, t)
+        for r in d.regions
+            v.x[t, r] = 0
+        end
+    end
+end
+
+m2 = Model()
+set_dimension!(m2, :time, 2000:2100)
+set_dimension!(m2, :regions, 3)
+set_dimension!(m2, :four, 4)
+set_dimension!(m2, :five, 5)
+
+addcomponent(m2, MyComp2)
+set_parameter!(m2, :MyComp2, :a, ones(3, 4, 5)) 
+
+run(m2)
+
+#5.  errors
+#spec creation for MyComp.a should fail, havn't handled this case yet
+@test_warn "spec conversion failed for MyComp2.a" w = explore(m2)
 @test typeof(w) == Electron.Window

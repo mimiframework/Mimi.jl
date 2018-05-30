@@ -36,7 +36,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         return spec
         
     catch err
-        println("spec conversion failed for $comp_name.$item_name")
+        warn("spec conversion failed for $comp_name.$item_name")
         rethrow(err)
     end
 end
