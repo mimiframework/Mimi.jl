@@ -8,20 +8,18 @@
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
-abstract type AbstractTimestep{Start, Step, Stop} end
+abstract type AbstractTimestep end
 
-struct Timestep{Start, Step, Stop} <: AbstractTimestep{Start, Step, Stop}
+struct Timestep{Start, Step, Stop} <: AbstractTimestep
     t::Int
 end
 
-struct VariableTimestep{Start, Steps, Stop} <: AbstractTimestep{Start, Steps, Stop}
+struct VariableTimestep{Years} <: AbstractTimestep
     t::Int
     current::Int 
 
-    function VariableTimestep{Start, Steps, Stop}(t::Int = 1, current::Int = Start) where {Start, Steps, Stop}
-        if t > 1
-            current::Int = Start + sum(Steps[1:t-1]) 
-        end
+    function VariableTimestep{Years}(t::Int = 1, current::Int = Years[1]) where {Years}
+        current::Int = Years[t]
         return new(t, current)
     end
 end
@@ -36,8 +34,8 @@ mutable struct Clock
 		return new(Timestep{start, step, stop}(1))
     end
     
-    function Clock(start::Int, steps::NTuple{N, Int} where N, stop::Int)
-        return new(VariableTimestep{start, steps, stop}(1, start))
+    function Clock(years::NTuple{N, Int} where N)
+        return new(VariableTimestep{years}(1, years[1]))
     end
 end
 

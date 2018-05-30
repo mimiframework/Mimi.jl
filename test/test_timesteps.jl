@@ -26,11 +26,12 @@ t = next_timestep(t)
 ########################################################
 #  Test basic timestep functions for Variable Timestep #
 ########################################################
+years = tuple([2000:1:2024; 2025:5:2105]...)
 
-t = VariableTimestep{1850, (10, 10, 10, 10, 10, 100, 100, 100, 100, 100, 100), 2400}()
+t = VariableTimestep{years}()
 @test is_start(t)
 
-t = VariableTimestep{2000, (10, 20, 30, 40, 50), 2100}(5)
+t = VariableTimestep{years}(41)
 @test is_stop(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)

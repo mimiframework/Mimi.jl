@@ -19,12 +19,20 @@ end
 
 # NOTE:  this function is not used internally, so we may want to deprecate it ... 
 # look into where it might be used within models?
-function is_stop(ts::AbstractTimestep{Start, Step, Stop}) where {Start, Step, Stop}
+function is_stop(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) == Stop
 end
 
-function finished(ts::AbstractTimestep{Start, Step, Stop}) where {Start, Step, Stop}
+function is_stop(ts::VariableTimestep{Years}) where {Years}
+	return gettime(ts) == Years[end-1]
+end
+
+function finished(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) > Stop
+end
+
+function finished(ts::VariableTimestep{Years}) where {Years}
+	return gettime(ts) > Years[end-1]
 end
 
 function next_timestep(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
@@ -34,11 +42,11 @@ function next_timestep(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop
 	return Timestep{Start, Step, Stop}(ts.t + 1)
 end
 
-function next_timestep(ts::VariableTimestep{Start, Steps, Stop}) where {Start, Steps, Stop}
+function next_timestep(ts::VariableTimestep{Years}) where {Years}
 	if finished(ts)
 		error("Cannot get next timestep, this is final timestep.")
 	end
-	return VariableTimestep{Start, Steps, Stop}(ts.t + 1, ts.current + Steps[ts.t])		
+	return VariableTimestep{Years}(ts.t + 1)		
 end
 
 # NOTE:  This funcion is not used internally, and the arithmetic is possible wrong.  
@@ -97,7 +105,11 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 # TimestepVector
 #
 
-function Base.getindex(x::TimestepVector{T, Start, Step}, ts::AbstractTimestep{Start, Step, Stop}) where {T, Start, Step, Stop}
+function Base.getindex(x::TimestepVector{T, Start, Step}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
+	return x.data[ts.t]
+end
+
+function Base.getindex(x::TimestepVector{T, Start, Step}, ts::VariableTimestep{Years}) where {T, Years}
 	return x.data[ts.t]
 end
 
@@ -106,15 +118,8 @@ function Base.getindex(x::TimestepVector{T, d_start, Step}, ts::Timestep{t_start
 	return x.data[t]
 end
 
-# TODO:  do we need an error here if attempt to index into a year that is not of
-# the proper step size?  the functions above do not have such an error
-function Base.getindex(x::TimestepVector{T, d_start, Steps}, ts::VariableTimestep{t_start, Steps, Stop}) where {T, d_start, Steps, t_start, Stop}
-	t = ts.t
-	cumsum::Int = 0
-	while cumsum < t_start - d_start
-		cumsum += Steps[i]
-		t += 1
-	end
+function Base.getindex(x::TimestepVector{T, d_years}, ts::VariableTimestep{t_years}) where {T, d_years, t_years}
+	t = ts.t + getindex(t_years, d_years[1])
 	return x.data[t]
 end
 
@@ -124,10 +129,11 @@ function Base.getindex(x::TimestepVector{T, Start, Step}, i::AnyIndex) where {T,
 end
 
 # TODO:  this function assumes fixed step size, need to parameterize properly 
-# and then create a version for variable timestep
-function Base.indices(x::TimestepVector{T, Start, Step}) where {T, Start, Step}
-	return (Start:Step:(Start + (length(x.data) - 1) * Step), )
-end
+# and then create a version for variable timestep.  It is also not used within
+# the code and possibly incorrectly interprets the meaning of the Base.indices function.
+# function Base.indices(x::TimestepVector{T, Start, Step}) where {T, Start, Step}
+# 	return (Start:Step:(Start + (length(x.data) - 1) * Step), )
+# end
 
 function Base.setindex!(v::TimestepVector{T, Start, Step}, val, ts::AbstractTimestep{Start, Step, Stop}) where {T, Start, Step, Stop}
 	setindex!(v.data, val, ts.t)
