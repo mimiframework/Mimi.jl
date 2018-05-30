@@ -25,7 +25,8 @@ function explore(model; title = "Electron")
     w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
 
     #refresh variable list
-    result = run(w, "refresh($speclistJSON)")
+    run(w, "refresh($speclistJSON)")
     
-    return w
+    return nothing 
+
 end
