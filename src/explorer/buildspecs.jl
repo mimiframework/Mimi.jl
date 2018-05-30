@@ -130,7 +130,6 @@ function createspec_multilineplot(name, df, dffields)
     return spec
 end
 
-## TODO 1:  does this datapart need to be JSONText?
 function createspec_singlevalue(name)
 
     datapart = [];
@@ -140,9 +139,6 @@ function createspec_singlevalue(name)
     )
     return spec
 end
-
-## TODO 2:  Ok with dependency on StringBuilders?
-## TODO 3:  Why is mcs breaking?
 
 function getdatapart(df, dffields, plottype::Symbol)
 
