@@ -57,13 +57,6 @@ run(m)
 s = spec_list(m)
 @test typeof(s) == Array{Any, 1}
 @test length(s) == 7
-goodDicts = 0;
-for i = 1:length(s)
-    if typeof(s[1]) == Dict{String, Any} && collect(keys(s[i])) == ["name", "VLspec"]
-        goodDicts += 1
-    end
-end
-@test goodDicts == length(s)
 
 #4.  explore
 w = explore(m, title = "Testing Window")
