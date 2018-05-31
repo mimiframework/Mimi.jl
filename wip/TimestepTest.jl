@@ -1,24 +1,13 @@
 using Mimi
 include("wip/export_all.jl")
 
+years = tuple([2000:1:2024; 2025:5:2105]...)
+
 ft = Timestep{2010, 10, 2050}(1)
-vt = VariableTimestep{2010, (10,20,50), 2090}()
-
-gettime(ft)
-gettime(vt)
-
-is_start(ft)
-is_start(vt)
-
-is_stop(ft)
-is_stop(vt)
-
-finished(ft)
-finished(vt)
-
+vt = VariableTimestep{years}()
 
 fc = Clock(2010, 10, 2050)
-vc = Clock(2010, (10,20,50, 20), 2090)
+vc = Clock(years)
 
 advance(fc); fc
 

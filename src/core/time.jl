@@ -2,7 +2,8 @@
 #  TIMESTEP
 #
 
-# General TODO:  We may want to type specialize the functions in the TIMESTEP
+# General TODO:  
+# 1. We may want to type specialize the functions in the TIMESTEP
 # section below for performance reasons.
 
 function gettime(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
@@ -17,7 +18,7 @@ function is_start(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
-# NOTE:  this function is not used internally, so we may want to deprecate it ... 
+# NOTE:  is_stop function is not used internally, so we may want to deprecate it ... 
 # look into where it might be used within models?
 function is_stop(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) == Stop

@@ -10,7 +10,7 @@
 
 abstract type AbstractTimestep end
 
-struct Timestep{Start, Step, Stop} <: AbstractTimestep
+struct Timestep{Start, Step, Stop}(t::Int = 1) <: AbstractTimestep
     t::Int
 end
 
