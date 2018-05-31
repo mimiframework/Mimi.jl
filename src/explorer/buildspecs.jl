@@ -36,7 +36,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         return spec
         
     catch err
-        println("spec conversion failed for $comp_name.$item_name")
+        warn("spec conversion failed for $comp_name.$item_name")
         rethrow(err)
     end
 end
@@ -130,7 +130,6 @@ function createspec_multilineplot(name, df, dffields)
     return spec
 end
 
-## TODO 1:  does this datapart need to be JSONText?
 function createspec_singlevalue(name)
 
     datapart = [];
@@ -140,9 +139,6 @@ function createspec_singlevalue(name)
     )
     return spec
 end
-
-## TODO 2:  Ok with dependency on StringBuilders?
-## TODO 3:  Why is mcs breaking?
 
 function getdatapart(df, dffields, plottype::Symbol)
 
