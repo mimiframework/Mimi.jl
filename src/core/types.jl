@@ -1,6 +1,6 @@
 # General TODO:
 # 1.  Change the names of timesteps to AbstractTimestep, FixedTimestep, and
-# VariableTimestep (as of now FixedTimstep is just called Timestep) 
+# VariableTimestep (as of now FixedTimestep is just called Timestep) 
 # 2.  Change Start, Stop to First, Last, which are more logical names in
 # context
 
@@ -10,7 +10,7 @@
 
 abstract type AbstractTimestep end
 
-struct Timestep{Start, Step, Stop}(t::Int = 1) <: AbstractTimestep
+struct Timestep{Start, Step, Stop} <: AbstractTimestep
     t::Int
 end
 
@@ -39,14 +39,14 @@ mutable struct Clock
     end
 end
 
-mutable struct TimestepArray{T, N, Start, Step}
+mutable struct TimestepArray{T, N, Years}
 	data::Array{T, N}
 
-    function TimestepArray{T, N, Start, Step}(d::Array{T, N}) where {T, N, Start, Step}
+    function TimestepArray{T, N, Years}(d::Array{T, N}) where {T, N, Years}
 		return new(d)
 	end
 
-    function TimestepArray{T, N, Start, Step}(lengths::Int...) where {T, N, Start, Step}
+    function TimestepArray{T, N, Years}(lengths::Int...) where {T, N, Years}
 		return new(Array{T, N}(lengths...))
 	end
 end
@@ -54,8 +54,8 @@ end
 # Since these are the most common cases, we define methods (in time.jl)
 # specific to these type aliases, avoiding some of the inefficiencies
 # associated with an arbitrary number of dimensions.
-const TimestepMatrix{T, Start, Step} = TimestepArray{T, 2, Start, Step}
-const TimestepVector{T, Start, Step} = TimestepArray{T, 1, Start, Step}
+const TimestepMatrix{T, Years} = TimestepArray{T, 2, Years}
+const TimestepVector{T, Years} = TimestepArray{T, 1, Years}
 
 #
 # 2. Dimensions
