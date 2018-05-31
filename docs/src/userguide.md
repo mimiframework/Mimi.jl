@@ -54,12 +54,31 @@ To access the data in a parameter or to assign a value to a variable, you must u
 
 ## Constructing a Model
 
-The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers. If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
+The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers.  If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
 
 ```julia
+
 mymodel = Model()
 set_dimension!(mymodel, :time, 1850:2200)
 set_dimension!(mymodel, :regions, ["USA", "EU", "LATAM"])
+
+```
+
+*A Note on Time Indexes:* It is important to note that if an array of numbers is given for the time index, the model will run *up until*, but not beyond, the final year in the list.  Alternatively, if a numerical range is given with an implied or explicit step size, the model will run *through* that year using the step size.  Thus the following three ways of setting the index would run the model for six years: 1950, 1951, 1952, 1953, 1954, and 1955, running up until 1956 but not including 1956.
+
+```julia
+
+# UnitRange
+mymodel = Model()
+set_dimension!(mymodel, :time, 1950:1955)
+
+# StepRange
+mymodel = Model()
+set_dimension!(mymodel, :time, 1950:1:1955)
+
+# Array
+mymodel = Model()
+set_dimension!(mymodel, :time, [1950, 1951, 1952, 1953, 1954, 1955, 1956])
 
 ```
 
@@ -163,8 +182,8 @@ A `Timestep` is an immutable type defined within Mimi in "src/clock.jl". It is u
 In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where `t` is a Timestep object:
 
 ```julia
-isfinaltimestep(t) # returns true or false
-isfirsttimestep(t) # returns true or false
+isstart(t) # returns true or false, true if t is the first timestep to be run
+isstop(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
 ```
 
