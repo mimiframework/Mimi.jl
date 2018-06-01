@@ -171,7 +171,8 @@ Base.endof(v::TimestepVector) = length(v)
 #
 
 # TODO:  this function would be better handled by dispatch as opposed to
-# conditional statements.
+# conditional statements; also the first case tests if the full range of years
+# is equal, which isn't really necessary ... but checking narrower case is messy
 function Base.getindex(mat::TimestepMatrix{T, Years}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop, Years}
 	if tuple(Start:Step:Stop..., Stop + Step) == Years
 		t = ts.t
@@ -185,8 +186,8 @@ function Base.getindex(mat::TimestepMatrix{T, Years}, ts::VariableTimestep{Years
 	return mat.data[ts.t, i]
 end
 
-function Base.getindex(mat::TimestepMatrix{T, d_years}, ts::VariableTimestep{t_years}, i::AnyIndex) where {T, d_start,t_years}
-	# TODO:  write this function 
+function Base.getindex(mat::TimestepMatrix{T, d_years}, ts::VariableTimestep{t_years}, i::AnyIndex) where {T, d_years, t_years}
+	t = ts.t + find(d_years .== t_years[1])[1] - 1
 	return mat.data[t, i]
 end
 
@@ -196,7 +197,8 @@ function Base.getindex(mat::TimestepMatrix{T, Years}, idx1::AnyIndex, idx2::AnyI
 end
 
 # TODO:  this function would be better handled by dispatch as opposed to
-# conditional statements.
+# conditional statements; also the first case tests if the full range of years
+# is equal, which isn't really necessary ... but checking narrower case is messy
 function Base.setindex!(mat::TimestepMatrix{T, Years}, val, ts::Timestep{Start, Step, Stop}, idx::AnyIndex) where {T, Start, Step, Stop, Years}
 	if tuple(Start:Step:Stop..., Stop + Step) == Years
 		t = ts.t
@@ -211,7 +213,7 @@ function Base.setindex!(mat::TimestepMatrix{T, Years}, val, ts::VariableTimestep
 end
 
 function Base.setindex!(mat::TimestepMatrix{T, d_years}, val, ts::VariableTimestep{t_years}, idx::AnyIndex) where {T, d_years, t_years}
-	#TODO:  write this function
+	t = ts.t + find(d_years .== t_years[1])[1] - 1
 	setindex!(mat.data, val, t, idx)	
 end
 
