@@ -60,6 +60,9 @@ const TimestepVector{T, Years} = TimestepArray{T, 1, Years}
 #
 # 2. Dimensions
 #
+
+# TODO:  TBD how to deal with ranges versus arrays for time, and what counts as
+# the last timestep
 abstract type AbstractDimension end
 
 const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}

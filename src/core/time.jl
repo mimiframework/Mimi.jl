@@ -241,8 +241,10 @@ start_period(obj::TimestepArray{T, N, Years}) where {T, N, Years} = Years[1]
 
 end_period(obj::TimestepArray{T, N, Years}) where {T, N, Years} = Years[end]
 
-# needs to be rethought for variable timestep length
-step_size(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = Step
+# TODO:  this function isn't useful now that we save years instead of step, 
+# should delete it, and replace with the use of years_array as defined below
+# step_size(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = Step
+years_array(obj::TimestepArray{T, N, Years}) where {T, N, Years} = Years
 
 # TODO:  this function would be better handled by dispatch as opposed to
 # conditional statements

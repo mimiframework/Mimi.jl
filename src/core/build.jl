@@ -2,6 +2,8 @@ connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
 function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
+# REPLACE:
+#function _instance_datatype(md::ModelDef, def::DatumDef, years::Array{T, N}) where {T, N} 
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)
@@ -12,9 +14,13 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     elseif dims[1] != :time
         T = Array{dtype, num_dims}
     
-    else
+    else   
         step = step_size(md)
+        # REPLACE:
+        #years = years_array(md)
         T = TimestepArray{dtype, num_dims, start, step}
+        # REPLACE:   
+        #T = TimestepArray{dtype, num_dims, years}
     end
 
     # println("_instance_datatype($def) returning $T")

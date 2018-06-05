@@ -107,7 +107,10 @@ List all the components in model `m`.
 
 @modelegate timelabels(m::Model) => md
 
-@modelegate step_size(m::Model) => md
+#TODO:  step_size is no longer a used function, should delete this line, instead
+# below is added a new complementary function
+#@modelegate step_size(m::Model) => md
+@modelegate years_array(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
 @modelegate getspan(m::Model, comp_name::Symbol) => md

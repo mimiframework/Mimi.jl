@@ -208,11 +208,22 @@ dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
 
+# TODO:  We want to create a timestep clock when possible, as opposed to a variable
+# timestep clock, below is probably not efficient but has the logic.  We could
+# remove step_size as a function and put it explicitly below since not used elsewhere.
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
     start = time_keys[1]
     stop  = time_keys[min(length(time_keys), ntimesteps)]
-    step  = step_size(time_keys)
-    return Clock(start, step, stop)
+    if isuniform(time_keys)
+        #step  = step_size(time_keys)
+        step = length(time_keys) > 1 ? keys[2] - keys[1] : 1
+        return Clock(start, step, stop)
+
+    else
+        stop_index = find(time_keys .== stop)
+        years = tuple(time_keys[1:stop_index]...)
+        return Clock(years)
+
 end
 
 function reset_variables(ci::ComponentInstance)
@@ -282,6 +293,7 @@ function _run_components(mi::ModelInstance, clock::Clock,
     nothing
 end
 
+## TODO:  step_size and clock creation fixes
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
                   dimkeys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if length(mi.components) == 0
