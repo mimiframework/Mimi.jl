@@ -12,9 +12,20 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     elseif dims[1] != :time
         T = Array{dtype, num_dims}
     
-    else
-        step = step_size(md)
-        T = TimestepArray{dtype, num_dims, start, step}
+    else   
+
+        #T = TimestepArray{AbstractTimestep, dtype, num_dims}
+
+        # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
+        # We need to access years and stepsize, so this might have to do with
+        # how the isuniform function is used etc.
+        years = years_array(md)
+        stepsize = isuniform(years)
+        if stepsize == -1
+            T = TimestepArray{VariableTimestep{years}, dtype, num_dims}
+        else
+            T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
+        end
     end
 
     # println("_instance_datatype($def) returning $T")

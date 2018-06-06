@@ -107,7 +107,10 @@ List all the components in model `m`.
 
 @modelegate timelabels(m::Model) => md
 
-@modelegate step_size(m::Model) => md
+# LFR-TBD:  Since we cannot gaurantee that a model has a step_size, we have 
+# removed this function and replaced it with a more universal one: years_array.
+#@modelegate step_size(m::Model) => md
+@modelegate years_array(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
 @modelegate getspan(m::Model, comp_name::Symbol) => md

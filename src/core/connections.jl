@@ -106,12 +106,29 @@ function connect_parameter(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        start = start_period(dst_comp_def)
-        step = step_size(md)
+        # start = start_period(dst_comp_def)
+        # step = step_size(md)
         T = eltype(backup)
 
         dim_count = length(dst_dims)
-        values = dim_count == 0 ? backup : TimestepArray{T, dim_count, start, step}(backup)
+        
+        #values = dim_count == 0 ? backup : TimestepArray{AbstractTimestep, T, dim_count, years}(backup)
+        
+        # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
+        # We need to access years and stepsize, so this might have to do with
+        # how the isuniform function is used etc.
+        if dim_count == 0
+            values = backup
+        else
+            years = years_array(md)
+            stepsize = isuniform(years)
+            if stepsize == -1
+                values = TimestepArray{VariableTimestep{years}, T, dim_count}(backup)
+            else
+                values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count}(backup)
+            end
+            
+        end
 
         set_external_array_param!(md, dst_par_name, values, dst_dims)
     end
@@ -194,9 +211,11 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
                     # start = indexvalues(md, :time)[1]
-                    start = dim_keys(md, :time)[1]
-                    step = step_size(md)
-                    values = get_timestep_instance(eltype(value), start, step, num_dims, value)
+                    # start = dim_keys(md, :time)[1]
+                    # step = step_size(md)
+                    years = years_array(md)
+                    values = get_timestep_instance(eltype(value), years, num_dims, value)
+                    
                 else
                     values = value
                 end
