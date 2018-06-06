@@ -11,7 +11,7 @@ struct RandomVariable
 
     function RandomVariable(name::Symbol, dist::Distribution)
         self = new(name, dist)
-        # register_random_variable(name, self)      # deprecated
+        _rvDict[name] = self
         return self
     end
 end
@@ -31,14 +31,7 @@ struct TransformSpec
     end 
 end
 
-"""
-Defines a target rank correlation to establish between the two named random vars.
-"""
-struct CorrelationSpec
-    name1::Symbol
-    name2::Symbol
-    value::Float64
-end
+const CorrelationSpec = Tuple{Symbol, Symbol, Float64}
 
 """
 Holds all the data that defines a Monte Carlo simulation.
@@ -51,11 +44,12 @@ mutable struct MonteCarloSimulation
     savelist::Vector{Tuple}
     data::DataFrame
     results::Union{Dict{Tuple, DataFrame}, Void}
+    output_dir::Union{String, Void}
 
     function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
                                   translist::Vector{TransformSpec}, 
                                   corrlist::Union{Vector{CorrelationSpec}, Void},
                                   savelist::Vector{Tuple})
-        return new(0, rvlist, translist, corrlist, savelist, DataFrame(), nothing)
+        return new(0, rvlist, translist, corrlist, savelist, DataFrame(), nothing, nothing)
     end
 end

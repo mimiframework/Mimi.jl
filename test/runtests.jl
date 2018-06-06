@@ -69,7 +69,4 @@ end
     # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
     # @info("test_connectorcomp.jl")
     # include("test_connectorcomp.jl")
-
-    @info("test_explorer.jl")
-    include("test_explorer.jl")
 end

@@ -39,7 +39,7 @@ macro defmcs(expr)
 
             # e.g., name1:name2 = 0.7
             elseif @capture(elt, name1_:name2_ = value_)
-                push!(_corrs, CorrelationSpec(name1, name2, value))
+                push!(_corrs, (name1, name2, value))
 
             # e.g., ext_var5[2010:2050, :] *= name2
             # A bug in Macrotools prevents this shorter expression from working:

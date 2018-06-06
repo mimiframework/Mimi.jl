@@ -281,8 +281,13 @@ end
 """
     set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
 
-Adds a multi-dimensional time-indexed array parameter to the model.
+Adds a two dimensional time-indexed array parameter to the model.
 """
+function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
+    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    set_external_param!(md, name, param)
+end
+
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
