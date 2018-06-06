@@ -106,7 +106,7 @@ mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
 mutable struct Scalar{T}
     value::T
 
-    function Scalar{T}(value::T) where {T <: Number}
+    function Scalar{T}(value::T) where T
         new(value)
     end
 end
@@ -115,7 +115,7 @@ Scalar(value) = Scalar{typeof(value)}(value)
 
 Base.convert(::Type{Scalar{T}}, value::Number) where {T} = Scalar{T}(T(value))
 
-Base.convert(::Type{T}, s::Scalar{T}) where {T <: Number} = s.value
+Base.convert(::Type{T}, s::Scalar{T}) where {T} = T(s.value)
 
 abstract type ModelParameter end
 

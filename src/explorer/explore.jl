@@ -27,4 +27,6 @@ function explore(model; title = "Electron")
     #refresh variable list
     result = run(w, "refresh($speclistJSON)")
     
+    return w
+
 end

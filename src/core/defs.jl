@@ -561,14 +561,13 @@ to restore values between trials.
 
 """
 function copy_external_params(md::ModelDef)
-    external_params = Dict{Symbol, ModelParameter}()
-
-    for (key, obj) in md.external_params
-        external_params[key] = obj isa ScalarModelParameter ? ScalarModelParameter(obj.value) : ArrayModelParameter(copy(obj.values), obj.dimensions)
-    end
-
+    external_params = Dict{Symbol, ModelParameter}(key => copy(obj) for (key, obj) in md.external_params)
     return external_params
 end
+
+Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter{T}(copy(obj.value))
+
+Base.copy(obj::ArrayModelParameter{T})  where T = ArrayModelParameter{T}(copy(obj.values), obj.dimensions)
 
 function Base.copy(obj::TimestepVector{T_ts, T}) where {T_ts, T}
     return TimestepVector{T_ts, T}(copy(obj.data))

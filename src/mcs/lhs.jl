@@ -21,16 +21,6 @@ function DataFrames.DataFrame(m::Matrix{T}, cnames::AbstractArray{Symbol,1}) whe
 end
 
 """
-Global dictionary of random variables. This may will disappear eventually,
-as the dictionary could be defined per model.
-"""
-global const _rvDict = Dict{Symbol, RandomVariable}()
-
-function get_random_variable(name::Symbol)
-    return _rvDict[name]
-end
-
-"""
     rank_corr_coef(m::Matrix{Float64})
 
 Take a 2-D array of values and produce a array of rank correlation
@@ -196,10 +186,10 @@ function correlation_matrix(mcs::MonteCarloSimulation)
     count = length(mcs.rvlist)
     corrmatrix = eye(count, count)
 
-    for (name1, name2, value) in mcs.corrlist
-        i = names[name1]
-        j = names[name2]
-        corrmatrix[i, j] = corrmatrix[j, i] = value
+    for corr in mcs.corrlist
+        i = names[corr.name1]
+        j = names[corr.name2]
+        corrmatrix[i, j] = corrmatrix[j, i] = corr.value
     end
 
     return corrmatrix
