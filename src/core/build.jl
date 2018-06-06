@@ -13,19 +13,20 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
         T = Array{dtype, num_dims}
     
     else   
-        # TODO-AbstractTimestep:  ok to leave this as abstract timestep, or should we dig into
-        # the years array to figure out if it's uniform and go from there to 
-        # get the type parameterization?  If so, think of best way to do it...
-        # appears in three places (see TODO-AbsractTimestep)
-        T = TimestepArray{AbstractTimestep, dtype, num_dims}
+        # TODO-AbstractTimestep:  I think we need to go about this in a way that
+        # allows us to parameterize the TImestep within the Array.  We may want
+        # a more elegant way to do this though.  Appears in three places 
+        #(see TODO-AbsractTimestep)
+        
+        #T = TimestepArray{AbstractTimestep, dtype, num_dims}
 
-        # years = years_array(md)
-        # stepsize = isuniform(years)
-        # if stepsize == -1
-        #     T = TimestepArray{VariableTimestep{years}, dtype, num_dims}
-        # else
-        #     T = TimestepArray{Timestep{start, stepsize, years[end]}, dtype, num_dims}
-        # end
+        years = years_array(md)
+        stepsize = isuniform(years)
+        if stepsize == -1
+            T = TimestepArray{VariableTimestep{years}, dtype, num_dims}
+        else
+            T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
+        end
     end
 
     # println("_instance_datatype($def) returning $T")

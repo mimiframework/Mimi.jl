@@ -22,7 +22,7 @@ years = (collect(2000:1:2003)...)
 # matching years and mismatched years)
 
 i = get_timestep_instance(Int, years, 1, a[:,3])
-x = TimestepVector{Timestep, Int}(a[:,3])
+x = TimestepVector{Timestep{2000, 1}, Int}(a[:,3])
 @test typeof(i) == typeof(x)
 @test length(x) == 4
 @test endof(x) == 4
@@ -56,12 +56,12 @@ x[t3] = 100
 ##############################################
 
 years = ([2000:5:2005; 2015:10:2025]...)
-x = TimestepVector{VariableTimestep, Int}(a[:,3])
+x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 
 #2a.  test hasvalue, getindex, years_array, and setindex (with both matching years and
 # mismatched years)
 
-@test years_array(x) == collect(years)
+@test years_array(x) == years
 t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
 
 @test hasvalue(x, t) 
@@ -91,7 +91,7 @@ years = (collect(2000:1:2003)...)
 # and mismatched years)
 
 i = get_timestep_instance(Int, years, 2, a[:,1:2])
-y = TimestepMatrix{Int, years}(a[:,1:2])
+y = TimestepMatrix{Timestep{2000, 1}, Int}(a[:,1:2])
 @test typeof(i) == typeof(y)
 
 #3b.  test hasvalue, getindex, and setindex (with both matching years and
@@ -121,7 +121,7 @@ y[t3, 1] = 10
 @test y[t3,1] == 10
 
 #3c.  interval wider than 1
-z = TimestepMatrix{Int, (collect(2000:2:2010)...)}(a[:,3:4])
+z = TimestepMatrix{Timestep{2000, 2}, Int}(a[:,3:4])
 t = Timestep{1980, 2, 3000}(11)
 
 @test z[t,1] == 9
@@ -136,7 +136,7 @@ t2 = next_timestep(t)
 ##############################################
 
 years = ([2000:5:2005; 2015:10:2025]...)
-y = TimestepMatrix{Int, years}(a[:,1:2])
+y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
 
 #4a.  test hasvalue, getindex, setindex, and endof (with both matching years and
 # mismatched years)

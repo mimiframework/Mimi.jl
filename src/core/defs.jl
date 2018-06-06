@@ -134,11 +134,11 @@ unit(def::DatumDef) = def.unit
 
 # step_size(md::ModelDef) = step_size(indexvalues(md))
 
-# TODO:  These step_size functions will still work as long as the years are
+# TBD:  These step_size functions will still work as long as the years are
 # evenly spread (fixed timestep), but not for variable timestep.  We could keep
 # them around after using a isuniform check, or remove them all togther.  Below
 # I replace them with a complementary years_array function that may be more useful, 
-# we could also call is_uniform on the model itself?
+# we could also allow calls to is_uniform on the model itself?
 #
 # function step_size(md::ModelDef)
 #     # N.B. assumes that all timesteps of the model are the same length
@@ -206,7 +206,7 @@ function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tup
     return dim
 end
 
-# TODO: may be able to simplify this function
+# TBD:  may be able to simplify this function
 # helper function for setindex; used to determine if the provided time values are 
 # a uniform range. The function returns -1 if the vector is not uniform, 
 #otherwise it returns the timestep length aka stepsize
@@ -320,11 +320,25 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
             # start = start_period(comp_def)
             # dur = step_size(md)
 
-            # TODO-AbstractTimestep:  ok to leave this as abstract timestep, or should we dig into
-            # the years array to figure out if it's uniform and go from there to 
-            # get the type parameterization?  If so, think of best way to do it...
-            # appears in three places (see TODO-AbsractTimestep)
-            values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
+            # TODO-AbstractTimestep:  I think we need to go about this in a way that
+            # allows us to parameterize the TImestep within the Array.  We may want
+            # a more elegant way to do this though.  Appears in three places 
+            #(see TODO-AbsractTimestep)
+            
+            #values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
+
+            if num_dims == 0
+                values = value
+            else
+                years = years_array(md)
+                stepsize = isuniform(years)
+                if stepsize == -1
+                    values = TimestepArray{VariableTimestep{years}, T, dim_count, years}(value)
+                else
+                    values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count, years}(value)
+                end
+                
+            end
 
         else
             values = value

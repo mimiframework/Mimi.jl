@@ -111,12 +111,26 @@ function connect_parameter(md::ModelDef,
         T = eltype(backup)
 
         dim_count = length(dst_dims)
-        # TODO-AbstractTimestep:  ok to leave this as abstract timestep, or should we dig into
-        # the years array to figure out if it's uniform and go from there to 
-        # get the type parameterization?  If so, think of best way to do it...
-        # appears in three places (see TODO-AbsractTimestep)
-        values = dim_count == 0 ? backup : TimestepArray{AbstractTimestep, T, dim_count, years}(backup)
+        # TODO-AbstractTimestep:  I think we need to go about this in a way that
+        # allows us to parameterize the TImestep within the Array.  We may want
+        # a more elegant way to do this though.  Appears in three places 
+        #(see TODO-AbsractTimestep)
         
+        #values = dim_count == 0 ? backup : TimestepArray{AbstractTimestep, T, dim_count, years}(backup)
+        
+        if dim_count == 0
+            values = backup
+        else
+            years = years_array(md)
+            stepsize = isuniform(years)
+            if stepsize == -1
+                values = TimestepArray{VariableTimestep{years}, T, dim_count, years}(backup)
+            else
+                values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count, years}(backup)
+            end
+            
+        end
+
         set_external_array_param!(md, dst_par_name, values, dst_dims)
     end
 

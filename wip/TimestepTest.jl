@@ -187,8 +187,15 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 # 3b. TimestepVector
 #
 
-function Base.getindex(v::TimestepVector{Timestep{Start1, Step1, Stop1} where {Start1, Step1, Stop1}, T}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop}
+function Base.getindex(v::TimestepVector{Timestep{Start, Step}, T}, ts::Timestep{Start, Step}) where {T, Start, Step} 
+	println("calling equal timestep getindex")
 	return v.data[ts.t]
+end
+
+function Base.getindex(v::TimestepVector{Timestep{d_start, Step}, T}, ts::Timestep{t_start, Step}) where {T, d_start, t_start, Step} 
+	println("calling unequal timestep getindex")
+	t = Int(ts.t + (t_start - d_start) / Step)
+	return v.data[t]
 end
 
 
@@ -197,7 +204,7 @@ using Base.Test
 
 a = collect(reshape(1:16,4,4))
 years = (collect(2000:1:2003)...)
-x = TimestepVector{Timestep, Int}(a[:,3])
+x = TimestepVector{Timestep{2000, 1}, Int}(a[:,3])
 i = get_timestep_instance(Int, years, 1, a[:,3])
 
 t = Timestep{2001, 1, 3000}(1)
