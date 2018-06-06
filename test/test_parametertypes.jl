@@ -3,7 +3,7 @@ using Base.Test
 
 import Mimi: 
     external_params, update_external_param, TimestepMatrix, TimestepVector, 
-    ArrayModelParameter, ScalarModelParameter
+    ArrayModelParameter, ScalarModelParameter, Timestep
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
@@ -47,8 +47,8 @@ extpars = external_params(m)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
-@test typeof(extpars[:b].values) == TimestepVector{Float64, 2000, 1}
+@test typeof(extpars[:a].values) == TimestepMatrix{Timestep{2000, 1}, Float64}
+@test typeof(extpars[:b].values) == TimestepVector{Timestep{2000, 1}, Float64}
 @test typeof(extpars[:c].values) == Array{Float64, 1}
 @test typeof(extpars[:d].value) == Float64
 @test typeof(extpars[:e].values) == Array{Float64, 1}
@@ -67,6 +67,6 @@ update_external_param(m, :d, 5) # should work, will convert to float
 update_external_param(m, :e, [4,5,6,7])
 
 @test length(extpars) == 6
-@test typeof(extpars[:a].values) == TimestepMatrix{Float64, 2000, 1}
+@test typeof(extpars[:a].values) == TimestepMatrix{Timestep{2000, 1}, Float64}
 @test typeof(extpars[:d].value) == Float64
 @test typeof(extpars[:e].values) == Array{Float64, 1}

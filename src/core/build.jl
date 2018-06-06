@@ -13,13 +13,12 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
         T = Array{dtype, num_dims}
     
     else   
-        # TODO-AbstractTimestep:  I think we need to go about this in a way that
-        # allows us to parameterize the TImestep within the Array.  We may want
-        # a more elegant way to do this though.  Appears in three places 
-        #(see TODO-AbsractTimestep)
-        
+
         #T = TimestepArray{AbstractTimestep, dtype, num_dims}
 
+        # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
+        # We need to access years and stepsize, so this might have to do with
+        # how the isuniform function is used etc.
         years = years_array(md)
         stepsize = isuniform(years)
         if stepsize == -1

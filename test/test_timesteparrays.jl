@@ -2,8 +2,8 @@ using Mimi
 using Base.Test
 
 import Mimi:
-    Timestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    get_timestep_instance
+    Timestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
+    get_timestep_instance, isuniform, years_array, start_period, end_period
 
 a = collect(reshape(1:16,4,4))
 
@@ -18,7 +18,7 @@ a = collect(reshape(1:16,4,4))
 ###########################################
 years = (collect(2000:1:2003)...)
 
-#1a.  test get_timestep_instance, constructor, endof, step_size, and length (with both 
+#1a.  test get_timestep_instance, constructor, endof, years_array, and length (with both 
 # matching years and mismatched years)
 
 i = get_timestep_instance(Int, years, 1, a[:,3])
@@ -26,7 +26,7 @@ x = TimestepVector{Timestep{2000, 1}, Int}(a[:,3])
 @test typeof(i) == typeof(x)
 @test length(x) == 4
 @test endof(x) == 4
-@test step_size(x) == 1
+@test years_array(x) == collect(years)
 
 #1b.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
@@ -61,11 +61,11 @@ x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 #2a.  test hasvalue, getindex, years_array, and setindex (with both matching years and
 # mismatched years)
 
-@test years_array(x) == years
+@test years_array(x) == collect(years)
 t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
 
 @test hasvalue(x, t) 
-@test !hasvalue(x, Timestep{2000, 1, 2012}(10)) 
+@test !hasvalue(x, VariableTimestep{years}(10)) 
 @test x[t] == 10
 
 t2 =  next_timestep(t)
@@ -144,7 +144,7 @@ y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
 t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
 
 @test hasvalue(y, t, 1) 
-@test !hasvalue(y, Timestep{2000, 4, 3000}(10), 1) 
+@test !hasvalue(y, VariableTimestep{years}(10)) 
 @test y[t,1] == 2
 @test y[t,2] == 6
 
@@ -168,16 +168,18 @@ y[t3, 1] = 10
 # 5. Test TimeStepAarray methods #
 ##################################
 
-x_years = ([2000:5:2005; 2015:10:2025]...)
-y_years = ([2000:5:2005; 2015:10:2025]...)
+x_years = (2000:5:2015...) #fixed
+y_years = ([2000:5:2005; 2015:10:2025]...) #variable
 
-x = TimestepVector{Int, x_years}(a[:,3]) #vector
-y = TimestepMatrix{Int, y_years}(a[:,1:2]) #matrix
+x_vec = TimestepVector{Timestep{2000, 5}, Int}(a[:,3]) 
+x_mat = TimestepMatrix{Timestep{2000, 5}, Int}(a[:,1:2])
+y_vec = TimestepVector{VariableTimestep{y_years}, Int}(a[:,3]) 
+y_mat = TimestepMatrix{VariableTimestep{y_years}, Int}(a[:,1:2])
 
-x_fill = fill!(x, 2)
-y_fill = fill!(y, 2)
-@test x.data == fill(2, (4))
-@test y.data == fill(2, (4, 2))
+@test start_period(x_vec) == start_period(x_mat) == x_years[1] 
+@test start_period(y_vec) == start_period(y_mat) == y_years[1]
+@test end_period(x_vec) == end_period(x_mat) == x_years[end] 
+@test end_period(y_vec) == end_period(y_mat) == y_years[end]
 
 @test size(x) == size(a[:,3])
 @test size(y) == size(a[:,1:2])
@@ -189,7 +191,10 @@ y_fill = fill!(y, 2)
 @test eltype(x) == eltype(a) 
 @test eltype(y) == eltype(a) 
 
-@test start_period(x) == x_years[1]
-@test start_period(y) == y_years[1]
-@test end_period(x) == x_years[end]
-@test end_period(y) == y_years[end]
+fill!(x, 2)
+fill!(y, 2)
+@test x.data == fill(2, (4))
+@test y.data == fill(2, (4, 2))
+
+@test years_array(x_vec) == years_array(x_mat) == collect(x_years)
+@test years_array(y_vec) == years_array(y_mat) == collect(y_years)

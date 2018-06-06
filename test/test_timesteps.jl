@@ -31,7 +31,7 @@ years = ([2000:1:2024; 2025:5:2105]...)
 t = VariableTimestep{years}()
 @test is_start(t)
 
-t = VariableTimestep{years}(41)
+t = VariableTimestep{years}(42)
 @test is_stop(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)

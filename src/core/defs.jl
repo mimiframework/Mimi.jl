@@ -132,14 +132,11 @@ description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
 
+# LFR-TBD:  Since not all models have a step_size, we have removed this function
+# and replaced it with a complementary one, yeras_array
+
 # step_size(md::ModelDef) = step_size(indexvalues(md))
 
-# TBD:  These step_size functions will still work as long as the years are
-# evenly spread (fixed timestep), but not for variable timestep.  We could keep
-# them around after using a isuniform check, or remove them all togther.  Below
-# I replace them with a complementary years_array function that may be more useful, 
-# we could also allow calls to is_uniform on the model itself?
-#
 # function step_size(md::ModelDef)
 #     # N.B. assumes that all timesteps of the model are the same length
 #     keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years the model runs
@@ -206,7 +203,11 @@ function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tup
     return dim
 end
 
-# TBD:  may be able to simplify this function
+# LFR-TBD:  We might be able to simplify this function, and we should think through
+# it's return carefully as it is at the root of several functions.  Also, do we
+# want to be able to call this on a model too (like years_array?) ... otherwise
+# we often call years_array and then isuniform.
+#
 # helper function for setindex; used to determine if the provided time values are 
 # a uniform range. The function returns -1 if the vector is not uniform, 
 #otherwise it returns the timestep length aka stepsize
@@ -320,22 +321,20 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
             # start = start_period(comp_def)
             # dur = step_size(md)
 
-            # TODO-AbstractTimestep:  I think we need to go about this in a way that
-            # allows us to parameterize the TImestep within the Array.  We may want
-            # a more elegant way to do this though.  Appears in three places 
-            #(see TODO-AbsractTimestep)
-            
             #values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
 
+            # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
+            # We need to access years and stepsize, so this might have to do with
+            # how the isuniform function is used etc.
             if num_dims == 0
                 values = value
             else
                 years = years_array(md)
                 stepsize = isuniform(years)
                 if stepsize == -1
-                    values = TimestepArray{VariableTimestep{years}, T, dim_count, years}(value)
+                    values = TimestepArray{VariableTimestep{years}, T, num_dims}(value)
                 else
-                    values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count, years}(value)
+                    values = TimestepArray{Timestep{years[1], stepsize}, T, num_dims}(value)
                 end
                 
             end

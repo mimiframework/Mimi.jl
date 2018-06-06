@@ -111,22 +111,21 @@ function connect_parameter(md::ModelDef,
         T = eltype(backup)
 
         dim_count = length(dst_dims)
-        # TODO-AbstractTimestep:  I think we need to go about this in a way that
-        # allows us to parameterize the TImestep within the Array.  We may want
-        # a more elegant way to do this though.  Appears in three places 
-        #(see TODO-AbsractTimestep)
         
         #values = dim_count == 0 ? backup : TimestepArray{AbstractTimestep, T, dim_count, years}(backup)
         
+        # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
+        # We need to access years and stepsize, so this might have to do with
+        # how the isuniform function is used etc.
         if dim_count == 0
             values = backup
         else
             years = years_array(md)
             stepsize = isuniform(years)
             if stepsize == -1
-                values = TimestepArray{VariableTimestep{years}, T, dim_count, years}(backup)
+                values = TimestepArray{VariableTimestep{years}, T, dim_count}(backup)
             else
-                values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count, years}(backup)
+                values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count}(backup)
             end
             
         end

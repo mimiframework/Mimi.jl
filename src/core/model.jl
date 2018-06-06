@@ -107,8 +107,8 @@ List all the components in model `m`.
 
 @modelegate timelabels(m::Model) => md
 
-#TODO:  step_size is no longer a used function, should delete this line, instead
-# below is added a new complementary function
+# LFR-TBD:  Since we cannot gaurantee that a model has a step_size, we have 
+# removed this function and replaced it with a more universal one: years_array.
 #@modelegate step_size(m::Model) => md
 @modelegate years_array(m::Model) => md
 

@@ -276,7 +276,7 @@ function run_timestep(ci::ComponentInstance, clock::Clock)
 end
 
 function _run_components(mi::ModelInstance, clock::Clock,
-                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock})
+                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
     comp_instances = components(mi)
     
     while ! finished(clock)
