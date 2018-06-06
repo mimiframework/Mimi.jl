@@ -208,22 +208,19 @@ dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
 
-# TODO:  We want to create a timestep clock when possible, as opposed to a variable
-# timestep clock, below is probably not efficient but has the logic.  We could
-# remove step_size as a function and put it explicitly below since not used elsewhere.
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
     start = time_keys[1]
     stop  = time_keys[min(length(time_keys), ntimesteps)]
-    if isuniform(time_keys)
-        #step  = step_size(time_keys)
-        step = length(time_keys) > 1 ? keys[2] - keys[1] : 1
-        return Clock(start, step, stop)
+    step = isuniform(time_keys)
+    if step != -1
+        return Clock{Timestep}(start, step, stop)
 
     else
-        stop_index = find(time_keys .== stop)
-        years = tuple(time_keys[1:stop_index]...)
-        return Clock(years)
+        stop_index = findfirst(time_keys, stop)
+        years = (time_keys[1:stop_index]...)
+        return Clock{VariableTimestep}(years)
 
+    end
 end
 
 function reset_variables(ci::ComponentInstance)
@@ -293,7 +290,6 @@ function _run_components(mi::ModelInstance, clock::Clock,
     nothing
 end
 
-## TODO:  step_size and clock creation fixes
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
                   dimkeys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if length(mi.components) == 0
@@ -304,10 +300,20 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     starts = mi.starts
     stops = mi.stops
-    step  = step_size(t)
+    step  = isuniform(t)
 
-    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
-    
+    if step != -1
+        comp_clocks = [Clock{Timestep}(start, step, stop) for (start, stop) in zip(starts, stops)]
+    else
+        comp_clocks = Array{Clock{VariableTimestep}}(length(starts))
+        for i = 1:length(starts)
+            start_index = findfirst(t, starts[i])
+            stop_index = findfirst(t, stops[i])
+            years = t[start_index:stop+index]
+            comp_clocks[i] = Clock{VariableTimestep}(years)
+        end
+    end
+
     clock = make_clock(mi, ntimesteps, t)
 
     init(mi)    # call module's (or fallback) init function

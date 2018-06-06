@@ -137,7 +137,9 @@ unit(def::DatumDef) = def.unit
 # TODO:  These step_size functions will still work as long as the years are
 # evenly spread (fixed timestep), but not for variable timestep.  We could keep
 # them around after using a isuniform check, or remove them all togther.  Below
-# I replace them with a complementary years_array function 
+# I replace them with a complementary years_array function that may be more useful, 
+# we could also call is_uniform on the model itself?
+#
 # function step_size(md::ModelDef)
 #     # N.B. assumes that all timesteps of the model are the same length
 #     keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years the model runs
@@ -204,26 +206,34 @@ function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tup
     return dim
 end
 
-# helper function for setindex; used to determine if the provided time values are a uniform range.
+# TODO: may be able to simplify this function
+# helper function for setindex; used to determine if the provided time values are 
+# a uniform range. The function returns -1 if the vector is not uniform, 
+#otherwise it returns the timestep length aka stepsize
 function isuniform(values::Vector)
     num_values = length(values)
 
     if num_values == 0
-        return false
+        return -1
     end
 
-    if num_values in (1, 2)
-        return true
+    if num_values == 1
+        return 1
     end
 
     stepsize = values[2] - values[1]
+    
+    if num_values == 2
+        return stepsize
+    end
+
     for i in 3:length(values)
         if (values[i] - values[i - 1]) != stepsize
-            return false
+            return -1
         end
     end
 
-    return true
+    return stepsize
 end
 
 #
@@ -307,14 +317,15 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
         
         if comp_param_dims[1] == :time
             T = eltype(value)
-            start = start_period(comp_def)
-            dur = step_size(md)
-            #REPLACE
-            #years = years_array(md)
+            # start = start_period(comp_def)
+            # dur = step_size(md)
 
-            values = num_dims == 0 ? value : TimestepArray{T, num_dims, start, dur}(value)
-            #REPLACE
-            #values = num_dims == 0 ? value : TimestepArray{T, num_dims, years}(value)
+            # TODO-AbstractTimestep:  ok to leave this as abstract timestep, or should we dig into
+            # the years array to figure out if it's uniform and go from there to 
+            # get the type parameterization?  If so, think of best way to do it...
+            # appears in three places (see TODO-AbsractTimestep)
+            values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
+
         else
             values = value
         end
@@ -384,28 +395,23 @@ end
 # Other
 #
 
-# TODO:  does the component need to hold its own years, as opposed to start and
-# stop, so that we can run this?  Or should we do arithmetic like that below
-# that uses the component's start and stop along with the model years
 # Return the number of timesteps a given component in a model will run for.
-function getspan(md::ModelDef, comp_name::Symbol)
-    comp_def = compdef(md, comp_name)
-    start = start_period(comp_def)
-    stop  = stop_period(comp_def)
-    step  = step_size(md)
-    return Int((stop - start) / step + 1)
-end
-#REPLACE
 # function getspan(md::ModelDef, comp_name::Symbol)
 #     comp_def = compdef(md, comp_name)
 #     start = start_period(comp_def)
 #     stop  = stop_period(comp_def)
-#     years = years_array(md)
-#     start_index = find(years .== start)
-#     stop_index = find(years .== stop)
-#     return Int(size(years[start:stop]))
+#     step  = step_size(md)
+#     return Int((stop - start) / step + 1)
 # end
-
+function getspan(md::ModelDef, comp_name::Symbol)
+    comp_def = compdef(md, comp_name)
+    start = start_period(comp_def)
+    stop  = stop_period(comp_def)
+    years = years_array(md)
+    start_index = findfirst(years, start)
+    stop_index = findfirst(years, stop)
+    return Int(size(years[start:stop]))
+end
 
 function set_run_period!(comp_def::ComponentDef, start, stop)
     comp_def.start = start
@@ -551,21 +557,13 @@ function copy_external_params(md::ModelDef)
     return external_params
 end
 
-function Base.copy(obj::TimestepVector{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
-    return TimestepVector{T, FirstPeriod, Duration}(copy(obj.data))
+function Base.copy(obj::TimestepVector{T_ts, T}) where {T_ts, T}
+    return TimestepVector{T_ts, T}(copy(obj.data))
 end
-#REPLACE
-# function Base.copy(obj::TimestepVector{T, FirstPeriod, Years}) where {T, FirstPeriod, Years}
-#     return TimestepVector{T, FirstPeriod, Years}(copy(obj.data))
-# end
 
-function Base.copy(obj::TimestepMatrix{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
-    return TimestepMatrix{T, FirstPeriod, Duration}(copy(obj.data))
+function Base.copy(obj::TimestepMatrix{T_ts, T}) where {T_ts, T}
+    return TimestepMatrix{T_ts, T}(copy(obj.data))
 end
-#REPLACE
-# function Base.copy(obj::TimestepMatrix{T, FirstPeriod, Years}) where {T, FirstPeriod, Years}
-#     return TimestepMatrix{T, FirstPeriod, Years}(copy(obj.data))
-# end
 
 """
     copy(md::ModelDef)

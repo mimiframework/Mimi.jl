@@ -26,7 +26,7 @@ t = next_timestep(t)
 ########################################################
 #  Test basic timestep functions for Variable Timestep #
 ########################################################
-years = tuple([2000:1:2024; 2025:5:2105]...)
+years = ([2000:1:2024; 2025:5:2105]...)
 
 t = VariableTimestep{years}()
 @test is_start(t)

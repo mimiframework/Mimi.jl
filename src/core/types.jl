@@ -18,35 +18,36 @@ struct VariableTimestep{Years} <: AbstractTimestep
     t::Int
     current::Int 
 
-    function VariableTimestep{Years}(t::Int = 1, current::Int = Years[1]) where {Years}
-        current::Int = Years[t]
+    function VariableTimestep{Years}(t::Int = 1) where {Years}
+        # The special case below handles when functions like next_step step beyond
+        # the end of the Years array.  The assumption is that the length of this
+        # last timestep, starting at Years[end], is 1.
+        current::Int = t > length(Years) ? Years[end] + 1 : Years[t]
+        
         return new(t, current)
     end
 end
 
-# TODO:  As of now the Clock is not parameterized, although we may want to do so in 
-# in order to improve performance.  The concern here is whether we always know
-# what type of Clock we are using when we create a Clock.  
-mutable struct Clock
-	ts::AbstractTimestep
+mutable struct Clock{T <: AbstractTimestep}
+	ts::T
 
-	function Clock(start::Int, step::Int, stop::Int)
+	function Clock{T}(start::Int, step::Int, stop::Int) where T
 		return new(Timestep{start, step, stop}(1))
     end
     
-    function Clock(years::NTuple{N, Int} where N)
+    function Clock{T}(years::NTuple{N, Int} where N) where T
         return new(VariableTimestep{years}(1, years[1]))
     end
 end
 
-mutable struct TimestepArray{T, N, Years}
+mutable struct TimestepArray{T_ts <: AbstractTimestep, T, N}
 	data::Array{T, N}
 
-    function TimestepArray{T, N, Years}(d::Array{T, N}) where {T, N, Years}
+    function TimestepArray{T_ts, T, N}(d::Array{T, N}) where {T_ts, T, N}
 		return new(d)
 	end
 
-    function TimestepArray{T, N, Years}(lengths::Int...) where {T, N, Years}
+    function TimestepArray{T_ts, T, N}(lengths::Int...) where {T_ts, T, N}
 		return new(Array{T, N}(lengths...))
 	end
 end
@@ -54,15 +55,13 @@ end
 # Since these are the most common cases, we define methods (in time.jl)
 # specific to these type aliases, avoiding some of the inefficiencies
 # associated with an arbitrary number of dimensions.
-const TimestepMatrix{T, Years} = TimestepArray{T, 2, Years}
-const TimestepVector{T, Years} = TimestepArray{T, 1, Years}
+const TimestepMatrix{T_ts, T} = TimestepArray{T_ts, T, 2}
+const TimestepVector{T_ts, T} = TimestepArray{T_ts, T, 1}
 
 #
 # 2. Dimensions
 #
 
-# TODO:  TBD how to deal with ranges versus arrays for time, and what counts as
-# the last timestep
 abstract type AbstractDimension end
 
 const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}

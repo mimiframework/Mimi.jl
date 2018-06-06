@@ -106,16 +106,16 @@ function connect_parameter(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        start = start_period(dst_comp_def)
-        step = step_size(md)
-        #REPLACE
-        #years = years_array(md)
+        # start = start_period(dst_comp_def)
+        # step = step_size(md)
         T = eltype(backup)
 
         dim_count = length(dst_dims)
-        values = dim_count == 0 ? backup : TimestepArray{T, dim_count, start, step}(backup)
-        #REPLACE
-        #values = dim_count == 0 ? backup : TimestepArray{T, dim_count, years}(backup)
+        # TODO-AbstractTimestep:  ok to leave this as abstract timestep, or should we dig into
+        # the years array to figure out if it's uniform and go from there to 
+        # get the type parameterization?  If so, think of best way to do it...
+        # appears in three places (see TODO-AbsractTimestep)
+        values = dim_count == 0 ? backup : TimestepArray{AbstractTimestep, T, dim_count, years}(backup)
         
         set_external_array_param!(md, dst_par_name, values, dst_dims)
     end
@@ -198,13 +198,10 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
                     # start = indexvalues(md, :time)[1]
-                    start = dim_keys(md, :time)[1]
-                    step = step_size(md)
-                    #REPLACE
-                    #years = years_array(md)
-                    values = get_timestep_instance(eltype(value), start, step, num_dims, value)
-                    #REPLACE
-                    #values = get_timestep_instance(eltype(value), years, num_dims, value)
+                    # start = dim_keys(md, :time)[1]
+                    # step = step_size(md)
+                    years = years_array(md)
+                    values = get_timestep_instance(eltype(value), years, num_dims, value)
                     
                 else
                     values = value

@@ -2,8 +2,6 @@ connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
 function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
-# REPLACE:
-#function _instance_datatype(md::ModelDef, def::DatumDef, years::Array{T, N}) where {T, N} 
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)
@@ -15,12 +13,19 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
         T = Array{dtype, num_dims}
     
     else   
-        step = step_size(md)
-        # REPLACE:
-        #years = years_array(md)
-        T = TimestepArray{dtype, num_dims, start, step}
-        # REPLACE:   
-        #T = TimestepArray{dtype, num_dims, years}
+        # TODO-AbstractTimestep:  ok to leave this as abstract timestep, or should we dig into
+        # the years array to figure out if it's uniform and go from there to 
+        # get the type parameterization?  If so, think of best way to do it...
+        # appears in three places (see TODO-AbsractTimestep)
+        T = TimestepArray{AbstractTimestep, dtype, num_dims}
+
+        # years = years_array(md)
+        # stepsize = isuniform(years)
+        # if stepsize == -1
+        #     T = TimestepArray{VariableTimestep{years}, dtype, num_dims}
+        # else
+        #     T = TimestepArray{Timestep{start, stepsize, years[end]}, dtype, num_dims}
+        # end
     end
 
     # println("_instance_datatype($def) returning $T")

@@ -2,9 +2,6 @@
 #  1. TIMESTEP
 #
 
-# TODO:  We may want to type specialize the functions in the TIMESTEP
-# section below for performance reasons.
-
 function gettime(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return Start + (ts.t - 1) * Step
 end
@@ -24,7 +21,7 @@ function is_stop(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 end
 
 function is_stop(ts::VariableTimestep{Years}) where {Years}
-	return gettime(ts) == Years[end-1]
+	return gettime(ts) == Years[end]
 end
 
 function finished(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
@@ -32,7 +29,7 @@ function finished(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
 end
 
 function finished(ts::VariableTimestep{Years}) where {Years}
-	return gettime(ts) > Years[end-1]
+	return gettime(ts) > Years[end]
 end
 
 function next_timestep(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
@@ -57,9 +54,6 @@ end
 #
 #  2. CLOCK
 #
-
-# TODO:  We may want to type specialize the functions in the CLOCK
-# section below for performance reasons.
 
 function timestep(c::Clock)
 	return c.ts
@@ -92,11 +86,13 @@ end
 
 function get_timestep_instance(T, years, num_dims, value)
 	if !(num_dims in (1, 2))
-			error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
+		error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
 	end
 
-	timestep_type = num_dims == 1 ? TimestepVector : TimestepMatrix
-	return timestep_type{T, years}(value)
+	timestep_array_type = num_dims == 1 ? TimestepVector : TimestepMatrix
+	timestep_type = isuniform(collect(years)) == -1 ? VariableTimestep : Timestep
+
+	return timestep_array_type{timestep_type, T}(value)
 end
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
@@ -108,29 +104,31 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 # 3b. TimestepVector
 #
 
-# TODO:  this function would be better handled by dispatch as opposed to
-# conditional statements
-function Base.getindex(x::TimestepVector{T, Years}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop, Years}
-	if Start == Years[1] && Years[2] - Years[1] == Step
-		t = ts.t
-	else
-		t = Int(ts.t + (Start - Years[1]) / Step)
-	end
-	return x.data[t]
+function Base.getindex(v::TimestepVector{Timestep{Start, Step, Stop}, T}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop} 
+	return v.data[ts.t]
 end
 
-function Base.getindex(x::TimestepVector{T, Years}, ts::VariableTimestep{Years}) where {T, Years}
-	return x.data[ts.t]
+function Base.getindex(v::TimestepVector{VariableTimestep{Years}, T}, ts::VariableTimestep{Years}) where {T, Years}
+	return v.data[ts.t]
 end
 
-function Base.getindex(x::TimestepVector{T, d_years}, ts::VariableTimestep{t_years}) where {T, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1
-	return x.data[t]
+function Base.getindex(v::TimestepVector{Timestep{d_start, Step, Stop}, T}, ts::Timestep{t_start, Step, Stop}) where {T, d_start, t_start, Step, Stop} 
+	t = Int(ts.t + (t_start - d_start) / Step)
+	return v.data[t]
+end
+
+function Base.getindex(v::TimestepVector{VariableTimestep{d_years}, T}, ts::VariableTimestep{t_years}) where {T, d_years, t_years}
+	t = ts.t + findfirst(d_years, t_years[1]) - 1
+	return v.data[t]
 end
 
 # int indexing version supports old style components
-function Base.getindex(x::TimestepVector{T, Years}, i::AnyIndex) where {T, Years}
-   	return x.data[i]
+function Base.getindex(v::TimestepVector{Timestep{Start, Step, Stop}, T}, i::AnyIndex) where {T, Start, Step, Stop}
+	return v.data[i]
+end
+
+function Base.getindex(v::TimestepVector{VariableTimestep{Years}, T}, i::AnyIndex) where {T, Years}
+	return v.data[i]
 end
 
 # TODO:  this function assumes fixed step size, need to parameterize properly 
@@ -140,27 +138,30 @@ end
 # 	return (Start:Step:(Start + (length(x.data) - 1) * Step), )
 # end
 
-# TODO:  this function would be better handled by dispatch as opposed to
-# conditional statements
-function Base.setindex!(v::TimestepVector{T, Years}, val, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop, Years}
-	if Start == Years[1] && Years[2] - Years[1] == Step		
-		t = ts.t
-	else
-		t = Int(ts.t + (Start - Years[1]) / Step)
-	end
-	setindex!(v.data, val, t)
-end
-
-function Base.setindex!(v::TimestepVector{T, Years}, val, ts::VariableTimestep{Years}) where {T, Years}
+function Base.setindex(v::TimestepVector{Timestep{Start, Step, Stop}, T}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop} 
 	setindex!(v.data, val, ts.t)
 end
 
-function Base.setindex!(v::TimestepVector{T, d_years}, val, ts::VariableTimestep{t_years}) where {T, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1
+function Base.setindex(v::TimestepVector{VariableTimestep{Years}, T}, ts::VariableTimestep{Years}) where {T, Years}
+	setindex!(v.data, val, ts.t)	
+end
+
+function Base.setindex(v::TimestepVector{Timestep{d_start, Step, Stop}, T}, ts::Timestep{t_start, Step, Stop}) where {T, d_start, t_start, Step, Stop} 
+	t = Int(ts.t + (t_start - d_start) / Step)
 	setindex!(v.data, val, t)
 end
 
-function Base.setindex!(v::TimestepVector{T, Years}, val, i::AnyIndex) where {T, Years}
+function Base.setindex(v::TimestepVector{VariableTimestep{d_years}, T}, ts::VariableTimestep{t_years}) where {T, d_years, t_years}
+	t = ts.t + findfirst(d_years, t_years[1]) - 1
+	setindex!(v.data, val, t)
+end
+
+# int indexing version supports old style components
+function Base.setindex!(v::TimestepVector{Timestep{Start, Step, Stop}, T}, val, i::AnyIndex) where {T, Start, Step, Stop}
+	setindex!(v.data, val, i)
+end
+
+function Base.setindex!(v::TimestepVector{VariableTimestep{Years}, T}, val, i::AnyIndex) where {T, Years}
 	setindex!(v.data, val, i)
 end
 
@@ -174,57 +175,63 @@ Base.endof(v::TimestepVector) = length(v)
 # 3c. TimestepMatrix
 #
 
-# TODO:  this function would be better handled by dispatch as opposed to
-# conditional statements
-function Base.getindex(mat::TimestepMatrix{T, Years}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop, Years}
-	if Start == Years[1] && Years[2] - Years[1] == Step
-		t = ts.t
-	else
-		t = Int(ts.t + (Start - Years[1]) / Step)	
-	end
+function Base.getindex(mat::TimestepMatrix{Timestep{Start, Step, Stop}, T}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop} 
 	return mat.data[t, i]
 end
 
-function Base.getindex(mat::TimestepMatrix{T, Years}, ts::VariableTimestep{Years}, i::AnyIndex) where {T, Years}
-	return mat.data[ts.t, i]
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{Years}, T}, ts::VariableTimestep{Years}, i::AnyIndex) where {T, Years}
+	return mat.data[t, i]
 end
 
-function Base.getindex(mat::TimestepMatrix{T, d_years}, ts::VariableTimestep{t_years}, i::AnyIndex) where {T, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1
-	return mat.data[t, i]
+function Base.getindex(mat::TimestepMatrix{Timestep{d_start, Step, Stop}, T}, ts::Timestep{t_start, Step, Stop}, i::AnyIndex) where {T, d_start, t_start, Step, Stop} 
+	t = Int(ts.t + (t_start - d_start) / Step)
+	return return mat.data[t, i]
+end
+
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{d_years}, T}, ts::VariableTimestep{t_years}, i::AnyIndex) where {T, d_years, t_years}
+	t = ts.t + findfirst(d_years, t_years[1]) - 1
+	return return mat.data[t, i]
 end
 
 # int indexing version supports old style components
-function Base.getindex(mat::TimestepMatrix{T, Years}, idx1::AnyIndex, idx2::AnyIndex) where {T, Years}
+function Base.getindex(mat::TimestepMatrix{Timestep{Start, Step, Stop}, T}, idx1:AnyIndex, idx2:AnyIndex) where {T, Start, Step, Stop}
 	return mat.data[idx1, idx2]
 end
 
-# TODO:  this function would be better handled by dispatch as opposed to
-# conditional statements
-function Base.setindex!(mat::TimestepMatrix{T, Years}, val, ts::Timestep{Start, Step, Stop}, idx::AnyIndex) where {T, Start, Step, Stop, Years}
-	if Start == Years[1] && Years[2] - Years[1] == Step
-		t = ts.t
-	else
-		t = Int(ts.t + (Start - Years[1]) / Step)		
-	end
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{Years}, T}, idx1:AnyIndex, idx2:AnyIndex) where {T, Years}
+	return mat.data[idx1, idx2]
+end
+
+function Base.setindex(v::TimestepVector{Timestep{Start, Step, Stop}, T}, ts::Timestep{Start, Step, Stop}, idx::AnyIndex) where {T, Start, Step, Stop} 
+	setindex!(mat.data, val, ts.t, idx)
+end
+
+function Base.setindex(v::TimestepVector{VariableTimestep{Years}, T}, ts::VariableTimestep{Years}, idx::AnyIndex) where {T, Years}
+	setindex!(mat.data, val, ts.t, idx)
+end
+
+function Base.setindex(mat::TimestepVector{Timestep{d_start, Step, Stop}, T}, ts::Timestep{t_start, Step, Stop}, idx::AnyIndex) where {T, d_start, t_start, Step, Stop} 
+	t = Int(ts.t + (t_start - d_start) / Step)
 	setindex!(mat.data, val, t, idx)
 end
 
-function Base.setindex!(mat::TimestepMatrix{T, Years}, val, ts::VariableTimestep{Years}, idx::AnyIndex) where {T, Years}
-	setindex!(mat.data, val, ts.t, idx)	
+function Base.setindex(mat::TimestepVector{VariableTimestep{d_years}, T}, ts::VariableTimestep{t_years}, idx::AnyIndex) where {T, d_years, t_years}
+	t = ts.t + findfirst(d_years, t_years[1]) - 1
+	setindex!(mat.data, val, t, idx)
 end
 
-function Base.setindex!(mat::TimestepMatrix{T, d_years}, val, ts::VariableTimestep{t_years}, idx::AnyIndex) where {T, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1
-	setindex!(mat.data, val, t, idx)	
+# int indexing version supports old style components
+
+function Base.setindex!(mat::TimestepVector{VariableTimestep{Years}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, Years}
+	setindex!(mat.data, val, idx1, idx2)
 end
 
-function Base.setindex!(mat::TimestepMatrix{T, Years}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, Years}
+function Base.setindex!(mat::TimestepVector{VariableTimestep{Years}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, Years}
 	setindex!(mat.data, val, idx1, idx2)
 end
 
 #
-# 4. TimestepArray methods
+# 4. TimestepArray methods (TODO)
 #
 
 Base.fill!(obj::TimestepArray, value) = fill!(obj.data, value)
@@ -233,18 +240,19 @@ Base.size(obj::TimestepArray) = size(obj.data)
 
 Base.size(obj::TimestepArray, i::Int) = size(obj.data, i)
 
-Base.ndims(obj::TimestepArray{T, N, Years}) where {T, N, Years} = N
+Base.ndims(obj::TimestepArray{T_ts, T, N, Years}) where {T_ts,T, N, Years} = N
 
-Base.eltype(obj::TimestepArray{T, N, Years}) where {T, N, Years} = T
+Base.eltype(obj::TimestepArray{T_ts, T, N, Years}) where {T_ts,T, N, Years} = T
 
-start_period(obj::TimestepArray{T, N, Years}) where {T, N, Years} = Years[1]
+start_period(obj::TimestepArray{T_ts, T, N, Years}) where {T_ts,T, N, Years} = Years[1]
 
-end_period(obj::TimestepArray{T, N, Years}) where {T, N, Years} = Years[end]
+end_period(obj::TimestepArray{T_ts, T, N, Years}) where {T_ts,T, N, Years} = Years[end]
 
-# TODO:  this function isn't useful now that we save years instead of step, 
-# should delete it, and replace with the use of years_array as defined below
-# step_size(obj::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step} = Step
-years_array(obj::TimestepArray{T, N, Years}) where {T, N, Years} = Years
+# only works for a timestep array parameterized by fixed timesteps
+step_size(obj::TimestepArray{Timestep{Start, Step, Stop}, T, N}) where {Start, Step, Stop, T, N} = Step
+
+# only works for a timestep array parameterized by variable timesteps
+years_array(obj::TimestepArray{VariableTimestep{Years}, T, N}) where {Years, T, N} = Years
 
 # TODO:  this function would be better handled by dispatch as opposed to
 # conditional statements
@@ -267,7 +275,7 @@ end
 
 # TimestepArray and Timestep have different years
 function Base.getindex(arr::TimestepArray{T, N, d_years}, ts::VariableTimestep{t_years}, idxs::AnyIndex...) where {T, N, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1	
+	t = ts.t + findfirst(d_years, t_years[1])[1] - 1	
 	return arr.data[t, idxs...]
 end
 
@@ -292,7 +300,7 @@ end
 
 # TimestepArray and Timestep have different years
 function Base.setindex!(arr::TimestepArray{T, N, d_years}, val, ts::VariableTimestep{t_years}, idxs::AnyIndex...) where {T, N, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1	
+	t = ts.t + findfirst(d_years, t_years[1])[1] - 1	
 	setindex!(arr.data, val, t, idxs...)
 end
 
@@ -347,7 +355,7 @@ end
 	
 # TimestepArray and Timestep have different years
 function hasvalue(arr::TimestepArray{T, N, d_years}, ts::VariableTimestep{t_years}) where {T, N, d_years, t_years}
-	t = ts.t + find(d_years .== t_years[1])[1] - 1	
+	t = ts.t + findfirst(d_years, t_years[1])[1] - 1	
 	return 1 <= t <= size(arr, 1)
 end
 

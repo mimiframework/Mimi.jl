@@ -7,18 +7,26 @@ import Mimi:
 
 a = collect(reshape(1:16,4,4))
 
+## quick check of isuniform
+@test isuniform([]) == -1
+@test isuniform([1]) == 1
+@test isuniform([1,2,3]) == 1
+@test isuniform([1,2,3,5]) == -1
+
 ###########################################
 # 1. Test TimestepVector - Fixed Timestep #
 ###########################################
-years = tuple(collect(2000:1:2003)...)
+years = (collect(2000:1:2003)...)
 
-#1a.  test get_timestep_instance, constructor, endof, and length (with both 
+#1a.  test get_timestep_instance, constructor, endof, step_size, and length (with both 
 # matching years and mismatched years)
 
 i = get_timestep_instance(Int, years, 1, a[:,3])
-x = TimestepVector{Int, years}(a[:,3])
+x = TimestepVector{Timestep, Int}(a[:,3])
 @test typeof(i) == typeof(x)
 @test length(x) == 4
+@test endof(x) == 4
+@test step_size(x) == 1
 
 #1b.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
@@ -28,7 +36,6 @@ t = Timestep{2001, 1, 3000}(1)
 @test hasvalue(x, t)
 @test !hasvalue(x, Timestep{2000, 1, 2012}(10)) 
 @test x[t] == 10
-@test endof(x) ==4
 
 t2 = next_timestep(t)
 
@@ -38,7 +45,7 @@ t2 = next_timestep(t)
 x[t2] = 99
 @test x[t2] == 99
 
-t3 = Timestep{2000, 1, 2005}(1)
+t3 = Timestep{2000, 1, 2003}(1)
 @test x[t3] == 9
 
 x[t3] = 100
@@ -48,13 +55,14 @@ x[t3] = 100
 # 2. Test TimestepVector - Variable Timestep #
 ##############################################
 
-years = tuple([2000:5:2005; 2015:10:2025]...)
-x = TimestepVector{Int, years}(a[:,3])
+years = ([2000:5:2005; 2015:10:2025]...)
+x = TimestepVector{VariableTimestep, Int}(a[:,3])
 
-#2a.  test hasvalue, getindex, setindex, and (with both matching years and
+#2a.  test hasvalue, getindex, years_array, and setindex (with both matching years and
 # mismatched years)
 
-t = VariableTimestep{tuple([2005:5:2010; 2015:10:3000]...)}()
+@test years_array(x) == collect(years)
+t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
 
 @test hasvalue(x, t) 
 @test !hasvalue(x, Timestep{2000, 1, 2012}(10)) 
@@ -77,7 +85,7 @@ x[t3] = 100
 ###########################################
 # 3. Test TimestepMatrix - Fixed Timestep #
 ###########################################
-years = tuple(collect(2000:1:2003)...)
+years = (collect(2000:1:2003)...)
 
 #3a.  test get_timestep_instance and constructor (with both matching years 
 # and mismatched years)
@@ -113,7 +121,7 @@ y[t3, 1] = 10
 @test y[t3,1] == 10
 
 #3c.  interval wider than 1
-z = TimestepMatrix{Int, tuple(collect(2000:2:2010)...)}(a[:,3:4])
+z = TimestepMatrix{Int, (collect(2000:2:2010)...)}(a[:,3:4])
 t = Timestep{1980, 2, 3000}(11)
 
 @test z[t,1] == 9
@@ -127,13 +135,13 @@ t2 = next_timestep(t)
 # 4. Test TimestepMatrix - Variable Timestep #
 ##############################################
 
-years = tuple([2000:5:2005; 2015:10:2025]...)
+years = ([2000:5:2005; 2015:10:2025]...)
 y = TimestepMatrix{Int, years}(a[:,1:2])
 
 #4a.  test hasvalue, getindex, setindex, and endof (with both matching years and
 # mismatched years)
 
-t = VariableTimestep{tuple([2005:5:2010; 2015:10:3000]...)}()
+t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
 
 @test hasvalue(y, t, 1) 
 @test !hasvalue(y, Timestep{2000, 4, 3000}(10), 1) 
@@ -160,8 +168,8 @@ y[t3, 1] = 10
 # 5. Test TimeStepAarray methods #
 ##################################
 
-x_years = tuple([2000:5:2005; 2015:10:2025]...)
-y_years = tuple([2000:5:2005; 2015:10:2025]...)
+x_years = ([2000:5:2005; 2015:10:2025]...)
+y_years = ([2000:5:2005; 2015:10:2025]...)
 
 x = TimestepVector{Int, x_years}(a[:,3]) #vector
 y = TimestepMatrix{Int, y_years}(a[:,1:2]) #matrix
