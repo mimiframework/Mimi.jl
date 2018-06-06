@@ -64,23 +64,7 @@ set_dimension!(mymodel, :regions, ["USA", "EU", "LATAM"])
 
 ```
 
-*A Note on Time Indexes:* It is important to note that if an array of numbers is given for the time index, the model will run *up until*, but not beyond, the final year in the list.  Alternatively, if a numerical range is given with an implied or explicit step size, the model will run *through* that year using the step size.  Thus the following three ways of setting the index would run the model for six years: 1950, 1951, 1952, 1953, 1954, and 1955, running up until 1956 but not including 1956.
-
-```julia
-
-# UnitRange
-mymodel = Model()
-set_dimension!(mymodel, :time, 1950:1955)
-
-# StepRange
-mymodel = Model()
-set_dimension!(mymodel, :time, 1950:1:1955)
-
-# Array
-mymodel = Model()
-set_dimension!(mymodel, :time, [1950, 1951, 1952, 1953, 1954, 1955, 1956])
-
-```
+*A Note on Time Indexes:* It is important to note that the values used for the time index are the *start times* of the timesteps.  If the range or array of time values has a uniform timestep length, the model will run *through* the last year of the range with a last timestep period length consistent with the other timesteps.  If the time values are provided as an array with non-uniform timestep lengths, the model will run *through* the last year of the range with a last timestep period length *assumed to be one*. 
 
 The next step is to add components to the model. This is done by the following syntax:
 
