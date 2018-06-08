@@ -217,8 +217,8 @@ function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
 
     else
         stop_index = findfirst(time_keys, stop)
-        years = (time_keys[1:stop_index]...)
-        return Clock{VariableTimestep}(years)
+        start_times = (time_keys[1:stop_index]...)
+        return Clock{VariableTimestep}(start_times)
 
     end
 end
@@ -314,8 +314,8 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         for i = 1:length(starts)
             start_index = findfirst(t, starts[i])
             stop_index = findfirst(t, stops[i])
-            years = t[start_index:stop+index]
-            comp_clocks[i] = Clock{VariableTimestep}(years)
+            start_times = t[start_index:stop_index]
+            comp_clocks[i] = Clock{VariableTimestep}(start_times)
         end
     end
 

@@ -14,15 +14,15 @@ struct Timestep{Start, Step, Stop} <: AbstractTimestep
     t::Int
 end
 
-struct VariableTimestep{Years} <: AbstractTimestep
+struct VariableTimestep{start_times} <: AbstractTimestep
     t::Int
     current::Int 
 
-    function VariableTimestep{Years}(t::Int = 1) where {Years}
+    function VariableTimestep{start_times}(t::Int = 1) where {start_times}
         # The special case below handles when functions like next_step step beyond
-        # the end of the Years array.  The assumption is that the length of this
-        # last timestep, starting at Years[end], is 1.
-        current::Int = t > length(Years) ? Years[end] + 1 : Years[t]
+        # the end of the start_times array.  The assumption is that the length of this
+        # last timestep, starting at start_times[end], is 1.
+        current::Int = t > length(start_times) ? start_times[end] + 1 : start_times[t]
         
         return new(t, current)
     end
@@ -35,8 +35,8 @@ mutable struct Clock{T <: AbstractTimestep}
 		return new(Timestep{start, step, stop}(1))
     end
     
-    function Clock{T}(years::NTuple{N, Int} where N) where T
-        return new(VariableTimestep{years}(1, years[1]))
+    function Clock{T}(start_times::NTuple{N, Int} where N) where T
+        return new(VariableTimestep{start_times}(1, start_times[1]))
     end
 end
 

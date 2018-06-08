@@ -109,7 +109,7 @@ List all the components in model `m`.
 
 @modelegate start_step(m::Model) => md
 
-@modelegate years_array(m::Model) => md
+@modelegate starttimes(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
 @modelegate getspan(m::Model, comp_name::Symbol) => md

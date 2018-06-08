@@ -133,7 +133,7 @@ description(def::DatumDef) = def.description
 unit(def::DatumDef) = def.unit
 
 function start_step(md::ModelDef)
-    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years of the model runs
+    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the start_times of the model runs
     return keys[1], (length(keys) > 1 ? keys[2] - keys[1] : 1)
 end
 
@@ -141,13 +141,9 @@ function start_step(values::Vector{Int})
      return values[1], (length(values) > 1 ? values[2] - values[1] : 1)
 end
 
-function years_array(md::ModelDef)
+function starttimes(md::ModelDef)
     keys::Vector{Int} = dim_keys(md, :time)
     return keys
-end
-
-function years_array(values::Vector{Int})
-    return values
 end
 
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
@@ -200,36 +196,29 @@ function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tup
     return dim
 end
 
-# helper function for setindex; used to determine if the provided time values are 
+# helper functions used to determine if the provided time values are 
 # a uniform range.
-function isuniform(values::Vector)
-    num_values = length(values)
 
-    if num_values == 0
+function all_equal(values)
+    return all(map(val -> val == values[1], values[2:end]))
+end
+    
+function isuniform(values)
+   if length(values) == 0
         return false
-    end
+   else 
+        return all_equal(diff(collect(values)))
+   end
+end
 
-    if num_values in (1, 2)
-        return true
-    end
-
-    stepsize = values[2] - values[1]
-    for i in 3:length(values)
-        if (values[i] - values[i - 1]) != stepsize
-            return false
-        end
-    end
-
+#needed when time dimension is defined using a single integer
+function isuniform(values::Int)
     return true
 end
 
-function isuniform(value::Int)
-    return true
-end
-
-function isuniform(values::Range{Int})
-    return isuniform(collect(values))
-end
+# function isuniform(values::Range{Int})
+#     return isuniform(collect(values))
+# end
 
 #
 # Parameters
@@ -328,10 +317,10 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
                     ~, stepsize = start_step(md)
                     values = TimestepArray{Timestep{start, stepsize}, T, num_dims}(value)
                 else
-                    years = years_array(md)  
+                    start_times = starttimes(md)  
                     #use the start from the comp_def 
-                    start_index = findfirst(starttimes, start)                  
-                    values = TimestepArray{VariableTimestep{years_array[start_index, :]}, T, num_dims}(value)
+                    start_index = findfirst(start_times, start)                  
+                    values = TimestepArray{VariableTimestep{start_times[start_index, :]}, T, num_dims}(value)
                 end 
                 
             end
@@ -417,10 +406,10 @@ function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
     start = start_period(comp_def)
     stop  = stop_period(comp_def)
-    years = years_array(md)
-    start_index = findfirst(years, start)
-    stop_index = findfirst(years, stop)
-    return Int(size(years[start_index:stop_index]))
+    start_times = starttimes(md)
+    start_index = findfirst(start_times, start)
+    stop_index = findfirst(start_times, stop)
+    return size(start_times[start_index:stop_index])
 end
 
 function set_run_period!(comp_def::ComponentDef, start, stop)

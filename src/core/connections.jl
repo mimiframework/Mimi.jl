@@ -125,10 +125,10 @@ function connect_parameter(md::ModelDef,
                 ~, stepsize = start_step(md)
                 values = TimestepArray{Timestep{start, stepsize}, T, dim_count}(backup)
             else
-                years = years_array(md)
+                start_times = starttimes(md)
                 #use the start from the comp_def 
-                start_index = findfirst(years, start)
-                values = TimestepArray{VariableTimestep{years[start_index,:]}, T, dim_count}(backup)
+                start_index = findfirst(start_times, start)
+                values = TimestepArray{VariableTimestep{start_times[start_index,:]}, T, dim_count}(backup)
             end
             
         end
@@ -218,7 +218,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                     # step = step_size(md)
                     # values = get_timestep_instance(eltype(value), start, step, num_dims, value)
 
-                    years = years_array(md)
+                    start_times = starttimes(md)
                     values = get_timestep_instance(md, eltype(value), num_dims, value)
                     
                 else

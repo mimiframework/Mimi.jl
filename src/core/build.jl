@@ -22,10 +22,10 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
             ~, stepsize = start_step(md)
             T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
         else
-            years = years_array(md)
+            start_times = starttimes(md)
             #need to make sure we start at the start from the function argument
-            start_index = findfirst(years, start)
-            T = TimestepArray{VariableTimestep{years[start_index:end]}, dtype, num_dims}
+            start_index = findfirst(start_times, start)
+            T = TimestepArray{VariableTimestep{start_times[start_index:end]}, dtype, num_dims}
         end
     end
 
