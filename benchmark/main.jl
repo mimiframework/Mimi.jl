@@ -1,17 +1,21 @@
 using PkgBenchmark
 
-function benchmarkMimi(target::String, baseline::String; filename::String = nothing)
+function benchmarkMimi(target::String, baseline::String; filepath::String = nothing)
 
-    results = judge("Mimi", target, baseline) 
-    results_nums = collect(PkgBenchmark.benchmarkgroup(results))
+    results = judge("Mimi", target, baseline; ) 
+    trial_judgement = collect(PkgBenchmark.benchmarkgroup(results))
 
+    target_results_nums = collect(PkgBenchmark.benchmarkgroup(PkgBenchmark.target_result(results)))
+    baseline_results_nums = collect(PkgBenchmark.benchmarkgroup(PkgBenchmark.baseline_result(results)))
+    
     println("Results Summary: ")
     for i = 1:length(results_nums)
         println(results_nums[i]...)
+        println("Min for Target: ", target_results_nums[i]...)
+        println("Min for Baseline: ", baseline_results_nums[i]...)
+        println("")
     end
 
-    export_markdown(string("benchmark/results/", filename), results)
+    export_markdown(string(filepath), results)
     return results
 end
-
-results = benchmarkMimi("benchmark-branch1", "benchmark-branch2", filename = "test1")
