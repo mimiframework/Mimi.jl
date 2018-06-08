@@ -90,17 +90,19 @@ end
 # 3a.  General
 #
 
-function get_timestep_instance(T, years, num_dims, value)
+function get_timestep_instance(md::ModelDef, T, num_dims, value)
 	if !(num_dims in (1, 2))
 		error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
 	end
 
 	timestep_array_type = num_dims == 1 ? TimestepVector : TimestepMatrix
-	stepsize = isuniform(collect(years))
-	if stepsize == -1
-		return timestep_array_type{VariableTimestep{years}, T}(value)
+
+	if isuniform(md)
+		start, stepsize = start_step(md)
+		return timestep_array_type{Timestep{start, stepsize}, T}(value)
 	else
-		return timestep_array_type{Timestep{years[1], stepsize}, T}(value)
+		years = years_array(md)		
+		return timestep_array_type{VariableTimestep{years}, T}(value)	
 	end
 end
 

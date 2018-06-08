@@ -209,11 +209,11 @@ dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
 
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
-    start = time_keys[1]
     stop  = time_keys[min(length(time_keys), ntimesteps)]
-    step = isuniform(time_keys)
-    if step != -1
-        return Clock{Timestep}(start, step, stop)
+
+    if isuniform(time_keys)
+        start, stepsize = start_step(time_keys)
+        return Clock{Timestep}(start, stepsize, stop)
 
     else
         stop_index = findfirst(time_keys, stop)
@@ -297,13 +297,18 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     end
 
     t::Vector{Int} = dimkeys == nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
+    
+    # OLD WAY
+    # starts = mi.starts
+    # stops = mi.stops
+    # step  = step_size(t)
 
     starts = mi.starts
     stops = mi.stops
-    step  = isuniform(t)
 
-    if step != -1
-        comp_clocks = [Clock{Timestep}(start, step, stop) for (start, stop) in zip(starts, stops)]
+    if isuniform(t)
+        ~, stepsize = start_step(t)
+        comp_clocks = [Clock{Timestep}(start, stepsize, stop) for (start, stop) in zip(starts, stops)]
     else
         comp_clocks = Array{Clock{VariableTimestep}}(length(starts))
         for i = 1:length(starts)

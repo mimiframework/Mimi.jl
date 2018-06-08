@@ -13,18 +13,19 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
         T = Array{dtype, num_dims}
     
     else   
+        # OLD WAY
+        # step = step_size(md)
+        # T = TimestepArray{dtype, num_dims, start, step}
 
-        #T = TimestepArray{AbstractTimestep, dtype, num_dims}
-
-        # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
-        # We need to access years and stepsize, so this might have to do with
-        # how the isuniform function is used etc.
-        years = years_array(md)
-        stepsize = isuniform(years)
-        if stepsize == -1
-            T = TimestepArray{VariableTimestep{years}, dtype, num_dims}
-        else
+        if isuniform(md)
+            #take the start from the function argument, not the stepsize call
+            ~, stepsize = start_step(md)
             T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
+        else
+            years = years_array(md)
+            #need to make sure we start at the start from the function argument
+            start_index = findfirst(years, start)
+            T = TimestepArray{VariableTimestep{years[start_index:end]}, dtype, num_dims}
         end
     end
 

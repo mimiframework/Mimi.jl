@@ -242,6 +242,8 @@ mutable struct ModelDef
 
     sorted_comps::Union{Void, Vector{Symbol}}
 
+    is_uniform::Bool
+    
     function ModelDef(number_type=Float64)
         self = new()
         self.module_name = module_name(current_module())
@@ -253,6 +255,7 @@ mutable struct ModelDef
         self.external_params = Dict{Symbol, ModelParameter}()
         self.backups = Vector{Symbol}()
         self.sorted_comps = nothing
+        self.is_uniform = true
         return self
     end
 end

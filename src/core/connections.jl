@@ -106,26 +106,29 @@ function connect_parameter(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        # start = start_period(dst_comp_def)
-        # step = step_size(md)
+        start = start_period(dst_comp_def)
+        
         T = eltype(backup)
 
         dim_count = length(dst_dims)
+
+        # OLD WAY
+        # step = step_size(md)
+        # values = dim_count == 0 ? backup : TimestepArray{T, dim_count, start, step}(backup)
         
-        #values = dim_count == 0 ? backup : TimestepArray{AbstractTimestep, T, dim_count, years}(backup)
-        
-        # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
-        # We need to access years and stepsize, so this might have to do with
-        # how the isuniform function is used etc.
         if dim_count == 0
             values = backup
         else
-            years = years_array(md)
-            stepsize = isuniform(years)
-            if stepsize == -1
-                values = TimestepArray{VariableTimestep{years}, T, dim_count}(backup)
+            
+            if isuniform(md)
+                #use the start from the comp_def not the ModelDef
+                ~, stepsize = start_step(md)
+                values = TimestepArray{Timestep{start, stepsize}, T, dim_count}(backup)
             else
-                values = TimestepArray{Timestep{years[1], stepsize}, T, dim_count}(backup)
+                years = years_array(md)
+                #use the start from the comp_def 
+                start_index = findfirst(years, start)
+                values = TimestepArray{VariableTimestep{years[start_index,:]}, T, dim_count}(backup)
             end
             
         end
@@ -210,11 +213,13 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
-                    # start = indexvalues(md, :time)[1]
+                    #OLD WAY
                     # start = dim_keys(md, :time)[1]
                     # step = step_size(md)
+                    # values = get_timestep_instance(eltype(value), start, step, num_dims, value)
+
                     years = years_array(md)
-                    values = get_timestep_instance(eltype(value), years, num_dims, value)
+                    values = get_timestep_instance(md, eltype(value), num_dims, value)
                     
                 else
                     values = value

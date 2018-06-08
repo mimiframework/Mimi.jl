@@ -132,21 +132,14 @@ description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
 
-# LFR-TBD:  Since not all models have a step_size, we have removed this function
-# and replaced it with a complementary one, yeras_array
+function start_step(md::ModelDef)
+    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years of the model runs
+    return keys[1], (length(keys) > 1 ? keys[2] - keys[1] : 1)
+end
 
-# step_size(md::ModelDef) = step_size(indexvalues(md))
-
-# function step_size(md::ModelDef)
-#     # N.B. assumes that all timesteps of the model are the same length
-#     keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years the model runs
-#     return length(keys) > 1 ? keys[2] - keys[1] : 1
-# end
-
-# function step_size(values::Vector{Int})
-#     # N.B. assumes that all timesteps of the model are the same length
-#      return length(values) > 1 ? values[2] - values[1] : 1
-# end
+function start_step(values::Vector{Int})
+     return values[1], (length(values) > 1 ? values[2] - values[1] : 1)
+end
 
 function years_array(md::ModelDef)
     keys::Vector{Int} = dim_keys(md, :time)
@@ -193,48 +186,49 @@ timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
 
 Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
+isuniform(md::ModelDef) = md.is_uniform
+
 function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
     if haskey(md, name)
         warn("Redefining dimension :$name")
     end
-
+    if name == :time 
+        md.is_uniform = isuniform(keys)
+    end
     dim = Dimension(keys)
     md.dimensions[name] = dim
     return dim
 end
 
-# LFR-TBD:  We might be able to simplify this function, and we should think through
-# it's return carefully as it is at the root of several functions.  Also, do we
-# want to be able to call this on a model too (like years_array?) ... otherwise
-# we often call years_array and then isuniform.
-#
 # helper function for setindex; used to determine if the provided time values are 
-# a uniform range. The function returns -1 if the vector is not uniform, 
-#otherwise it returns the timestep length aka stepsize
+# a uniform range.
 function isuniform(values::Vector)
     num_values = length(values)
 
     if num_values == 0
-        return -1
+        return false
     end
 
-    if num_values == 1
-        return 1
+    if num_values in (1, 2)
+        return true
     end
 
     stepsize = values[2] - values[1]
-    
-    if num_values == 2
-        return stepsize
-    end
-
     for i in 3:length(values)
         if (values[i] - values[i - 1]) != stepsize
-            return -1
+            return false
         end
     end
 
-    return stepsize
+    return true
+end
+
+function isuniform(value::Int)
+    return true
+end
+
+function isuniform(values::Range{Int})
+    return isuniform(collect(values))
 end
 
 #
@@ -318,24 +312,27 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
         
         if comp_param_dims[1] == :time
             T = eltype(value)
+
+            # OLD WAY
             # start = start_period(comp_def)
             # dur = step_size(md)
+            # values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
 
-            #values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
-
-            # LFR-TBD:  There may be a more elegant way to carry out the logic below.  
-            # We need to access years and stepsize, so this might have to do with
-            # how the isuniform function is used etc.
             if num_dims == 0
                 values = value
             else
-                years = years_array(md)
-                stepsize = isuniform(years)
-                if stepsize == -1
-                    values = TimestepArray{VariableTimestep{years}, T, num_dims}(value)
+                start = start_period(comp_def)
+
+                if isuniform(md)
+                    #want to use the start from the comp_def not the ModelDef
+                    ~, stepsize = start_step(md)
+                    values = TimestepArray{Timestep{start, stepsize}, T, num_dims}(value)
                 else
-                    values = TimestepArray{Timestep{years[1], stepsize}, T, num_dims}(value)
-                end
+                    years = years_array(md)  
+                    #use the start from the comp_def 
+                    start_index = findfirst(starttimes, start)                  
+                    values = TimestepArray{VariableTimestep{years_array[start_index, :]}, T, num_dims}(value)
+                end 
                 
             end
 
@@ -423,7 +420,7 @@ function getspan(md::ModelDef, comp_name::Symbol)
     years = years_array(md)
     start_index = findfirst(years, start)
     stop_index = findfirst(years, stop)
-    return Int(size(years[start:stop]))
+    return Int(size(years[start_index:stop_index]))
 end
 
 function set_run_period!(comp_def::ComponentDef, start, stop)

@@ -3,27 +3,28 @@ using Base.Test
 
 import Mimi:
     Timestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    get_timestep_instance, isuniform, years_array, start_period, end_period
+    isuniform, years_array, start_period, end_period, 
+    start_step
 
 a = collect(reshape(1:16,4,4))
 
 ## quick check of isuniform
-@test isuniform([]) == -1
-@test isuniform([1]) == 1
-@test isuniform([1,2,3]) == 1
-@test isuniform([1,2,3,5]) == -1
+@test isuniform([]) == false
+@test isuniform([1]) == true
+@test isuniform([1,2,3]) == true
+@test isuniform([1,2,3,5]) == false
+
+@test start_step([2,3,4]) == (2,1)
 
 ###########################################
 # 1. Test TimestepVector - Fixed Timestep #
 ###########################################
 years = (collect(2000:1:2003)...)
 
-#1a.  test get_timestep_instance, constructor, endof, years_array, and length (with both 
+#1a.  test constructor, endof, years_array, and length (with both 
 # matching years and mismatched years)
 
-i = get_timestep_instance(Int, years, 1, a[:,3])
 x = TimestepVector{Timestep{2000, 1}, Int}(a[:,3])
-@test typeof(i) == typeof(x)
 @test length(x) == 4
 @test endof(x) == 4
 @test years_array(x) == collect(years)
@@ -87,12 +88,10 @@ x[t3] = 100
 ###########################################
 years = (collect(2000:1:2003)...)
 
-#3a.  test get_timestep_instance and constructor (with both matching years 
+#3a.  test constructor (with both matching years 
 # and mismatched years)
 
-i = get_timestep_instance(Int, years, 2, a[:,1:2])
 y = TimestepMatrix{Timestep{2000, 1}, Int}(a[:,1:2])
-@test typeof(i) == typeof(y)
 
 #3b.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
