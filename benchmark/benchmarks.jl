@@ -1,5 +1,3 @@
-using BenchmarkTools
-
 include("RegionTutorialBenchmarks.jl")
 using RegionTutorialBenchmarks
 
