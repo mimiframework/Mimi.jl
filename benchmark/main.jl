@@ -1,6 +1,5 @@
 using PkgBenchmark
 using BenchmarkTools
-using JSON
 
 function benchmarkMimi(target::String, baseline::String; filename::String = nothing)
 
