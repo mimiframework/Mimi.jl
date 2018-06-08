@@ -1,5 +1,4 @@
 using PkgBenchmark
-using BenchmarkTools
 
 function benchmarkMimi(target::String, baseline::String; filename::String = nothing)
 
