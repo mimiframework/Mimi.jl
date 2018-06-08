@@ -9,8 +9,6 @@ function benchmarkMimi(target::String, baseline::String; filename::String = noth
     for i = 1:length(results_nums)
         println(results_nums[i]...)
     end
-    println("Baseline Minimum:  ", base_trials)
-    println("Target Minimum:  ", target_trials)
 
     export_markdown(string("benchmark/results/", filename), results)
     return results
