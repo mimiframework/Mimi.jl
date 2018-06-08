@@ -4,7 +4,13 @@ const tutorialpath = normpath(joinpath(@__DIR__, "..", "examples", "tutorial"))
 const tworegionpath = joinpath(tutorialpath, "02-two-region-model")
 const oneregionpath = joinpath(tutorialpath, "01-one-region-model")
 
-include(joinpath(oneregionpath, "one-region-model.jl"))
-include(joinpath(tworegionpath, "main.jl"))
+function run_oneregion()
+    include(joinpath(tworegionpath, "main.jl"))
+end
 
+function run_tworegion()
+    include(joinpath(oneregionpath, "one-region-model.jl"))
+end
+
+export run_tworegion, run_oneregion
 end #module
