@@ -1,4 +1,4 @@
-module TestModelStructure
+module TestModelStructure_VariableTimestep
 
 #tests the framework of components and connections
 
@@ -43,11 +43,17 @@ end
 end
 
 m = Model()
-set_dimension!(m, :time, 2015:5:2100)
+years = [2015:5:2100; 2110:10:2200]
+set_dimension!(m, :time, years)
 
-addcomponent(m, A)
+@test_throws ErrorException addcomponent(m, A, stop = 2210) 
+@test_throws ErrorException addcomponent(m, A, start = 2010) 
+@test_throws ErrorException addcomponent(m, A, after=:B)
+addcomponent(m, A, start = 2050, stop = 2150) #test specific stop and start
+
 addcomponent(m, B, before=:A)
-addcomponent(m, C, after=:B)
+
+addcomponent(m, C, after=:B) # test a later start than model
 # Component order is B -> C -> A.
 
 connect_parameter(m, :A, :parA, :C, :varC)
@@ -79,23 +85,22 @@ connect_parameter(m, :C => :parC, :B => :varB)
 add_connector_comps(m)
 run(m)
 
-@test all([m[:A, :varA][t] == 1 for t in 1:9])
-
-@test all([m[:A, :varA][t] == 10 for t in 10:dim_count(m.md, :time)])
+@test all([m[:A, :varA][t] == 1 for t in 1:2])
+@test all([m[:A, :varA][t] == 10 for t in 3:16])
 
 
 ##########################
 #   tests for indexing   #
 ##########################
 
-@test dim_count(m.md, :time) == 18
+@test dim_count(m.md, :time) == 28
 
 @test m[:A, :parA] == 10
 @test_throws ErrorException m[:A, :xx]
 
 time = dimension(m, :time)
 a = collect(keys(time))
-@test all([a[i] == 2010 + 5*i for i in 1:18])
+@test all([a[i] == years[i] for i in 1:28])
 
 @test dimensions(m, :A, :varA)[1] == :time
 @test length(dimensions(m, :A, :parA)) == 0

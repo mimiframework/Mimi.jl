@@ -128,7 +128,7 @@ function connect_parameter(md::ModelDef,
                 start_times = starttimes(md)
                 #use the start from the comp_def 
                 start_index = findfirst(start_times, start)
-                values = TimestepArray{VariableTimestep{start_times[start_index,:]}, T, dim_count}(backup)
+                values = TimestepArray{VariableTimestep{(start_times[start_index:end]...)}, T, dim_count}(backup)
             end
             
         end

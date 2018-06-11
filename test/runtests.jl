@@ -13,6 +13,9 @@ end
     @info("test_main.jl")
     include("test_main.jl")
 
+    @info("test_main_variabletimestep.jl")
+    include("test_main_variabletimestep.jl")
+
     @info("test_metainfo.jl")
     include("test_metainfo.jl")
 
@@ -24,6 +27,9 @@ end
 
     @info("test_model_structure.jl")
     include("test_model_structure.jl")
+
+    @info("test_model_structure_variabletimestep.jl")
+    include("test_model_structure_variabletimestep.jl")
 
     @info("test_tools.jl")
     include("test_tools.jl")

@@ -314,7 +314,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         for i = 1:length(starts)
             start_index = findfirst(t, starts[i])
             stop_index = findfirst(t, stops[i])
-            start_times = t[start_index:stop_index]
+            start_times = (t[start_index:stop_index]...)
             comp_clocks[i] = Clock{VariableTimestep}(start_times)
         end
     end

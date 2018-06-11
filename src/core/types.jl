@@ -36,7 +36,7 @@ mutable struct Clock{T <: AbstractTimestep}
     end
     
     function Clock{T}(start_times::NTuple{N, Int} where N) where T
-        return new(VariableTimestep{start_times}(1, start_times[1]))
+        return new(VariableTimestep{start_times}())
     end
 end
 

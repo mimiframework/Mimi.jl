@@ -320,7 +320,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
                     start_times = starttimes(md)  
                     #use the start from the comp_def 
                     start_index = findfirst(start_times, start)                  
-                    values = TimestepArray{VariableTimestep{start_times[start_index, :]}, T, num_dims}(value)
+                    values = TimestepArray{VariableTimestep{(start_times[start_index:end]...)}, T, num_dims}(value)
                 end 
                 
             end
