@@ -12,8 +12,8 @@ function benchmarkMimi(target::String, baseline::String; filepath::String = noth
     baseline_results_nums = collect(PkgBenchmark.benchmarkgroup(PkgBenchmark.baseline_result(results)))
     
     println("Results Summary: ")
-    for i = 1:length(results_nums)
-        println(results_nums[i]...)
+    for i = 1:length(trial_judgement)
+        println(trial_judgement[i]...)
         println("Min for Target: ", target_results_nums[i]...)
         println("Min for Baseline: ", baseline_results_nums[i]...)
         println("")
