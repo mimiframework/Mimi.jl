@@ -2,7 +2,7 @@ using PkgBenchmark
 
 #function to compare the package benchmark suite performance at the target git id
 #at the target and the baeline git id (eg. branch, commit, etc.)
-function benchmarkMimi(target::String, baseline::String; filepath::String = nothing)
+function benchmarkMimi(target::String, baseline::String; filepath::String = "")
 
     results = judge("Mimi", target, baseline)
 
@@ -20,7 +20,7 @@ function benchmarkMimi(target::String, baseline::String; filepath::String = noth
     end
 
     #print optional results file
-    if filepath != nothing
+    if filepath != ""
         export_markdown(string(filepath), results)
     end
 
