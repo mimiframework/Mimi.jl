@@ -1,8 +1,4 @@
 #  General TODO:  
-#  1. Confirm that we can use the general case for setindex!, getindex,
-# 	and has value instead of teh two specific cases for Variable and Fixed.  
-#	Is there any reason to specify Start, Step or Year here in order to be
-#	positive that they match?
 
 #
 #  1. TIMESTEP
@@ -114,6 +110,11 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 #
 # 3b. TimestepVector
 #
+
+#   Note:  commented out the general case for setindex!, getindex,and hasvalue 
+#   which could replace the two specific cases for Variable and Fixed timesteps 
+#   in the matching years subcase.  Need to think through the potential cases and
+#   consequences before doing this replacement. 
 
 # function Base.getindex(v::TimestepVector, ts::T) where {T <: AbstractTimestep}
 # 	return v.data[ts.t]
