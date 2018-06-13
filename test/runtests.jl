@@ -19,6 +19,9 @@ end
     @info("test_metainfo.jl")
     include("test_metainfo.jl")
 
+    @info("test_metainfo_variabletimestep.jl")
+    include("test_metainfo_variabletimestep.jl")
+
     @info("test_references.jl")
     include("test_references.jl")
 
@@ -48,6 +51,9 @@ end
 
     @info("test_getindex.jl")
     include("test_getindex.jl")
+
+    @info("test_getindex_variabletimestep.jl")
+    include("test_getindex_variabletimestep.jl")
 
     @info("test_num_components.jl")
     include("test_num_components.jl")
