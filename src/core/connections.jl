@@ -107,9 +107,8 @@ function connect_parameter(md::ModelDef,
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
         start = start_period(dst_comp_def)
+        T = eltype(backup)        
         
-        T = eltype(backup)
-
         dim_count = length(dst_dims)
 
         # OLD WAY
@@ -213,7 +212,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
-                    #OLD WAY
+                    # OLD WAY
                     # start = dim_keys(md, :time)[1]
                     # step = step_size(md)
                     # values = get_timestep_instance(eltype(value), start, step, num_dims, value)
