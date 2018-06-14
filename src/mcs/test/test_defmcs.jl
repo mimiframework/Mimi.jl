@@ -45,12 +45,14 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-N = 10000
+N = 10
 
-generate_trials!(mcs, N, filename="/tmp/Mimi/trialdata.csv")
+output_dir = "/Volumes/RamDisk/Mimi"
+
+generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Run trials 1:N, and save results to the indicated directory
-run_mcs(m, mcs, N, output_dir="/tmp/Mimi")
+run_mcs(m, mcs, N, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018
 # generate_trials(mcs, samples=load("foo.csv"))
@@ -60,7 +62,6 @@ run_mcs(m, mcs, N, output_dir="/tmp/Mimi")
 # run_mcs(mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], mcs, N, output_dir="/tmp/Mimi")
 # run_mcs(mm, output_vars=[(:base,:compname,:varname), (:)], mcs, N, output_dir="/tmp/Mimi")
 # run_mcs(m, output_vars=[(:base,:compname,:varname), (:)], mcs, N, output_dir="/tmp/Mimi")
-
 
 # run_mcs(m, mcs, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
 
@@ -76,7 +77,7 @@ function show_E_Global(year::Int; bins=40)
 end
 
 #
-# Test new loop capability
+# Test scenario loop capability
 #
 
 #
@@ -89,10 +90,10 @@ function my_loop_func(m::Model, mcs::MonteCarloSimulation,    # required args
     println("scen:$scen, rate:$rate")
 end
 
-# Pass as a tuple of pairs
 run_mcs(m, mcs, 10;
-        output_dir="/tmp/Mimi",
-        loop_func=my_loop_func, 
-        loop_args=[:scen => [:low, :med, :high],
-                   :rate => [0.015, 0.03, 0.05]])
+        output_dir=output_dir,
+        scenario_func=my_loop_func, 
+        scenario_args=[:scen => [:low, :med, :high],
+                       :rate => [0.015, 0.03, 0.05]],
+        scenario_placement=Mimi.OUTER)
  

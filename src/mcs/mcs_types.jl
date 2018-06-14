@@ -1,6 +1,34 @@
 using IterableTables
 using NamedTuples
 
+@enum ScenarioLoopPlacement OUTER INNER
+@enum SamplingOptions LHS RANDOM
+
+# SampleStore is a faux Distribution that implements base.rand() 
+# to yield stored values.
+mutable struct SampleStore{T}
+    values::Vector{T}   # generally Int or Float64
+    idx::Int            # index of next value to return
+
+    function SampleStore(values::Vector{T}) where T
+        return new{T}(values, 1)
+    end
+end
+
+Base.eltype(ss::SampleStore) = eltype(ss.values)
+
+#
+# TBD: maybe have a different SampleStore subtype for values drawn from a dist
+# versus those loaded from a file, which would be treated as immutable?
+#
+
+# TBD: This interpolates values between those in the vector. Is this reasonable?
+# Probably shouldn't use correlation on values loaded from a file rather than 
+# from a proper distribution.
+function Base.quantile(ss::SampleStore{T}, probs) where T
+    return quantile(sort(ss.values), probs)
+end
+
 """
 A RandomVariable can be "assigned" to different model parameters. Its
 value can be used directly or applied by adding to, or multiplying by, 
@@ -8,15 +36,17 @@ reference values for the indicated parameter. Note that the distribution
 must be instantiated, e.g., call as RandomVariable(:foo, Normal()), not
 RandomVariable(:foo, Normal).
 """
-struct RandomVariable # {T}
+struct RandomVariable{T}
     name::Symbol
-    dist::Distribution   # T 
+    dist::T 
 
-    function RandomVariable(name::Symbol, dist::Distribution) # dist::T
-        self = new(name, dist)
+    function RandomVariable(name::Symbol, dist::T) where {T <: Union{Distribution, SampleStore}}
+        self = new{T}(name, dist)
         return self
     end
 end
+
+Base.eltype(rv::RandomVariable) = eltype(rv.dist)
 
 struct TransformSpec
     paramname::Symbol
@@ -43,17 +73,6 @@ struct CorrelationSpec
 end
 
 
-# SampleStore is a faux Distribution that implements base.rand() 
-# to yield stored values.
-mutable struct SampleStore{T}
-    values::Vector{T}   # generally Int or Float64
-    idx::Int            # index of next value to return
-
-    function SampleStore(values::Vector{T}) where T
-        return new{T}(values, 1)
-    end
-end
-
 """
     Base.rand(s::SampleStore{T}, n::Int=1) where T
 
@@ -64,7 +83,7 @@ but you can `reset` the `SampleStore` to reuse it.
 function Base.rand(s::SampleStore{T}, n::Int=1) where T
     idx = s.idx
     s.idx = next_idx = idx + n
-    return s.values[idx:(next_idx - 1)]
+    return n > 1 ? s.values[idx:(next_idx - 1)] : s.values[idx]
 end
 
 function Base.reset(s::SampleStore{T}) where T
@@ -77,33 +96,39 @@ Holds all the data that defines a Monte Carlo simulation.
 """
 mutable struct MonteCarloSimulation
     trials::Int
-    rvlist::Vector{RandomVariable}      # TBD: needs to be OrderedDict{Symbol, RandomVariable}
+    current_trial::Int
+    current_data::Any               # holds data for current_trial when current_trial > 0
+    rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
     corrlist::Union{Vector{CorrelationSpec}, Void}
     savelist::Vector{Tuple}
-    
-    data::DataFrame         # DEPRECATED (replaced by nt_type)
-    generated::Bool
-
+    dist_rvs::Any              # actually Vector{RandomVariable{Distribution}}
     results::Union{Dict{Tuple, DataFrame}, Void}
-
-    nt_type::Any   # a NamedTuple type to hold all for a single trial
+    nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
 
     function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
                                   translist::Vector{TransformSpec}, 
                                   corrlist::Union{Vector{CorrelationSpec}, Void},
                                   savelist::Vector{Tuple})
-        # assigned to vars for documentation purposes
-        trials = 0
-        results = nothing
-        df = DataFrame()
-        generated = false
-        nt_type = NamedTuples.make_tuple([rv.name for rv in rvlist])
-        return new(trials, rvlist, translist, corrlist, savelist, df, generated, results, nt_type)
+        self = new()
+        self.trials = 0
+        self.current_trial = 0
+        self.current_data = nothing
+        self.rvdict = OrderedDict([rv.name => rv for rv in rvlist])
+        self.translist = translist
+        self.corrlist = corrlist
+        self.savelist = savelist
+        self.dist_rvs = [rv for rv in rvlist if rv.dist isa Distribution]
+        self.results = nothing
+        self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
+        return self
     end
 end
 
-# Iterator protocol. `State` is just the trial number
-Base.start(mcs::MonteCarloSimulation) = 1
-Base.next(mcs, trialnum) = (get_trial_data(trialnum), trialnum + 1)
-Base.done(mcs, trialnum) = (trialnum == mcs.trials)
+struct MCSIterator{NT}
+    mcs::MonteCarloSimulation
+
+    function MCSIterator{NT}(mcs::MonteCarloSimulation) where NT
+        return new{NT}(mcs)
+    end
+end

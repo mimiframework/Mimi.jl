@@ -1,4 +1,6 @@
 using IterTools
+using IterableTables
+using TableTraits
 using ProgressMeter
 
 function store_trial_results(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
@@ -61,50 +63,106 @@ end
 
 function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
     mkpath(dirname(filename), 0o770)   # ensure that the specified path exists
-    save(filename, mcs.data)
+    save(filename, mcs)
     return nothing
 end
 
 # TBD: store rvlist and corrlist in src, or just in mcs?
 # TBD: generate a NamedTuple for the set of RVs?
 # TBD: Modify lhs() to return an array of SampleStore{T} instances
-function get_trial_data(mcs::MonteCarloSimulation, trialnum::Int)
-    rvlist = mcs.rvlist
-
-    if mcs.corrlist == nothing
-        # If no correlations, just grab the next value from each RV
-        values = [rv.dist.rand() for rv in rvlist]
-    else
-        if ! mcs.generated
-            # TBD: should only generate data for correlated vars or using LHS.
-            # First time through, generate all trial data to enable correlations
-            mcs.data = lhs(rvlist, mcs.trials, corrmatrix=correlation_matrix(mcs))
-            mcs.generated = true
-        end
-
-        df = mcs.data
-        values = [df[trialnum, col] for col in 1:size(df, 2)]
+function get_trial(mcs::MonteCarloSimulation, trialnum::Int)
+    # We cache the value for the current trial so we can return the
+    # same data if requested again, i.e., to support MarginalModel.
+    if mcs.current_trial == trialnum
+        return mcs.current_data
     end
 
-    return mcs.nt_type(values...)
+    vals = [rand(rv.dist) for rv in values(mcs.rvdict)]
+    mcs.current_data = mcs.nt_type(vals...)
+    mcs.current_trial = trialnum
+    
+    return mcs.current_data
+end
+
+# Deprecated
+# function get_trial_data(mcs::MonteCarloSimulation, trialnum::Int)
+#     # We cache the value for the current trial so we can return the
+#     # same data if requested again, i.e., to support MarginalModel.
+#     if mcs.current_trial == trialnum
+#         return mcs.data
+#     end
+
+#     rvlist = mcs.rvlist
+
+#     if mcs.corrlist == nothing
+#         # If no correlations, just grab the next value from each RV
+#         values = [rv.dist.rand() for rv in rvlist]
+#     else
+#         if ! mcs.generated
+#             # TBD: should only generate data for correlated vars or using LHS.
+#             # First time through, generate all trial data to enable correlations
+#             mcs.lhs_data = lhs(rvlist, mcs.trials, corrmatrix=correlation_matrix(mcs))
+#             mcs.generated = true
+#         end
+
+#         df = mcs.data
+#         values = [df[trialnum, col] for col in 1:size(df, 2)]
+#     end
+
+#     # Cache data in case its requested again
+#     mcs.current_trial = trialnum
+#     mcs.data = nt = mcs.nt_type(values...)
+    
+#     return nt
+# end
+
+"""
+    generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
+                     filename::String="", sampling::SamplingOptions)
+
+Generate the given number of trials for the given MonteCarloSimulation instance. 
+Call this before running the MCS to enable saving of inputs to to choose a sampling 
+method other than LHS. (Currently, only LHS and RANDOM are possible.)
+"""
+function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
+                          filename::String="",
+                          sampling::SamplingOptions=LHS)
+    mcs.trials = trials
+
+    if sampling == LHS
+        corrmatrix = correlation_matrix(mcs)
+        rvlist = collect(values(mcs.rvdict))
+
+        # update the dict in mcs
+        lhs!(mcs, corrmatrix=corrmatrix)
+
+    else    # sampling == RANDOM
+        # we pre-generate the trial data only if we're saving it
+        if filename != ""
+            rand!(mcs)
+        end
+    end
+
+    # TBD: If user asks for trial data to be saved, generate it up-front, or 
+    # open a file that can be written to for each trialnum/scenario set?
+    if filename != ""
+        save_trial_inputs(mcs, filename)
+    end
 end
 
 """
-    generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="")
+    Base.rand!(mcs::MonteCarloSimulation)
 
-Generate the given number of trials for the given MonteCarloSimulation instance.
+Replace all RVs originally of type Distribution with SampleStores with 
+values drawn from that original distribution.
 """
-function generate_trials!(mcs::MonteCarloSimulation, trials::Int; filename::String="",
-                          sampling::Symbol=:lhs)
+function Base.rand!(mcs::MonteCarloSimulation)
+    rvdict = mcs.rvdict
+    trials = mcs.trials
 
-    # TBD: distinguish :lhs from :random sampling
-
-    corrmatrix = correlation_matrix(mcs)
-    mcs.data = lhs(mcs.rvlist, trials, corrmatrix=corrmatrix)
-    mcs.trials = trials
-
-    if filename != ""
-        save_trial_inputs(mcs, filename)
+    for rv in mcs.dist_rvs
+        values = rand(rv.dist, trials)
+        rvdict[name] = RandomVariable(rv.name, SampleStore(values))
     end
 end
 
@@ -193,19 +251,36 @@ end
 
 Modify the stochastic parameters using the values drawn for trial `trialnum`.
 """
-function _perturb_params!(md::ModelDef, mcs::MonteCarloSimulation, trialnum::Int)
+function _perturb_params!(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     if trialnum > mcs.trials
         error("Attempted to run trial $trialnum, but only $(mcs.trials) trials are defined")
     end
 
-    # trialdata = _get_trial_data(mcs)  # returns a NamedTuple
-    trialdata = mcs.data[trialnum, :]
+    trialdata = get_trial(mcs, trialnum)
+
+    md = m.mi.md
 
     for trans in mcs.translist        
         param = external_param(md, trans.paramname)
-        rvalue = trialdata[1, trans.rvname]
-        # rvalue = getfield(trialdata, trans.rvname)
+        rvalue = getfield(trialdata, trans.rvname)
+
         _perturb_param!(param, md, trans, rvalue)
+    end
+
+    return nothing
+end
+
+function _perturb_params!(mm::MarginalModel, mcs::MonteCarloSimulation, trialnum::Int)
+    # N.B. get_trial() returns the same data in consecutive calls with same trialnum
+    _perturb_params!(mm.base, mcs, trialnum)
+    _perturb_params!(mm.marginal, mcs, trialnum)
+end
+
+function _reset_params!(mcs::MonteCarloSimulation)
+    for rv in values(mcs.rvdict)
+        if rv.dist isa SampleStore
+            reset(rv.dist)
+        end
     end
 end
 
@@ -219,7 +294,9 @@ function clear_results(mcs::MonteCarloSimulation)
 end
 
 """
-    run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Int, Vector{Int}, Range{Int}}; 
+    run_mcs(m::Union{Model,MarginalModel}, 
+            mcs::MonteCarloSimulation, 
+            trials::Union{Int, Vector{Int}, Range{Int}}; 
             ntimesteps::Int=typemax(Int), 
             output_dir::Union{Void, AbstractString}=nothing, 
             pre_trial_func::Union{Void, Function}=nothing, 
@@ -237,16 +314,19 @@ of arbitrary values that will be meaningful to `loop_func`, which is called with
 `m`, the MonteCarloSimulation `mcs`, and the splatted tuple of values for the current outer
 loop iteration.
 """
-function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int}, Range{Int}}; 
+function run_mcs(m::Union{Model,MarginalModel}, 
+                 mcs::MonteCarloSimulation, 
+                 trials::Union{Vector{Int}, Range{Int}}; 
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Void, AbstractString}=nothing, 
                  pre_trial_func::Union{Void, Function}=nothing, 
                  post_trial_func::Union{Void, Function}=nothing,
-                 loop_func::Union{Void, Function}=nothing,
-                 loop_args=nothing)
+                 scenario_func::Union{Void, Function}=nothing,
+                 scenario_placement::ScenarioLoopPlacement=OUTER,
+                 scenario_args=nothing)
 
-    if (loop_func == nothing) != (loop_args == nothing)
-        error("run_mcs: loop_func and loop_arg must both be nothing or both set to non-nothing values")
+    if (scenario_func == nothing) != (scenario_args == nothing)
+        error("run_mcs: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
     end
 
     if m.mi == nothing
@@ -256,11 +336,23 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int},
     
     orig_output_dir = output_dir
 
-    if loop_args == nothing
-        arg_tuples = (nothing,)     # handles case with no outer loop
-    else
-        seqs = [arg.second for arg in loop_args]
+    has_scenario_func = (scenario_func != nothing)
+    has_outer_scenario = (has_scenario_func && scenario_placement == OUTER)
+    has_inner_scenario = (has_scenario_func && scenario_placement == INNER)
+
+    if has_scenario_func
+        seqs = [arg.second for arg in scenario_args]
         arg_tuples = product(seqs...)
+
+        if has_outer_scenario
+            arg_tuples_outer = arg_tuples
+            arg_tuples_inner = (nothing,)   # allows one iteration when no scenario loop specified
+        else
+            arg_tuples_outer = (nothing,)
+            arg_tuples_inner = arg_tuples
+        end
+    else
+        arg_tuples = arg_tuples_outer = arg_tuples_inner = (nothing,)
     end
     
     nscenarios = length(arg_tuples)
@@ -269,51 +361,111 @@ function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Union{Vector{Int},
     counter = 1
     p = Progress(total_runs, counter, "Running $ntrials trials for $nscenarios scenarios...")
 
-    for tup in arg_tuples
+    # Reset internal index to 1 for all stored parameters to reuse the data
+    _reset_params!(mcs)
 
-        if loop_func != nothing
-            # Call outer loop setup function
-            loop_func(m, mcs, tup...)
+    for tup in arg_tuples_outer
 
-            # Create a subdir to store the results of each outer loop
+        clear_results(mcs)
+        
+        # If we're running scenarios, create a subdir to store the results of each
+        if has_scenario_func
+            scenario_func(m, mcs, tup...)
+
+            _reset_params!(mcs)
+
             if orig_output_dir != nothing
                 output_dir = joinpath(orig_output_dir, join(map(string, tup), "_"))
             end
         end
-
-        clear_results(mcs)
         
         # Save the params to be perturbed so we can reset them after each trial
         original_values = _copy_mcs_params(mcs, md)
 
         for (i, trialnum) in enumerate(trials)
-            _perturb_params!(md, mcs, trialnum) # TBD: any need to pass trialnum?
+            for tup in arg_tuples_inner               
+                _perturb_params!(m, mcs, trialnum)
 
-            pre_trial_func  == nothing || pre_trial_func(m, mcs, trialnum)
-            run(m, ntimesteps=ntimesteps)
-            post_trial_func == nothing || post_trial_func(m, mcs, trialnum)
+                if pre_trial_func != nothing
+                    pre_trial_func(m, mcs, trialnum, tup)
+                end               
 
-            _restore_params!(md, mcs, original_values)
-            store_trial_results(m, mcs, trialnum)
+                if has_inner_scenario
+                    scenario_func(m, mcs, tup...)
 
-            counter += 1
-            ProgressMeter.update!(p, counter)
-        end
+                    if orig_output_dir != nothing
+                        output_dir = joinpath(orig_output_dir, join(map(string, tup), "_"))
+                    end
+                end
 
-        if output_dir != nothing
-            save_trial_results(mcs, output_dir)
+                run(m, ntimesteps=ntimesteps)
+                
+                if post_trial_func != nothing
+                    post_trial_func(m, mcs, trialnum, tup)
+                end
+
+                _restore_params!(md, mcs, original_values)
+                store_trial_results(m, mcs, trialnum)
+
+                counter += 1
+                ProgressMeter.update!(p, counter)
+                
+                if output_dir != nothing
+                    save_trial_results(mcs, output_dir)
+                end
+            end
         end
     end
 end
 
-function run_mcs(m::Model, mcs::MonteCarloSimulation, trials::Int=mcs.trials; 
+function run_mcs(m::Union{Model,MarginalModel}, 
+                 mcs::MonteCarloSimulation, 
+                 trials::Int=mcs.trials; 
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Void, AbstractString}=nothing, 
                  pre_trial_func::Union{Void, Function}=nothing, 
                  post_trial_func::Union{Void, Function}=nothing,
-                 loop_func::Union{Void, Function}=nothing,
-                 loop_args=nothing)
-    return run_mcs(m, mcs, 1:trials, ntimesteps=ntimesteps, output_dir=output_dir, 
-                   pre_trial_func=pre_trial_func, post_trial_func=post_trial_func,
-                   loop_func=loop_func, loop_args=loop_args)
+                 scenario_func::Union{Void, Function}=nothing,
+                 scenario_placement::ScenarioLoopPlacement=OUTER,
+                 scenario_args=nothing)
+    return run_mcs(m, mcs, 1:trials, 
+                   ntimesteps=ntimesteps, 
+                   output_dir=output_dir, 
+                   pre_trial_func=pre_trial_func, 
+                   post_trial_func=post_trial_func,
+                   scenario_func=scenario_func, 
+                   scenario_placement=scenario_placement,
+                   scenario_args=scenario_args)
 end
+
+# Iterator protocol. `State` is just the trial number
+
+function Base.start(mcs::MonteCarloSimulation)
+    _reset_params!(mcs)
+    return 1
+end
+Base.next(mcs::MonteCarloSimulation, trialnum) = (get_trial(mcs, trialnum), trialnum + 1)
+Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum == mcs.trials)
+
+TableTraits.isiterable(mcs::MonteCarloSimulation) = true
+TableTraits.isiterabletable(mcs::MonteCarloSimulation) = true
+
+IterableTables.getiterator(mcs::MonteCarloSimulation) = MCSIterator{mcs.nt_type}(mcs)
+# IterableTables.getiterator(mcs::MonteCarloSimulation) = mcs
+
+column_names(mcs::MonteCarloSimulation) = fieldnames(mcs.nt_type)
+column_types(mcs::MonteCarloSimulation) = [eltype(fld) for fld in values(mcs.rvdict)]
+
+column_names(iter::MCSIterator) = column_names(iter.mcs)
+column_types(iter::MCSIterator) = IterableTables.column_types(iter.mcs)
+
+function Base.start(iter::MCSIterator)
+    _reset_params!(iter.mcs)
+    return 1
+end
+
+Base.next(iter, idx) = (get_trial(iter.mcs, idx), idx + 1)
+Base.done(iter, idx) = (idx == iter.mcs.trials)
+Base.length(iter) = iter.mcs.trials
+
+Base.eltype(::Type{MCSIterator{T}}) where T = T
