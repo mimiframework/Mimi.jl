@@ -45,6 +45,10 @@ function _replace_dots(ex)
     end
 end
 
+#Store Dict to keep _generate_run_func clean
+const global Timestep_Type_Dict = Dict([:FixedTimestep => :(Mimi.FixedTimestep), 
+    :VariableTimestep => :(Mimi.VariableTimestep), :AbstractTimestep => :(Mimi.AbstractTimestep)])
+
 function _generate_run_func(module_name, comp_name, args, body)
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
@@ -53,8 +57,9 @@ function _generate_run_func(module_name, comp_name, args, body)
     (p, v, d, t) = args
 
     if @capture(t, tname_::ttype_)
-        if ttype == :Timestep
-            ttype = :(Mimi.Timestep)
+        mimi_type = get(timestep_type_dict, ttype, nothing)
+        if mimi_type != nothing
+            ttype = mimi_type
         end
         t = tname
     else
