@@ -4,7 +4,7 @@
 
 abstract type AbstractTimestep end
 
-struct Timestep{Start, Step, Stop} <: AbstractTimestep
+struct FixedTimestep{Start, Step, Stop} <: AbstractTimestep
     t::Int
 end
 
@@ -26,7 +26,7 @@ mutable struct Clock{T <: AbstractTimestep}
 	ts::T
 
 	function Clock{T}(start::Int, step::Int, stop::Int) where T
-		return new(Timestep{start, step, stop}(1))
+		return new(FixedTimestep{start, step, stop}(1))
     end
     
     function Clock{T}(start_times::NTuple{N, Int} where N) where T

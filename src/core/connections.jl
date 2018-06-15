@@ -118,7 +118,7 @@ function connect_parameter(md::ModelDef,
             if isuniform(md)
                 #use the start from the comp_def not the ModelDef
                 _, stepsize = first_and_step(md)
-                values = TimestepArray{Timestep{start, stepsize}, T, dim_count}(backup)
+                values = TimestepArray{FixedTimestep{start, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
                 #use the start from the comp_def 

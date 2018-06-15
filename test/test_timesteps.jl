@@ -4,7 +4,7 @@ using Mimi
 using Base.Test
 
 import Mimi:
-    AbstractTimestep, Timestep, VariableTimestep, TimestepVector, 
+    AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_start, is_stop, 
     gettime
 
@@ -14,7 +14,7 @@ Mimi.reset_compdefs()
 #  Test basic timestep functions for Fixed Timestep #
 #####################################################
 
-t = Timestep{1850, 10, 3000}(1)
+t = FixedTimestep{1850, 10, 3000}(1)
 @test is_start(t)
 t1 = next_timestep(t)
 #t2 = new_timestep(t1, 1860)
@@ -22,7 +22,7 @@ t1 = next_timestep(t)
 #t3 = new_timestep(t2, 1840)
 #@test t3.t == 3
 
-t = Timestep{2000, 1, 2050}(51)
+t = FixedTimestep{2000, 1, 2050}(51)
 @test is_stop(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)

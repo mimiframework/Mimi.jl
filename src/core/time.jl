@@ -2,7 +2,7 @@
 #  1. TIMESTEP
 #
 
-function gettime(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
+function gettime(ts::FixedTimestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return Start + (ts.t - 1) * Step
 end
 
@@ -16,7 +16,7 @@ end
 
 # TBD:  is_stop function is not used internally, so we may want to deprecate it ... 
 # look into where it might be used within models?
-function is_stop(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
+function is_stop(ts::FixedTimestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) == Stop
 end
 
@@ -24,7 +24,7 @@ function is_stop(ts::VariableTimestep{start_times}) where {start_times}
 	return gettime(ts) == start_times[end]
 end
 
-function finished(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
+function finished(ts::FixedTimestep{Start, Step, Stop}) where {Start, Step, Stop}
 	return gettime(ts) > Stop
 end
 
@@ -32,11 +32,11 @@ function finished(ts::VariableTimestep{start_times}) where {start_times}
 	return gettime(ts) > start_times[end]
 end
 
-function next_timestep(ts::Timestep{Start, Step, Stop}) where {Start, Step, Stop}
+function next_timestep(ts::FixedTimestep{Start, Step, Stop}) where {Start, Step, Stop}
 	if finished(ts)
 			error("Cannot get next timestep, this is final timestep.")
 	end
-	return Timestep{Start, Step, Stop}(ts.t + 1)
+	return FixedTimestep{Start, Step, Stop}(ts.t + 1)
 end
 
 function next_timestep(ts::VariableTimestep{start_times}) where {start_times}
@@ -93,7 +93,7 @@ function get_timestep_instance(md::ModelDef, T, num_dims, value)
 
 	if isuniform(md)
 		start, stepsize = first_and_step(md)
-		return timestep_array_type{Timestep{start, stepsize}, T}(value)
+		return timestep_array_type{FixedTimestep{start, stepsize}, T}(value)
 	else
 		start_times = time_labels(md)		
 		return timestep_array_type{VariableTimestep{start_times}, T}(value)	
@@ -118,7 +118,7 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 # 	return v.data[ts.t]
 # end
 
-function Base.getindex(v::TimestepVector{Timestep{Start, Step}, T}, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop} 
+function Base.getindex(v::TimestepVector{FixedTimestep{Start, Step}, T}, ts::FixedTimestep{Start, Step, Stop}) where {T, Start, Step, Stop} 
 	return v.data[ts.t]
 end
 
@@ -126,7 +126,7 @@ function Base.getindex(v::TimestepVector{VariableTimestep{start_times}, T}, ts::
 	return v.data[ts.t]
 end
 
-function Base.getindex(v::TimestepVector{Timestep{d_start, Step}, T}, ts::Timestep{t_start, Step, Stop}) where {T, d_start, t_start, Step, Stop} 
+function Base.getindex(v::TimestepVector{FixedTimestep{d_start, Step}, T}, ts::FixedTimestep{t_start, Step, Stop}) where {T, d_start, t_start, Step, Stop} 
 	t = Int(ts.t + (t_start - d_start) / Step)
 	return v.data[t]
 end
@@ -141,7 +141,7 @@ end
 # 	return v.data[i]
 # end
 
-function Base.getindex(v::TimestepVector{Timestep{Start, Step}, T}, i::AnyIndex) where {T, Start, Step}
+function Base.getindex(v::TimestepVector{FixedTimestep{Start, Step}, T}, i::AnyIndex) where {T, Start, Step}
 	return v.data[i]
 end
 
@@ -153,7 +153,7 @@ end
 # 	setindex!(v.data, val, ts.t)
 # end
 
-function Base.setindex!(v::TimestepVector{Timestep{Start, Step}, T}, val, ts::Timestep{Start, Step, Stop}) where {T, Start, Step, Stop} 
+function Base.setindex!(v::TimestepVector{FixedTimestep{Start, Step}, T}, val, ts::FixedTimestep{Start, Step, Stop}) where {T, Start, Step, Stop} 
 	setindex!(v.data, val, ts.t)
 end
 
@@ -161,7 +161,7 @@ function Base.setindex!(v::TimestepVector{VariableTimestep{start_times}, T}, val
 	setindex!(v.data, val, ts.t)	
 end
 
-function Base.setindex!(v::TimestepVector{Timestep{d_start, Step}, T}, val, ts::Timestep{t_start, Step, Stop}) where {T, d_start, t_start, Step, Stop} 
+function Base.setindex!(v::TimestepVector{FixedTimestep{d_start, Step}, T}, val, ts::FixedTimestep{t_start, Step, Stop}) where {T, d_start, t_start, Step, Stop} 
 	t = Int(ts.t + (t_start - d_start) / Step)
 	setindex!(v.data, val, t)
 end
@@ -176,7 +176,7 @@ end
 # 	setindex!(v.data, val, i)
 # end
 
-function Base.setindex!(v::TimestepVector{Timestep{Start, Step}, T}, val, i::AnyIndex) where {T, Start, Step}
+function Base.setindex!(v::TimestepVector{FixedTimestep{Start, Step}, T}, val, i::AnyIndex) where {T, Start, Step}
 	setindex!(v.data, val, i)
 end
 
@@ -206,7 +206,7 @@ Base.endof(v::TimestepVector) = length(v)
 # 	return mat.data[ts.t, i]
 # end
 
-function Base.getindex(mat::TimestepMatrix{Timestep{Start, Step}, T}, ts::Timestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop} 
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{Start, Step}, T}, ts::FixedTimestep{Start, Step, Stop}, i::AnyIndex) where {T, Start, Step, Stop} 
 	return mat.data[ts.t, i]
 end
 
@@ -214,7 +214,7 @@ function Base.getindex(mat::TimestepMatrix{VariableTimestep{start_times}, T}, ts
 	return mat.data[ts.t, i]
 end
 
-function Base.getindex(mat::TimestepMatrix{Timestep{d_start, Step}, T}, ts::Timestep{t_start, Step, Stop}, i::AnyIndex) where {T, d_start, t_start, Step, Stop} 
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{d_start, Step}, T}, ts::FixedTimestep{t_start, Step, Stop}, i::AnyIndex) where {T, d_start, t_start, Step, Stop} 
 	t = Int(ts.t + (t_start - d_start) / Step)
 	return return mat.data[t, i]
 end
@@ -229,7 +229,7 @@ end
 # 	return mat.data[idx1, idx2]
 # end
 
-function Base.getindex(mat::TimestepMatrix{Timestep{Start, Step}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, Start, Step}
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{Start, Step}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, Start, Step}
 	return mat.data[idx1, idx2]
 end
 
@@ -241,7 +241,7 @@ end
 # 	setindex!(mat.data, val, ts.t, idx)
 # end
 
-function Base.setindex(mat::TimestepMatrix{Timestep{Start, Step}, T}, val, ts::Timestep{Start, Step, Stop}, idx::AnyIndex) where {T, Start, Step, Stop} 
+function Base.setindex(mat::TimestepMatrix{FixedTimestep{Start, Step}, T}, val, ts::FixedTimestep{Start, Step, Stop}, idx::AnyIndex) where {T, Start, Step, Stop} 
 	setindex!(mat.data, val, ts.t, idx)
 end
 
@@ -249,7 +249,7 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{start_times}, T}, v
 	setindex!(mat.data, val, ts.t, idx)
 end
 
-function Base.setindex!(mat::TimestepMatrix{Timestep{d_start, Step}, T}, val, ts::Timestep{t_start, Step, Stop}, idx::AnyIndex) where {T, d_start, t_start, Step, Stop} 
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{d_start, Step}, T}, val, ts::FixedTimestep{t_start, Step, Stop}, idx::AnyIndex) where {T, d_start, t_start, Step, Stop} 
 	t = Int(ts.t + (t_start - d_start) / Step)
 	setindex!(mat.data, val, t, idx)
 end
@@ -264,7 +264,7 @@ end
 # 	setindex!(mat.data, val, idx1, idx2)
 # end
 
-function Base.setindex!(mat::TimestepMatrix{Timestep{Start, Step}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, Start, Step}
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{Start, Step}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, Start, Step}
 	setindex!(mat.data, val, idx1, idx2)
 end
 
@@ -286,20 +286,20 @@ Base.ndims(obj::TimestepArray{T_ts, T, N}) where {T_ts,T, N} = N
 
 Base.eltype(obj::TimestepArray{T_ts, T, N}) where {T_ts,T, N} = T
 
-start_period(obj::TimestepArray{Timestep{Start,Step}, T, N}) where {Start, Step, T, N} = Start
+start_period(obj::TimestepArray{FixedTimestep{Start,Step}, T, N}) where {Start, Step, T, N} = Start
 start_period(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {start_times, T, N} = start_times[1]
 
-end_period(obj::TimestepArray{Timestep{Start, Step}, T, N}) where {Start, Step,T, N} = (Start + (size(obj, 1) - 1) * Step)
+end_period(obj::TimestepArray{FixedTimestep{Start, Step}, T, N}) where {Start, Step,T, N} = (Start + (size(obj, 1) - 1) * Step)
 end_period(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {start_times,T, N} = start_times[end]
 
-time_labels(obj::TimestepArray{Timestep{Start, Step}, T, N}) where {Start, Step, T, N} = collect(Start:Step:(Start + (size(obj, 1) - 1) * Step))
+time_labels(obj::TimestepArray{FixedTimestep{Start, Step}, T, N}) where {Start, Step, T, N} = collect(Start:Step:(Start + (size(obj, 1) - 1) * Step))
 time_labels(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {start_times, T, N} = collect(start_times)
 
 # function Base.getindex(arr::TimestepArray, ts::T, indxs::AnyIndex...) where {T <: AbstractTimestep}
 # 	return arr.data[ts.t, idxs...]
 # end
 
-function Base.getindex(arr::TimestepArray{Timestep{Start, Step}, T, N}, ts::Timestep{Start, Step, Stop}, indxs::AnyIndex...) where {T, N, Start, Step, Stop}
+function Base.getindex(arr::TimestepArray{FixedTimestep{Start, Step}, T, N}, ts::FixedTimestep{Start, Step, Stop}, indxs::AnyIndex...) where {T, N, Start, Step, Stop}
 	return arr.data[ts.t, idxs...]
 end
 
@@ -307,7 +307,7 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{start_times}, T, N}, 
 	return arr.data[ts.t, idxs...]
 end
 
-function Base.getindex(arr::TimestepArray{Timestep{d_start, Step}, T, N}, ts::Timestep{t_start, Step, Stop}, indxs::AnyIndex...) where {T, N, d_start, t_start, Step, Stop}
+function Base.getindex(arr::TimestepArray{FixedTimestep{d_start, Step}, T, N}, ts::FixedTimestep{t_start, Step, Stop}, indxs::AnyIndex...) where {T, N, d_start, t_start, Step, Stop}
 	t = Int(ts.t + (Start - start_times[1]) / Step)					
 	return arr.data[t, idxs...]
 end
@@ -322,7 +322,7 @@ end
 # 	return arr.data[idx1, idx2, idxs...]
 # end
 
-function Base.getindex(arr::TimestepArray{Timestep{Start, Step}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, Start, Step}
+function Base.getindex(arr::TimestepArray{FixedTimestep{Start, Step}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, Start, Step}
 	return arr.data[idx1, idx2, idxs...]
 end
 
@@ -334,7 +334,7 @@ end
 # 	setindex!(arr.data, val, ts.t, idxs...)
 # end
 
-function Base.setindex!(arr::TimestepArray{Timestep{Start, Step}, T, N}, val, ts::Timestep{Start, Step, Stop}, indxs::AnyIndex...) where {T, N, Start, Step, Stop}
+function Base.setindex!(arr::TimestepArray{FixedTimestep{Start, Step}, T, N}, val, ts::FixedTimestep{Start, Step, Stop}, indxs::AnyIndex...) where {T, N, Start, Step, Stop}
 	setindex!(arr.data, val, ts.t, idxs...)
 end
 
@@ -342,7 +342,7 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{start_times}, T, N},
 	setindex!(arr.data, val, ts.t, idxs...)
 end
 
-function Base.setindex!(arr::TimestepArray{Timestep{d_start, Step}, T, N}, val, ts::Timestep{t_start, Step, Stop}, indxs::AnyIndex...) where {T, N, d_start, t_start, Step, Stop}
+function Base.setindex!(arr::TimestepArray{FixedTimestep{d_start, Step}, T, N}, val, ts::FixedTimestep{t_start, Step, Stop}, indxs::AnyIndex...) where {T, N, d_start, t_start, Step, Stop}
 	t = ts.t + findfirst(d_start_times, t_start_times[1]) - 1	
 	setindex!(arr.data, val, t, idxs...)
 end
@@ -357,7 +357,7 @@ end
 # 	setindex!(arr.data, val, idx1, idx2, idxs...)
 # end
 
-function Base.setindex!(arr::TimestepArray{Timestep{Start, Step}, T, N}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, Start, Step}
+function Base.setindex!(arr::TimestepArray{FixedTimestep{Start, Step}, T, N}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, Start, Step}
 	setindex!(arr.data, val, idx1, idx2, idxs...)
 end
 
@@ -369,7 +369,7 @@ end
 # 	return 1 <= ts.t <= size(arr, 1)	
 # end
 
-function hasvalue(arr::TimestepArray{Timestep{Start, Step}, T, N}, ts::Timestep{Start, Step, Stop}) where {T, N, Start, Step, Stop}
+function hasvalue(arr::TimestepArray{FixedTimestep{Start, Step}, T, N}, ts::FixedTimestep{Start, Step, Stop}) where {T, N, Start, Step, Stop}
 	return 1 <= ts.t <= size(arr, 1)	
 end
 
@@ -377,7 +377,7 @@ function hasvalue(arr::TimestepArray{VariableTimestep{start_times}, T, N}, ts::V
 	return 1 <= ts.t <= size(arr, 1)	
 end
 
-function hasvalue(arr::TimestepArray{Timestep{d_start, Step}, T, N}, ts::Timestep{t_start, Step, Stop}) where {T, N, d_start, t_start, Step, Stop}
+function hasvalue(arr::TimestepArray{FixedTimestep{d_start, Step}, T, N}, ts::FixedTimestep{t_start, Step, Stop}) where {T, N, d_start, t_start, Step, Stop}
 	return d_start <= gettime(ts) <= end_period(arr)
 end
 
@@ -390,7 +390,7 @@ end
 # 	return 1 <= t <= size(arr, 1)
 # end
 
-function hasvalue(arr::TimestepArray{Timestep{Start, Step}, T, N}, t::Int) where {T, N, Start, Step}
+function hasvalue(arr::TimestepArray{FixedTimestep{Start, Step}, T, N}, t::Int) where {T, N, Start, Step}
 	return 1 <= t <= size(arr, 1)
 end
 
@@ -399,8 +399,8 @@ function hasvalue(arr::TimestepArray{VariableTimestep{start_times}, T, N}, t::In
 end
 
 # Array and Timestep have different Start, validating all dimensions
-function hasvalue(arr::TimestepArray{Timestep{d_start, Step}, T, N}, 
-	ts::Timestep{t_start, Step, Stop}, 
+function hasvalue(arr::TimestepArray{FixedTimestep{d_start, Step}, T, N}, 
+	ts::FixedTimestep{t_start, Step, Stop}, 
 	idxs::Int...) where {T, N, d_start, t_start, Step, Stop}
 	return d_start <= gettime(ts) <= end_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
 end

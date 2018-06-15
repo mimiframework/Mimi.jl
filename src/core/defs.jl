@@ -308,7 +308,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
                 if isuniform(md)
                     #want to use the start from the comp_def not the ModelDef
                     _, stepsize = first_and_step(md)
-                    values = TimestepArray{Timestep{start, stepsize}, T, num_dims}(value)
+                    values = TimestepArray{FixedTimestep{start, stepsize}, T, num_dims}(value)
                 else
                     times = time_labels(md)  
                     #use the start from the comp_def 
