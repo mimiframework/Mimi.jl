@@ -2,26 +2,46 @@
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
-struct Timestep{Start, Step, Stop}
+abstract type AbstractTimestep end
+
+struct Timestep{Start, Step, Stop} <: AbstractTimestep
     t::Int
 end
 
-mutable struct Clock
-	ts::Timestep
+struct VariableTimestep{start_times} <: AbstractTimestep
+    t::Int
+    current::Int 
 
-	function Clock(start::Int, step::Int, stop::Int)
-		return new(Timestep{start, step, stop}(1))
-	end
+    function VariableTimestep{start_times}(t::Int = 1) where {start_times}
+        # The special case below handles when functions like next_step step beyond
+        # the end of the start_times array.  The assumption is that the length of this
+        # last timestep, starting at start_times[end], is 1.
+        current::Int = t > length(start_times) ? start_times[end] + 1 : start_times[t]
+        
+        return new(t, current)
+    end
 end
 
-mutable struct TimestepArray{T, N, Start, Step}
+mutable struct Clock{T <: AbstractTimestep}
+	ts::T
+
+	function Clock{T}(start::Int, step::Int, stop::Int) where T
+		return new(Timestep{start, step, stop}(1))
+    end
+    
+    function Clock{T}(start_times::NTuple{N, Int} where N) where T
+        return new(VariableTimestep{start_times}())
+    end
+end
+
+mutable struct TimestepArray{T_ts <: AbstractTimestep, T, N}
 	data::Array{T, N}
 
-    function TimestepArray{T, N, Start, Step}(d::Array{T, N}) where {T, N, Start, Step}
+    function TimestepArray{T_ts, T, N}(d::Array{T, N}) where {T_ts, T, N}
 		return new(d)
 	end
 
-    function TimestepArray{T, N, Start, Step}(lengths::Int...) where {T, N, Start, Step}
+    function TimestepArray{T_ts, T, N}(lengths::Int...) where {T_ts, T, N}
 		return new(Array{T, N}(lengths...))
 	end
 end
@@ -29,12 +49,13 @@ end
 # Since these are the most common cases, we define methods (in time.jl)
 # specific to these type aliases, avoiding some of the inefficiencies
 # associated with an arbitrary number of dimensions.
-const TimestepMatrix{T, Start, Step} = TimestepArray{T, 2, Start, Step}
-const TimestepVector{T, Start, Step} = TimestepArray{T, 1, Start, Step}
+const TimestepMatrix{T_ts, T} = TimestepArray{T_ts, T, 2}
+const TimestepVector{T_ts, T} = TimestepArray{T_ts, T, 1}
 
 #
 # 2. Dimensions
 #
+
 abstract type AbstractDimension end
 
 const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}
@@ -215,6 +236,8 @@ mutable struct ModelDef
 
     sorted_comps::Union{Void, Vector{Symbol}}
 
+    is_uniform::Bool
+    
     function ModelDef(number_type=Float64)
         self = new()
         self.module_name = module_name(current_module())
@@ -226,6 +249,7 @@ mutable struct ModelDef
         self.external_params = Dict{Symbol, ModelParameter}()
         self.backups = Vector{Symbol}()
         self.sorted_comps = nothing
+        self.is_uniform = true
         return self
     end
 end
@@ -314,7 +338,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
 
             # This is used to determine type of time argument to pass to run_timestep
             time_type = arg_types[length(arg_types)]
-            if time_type <: Timestep
+
+            if time_type <: AbstractTimestep
                 self.useIntegerTime = false
             end
         end
