@@ -133,8 +133,8 @@ description(def::DatumDef) = def.description
 unit(def::DatumDef) = def.unit
 
 function first_and_step(md::ModelDef)
-    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the times of the model runs
-    return keys[1], (length(keys) > 1 ? keys[2] - keys[1] : 1)
+    keys::Vector{Int} = time_labels(md) # labels are the start times of the model runs
+    return first_and_step(keys)
 end
 
 function first_and_step(values::Vector{Int})
@@ -300,11 +300,6 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
         if comp_param_dims[1] == :time
             T = eltype(value)
 
-            # OLD WAY
-            # start = start_period(comp_def)
-            # dur = step_size(md)
-            # values = num_dims == 0 ? value : TimestepArray{AbstractTimestep, T, num_dims}(value)
-
             if num_dims == 0
                 values = value
             else
@@ -312,7 +307,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
 
                 if isuniform(md)
                     #want to use the start from the comp_def not the ModelDef
-                    ~, stepsize = first_and_step(md)
+                    _, stepsize = first_and_step(md)
                     values = TimestepArray{Timestep{start, stepsize}, T, num_dims}(value)
                 else
                     times = time_labels(md)  
@@ -393,13 +388,6 @@ end
 #
 
 # Return the number of timesteps a given component in a model will run for.
-# function getspan(md::ModelDef, comp_name::Symbol)
-#     comp_def = compdef(md, comp_name)
-#     start = start_period(comp_def)
-#     stop  = stop_period(comp_def)
-#     step  = step_size(md)
-#     return Int((stop - start) / step + 1)
-# end
 function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
     start = start_period(comp_def)

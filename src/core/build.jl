@@ -13,13 +13,10 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
         T = Array{dtype, num_dims}
     
     else   
-        # OLD WAY
-        # step = step_size(md)
-        # T = TimestepArray{dtype, num_dims, start, step}
 
         if isuniform(md)
             #take the start from the function argument, not the model def
-            ~, stepsize = first_and_step(md)
+            _, stepsize = first_and_step(md)
             T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
         else
             times = time_labels(md)

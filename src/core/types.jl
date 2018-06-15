@@ -1,9 +1,3 @@
-# General TODO:
-# 1.  Change the names of timesteps to AbstractTimestep, FixedTimestep, and
-# VariableTimestep (as of now FixedTimestep is just called Timestep) 
-# 2.  Change Start, Stop to First, Last, which are more logical names in
-# context
-
 #
 # 1. Types supporting parameterized Timestep and Clock objects
 #

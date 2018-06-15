@@ -111,17 +111,13 @@ function connect_parameter(md::ModelDef,
         
         dim_count = length(dst_dims)
 
-        # OLD WAY
-        # step = step_size(md)
-        # values = dim_count == 0 ? backup : TimestepArray{T, dim_count, start, step}(backup)
-        
         if dim_count == 0
             values = backup
         else
             
             if isuniform(md)
                 #use the start from the comp_def not the ModelDef
-                ~, stepsize = first_and_step(md)
+                _, stepsize = first_and_step(md)
                 values = TimestepArray{Timestep{start, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
@@ -212,10 +208,6 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
             else
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
-                    # OLD WAY
-                    # start = dim_keys(md, :time)[1]
-                    # step = step_size(md)
-                    # values = get_timestep_instance(eltype(value), start, step, num_dims, value)
 
                     times = time_labels(md)
                     values = get_timestep_instance(md, eltype(value), num_dims, value)

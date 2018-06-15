@@ -301,13 +301,8 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     starts = mi.starts
     stops = mi.stops
 
-    # OLD WAY
-    # step  = step_size(t)
-    # comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
-    
-    
     if isuniform(t)
-        ~, stepsize = first_and_step(t)
+        _, stepsize = first_and_step(t)
         comp_clocks = [Clock{Timestep}(start, stepsize, stop) for (start, stop) in zip(starts, stops)]
     else
         comp_clocks = Array{Clock{VariableTimestep}}(length(starts))
