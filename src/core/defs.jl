@@ -132,16 +132,16 @@ description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
 
-function start_step(md::ModelDef)
-    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the start_times of the model runs
+function first_and_step(md::ModelDef)
+    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the times of the model runs
     return keys[1], (length(keys) > 1 ? keys[2] - keys[1] : 1)
 end
 
-function start_step(values::Vector{Int})
+function first_and_step(values::Vector{Int})
      return values[1], (length(values) > 1 ? values[2] - values[1] : 1)
 end
 
-function starttimes(md::ModelDef)
+function time_labels(md::ModelDef)
     keys::Vector{Int} = dim_keys(md, :time)
     return keys
 end
@@ -177,8 +177,6 @@ dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 
 dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
 dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dimensions(md)])
-
-timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
 
 Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
@@ -314,13 +312,13 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
 
                 if isuniform(md)
                     #want to use the start from the comp_def not the ModelDef
-                    ~, stepsize = start_step(md)
+                    ~, stepsize = first_and_step(md)
                     values = TimestepArray{Timestep{start, stepsize}, T, num_dims}(value)
                 else
-                    start_times = starttimes(md)  
+                    times = time_labels(md)  
                     #use the start from the comp_def 
-                    start_index = findfirst(start_times, start)                  
-                    values = TimestepArray{VariableTimestep{(start_times[start_index:end]...)}, T, num_dims}(value)
+                    start_index = findfirst(times, start)                  
+                    values = TimestepArray{VariableTimestep{(times[start_index:end]...)}, T, num_dims}(value)
                 end 
                 
             end
@@ -406,10 +404,10 @@ function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
     start = start_period(comp_def)
     stop  = stop_period(comp_def)
-    start_times = starttimes(md)
-    start_index = findfirst(start_times, start)
-    stop_index = findfirst(start_times, stop)
-    return size(start_times[start_index:stop_index])
+    times = time_labels(md)
+    start_index = findfirst(times, start)
+    stop_index = findfirst(times, stop)
+    return size(times[start_index:stop_index])
 end
 
 function set_run_period!(comp_def::ComponentDef, start, stop)

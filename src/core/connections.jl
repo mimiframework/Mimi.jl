@@ -121,13 +121,13 @@ function connect_parameter(md::ModelDef,
             
             if isuniform(md)
                 #use the start from the comp_def not the ModelDef
-                ~, stepsize = start_step(md)
+                ~, stepsize = first_and_step(md)
                 values = TimestepArray{Timestep{start, stepsize}, T, dim_count}(backup)
             else
-                start_times = starttimes(md)
+                times = time_labels(md)
                 #use the start from the comp_def 
-                start_index = findfirst(start_times, start)
-                values = TimestepArray{VariableTimestep{(start_times[start_index:end]...)}, T, dim_count}(backup)
+                start_index = findfirst(times, start)
+                values = TimestepArray{VariableTimestep{(times[start_index:end]...)}, T, dim_count}(backup)
             end
             
         end
@@ -217,7 +217,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                     # step = step_size(md)
                     # values = get_timestep_instance(eltype(value), start, step, num_dims, value)
 
-                    start_times = starttimes(md)
+                    times = time_labels(md)
                     values = get_timestep_instance(md, eltype(value), num_dims, value)
                     
                 else

@@ -3,8 +3,8 @@ using Base.Test
 
 import Mimi:
     Timestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    isuniform, starttimes, start_period, end_period, 
-    start_step
+    isuniform, start_period, end_period, 
+    first_and_step
 
 a = collect(reshape(1:16,4,4))
 
@@ -15,21 +15,20 @@ a = collect(reshape(1:16,4,4))
 @test isuniform([1,2,3,5]) == false
 @test isuniform(1) == true
 
-@test start_step([2,3,4]) == (2,1)
-@test start_step([1:2:10...]) == (1,2)
+@test first_and_step([2,3,4]) == (2,1)
+@test first_and_step([1:2:10...]) == (1,2)
 
 ###########################################
 # 1. Test TimestepVector - Fixed Timestep #
 ###########################################
 years = (collect(2000:1:2003)...)
 
-#1a.  test constructor, endof, starttimes, and length (with both 
+#1a.  test constructor, endof, and length (with both 
 # matching years and mismatched years)
 
 x = TimestepVector{Timestep{2000, 1}, Int}(a[:,3])
 @test length(x) == 4
 @test endof(x) == 4
-@test starttimes(x) == collect(years)
 
 #1b.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
@@ -61,10 +60,9 @@ x[t3] = 100
 years = ([2000:5:2005; 2015:10:2025]...)
 x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 
-#2a.  test hasvalue, getindex, starttimes, and setindex (with both matching years and
+#2a.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
 
-@test starttimes(x) == collect(years)
 t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
 
 @test hasvalue(x, t) 
@@ -196,6 +194,3 @@ fill!(x, 2)
 fill!(y, 2)
 @test x.data == fill(2, (4))
 @test y.data == fill(2, (4, 2))
-
-@test starttimes(x_vec) == starttimes(x_mat) == collect(x_years)
-@test starttimes(y_vec) == starttimes(y_mat) == collect(y_years)

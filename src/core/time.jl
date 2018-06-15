@@ -94,10 +94,10 @@ function get_timestep_instance(md::ModelDef, T, num_dims, value)
 	timestep_array_type = num_dims == 1 ? TimestepVector : TimestepMatrix
 
 	if isuniform(md)
-		start, stepsize = start_step(md)
+		start, stepsize = first_and_step(md)
 		return timestep_array_type{Timestep{start, stepsize}, T}(value)
 	else
-		start_times = starttimes(md)		
+		start_times = time_labels(md)		
 		return timestep_array_type{VariableTimestep{start_times}, T}(value)	
 	end
 end
@@ -294,8 +294,8 @@ start_period(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {sta
 end_period(obj::TimestepArray{Timestep{Start, Step}, T, N}) where {Start, Step,T, N} = (Start + (size(obj, 1) - 1) * Step)
 end_period(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {start_times,T, N} = start_times[end]
 
-starttimes(obj::TimestepArray{Timestep{Start, Step}, T, N}) where {Start, Step, T, N} = collect(Start:Step:(Start + (size(obj, 1) - 1) * Step))
-starttimes(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {start_times, T, N} = collect(start_times)
+time_labels(obj::TimestepArray{Timestep{Start, Step}, T, N}) where {Start, Step, T, N} = collect(Start:Step:(Start + (size(obj, 1) - 1) * Step))
+time_labels(obj::TimestepArray{VariableTimestep{start_times}, T, N}) where {start_times, T, N} = collect(start_times)
 
 # function Base.getindex(arr::TimestepArray, ts::T, indxs::AnyIndex...) where {T <: AbstractTimestep}
 # 	return arr.data[ts.t, idxs...]

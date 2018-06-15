@@ -212,13 +212,13 @@ function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
     stop  = time_keys[min(length(time_keys), ntimesteps)]
 
     if isuniform(time_keys)
-        start, stepsize = start_step(time_keys)
+        start, stepsize = first_and_step(time_keys)
         return Clock{Timestep}(start, stepsize, stop)
 
     else
         stop_index = findfirst(time_keys, stop)
-        start_times = (time_keys[1:stop_index]...)
-        return Clock{VariableTimestep}(start_times)
+        times = (time_keys[1:stop_index]...)
+        return Clock{VariableTimestep}(times)
 
     end
 end
@@ -305,16 +305,17 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     # step  = step_size(t)
     # comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
     
+    
     if isuniform(t)
-        ~, stepsize = start_step(t)
+        ~, stepsize = first_and_step(t)
         comp_clocks = [Clock{Timestep}(start, stepsize, stop) for (start, stop) in zip(starts, stops)]
     else
         comp_clocks = Array{Clock{VariableTimestep}}(length(starts))
         for i = 1:length(starts)
             start_index = findfirst(t, starts[i])
             stop_index = findfirst(t, stops[i])
-            start_times = (t[start_index:stop_index]...)
-            comp_clocks[i] = Clock{VariableTimestep}(start_times)
+            times = (t[start_index:stop_index]...)
+            comp_clocks[i] = Clock{VariableTimestep}(times)
         end
     end
 
