@@ -102,7 +102,7 @@ mutable struct MonteCarloSimulation
     translist::Vector{TransformSpec}
     corrlist::Vector{CorrelationSpec}
     savelist::Vector{Tuple}
-    dist_rvs::Vector{RandomVariable{Distribution}}
+    dist_rvs::Vector{RandomVariable{<: Distribution}}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
@@ -123,8 +123,8 @@ mutable struct MonteCarloSimulation
         self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
 
         # These are parallel arrays; each model has a corresponding results dict
-        self.models = Vector{Model}()
-        self.results = Vector{Dict{Tuple, DataFrame}}()
+        self.models = Vector{Model}(1)
+        self.results = [Dict{Tuple, DataFrame}()]
         return self
     end
 end

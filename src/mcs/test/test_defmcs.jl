@@ -52,7 +52,9 @@ generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Run trials 1:N, and save results to the indicated directory
 
-run_mcs(mcs, m, N, output_dir=output_dir)
+Mimi.set_model!(mcs, m)
+
+run_mcs(mcs, N, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018
 # generate_trials(mcs, samples=load("foo.csv"))
@@ -79,15 +81,15 @@ end
 #
 # Test scenario loop capability
 #
-function my_loop_func(m::Model, mcs::MonteCarloSimulation, tup)
+function my_loop_func(mcs::MonteCarloSimulation, tup)
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    log_info("scen:$scen, rate:$rate")
+    Mimi.log_info("scen:$scen, rate:$rate")
 end
 
 output_dir = "/Volumes/RamDisk/Mimi-scen"
 
-run_mcs(m, mcs, 1000;
+run_mcs(mcs, 1000;
         output_dir=output_dir,
         scenario_func=my_loop_func, 
         scenario_args=[:scen => [:low, :med, :high],

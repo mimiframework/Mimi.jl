@@ -35,7 +35,7 @@ function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
 end
 
 # Convenience method for singular model
-set_model!(mcs::MonteCarloSimulation, m::Model) = set_model!(mcs, [m])
+set_model!(mcs::MonteCarloSimulation, m::Model) = set_models!(mcs, [m])
 
 # Store results for a single parameter
 function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
@@ -91,15 +91,20 @@ end
 Save the stored MCS results to files in the directory `output_dir`
 """
 function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractString)
-    mkpath(output_dir, 0o750)   # ensure that the specified path exists
+    multiple_results = (length(mcs.results) > 1)
 
-    for datum_key in mcs.savelist
-        (comp_name, datum_name) = datum_key
-        filename = joinpath(output_dir, "$datum_name.csv")
-        results_df = mcs.results[datum_key]
+    for (i, results) in enumerate(mcs.results)
+        if multiple_results
+            output_dir = joinpath(output_dir, "model_$i")
+            mkpath(output_dir, 0o750)
+        end
 
-        log_info("Writing $comp_name.$datum_name to $filename")
-        save(filename, results_df)
+        for datum_key in mcs.savelist
+            (comp_name, datum_name) = datum_key
+            filename = joinpath(output_dir, "$datum_name.csv")
+            log_info("Writing $comp_name.$datum_name to $filename")
+            save(filename, results[datum_key])
+        end
     end
 end
 
@@ -304,7 +309,7 @@ _reset_results!(mcs::MonteCarloSimulation)
 Reset all MCS results storage to a vector of empty dicts
 """
 function _reset_results!(mcs::MonteCarloSimulation)
-    mcs.results = Vector{Dict{Tuple, DataFrame}}(length(mcs.models))
+    mcs.results = [Dict{Tuple, DataFrame}() for m in mcs.models]
 end
 
 # Append a string representation of the tuple args to the given directory name
