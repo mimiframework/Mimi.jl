@@ -100,15 +100,16 @@ mutable struct MonteCarloSimulation
     current_data::Any               # holds data for current_trial when current_trial > 0
     rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
-    corrlist::Union{Vector{CorrelationSpec}, Void}
+    corrlist::Vector{CorrelationSpec}
     savelist::Vector{Tuple}
-    dist_rvs::Any              # actually Vector{RandomVariable{Distribution}}
-    results::Union{Dict{Tuple, DataFrame}, Void}
+    dist_rvs::Vector{RandomVariable{Distribution}}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
+    models::Vector{Model}
+    results::Vector{Dict{Tuple, DataFrame}}
 
     function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
                                   translist::Vector{TransformSpec}, 
-                                  corrlist::Union{Vector{CorrelationSpec}, Void},
+                                  corrlist::Vector{CorrelationSpec},
                                   savelist::Vector{Tuple})
         self = new()
         self.trials = 0
@@ -119,8 +120,11 @@ mutable struct MonteCarloSimulation
         self.corrlist = corrlist
         self.savelist = savelist
         self.dist_rvs = [rv for rv in rvlist if rv.dist isa Distribution]
-        self.results = nothing
         self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
+
+        # These are parallel arrays; each model has a corresponding results dict
+        self.models = Vector{Model}()
+        self.results = Vector{Dict{Tuple, DataFrame}}()
         return self
     end
 end

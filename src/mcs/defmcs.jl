@@ -8,10 +8,10 @@ end
 
 macro defmcs(expr)
     let # to make vars local to each macro invocation
-        local _rvs::Vector{RandomVariable} = []
-        local _corrs::Vector{CorrelationSpec} = []
-        local _transforms::Vector{TransformSpec} = []
-        local _saves::Vector{Tuple} = []
+        local _rvs        = Vector{RandomVariable}()
+        local _corrs      = Vector{CorrelationSpec}()
+        local _transforms = Vector{TransformSpec}()
+        local _saves      = Vector{Tuple}()
 
         # distilled into a function since it's called from two branches below
         function saverv(rvname, distname, distargs)
