@@ -1,3 +1,5 @@
+module TestTimesteps
+
 using Mimi
 using Base.Test
 
@@ -5,6 +7,8 @@ import Mimi:
     AbstractTimestep, Timestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_start, is_stop, 
     gettime
+
+Mimi.reset_compdefs()
 
 #####################################################
 #  Test basic timestep functions for Fixed Timestep #
@@ -33,6 +37,7 @@ t = VariableTimestep{years}()
 
 t = VariableTimestep{years}(42)
 @test is_stop(t)
+@test ! is_start(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)
 
@@ -47,7 +52,7 @@ t = next_timestep(t)
     inputF = Parameter()
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, ts::AbstractTimestep)
         v.output[ts] = p.inputF + ts.t
     end
 end
@@ -56,7 +61,7 @@ end
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts)      # TBD: Was ts::Timestep, but it's broken currently...
+    function run_timestep(p, v, d, ts::AbstractTimestep)      # TBD: Was ts::Timestep, but it's broken currently...
         if gettime(ts) < 2005
             v.output[ts] = p.inputB[ts]
         else
@@ -114,7 +119,7 @@ bar = addcomponent(m2, Bar)
 foo2 = addcomponent(m2, Foo2, start=2005) #offset for foo
 
 set_parameter!(m2, :Bar, :inputB, collect(1:11))
-connectparameter(m2, :Foo2, :inputF, :Bar, :output)
+connect_parameter(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
@@ -130,7 +135,7 @@ end
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, ts::AbstractTimestep)
         if gettime(ts) < 2005
             v.output[ts] = 0
         else
@@ -146,9 +151,11 @@ addcomponent(m3, Foo, start=2005)
 addcomponent(m3, Bar2)
 
 set_parameter!(m3, :Foo, :inputF, 5.)
-connectparameter(m3, :Bar2, :inputB, :Foo, :output)
+connect_parameter(m3, :Bar2, :inputB, :Foo, :output)
 run(m3)
 
 @test length(m3[:Foo, :output]) == 6
 @test length(m3[:Bar2, :inputB]) == 6
 @test length(m3[:Bar2, :output]) == 11
+
+end
