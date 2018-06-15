@@ -209,10 +209,18 @@ dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
 
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
-    start = time_keys[1]
     stop  = time_keys[min(length(time_keys), ntimesteps)]
-    step  = step_size(time_keys)
-    return Clock(start, step, stop)
+
+    if isuniform(time_keys)
+        start, stepsize = first_and_step(time_keys)
+        return Clock{Timestep}(start, stepsize, stop)
+
+    else
+        stop_index = findfirst(time_keys, stop)
+        times = (time_keys[1:stop_index]...)
+        return Clock{VariableTimestep}(times)
+
+    end
 end
 
 function reset_variables(ci::ComponentInstance)
@@ -268,7 +276,7 @@ function run_timestep(ci::ComponentInstance, clock::Clock)
 end
 
 function _run_components(mi::ModelInstance, clock::Clock,
-                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock})
+                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
     comp_instances = components(mi)
     
     while ! finished(clock)
@@ -289,13 +297,23 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     end
 
     t::Vector{Int} = dimkeys == nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
-
+    
     starts = mi.starts
     stops = mi.stops
-    step  = step_size(t)
 
-    comp_clocks = [Clock(start, step, stop) for (start, stop) in zip(starts, stops)]
-    
+    if isuniform(t)
+        _, stepsize = first_and_step(t)
+        comp_clocks = [Clock{Timestep}(start, stepsize, stop) for (start, stop) in zip(starts, stops)]
+    else
+        comp_clocks = Array{Clock{VariableTimestep}}(length(starts))
+        for i = 1:length(starts)
+            start_index = findfirst(t, starts[i])
+            stop_index = findfirst(t, stops[i])
+            times = (t[start_index:stop_index]...)
+            comp_clocks[i] = Clock{VariableTimestep}(times)
+        end
+    end
+
     clock = make_clock(mi, ntimesteps, t)
 
     init(mi)    # call module's (or fallback) init function

@@ -132,17 +132,18 @@ description(def::DatumDef) = def.description
 
 unit(def::DatumDef) = def.unit
 
-# step_size(md::ModelDef) = step_size(indexvalues(md))
-
-function step_size(md::ModelDef)
-    # N.B. assumes that all timesteps of the model are the same length
-    keys::Vector{Int} = dim_keys(md, :time) # keys are, e.g., the years the model runs
-    return length(keys) > 1 ? keys[2] - keys[1] : 1
+function first_and_step(md::ModelDef)
+    keys::Vector{Int} = time_labels(md) # labels are the start times of the model runs
+    return first_and_step(keys)
 end
 
-function step_size(values::Vector{Int})
-    # N.B. assumes that all timesteps of the model are the same length
-     return length(values) > 1 ? values[2] - values[1] : 1
+function first_and_step(values::Vector{Int})
+     return values[1], (length(values) > 1 ? values[2] - values[1] : 1)
+end
+
+function time_labels(md::ModelDef)
+    keys::Vector{Int} = dim_keys(md, :time)
+    return keys
 end
 
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
@@ -177,41 +178,45 @@ dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
 dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dimensions(md)])
 
-timelabels(md::ModelDef) = collect(keys(dimension(md, :time)))
-
 Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
+
+isuniform(md::ModelDef) = md.is_uniform
 
 function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
     if haskey(md, name)
         warn("Redefining dimension :$name")
     end
-
+    if name == :time 
+        md.is_uniform = isuniform(keys)
+    end
     dim = Dimension(keys)
     md.dimensions[name] = dim
     return dim
 end
 
-# helper function for setindex; used to determine if the provided time values are a uniform range.
-function isuniform(values::Vector)
-    num_values = length(values)
+# helper functions used to determine if the provided time values are 
+# a uniform range.
 
-    if num_values == 0
+function all_equal(values)
+    return all(map(val -> val == values[1], values[2:end]))
+end
+    
+function isuniform(values)
+   if length(values) == 0
         return false
-    end
+   else 
+        return all_equal(diff(collect(values)))
+   end
+end
 
-    if num_values in (1, 2)
-        return true
-    end
-
-    stepsize = values[2] - values[1]
-    for i in 3:length(values)
-        if (values[i] - values[i - 1]) != stepsize
-            return false
-        end
-    end
-
+#needed when time dimension is defined using a single integer
+function isuniform(values::Int)
     return true
 end
+
+# function isuniform(values::Range{Int})
+#     return isuniform(collect(values))
+# end
 
 #
 # Parameters
@@ -291,13 +296,28 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
 
         # convert the number type and, if NamedArray, convert to Array
         value = convert(Array{dtype, num_dims}, value)
-   
+        
         if comp_param_dims[1] == :time
             T = eltype(value)
-            start = start_period(comp_def)
-            dur = step_size(md)
 
-            values = num_dims == 0 ? value : TimestepArray{T, num_dims, start, dur}(value)
+            if num_dims == 0
+                values = value
+            else
+                start = start_period(comp_def)
+
+                if isuniform(md)
+                    #want to use the start from the comp_def not the ModelDef
+                    _, stepsize = first_and_step(md)
+                    values = TimestepArray{Timestep{start, stepsize}, T, num_dims}(value)
+                else
+                    times = time_labels(md)  
+                    #use the start from the comp_def 
+                    start_index = findfirst(times, start)                  
+                    values = TimestepArray{VariableTimestep{(times[start_index:end]...)}, T, num_dims}(value)
+                end 
+                
+            end
+
         else
             values = value
         end
@@ -372,10 +392,11 @@ function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
     start = start_period(comp_def)
     stop  = stop_period(comp_def)
-    step  = step_size(md)
-    return Int((stop - start) / step + 1)
+    times = time_labels(md)
+    start_index = findfirst(times, start)
+    stop_index = findfirst(times, stop)
+    return size(times[start_index:stop_index])
 end
-
 
 function set_run_period!(comp_def::ComponentDef, start, stop)
     comp_def.start = start
@@ -520,12 +541,12 @@ Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter{T}(copy(o
 
 Base.copy(obj::ArrayModelParameter{T})  where T = ArrayModelParameter{T}(copy(obj.values), obj.dimensions)
 
-function Base.copy(obj::TimestepVector{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
-    return TimestepVector{T, FirstPeriod, Duration}(copy(obj.data))
+function Base.copy(obj::TimestepVector{T_ts, T}) where {T_ts, T}
+    return TimestepVector{T_ts, T}(copy(obj.data))
 end
 
-function Base.copy(obj::TimestepMatrix{T, FirstPeriod, Duration}) where {T, FirstPeriod, Duration}
-    return TimestepMatrix{T, FirstPeriod, Duration}(copy(obj.data))
+function Base.copy(obj::TimestepMatrix{T_ts, T}) where {T_ts, T}
+    return TimestepMatrix{T_ts, T}(copy(obj.data))
 end
 
 """

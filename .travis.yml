@@ -13,9 +13,10 @@ branches:
 before_install:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-  - julia -e 'Pkg.clone(pwd())'
+  - if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi 
+  - julia -e'Pkg.clone(pwd())'
   - julia -e 'Pkg.build("Mimi")'
-  - julia --check-bounds=yes -e 'Pkg.test("Mimi", coverage=true)'
+  - $TESTCMD --check-bounds=yes -e 'Pkg.test("Mimi", coverage=true)'
   - julia -e 'ENV["PYTHON"]=""; Pkg.add("ExcelReaders")'
   - julia -e 'include("test/test_dependencies.jl"); run_dependency_tests()'
 after_success:

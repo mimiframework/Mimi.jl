@@ -105,9 +105,9 @@ List all the components in model `m`.
 
 @modelegate numcomponents(m::Model) => md
 
-@modelegate timelabels(m::Model) => md
+@modelegate first_and_step(m::Model) => md
 
-@modelegate step_size(m::Model) => md
+@modelegate time_labels(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
 @modelegate getspan(m::Model, comp_name::Symbol) => md

@@ -37,10 +37,10 @@ end
 end
 
 
-set_dimension!(my_model, :time, 2015:5:2110)
+set_dimension!(my_model, :time, [2000:1:2014; 2015:5:2110])
 addcomponent(my_model, testcomp1)
 
-par = collect(2015:5:2110)
+par = collect([2000:1:2014; 2015:5:2110])
 
 set_parameter!(my_model, :testcomp1, :par1, par)
 run(my_model)

@@ -12,9 +12,19 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     elseif dims[1] != :time
         T = Array{dtype, num_dims}
     
-    else
-        step = step_size(md)
-        T = TimestepArray{dtype, num_dims, start, step}
+    else   
+
+        if isuniform(md)
+            #take the start from the function argument, not the model def
+            _, stepsize = first_and_step(md)
+            T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
+        else
+            times = time_labels(md)
+            #need to make sure we define the tiemstp to begin at the start from 
+            #the function argument
+            start_index = findfirst(times, start)
+            T = TimestepArray{VariableTimestep{times[start_index:end]}, dtype, num_dims}
+        end
     end
 
     # println("_instance_datatype($def) returning $T")

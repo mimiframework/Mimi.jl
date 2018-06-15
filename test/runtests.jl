@@ -13,8 +13,14 @@ end
     @info("test_main.jl")
     include("test_main.jl")
 
+    @info("test_main_variabletimestep.jl")
+    include("test_main_variabletimestep.jl")
+
     @info("test_metainfo.jl")
     include("test_metainfo.jl")
+
+    @info("test_metainfo_variabletimestep.jl")
+    include("test_metainfo_variabletimestep.jl")
 
     @info("test_references.jl")
     include("test_references.jl")
@@ -24,6 +30,9 @@ end
 
     @info("test_model_structure.jl")
     include("test_model_structure.jl")
+
+    @info("test_model_structure_variabletimestep.jl")
+    include("test_model_structure_variabletimestep.jl")
 
     @info("test_tools.jl")
     include("test_tools.jl")
@@ -42,6 +51,9 @@ end
 
     @info("test_getindex.jl")
     include("test_getindex.jl")
+
+    @info("test_getindex_variabletimestep.jl")
+    include("test_getindex_variabletimestep.jl")
 
     @info("test_num_components.jl")
     include("test_num_components.jl")
@@ -69,4 +81,7 @@ end
     # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
     # @info("test_connectorcomp.jl")
     # include("test_connectorcomp.jl")
+
+    @info("test_explorer.jl")
+    include("test_explorer.jl")
 end
