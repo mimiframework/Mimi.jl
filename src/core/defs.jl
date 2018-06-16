@@ -35,9 +35,9 @@ function reset_compdefs(reload_builtins=true)
     end
 end
 
-start_period(comp_def::ComponentDef) = comp_def.start
+first_period(comp_def::ComponentDef) = comp_def.first
 
-stop_period(comp_def::ComponentDef) = comp_def.stop
+last_period(comp_def::ComponentDef) = comp_def.last
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -133,7 +133,7 @@ description(def::DatumDef) = def.description
 unit(def::DatumDef) = def.unit
 
 function first_and_step(md::ModelDef)
-    keys::Vector{Int} = time_labels(md) # labels are the start times of the model runs
+    keys::Vector{Int} = time_labels(md) # labels are the first times of the model runs
     return first_and_step(keys)
 end
 
@@ -303,17 +303,17 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
             if num_dims == 0
                 values = value
             else
-                start = start_period(comp_def)
+                first = first_period(comp_def)
 
                 if isuniform(md)
-                    #want to use the start from the comp_def not the ModelDef
+                    #want to use the first from the comp_def not the ModelDef
                     _, stepsize = first_and_step(md)
-                    values = TimestepArray{FixedTimestep{start, stepsize}, T, num_dims}(value)
+                    values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims}(value)
                 else
                     times = time_labels(md)  
-                    #use the start from the comp_def 
-                    start_index = findfirst(times, start)                  
-                    values = TimestepArray{VariableTimestep{(times[start_index:end]...)}, T, num_dims}(value)
+                    #use the first from the comp_def 
+                    first_index = findfirst(times, first)                  
+                    values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, num_dims}(value)
                 end 
                 
             end
@@ -390,17 +390,17 @@ end
 # Return the number of timesteps a given component in a model will run for.
 function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
-    start = start_period(comp_def)
-    stop  = stop_period(comp_def)
+    first = first_period(comp_def)
+    last  = last_period(comp_def)
     times = time_labels(md)
-    start_index = findfirst(times, start)
-    stop_index = findfirst(times, stop)
-    return size(times[start_index:stop_index])
+    first_index = findfirst(times, first)
+    last_index = findfirst(times, last)
+    return size(times[first_index:last_index])
 end
 
-function set_run_period!(comp_def::ComponentDef, start, stop)
-    comp_def.start = start
-    comp_def.stop = stop
+function set_run_period!(comp_def::ComponentDef, first, last)
+    comp_def.first = first
+    comp_def.last = last
     return nothing
 end
 
@@ -411,28 +411,28 @@ const VoidInt    = Union{Void, Int}
 const VoidSymbol = Union{Void, Symbol}
 
 """
-    addcomponent(md::ModelDef, comp_def::ComponentDef; start=nothing, stop=nothing, before=nothing, after=nothing)
+    addcomponent(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the model. The component is added at the end of 
-the list unless one of the keywords, `start`, `stop`, `before`, `after`. If the `comp_name`
+the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
 function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
-                      start::VoidInt=nothing, stop::VoidInt=nothing, 
+                      first::VoidInt=nothing, last::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    # check that start and stop are within the model's time index range
+    # check that first and last are within the model's time index range
     time_index = dim_keys(md, :time)
 
-    if start == nothing
-        start = time_index[1]
-    elseif start < time_index[1]
-        error("Cannot add component $name with start time before start of model's time index range.")
+    if first == nothing
+        first = time_index[1]
+    elseif first < time_index[1]
+        error("Cannot add component $name with first time before first of model's time index range.")
     end
 
-    if stop == nothing
-        stop = time_index[end]
-    elseif stop > time_index[end]
-        error("Cannot add component $name with stop time after end of model's time index range.")
+    if last == nothing
+        last = time_index[end]
+    elseif last > time_index[end]
+        error("Cannot add component $name with last time after end of model's time index range.")
     end
 
     if before != nothing && after != nothing
@@ -450,7 +450,7 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
         comp_def = copy_comp_def(comp_def, comp_name)
     end        
 
-    set_run_period!(comp_def, start, stop)
+    set_run_period!(comp_def, first, last)
 
     if before == nothing && after == nothing
         md.comp_defs[comp_name] = comp_def   # just add it to the end
@@ -490,17 +490,17 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 end
 
 function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      start::VoidInt=nothing, stop::VoidInt=nothing, 
+                      first::VoidInt=nothing, last::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
-    addcomponent(md, compdef(comp_id), comp_name, start=start, stop=stop, before=before, after=after)
+    addcomponent(md, compdef(comp_id), comp_name, first=first, last=last, before=before, after=after)
 end
 
 function replace_component(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           start::VoidInt=nothing, stop::VoidInt=nothing,
+                           first::VoidInt=nothing, last::VoidInt=nothing,
                            before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     delete!(md, comp_name)
-    addcomponent(md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)
+    addcomponent(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
 """
@@ -518,8 +518,8 @@ function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
     obj.variables  = comp_def.variables
     obj.parameters = comp_def.parameters
     obj.dimensions = comp_def.dimensions
-    obj.start      = comp_def.start
-    obj.stop       = comp_def.stop
+    obj.first      = comp_def.first
+    obj.last       = comp_def.last
 
     return obj
 end

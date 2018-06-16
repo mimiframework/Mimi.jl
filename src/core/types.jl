@@ -4,19 +4,19 @@
 
 abstract type AbstractTimestep end
 
-struct FixedTimestep{Start, Step, Stop} <: AbstractTimestep
+struct FixedTimestep{FIRST, STEP, LAST} <: AbstractTimestep
     t::Int
 end
 
-struct VariableTimestep{start_times} <: AbstractTimestep
+struct VariableTimestep{TIMES} <: AbstractTimestep
     t::Int
     current::Int 
 
-    function VariableTimestep{start_times}(t::Int = 1) where {start_times}
+    function VariableTimestep{TIMES}(t::Int = 1) where {TIMES}
         # The special case below handles when functions like next_step step beyond
-        # the end of the start_times array.  The assumption is that the length of this
-        # last timestep, starting at start_times[end], is 1.
-        current::Int = t > length(start_times) ? start_times[end] + 1 : start_times[t]
+        # the end of the TIMES array.  The assumption is that the length of this
+        # last timestep, starting at TIMES[end], is 1.
+        current::Int = t > length(TIMES) ? TIMES[end] + 1 : TIMES[t]
         
         return new(t, current)
     end
@@ -25,23 +25,23 @@ end
 mutable struct Clock{T <: AbstractTimestep}
 	ts::T
 
-	function Clock{T}(start::Int, step::Int, stop::Int) where T
-		return new(FixedTimestep{start, step, stop}(1))
+	function Clock{T}(FIRST::Int, STEP::Int, LAST::Int) where T
+		return new(FixedTimestep{FIRST, STEP, LAST}(1))
     end
     
-    function Clock{T}(start_times::NTuple{N, Int} where N) where T
-        return new(VariableTimestep{start_times}())
+    function Clock{T}(TIMES::NTuple{N, Int} where N) where T
+        return new(VariableTimestep{TIMES}())
     end
 end
 
-mutable struct TimestepArray{T_ts <: AbstractTimestep, T, N}
+mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N}
 	data::Array{T, N}
 
-    function TimestepArray{T_ts, T, N}(d::Array{T, N}) where {T_ts, T, N}
+    function TimestepArray{T_TS, T, N}(d::Array{T, N}) where {T_TS, T, N}
 		return new(d)
 	end
 
-    function TimestepArray{T_ts, T, N}(lengths::Int...) where {T_ts, T, N}
+    function TimestepArray{T_TS, T, N}(lengths::Int...) where {T_TS, T, N}
 		return new(Array{T, N}(lengths...))
 	end
 end
@@ -49,8 +49,8 @@ end
 # Since these are the most common cases, we define methods (in time.jl)
 # specific to these type aliases, avoiding some of the inefficiencies
 # associated with an arbitrary number of dimensions.
-const TimestepMatrix{T_ts, T} = TimestepArray{T_ts, T, 2}
-const TimestepVector{T_ts, T} = TimestepArray{T_ts, T, 1}
+const TimestepMatrix{T_TS, T} = TimestepArray{T_TS, T, 2}
+const TimestepVector{T_TS, T} = TimestepArray{T_TS, T, 1}
 
 #
 # 2. Dimensions
@@ -197,8 +197,8 @@ mutable struct ComponentDef  <: NamedDef
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
-    start::Int
-    stop::Int
+    first::Int
+    last::Int
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension, etc.
@@ -209,7 +209,7 @@ mutable struct ComponentDef  <: NamedDef
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
-        self.start = self.stop = 0
+        self.first = self.last = 0
         return self
     end
 end
@@ -306,8 +306,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     parameters::TP
     dim_dict::Dict{Symbol, Vector{Int}}
 
-    start::Int
-    stop::Int
+    first::Int
+    last::Int
 
     run_timestep::Union{Void, Function}
     useIntegerTime::Bool
@@ -322,8 +322,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
         self.variables = vars
         self.parameters = pars
-        self.start = comp_def.start
-        self.stop = comp_def.stop
+        self.first = comp_def.first
+        self.last = comp_def.last
         self.useIntegerTime = true
 
         comp_module = eval(Main, comp_id.module_name)
@@ -355,15 +355,15 @@ mutable struct ModelInstance
     # Ordered list of components (including hidden ConnectorComps)
     components::OrderedDict{Symbol, ComponentInstance}
   
-    starts::Vector{Int}        # in order corresponding with components
-    stops::Vector{Int}
+    firsts::Vector{Int}        # in order corresponding with components
+    lasts::Vector{Int}
 
     function ModelInstance(md::ModelDef)
         self = new()
         self.md = md
         self.components = OrderedDict{Symbol, ComponentInstance}()    
-        self.starts = Vector{Int}()
-        self.stops = Vector{Int}()
+        self.firsts = Vector{Int}()
+        self.lasts = Vector{Int}()
         return self
     end
 end
