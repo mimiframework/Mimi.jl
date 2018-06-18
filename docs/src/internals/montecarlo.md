@@ -5,7 +5,7 @@
 Monte Carlo Simulation support consists of two primary user-facing elements:
 
 1. The `@defmcs` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and
-2. The `run_mcs` function, which runs a simulation, with parameters describing the number of trials and callback functions that customize simulation behavior.
+2. The `run_mcs` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
 
 These are described further below.
 
@@ -13,11 +13,13 @@ These are described further below.
 
 Monte Carlo Simulations are defined using the macro ```@defmcs```, which does the following:
 
-* Defines random variables (RV) by assigning names to distributions, which can be any object that provides the following function:
+* Defines random variables (RV) by assigning names to distributions, which can be any object that supports the following function:
   
     `rand(dist, count::Int=1)`
 
-  which produces a single value when `count == 1`, else a `Vector` of values, and if using Latin Hypercube Sampling (LHS), 
+  which produces a single value when `count == 1`, else a `Vector` of values.
+  
+  If using Latin Hypercube Sampling (LHS) is used, the following function must also be defined:
 
   `quantile(dist, quantiles::Vector{Float64})`
   
@@ -25,7 +27,7 @@ Monte Carlo Simulations are defined using the macro ```@defmcs```, which does th
 
   In addition to the distributions available in the `Distributions` package, Mimi provides:
 
-  * `EmpiricalDistribution`, which takes a vector of values and (optional) probabilities and produces samples from these values using the given probabilities, if provide, or equal probability otherwise.
+  * `EmpiricalDistribution`, which takes a vector of values and (optional) vector of probabilities and produces samples from these values using the given probabilities, if provided, or equal probability otherwise.
 
   * `SampleStore{T}`, which stores a vector of samples that are produced in order by the `rand` function. This allows the user to to store a predefined set of values (useful for regression testing) and it is used by the LHS method, which draws all required samples at once at equal probability intervals and then shuffles the values. It is also used when rank correlations are specified, since this requires re-ordering draws from random variables.
 
@@ -33,13 +35,78 @@ Monte Carlo Simulations are defined using the macro ```@defmcs```, which does th
   * ```param = RV``` replaces the values in the parameter with the value of the RV for the current trial.
   * ```param += RV``` replaces the values in the parameter with the sum of the original value and the value of the RV for the current trial.
   * ```param *= RV``` replaces the values in the parameter with the product of the original value and the value of the RV for the current trial.
-* Defines desired rank correlations between pairs of random variables. Note that these cannot be achieved exactly, but in practice, the values are usually fairly close.
+
+* Defines desired rank correlations between pairs of random variables. Approximate rank correlation is achieved by re-ordering vectors of random draws as per Iman and Conover (1982).
 
 The ```@defmcs``` macro returns a ```MonteCarloSimulation``` instance, which contains all the definition information in a form that can be applied at run-time.
 
 ## The run_mcs function
 
 In it's simplest use, the `run_mcs` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
+
+### Function signature
+
+The full signature for the `run_mcs` is:
+
+```
+function run_mcs(mcs::MonteCarloSimulation, 
+                 trials::Union{Int, Vector{Int}, Range{Int}},
+                 models_to_run::Int=length(mcs.models);
+                 ntimesteps::Int=typemax(Int), 
+                 output_dir::Union{Void, AbstractString}=nothing, 
+                 pre_trial_func::Union{Void, Function}=nothing, 
+                 post_trial_func::Union{Void, Function}=nothing,
+                 scenario_func::Union{Void, Function}=nothing,
+                 scenario_placement::ScenarioLoopPlacement=OUTER,
+                 scenario_args=nothing)
+```
+
+The `run_mcs` function runs the indicated trial numbers, where the first `models_to_run` 
+associated models are each run for `ntimesteps`, if specified, else to the maximum defined time period. 
+Note that trial data are applied to all the associated models even when running only a portion of them.
+    
+If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
+just before or after (respectively) running a trial. The functions must have the signature:
+
+    fn(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+
+where `tup` is a tuple of scenario arguments representing one element in the cross-product
+of all scenario value vectors. In situations in which you want the MCS loop to run only
+some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
+`post_trial_func`.
+
+If provided, `scenario_args` must be a `Vector{Pair}`, where each `Pair` is a symbol and a 
+`Vector` of arbitrary values that will be meaningful to `scenario_func`, which must have
+the signature:
+
+    scenario_func(mcs::MonteCarloSimulation, tup::Tuple)
+
+By default, the scenario loop encloses the Monte Carlo loop, but the scenario loop can be
+placed inside the Monte Carlo loop by specifying `scenario_placement=INNER`. When `INNER` 
+is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
+is run.
+
+### Associating models with a MonteCarloSimulation
+
+The "core" `run_mcs` function assumes the `MonteCarloSimulation` instance has references to the model or models to run. There are several methods for associating the model(s) to run with the `MonteCarloSimulation` instance. The first involves calling one of the following functions:
+
+```
+set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
+
+set_model!(mcs::MonteCarloSimulation, m::Model)
+
+set_model!(mcs::MonteCarloSimulation, mm::MarginalModel)
+```
+
+The other approach is to call a variant of `run_mcs` that takes a model or vector of models as an argument:
+
+```
+run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials; kwargs...)
+
+run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials; kwargs...)
+```
+
+These are simply convenience functions that call `set_model!()` or `set_models!()` prior to calling the core `run_mcs` function.
 
 ### Non-stochastic Scenarios
 
@@ -56,8 +123,6 @@ where `tup` is an element of the set of tuples produced by calling `Itertools.pr
 `[("a", 0.025), ("b", 0.025), ("a", 0.03), ("b", 0.03), ("a", 0.05), ("b", 0.05)]`.
 
 This approach allows all scenario combinations to be iterated over using a single loop. A final keyword argument, `scenario_placement::ScenarioLoopPlacement` indicates whether the scenario loop should occur inside or outside the loop over stochastic trial values. The type `ScenarioLoopPlacement` is an `enum` with values `INNER` and `OUTER`, the latter being the default placement.
-
-In addition to the `scenario_func`, the user can define functions to be called immediately before or after calling `run` on the model. These are passed to `run_mcs` via the keyword arguments `pre_trial_func` and `post_trial_func`, respectively.
 
 In approximate pseudo-julia, these options produce the following behavior:
 
@@ -101,23 +166,6 @@ In some simulations, a baseline model needs to be compared to one or more models
 
 By default, all defined models are run. In some cases, you may want to run some of the models "manually" in the `pre_trial_func` or `post_trial_func`, which allow you to make arbitrary modifications to these additional models.
 
-### Function signature
-
-The full signature for the `run_mcs` is:
-
-```
-function run_mcs(mcs::MonteCarloSimulation, 
-                 trials::Union{Int, Vector{Int}, Range{Int}},
-                 models_to_run::Int=length(mcs.models);
-                 ntimesteps::Int=typemax(Int), 
-                 output_dir::Union{Void, AbstractString}=nothing, 
-                 pre_trial_func::Union{Void, Function}=nothing, 
-                 post_trial_func::Union{Void, Function}=nothing,
-                 scenario_func::Union{Void, Function}=nothing,
-                 scenario_placement::ScenarioLoopPlacement=OUTER,
-                 scenario_args=nothing)
-```
-
 **Example**
 
 The following example is available in `"Mimi.jl/src/mcs/test_mcs.jl"` branch.
@@ -128,7 +176,7 @@ using Distributions
 
 include("examples/tutorial/02-two-region-model/main.jl")
 
-m = tworegion.my_model
+m = model # defined by 2-region model
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -173,9 +221,12 @@ run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
 run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
 
-**The remaining sections describe an API that hasn't been developed yet.**
+# Not Implemented (Yet)
+
+The remaining sections describe an API that hasn't been developed yet.
 
 ## ModelRunner
+
 
 There are several types of analyses that require an ensemble of model runs performed over a set of parameter values. These include traditional Monte Carlo simulation, in which random values are drawn from distributions and applied to model parameters, as well as global sensitivity analyses that use prescribed methods for defining trial data (e.g., Sobol sampling), and Markov Chain Monte Carlo, which computes new trial data based on prior model results.
 

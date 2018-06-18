@@ -29,14 +29,6 @@ function log_warn(msg)
     nothing
 end
 
-function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
-    mcs.models = models
-    _reset_results!(mcs)    # sets results vector to same length
-end
-
-# Convenience method for singular model
-set_model!(mcs::MonteCarloSimulation, m::Model) = set_models!(mcs, [m])
-
 # Store results for a single parameter
 function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
     log_debug("\nStoring trial results for $datum_key")
@@ -376,7 +368,7 @@ function run_mcs(mcs::MonteCarloSimulation,
         end
     end
     
-    # Save the original since we modify the output_dir to store scenario results
+    # Save the original dir since we modify the output_dir to store scenario results
     orig_output_dir = output_dir
 
     # booleans vars to simplify the repeated tests in the loop below
@@ -415,18 +407,18 @@ function run_mcs(mcs::MonteCarloSimulation,
     models = mcs.models[1:models_to_run]
 
     for tup in arg_tuples_outer
-        _reset_rvs!(mcs)        # Reset internal index to 1 for all stored parameters to reuse the data
-        _reset_results!(mcs)    # Clear prior results (these are saved at the bottom of the loop)
-        
-        # Save the params to be perturbed so we can reset them after each trial
-        original_values = _copy_mcs_params(mcs)
-       
         if has_outer_scenario
             scenario_func(mcs, tup)
 
             # we'll store the results of each in a subdir composed of tuple values
             output_dir = _compute_output_dir(orig_output_dir, tup)
         end
+                
+        # Save the params to be perturbed so we can reset them after each trial
+        original_values = _copy_mcs_params(mcs)        
+        
+        # Reset internal index to 1 for all stored parameters to reuse the data
+        _reset_rvs!(mcs)        
 
         for (i, trialnum) in enumerate(trials)
             for tup in arg_tuples_inner               
@@ -458,11 +450,13 @@ function run_mcs(mcs::MonteCarloSimulation,
 
             if has_inner_scenario && has_output_dir
                 save_trial_results(mcs, output_dir)
+                _reset_results!(mcs)
             end
         end
 
         if ! has_inner_scenario && has_output_dir
             save_trial_results(mcs, output_dir)
+            _reset_results!(mcs)
         end
     end
 end
@@ -479,10 +473,20 @@ function run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials; kwargs.
 end
 
 # Same as above, but takes a multiple models to run
-function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trial; kwargs...)
+function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials; kwargs...)
     set_models!(mcs, models)
     return run_mcs(mcs, 1:trials; kwargs...)
 end
+
+function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
+    mcs.models = models
+    _reset_results!(mcs)    # sets results vector to same length
+end
+
+# Convenience methods for single model and MarginalModel
+set_model!(mcs::MonteCarloSimulation, m::Model) = set_models!(mcs, [m])
+
+set_model!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.base, mm.marginal])
 
 #
 # Iterator functions for MonteCarloSimulation directly, and for use as an IterableTable.
