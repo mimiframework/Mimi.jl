@@ -2,10 +2,13 @@
 
 ## Overview
 
-Monte Carlo Simulation support consists of two primary user-facing elements:
+Monte Carlo Simulation support consists of three primary user-facing elements:
 
 1. The `@defmcs` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and
-2. The `run_mcs` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
+
+2. The optional `generate_trials!` function, which can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.
+
+3. The `run_mcs` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
 
 These are described further below.
 
@@ -39,6 +42,23 @@ Monte Carlo Simulations are defined using the macro ```@defmcs```, which does th
 * Defines desired rank correlations between pairs of random variables. Approximate rank correlation is achieved by re-ordering vectors of random draws as per Iman and Conover (1982).
 
 The ```@defmcs``` macro returns a ```MonteCarloSimulation``` instance, which contains all the definition information in a form that can be applied at run-time.
+
+## The generate_trials! function
+
+The `generate_trials!` function can be used to pre-generate data for the given number of `trials`, save all random variable values in the file `filename`, and/or override the default sampling method. Its calling signature is:
+
+```
+generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
+                 filename::String="", sampling::SamplingOptions=LHS)
+```
+
+The `sampling` parameter is of type `SamplingOptions`, an `enum` with two values, `LHS`, and `RANDOM`. Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling.
+
+Note that in the current implementation, rank correlation between parameters is supported only for the `LHS` option.
+
+Also note that if the `filename` argument is used, all random variable draws are made prior to running the model(s) and saved to the given filename. Internally, any `Distribution` instance is converted to a `SampleStore` and the values are subsequently returned in the order generated when `rand!` is called.
+
+If this function is not called prior to calling `run_mcs`, Latin Hypercube sampling is used for all distributions and trial data are not saved.
 
 ## The run_mcs function
 

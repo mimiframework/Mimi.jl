@@ -106,12 +106,17 @@ function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
     return nothing
 end
 
-# TBD: store rvlist and corrlist in src, or just in mcs?
-# TBD: generate a NamedTuple for the set of RVs?
-# TBD: Modify lhs() to return an array of SampleStore{T} instances
+# TBD: Modify lhs() to return an array of SampleStore{T} instances?
+"""
+get_trial(mcs::MonteCarloSimulation, trialnum::Int)
+
+Return a NamedTuple with the data for next trial. Note that the `trialnum`
+parameter is used only to support a 1-deep data cache that allows this
+function to be called successively with the same `trialnum` to retrieve
+the same NamedTuple. If `trialnum` does not match the current trial number,
+the argument is ignored.
+"""
 function get_trial(mcs::MonteCarloSimulation, trialnum::Int)
-    # We cache the value for the current trial so we can return the
-    # same data if requested again, i.e., to support MarginalModel.
     if mcs.current_trial == trialnum
         return mcs.current_data
     end
