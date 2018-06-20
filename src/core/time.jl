@@ -96,7 +96,7 @@ function get_timestep_instance(md::ModelDef, T, num_dims, value)
 		return timestep_array_type{Timestep{start, stepsize}, T}(value)
 	else
 		start_times = time_labels(md)		
-		return timestep_array_type{VariableTimestep{start_times}, T}(value)	
+		return timestep_array_type{VariableTimestep{(start_times...)}, T}(value)	
 	end
 end
 

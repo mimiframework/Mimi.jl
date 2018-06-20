@@ -23,7 +23,7 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
             #need to make sure we define the tiemstp to begin at the start from 
             #the function argument
             start_index = findfirst(times, start)
-            T = TimestepArray{VariableTimestep{times[start_index:end]}, dtype, num_dims}
+            T = TimestepArray{VariableTimestep{(times[start_index:end]...)}, dtype, num_dims}
         end
     end
 
