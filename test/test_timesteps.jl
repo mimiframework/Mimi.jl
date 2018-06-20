@@ -5,7 +5,7 @@ using Base.Test
 
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
-    TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_start, is_stop, 
+    TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
     gettime
 
 Mimi.reset_compdefs()
@@ -15,15 +15,15 @@ Mimi.reset_compdefs()
 #####################################################
 
 t = FixedTimestep{1850, 10, 3000}(1)
-@test is_start(t)
+@test is_first(t)
 t1 = next_timestep(t)
 #t2 = new_timestep(t1, 1860)
-#@test is_start(t2)
+#@test is_first(t2)
 #t3 = new_timestep(t2, 1840)
 #@test t3.t == 3
 
 t = FixedTimestep{2000, 1, 2050}(51)
-@test is_stop(t)
+@test is_last(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)
 
@@ -33,11 +33,11 @@ t = next_timestep(t)
 years = ([2000:1:2024; 2025:5:2105]...)
 
 t = VariableTimestep{years}()
-@test is_start(t)
+@test is_first(t)
 
 t = VariableTimestep{years}(42)
-@test is_stop(t)
-@test ! is_start(t)
+@test is_last(t)
+@test ! is_first(t)
 t = next_timestep(t)
 @test_throws ErrorException next_timestep(t)
 
@@ -73,11 +73,11 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2010)
 
-# test that you can only add components with start/final within model's time index range
-@test_throws ErrorException addcomponent(m, Foo; start=1900)
-@test_throws ErrorException addcomponent(m, Foo; stop=2100)
+# test that you can only add components with first/last within model's time index range
+@test_throws ErrorException addcomponent(m, Foo; first=1900)
+@test_throws ErrorException addcomponent(m, Foo; last=2100)
 
-foo = addcomponent(m, Foo; start=2005) #offset for foo
+foo = addcomponent(m, Foo; first=2005) #offset for foo
 bar = addcomponent(m, Bar)
 
 set_parameter!(m, :Foo, :inputF, 5.)
@@ -116,7 +116,7 @@ end
 m2 = Model()
 set_dimension!(m2, :time, 2000:2010)
 bar = addcomponent(m2, Bar)
-foo2 = addcomponent(m2, Foo2, start=2005) #offset for foo
+foo2 = addcomponent(m2, Foo2, first=2005) #offset for foo
 
 set_parameter!(m2, :Bar, :inputB, collect(1:11))
 connect_parameter(m2, :Foo2, :inputF, :Bar, :output)
@@ -147,7 +147,7 @@ end
 m3 = Model()
 
 set_dimension!(m3, :time, 2000:2010)
-addcomponent(m3, Foo, start=2005)
+addcomponent(m3, Foo, first=2005)
 addcomponent(m3, Bar2)
 
 set_parameter!(m3, :Foo, :inputF, 5.)

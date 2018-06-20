@@ -34,14 +34,14 @@ end
 
 function next_timestep(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	if finished(ts)
-			error("Cannot get next timestep, this is final timestep.")
+			error("Cannot get next timestep, this is last timestep.")
 	end
 	return FixedTimestep{FIRST, STEP, LAST}(ts.t + 1)
 end
 
 function next_timestep(ts::VariableTimestep{TIMES}) where {TIMES}
 	if finished(ts)
-		error("Cannot get next timestep, this is final timestep.")
+		error("Cannot get next timestep, this is last timestep.")
 	end
 	return VariableTimestep{TIMES}(ts.t + 1)		
 end
