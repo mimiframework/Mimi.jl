@@ -282,8 +282,8 @@ function _run_components(mi::ModelInstance, clock::Clock,
     tups = collect(zip(comp_instances, firsts, lasts, comp_clocks))
     
     while ! finished(clock)
-        for (ci, start, stop, comp_clock) in tups
-            if start <= gettime(clock) <= stop
+        for (ci, first, last, comp_clock) in tups
+            if first <= gettime(clock) <= last
                 run_timestep(ci, comp_clock)
             end
         end
