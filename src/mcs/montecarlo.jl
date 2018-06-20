@@ -373,6 +373,9 @@ function run_mcs(mcs::MonteCarloSimulation,
         end
     end
     
+    # TBD: address confusion over whether trials is a list of trialnums or just the number of trials
+    mcs.trials = length(trials)
+
     # Save the original dir since we modify the output_dir to store scenario results
     orig_output_dir = output_dir
 
@@ -408,41 +411,48 @@ function run_mcs(mcs::MonteCarloSimulation,
     counter = 1
     p = Progress(total_runs, counter, "Running $ntrials trials for $nscenarios scenarios...")
 
-    # we run the first `models_to_run` models automatically; user can supplement in callbacks
-    models = mcs.models[1:models_to_run]
-
-    for tup in arg_tuples_outer
+    for outer_tup in arg_tuples_outer
         if has_outer_scenario
-            scenario_func(mcs, tup)
+            log_debug("Calling outer scenario_func with $outer_tup")
+            scenario_func(mcs, outer_tup)
 
             # we'll store the results of each in a subdir composed of tuple values
-            output_dir = _compute_output_dir(orig_output_dir, tup)
+            output_dir = _compute_output_dir(orig_output_dir, outer_tup)
         end
                 
         # Save the params to be perturbed so we can reset them after each trial
         original_values = _copy_mcs_params(mcs)        
         
         # Reset internal index to 1 for all stored parameters to reuse the data
-        _reset_rvs!(mcs)        
+        _reset_rvs!(mcs)
 
         for (i, trialnum) in enumerate(trials)
-            for tup in arg_tuples_inner               
+            log_debug("Running trial $trialnum")
+
+            for inner_tup in arg_tuples_inner
+                tup = has_inner_scenario ? inner_tup : outer_tup
+
                 _perturb_params!(mcs, trialnum)
 
                 if pre_trial_func != nothing
+                    log_debug("Calling pre_trial_func($trialnum, $tup)")
                     pre_trial_func(mcs, trialnum, ntimesteps, tup)
                 end               
 
                 if has_inner_scenario
-                    scenario_func(mcs, tup)
-                    output_dir = _compute_output_dir(orig_output_dir, tup)
+                    log_debug("Calling inner scenario_func with $inner_tup")
+                    scenario_func(mcs, inner_tup)
+
+                    output_dir = _compute_output_dir(orig_output_dir, inner_tup)
                 end
 
-                for m in models
+                for m in mcs.models[1:models_to_run]    # note that list of models may be changed in scenario_func
+                    log_debug("Running model")
                     run(m, ntimesteps=ntimesteps)
                 end
                 
                 if post_trial_func != nothing
+                    log_debug("Calling post_trial_func($trialnum, $tup)")
                     post_trial_func(mcs, trialnum, ntimesteps, tup)
                 end
 
@@ -467,20 +477,23 @@ function run_mcs(mcs::MonteCarloSimulation,
 end
 
 # Same as above, but takes a number of trials and converts this to `1:trials`.
-function run_mcs(mcs::MonteCarloSimulation, trials::Int=mcs.trials; kwargs...)
-    return run_mcs(mcs, 1:trials; kwargs...)
+function run_mcs(mcs::MonteCarloSimulation, trials::Int=mcs.trials, 
+                 models_to_run::Int=length(mcs.models); kwargs...)
+    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
 end
 
 # Same as above, but takes a single model to run
-function run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials; kwargs...)
+function run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials, 
+                 models_to_run::Int=length(mcs.models); kwargs...)
     set_model!(mcs, m)
-    return run_mcs(mcs, trials; kwargs...)
+    return run_mcs(mcs, trials, models_to_run; kwargs...)
 end
 
 # Same as above, but takes a multiple models to run
-function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials; kwargs...)
+function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials, 
+                 models_to_run::Int=length(mcs.models); kwargs...)
     set_models!(mcs, models)
-    return run_mcs(mcs, 1:trials; kwargs...)
+    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
 end
 
 function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})

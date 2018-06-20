@@ -13,5 +13,6 @@ include("lhs.jl")
 include("montecarlo.jl")
 
 export 
-    @defmcs, generate_trials!, run_mcs, save_trial_inputs, save_trial_results, set_models!,
-    EmpiricalDistribution, RandomVariable, TransformSpec, CorrelationSpec, MonteCarloSimulation
+    @defmcs, generate_trials!, run_mcs, save_trial_inputs, save_trial_results, set_model!, set_models!,
+    EmpiricalDistribution, RandomVariable, TransformSpec, CorrelationSpec, MonteCarloSimulation,
+    RANDOM, LHS, INNER, OUTER

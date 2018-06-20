@@ -40,7 +40,7 @@ struct RandomVariable{T}
     name::Symbol
     dist::T 
 
-    function RandomVariable(name::Symbol, dist::T) where {T <: Union{Distribution, SampleStore}}
+    function RandomVariable(name::Symbol, dist::T) where T
         self = new{T}(name, dist)
         return self
     end
@@ -54,7 +54,7 @@ struct TransformSpec
     rvname::Symbol
     dims::Vector{Any}
 
-    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{Any}=[])
+    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
@@ -101,7 +101,7 @@ mutable struct MonteCarloSimulation
     rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
     corrlist::Vector{CorrelationSpec}
-    savelist::Vector{Tuple}
+    savelist::Vector{Tuple{Symbol, Symbol}}
     dist_rvs::Vector{RandomVariable{<: Distribution}}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
@@ -110,7 +110,7 @@ mutable struct MonteCarloSimulation
     function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
                                   translist::Vector{TransformSpec}, 
                                   corrlist::Vector{CorrelationSpec},
-                                  savelist::Vector{Tuple})
+                                  savelist::Vector{Tuple{Symbol, Symbol}})
         self = new()
         self.trials = 0
         self.current_trial = 0
@@ -123,10 +123,18 @@ mutable struct MonteCarloSimulation
         self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
 
         # These are parallel arrays; each model has a corresponding results dict
-        self.models = Vector{Model}(1)
+        self.models = Vector{Model}(0)
         self.results = [Dict{Tuple, DataFrame}()]
         return self
     end
+end
+
+function MonteCarloSimulation(rvlist::Vector, 
+                              translist::Vector{TransformSpec}, 
+                              corrlist::Vector{CorrelationSpec},
+                              savelist::Vector{Tuple})
+    println("rvlist: $rvlist")
+    println("typeof(rvlist): $(typeof(rvlist))")
 end
 
 struct MCSIterator{NT}
