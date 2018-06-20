@@ -46,14 +46,14 @@ m = Model()
 years = [2015:5:2100; 2110:10:2200]
 set_dimension!(m, :time, years)
 
-@test_throws ErrorException addcomponent(m, A, stop = 2210) 
-@test_throws ErrorException addcomponent(m, A, start = 2010) 
+@test_throws ErrorException addcomponent(m, A, last = 2210) 
+@test_throws ErrorException addcomponent(m, A, first = 2010) 
 @test_throws ErrorException addcomponent(m, A, after=:B)
-addcomponent(m, A, start = 2050, stop = 2150) #test specific stop and start
+addcomponent(m, A, first = 2050, last = 2150) #test specific last and first
 
 addcomponent(m, B, before=:A)
 
-addcomponent(m, C, after=:B) # test a later start than model
+addcomponent(m, C, after=:B) # test a later first than model
 # Component order is B -> C -> A.
 
 connect_parameter(m, :A, :parA, :C, :varC)

@@ -10,13 +10,13 @@ function interpolate(values::Vector{T}, ts::Int=10) where T <: Union{Float64, In
     fracs = collect(range(0.0, 1/ts, ts))
 
     for i = 1:count - 1
-        start = values[i]
-        stop  = values[i+1]
-        diff  = stop - start
+        first = values[i]
+        last  = values[i+1]
+        diff  = last - first
 
-        start_idx = (i - 1) * ts + 1
-        end_idx   = start_idx + ts - 1
-        newvalues[start_idx:end_idx] = start + diff * fracs
+        first_idx = (i - 1) * ts + 1
+        end_idx   = first_idx + ts - 1
+        newvalues[first_idx:end_idx] = first + diff * fracs
     end
 
     newvalues[end] = values[end]

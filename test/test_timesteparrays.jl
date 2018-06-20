@@ -2,8 +2,8 @@ using Mimi
 using Base.Test
 
 import Mimi:
-    Timestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    isuniform, start_period, end_period, 
+    FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
+    isuniform, first_period, last_period, 
     first_and_step
 
 a = collect(reshape(1:16,4,4))
@@ -26,17 +26,17 @@ years = (collect(2000:1:2003)...)
 #1a.  test constructor, endof, and length (with both 
 # matching years and mismatched years)
 
-x = TimestepVector{Timestep{2000, 1}, Int}(a[:,3])
+x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 @test length(x) == 4
 @test endof(x) == 4
 
 #1b.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
 
-t = Timestep{2001, 1, 3000}(1)
+t = FixedTimestep{2001, 1, 3000}(1)
 
 @test hasvalue(x, t)
-@test !hasvalue(x, Timestep{2000, 1, 2012}(10)) 
+@test !hasvalue(x, FixedTimestep{2000, 1, 2012}(10)) 
 @test x[t] == 10
 
 t2 = next_timestep(t)
@@ -47,7 +47,7 @@ t2 = next_timestep(t)
 x[t2] = 99
 @test x[t2] == 99
 
-t3 = Timestep{2000, 1, 2003}(1)
+t3 = FixedTimestep{2000, 1, 2003}(1)
 @test x[t3] == 9
 
 x[t3] = 100
@@ -91,15 +91,15 @@ years = (collect(2000:1:2003)...)
 #3a.  test constructor (with both matching years 
 # and mismatched years)
 
-y = TimestepMatrix{Timestep{2000, 1}, Int}(a[:,1:2])
+y = TimestepMatrix{FixedTimestep{2000, 1}, Int}(a[:,1:2])
 
 #3b.  test hasvalue, getindex, and setindex (with both matching years and
 # mismatched years)
 
-t = Timestep{2001, 1, 3000}(1)
+t = FixedTimestep{2001, 1, 3000}(1)
 
 @test hasvalue(y, t, 1) 
-@test !hasvalue(y, Timestep{2000, 1, 3000}(10), 1)
+@test !hasvalue(y, FixedTimestep{2000, 1, 3000}(10), 1)
 @test y[t,1] == 2
 @test y[t,2] == 6
 
@@ -111,7 +111,7 @@ t2 = next_timestep(t)
 y[t2, 1] = 5
 @test y[t2, 1] == 5
 
-t3 = Timestep{2000, 1, 2005}(1)
+t3 = FixedTimestep{2000, 1, 2005}(1)
 
 @test y[t3, 1] == 1
 @test y[t3, 2] == 5
@@ -120,8 +120,8 @@ y[t3, 1] = 10
 @test y[t3,1] == 10
 
 #3c.  interval wider than 1
-z = TimestepMatrix{Timestep{2000, 2}, Int}(a[:,3:4])
-t = Timestep{1980, 2, 3000}(11)
+z = TimestepMatrix{FixedTimestep{2000, 2}, Int}(a[:,3:4])
+t = FixedTimestep{1980, 2, 3000}(11)
 
 @test z[t,1] == 9
 @test z[t,2] == 13
@@ -170,15 +170,15 @@ y[t3, 1] = 10
 x_years = (2000:5:2015...) #fixed
 y_years = ([2000:5:2005; 2015:10:2025]...) #variable
 
-x_vec = TimestepVector{Timestep{2000, 5}, Int}(a[:,3]) 
-x_mat = TimestepMatrix{Timestep{2000, 5}, Int}(a[:,1:2])
+x_vec = TimestepVector{FixedTimestep{2000, 5}, Int}(a[:,3]) 
+x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int}(a[:,1:2])
 y_vec = TimestepVector{VariableTimestep{y_years}, Int}(a[:,3]) 
 y_mat = TimestepMatrix{VariableTimestep{y_years}, Int}(a[:,1:2])
 
-@test start_period(x_vec) == start_period(x_mat) == x_years[1] 
-@test start_period(y_vec) == start_period(y_mat) == y_years[1]
-@test end_period(x_vec) == end_period(x_mat) == x_years[end] 
-@test end_period(y_vec) == end_period(y_mat) == y_years[end]
+@test first_period(x_vec) == first_period(x_mat) == x_years[1] 
+@test first_period(y_vec) == first_period(y_mat) == y_years[1]
+@test last_period(x_vec) == last_period(x_mat) == x_years[end] 
+@test last_period(y_vec) == last_period(y_mat) == y_years[end]
 
 @test size(x) == size(a[:,3])
 @test size(y) == size(a[:,1:2])

@@ -69,12 +69,12 @@ The next step is to add components to the model. This is done by the following s
 
 ```julia
 addcomponent(mymodel, ComponentA, :GDP)
-addcomponent(mymodel, ComponentB; start=2010)
-addcomponent(mymodel, ComponentC; start=2010, final=2100)
+addcomponent(mymodel, ComponentB; first=2010)
+addcomponent(mymodel, ComponentC; first=2010, last=2100)
 
 ```
 
-The first argument to addcomponent is the model, the second is the name of the ComponentId defined by @defcomp. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom start and final times with the optional keyword arguments as shown above. If no start or final time is provided, the component will assume the start or final time of the model's time index values that were specified in set_dimension!.
+The first argument to addcomponent is the model, the second is the name of the ComponentId defined by @defcomp. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom first and last times with the optional keyword arguments as shown above. If no first or last time is provided, the component will assume the first or last time of the model's time index values that were specified in set_dimension!.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
@@ -182,7 +182,7 @@ backup = rand(100) # data array of the proper size
 connectparameter(mymodel, :LongComponent=>:parametername, :ShortComponent=>:variablename, backup)
 ```
 
-Note: for now, to avoid discrepancy with timing and alignment, the backup data must be the length of the whole component's start to final time, even though it will only be used for values not found in the shorter component.
+Note: for now, to avoid discrepancy with timing and alignment, the backup data must be the length of the whole component's first to last time, even though it will only be used for values not found in the shorter component.
 
 ### More on parameter indices
 

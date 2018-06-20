@@ -28,9 +28,9 @@ m = Model()
 set_dimension!(m, :time, 2000:3000)
 nsteps = Mimi.dim_count(m.md, :time)
 
-addcomponent(m, ShortComponent; start=2100)
+addcomponent(m, ShortComponent; first=2100)
 addcomponent(m, ConnectorCompVector, :MyConnector) # can give it your own name
-addcomponent(m, LongComponent; start=2000)
+addcomponent(m, LongComponent; first=2000)
 
 comp_def = compdef(m, :MyConnector)
 @test Mimi.compname(comp_def.comp_id) == :ConnectorCompVector
@@ -78,7 +78,7 @@ run(model2)
 
 model3 = Model()
 set_dimension!(model3, :time, 2000:2010)
-addcomponent(model3, ShortComponent; stop=2005)
+addcomponent(model3, ShortComponent; last=2005)
 addcomponent(model3, LongComponent)
 
 set_parameter!(model3, :ShortComponent, :a, 2.)
@@ -151,7 +151,7 @@ b3 = getdataframe(model4, :Short, :b)
 model5 = Model()
 set_dimension!(model5, :time, 2000:5:2100)
 set_dimension!(model5, :regions, [:A, :B, :C])
-addcomponent(model5, Short; start=2020, final=2070)
+addcomponent(model5, Short; first=2020, last=2070)
 addcomponent(model5, Long)
 
 set_parameter!(model5, :Short, :a, [1,2,3])
