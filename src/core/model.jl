@@ -212,7 +212,7 @@ end
 Add a scalar type parameter to the model.
 """
 function set_external_scalar_param!(m::Model, name::Symbol, value::Any)
-    set_external_array_param!(m.md, name, value)
+    set_external_scalar_param!(m.md, name, value)
     decache(m)
 end
 
