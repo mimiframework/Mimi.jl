@@ -23,8 +23,8 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
             #need to make sure we define the timestep to begin at the first from 
             #the function argument
       
-            first_index = findfirst(times, first)
-      T = TimestepArray{VariableTimestep{times[(first_index:end]...)}, dtype, num_dims}
+            first_index = findfirst(times, first) 
+            T = TimestepArray{VariableTimestep{(times[first_index:end]...)}, dtype, num_dims}
         end
     end
 
