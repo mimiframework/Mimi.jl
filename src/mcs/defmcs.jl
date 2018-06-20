@@ -128,6 +128,9 @@ macro defmcs(expr)
                 error("Unrecognized expression '$elt' in @defmcs")
             end
         end
-        return :(MonteCarloSimulation([$(_rvs...)], [$(_transforms...)], [$(_corrs...)], [$(_saves...)]))
+        return :(MonteCarloSimulation([$(_rvs...)], 
+                                      [$(_transforms...)], 
+                                      CorrelationSpec[$(_corrs...)], 
+                                      Tuple{Symbol, Symbol}[$(_saves...)]))
     end
 end

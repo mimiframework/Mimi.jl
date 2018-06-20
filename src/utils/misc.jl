@@ -6,7 +6,7 @@ for timestep of length `ts`.
 """
 function interpolate(values::Vector{T}, ts::Int=10) where T <: Union{Float64, Int}
     count = length(values)
-    newvalues = zeros((count-1) * ts + 1)
+    newvalues::Vector{Float64} = zeros((count-1) * ts + 1)
     fracs = collect(range(0.0, 1/ts, ts))
 
     for i = 1:count - 1

@@ -29,6 +29,37 @@ function log_warn(msg)
     nothing
 end
 
+function Base.show(io::IO, mcs::MonteCarloSimulation)
+    println("MonteCarloSimulation")
+    
+    println("  trials: $(mcs.trials)")
+    println("  current_trial: $(mcs.current_trial)")
+    
+    mcs.current_trial > 0 && println("  current_data: $(mcs.current_data)")
+    
+    println("  rvdict:")
+    for (key, value) in mcs.rvdict
+        println("    $key: $(typeof(value))")
+    end
+
+    function print_nonempty(name, vector)
+        if length(vector) > 0
+            println("  $name:")
+            for obj in vector
+                println("    ", obj)
+            end
+        end
+    end
+
+    print_nonempty("translist", mcs.translist)
+    print_nonempty("corrlist",  mcs.corrlist)
+    print_nonempty("savelist",  mcs.savelist)
+
+    println("  nt_type: $(mcs.nt_type)")
+    println("  $(length(mcs.models)) models")
+    println("  $(length(mcs.results)) results dicts")
+end
+
 # Store results for a single parameter
 function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
     log_debug("\nStoring trial results for $datum_key")

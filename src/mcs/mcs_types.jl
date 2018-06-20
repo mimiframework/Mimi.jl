@@ -107,7 +107,7 @@ mutable struct MonteCarloSimulation
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
 
-    function MonteCarloSimulation(rvlist::Vector{RandomVariable}, 
+    function MonteCarloSimulation(rvlist::Vector, 
                                   translist::Vector{TransformSpec}, 
                                   corrlist::Vector{CorrelationSpec},
                                   savelist::Vector{Tuple{Symbol, Symbol}})
@@ -129,13 +129,6 @@ mutable struct MonteCarloSimulation
     end
 end
 
-function MonteCarloSimulation(rvlist::Vector, 
-                              translist::Vector{TransformSpec}, 
-                              corrlist::Vector{CorrelationSpec},
-                              savelist::Vector{Tuple})
-    println("rvlist: $rvlist")
-    println("typeof(rvlist): $(typeof(rvlist))")
-end
 
 struct MCSIterator{NT}
     mcs::MonteCarloSimulation
