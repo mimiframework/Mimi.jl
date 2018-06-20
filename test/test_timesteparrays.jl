@@ -3,7 +3,7 @@ using Base.Test
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    isuniform, first_period, end_period, 
+    isuniform, first_period, last_period, 
     first_and_step
 
 a = collect(reshape(1:16,4,4))
@@ -177,8 +177,8 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int}(a[:,1:2])
 
 @test first_period(x_vec) == first_period(x_mat) == x_years[1] 
 @test first_period(y_vec) == first_period(y_mat) == y_years[1]
-@test end_period(x_vec) == end_period(x_mat) == x_years[end] 
-@test end_period(y_vec) == end_period(y_mat) == y_years[end]
+@test last_period(x_vec) == last_period(x_mat) == x_years[end] 
+@test last_period(y_vec) == last_period(y_mat) == y_years[end]
 
 @test size(x) == size(a[:,3])
 @test size(y) == size(a[:,1:2])

@@ -57,7 +57,7 @@ function _generate_run_func(module_name, comp_name, args, body)
     (p, v, d, t) = args
 
     if @capture(t, tname_::ttype_)
-        mimi_type = get(timestep_type_dict, ttype, nothing)
+        mimi_type = get(Timestep_Type_Dict, ttype, nothing)
         if mimi_type != nothing
             ttype = mimi_type
         end

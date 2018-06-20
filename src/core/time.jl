@@ -289,8 +289,8 @@ Base.eltype(obj::TimestepArray{T_ts, T, N}) where {T_ts,T, N} = T
 first_period(obj::TimestepArray{FixedTimestep{FIRST,STEP}, T, N}) where {FIRST, STEP, T, N} = FIRST
 first_period(obj::TimestepArray{VariableTimestep{TIMES}, T, N}) where {TIMES, T, N} = TIMES[1]
 
-end_period(obj::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}) where {FIRST, STEP,T, N} = (FIRST + (size(obj, 1) - 1) * STEP)
-end_period(obj::TimestepArray{VariableTimestep{TIMES}, T, N}) where {TIMES,T, N} = TIMES[end]
+last_period(obj::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}) where {FIRST, STEP,T, N} = (FIRST + (size(obj, 1) - 1) * STEP)
+last_period(obj::TimestepArray{VariableTimestep{TIMES}, T, N}) where {TIMES,T, N} = TIMES[end]
 
 time_labels(obj::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}) where {FIRST, STEP, T, N} = collect(FIRST:STEP:(FIRST + (size(obj, 1) - 1) * STEP))
 time_labels(obj::TimestepArray{VariableTimestep{TIMES}, T, N}) where {TIMES, T, N} = collect(TIMES)
@@ -378,11 +378,11 @@ function hasvalue(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, ts::Variabl
 end
 
 function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, ts::FixedTimestep{T_FIRST, STEP, LAST}) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
-	return D_FIRST <= gettime(ts) <= end_period(arr)
+	return D_FIRST <= gettime(ts) <= last_period(arr)
 end
 
 function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::VariableTimestep{T_FIRST}) where {T, N, T_FIRST, D_FIRST}
-	return D_FIRST[1] <= gettime(ts) <= end_period(arr)	
+	return D_FIRST[1] <= gettime(ts) <= last_period(arr)	
 end
 
 # Legacy integer case
@@ -402,7 +402,7 @@ end
 function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, 
 	ts::FixedTimestep{T_FIRST, STEP, LAST}, 
 	idxs::Int...) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
-	return D_FIRST <= gettime(ts) <= end_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
+	return D_FIRST <= gettime(ts) <= last_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
 end
 
 # Array and Timestep different TIMES, validating all dimensions
@@ -410,7 +410,7 @@ function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N},
 	ts::VariableTimestep{T_FIRST}, 
 	idxs::Int...) where {T, N, D_FIRST, T_FIRST}
 
-	return D_FIRST[1] <= gettime(ts) <= end_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
+	return D_FIRST[1] <= gettime(ts) <= last_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
 end
 
 # TBD:  this function assumes fixed step size, need to parameterize properly 
@@ -418,6 +418,6 @@ end
 # may just want to deprecate it
 # function Base.indices(arr::TimestepArray{T, N, Start, Step}) where {T, N, Start, Step}
 # 	idxs = [1:size(arr, i) for i in 2:ndims(arr)]
-# 	stop = end_period(arr)
+# 	stop = last_period(arr)
 # 	return (Start:Step:stop, idxs...)
 # end
