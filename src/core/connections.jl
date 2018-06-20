@@ -106,7 +106,7 @@ function connect_parameter(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        start = start_period(dst_comp_def)
+        first = first_period(dst_comp_def)
         T = eltype(backup)        
         
         dim_count = length(dst_dims)
@@ -116,14 +116,14 @@ function connect_parameter(md::ModelDef,
         else
             
             if isuniform(md)
-                #use the start from the comp_def not the ModelDef
+                #use the first from the comp_def not the ModelDef
                 _, stepsize = first_and_step(md)
-                values = TimestepArray{Timestep{start, stepsize}, T, dim_count}(backup)
+                values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
-                #use the start from the comp_def 
-                start_index = findfirst(times, start)
-                values = TimestepArray{VariableTimestep{(times[start_index:end]...)}, T, dim_count}(backup)
+                #use the first from the comp_def 
+                first_index = findfirst(times, first)
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, dim_count}(backup)
             end
             
         end
@@ -209,7 +209,6 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                 if num_dims in (1, 2) && param_dims[1] == :time   # array case
                     value = convert(Array{md.number_type}, value)
 
-                    times = time_labels(md)
                     values = get_timestep_instance(md, eltype(value), num_dims, value)
                     
                 else
