@@ -1,7 +1,7 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
+function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)
@@ -15,15 +15,16 @@ function _instance_datatype(md::ModelDef, def::DatumDef, start::Int)
     else   
 
         if isuniform(md)
-            #take the start from the function argument, not the model def
+            #take the first from the function argument, not the model def
             _, stepsize = first_and_step(md)
-            T = TimestepArray{Timestep{start, stepsize}, dtype, num_dims}
+            T = TimestepArray{FixedTimestep{first, stepsize}, dtype, num_dims}
         else
             times = time_labels(md)
-            #need to make sure we define the tiemstp to begin at the start from 
+            #need to make sure we define the timestep to begin at the first from 
             #the function argument
-            start_index = findfirst(times, start)
-            T = TimestepArray{VariableTimestep{(times[start_index:end]...)}, dtype, num_dims}
+      
+            first_index = findfirst(times, first) 
+            T = TimestepArray{VariableTimestep{(times[first_index:end]...)}, dtype, num_dims}
         end
     end
 
@@ -35,15 +36,15 @@ function _vars_type(md::ModelDef, comp_def::ComponentDef)
     var_defs = variables(comp_def)    
     vnames = Tuple([name(vdef) for vdef in var_defs])
     
-    start = comp_def.start
-    vtypes = Tuple{[_instance_datatype(md, vdef, start) for vdef in var_defs]...}
+    first = comp_def.first
+    vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
 
     return ComponentInstanceVariables{vnames, vtypes}
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
-    dtype = _instance_datatype(md, def, start)
+function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
+    dtype = _instance_datatype(md, def, first)
     dims = dimensions(def)
     num_dims = length(dims)
     
@@ -53,7 +54,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, start::Int)
     # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1 && dims[1] == :time
         # t = dimension(md, :time)
-        # value = dtype(length(t[start:end]))
+        # value = dtype(length(t[first:end]))
         value = dtype(dim_count(md, :time))
 
     else # if dims[1] != :time
@@ -73,10 +74,10 @@ the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    start = comp_def.start
+    first = comp_def.first
     vtype = _vars_type(md, comp_def)
     
-    vals = [_instantiate_datum(md, def, start) for def in variables(comp_def)]
+    vals = [_instantiate_datum(md, def, first) for def in variables(comp_def)]
     return vtype(vals)
 end
 

@@ -20,8 +20,8 @@ components(mi::ModelInstance) = values(mi.components)
 function addcomponent(mi::ModelInstance, ci::ComponentInstance) 
     mi.components[name(ci)] = ci
 
-    push!(mi.starts, ci.start)
-    push!(mi.stops, ci.stop)
+    push!(mi.firsts, ci.first)
+    push!(mi.lasts, ci.last)
 end
 
 #
@@ -209,15 +209,15 @@ dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
 
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
-    stop  = time_keys[min(length(time_keys), ntimesteps)]
+    last  = time_keys[min(length(time_keys), ntimesteps)]
 
     if isuniform(time_keys)
-        start, stepsize = first_and_step(time_keys)
-        return Clock{Timestep}(start, stepsize, stop)
+        first, stepsize = first_and_step(time_keys)
+        return Clock{FixedTimestep}(first, stepsize, last)
 
     else
-        stop_index = findfirst(time_keys, stop)
-        times = (time_keys[1:stop_index]...)
+        last_index = findfirst(time_keys, last)
+        times = (time_keys[1:last_index]...)
         return Clock{VariableTimestep}(times)
 
     end
@@ -276,12 +276,12 @@ function run_timestep(ci::ComponentInstance, clock::Clock)
 end
 
 function _run_components(mi::ModelInstance, clock::Clock,
-                         starts::Vector{Int}, stops::Vector{Int}, comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
+                         firsts::Vector{Int}, lasts::Vector{Int}, comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
     comp_instances = components(mi)
     
     while ! finished(clock)
-        for (ci, start, stop, comp_clock) in zip(comp_instances, starts, stops, comp_clocks)
-            if start <= gettime(clock) <= stop
+        for (ci, first, last, comp_clock) in zip(comp_instances, firsts, lasts, comp_clocks)
+            if first <= gettime(clock) <= last
                 run_timestep(ci, comp_clock)
             end
         end
@@ -298,18 +298,18 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     t::Vector{Int} = dimkeys == nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
     
-    starts = mi.starts
-    stops = mi.stops
+    firsts = mi.firsts
+    lasts = mi.lasts
 
     if isuniform(t)
         _, stepsize = first_and_step(t)
-        comp_clocks = [Clock{Timestep}(start, stepsize, stop) for (start, stop) in zip(starts, stops)]
+        comp_clocks = [Clock{FixedTimestep}(first, stepsize, last) for (first, last) in zip(firsts, lasts)]
     else
-        comp_clocks = Array{Clock{VariableTimestep}}(length(starts))
-        for i = 1:length(starts)
-            start_index = findfirst(t, starts[i])
-            stop_index = findfirst(t, stops[i])
-            times = (t[start_index:stop_index]...)
+        comp_clocks = Array{Clock{VariableTimestep}}(length(firsts))
+        for i = 1:length(firsts)
+            first_index = findfirst(t, firsts[i])
+            last_index = findfirst(t, lasts[i])
+            times = (t[first_index:last_index]...)
             comp_clocks[i] = Clock{VariableTimestep}(times)
         end
     end
@@ -318,6 +318,6 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     init(mi)    # call module's (or fallback) init function
 
-    _run_components(mi, clock, starts, stops, comp_clocks)
+    _run_components(mi, clock, firsts, lasts, comp_clocks)
     nothing
 end

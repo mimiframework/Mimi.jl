@@ -79,16 +79,16 @@ end
 
 
 function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      start=nothing, stop=nothing, before=nothing, after=nothing)
-    addcomponent(m.md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)
+                      first=nothing, last=nothing, before=nothing, after=nothing)
+    addcomponent(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
 end
 
 function replace_component(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           start::VoidSymbol=nothing, stop::VoidSymbol=nothing,
+                           first::VoidSymbol=nothing, last::VoidSymbol=nothing,
                            before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    replace_component(m.md, comp_id, comp_name; start=start, stop=stop, before=before, after=after)
+    replace_component(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
 end
