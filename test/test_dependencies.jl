@@ -11,7 +11,7 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-    "https://github.com/lrennels/fund/archive/60b9239483100c4bdf8762c00f9f96e723bf984f.zip",
+    "https://github.com/lrennels/fund/archive/062e41f8af3c10740f27d5a977a9433af45c90a9.zip",
     "https://github.com/lrennels/mimi-rice-2010.jl/archive/09b8bda6a63f51c5421fc47b488ea56f712bb8e5.zip"
 ]
 
