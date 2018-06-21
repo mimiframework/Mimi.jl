@@ -1,9 +1,10 @@
 using Mimi
 using Distributions
 using Query
-using Plots
 using DataFrames
 using IterTools
+
+using Base.Test
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -96,3 +97,5 @@ run_mcs(mcs, 1000;
                        :rate => [0.015, 0.03, 0.05]],
         scenario_placement=Mimi.OUTER)
  
+
+@test true
