@@ -1,10 +1,8 @@
-using FileIO
+using ExcelFiles
 using Mimi
 using Base.Test
 
 # include("../../../wip/load_empirical_dist.jl")
-
-using ExcelReaders
 
 function load_vector(path, range, header=false)
     tups = collect(load(path, range, header=header))
