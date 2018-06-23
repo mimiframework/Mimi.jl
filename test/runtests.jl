@@ -74,8 +74,8 @@ end
     include("test_timesteparrays.jl")
 
     # fails currently: requires calling run_timestep with TimeStep rather than Int
-    # @info("test_timesteps.jl")           
-    # include("test_timesteps.jl")
+    @info("test_timesteps.jl")           
+    include("test_timesteps.jl")
 
     # fails currently: requires either not having Refs typed (which prevents reassignment)
     # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
@@ -84,4 +84,6 @@ end
 
     @info("test_explorer.jl")
     include("test_explorer.jl")
+
+    include("mcs/run_tests.jl")
 end

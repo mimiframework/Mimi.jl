@@ -45,9 +45,12 @@ function _replace_dots(ex)
     end
 end
 
-#Store Dict to keep _generate_run_func clean
-const global Timestep_Type_Dict = Dict([:FixedTimestep => :(Mimi.FixedTimestep), 
-    :VariableTimestep => :(Mimi.VariableTimestep), :AbstractTimestep => :(Mimi.AbstractTimestep)])
+# Store Dict to keep _generate_run_func clean
+const global Timestep_Type_Dict = Dict([
+    :Timestep         => :(Mimi.AbstractTimestep),       # This might be the only one we need...
+    :FixedTimestep    => :(Mimi.FixedTimestep), 
+    :VariableTimestep => :(Mimi.VariableTimestep), 
+    :AbstractTimestep => :(Mimi.AbstractTimestep)])
 
 function _generate_run_func(module_name, comp_name, args, body)
     if length(args) != 4

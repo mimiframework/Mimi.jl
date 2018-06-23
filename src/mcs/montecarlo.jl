@@ -343,6 +343,7 @@ end
 # Append a string representation of the tuple args to the given directory name
 function _compute_output_dir(orig_output_dir, tup)
     output_dir = (orig_output_dir == nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
+    mkpath(output_dir, 0o750)
     return output_dir
 end
 

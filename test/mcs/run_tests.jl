@@ -1,5 +1,3 @@
-using FileIO
-
 using Mimi
 using Base.Test
 
