@@ -247,6 +247,7 @@ function init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.Co
     nothing
 end
 
+# TBD: store this as with ci.run_timestep to avoid dynamic dispatch?
 function init(mi::ModelInstance)
     for ci in components(mi)
         init(mi, ci)
@@ -278,9 +279,10 @@ end
 function _run_components(mi::ModelInstance, clock::Clock,
                          firsts::Vector{Int}, lasts::Vector{Int}, comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
     comp_instances = components(mi)
+    tups = collect(zip(comp_instances, firsts, lasts, comp_clocks))
     
     while ! finished(clock)
-        for (ci, first, last, comp_clock) in zip(comp_instances, firsts, lasts, comp_clocks)
+        for (ci, first, last, comp_clock) in tups
             if first <= gettime(clock) <= last
                 run_timestep(ci, comp_clock)
             end

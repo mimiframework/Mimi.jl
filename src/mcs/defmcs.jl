@@ -8,15 +8,15 @@ end
 
 macro defmcs(expr)
     let # to make vars local to each macro invocation
-        local _rvs::Vector{RandomVariable} = []
-        local _corrs::Vector{CorrelationSpec} = []
-        local _transforms::Vector{TransformSpec} = []
-        local _saves::Vector{Tuple} = []
+        local _rvs        = []
+        local _corrs      = []
+        local _transforms = []
+        local _saves      = []
 
         # distilled into a function since it's called from two branches below
         function saverv(rvname, distname, distargs)
-            args = Tuple(distargs)
-            push!(_rvs, RandomVariable(rvname, eval(distname)(args...)))
+            expr = :(RandomVariable($(QuoteNode(rvname)), $distname($(distargs...))))
+            push!(_rvs, esc(expr))
         end
 
         @capture(expr, elements__)
@@ -31,7 +31,8 @@ macro defmcs(expr)
                 for var in vars
                     # println("var: $var")
                     if @capture(var, comp_.datum_)
-                        push!(_saves, (comp, datum))
+                        expr = :($(QuoteNode(comp)), $(QuoteNode(datum)))
+                        push!(_saves, esc(expr))
                     else
                         error("Save arg spec must be of the form comp_name.datum_name; got ($var)")
                     end
@@ -39,7 +40,8 @@ macro defmcs(expr)
 
             # e.g., name1:name2 = 0.7
             elseif @capture(elt, name1_:name2_ = value_)
-                push!(_corrs, CorrelationSpec(name1, name2, value))
+                expr = :(CorrelationSpec($(QuoteNode(name1)), $(QuoteNode(name2)), $value))
+                push!(_corrs, esc(expr))
 
             # e.g., ext_var5[2010:2050, :] *= name2
             # A bug in Macrotools prevents this shorter expression from working:
@@ -90,24 +92,25 @@ macro defmcs(expr)
                         elseif @capture(arg, first_Int:last_)   # last can be an int or 'end', which is converted to 0
                             # println("arg is range")
                             last = last == :end ? 0 : last
-                            dim = first:last
+                            dim = :($first:$last)
 
                         elseif @capture(arg, first_Int:step_:last_)
                             # println("arg is step range")
                             last = last == :end ? 0 : last
-                            dim = first:step:last
+                            dim = :($first:$step:$last)
 
                         elseif @capture(arg, s_Symbol)
                             if arg == :(:)
                                 # println("arg is Colon")
+                                # dim = :(Colon())
                                 dim = Colon()
                             else
                                 # println("arg is Symbol")
-                                dim = s
+                                dim = :($(QuoteNode(s)))
                             end
 
                         elseif isa(arg, Expr) && arg.head == :tuple  # tuple of Symbols (@capture didn't work...)
-                            dim = convert(Vector{Symbol}, arg.args)
+                            dim = :(convert(Vector{Symbol}, $(arg.args)))
 
                         else
                             error("Unrecognized stochastic parameter specification: $arg")
@@ -116,14 +119,18 @@ macro defmcs(expr)
                         # println("dims = $dims")
                     end
 
-                    push!(_transforms, TransformSpec(name, op, rvname, dims))
+                    expr = :(TransformSpec($(QuoteNode(name)), $(QuoteNode(op)), $(QuoteNode(rvname)), [$(dims...)]))
                 else
-                    push!(_transforms, TransformSpec(extvar, op, rvname))
+                    expr = :(TransformSpec($(QuoteNode(extvar)), $(QuoteNode(op)), $(QuoteNode(rvname))))
                 end
+                push!(_transforms, esc(expr))
             else
                 error("Unrecognized expression '$elt' in @defmcs")
             end
         end
-        return MonteCarloSimulation(_rvs, _transforms, _corrs, _saves)
+        return :(MonteCarloSimulation([$(_rvs...)], 
+                                      [$(_transforms...)], 
+                                      CorrelationSpec[$(_corrs...)], 
+                                      Tuple{Symbol, Symbol}[$(_saves...)]))
     end
 end
