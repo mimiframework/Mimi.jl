@@ -73,7 +73,6 @@ end
     @info("test_timesteparrays.jl")
     include("test_timesteparrays.jl")
 
-    # fails currently: requires calling run_timestep with TimeStep rather than Int
     @info("test_timesteps.jl")           
     include("test_timesteps.jl")
 
