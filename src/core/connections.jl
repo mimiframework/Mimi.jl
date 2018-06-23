@@ -191,14 +191,14 @@ to some other component to a value from a dictionary. This method assumes the di
 keys are strings that match the names of unset parameters in the model.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-    parameters = Dict(lowercase(k) => v for (k, v) in parameters)
+    parameters = Dict(k => v for (k, v) in parameters)
     leftovers = unconnected_params(md)
     external_params = md.external_params
 
     for (comp_name, param_name) in leftovers
         # check whether we need to set the external parameter
         if ! haskey(md.external_params, param_name)
-            value = parameters[lowercase(string(param_name))]
+            value = parameters[string(param_name)]
             param_dims = parameter_dimensions(md, comp_name, param_name)
             num_dims = length(param_dims)
 
