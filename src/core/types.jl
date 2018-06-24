@@ -185,6 +185,22 @@ mutable struct DatumDef <: NamedDef
     description::String
     unit::String
     datum_type::Symbol          # :parameter or :variable
+    default::Any                # used only for Parameters
+
+    function DatumDef(name::Symbol, datatype::DataType, dimensions::Vector{Symbol}, 
+                      description::String, unit::String, datum_type::Symbol,
+                      default::Any=nothing)
+        self = new()
+        self.name = name
+        self.datatype = datatype
+        self.dimensions = dimensions
+        self.description = description
+        self.unit = unit
+        self.datum_type = datum_type
+        self.default = default
+        return self
+    end
+
 end
 
 mutable struct DimensionDef <: NamedDef
