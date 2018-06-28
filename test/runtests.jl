@@ -76,6 +76,9 @@ end
     @info("test_clock.jl")
     include("test_clock.jl")
 
+    @info("test_dimensions")
+    include("test_dimensions.jl")
+
     # fails currently: requires calling run_timestep with TimeStep rather than Int
     # @info("test_timesteps.jl")           
     # include("test_timesteps.jl")

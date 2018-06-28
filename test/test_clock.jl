@@ -4,6 +4,8 @@ using Base.Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, Clock, timestep
 
+Mimi.reset_compdefs()
+
 t_f = FixedTimestep{1850, 10, 3000}(1)
 c_f = Clock{FixedTimestep}(1850, 10, 3000)
 @test timestep(c_f) == t_f
