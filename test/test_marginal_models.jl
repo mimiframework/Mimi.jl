@@ -1,7 +1,7 @@
 using Mimi
 using Base.Test
 
-reset_compdefs()
+Mimi.reset_compdefs()
 
 @defcomp compA begin
     varA = Variable(index=[time])
@@ -29,4 +29,15 @@ run(mm)
 
 for i in collect(1:10)
     @test mm[:compA, :varA][i] == 2*i
+end
+
+mm2 = create_marginal_model(model1, 0.5)
+
+mm2_marginal = mm2.marginal
+set_parameter!(mm2_marginal, :compA, :parA, x2)
+
+run(mm2)
+
+for i in collect(1:10)
+    @test mm2[:compA, :varA][i] == 2*i 
 end
