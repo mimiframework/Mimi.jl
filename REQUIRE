@@ -5,7 +5,7 @@ DataStructures 0.4.6
 Distributions 0.11.0
 Documenter 0.9.0
 Electron 0.1.1
-FileIO 0.7.0
+FileIO
 JSON 0.17.1
 LightGraphs 0.12.0
 MacroTools 0.4.0
@@ -13,3 +13,4 @@ MetaGraphs 0.4.0
 NamedArrays 0.5.3
 StatsBase
 StringBuilders 0.0.1
+ProgressMeter 0.5.5
