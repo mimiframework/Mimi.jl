@@ -173,7 +173,7 @@ var documenterSearchIndex = {"docs": [
     "page": "User Guide",
     "title": "Timesteps and available functions",
     "category": "section",
-    "text": "A Timestep is an immutable type defined within Mimi in \"src/clock.jl\". It is used to represent and keep track of time indices when running a model.In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where t is a Timestep object:isstart(t) # returns true or false, true if t is the first timestep to be run\nisstop(t) # returns true or false, true if t is the last timestep to be run\ngettime(t) # returns the year represented by timestep t"
+    "text": "A Timestep is an immutable type defined within Mimi in \"src/clock.jl\". It is used to represent and keep track of time indices when running a model.In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where t is a Timestep object:is_first(t) # returns true or false, true if t is the first timestep to be run\nis_last(t) # returns true or false, true if t is the last timestep to be run\ngettime(t) # returns the year represented by timestep t"
 },
 
 {
