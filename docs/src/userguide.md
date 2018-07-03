@@ -86,11 +86,12 @@ set_parameter!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-d
 
 ```
 
-To make an internal connection:
+To make an internal connection, the syntax is as follows.  Note that there is an optional keyword argument offset, that should be used in the case that a component parameter is connected to a variable from a prior timestep to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps.
 
 ```julia
 connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
-
+# Note: offset=1 => dependence is on on prior timestep, i.e., not a cycle
+connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
 ```
 
 To finish connecting components:
