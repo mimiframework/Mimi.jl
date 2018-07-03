@@ -31,8 +31,7 @@ trials = []
 targets = []
 baselines = []
 for i = 1:5
-    results = judge("Mimi", b, b);
-    
+    results = judge("Mimi", b, b, retune = true);
     trial_judgement = collect(PkgBenchmark.benchmarkgroup(results))
     target_results_nums = collect(PkgBenchmark.benchmarkgroup(PkgBenchmark.target_result(results)))
     baseline_results_nums = collect(PkgBenchmark.benchmarkgroup(PkgBenchmark.baseline_result(results)))
