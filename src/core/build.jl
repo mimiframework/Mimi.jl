@@ -53,8 +53,6 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
       
     # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1 && dims[1] == :time
-        # t = dimension(md, :time)
-        # value = dtype(length(t[first:end]))
         value = dtype(dim_count(md, :time))
 
     else # if dims[1] != :time
