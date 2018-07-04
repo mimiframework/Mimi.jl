@@ -86,11 +86,12 @@ set_parameter!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-d
 
 ```
 
-To make an internal connection:
+To make an internal connection, the syntax is as follows.  Note that there is an optional keyword argument offset, that should be used in the case that a component parameter is connected to a variable from a prior timestep to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps.
 
 ```julia
 connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
-
+# Note: offset=1 => dependence is on on prior timestep, i.e., not a cycle
+connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
 ```
 
 To finish connecting components:
@@ -165,8 +166,8 @@ A `Timestep` is an immutable type defined within Mimi in "src/clock.jl". It is u
 In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where `t` is a Timestep object:
 
 ```julia
-isstart(t) # returns true or false, true if t is the first timestep to be run
-isstop(t) # returns true or false, true if t is the last timestep to be run
+is_first(t) # returns true or false, true if t is the first timestep to be run
+is_last(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
 ```
 
