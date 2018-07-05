@@ -10,7 +10,8 @@ makedocs(
         "User Guide" => "userguide.md",
 		"Tutorial" => "tutorial.md",
 		"FAQ" => "faq.md",
-		"Reference" => "reference.md"]
+		"Reference" => "reference.md"],
+		"Integration Guide" => "integrationguide.md"
 )
 
 deploydocs(
