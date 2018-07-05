@@ -1,9 +1,10 @@
 using Mimi
 using Distributions
 using Query
-using Plots
 using DataFrames
 using IterTools
+
+using Base.Test
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -33,7 +34,7 @@ mcs = @defmcs begin
 end
 
 Mimi.reset_compdefs()
-include("../../../examples/tutorial/02-two-region-model/main.jl")
+include("../../examples/tutorial/02-two-region-model/main.jl")
 
 m = model
 
@@ -44,9 +45,7 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-N = 1000
-
-output_dir = "/Volumes/RamDisk/Mimi-no-scen"
+output_dir = "/tmp"
 
 generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
@@ -54,7 +53,7 @@ generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 Mimi.set_model!(mcs, m)
 
-run_mcs(mcs, N, output_dir=output_dir)
+run_mcs(mcs, 1000, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018
 # generate_trials(mcs, samples=load("foo.csv"))
@@ -87,7 +86,7 @@ function my_loop_func(mcs::MonteCarloSimulation, tup)
     Mimi.log_info("scen:$scen, rate:$rate")
 end
 
-output_dir = "/Volumes/RamDisk/Mimi-scen"
+output_dir = "/tmp"
 
 run_mcs(mcs, 1000;
         output_dir=output_dir,
@@ -96,3 +95,4 @@ run_mcs(mcs, 1000;
                        :rate => [0.015, 0.03, 0.05]],
         scenario_placement=Mimi.OUTER)
  
+@test true

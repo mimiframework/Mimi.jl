@@ -59,7 +59,7 @@ function timestep(c::Clock)
 	return c.ts
 end
 
-function timeindex(c::Clock)
+function time_index(c::Clock)
 	return c.ts.t
 end
 

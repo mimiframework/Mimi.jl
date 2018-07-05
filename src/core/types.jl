@@ -185,6 +185,22 @@ mutable struct DatumDef <: NamedDef
     description::String
     unit::String
     datum_type::Symbol          # :parameter or :variable
+    default::Any                # used only for Parameters
+
+    function DatumDef(name::Symbol, datatype::DataType, dimensions::Vector{Symbol}, 
+                      description::String, unit::String, datum_type::Symbol,
+                      default::Any=nothing)
+        self = new()
+        self.name = name
+        self.datatype = datatype
+        self.dimensions = dimensions
+        self.description = description
+        self.unit = unit
+        self.datum_type = datum_type
+        self.default = default
+        return self
+    end
+
 end
 
 mutable struct DimensionDef <: NamedDef
@@ -310,7 +326,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     last::Int
 
     run_timestep::Union{Void, Function}
-    useIntegerTime::Bool
+    use_integer_time::Bool                  # will be deprecated when switching to timesteps in all cases
 
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
                                vars::TV, pars::TP, 
@@ -324,7 +340,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         self.parameters = pars
         self.first = comp_def.first
         self.last = comp_def.last
-        self.useIntegerTime = true
+        self.use_integer_time = true
 
         comp_module = eval(Main, comp_id.module_name)
 
@@ -340,7 +356,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
             time_type = arg_types[length(arg_types)]
 
             if time_type <: AbstractTimestep
-                self.useIntegerTime = false
+                self.use_integer_time = false
             end
         end
 
