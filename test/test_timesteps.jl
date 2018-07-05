@@ -16,11 +16,9 @@ Mimi.reset_compdefs()
 
 t = FixedTimestep{1850, 10, 3000}(1)
 @test is_first(t)
+
 t1 = next_timestep(t)
-#t2 = new_timestep(t1, 1860)
-#@test is_first(t2)
-#t3 = new_timestep(t2, 1840)
-#@test t3.t == 3
+@test t1.t == 2
 
 t = FixedTimestep{2000, 1, 2050}(51)
 @test is_last(t)
@@ -52,7 +50,7 @@ t = next_timestep(t)
     inputF = Parameter()
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::AbstractTimestep)
+    function run_timestep(p, v, d, ts::Timestep)
         v.output[ts] = p.inputF + ts.t
     end
 end
@@ -61,7 +59,7 @@ end
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::AbstractTimestep)      # TBD: Was ts::Timestep, but it's broken currently...
+    function run_timestep(p, v, d, ts::Timestep)
         if gettime(ts) < 2005
             v.output[ts] = p.inputB[ts]
         else
@@ -85,8 +83,8 @@ set_parameter!(m, :Bar, :inputB, collect(1:11))
 
 run(m)
 
-@test length(m[:Foo, :output])==6
-@test length(m[:Bar, :output])==11
+@test length(m[:Foo, :output]) == 11
+@test length(m[:Bar, :output]) == 11
 
 for i in 1:6
     @test m[:Foo, :output][i] == 5+i
@@ -108,7 +106,7 @@ end
     inputF = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, ts::Timestep)
         v.output[ts] = p.inputF[ts]
     end
 end
@@ -116,10 +114,13 @@ end
 m2 = Model()
 set_dimension!(m2, :time, 2000:2010)
 bar = addcomponent(m2, Bar)
-foo2 = addcomponent(m2, Foo2, first=2005) #offset for foo
+foo2 = addcomponent(m2, Foo2, first=2005)
 
 set_parameter!(m2, :Bar, :inputB, collect(1:11))
-connect_parameter(m2, :Foo2, :inputF, :Bar, :output)
+
+# TBD: Connecting components with different "first" times creates a mismatch
+# in understanding how to translate the index back to a year.
+connect_parameter(m2, :Foo2, :inputF, :Bar, :output)        
 
 run(m2)
 
@@ -135,7 +136,7 @@ end
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::AbstractTimestep)
+    function run_timestep(p, v, d, ts::Timestep)
         if gettime(ts) < 2005
             v.output[ts] = 0
         else
@@ -154,8 +155,8 @@ set_parameter!(m3, :Foo, :inputF, 5.)
 connect_parameter(m3, :Bar2, :inputB, :Foo, :output)
 run(m3)
 
-@test length(m3[:Foo, :output]) == 6
-@test length(m3[:Bar2, :inputB]) == 6
+@test length(m3[:Foo, :output]) == 11
+@test length(m3[:Bar2, :inputB]) == 11
 @test length(m3[:Bar2, :output]) == 11
 
 end

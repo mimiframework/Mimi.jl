@@ -224,14 +224,14 @@ end
 
 external_params(md::ModelDef) = md.external_params
 
-function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
-    p = DatumDef(name, datatype, dimensions, description, unit, :parameter)
+function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
+    p = DatumDef(name, datatype, dimensions, description, unit, :parameter, default)
     comp_def.parameters[name] = p
     return p
 end
 
-function addparameter(comp_id::ComponentId, name, datatype, dimensions, description, unit)
-    addparameter(compdef(comp_id), name, datatype, dimensions, description, unit)
+function addparameter(comp_id::ComponentId, name, datatype, dimensions, description, unit, default)
+    addparameter(compdef(comp_id), name, datatype, dimensions, description, unit, default)
 end
 
 parameters(comp_def::ComponentDef) = values(comp_def.parameters)
@@ -454,38 +454,45 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 
     if before == nothing && after == nothing
         md.comp_defs[comp_name] = comp_def   # just add it to the end
-        return nothing
+    else
+        new_comps = OrderedDict{Symbol, ComponentDef}()
+
+        if before != nothing
+            if ! hascomp(md, before)
+                error("Component to add before ($before) does not exist")
+            end
+
+            for i in compkeys(md)
+                if i == before
+                    new_comps[comp_name] = comp_def
+                end
+                new_comps[i] = md.comp_defs[i]
+            end
+
+        else    # after != nothing, since we've handled all other possibilities above
+            if ! hascomp(md, after)
+                error("Component to add before ($before) does not exist")
+            end
+
+            for i in compkeys(md)
+                new_comps[i] = md.comp_defs[i]
+                if i == after
+                    new_comps[comp_name] = comp_def
+                end
+            end
+        end
+
+        md.comp_defs = new_comps
+        # println("md.comp_defs: $(md.comp_defs)")
     end
 
-    new_comps = OrderedDict{Symbol, ComponentDef}()
-
-    if before != nothing
-        if ! hascomp(md, before)
-            error("Component to add before ($before) does not exist")
-        end
-
-        for i in compkeys(md)
-            if i == before
-                new_comps[comp_name] = comp_def
-            end
-            new_comps[i] = md.comp_defs[i]
-        end
-
-    else    # after != nothing, since we've handled all other possibilities above
-        if ! hascomp(md, after)
-            error("Component to add before ($before) does not exist")
-        end
-
-        for i in compkeys(md)
-            new_comps[i] = md.comp_defs[i]
-            if i == after
-                new_comps[comp_name] = comp_def
-            end
+    # Set parameters to any specified defaults
+    for param in parameters(comp_def)
+        if param.default != nothing
+            set_parameter!(md, comp_name, name(param), param.default)
         end
     end
-
-    md.comp_defs = new_comps
-    # println("md.comp_defs: $(md.comp_defs)")
+    
     return nothing
 end
 

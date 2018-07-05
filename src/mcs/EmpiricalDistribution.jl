@@ -1,3 +1,5 @@
+using Distributions
+
 struct EmpiricalDistribution{T}
     values::Vector{T}
     weights::ProbabilityWeights

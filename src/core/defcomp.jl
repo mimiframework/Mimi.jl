@@ -45,9 +45,12 @@ function _replace_dots(ex)
     end
 end
 
-#Store Dict to keep _generate_run_func clean
-const global Timestep_Type_Dict = Dict([:FixedTimestep => :(Mimi.FixedTimestep), 
-    :VariableTimestep => :(Mimi.VariableTimestep), :AbstractTimestep => :(Mimi.AbstractTimestep)])
+# Store Dict to keep _generate_run_func clean
+const global Timestep_Type_Dict = Dict([
+    :Timestep         => :(Mimi.AbstractTimestep),       # This might be the only one we need...
+    :FixedTimestep    => :(Mimi.FixedTimestep), 
+    :VariableTimestep => :(Mimi.VariableTimestep), 
+    :AbstractTimestep => :(Mimi.AbstractTimestep)])
 
 function _generate_run_func(module_name, comp_name, args, body)
     if length(args) != 4
@@ -109,7 +112,7 @@ function _generate_init_func(module_name, comp_name, args, body)
 end
 
 function _check_for_known_argname(name)
-    if !(name in (:description, :unit, :index))
+    if !(name in (:description, :unit, :index, :default))
         error("Unknown argument name: '$name'")
     end
 end
@@ -121,9 +124,14 @@ function _check_for_known_element(name)
 end
 
 # Generates an expression to construct a Variable or Parameter
-function _generate_var_or_param(elt_type, name, datatype, dimensions, desc, unit)
+function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit)
     func_name = elt_type == :Parameter ? :addparameter : :addvariable
-    expr = :($func_name($(esc(:comp)), $(QuoteNode(name)), $datatype, $dimensions, $desc, $unit))
+    args = [datatype, dimensions, desc, unit]
+    if elt_type == :Parameter
+        push!(args, dflt)
+    end
+    # expr = :($func_name($(esc(:comp)), $(QuoteNode(name)), $datatype, $dimensions, $desc, $unit))
+    expr = :($func_name($(esc(:comp)), $(QuoteNode(name)), $(args...)))
     debug("Returning: $expr\n")
     return expr
 end
@@ -215,7 +223,9 @@ macro defcomp(comp_name, ex)
 
         elseif elt_type in (:Variable, :Parameter)
             debug("  $elt_type $name")
-            desc = unit = ""
+            desc = ""
+            unit = ""
+            dflt = nothing
             dimensions = Array{Symbol}(0)
 
             for arg in args
@@ -249,6 +259,11 @@ macro defcomp(comp_name, ex)
                             push!(known_dims, dim)
                         end
                     end
+                elseif @capture(arg, default = dflt_)
+                    if elt_type == :Variable
+                        error("Default values are permitted only for Parameters, not for Variables")
+                    end
+                    debug("Default for parameter $name is $dflt")
                 end
             end
 
@@ -256,7 +271,7 @@ macro defcomp(comp_name, ex)
             debug("    index $dims, unit '$unit', desc '$desc'")
 
             datatype = vartype == nothing ? Number : vartype
-            addexpr(_generate_var_or_param(elt_type, name, datatype, dimensions, desc, unit))
+            addexpr(_generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit))
 
         else
             error("Unrecognized element type: $elt_type")
