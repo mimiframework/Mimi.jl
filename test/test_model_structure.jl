@@ -7,7 +7,8 @@ using Mimi
 
 import Mimi: 
     add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
-    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count
+    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
+    modeldef, modelinstance
 
 reset_compdefs()
 
@@ -31,7 +32,6 @@ end
         end
     end
 end
-
 
 @defcomp C begin
     varC::Int = Variable()
@@ -72,12 +72,19 @@ connect_parameter(m, :C => :parC, :B => :varB)
 
 @test length(unconnected_params(m)) == 0
 
+add_connector_comps(m)
+run(m)
+
+#############################################
+#  Tests for model def and instance         #
+#############################################
+
+@test modeldef(m) == m.md
+@test modelinstance(m) == m.mi
+
 #############################################
 #  Tests for connecting scalar parameters   #
 #############################################
-
-add_connector_comps(m)
-run(m)
 
 @test all([m[:A, :varA][t] == 1 for t in 1:9])
 

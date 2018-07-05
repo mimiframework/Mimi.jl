@@ -72,6 +72,12 @@ end
 
     @info("test_timesteparrays.jl")
     include("test_timesteparrays.jl")
+ 
+    @info("test_clock.jl")
+    include("test_clock.jl")
+ 
+    @info("test_dimensions")
+    include("test_dimensions.jl")
 
     @info("test_timesteps.jl")           
     include("test_timesteps.jl")

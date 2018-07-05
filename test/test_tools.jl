@@ -1,10 +1,17 @@
 using Base.Test
 using Mimi
 
-@test Mimi.prettify("camelCaseBasic") == "Camel Case Basic"
-@test Mimi.prettify("camelWithAOneLetterWord") == "Camel With A One Letter Word"
-@test Mimi.prettify("snake_case_basic") == "Snake Case Basic"
-@test Mimi.prettify("_snake__case__weird_") == "Snake Case Weird"
+#utils: prettify
+@test Mimi.prettify("camelCaseBasic") == Mimi.prettify(:camelCaseBasic) == "Camel Case Basic"
+@test Mimi.prettify("camelWithAOneLetterWord") == Mimi.prettify(:camelWithAOneLetterWord) == "Camel With A One Letter Word"
+@test Mimi.prettify("snake_case_basic") == Mimi.prettify(:snake_case_basic) == "Snake Case Basic"
+@test Mimi.prettify("_snake__case__weird_") == Mimi.prettify(:_snake__case__weird_) == "Snake Case Weird"
+
+#utils: interpolate
+step = 2;
+last = 10;
+ts = 10;
+@test Mimi.interpolate(collect(0:step:last), ts) == collect(0:step/ts:last)
 
 @defcomp Foo begin
     input = Parameter()

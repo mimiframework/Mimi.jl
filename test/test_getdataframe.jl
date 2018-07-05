@@ -38,6 +38,11 @@ par = collect(2015:5:2110)
 set_dimension!(my_model, :time, 2015:5:2110)
 addcomponent(my_model, testcomp1)
 set_parameter!(my_model, :testcomp1, :par1, par)
+
+# Test running before model built
+@test_throws ErrorException dataframe = getdataframe(my_model, :testcomp1, :var1)
+
+# Now run model
 run(my_model)
 
 # Regular getdataframe
