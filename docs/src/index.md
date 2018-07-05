@@ -2,7 +2,7 @@
 
 ## Overview
 
-Mimi is a package that provides a component model for integrated assessment models.
+Mimi is a package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling).
 
 ## Installation
 
