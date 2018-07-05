@@ -47,6 +47,8 @@ end
 
 output_dir = "/tmp"
 
+N = 1000
+
 generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Run trials 1:N, and save results to the indicated directory
