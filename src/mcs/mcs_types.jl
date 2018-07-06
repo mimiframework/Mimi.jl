@@ -25,8 +25,8 @@ Base.eltype(ss::SampleStore) = eltype(ss.values)
 # TBD: This interpolates values between those in the vector. Is this reasonable?
 # Probably shouldn't use correlation on values loaded from a file rather than 
 # from a proper distribution.
-function Base.quantile(ss::SampleStore{T}, probs) where T
-    return quantile(sort(ss.values), probs)
+function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
+    return quantile.(sort(ss.values), probs)
 end
 
 """

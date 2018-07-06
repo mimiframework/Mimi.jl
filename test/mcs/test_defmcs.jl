@@ -55,7 +55,7 @@ generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 Mimi.set_model!(mcs, m)
 
-run_mcs(mcs, 1000, output_dir=output_dir)
+run_mcs(mcs, N, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018
 # generate_trials(mcs, samples=load("foo.csv"))
@@ -82,19 +82,84 @@ end
 #
 # Test scenario loop capability
 #
-function my_loop_func(mcs::MonteCarloSimulation, tup)
+global loop_counter = 0
+
+function outer_loop_func(mcs::MonteCarloSimulation, tup)
+    global loop_counter
+    loop_counter += 1
+
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    Mimi.log_info("scen:$scen, rate:$rate")
+    Mimi.log_info("outer loop: scen:$scen, rate:$rate")
+end
+
+function inner_loop_func(mcs::MonteCarloSimulation, tup)
+    global loop_counter
+    loop_counter += 1
+
+    # unpack tuple (better to use NT here?)
+    (scen, rate) = tup
+    Mimi.log_info("inner loop: scen:$scen, rate:$rate")
 end
 
 output_dir = "/tmp"
 
+
+loop_counter = 0
+
 run_mcs(mcs, 1000;
         output_dir=output_dir,
-        scenario_func=my_loop_func, 
-        scenario_args=[:scen => [:low, :med, :high],
+        scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
+        scenario_func=outer_loop_func, 
         scenario_placement=Mimi.OUTER)
  
-@test true
+@test loop_counter == 6
+
+
+loop_counter = 0
+
+run_mcs(mcs, 1000;
+        output_dir=output_dir,
+        scenario_args=[:scen => [:low, :high],
+                       :rate => [0.015, 0.03, 0.05]],
+        scenario_func=inner_loop_func, 
+        scenario_placement=Mimi.INNER)
+
+@test loop_counter == 6000
+
+
+function other_loop_func(mcs::MonteCarloSimulation, tup)
+    global loop_counter
+    loop_counter += 10
+end
+
+function pre_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    global loop_counter
+    loop_counter += 1
+end
+
+loop_counter = 0
+
+run_mcs(mcs, 1000;
+        output_dir=output_dir,
+        pre_trial_func=pre_trial,
+        scenario_func=other_loop_func,
+        scenario_args=[:scen => [:low, :high],
+                       :rate => [0.015, 0.03, 0.05]])
+
+@test loop_counter == 6060
+
+
+function post_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Union{Void,Tuple})
+    global loop_counter
+    loop_counter += 1
+end
+
+loop_counter = 0
+
+run_mcs(mcs, 1000;
+        output_dir=output_dir,
+        post_trial_func=post_trial)
+
+@test loop_counter == 1000
