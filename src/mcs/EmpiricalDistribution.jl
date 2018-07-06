@@ -79,7 +79,7 @@ function Base.var(d::EmpiricalDistribution)
 end
 
 function Base.quantile(d::EmpiricalDistribution, args...)
-    indices = quantile(d.dist, args...)
+    indices = quantile.(d.dist, args...)
     return d.values[indices]
 end
 
