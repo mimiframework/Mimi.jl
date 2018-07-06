@@ -24,7 +24,7 @@ dim_vals = Dimension(4) # Same as 1:4
 @test start(dim_varargs) == 1
 @test start(dim_vec) == 1
 @test start(dim_vals) == 1
-@test start(dim_range) == 2010
+@test start(dim_range) == 1
 
 @test endof(dim_varargs) == :baz
 @test endof(dim_vec) == :baz
