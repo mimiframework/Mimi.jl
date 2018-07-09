@@ -43,7 +43,7 @@ In an effort to standardize the function naming protocol within Mimi, and to str
 |`connectparameter`         |`connect_parameter`        |
 |`setleftoverparameters`    |`set_leftover_params!`     |
 |`setparameter`             |`set_parameter!`           |
-|`adddimension`             |`add_dimension`            |
+|`adddimension`             |`add_dimension!`            |
 |`setindex`                 |`set_dimension!`           |  
 
 Changes to various optional keyword arguments:
