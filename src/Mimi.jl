@@ -19,7 +19,7 @@ export
     Model,
     addcomponent,
     add_connector_comps,
-    add_dimension,
+    add_dimension!,
     addparameter,
     compdef,
     compdefs,

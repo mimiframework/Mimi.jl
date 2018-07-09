@@ -149,7 +149,7 @@ function _generate_dims_expr(name, args, vartype)
         error("Index $name: Type specification ($vartype) is not supported")
     end
 
-    expr = :(add_dimension($(esc(:comp)), $(QuoteNode(name))))
+    expr = :(add_dimension!($(esc(:comp)), $(QuoteNode(name))))
     return expr
 end
 
