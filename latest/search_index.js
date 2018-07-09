@@ -333,7 +333,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "\n@defcomp,\n@modelegate,\nMarginalModel,\nModel,\naddcomponent,\nadd_connector_comps,\nadd_dimension,\naddparameter,\ncompdef,\ncompdefs,\ncompinstance,\ncompkeys,\ncomponents,\nconnect_parameter,\ncreate_marginal_model,\ndatatype,\ndescription,\ndimension,\ndimensions,\ndisconnect!,\nexplore,\ngetdataframe,\ngetproperty,\nget_parameter_value,\nget_variable_value,\ninterpolate,\nload_comps,\nmodeldef,\nname,\nnew_component,\nparameters,\nreplace_component,\nrun_timestep,\nset_dimension!,\nset_leftover_params!,\nset_parameter!,\nsetproperty!,\nunit,\nvariables\n"
+    "text": "\n@defcomp,\n@modelegate,\nMarginalModel,\nModel,\naddcomponent,\nadd_connector_comps,\nadd_dimension!,\naddparameter,\ncompdef,\ncompdefs,\ncompinstance,\ncompkeys,\ncomponents,\nconnect_parameter,\ncreate_marginal_model,\ndatatype,\ndescription,\ndimension,\ndimensions,\ndisconnect!,\nexplore,\ngetdataframe,\ngetproperty,\nget_parameter_value,\nget_variable_value,\ninterpolate,\nload_comps,\nmodeldef,\nname,\nnew_component,\nparameters,\nreplace_component,\nrun_timestep,\nset_dimension!,\nset_leftover_params!,\nset_parameter!,\nsetproperty!,\nunit,\nvariables\n"
 },
 
 ]}
