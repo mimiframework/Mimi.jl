@@ -217,7 +217,7 @@ mutable struct ComponentDef  <: NamedDef
     last::Int
 
     # ComponentDefs are created "empty"; elements are subsequently added 
-    # to them via addvariable, add_dimension, etc.
+    # to them via addvariable, add_dimension!, etc.
     function ComponentDef(comp_id::ComponentId)
         self = new()
         self.name = comp_id.comp_name

@@ -111,12 +111,12 @@ end
 #
 # Dimensions
 #
-function add_dimension(comp::ComponentDef, name)
+function add_dimension!(comp::ComponentDef, name)
     comp.dimensions[name] = dim_def = DimensionDef(name)
     return dim_def
 end
 
-add_dimension(comp_id::ComponentId, name) = add_dimension(compdef(comp_id), name)
+add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
 dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
 
