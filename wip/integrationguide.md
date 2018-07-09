@@ -53,7 +53,7 @@ Changes to various optional keyword arguments:
 ```julia
 connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
 ```
-- `add_component`:  Previously the optional keyword arguments `start` and `stop` could be used to specify times for components that do not run for the full length of the model. These arguments are now `first` and `last` respectively.
+- `addcomponent`:  Previously the optional keyword arguments `start` and `stop` could be used to specify times for components that do not run for the full length of the model. These arguments are now `first` and `last` respectively.
 
 ```julia
 addcomponent(mymodel, ComponentC; first=2010, last=2100)
