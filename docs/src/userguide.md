@@ -240,6 +240,29 @@ result2 = instance2[:Comp, :Var]
 
 Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.
 
+### The init function ###
+
+The `init` function can optionally be called within `@defcomp` and **before** `run_timestep`.  Similarly to `run_timestep`, this function is called with parameters `init(p, v, d)`, where the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined.   
+
+If defined for a specific component, this function will run **before** the timestep loop, and should only be used for parameters or variables without a time index e.g. to compute the values of scalar variables that only depend on scalar parameters. Note that when using `init`, it may be necessary to add special handling in the `run_timestep` function for the first timestep, in particular for difference equations.  A skeleton `@defcomp` script using both `run_timestep` and `init` would appear as follows:
+
+```julia
+@defcomp component1 begin
+
+    # First define the state this component will hold
+    savingsrate = Parameter()
+
+    # Second, define the (optional) init function for the component
+    function init(p, v, d)
+    end
+
+    # Third, define the run_timestep function for the component
+    function run_timestep(p, v, d, t)
+    end
+
+end
+```
+
 ###  The explorer UI
  
  The `explore` function allows the user to view and explore the variables and parameters of a model run.  To invoke the explorer UI, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
