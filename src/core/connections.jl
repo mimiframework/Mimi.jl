@@ -202,20 +202,22 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
             param_dims = parameter_dimensions(md, comp_name, param_name)
             num_dims = length(param_dims)
 
-            if num_dims == 0    # scalar case
-                set_external_scalar_param!(md, param_name, value)
+            set_external_param!(md, param_name, value)
 
-            else
-                if num_dims in (1, 2) && param_dims[1] == :time   # array case
-                    value = convert(Array{md.number_type}, value)
+            # if num_dims == 0    # scalar case
+            #     set_external_scalar_param!(md, param_name, value)
 
-                    values = get_timestep_instance(md, eltype(value), num_dims, value)
+            # else
+            #     if num_dims in (1, 2) && param_dims[1] == :time   # array case
+            #         value = convert(Array{md.number_type}, value)
+
+            #         values = get_timestep_instance(md, eltype(value), num_dims, value)
                     
-                else
-                    values = value
-                end
-                set_external_array_param!(md, param_name, values, param_dims)
-            end
+            #     else
+            #         values = value
+            #     end
+            #     set_external_array_param!(md, param_name, values, param_dims)
+            # end
         end
         connect_parameter(md, comp_name, param_name, param_name)
     end
@@ -258,8 +260,26 @@ function add_external_param_conn(md::ModelDef, conn::ExternalParameterConnection
     push!(md.external_param_conns, conn)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
+function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter; param_dims = [], num_dims = 0)
     md.external_params[name] = value
+end
+
+function set_external_param(md::ModelDef, name::Symbol, value::Number; param_dims = [], num_dims = 0)
+    set_external_scalar_param!(md, param_name, value)
+end
+
+function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims = [], num_dims = 0)
+
+    if num_dims in (1, 2) && param_dims[1] == :time   
+        value = convert(Array{md.number_type}, value)
+
+        values = get_timestep_instance(md, eltype(value), num_dims, value)
+                 
+    else
+         values = value
+    end
+
+    set_external_array_param!(md, param_name, values, param_dims)
 end
 
 """
