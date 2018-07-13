@@ -202,7 +202,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
             param_dims = parameter_dimensions(md, comp_name, param_name)
             num_dims = length(param_dims)
 
-            set_external_param!(md, param_name, value)
+            set_external_param!(md, param_name, value, param_dims, num_dims)
             
             #TODO:  if tests pass and we like this change to set_external_param!, delete the commented out code below
             # if num_dims == 0    # scalar case
