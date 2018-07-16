@@ -67,12 +67,12 @@ function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Number; comp_name = comp_name)
+function set_external_param!(m::Model, name::Symbol, value::Number; comp_name::Symbol = nothing)
     set_external_param!(m.md, name, value; comp_name = comp_name)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; comp_name = comp_name)
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; comp_name::Symbol = nothing)
     set_external_param!(m.md, name, value; comp_name = comp_name)
 end
 
