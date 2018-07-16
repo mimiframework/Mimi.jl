@@ -62,18 +62,18 @@ function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol
     connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::ModelParameter; param_dims = [], num_dims = 0)
+function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     set_external_param!(m.md, name, value)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Number; param_dims = [], num_dims = 0)
-    set_external_param!(m.md, name, value)
+function set_external_param!(m::Model, name::Symbol, value::Number; comp_name = comp_name)
+    set_external_param!(m.md, name, value; comp_name = comp_name)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims = [], num_dims = 0)
-    set_external_param!(m.md, name, value; param_dims = param_dims, num_dims = num_dims)
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; comp_name = comp_name)
+    set_external_param!(m.md, name, value; comp_name = comp_name)
 end
 
 function add_internal_param_conn(m::Model, conn::InternalParameterConnection)
