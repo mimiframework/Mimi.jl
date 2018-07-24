@@ -118,13 +118,15 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
 
     for (i, results) in enumerate(mcs.results)
         if multiple_results
-            output_dir = joinpath(output_dir, "model_$i")
-            mkpath(output_dir, 0o750)
+            sub_dir = joinpath(output_dir, "model_$i")
+            mkpath(sub_dir, 0o750)
+        else
+            sub_dir = output_dir 
         end
 
         for datum_key in mcs.savelist
             (comp_name, datum_name) = datum_key
-            filename = joinpath(output_dir, "$datum_name.csv")
+            filename = joinpath(sub_dir, "$datum_name.csv")
             log_info("Writing $comp_name.$datum_name to $filename")
             save(filename, results[datum_key])
         end
