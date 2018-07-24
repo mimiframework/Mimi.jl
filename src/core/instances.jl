@@ -40,9 +40,9 @@ function _property_expr(obj, types, index_pos)
     T = types.parameters[index_pos]
     # println("_property_expr() index_pos: $index_pos, T: $T")
    
-    if T <: Scalar
+    if T <: ScalarModelParameter
         value_type = T.parameters[1]
-        ex = :(obj.values[$index_pos].value::$(value_type)) # dereference Scalar instance
+        ex = :(obj.values[$index_pos].value::$(value_type)) # dereference scalar parameter
     else
         ex = :(obj.values[$index_pos])
     end
@@ -81,14 +81,12 @@ end
     return _property_expr(obj, TYPES, index_pos)
 end
 
-# Shouldn't set the parameter itself, just the value (for Scalar objs) or array slice
-
 @generated function setproperty!(obj::ComponentInstanceParameters{NAMES, TYPES}, 
                                  ::Val{PROPERTY}, value) where {NAMES, TYPES, PROPERTY}
     index_pos = _index_pos(NAMES, PROPERTY, "parameter")
     T = TYPES.parameters[index_pos]
 
-    if T <: Scalar
+    if T <: ScalarModelParameter
         return :(obj.values[$index_pos].value = value)
     else
         error("You cannot override indexed parameter $PROPERTY::$T.")
@@ -101,7 +99,7 @@ end
     index_pos = _index_pos(NAMES, PROPERTY, "variable")
     T = TYPES.parameters[index_pos]
 
-    if T <: Scalar
+    if T <: ScalarModelParameter
         return :(obj.values[$index_pos].value = value)
     else
         error("You cannot override indexed variable $PROPERTY::$T.")
@@ -233,10 +231,10 @@ function reset_variables(ci::ComponentInstance)
         if (T <: AbstractArray || T <: TimestepArray) && eltype(value) <: AbstractFloat
             fill!(value, NaN)
 
-        elseif T <: AbstractFloat || (T <: Scalar && T.parameters[1] <: AbstractFloat)            
+        elseif T <: AbstractFloat || (T <: ScalarModelParameter && T.parameters[1] <: AbstractFloat)            
             setproperty!(vars, Val(name), NaN)
 
-        elseif (T <: Scalar)    # integer or bool
+        elseif (T <: ScalarModelParameter)    # integer or bool
             setproperty!(vars, Val(name), 0)
         end
     end

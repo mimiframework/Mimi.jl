@@ -6,6 +6,8 @@ using IterTools
 
 using Base.Test
 
+N = 1000
+
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
@@ -45,9 +47,7 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-output_dir = "/tmp"
-
-N = 1000
+output_dir = "/tmp/mcs"
 
 generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
@@ -102,12 +102,9 @@ function inner_loop_func(mcs::MonteCarloSimulation, tup)
     Mimi.log_info("inner loop: scen:$scen, rate:$rate")
 end
 
-output_dir = "/tmp"
-
-
 loop_counter = 0
 
-run_mcs(mcs, 1000;
+run_mcs(mcs, N;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -119,14 +116,14 @@ run_mcs(mcs, 1000;
 
 loop_counter = 0
 
-run_mcs(mcs, 1000;
+run_mcs(mcs, N;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=inner_loop_func, 
         scenario_placement=Mimi.INNER)
 
-@test loop_counter == 6000
+@test loop_counter == N * 6
 
 
 function other_loop_func(mcs::MonteCarloSimulation, tup)
@@ -141,25 +138,29 @@ end
 
 loop_counter = 0
 
-run_mcs(mcs, 1000;
+run_mcs(mcs, N;
         output_dir=output_dir,
         pre_trial_func=pre_trial,
         scenario_func=other_loop_func,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]])
 
-@test loop_counter == 6060
+@test loop_counter == 6 * N + 60
 
 
 function post_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Union{Void,Tuple})
-    global loop_counter
+    global loop_counter    
     loop_counter += 1
+
+    m = mcs.models[1]
+    # println("grosseconomy.share: $(m[:grosseconomy, :share])")
 end
 
 loop_counter = 0
 
-run_mcs(mcs, 1000;
+N = 10
+run_mcs(mcs, N;
         output_dir=output_dir,
         post_trial_func=post_trial)
 
-@test loop_counter == 1000
+@test loop_counter == N
