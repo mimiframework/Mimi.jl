@@ -6,6 +6,9 @@
     sigma       = Parameter(index=[time, regions])  # Emissions output ratio
     YGROSS      = Parameter(index=[time, regions])  # Gross output - Note that YGROSS is now a parameter
 
+    # function init(p, v, d)
+    # end
+    
     function run_timestep(p, v, d, t)
         # Define an equation for E
         for r in d.regions
@@ -18,6 +21,4 @@
         end
     end
 
-    # function init(p, v, d)
-    # end
 end
