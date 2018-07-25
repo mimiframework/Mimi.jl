@@ -392,13 +392,13 @@ end
 # 	return 1 <= t <= size(arr, 1)
 # end
 
-function hasvalue(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, t::Int) where {T, N, FIRST, STEP}
-	return 1 <= t <= size(arr, 1)
-end
+# function hasvalue(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, t::Int) where {T, N, FIRST, STEP}
+# 	return 1 <= t <= size(arr, 1)
+# end
 
-function hasvalue(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, t::Int) where {T, N, TIMES}
-	return 1 <= t <= size(arr, 1)
-end
+# function hasvalue(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, t::Int) where {T, N, TIMES}
+# 	return 1 <= t <= size(arr, 1)
+# end
 
 # Array and Timestep have different FIRST, validating all dimensions
 function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, 

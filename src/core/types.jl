@@ -327,7 +327,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
 
     run_timestep::Union{Void, Function}
     use_integer_time::Bool                  # will be deprecated when switching to timesteps in all cases
-
+    
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
                                vars::TV, pars::TP, 
                                name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
@@ -339,8 +339,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         self.variables = vars
         self.parameters = pars
         self.first = comp_def.first
-        self.last = comp_def.last
-        self.use_integer_time = true
+        self.last = comp_def.last        
+        # self.use_integer_time = true
 
         comp_module = eval(Main, comp_id.module_name)
 
@@ -355,11 +355,10 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
             # This is used to determine type of time argument to pass to run_timestep
             time_type = arg_types[length(arg_types)]
 
-            if time_type <: AbstractTimestep
-                self.use_integer_time = false
-            end
-        end
-
+            # if time_type <: AbstractTimestep
+            #     self.use_integer_time = false
+            # end       
+        end            
         return self
     end
 end

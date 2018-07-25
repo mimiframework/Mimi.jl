@@ -66,7 +66,8 @@ function _generate_run_func(module_name, comp_name, args, body)
         end
         t = tname
     else
-        ttype = :Int
+        #ttype = :Int
+        ttype = :(Mimi.AbstractTimestep)
     end
 
     # replace each expression with its dot-replaced equivalent
