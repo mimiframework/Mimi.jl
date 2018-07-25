@@ -556,6 +556,10 @@ function Base.copy(obj::TimestepMatrix{T_ts, T}) where {T_ts, T}
     return TimestepMatrix{T_ts, T}(copy(obj.data))
 end
 
+function Base.copy(obj::TimestepArray{T_ts, T, N}) where {T_ts, T, N}
+    return TimestepArray{T_ts, T, N}(copy(obj.data))
+end
+
 """
     copy(md::ModelDef)
 
