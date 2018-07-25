@@ -249,11 +249,11 @@ function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     md.external_params[name] = value
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Array{Symbol} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
     set_external_scalar_param!(md, name, value)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Array{Symbol} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
     
     num_dims = length(param_dims)
 
