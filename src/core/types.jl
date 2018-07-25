@@ -97,6 +97,8 @@ mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
 #
 abstract type ModelParameter end
 
+# TBD: rename ScalarParameter, ArrayParameter, and AbstractParameter?
+
 mutable struct ScalarModelParameter{T} <: ModelParameter
     value::T
 
@@ -104,9 +106,6 @@ mutable struct ScalarModelParameter{T} <: ModelParameter
         new(value)
     end
 end
-
-# TBD: rename ScalarParameter, ArrayParameter, and AbstractParameter
-ScalarModelParameter(value) = ScalarModelParameter{typeof(value)}(value)
 
 mutable struct ArrayModelParameter{T} <: ModelParameter
     values::T
