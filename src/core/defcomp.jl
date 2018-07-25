@@ -45,30 +45,12 @@ function _replace_dots(ex)
     end
 end
 
-# Store Dict to keep _generate_run_func clean
-const global Timestep_Type_Dict = Dict([
-    :Timestep         => :(Mimi.AbstractTimestep),       # This might be the only one we need...
-    :FixedTimestep    => :(Mimi.FixedTimestep), 
-    :VariableTimestep => :(Mimi.VariableTimestep), 
-    :AbstractTimestep => :(Mimi.AbstractTimestep)])
-
 function _generate_run_func(module_name, comp_name, args, body)
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
     end
 
     (p, v, d, t) = args
-
-    if @capture(t, tname_::ttype_)
-        mimi_type = get(Timestep_Type_Dict, ttype, nothing)
-        if mimi_type != nothing
-            ttype = mimi_type
-        end
-        t = tname
-    else
-        #ttype = :Int
-        ttype = :(Mimi.AbstractTimestep)
-    end
 
     # replace each expression with its dot-replaced equivalent
     body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
@@ -79,7 +61,7 @@ function _generate_run_func(module_name, comp_name, args, body)
 
     func = :(
         function $(funcname)($(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
-                             $(d)::Dict{Symbol, Vector{Int}}, $(t)::$(ttype))
+                             $(d)::Dict{Symbol, Vector{Int}}, $(t)::T) where {T <: Mimi.AbstractTimestep}
             $(body...)
             
             return nothing

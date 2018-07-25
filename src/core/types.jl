@@ -326,7 +326,6 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     last::Int
 
     run_timestep::Union{Void, Function}
-    # use_integer_time::Bool                  # will be deprecated when switching to timesteps in all cases
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
                                vars::TV, pars::TP, 
@@ -340,25 +339,12 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         self.parameters = pars
         self.first = comp_def.first
         self.last = comp_def.last        
-        # self.use_integer_time = true
 
         comp_module = eval(Main, comp_id.module_name)
 
         # the try/catch allows components with no run_timestep function (as in some of our test cases)
         self.run_timestep = func = try eval(comp_module, Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)")) end
-
-        if func != nothing
-            meths = methods(func)
-            meth = meths.ms[1]
-            arg_types = meth.sig.parameters
-
-            # This is used to determine type of time argument to pass to run_timestep
-            time_type = arg_types[length(arg_types)]
-
-            # if time_type <: AbstractTimestep
-            #     self.use_integer_time = false
-            # end       
-        end            
+           
         return self
     end
 end

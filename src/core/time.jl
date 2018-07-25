@@ -422,19 +422,6 @@ function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::Varia
 	return D_FIRST[1] <= gettime(ts) <= last_period(arr)	
 end
 
-# Legacy integer case
-# function hasvalue(arr::TimestepArray, t::Int) 
-# 	return 1 <= t <= size(arr, 1)
-# end
-
-# function hasvalue(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, t::Int) where {T, N, FIRST, STEP}
-# 	return 1 <= t <= size(arr, 1)
-# end
-
-# function hasvalue(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, t::Int) where {T, N, TIMES}
-# 	return 1 <= t <= size(arr, 1)
-# end
-
 # Array and Timestep have different FIRST, validating all dimensions
 function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, 
 	ts::FixedTimestep{T_FIRST, STEP, LAST}, 
