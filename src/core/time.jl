@@ -14,8 +14,6 @@ function is_first(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
-# TBD:  is_last function is not used internally, so we may want to deprecate it ... 
-# look into where it might be used within models?
 function is_last(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	return gettime(ts) == LAST
 end
@@ -49,19 +47,19 @@ end
 function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
 	if is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
-	elseif ts.t - val <= 0
+	elseif ts.t - val < 0
 		error("Cannot get requested timestep, preceeds first timestep.")		
 	end
-	return FixedTimestep{FIRST, STEP, LAST}(gettime(ts.t - 1))
+	return FixedTimestep{FIRST, STEP, LAST}(ts.t - 1)
 end
 
 function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 	if is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
-	elseif ts.t - val <= 0
+	elseif ts.t - val < 0
 		error("Cannot get requested timestep, preceeds first timestep.")		
 	end
-	return VariableTimestep{TIMES}(gettime(ts.t - 1))
+	return VariableTimestep{TIMES}(ts.t - 1)
 end
 
 function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
@@ -70,17 +68,17 @@ function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, S
 	elseif gettime(ts + val) > LAST + 1
 		error("Cannot get requested timestep, exceeds last timestep.")		
 	end
-	new_ts = FixedTimestep{FIRST, STEP, LAST}(ts.t + val::Int)
+	new_ts = FixedTimestep{FIRST, STEP, LAST}(ts.t + val)
 
 end
 
-function Base.:+(ts::VariableTimestep{TIMES}, val) where {TIMES}
+function Base.:+(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 	if finished(ts)
 		error("Cannot get next timestep, this is last timestep.")
 	elseif gettime(ts + val) > TIMES[end] + 1
 		error("Cannot get requested timestep, exceeds last timestep.")		
 	end
-	new_ts = VariableTimestep{TIMES}(gettime(ts.t + 1))
+	new_ts = VariableTimestep{TIMES}(ts.t + val)
 end
 
 # TBD:  This funcion is not used internally, and the arithmetic is possible wrong.  

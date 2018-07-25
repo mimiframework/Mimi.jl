@@ -140,7 +140,7 @@ end
         if gettime(ts) < 2005
             v.output[ts] = 0
         else
-            v.output[ts] = p.inputB[ts-1] * ts.t
+            v.output[ts] = p.inputB[ts] * ts.t
         end
     end
 end
