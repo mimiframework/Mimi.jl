@@ -326,7 +326,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     last::Int
 
     run_timestep::Union{Void, Function}
-    use_integer_time::Bool                  # will be deprecated when switching to timesteps in all cases
+    # use_integer_time::Bool                  # will be deprecated when switching to timesteps in all cases
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
                                vars::TV, pars::TP, 
