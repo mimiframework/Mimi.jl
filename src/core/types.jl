@@ -95,22 +95,6 @@ mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
 #
 # 3. Types supporting Parameters and their connections
 #
-
-# For storing references to scalar values that can be safely shared
-mutable struct Scalar{T}
-    value::T
-
-    function Scalar{T}(value::T) where T
-        new(value)
-    end
-end
-
-Scalar(value) = Scalar{typeof(value)}(value)
-
-Base.convert(::Type{Scalar{T}}, value::Number) where {T} = Scalar{T}(T(value))
-
-Base.convert(::Type{T}, s::Scalar{T}) where {T} = T(s.value)
-
 abstract type ModelParameter end
 
 mutable struct ScalarModelParameter{T} <: ModelParameter
@@ -121,6 +105,7 @@ mutable struct ScalarModelParameter{T} <: ModelParameter
     end
 end
 
+# TBD: rename ScalarParameter, ArrayParameter, and AbstractParameter
 ScalarModelParameter(value) = ScalarModelParameter{typeof(value)}(value)
 
 mutable struct ArrayModelParameter{T} <: ModelParameter
@@ -131,6 +116,12 @@ mutable struct ArrayModelParameter{T} <: ModelParameter
         new(values, dims)
     end
 end
+
+ScalarModelParameter(value) = ScalarModelParameter{typeof(value)}(value)
+
+Base.convert(::Type{ScalarModelParameter{T}}, value::Number) where {T} = ScalarModelParameter{T}(T(value))
+
+Base.convert(::Type{T}, s::ScalarModelParameter{T}) where {T} = T(s.value)
 
 ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(value)}(value, dims)
 

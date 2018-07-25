@@ -7,7 +7,7 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
     num_dims = dim_count(def)
 
     if num_dims == 0
-        T = Scalar{dtype}
+        T = ScalarModelParameter{dtype}
 
     elseif dims[1] != :time
         T = Array{dtype, num_dims}
@@ -15,13 +15,13 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
     else   
 
         if isuniform(md)
-            #take the first from the function argument, not the model def
+            # take the first from the function argument, not the model def
             _, stepsize = first_and_step(md)
             T = TimestepArray{FixedTimestep{first, stepsize}, dtype, num_dims}
         else
             times = time_labels(md)
-            #need to make sure we define the timestep to begin at the first from 
-            #the function argument
+            # need to make sure we define the timestep to begin at the first from 
+            # the function argument
       
             first_index = findfirst(times, first) 
             T = TimestepArray{VariableTimestep{(times[first_index:end]...)}, dtype, num_dims}
@@ -51,7 +51,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
     if num_dims == 0
         value = dtype(0)
       
-    # TBD: This is necessary only if dims[1] == :time, otherwise "else" handles it, too
+    # This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1 && dims[1] == :time
         value = dtype(dim_count(md, :time))
 
@@ -65,7 +65,7 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
 end
 
 """
-_instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
+    _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
 Instantiate a component and its variables (but not its parameters). Return 
 the resulting ComponentInstance.
@@ -108,7 +108,7 @@ function build(md::ModelDef)
 
     var_dict = Dict{Symbol, Any}()                 # collect all var defs and
     par_dict = Dict{Symbol, Dict{Symbol, Any}}()   # store par values as we go
-  
+
     comp_defs = compdefs(md)
     for comp_def in comp_defs
         comp_name = name(comp_def)
@@ -131,8 +131,7 @@ function build(md::ModelDef)
         comp_name = ext.comp_name
         param = external_param(md, ext.external_param)
         par_values = par_dict[comp_name]
-        val = value(param)
-        par_values[ext.param_name] = val isa Number ? Scalar(val) : val
+        par_values[ext.param_name] = param isa ScalarModelParameter ? param : value(param)
     end
 
     # Make the external parameter connections for the hidden ConnectorComps.
@@ -142,7 +141,7 @@ function build(md::ModelDef)
         param = external_param(md, backups)
 
         par_values = par_dict[comp_name]
-        par_values[:input2] = value(param)
+        par_values[:input2] = param isa ScalarModelParameter ? param : value(param)
     end
 
     mi = ModelInstance(md)

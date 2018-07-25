@@ -31,8 +31,6 @@ modelinstance(m::Model) = m.mi
 
 @modelegate external_param(m::Model, name::Symbol) => md
 
-@modelegate external_param_values(m::Model, name::Symbol) => md
-
 @modelegate connected_params(m::Model, comp_name::Symbol) => md
 
 @modelegate unconnected_params(m::Model) => md
@@ -261,7 +259,7 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
 end
 
 #
-# TBD: This function is not currently used only in test/test_parametertypes. Is it still needed?
+# TBD: This function is currently used only in test/test_parametertypes. Is it still needed?
 #
 """
     update_external_param(m::Model, name::Symbol, value)

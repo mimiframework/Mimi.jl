@@ -239,8 +239,6 @@ function add_internal_param_conn(md::ModelDef, conn::InternalParameterConnection
     push!(md.internal_param_conns, conn)
 end
 
-external_param_values(md::ModelDef, name::Symbol) = md.external_params[name].values
-
 function add_external_param_conn(md::ModelDef, conn::ExternalParameterConnection)
     push!(md.external_param_conns, conn)
 end
