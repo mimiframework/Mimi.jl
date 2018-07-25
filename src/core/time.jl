@@ -46,6 +46,43 @@ function next_timestep(ts::VariableTimestep{TIMES}) where {TIMES}
 	return VariableTimestep{TIMES}(ts.t + 1)		
 end
 
+function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
+	if is_first(ts)
+		error("Cannot get previous timestep, this is first timestep.")
+	elseif ts.t - val <= 0
+		error("Cannot get requested timestep, preceeds first timestep.")		
+	end
+	return FixedTimestep{FIRST, STEP, LAST}(gettime(ts.t - 1))
+end
+
+function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
+	if is_first(ts)
+		error("Cannot get previous timestep, this is first timestep.")
+	elseif ts.t - val <= 0
+		error("Cannot get requested timestep, preceeds first timestep.")		
+	end
+	return VariableTimestep{TIMES}(gettime(ts.t - 1))
+end
+
+function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
+	if finished(ts)
+		error("Cannot get next timestep, this is last timestep.")
+	elseif gettime(ts + val) > LAST + 1
+		error("Cannot get requested timestep, exceeds last timestep.")		
+	end
+	new_ts = FixedTimestep{FIRST, STEP, LAST}(ts.t + val::Int)
+
+end
+
+function Base.:+(ts::VariableTimestep{TIMES}, val) where {TIMES}
+	if finished(ts)
+		error("Cannot get next timestep, this is last timestep.")
+	elseif gettime(ts + val) > TIMES[end] + 1
+		error("Cannot get requested timestep, exceeds last timestep.")		
+	end
+	new_ts = VariableTimestep{TIMES}(gettime(ts.t + 1))
+end
+
 # TBD:  This funcion is not used internally, and the arithmetic is possible wrong.  
 # function new_timestep(ts::Timestep{Start, Step, Stop}, new_start::Int) where {Start, Step, Stop}
 # 	return Timestep{new_start, Step, Stop}(Int(ts.t + (Start - new_start) / Step))
