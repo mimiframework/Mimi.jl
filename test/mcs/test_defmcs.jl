@@ -27,7 +27,9 @@ mcs = @defmcs begin
     sigma[:, Region1] *= name2
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    depk[:] *= Uniform(0.7, 1.3)
+    depk = [Region1 => Uniform(0.7, 1.3),
+            Region2 => Uniform(0.8, 1.2),
+            Region3 => Normal()]
 
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
