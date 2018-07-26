@@ -35,8 +35,15 @@ function _make_dims(args)
                 dim = :($(QuoteNode(s)))
             end
 
-        elseif isa(arg, Expr) && arg.head == :tuple  # tuple of Symbols (@capture didn't work...)
-            dim = :(convert(Vector{Symbol}, $(arg.args)))
+        elseif @capture(arg, s_String)
+            dim = s
+
+        elseif isa(arg, Expr) && arg.head == :tuple  # tuple of Strings/Symbols (@capture didn't work...)
+            argtype = typeof(arg.args[1])            # ensure all are same type as first element
+            if ! isempty(filter(s -> typeof(s) != argtype, arg.args))
+                error("A parameter dimension tuple must all String or all Symbol (got $arg)")
+            end
+            dim = :(convert(Vector{$argtype}, $(arg.args)))
 
         else
             error("Unrecognized stochastic parameter specification: $arg")
