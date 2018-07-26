@@ -81,7 +81,7 @@ end
     function run_timestep(p, v, d, t)
         #Define an equation for K
         for r in d.regions
-            if t == 1
+            if is_first(t)
                 v.K[t,r] = p.k0[r]
             else
                 v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5

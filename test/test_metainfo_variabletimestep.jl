@@ -18,7 +18,7 @@ Mimi.reset_compdefs()
 
     function run_timestep(p, v, d, t)
         #from p.16 in Hope 2009
-        if t==1
+        if is_first(t)
             #calculate baseline forcing overlap in first time period
             v.over_baseoverlap = -0.47 * log(1 + 2.0e-5 * (p.c0_baseN2Oconc * p.c0_baseCH4conc)^0.75 + 5.3e-15 * p.c0_baseCH4conc * (p.c0_baseCH4conc * p.c0_baseN2Oconc)^1.52)
         end

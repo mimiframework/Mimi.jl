@@ -267,7 +267,7 @@ function run_timestep(ci::ComponentInstance, clock::Clock)
     pars = ci.parameters
     vars = ci.variables
     dims = ci.dim_dict
-    t = ci.use_integer_time ? time_index(clock) : clock.ts
+    t = clock.ts
 
     ci.run_timestep(pars, vars, dims, t)
     advance(clock)

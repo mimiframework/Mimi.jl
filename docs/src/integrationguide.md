@@ -15,7 +15,9 @@ This guide is organized into six main sections, each descripting an independent 
 
 ## Defining Components
 
-The `run_timestep` function is now contained by the `@defcomp` macro, and takes the parameters `p, v, d, t`, referring to Parameters, Variables, and Dimensions of the component you defined.  The fourth argument is an AbstractTimestep, i.e., either a `FixedTimestep` or a `VariableTimestep`.  Similarly, the optional `init` function is also contained by `@defcomp`, and takes the parameters `p, v, d`.  Thus, as described in the user guide, defining a single component is now done as follows:
+The `run_timestep` function is now contained by the `@defcomp` macro, and takes the parameters `p, v, d, t`, referring to Parameters, Variables, and Dimensions of the component you defined.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`.  Similarly, the optional `init` function is also contained by `@defcomp`, and takes the parameters `p, v, d`.  Thus, as described in the user guide, defining a single component is now done as follows:
+
+In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  The full API as described later in this document in **Advanced Topics:  Timesteps and available functions**.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`
 
 ```julia
 @defcomp component1 begin
@@ -86,6 +88,15 @@ As previously mentioned, some relevant function names have changed.  These chang
 | ------------------------  |:-------------------------:|
 |`isstart`                  |`is_first`                 |
 |`isstop`                   |`is_last`                  |    
+
+As mentioned in earlier in this document, the fourth argument in `run_timestep` is an `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` and is a type defined within Mimi in "src/time.jl".  In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Defining the `AbstractTimestep` object as `t`, indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`
+
+The full API:
+
+- you may index into a variable or parameter with `[t]` or `[t +/- x]` as usual
+- to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
+- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, as listed above
+- to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called.  
 
 ### Parameter connections between different length components
 

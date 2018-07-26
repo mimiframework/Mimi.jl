@@ -25,7 +25,7 @@ end
     varB::Int = Variable()
 
     function run_timestep(p, v, d, t)
-        if t < 10
+        if t.t < 10
             v.varB = 1
         else
             v.varB = 10
