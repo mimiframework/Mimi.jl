@@ -48,7 +48,9 @@ end
 
 ```
 
-The run_timestep function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is a Timestep, which represents which timestep the model is at each time the function gets called. 
+The run_timestep function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`, which represents which timestep the model is at.
+
+The API for using the fourth argument, represented as `t` in this explanation, is described in this document under **Advanced Topics:  Timesteps and available functions**. 
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
@@ -161,15 +163,22 @@ This method returns a ``Plots.Plot`` object, so calling it in an instance of an 
 
 ### Timesteps and available functions
 
-A `Timestep` is an immutable type defined within Mimi in "src/clock.jl". It is used to represent and keep track of time indices when running a model.
+An `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` is a type defined within Mimi in "src/time.jl". It is used to represent and keep track of time indices when running a model.
 
-In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where `t` is a Timestep object:
+In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where `t` is an AbstractTimestep object:
 
 ```julia
 is_first(t) # returns true or false, true if t is the first timestep to be run
 is_last(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
 ```
+
+The API details for AbstractTimestep object `t` are as follows:
+
+- you may index into a variable or parameter with `[t]` or `[t +/- x]` as usual
+- to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
+- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, as listed above
+- to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called. 
 
 ### Parameter connections between different length components
 

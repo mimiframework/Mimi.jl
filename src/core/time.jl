@@ -14,8 +14,6 @@ function is_first(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
-# TBD:  is_last function is not used internally, so we may want to deprecate it ... 
-# look into where it might be used within models?
 function is_last(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	return gettime(ts) == LAST
 end
@@ -44,6 +42,43 @@ function next_timestep(ts::VariableTimestep{TIMES}) where {TIMES}
 		error("Cannot get next timestep, this is last timestep.")
 	end
 	return VariableTimestep{TIMES}(ts.t + 1)		
+end
+
+function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
+	if is_first(ts)
+		error("Cannot get previous timestep, this is first timestep.")
+	elseif ts.t - val < 0
+		error("Cannot get requested timestep, preceeds first timestep.")		
+	end
+	return FixedTimestep{FIRST, STEP, LAST}(ts.t - 1)
+end
+
+function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
+	if is_first(ts)
+		error("Cannot get previous timestep, this is first timestep.")
+	elseif ts.t - val < 0
+		error("Cannot get requested timestep, preceeds first timestep.")		
+	end
+	return VariableTimestep{TIMES}(ts.t - 1)
+end
+
+function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
+	if finished(ts)
+		error("Cannot get next timestep, this is last timestep.")
+	elseif gettime(ts + val) > LAST + 1
+		error("Cannot get requested timestep, exceeds last timestep.")		
+	end
+	new_ts = FixedTimestep{FIRST, STEP, LAST}(ts.t + val)
+
+end
+
+function Base.:+(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
+	if finished(ts)
+		error("Cannot get next timestep, this is last timestep.")
+	elseif gettime(ts + val) > TIMES[end] + 1
+		error("Cannot get requested timestep, exceeds last timestep.")		
+	end
+	new_ts = VariableTimestep{TIMES}(ts.t + val)
 end
 
 # TBD:  This funcion is not used internally, and the arithmetic is possible wrong.  
@@ -385,19 +420,6 @@ end
 
 function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::VariableTimestep{T_FIRST}) where {T, N, T_FIRST, D_FIRST}
 	return D_FIRST[1] <= gettime(ts) <= last_period(arr)	
-end
-
-# Legacy integer case
-# function hasvalue(arr::TimestepArray, t::Int) 
-# 	return 1 <= t <= size(arr, 1)
-# end
-
-function hasvalue(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, t::Int) where {T, N, FIRST, STEP}
-	return 1 <= t <= size(arr, 1)
-end
-
-function hasvalue(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, t::Int) where {T, N, TIMES}
-	return 1 <= t <= size(arr, 1)
 end
 
 # Array and Timestep have different FIRST, validating all dimensions

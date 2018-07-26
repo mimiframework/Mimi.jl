@@ -31,7 +31,7 @@ end
     @info("test_model_structure.jl")
     include("test_model_structure.jl")
 
-    @info("test_model_structure_variabletimestep.jl")
+    @info("test_model_structure_variabletimestep.jl") 
     include("test_model_structure_variabletimestep.jl")
 
     @info("test_tools.jl")
@@ -52,7 +52,7 @@ end
     @info("test_getindex.jl")
     include("test_getindex.jl")
 
-    @info("test_getindex_variabletimestep.jl")
+    @info("test_getindex_variabletimestep.jl") 
     include("test_getindex_variabletimestep.jl")
 
     @info("test_num_components.jl")
@@ -80,7 +80,7 @@ end
     include("test_dimensions.jl")
 
     @info("test_timesteps.jl")           
-    include("test_timesteps.jl")
+    include("test_timesteps.jl") 
 
     # fails currently: requires either not having Refs typed (which prevents reassignment)
     # or by having lighter typing, e.g., TimestepArray but not a parameterized version.

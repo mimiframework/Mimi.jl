@@ -585,6 +585,6 @@ function Base.copy(md::ModelDef)
     mdcopy.sorted_comps = md.sorted_comps == nothing ? nothing : copy(md.sorted_comps)    
     
     mdcopy.is_uniform = md.is_uniform
-    
+
     return mdcopy
 end

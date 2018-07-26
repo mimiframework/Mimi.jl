@@ -12,7 +12,7 @@ using Mimi
 
     function run_timestep(p, v, d, t)
         # Define an equation for K
-        if t == 1
+        if is_first(t)
             v.K[t]  = p.k0  # Note the use of v. and p. to distinguish between variables and parameters
         else
             v.K[t]  = (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5

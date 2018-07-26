@@ -28,10 +28,12 @@ using Mimi
 
 Next, the run_timestep function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
 
+It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
+
 ```julia
 	function run_timestep(p, v, d, t)
 		#Define an equation for K
-		if t == 1
+		if is_first(t)
 			#Note the use of v. and p. to distinguish between variables and parameters
 			v.K[t] 	= p.k0	
 		else
@@ -154,7 +156,7 @@ using Mimi
 
 		#Define an equation for K
 		for r in d.regions
-			if t == 1
+			if is_first(t)
 				v.K[t,r] = p.k0[r]
 			else
 				v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
