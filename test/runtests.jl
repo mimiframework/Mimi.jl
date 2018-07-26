@@ -32,7 +32,7 @@ end
     include("test_model_structure.jl")
 
     @info("test_model_structure_variabletimestep.jl") 
-    include("test_model_structure_variabletimestep.jl") #fails with a MethodError for setindex!
+    include("test_model_structure_variabletimestep.jl")
 
     @info("test_tools.jl")
     include("test_tools.jl")
