@@ -31,8 +31,6 @@ modelinstance(m::Model) = m.mi
 
 @modelegate external_param(m::Model, name::Symbol) => md
 
-@modelegate external_param_values(m::Model, name::Symbol) => md
-
 @modelegate connected_params(m::Model, comp_name::Symbol) => md
 
 @modelegate unconnected_params(m::Model) => md
@@ -65,6 +63,15 @@ end
 function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     set_external_param!(m.md, name, value)
     decache(m)
+end
+
+function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+    set_external_param!(m.md, name, value; param_dims = param_dims)
+    decache(m)
+end
+
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
+    set_external_param!(m.md, name, value; param_dims = param_dims)
 end
 
 function add_internal_param_conn(m::Model, conn::InternalParameterConnection)
@@ -252,7 +259,7 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
 end
 
 #
-# TBD: This function is not currently used only in test/test_parametertypes. Is it still needed?
+# TBD: This function is currently used only in test/test_parametertypes. Is it still needed?
 #
 """
     update_external_param(m::Model, name::Symbol, value)
