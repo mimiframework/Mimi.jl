@@ -50,7 +50,7 @@ t = next_timestep(t)
     inputF = Parameter()
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::Timestep)
+    function run_timestep(p, v, d, ts)
         v.output[ts] = p.inputF + ts.t
     end
 end
@@ -59,7 +59,7 @@ end
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::Timestep)
+    function run_timestep(p, v, d, ts)
         if gettime(ts) < 2005
             v.output[ts] = p.inputB[ts]
         else
@@ -106,7 +106,7 @@ end
     inputF = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::Timestep)
+    function run_timestep(p, v, d, ts)
         v.output[ts] = p.inputF[ts]
     end
 end
@@ -136,7 +136,7 @@ end
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::Timestep)
+    function run_timestep(p, v, d, ts)
         if gettime(ts) < 2005
             v.output[ts] = 0
         else
