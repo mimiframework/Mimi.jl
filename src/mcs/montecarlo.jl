@@ -258,6 +258,7 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
     num_dims = length(tdims)
 
     if num_pdims != num_dims
+        pname = trans.paramname
         error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions ($pdims); MCS has $num_dims")
     end
 

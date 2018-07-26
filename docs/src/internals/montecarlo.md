@@ -60,6 +60,72 @@ Also note that if the `filename` argument is used, all random variable draws are
 
 If this function is not called prior to calling `run_mcs`, Latin Hypercube sampling is used for all distributions and trial data are not saved.
 
+## Assigning distributions
+
+In `@defmcs`, you can apply distributions to specific slices of array parameters,
+and you can "bulk assign" distributions to elements of a vector or matrix
+using a more condensed syntax.
+
+### Assigning to array slices
+
+Options for applying distributions to array slices is accomplished using
+array access syntax on the left-hand side of an assignment. The assignment
+may use any of these assignment operators: `=`, `*=`, or `+=`, as described
+above. Slices can be indicated using a variety of specifications. Assume we
+define two parameters in `@defcomp` as
+```
+  foo = Parameter(index=[regions])
+  bar = Parameter(index=[time, regions])
+```
+with `regions` defined as `[:USA, :CAN, :MEX, :ROW]`
+
+We can assign distributions to the elements of `foo` several ways:
+
+* Using a symbol or string or tuple of symbols or strings. Note that values specified without a ":" prefix or double quotes are treated as symbols. To specify strings, quote them the usual way.
+  * `foo[USA] = Uniform(0, 1)` would assign the RV to `foo[:USA]` only.
+  * `foo[(USA, CAN, MEX)] = Uniform(0, 1)` would assign the same RV to 3 elements of `foo`. 
+    That is, a single value is drawn from the RV with distribution `Uniform(0, 1)` and this
+    value is assigned to all three elements of `foo`.
+* A ":", indicating all elements for this dimension
+  * `foo[:] = Normal(10.0 3.0)` would use a draw from the Normal RV for all elements of `foo`.
+* A ":" range, with or without a step, or a tuple of integers
+  * `bar[2050:10:2080, :] = Uniform(2, 3)` would assign a single Uniform RV to all regions for 
+    time steps with labels 2050, 2060, 2070, and 2080.
+  * `bar[(2050, 2060, 2070, 2080), :] = Uniform(2, 3)` does the same thing using a tuple of values.
+
+If `regions` were defined using strings, as in `["USA", "CAN", "MEX", "ROW"]`, the examples above would be
+written as `foo["USA"] = Uniform(0, 1)` and so on.
+
+### Assigning a vector of distributions
+
+In some cases, it's more convenient to assign a vector of distributions (e.g., with different functional forms or parameters) to a single parameter. For example we can use the following syntax:
+
+```
+  foo = [USA => Uniform(0, 1),
+         (CAN, MEX) => Uniform(1, 2),
+         ROW => Normal(10, 3)]
+```
+
+which is equivalent to:
+
+```
+  foo[USA] = Uniform(0, 1),
+  foo[(CAN, MEX)] = Uniform(1, 2),
+  foo[ROW] = Normal(10, 3)]
+```
+
+To assign to parameters with more than one dimension, use square brackets around the dimensions
+on the left-hand side of each `=>` operator, e.g.,
+
+```
+  bar = [[2050, USA] => Uniform(0, 1),
+         [:, (CAN, MEX)] => Uniform(1, 2),
+         [2010:10:2080, ROW] => Normal(10, 3)]
+```
+
+Currently, the more condensed syntax (using the pair operator `=>`) supports only direct assignment 
+of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
+
 ## The run_mcs function
 
 In it's simplest use, the `run_mcs` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
@@ -188,7 +254,7 @@ By default, all defined models are run. In some cases, you may want to run some 
 
 **Example**
 
-The following example is available in `"Mimi.jl/src/mcs/test_mcs.jl"` branch.
+The following example is available in `"Mimi.jl/test/mcs/test_defmcs.jl"`.
 
 ```julia
 using Mimi
@@ -201,21 +267,26 @@ m = model # defined by 2-region model
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
-    # to an external parameter. Naming RVs is required only when defining
-    # correlations or sharing a single RV across multiple parameters.
+    # to an external parameter. This makes the (less common) naming of an
+    # RV slightly more burdensome, but it's only required when defining
+    # correlations or sharing an RV across parameters.
     rv(name1) = Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
 
-    # define (approximate) rank correlations
+    # define correlations
     name1:name2 = 0.7
     name1:name3 = 0.5
 
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
     sigma[:, Region1] *= name2
-
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+
+    # Assign an array of distributions, keyed by region, to parameter depk
+    depk = [Region1 => Uniform(0.7, 1.3),
+            Region2 => Uniform(0.8, 1.2),
+            Region3 => Normal()]
 
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
@@ -240,6 +311,7 @@ run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
 # Same thing but with a post-trial function
 run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
+
 
 # Not Implemented (Yet)
 
