@@ -81,7 +81,7 @@ with `regions` defined as `[:USA, :CAN, :MEX, :ROW]`
 
 We can assign distributions to the elements of `foo` several ways:
 
-* Using a symbol or tuple of symbols (without a ":" prefix) 
+* Using a symbol or string or tuple of symbols or strings. Note that values specified without a ":" prefix or double quotes are treated as symbols. To specify strings, quote them the usual way.
   * `foo[USA] = Uniform(0, 1)` would assign the RV to `foo[:USA]` only.
   * `foo[(USA, CAN, MEX)] = Uniform(0, 1)` would assign the same RV to 3 elements of `foo`. 
     That is, a single value is drawn from the RV with distribution `Uniform(0, 1)` and this
@@ -92,6 +92,9 @@ We can assign distributions to the elements of `foo` several ways:
   * `bar[2050:10:2080, :] = Uniform(2, 3)` would assign a single Uniform RV to all regions for 
     time steps with labels 2050, 2060, 2070, and 2080.
   * `bar[(2050, 2060, 2070, 2080), :] = Uniform(2, 3)` does the same thing using a tuple of values.
+
+If `regions` were defined using strings, as in `["USA", "CAN", "MEX", "ROW"]`, the examples above would be
+written as `foo["USA"] = Uniform(0, 1)` and so on.
 
 ### Assigning a vector of distributions
 
