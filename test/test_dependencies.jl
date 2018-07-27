@@ -11,8 +11,8 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-    "https://github.com/lrennels/fund/archive/32d3b04bca9bc48feb01f944f2326cdc4818f09d.zip",
-    "https://github.com/lrennels/mimi-rice-2010.jl/a82569488cc25ed3e6d812e9f41ec15fbe1d62d5.zip"
+    "https://github.com/lrennels/fund/archive/9945f8304d95e875c60cbc09f6ba1ed002213356.zip",
+    "https://github.com/lrennels/mimi-rice-2010.jl/archive/a82569488cc25ed3e6d812e9f41ec15fbe1d62d5.zip"
 ]
 
 function run_dependency_tests(dependencies=dependencies)
