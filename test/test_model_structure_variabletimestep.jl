@@ -7,7 +7,8 @@ using Mimi
 
 import Mimi: 
     add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
-    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count
+    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
+    compdef, getproperty, setproperty!, dimension, dimensions, compdefs
 
 reset_compdefs()
 

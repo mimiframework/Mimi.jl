@@ -4,7 +4,8 @@ using Mimi
 
 import Mimi: 
     reset_compdefs, reset_variables, @defmodel, 
-    variable, variable_names, external_param, build
+    variable, variable_names, external_param, build, 
+    compdef
 
 reset_compdefs()
 

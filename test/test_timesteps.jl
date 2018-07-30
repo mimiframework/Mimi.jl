@@ -6,7 +6,7 @@ using Base.Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime
+    gettime, getproperty
 
 Mimi.reset_compdefs()
 

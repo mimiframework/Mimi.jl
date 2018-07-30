@@ -1,6 +1,9 @@
 using Base.Test
 using Mimi
 
+import Mimi:
+    getproperty
+
 #utils: prettify
 @test Mimi.prettify("camelCaseBasic") == Mimi.prettify(:camelCaseBasic) == "Camel Case Basic"
 @test Mimi.prettify("camelWithAOneLetterWord") == Mimi.prettify(:camelWithAOneLetterWord) == "Camel With A One Letter Word"

@@ -14,33 +14,20 @@ using StringBuilders
 
 export
     @defcomp,
-    @modelegate,
     MarginalModel,
     Model,
-    addcomponent,
-    add_connector_comps,
-    add_dimension!,
-    addparameter,
-    compdef,
-    compdefs,
-    compinstance,
-    compkeys,
+    addcomponent,  # push!, add_component!, add_component, addcomp!, add!; could also have multiple functions like insert!, push! etc. instead of before after keywords
+    add_connector_comps, #should this be deleted?  Docs indicate we need it ...
     components,
-    connect_parameter,
+    connect_parameter, # connect!, bind, assign, link; ! yes or no; frontrunner: connect!
     create_marginal_model,
-    datatype,
-    description,
-    dimension,
-    dimensions,
-    disconnect!,
+    disconnect!, # disconnect_parameter!; frontrunner: disconnect!
     explore,
     getdataframe,
-    getproperty,
     gettime,
     get_parameter_value,
     get_variable_value,
     hasvalue,
-    interpolate,
     is_first,
     is_last,
     load_comps,
@@ -48,16 +35,11 @@ export
     name,
     new_component,
     parameters,
-    # plot,
-    # plot_comp_graph,
-    replace_component,
-    run_timestep,
-    set_dimension!,
-    set_leftover_params!,
-    set_parameter!,
-    setproperty!,
-    unit,
-    variables
+    replace_component, # Add !, comp vs, component, replace!
+    set_dimension!, # Think hard about axis-dimension-index-blabla
+    set_leftover_params!, #rethink in general
+    set_parameter!, # Just make parameter match other parts
+    variables # Just make sure it matches vars vs variables
 
 include("core/types.jl")
 
