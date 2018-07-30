@@ -15,7 +15,7 @@ function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symb
     if legend==nothing && isa(values, Array) && ndims(values)==2
         a = getindexlabels(m, component, parameter)
         a = Iterators.filter(i->i!=index, a)
-        legend = a[1]
+        legend = first(a)
     end
 
     # Create axis labels
