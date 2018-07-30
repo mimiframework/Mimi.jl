@@ -28,13 +28,13 @@ With this change, all previous "direct" access of data in the `Model` instance a
 To simplify coding the delegated calls, a new macro, `@modelegate` allows you to write, e.g., 
 
 ```
-@modelegate external_parameter_connections(m::Model) => mi
+@modelegate external_param_conns(m::Model) => mi
 ```
 
 which translates to:
 
 ```
-external_parameter_connections(m::Model) = external_parameter_connections(m.mi)
+external_param_conns(m::Model) = external_param_conns.mi)
 ```
 
 The right-hand side can also be `=> md` to indicate delegation to the `ModelDef` rather than to the `ModelInstance`. See `model.jl` for numerous examples.
