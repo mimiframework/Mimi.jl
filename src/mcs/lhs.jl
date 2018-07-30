@@ -59,9 +59,9 @@ function _gen_rank_values(params::Int, trials::Int, corrmatrix::Matrix{Float64})
         S[:, i] = vdwScores
     end
 
-    P = Matrix(cholfact(corrmatrix)[:L])
+    P = Matrix(cholfact(corrmatrix)[:L])    # 0.7 drops the :L?
     E = rank_corr_coef(S)
-    Q = Matrix(cholfact(E)[:L])
+    Q = Matrix(cholfact(E)[:L])             # 0.7 drops the :L?
     final = (S * inv(Q)') * P'
 
     ranks = zeros(Int, trials, params)
@@ -87,7 +87,7 @@ function _get_percentiles(trials::Int)
 end
 
 """
-    lhs(rvlist::Vector{RandomVariable}, trials::Int; corrmatrix::Union{Matrix{Float64},Void}=nothing, asDataFrame::Bool=true)
+    lhs(rvlist::Vector{RandomVariable}, trials::Int; corrmatrix::Union{Matrix{Float64},Nothing}=nothing, asDataFrame::Bool=true)
              
 Produce an array or DataFrame of 'trials' rows of values for the given parameter
 list, respecting the correlation matrix 'corrmatrix' if one is specified, using Latin
@@ -114,7 +114,7 @@ skip: (list of params)) Parameters to process later because they are
 Returns DataFrame with `trials` rows of values for the `rvlist`.
 """
 function lhs(rvlist::Vector{RandomVariable}, trials::Int; 
-             corrmatrix::Union{Matrix{Float64},Void}=nothing,
+             corrmatrix::Union{Matrix{Float64},Nothing}=nothing,
              asDataFrame::Bool=true)
 
     ranks = corrmatrix == nothing ? nothing : _gen_rank_values(length(rvlist), trials, corrmatrix)
@@ -137,7 +137,7 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
     return asDataFrame ? DataFrame(samples, map(rv->rv.name, rvlist)) : samples
 end
 
-function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Void}=nothing)
+function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Nothing}=nothing)
     # TBD: verify that any correlated values are actual distributions, not stored vectors?
 
     trials = mcs.trials

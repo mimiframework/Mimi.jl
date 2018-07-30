@@ -241,7 +241,7 @@ function reset_variables(ci::ComponentInstance)
 end
 
 # Fall-back for components without init methods
-function init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, d::Union{Void, Dict})
+function init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, d::Union{Nothing, Dict})
     nothing
 end
 
@@ -291,7 +291,7 @@ function _run_components(mi::ModelInstance, clock::Clock,
 end
 
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
-                  dimkeys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+                  dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if length(mi.components) == 0
         error("Cannot run the model: no components have been created.")
     end

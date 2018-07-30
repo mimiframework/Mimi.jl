@@ -1,12 +1,12 @@
 using DataFrames
 
 """
-    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol), df::Union{Void,DataFrame}=nothing)
+    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol), df::Union{Nothing,DataFrame}=nothing)
 
 Load a DataFrame from the variable or parameter `item_name` in component `comp_name`. If `df` is
 nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 """
-function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Void,DataFrame}=nothing)
+function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Nothing,DataFrame}=nothing)
     mi = m.mi
     md = mi.md
     comp_inst = compinstance(mi, comp_name)

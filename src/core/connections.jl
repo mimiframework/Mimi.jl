@@ -72,14 +72,14 @@ function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, 
 end
 
 """
-    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component.
 """
 function connect_parameter(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol,
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
     disconnect!(md, dst_comp_name, dst_par_name)
@@ -145,12 +145,12 @@ function connect_parameter(md::ModelDef,
 end
 
 """
-    connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_parameter(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
@@ -247,11 +247,11 @@ function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     md.external_params[name] = value
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_scalar_param!(md, name, value)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     
     num_dims = length(param_dims)
 

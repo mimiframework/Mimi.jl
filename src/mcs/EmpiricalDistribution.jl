@@ -1,4 +1,7 @@
+using StatsBase
+using Statistics
 using Distributions
+using Random
 
 struct EmpiricalDistribution{T}
     values::Vector{T}
@@ -9,7 +12,7 @@ struct EmpiricalDistribution{T}
     # vector of probabilities for each value. If not provided, the values are
     # assumed to be equally likely.
     # N.B. This doesn't copy the values vector, so caller must, if required
-    function EmpiricalDistribution(values::Vector{T}, probs::Union{Void, Vector{Float64}}=nothing) where T
+    function EmpiricalDistribution(values::Vector{T}, probs::Union{Nothing, Vector{Float64}}=nothing) where T
         n = length(values)
         if probs == nothing
             probs = Vector{Float64}(n)
@@ -34,7 +37,7 @@ end
 # """
 # EmpiricalDistribution(obj::Any,
 #                       value_col::Union{Symbol, String, Int},
-#                       prob_col::Union{Void, Symbol, String, Int}=nothing;
+#                       prob_col::Union{Nothing, Symbol, String, Int}=nothing;
 #                       value_type::DataType=Any)
 
 # Load empirical values from an object returned by load() and generate a distribution. 
@@ -49,7 +52,7 @@ end
 # """
 # function EmpiricalDistribution(obj::Any,
 #                                value_col::Union{Symbol, AbstractString, Int},
-#                                prob_col::Union{Void, Symbol, AbstractString, Int}=nothing;
+#                                prob_col::Union{Nothing, Symbol, AbstractString, Int}=nothing;
 #                                value_type::DataType=Any)
 #     probs = nothing
 
@@ -66,29 +69,29 @@ end
 # Delegate a few functions that we require in our application. 
 # No need to be exhaustive here.
 #
-function Base.mean(d::EmpiricalDistribution)
+function Statistics.mean(d::EmpiricalDistribution)
     return mean(d.values, d.weights)
 end
 
-function Base.std(d::EmpiricalDistribution)
+function Statistics.std(d::EmpiricalDistribution)
     return std(d.values, d.weights, corrected=true)
 end
 
-function Base.var(d::EmpiricalDistribution)
+function Statistics.var(d::EmpiricalDistribution)
     return var(d.values, d.weights, corrected=true)
 end
 
-function Base.quantile(d::EmpiricalDistribution, args...)
+function Statistics.quantile(d::EmpiricalDistribution, args...)
     indices = quantile.(d.dist, args...)
     return d.values[indices]
 end
 
-function Base.rand(d::EmpiricalDistribution, args...)
+function Statistics.rand(d::EmpiricalDistribution, args...)
     indices = rand(d.dist, args...)
     return d.values[indices]
 end
 
-function Base.rand!(d::EmpiricalDistribution, args...)
+function Random.rand!(d::EmpiricalDistribution, args...)
     indices = rand!(d.dist, args...)
     return d.values[indices]
 end

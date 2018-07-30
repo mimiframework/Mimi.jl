@@ -150,7 +150,7 @@ run_mcs(mcs, N;
 @test loop_counter == 6 * N + 60
 
 
-function post_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Union{Void,Tuple})
+function post_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
     global loop_counter    
     loop_counter += 1
 

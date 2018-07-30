@@ -139,10 +139,10 @@ function run_mcs(mcs::MonteCarloSimulation,
                  trials::Union{Int, Vector{Int}, Range{Int}},
                  models_to_run::Int=length(mcs.models);
                  ntimesteps::Int=typemax(Int), 
-                 output_dir::Union{Void, AbstractString}=nothing, 
-                 pre_trial_func::Union{Void, Function}=nothing, 
-                 post_trial_func::Union{Void, Function}=nothing,
-                 scenario_func::Union{Void, Function}=nothing,
+                 output_dir::Union{Nothing, AbstractString}=nothing, 
+                 pre_trial_func::Union{Nothing, Function}=nothing, 
+                 post_trial_func::Union{Nothing, Function}=nothing,
+                 scenario_func::Union{Nothing, Function}=nothing,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
                  scenario_args=nothing)
 ```

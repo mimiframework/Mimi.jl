@@ -133,11 +133,11 @@ struct InternalParameterConnection <: AbstractConnection
     dst_comp_name::Symbol
     dst_par_name::Symbol
     ignoreunits::Bool
-    backup::Union{Symbol, Void} # a Symbol identifying the external param providing backup data, or nothing
+    backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
     offset::Int
 
     function InternalParameterConnection(src_comp::Symbol, src_var::Symbol, dst_comp::Symbol, dst_par::Symbol,
-                                         ignoreunits::Bool, backup::Union{Symbol, Void}=nothing; offset::Int=0)
+                                         ignoreunits::Bool, backup::Union{Symbol, Nothing}=nothing; offset::Int=0)
         self = new(src_comp, src_var, dst_comp, dst_par, ignoreunits, backup, offset)
         return self
     end
@@ -240,7 +240,7 @@ mutable struct ModelDef
 
     external_params::Dict{Symbol, ModelParameter}
 
-    sorted_comps::Union{Void, Vector{Symbol}}
+    sorted_comps::Union{Nothing, Vector{Symbol}}
 
     is_uniform::Bool
     
@@ -315,7 +315,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     first::Int
     last::Int
 
-    run_timestep::Union{Void, Function}
+    run_timestep::Union{Nothing, Function}
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
                                vars::TV, pars::TP, 
@@ -368,7 +368,7 @@ end
 #
 mutable struct Model
     md::ModelDef
-    mi::Union{Void, ModelInstance}
+    mi::Union{Nothing, ModelInstance}
 
     function Model(number_type::DataType=Float64)
         return new(ModelDef(number_type), nothing)

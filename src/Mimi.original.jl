@@ -1,16 +1,16 @@
-__precompile__(false)
+__precompile__()
 
 module Mimi
 
-# using DataFrames
-# using DataStructures
-# using Distributions
-# using Electron
-# using JSON 
-# using LightGraphs
-# using MetaGraphs
-# using NamedArrays
-# using StringBuilders
+using DataFrames
+using DataStructures
+using Distributions
+using Electron
+using JSON 
+using LightGraphs
+using MetaGraphs
+using NamedArrays
+using StringBuilders
 
 export
     @defcomp,

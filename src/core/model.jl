@@ -45,7 +45,7 @@ end
 
 function connect_parameter(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
                       ignoreunits=ignoreunits, offset=offset)
 end
@@ -56,7 +56,7 @@ end
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
 function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
@@ -65,12 +65,12 @@ function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
 end
 
@@ -93,8 +93,8 @@ function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.
 end
 
 function replace_component(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
+                           before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     replace_component(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
@@ -244,7 +244,7 @@ end
 Run model `m` once.
 """
 function Base.run(m::Model; ntimesteps::Int=typemax(Int), 
-                  dim_keys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+                  dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if numcomponents(m) == 0
         error("Cannot run a model with no components.")
     end

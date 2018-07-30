@@ -407,8 +407,8 @@ end
 #
 # Model
 #
-const VoidInt    = Union{Void, Int}
-const VoidSymbol = Union{Void, Symbol}
+const NothingInt    = Union{Nothing, Int}
+const NothingSymbol = Union{Nothing, Symbol}
 
 """
     addcomponent(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
@@ -418,8 +418,8 @@ the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
 function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
-                      first::VoidInt=nothing, last::VoidInt=nothing, 
-                      before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+                      first::NothingInt=nothing, last::NothingInt=nothing, 
+                      before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     # check that first and last are within the model's time index range
     time_index = dim_keys(md, :time)
 
@@ -497,15 +497,15 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 end
 
 function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      first::VoidInt=nothing, last::VoidInt=nothing, 
-                      before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+                      first::NothingInt=nothing, last::NothingInt=nothing, 
+                      before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
     addcomponent(md, compdef(comp_id), comp_name, first=first, last=last, before=before, after=after)
 end
 
 function replace_component(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::VoidInt=nothing, last::VoidInt=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+                           first::NothingInt=nothing, last::NothingInt=nothing,
+                           before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     delete!(md, comp_name)
     addcomponent(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end

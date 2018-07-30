@@ -1,6 +1,6 @@
 using ExcelFiles
 using Mimi
-using Base.Test
+using Test
 
 include("../../wip/load_empirical_dist.jl")
 
