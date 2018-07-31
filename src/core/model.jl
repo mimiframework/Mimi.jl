@@ -43,21 +43,21 @@ function decache(m::Model)
     m.mi = nothing
 end
 
-function connect_parameter(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
+function connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_parameter(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
+    connect_param!(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
                       ignoreunits=ignoreunits, offset=offset)
 end
 
 """
-    connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
+    connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
-function connect_parameter(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_parameter(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
+    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
@@ -85,17 +85,17 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 
-function addcomponent(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                       first=nothing, last=nothing, before=nothing, after=nothing)
-    addcomponent(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+    add_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
 end
 
-function replace_component(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidSymbol=nothing, last::VoidSymbol=nothing,
                            before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    replace_component(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
     decache(m)
     return ComponentReference(m, comp_name)
 end
@@ -235,8 +235,8 @@ function Base.delete!(m::Model, comp_name::Symbol)
     decache(m)
 end
 
-function set_parameter!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    set_parameter!(m.md, comp_name, param_name, value, dims)    
+function set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+    set_param!(m.md, comp_name, param_name, value, dims)    
     decache(m)
 end
 

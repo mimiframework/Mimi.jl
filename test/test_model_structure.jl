@@ -6,9 +6,10 @@ using Base.Test
 using Mimi
 
 import Mimi: 
-    add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
+    connect_param!, unconnected_params, set_dimension!, 
     reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
-    modeldef, modelinstance
+    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, 
+    dimensions, compdefs
 
 reset_compdefs()
 
@@ -45,20 +46,20 @@ end
 m = Model()
 set_dimension!(m, :time, 2015:5:2100)
 
-addcomponent(m, A)
-addcomponent(m, B, before=:A)
-addcomponent(m, C, after=:B)
+add_comp!(m, A)
+add_comp!(m, B, before=:A)
+add_comp!(m, C, after=:B)
 # Component order is B -> C -> A.
 
-connect_parameter(m, :A, :parA, :C, :varC)
+connect_param!(m, :A, :parA, :C, :varC)
 
 unconn = unconnected_params(m)
 @test length(unconn) == 1
 @test unconn[1] == (:C, :parC)
 
-connect_parameter(m, :C => :parC, :B => :varB)
+connect_param!(m, :C => :parC, :B => :varB)
 
-@test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
+@test_throws ErrorException add_comp!(m, C, after=:A, before=:B)
 
 @test numcomponents(m.md) == 3
 
@@ -72,7 +73,6 @@ connect_parameter(m, :C => :parC, :B => :varB)
 
 @test length(unconnected_params(m)) == 0
 
-add_connector_comps(m)
 run(m)
 
 #############################################
@@ -127,7 +127,7 @@ delete!(m, :A)
   parD = Parameter()
 end
 
-addcomponent(m, D)
+add_comp!(m, D)
 @test_throws ErrorException Mimi.build(m)
 
 

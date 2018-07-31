@@ -3,6 +3,11 @@ module MyModel
 using Base.Test
 using Mimi
 
+import Mimi: 
+    compdef, reset_compdefs
+
+reset_compdefs()
+
 @defcomp ch4forcing1 begin
     c_N2Oconcentration = Parameter(index=[time],unit="ppbv")
     c_CH4concentration = Parameter(index=[time],unit="ppbv")

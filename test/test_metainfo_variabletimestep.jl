@@ -3,7 +3,10 @@ module MyModel
 using Base.Test
 using Mimi
 
-Mimi.reset_compdefs()
+import Mimi: 
+    compdef, reset_compdefs
+
+reset_compdefs()
 
 @defcomp ch4forcing1 begin
     c_N2Oconcentration = Parameter(index=[time],unit="ppbv")

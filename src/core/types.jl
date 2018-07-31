@@ -410,7 +410,7 @@ struct ComponentReference
 end
 
 """
-A container for a variable within a component, to improve connect_parameter aesthetics,
+A container for a variable within a component, to improve connect_param! aesthetics,
 by supporting subscripting notation via getindex & setindex .
 """
 struct VariableReference

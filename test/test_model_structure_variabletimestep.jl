@@ -6,8 +6,9 @@ using Base.Test
 using Mimi
 
 import Mimi: 
-    add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
-    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count
+    connect_param!, unconnected_params, set_dimension!, 
+    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
+    compdef, getproperty, setproperty!, dimension, dimensions, compdefs
 
 reset_compdefs()
 
@@ -45,25 +46,25 @@ m = Model()
 years = [2015:5:2100; 2110:10:2200]
 set_dimension!(m, :time, years)
 
-@test_throws ErrorException addcomponent(m, A, last = 2210) 
-@test_throws ErrorException addcomponent(m, A, first = 2010) 
-@test_throws ErrorException addcomponent(m, A, after=:B)
-addcomponent(m, A, first = 2050, last = 2150) #test specific last and first
+@test_throws ErrorException add_comp!(m, A, last = 2210) 
+@test_throws ErrorException add_comp!(m, A, first = 2010) 
+@test_throws ErrorException add_comp!(m, A, after=:B)
+add_comp!(m, A, first = 2050, last = 2150) #test specific last and first
 
-addcomponent(m, B, before=:A)
+add_comp!(m, B, before=:A)
 
-addcomponent(m, C, after=:B) # test a later first than model
+add_comp!(m, C, after=:B) # test a later first than model
 # Component order is B -> C -> A.
 
-connect_parameter(m, :A, :parA, :C, :varC)
+connect_param!(m, :A, :parA, :C, :varC)
 
 unconn = unconnected_params(m)
 @test length(unconn) == 1
 @test unconn[1] == (:C, :parC)
 
-connect_parameter(m, :C => :parC, :B => :varB)
+connect_param!(m, :C => :parC, :B => :varB)
 
-@test_throws ErrorException addcomponent(m, C, after=:A, before=:B)
+@test_throws ErrorException add_comp!(m, C, after=:A, before=:B)
 
 @test numcomponents(m.md) == 3
 
@@ -81,7 +82,6 @@ connect_parameter(m, :C => :parC, :B => :varB)
 #  Tests for connecting scalar parameters   #
 #############################################
 
-add_connector_comps(m)
 run(m)
 
 @test all([m[:A, :varA][t] == 1 for t in 1:2])
@@ -124,7 +124,7 @@ delete!(m, :A)
   parD = Parameter()
 end
 
-addcomponent(m, D)
+add_comp!(m, D)
 @test_throws ErrorException Mimi.build(m)
 
 

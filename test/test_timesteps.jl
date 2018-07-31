@@ -6,7 +6,7 @@ using Base.Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime
+    gettime, getproperty
 
 Mimi.reset_compdefs()
 
@@ -72,14 +72,14 @@ m = Model()
 set_dimension!(m, :time, 2000:2010)
 
 # test that you can only add components with first/last within model's time index range
-@test_throws ErrorException addcomponent(m, Foo; first=1900)
-@test_throws ErrorException addcomponent(m, Foo; last=2100)
+@test_throws ErrorException add_comp!(m, Foo; first=1900)
+@test_throws ErrorException add_comp!(m, Foo; last=2100)
 
-foo = addcomponent(m, Foo; first=2005) #offset for foo
-bar = addcomponent(m, Bar)
+foo = add_comp!(m, Foo; first=2005) #offset for foo
+bar = add_comp!(m, Bar)
 
-set_parameter!(m, :Foo, :inputF, 5.)
-set_parameter!(m, :Bar, :inputB, collect(1:11))
+set_param!(m, :Foo, :inputF, 5.)
+set_param!(m, :Bar, :inputB, collect(1:11))
 
 run(m)
 
@@ -113,14 +113,14 @@ end
 
 m2 = Model()
 set_dimension!(m2, :time, 2000:2010)
-bar = addcomponent(m2, Bar)
-foo2 = addcomponent(m2, Foo2, first=2005)
+bar = add_comp!(m2, Bar)
+foo2 = add_comp!(m2, Foo2, first=2005)
 
-set_parameter!(m2, :Bar, :inputB, collect(1:11))
+set_param!(m2, :Bar, :inputB, collect(1:11))
 
 # TBD: Connecting components with different "first" times creates a mismatch
 # in understanding how to translate the index back to a year.
-connect_parameter(m2, :Foo2, :inputF, :Bar, :output)        
+connect_param!(m2, :Foo2, :inputF, :Bar, :output)        
 
 run(m2)
 
@@ -148,11 +148,11 @@ end
 m3 = Model()
 
 set_dimension!(m3, :time, 2000:2010)
-addcomponent(m3, Foo, first=2005)
-addcomponent(m3, Bar2)
+add_comp!(m3, Foo, first=2005)
+add_comp!(m3, Bar2)
 
-set_parameter!(m3, :Foo, :inputF, 5.)
-connect_parameter(m3, :Bar2, :inputB, :Foo, :output)
+set_param!(m3, :Foo, :inputF, 5.)
+connect_param!(m3, :Bar2, :inputB, :Foo, :output)
 run(m3)
 
 @test length(m3[:Foo, :output]) == 11

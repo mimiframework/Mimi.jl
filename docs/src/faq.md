@@ -21,7 +21,7 @@ Then in the model construction, set the parameter with a multivariate
 distribution (here the parameters are loaded from a CSV file):
 ```
 cubicparams = readdlm("../data/cubicparams.csv", ',')
-setparameter(m, :example, :cubiccoeff, MvNormal(squeeze(cubicparams[1,:], 1), cubicparams[2:4,:]))
+set_param!(m, :example, :cubiccoeff, MvNormal(squeeze(cubicparams[1,:], 1), cubicparams[2:4,:]))
 ```
 
 Here, `../data/cubicparams.csv` is a parameter definition file that looks something like this:
@@ -37,22 +37,22 @@ Here, `../data/cubicparams.csv` is a parameter definition file that looks someth
 
 ## How do I use component references?
 
-Component references allow you to write cleaner model code when connecting components.  The `addcomponent` function returns a reference to the component that you just added:
+Component references allow you to write cleaner model code when connecting components.  The `add_comp!` function returns a reference to the component that you just added:
 ```
-mycomponent = addcomponent(model, MyComponent)
+mycomponent = add_comp!(model, MyComponent)
 ```
 
-If you want to get a reference to a component after the `addcomponent` call has been made, you can construct the reference as:
+If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
 ```
 mycomponent = ComponentReference(model, :MyComponent)
 ```
 
-You can use this component reference in place of the `set_parameter!` and `connect_parameter` calls.
+You can use this component reference in place of the `set_param!` and `connect_param!` calls.
 
-## References in place of `set_parameter!`
+## References in place of `set_param!`
 
-The line `set_parameter!(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
+The line `set_param!(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
 
-## References in place of `connect_parameter`
+## References in place of `connect_param!`
 
-The line `connect_parameter(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.
+The line `connect_param!(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.

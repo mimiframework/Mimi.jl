@@ -1,6 +1,9 @@
 using Base.Test
 using Mimi
 
+import Mimi:
+    getproperty
+
 #utils: prettify
 @test Mimi.prettify("camelCaseBasic") == Mimi.prettify(:camelCaseBasic) == "Camel Case Basic"
 @test Mimi.prettify("camelWithAOneLetterWord") == Mimi.prettify(:camelWithAOneLetterWord) == "Camel With A One Letter Word"
@@ -33,11 +36,10 @@ end
 
 m = Model()
 set_dimension!(m, :time, 2)
-foo = addcomponent(m, Foo)
-bar = addcomponent(m, Bar)
+foo = add_comp!(m, Foo)
+bar = add_comp!(m, Bar)
 
 foo[:input] = 3.14
 bar[:intermed] = foo[:intermed]
-#connectparameter(m, :Bar, :intermed, :Foo, :intermed)
 
 run(m)

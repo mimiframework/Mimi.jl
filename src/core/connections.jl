@@ -1,8 +1,8 @@
 """
 Removes any parameter connections for a given parameter in a given component.
 """
-function disconnect!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
-    # println("disconnect!($comp_name, $param_name)")
+function disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+    # println("disconnect_param!($comp_name, $param_name)")
     filter!(x -> !(x.dst_comp_name == comp_name && x.dst_par_name == param_name), internal_param_conns(md))
     filter!(x -> !(x.comp_name == comp_name && x.param_name == param_name), external_param_conns(md))
 end
@@ -51,11 +51,11 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
 end
 
 """
-    connect_parameter(md::ModelDef, component::Symbol, name::Symbol, parametername::Symbol)
+    connect_param!(md::ModelDef, component::Symbol, name::Symbol, parametername::Symbol)
 
 Connect a parameter in a component to an external parameter.
 """
-function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
     comp_def = compdef(md, comp_name)
     ext_param = external_param(md, ext_param_name)
 
@@ -63,7 +63,7 @@ function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, 
         _check_labels(md, comp_def, param_name, ext_param)
     end
 
-    disconnect!(md, comp_name, param_name)
+    disconnect_param!(md, comp_name, param_name)
 
     conn = ExternalParameterConnection(comp_name, param_name, ext_param_name)
     add_external_param_conn(md, conn)
@@ -72,17 +72,17 @@ function connect_parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol, 
 end
 
 """
-    connect_parameter(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component.
 """
-function connect_parameter(md::ModelDef, 
+function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol,
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
-    disconnect!(md, dst_comp_name, dst_par_name)
+    disconnect_param!(md, dst_comp_name, dst_par_name)
 
     if backup != nothing
         # If value is a NamedArray, we can check if the labels match
@@ -145,13 +145,13 @@ function connect_parameter(md::ModelDef,
 end
 
 """
-    connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
 
 Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
 """
-function connect_parameter(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_parameter(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
+    connect_param!(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 """
@@ -204,7 +204,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
             set_external_param!(md, param_name, value; param_dims = param_dims)
 
         end
-        connect_parameter(md, comp_name, param_name, param_name)
+        connect_param!(md, comp_name, param_name, param_name)
     end
     nothing
 end
@@ -343,8 +343,8 @@ function add_connector_comps(md::ModelDef)
             conn_comp_name = connector_comp_name(i)
 
             # Add the connector component before the user-defined component that required it
-            # println("add_connector_comps: addcomponent(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
-            addcomponent(md, conn_comp_def, conn_comp_name, before=comp_name)
+            # println("add_connector_comps: add_comp!(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
+            add_comp!(md, conn_comp_def, conn_comp_name, before=comp_name)
            
             # add a connection between src_component and the ConnectorComp
             push!(conns, InternalParameterConnection(conn.src_comp_name, conn.src_var_name,

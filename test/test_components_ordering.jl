@@ -35,14 +35,14 @@ end
 end
 
 set_dimension!(my_model, :time, 2015:5:2110)
-addcomponent(my_model, testcomp1)
+add_comp!(my_model, testcomp1)
 
-@test_throws ErrorException addcomponent(my_model, testcomp1)
+@test_throws ErrorException add_comp!(my_model, testcomp1)
 
 # Testing to catch adding component twice
-@test_throws ErrorException addcomponent(my_model, testcomp1)
+@test_throws ErrorException add_comp!(my_model, testcomp1)
 
 # Testing to catch if before or after does not exist
-@test_throws ErrorException addcomponent(my_model, testcomp2, before=:testcomp3)
+@test_throws ErrorException add_comp!(my_model, testcomp2, before=:testcomp3)
 
-@test_throws ErrorException addcomponent(my_model, testcomp2, after=:testcomp3)
+@test_throws ErrorException add_comp!(my_model, testcomp2, after=:testcomp3)

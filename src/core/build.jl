@@ -98,6 +98,9 @@ function build(m::Model)
 end
 
 function build(md::ModelDef)
+
+    add_connector_comps(md)
+    
     # check if all parameters are set
     not_set = unconnected_params(md)
     if ! isempty(not_set)
@@ -159,7 +162,7 @@ function build(md::ModelDef)
         pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
 
         ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
-        addcomponent(mi, ci)
+        add_comp!(mi, ci)
     end
 
     save_dim_dict_reference(mi)
