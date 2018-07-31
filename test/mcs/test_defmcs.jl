@@ -6,7 +6,7 @@ using IterTools
 
 using Base.Test
 
-N = 1000
+N = 100
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -49,13 +49,14 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-output_dir = "/tmp/mcs"
+output_dir = joinpath(tempdir(), "mcs")
 
 generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Run trials 1:N, and save results to the indicated directory
 
 Mimi.set_model!(mcs, m)
+
 
 run_mcs(mcs, N, output_dir=output_dir)
 
@@ -103,6 +104,7 @@ function inner_loop_func(mcs::MonteCarloSimulation, tup)
     (scen, rate) = tup
     Mimi.log_info("inner loop: scen:$scen, rate:$rate")
 end
+
 
 loop_counter = 0
 

@@ -84,6 +84,9 @@ set_parameter!(m2, :MyComp2, :a, ones(3, 4, 5))
 run(m2)
 
 #5.  errors
-#spec creation for MyComp.a should fail, havn't handled this case yet
-@test_warn "spec conversion failed for MyComp2.a" w = explore(m2)
+#spec creation for MyComp.a should fail, haven't handled this case yet
+#@test_warn "spec conversion failed for MyComp2.a" w = explore(m2)
+
+# Seems to work now!
+w = explore(m2)
 @test typeof(w) == Electron.Window

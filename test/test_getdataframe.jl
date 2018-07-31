@@ -79,5 +79,7 @@ data[:] = 1:(length(years) * length(regions) * length(rates))
 addcomponent(new_model, testcomp4)
 set_parameter!(new_model, :testcomp4, :par1, data)
 
-# TBD: This doesn't work; needs TimestepArray or the like to handle > 2 dimensions
-# run(new_model)
+run(new_model)
+
+# Test 3 getting DF for a dimensional parameter
+@test size(getdataframe(new_model, :testcomp4, :par1)) == (8, 4)
