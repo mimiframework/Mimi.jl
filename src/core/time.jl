@@ -332,24 +332,20 @@ last_period(obj::TimestepArray{VariableTimestep{TIMES}, T, N}) where {TIMES,T, N
 time_labels(obj::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}) where {FIRST, STEP, T, N} = collect(FIRST:STEP:(FIRST + (size(obj, 1) - 1) * STEP))
 time_labels(obj::TimestepArray{VariableTimestep{TIMES}, T, N}) where {TIMES, T, N} = collect(TIMES)
 
-# function Base.getindex(arr::TimestepArray, ts::T, indxs::AnyIndex...) where {T <: AbstractTimestep}
-# 	return arr.data[ts.t, idxs...]
-# end
-
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, ts::FixedTimestep{FIRST, STEP, LAST}, indxs::AnyIndex...) where {T, N, FIRST, STEP, LAST}
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, ts::FixedTimestep{FIRST, STEP, LAST}, idxs::AnyIndex...) where {T, N, FIRST, STEP, LAST}
 	return arr.data[ts.t, idxs...]
 end
 
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, ts::VariableTimestep{TIMES}, indxs::AnyIndex...) where {T, N, TIMES}
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, ts::VariableTimestep{TIMES}, idxs::AnyIndex...) where {T, N, TIMES}
 	return arr.data[ts.t, idxs...]
 end
 
-function Base.getindex(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, ts::FixedTimestep{T_FIRST, STEP, LAST}, indxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
+function Base.getindex(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, ts::FixedTimestep{T_FIRST, STEP, LAST}, idxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
 	t = Int(ts.t + (FIRST - TIMES[1]) / STEP)					
 	return arr.data[t, idxs...]
 end
 
-function Base.getindex(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::VariableTimestep{T_FIRST}, indxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST}
+function Base.getindex(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::VariableTimestep{T_FIRST}, idxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST}
 	t = ts.t + findfirst(D_FIRST, T_FIRST[1]) - 1	
 	return arr.data[t, idxs...]
 end
@@ -367,24 +363,24 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, idx1::
 	return arr.data[idx1, idx2, idxs...]
 end
 
-# function Base.setindex!(arr::TimestepArray, val, ts::T, indxs::AnyIndex...) where {T <: AbstractTimestep}
+# function Base.setindex!(arr::TimestepArray, val, ts::T, idxs::AnyIndex...) where {T <: AbstractTimestep}
 # 	setindex!(arr.data, val, ts.t, idxs...)
 # end
 
-function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, val, ts::FixedTimestep{FIRST, STEP, LAST}, indxs::AnyIndex...) where {T, N, FIRST, STEP, LAST}
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, val, ts::FixedTimestep{FIRST, STEP, LAST}, idxs::AnyIndex...) where {T, N, FIRST, STEP, LAST}
 	setindex!(arr.data, val, ts.t, idxs...)
 end
 
-function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, val, ts::VariableTimestep{TIMES}, indxs::AnyIndex...) where {T, N, TIMES}
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, val, ts::VariableTimestep{TIMES}, idxs::AnyIndex...) where {T, N, TIMES}
 	setindex!(arr.data, val, ts.t, idxs...)
 end
 
-function Base.setindex!(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, val, ts::FixedTimestep{T_FIRST, STEP, LAST}, indxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
+function Base.setindex!(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, val, ts::FixedTimestep{T_FIRST, STEP, LAST}, idxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
 	t = ts.t + findfirst(D_FIRST, T_FIRST[1]) - 1	
 	setindex!(arr.data, val, t, idxs...)
 end
 
-function Base.setindex!(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, val, ts::VariableTimestep{T_FIRST}, indxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST}
+function Base.setindex!(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, val, ts::VariableTimestep{T_FIRST}, idxs::AnyIndex...) where {T, N, D_FIRST, T_FIRST}
 	t = ts.t + findfirst(D_FIRST, T_FIRST[1]) - 1	
 	setindex!(arr.data, val, t, idxs...)
 end
