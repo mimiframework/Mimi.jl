@@ -5,7 +5,6 @@
     MarginalModel,
     Model,
     add_comp!,  
-    add_connector_comps, 
     components, 
     connect_param!,
     create_marginal_model,

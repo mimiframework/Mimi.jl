@@ -71,7 +71,6 @@ end
 #     (Mimi.set_param!)(tutorial, :grosseconomy, :share, 0.3)
 #     (Mimi.set_param!)(tutorial, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
 #     (Mimi.connect_param!)(tutorial, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-#     (Mimi.add_connector_comps)(tutorial)
 # end
 
 run(model)

@@ -98,6 +98,9 @@ function build(m::Model)
 end
 
 function build(md::ModelDef)
+
+    add_connector_comps(md)
+    
     # check if all parameters are set
     not_set = unconnected_params(md)
     if ! isempty(not_set)

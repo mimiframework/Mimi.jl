@@ -17,7 +17,6 @@ export
     MarginalModel,
     Model,
     add_comp!,  
-    add_connector_comps, #TODO:  add to build! so we can delete this from theAPI
     components, #TODO components -> comps?
     connect_param!,
     create_marginal_model,
