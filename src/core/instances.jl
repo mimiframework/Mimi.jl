@@ -141,9 +141,9 @@ function get_var_value(ci::ComponentInstance, name::Symbol)
     end
 end
 
-set_parameter_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, Val(name), value)
+set_param_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, Val(name), value)
 
-set_variable_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.variables, Val(name), value)
+set_var_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.variables, Val(name), value)
 
 # Allow values to be obtained from either parameter type using one method name.
 value(param::ScalarModelParameter) = param.value
