@@ -18,7 +18,6 @@ export
     MarginalModel,
     Model,
     addcomponent,
-    add_connector_comps,
     add_dimension!,
     addparameter,
     compdef,

@@ -325,8 +325,5 @@ macro defmodel(model_name, ex)
         push!(result.args, expr)
     end
 
-    # Finally, add a call to create connector components in the new ModelDef
-    push!(result.args, :(add_connector_comps($(esc(model_name)))))
-
     return result
 end

@@ -6,7 +6,7 @@ using Base.Test
 using Mimi
 
 import Mimi: 
-    add_connector_comps, connect_parameter, unconnected_params, set_dimension!, 
+    connect_parameter, unconnected_params, set_dimension!, 
     reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
     modeldef, modelinstance
 
@@ -72,7 +72,6 @@ connect_parameter(m, :C => :parC, :B => :varB)
 
 @test length(unconnected_params(m)) == 0
 
-add_connector_comps(m)
 run(m)
 
 #############################################

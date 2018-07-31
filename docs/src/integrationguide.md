@@ -60,13 +60,6 @@ connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:
 ```julia
 addcomponent(mymodel, ComponentC; first=2010, last=2100)
 ```
-                        
-Finally, in order to finish connecting components, it is necessary to run `add_connector_comps` as below.
-
-```julia
-add_connector_comps(mymodel)
-
-```
 
 ## Running a Model
 

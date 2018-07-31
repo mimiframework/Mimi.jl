@@ -122,7 +122,6 @@ quote
     set_parameter!(my_model, :grosseconomy, :share, 0.3)
     set_parameter!(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
     connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-    add_connector_comps(my_model)
 end
 ```
 
