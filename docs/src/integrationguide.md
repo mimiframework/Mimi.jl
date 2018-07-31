@@ -13,6 +13,13 @@ This guide is organized into six main sections, each descripting an independent 
 5) Plotting
 6) Advanced topics
 
+**A Note on Function Naming**: There has been a general overhaul on function names, especially those in the explicity user-facing API, to be consistent with Julia conventions and the conventions of this Package.  These can be briefly summarized as follows:
+
+- use `_` for readability
+- append all functions with side-effects, i.e., non-pure functions that return a value but leave all else unchanged with a `!`
+- the commonly used terms `component`, `variable`, and `parameter` are shortened to `comp`, `var`, and `param`
+- functions that act upon a component, variable, or parameter are often written in the form `[action]_[comp/var/param]`
+
 ## Defining Components
 
 The `run_timestep` function is now contained by the `@defcomp` macro, and takes the parameters `p, v, d, t`, referring to Parameters, Variables, and Dimensions of the component you defined.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`.  Similarly, the optional `init` function is also contained by `@defcomp`, and takes the parameters `p, v, d`.  Thus, as described in the user guide, defining a single component is now done as follows:
@@ -42,23 +49,24 @@ In an effort to standardize the function naming protocol within Mimi, and to str
 
 | Old Syntax                | New Syntax                |
 | ------------------------  |:-------------------------:|
-|`connectparameter`         |`connect_parameter`        |
+|`addcomponent!`            |`add_comp!`                |
+|`connectparameter`         |`connect_param!`           |
 |`setleftoverparameters`    |`set_leftover_params!`     |
-|`setparameter`             |`set_parameter!`           |
-|`adddimension`             |`add_dimension!`            |
+|`setparameter`             |`set_param!`           |
+|`adddimension`             |`add_dimension!`           |
 |`setindex`                 |`set_dimension!`           |  
 
 Changes to various optional keyword arguments:
 
- - `connect_parameter`:  In the case that a component parameter is connected to a variable from a prior timestep, it is necessary to use the `offset` keyword argument to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps as below.
+ - `connect_param!`:  In the case that a component parameter is connected to a variable from a prior timestep, it is necessary to use the `offset` keyword argument to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps as below.
 
 ```julia
-connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
+connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
 ```
-- `addcomponent`:  Previously the optional keyword arguments `start` and `stop` could be used to specify times for components that do not run for the full length of the model. These arguments are now `first` and `last` respectively.
+- `add_comp!`:  Previously the optional keyword arguments `start` and `stop` could be used to specify times for components that do not run for the full length of the model. These arguments are now `first` and `last` respectively.
 
 ```julia
-addcomponent(mymodel, ComponentC; first=2010, last=2100)
+add_comp!(mymodel, ComponentC; first=2010, last=2100)
 ```
                         
 Finally, in order to finish connecting components, it is necessary to run `add_connector_comps` as below.

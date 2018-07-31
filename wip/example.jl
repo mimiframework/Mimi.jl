@@ -14,10 +14,10 @@ m = Model()
 
 set_dimension!(m, :time, [1,2,3])
 
-addcomponent(m, foo)
+add_comp!(m, foo)
 
 
-set_parameter!(m, :foo, :in, [3.,6.,10.])
+set_param!(m, :foo, :in, [3.,6.,10.])
 
 run(m)
 

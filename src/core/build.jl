@@ -159,7 +159,7 @@ function build(md::ModelDef)
         pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
 
         ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
-        addcomponent(mi, ci)
+        add_comp!(mi, ci)
     end
 
     save_dim_dict_reference(mi)

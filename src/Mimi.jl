@@ -14,50 +14,34 @@ using StringBuilders
 
 export
     @defcomp,
-    @modelegate,
     MarginalModel,
     Model,
-    addcomponent,
-    add_connector_comps,
-    add_dimension!,
-    addparameter,
-    compdef,
-    compdefs,
-    compinstance,
-    compkeys,
-    components,
-    connect_parameter,
+    add_comp!,  
+    add_connector_comps, #TODO:  add to build! so we can delete this from theAPI
+    components, #TODO components -> comps?
+    connect_param!,
     create_marginal_model,
-    datatype,
-    description,
-    dimension,
-    dimensions,
-    disconnect!,
+    disconnect_param!,
     explore,
     getdataframe,
     getproperty,
     gettime,
-    get_parameter_value,
-    get_variable_value,
+    get_param_value,
+    get_var_value,
     hasvalue,
-    interpolate,
     is_first,
     is_last,
     load_comps,
     modeldef,
     name,
-    new_component,
-    parameters,
-    # plot,
-    # plot_comp_graph,
-    replace_component,
-    run_timestep,
-    set_dimension!,
-    set_leftover_params!,
-    set_parameter!,
+    new_comp,
+    parameters, #TODO:  parameters -> params?
+    replace_comp!, 
+    set_dimension!, # TODO:  Think hard about the terminology of axis-dimension-index-blabla
+    set_leftover_params!, #TODO:  Rething this function in general
     setproperty!,
-    unit,
-    variables
+    set_param!, 
+    variables  #TODO:  variables -> vars?
 
 include("core/types.jl")
 
