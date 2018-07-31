@@ -30,13 +30,13 @@ set_dimension!(m, :time, 2000:2100)
 set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
-addcomponent(m, MyComp)
-set_parameter!(m, :MyComp, :a, ones(101,3))
-set_parameter!(m, :MyComp, :b, 1:101)
-set_parameter!(m, :MyComp, :c, [4,5,6])
-set_parameter!(m, :MyComp, :d, .5)
-set_parameter!(m, :MyComp, :e, [1,2,3,4])
-set_parameter!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
+add_comp!(m, MyComp)
+set_param!(m, :MyComp, :a, ones(101,3))
+set_param!(m, :MyComp, :b, 1:101)
+set_param!(m, :MyComp, :c, [4,5,6])
+set_param!(m, :MyComp, :d, .5)
+set_param!(m, :MyComp, :e, [1,2,3,4])
+set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
 run(m)
 
@@ -78,8 +78,8 @@ set_dimension!(m2, :regions, 3)
 set_dimension!(m2, :four, 4)
 set_dimension!(m2, :five, 5)
 
-addcomponent(m2, MyComp2)
-set_parameter!(m2, :MyComp2, :a, ones(3, 4, 5)) 
+add_comp!(m2, MyComp2)
+set_param!(m2, :MyComp2, :a, ones(3, 4, 5)) 
 
 run(m2)
 
