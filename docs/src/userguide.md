@@ -70,30 +70,30 @@ set_dimension!(mymodel, :regions, ["USA", "EU", "LATAM"])
 The next step is to add components to the model. This is done by the following syntax:
 
 ```julia
-addcomponent(mymodel, ComponentA, :GDP)
-addcomponent(mymodel, ComponentB; first=2010)
-addcomponent(mymodel, ComponentC; first=2010, last=2100)
+add_comp!(mymodel, ComponentA, :GDP)
+add_comp!(mymodel, ComponentB; first=2010)
+add_comp!(mymodel, ComponentC; first=2010, last=2100)
 
 ```
 
-The first argument to addcomponent is the model, the second is the name of the ComponentId defined by @defcomp. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom first and last times with the optional keyword arguments as shown above. If no first or last time is provided, the component will assume the first or last time of the model's time index values that were specified in set_dimension!.
+The first argument to add_comp! is the model, the second is the name of the ComponentId defined by @defcomp. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom first and last times with the optional keyword arguments as shown above. If no first or last time is provided, the component will assume the first or last time of the model's time index values that were specified in set_dimension!.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
 To make an external connection, the syntax is as follows:
 
 ```julia
-set_parameter!(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
-set_parameter!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
+set_param!(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
+set_param!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
 
 ```
 
 To make an internal connection, the syntax is as follows.  Note that there is an optional keyword argument offset, that should be used in the case that a component parameter is connected to a variable from a prior timestep to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps.
 
 ```julia
-connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
+connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
 # Note: offset=1 => dependence is on on prior timestep, i.e., not a cycle
-connect_parameter(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
+connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
 ```
 
 If you wish to delete a component that has already been added, do the following:
@@ -183,7 +183,7 @@ As mentioned earlier, it is possible for some components to start later or end s
 
 ```julia
 backup = rand(100) # data array of the proper size
-connectparameter(mymodel, :LongComponent=>:parametername, :ShortComponent=>:variablename, backup)
+connect_param!(mymodel, :LongComponent=>:parametername, :ShortComponent=>:variablename, backup)
 ```
 
 Note: for now, to avoid discrepancy with timing and alignment, the backup data must be the length of the whole component's first to last time, even though it will only be used for values not found in the shorter component.
@@ -202,7 +202,7 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 
 ### Updating an external parameter
 
-When `set_parameter!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
+When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
 
 ```julia
 update_external_param(mymodel, :parametername, newvalues)

@@ -65,9 +65,9 @@ end
 We can now use Mimi to construct a model that binds the `grosseconomy` and `emissions` components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.
 
 * Once the model is defined, `set_dimension!` is used to set the length and interval of the time step.
-* We then use `addcomponent` to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.
-* Next, `set_parameter!` is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using `set_parameter!` two different times. The syntax is `set_parameter!(model_name, :component_name, :parameter_name, value)`
-* If any variables of one component are parameters for another, `connect_parameter` is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_parameter(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
+* We then use `add_comp!` to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.
+* Next, `set_param!` is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using `set_param!` two different times. The syntax is `set_param!(model_name, :component_name, :parameter_name, value)`
+* If any variables of one component are parameters for another, `connect_param!` is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
 * Finally, the model can be run using the command `run(model_name)`.
 * To access model results, use `model_name[:component, :variable_name]`.
 * To observe model results in a graphical form ,use `explore(model_name)` to open the UI window.
@@ -84,21 +84,21 @@ m = Model()
 set_dimension!(m, :time, collect(2015:5:2110))
 
 #Order matters here. If the emissions component were defined first, the model would not run.
-addcomponent(my_model, grosseconomy)  
-addcomponent(my_model, emissions)
+add_comp!(my_model, grosseconomy)  
+add_comp!(my_model, emissions)
 
 #Set parameters for the grosseconomy component
-set_parameter!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_parameter!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_parameter!(my_model, :grosseconomy, :s, ones(20).* 0.22)
-set_parameter!(my_model, :grosseconomy, :depk, 0.1)
-set_parameter!(my_model, :grosseconomy, :k0, 130.)
-set_parameter!(my_model, :grosseconomy, :share, 0.3)
+set_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+set_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)
+set_param!(my_model, :grosseconomy, :depk, 0.1)
+set_param!(my_model, :grosseconomy, :k0, 130.)
+set_param!(my_model, :grosseconomy, :share, 0.3)
 
 #Set parameters for the emissions component
-set_parameter!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-#Note that connect_parameter was used here.
+set_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
+#Note that connect_param! was used here.
 
 end #end module
 
@@ -125,7 +125,7 @@ We can now modify our two-component model of the globe to include multiple regio
 * When using `@defcomp`, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include `(index=[regions])`. This can be combined with the time index as well, `(index=[time, regions])`.
 * In the run_timestep function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
 * `set_dimension!` must be used to specify your regions in the same way that it is used to specify your timestep.
-* When using `set_parameter!` for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into `set_parameter!` rather than an entire equation.
+* When using `set_param!` for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into `set_param!` rather than an entire equation.
 * When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, `using Mimi` must be speficied for each component. This approach will be used here.
 
 To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.
@@ -251,19 +251,19 @@ m = Model()
 set_dimension!(m, :time, collect(2015:5:2110))
 set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 #Note that the regions of your model must be specified here
 
-addcomponent(m, grosseconomy)
-addcomponent(m, emissions)
+add_comp!(m, grosseconomy)
+add_comp!(m, emissions)
 
-set_parameter!(m, :grosseconomy, :l, l)
-set_parameter!(m, :grosseconomy, :tfp, tfp)
-set_parameter!(m, :grosseconomy, :s, s)
-set_parameter!(m, :grosseconomy, :depk,depk)
-set_parameter!(m, :grosseconomy, :k0, k0)
-set_parameter!(m, :grosseconomy, :share, 0.3)
+set_param!(m, :grosseconomy, :l, l)
+set_param!(m, :grosseconomy, :tfp, tfp)
+set_param!(m, :grosseconomy, :s, s)
+set_param!(m, :grosseconomy, :depk,depk)
+set_param!(m, :grosseconomy, :k0, k0)
+set_param!(m, :grosseconomy, :share, 0.3)
 
 #set parameters for emissions component
-set_parameter!(my_model, :emissions, :sigma, sigma)
-connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+set_param!(my_model, :emissions, :sigma, sigma)
+connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
 end #end module
 

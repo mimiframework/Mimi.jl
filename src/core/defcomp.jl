@@ -168,10 +168,10 @@ macro defcomp(comp_name, ex)
     end
     
     # For some reason this was difficult to do at the higher language level. 
-    # This fails: :(comp = new_component($(esc(mod_name).esc(comp_name))))
-    # newcomp = Expr(:(=), :comp, Expr(:call, :new_component, QuoteNode(mod_name), QuoteNode(comp_name)))
+    # This fails: :(comp = new_comp($(esc(mod_name).esc(comp_name))))
+    # newcomp = Expr(:(=), :comp, Expr(:call, :new_comp, QuoteNode(mod_name), QuoteNode(comp_name)))
     verbose = ! is_builtin(mod_name, comp_name)
-    newcomp = :(comp = new_component($comp_name, $verbose))
+    newcomp = :(comp = new_comp($comp_name, $verbose))
     addexpr(esc(newcomp))
 
     for elt in elements
@@ -298,7 +298,7 @@ macro defmodel(model_name, ex)
 
             comp_mod = comp_mod == nothing ? curr_module : comp_mod
             name = alias == nothing ? comp_name : alias
-            expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
+            expr = :(add_comp!($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
 
         elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||
                 @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_))
@@ -306,7 +306,7 @@ macro defmodel(model_name, ex)
                 error("Subscripted connection source must have subscript [t - x] where x is an integer > 0")
             end
 
-            expr = :(connect_parameter($(esc(model_name)),
+            expr = :(connect_param!($(esc(model_name)),
                                        $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
                                        $(QuoteNode(src_comp)), $(QuoteNode(src_name)), offset=$(esc(offset))))
 
@@ -314,7 +314,7 @@ macro defmodel(model_name, ex)
             expr = :(set_dimension!($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(set_parameter!($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
+            expr = :(set_param!($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

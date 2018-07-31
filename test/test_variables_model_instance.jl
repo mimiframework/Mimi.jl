@@ -18,8 +18,8 @@ end
 par = collect(2015:5:2110)
 
 set_dimension!(my_model, :time, 2015:5:2110)
-addcomponent(my_model, testcomp1)
-set_parameter!(my_model, :testcomp1, :par1, par)
+add_comp!(my_model, testcomp1)
+set_param!(my_model, :testcomp1, :par1, par)
 run(my_model);
 #NOTE: this variables function does NOT take in Nullable instances
 @test (Mimi.variable_names(my_model, :testcomp1) == [:var1, :var2])

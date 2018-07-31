@@ -27,16 +27,16 @@ set_dimension!(m, :time, 2000:2100)
 set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
-addcomponent(m, MyComp)
-set_parameter!(m, :MyComp, :a, ones(101,3))
-set_parameter!(m, :MyComp, :b, 1:101)
-set_parameter!(m, :MyComp, :c, [4,5,6])
-set_parameter!(m, :MyComp, :d, .5)
-set_parameter!(m, :MyComp, :e, [1,2,3,4])
-set_parameter!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
+add_comp!(m, MyComp)
+set_param!(m, :MyComp, :a, ones(101,3))
+set_param!(m, :MyComp, :b, 1:101)
+set_param!(m, :MyComp, :c, [4,5,6])
+set_param!(m, :MyComp, :d, .5)
+set_param!(m, :MyComp, :e, [1,2,3,4])
+set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
 # THIS FAILS: Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}} != Array{Float64,2}
-# set_parameter!(m, :MyComp, :f, reshape(1:16, 4, 4))
+# set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 
 extpars = external_params(m)
 
