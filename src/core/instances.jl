@@ -17,7 +17,7 @@ Return an iterator on the components in model instance `mi`.
 """
 components(mi::ModelInstance) = values(mi.components)
 
-function addcomponent(mi::ModelInstance, ci::ComponentInstance) 
+function add_comp!(mi::ModelInstance, ci::ComponentInstance) 
     mi.components[name(ci)] = ci
 
     push!(mi.firsts, ci.first)
@@ -116,7 +116,7 @@ function get_property_obj(obj::ComponentInstanceVariables{NAMES, TYPES},
 end
 
 # Convenience functions that can be called with a name symbol rather than Val(name)
-function get_parameter_value(ci::ComponentInstance, name::Symbol)
+function get_param_value(ci::ComponentInstance, name::Symbol)
     try 
         return getproperty(ci.parameters, Val(name))
     catch err
@@ -128,7 +128,7 @@ function get_parameter_value(ci::ComponentInstance, name::Symbol)
     end
 end
 
-function get_variable_value(ci::ComponentInstance, name::Symbol)
+function get_var_value(ci::ComponentInstance, name::Symbol)
     try
         # println("Getting $name from $(ci.variables)")
         return getproperty(ci.variables, Val(name))

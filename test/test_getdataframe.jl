@@ -36,8 +36,8 @@ end
 par = collect(2015:5:2110)
 
 set_dimension!(my_model, :time, 2015:5:2110)
-addcomponent(my_model, testcomp1)
-set_parameter!(my_model, :testcomp1, :par1, par)
+add_comp!(my_model, testcomp1)
+set_param!(my_model, :testcomp1, :par1, par)
 
 # Test running before model built
 @test_throws ErrorException dataframe = getdataframe(my_model, :testcomp1, :var1)
@@ -76,8 +76,8 @@ set_dimension!(new_model, :rates, rates)
 data = Array{Int}(length(years), length(regions), length(rates))
 data[:] = 1:(length(years) * length(regions) * length(rates))
 
-addcomponent(new_model, testcomp4)
-set_parameter!(new_model, :testcomp4, :par1, data)
+add_comp!(new_model, testcomp4)
+set_param!(new_model, :testcomp4, :par1, data)
 
 # TBD: This doesn't work; needs TimestepArray or the like to handle > 2 dimensions
 # run(new_model)

@@ -16,32 +16,32 @@ export
     @defcomp,
     MarginalModel,
     Model,
-    addcomponent,  # push!, add_component!, add_component, addcomp!, add!; could also have multiple functions like insert!, push! etc. instead of before after keywords
-    add_connector_comps, #should this be deleted?  Docs indicate we need it ...
-    components,
-    connect_parameter, # connect!, bind, assign, link; ! yes or no; frontrunner: connect!
+    add_comp!,  
+    add_connector_comps, #TODO:  add to build! so we can delete this from theAPI
+    components, #TODO components -> comps?
+    connect_param!,
     create_marginal_model,
-    disconnect!, # disconnect_parameter!; frontrunner: disconnect!
+    disconnect_param!,
     explore,
     getdataframe,
     getproperty,
     gettime,
-    get_parameter_value,
-    get_variable_value,
+    get_param_value,
+    get_var_value,
     hasvalue,
     is_first,
     is_last,
     load_comps,
     modeldef,
     name,
-    new_component,
-    parameters,
-    replace_component, # Add !, comp vs, component, replace!
-    set_dimension!, # Think hard about axis-dimension-index-blabla
-    set_leftover_params!, #rethink in general
+    new_comp,
+    parameters, #TODO:  parameters -> params?
+    replace_comp!, 
+    set_dimension!, # TODO:  Think hard about the terminology of axis-dimension-index-blabla
+    set_leftover_params!, #TODO:  Rething this function in general
     setproperty!,
-    set_parameter!, # Just make parameter match other parts
-    variables # Just make sure it matches vars vs variables
+    set_param!, 
+    variables  #TODO:  variables -> vars?
 
 include("core/types.jl")
 

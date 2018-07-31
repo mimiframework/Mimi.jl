@@ -50,13 +50,13 @@ end
 par1 = external_param(x1, :par1)
 @test par1.value == 5.0
 
-set_parameter!(x1, :foo1, :par1, 6.0)
+set_param!(x1, :foo1, :par1, 6.0)
 par1 = external_param(x1, :par1)
 @test par1.value == 6.0
 
-set_parameter!(x1, :foo1, :par2, [true true false; true false false; true true true])
+set_param!(x1, :foo1, :par2, [true true false; true false false; true true true])
 
-set_parameter!(x1, :foo1, :par3, [1.0, 2.0, 3.0])
+set_param!(x1, :foo1, :par3, [1.0, 2.0, 3.0])
 
 build(x1)
 
@@ -64,11 +64,11 @@ ci = compinstance(x1, :foo1)
 reset_variables(ci)
 
 # Check all variables are defaulted
-@test isnan(get_variable_value(ci, :var1))
+@test isnan(get_var_value(ci, :var1))
 
 m = Model()
 set_dimension!(m, :time, 20)
 set_dimension!(m, :index1, 5)
-addcomponent(m, foo1)
+add_comp!(m, foo1)
 
 @test :var1 in variable_names(x1, :foo1)

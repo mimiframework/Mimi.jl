@@ -69,13 +69,13 @@ function dump_components()
 end
 
 """
-    new_component(comp_id::ComponentId)
+    new_comp(comp_id::ComponentId)
 
 Create an empty `ComponentDef`` to the global component registry with the given
 `comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
 `addparameter`, etc.
 """
-function new_component(comp_id::ComponentId, verbose::Bool=true)
+function new_comp(comp_id::ComponentId, verbose::Bool=true)
     if verbose
         if haskey(_compdefs, comp_id)
             warn("Redefining component $comp_id")
@@ -268,13 +268,13 @@ function parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbo
 end
 
 """
-    set_parameter!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+    set_param!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
 Set the parameter of a component in a model to a given value. Value can by a scalar,
 an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
 the provided data, and will be used to check that they match the model's index labels.
 """
-function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     comp_def = compdef(md, comp_name)
 
     # perform possible dimension and labels checks
@@ -328,7 +328,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
         set_external_scalar_param!(md, param_name, value)
     end
 
-    connect_parameter(md, comp_name, param_name, param_name)
+    connect_param!(md, comp_name, param_name, param_name)
     nothing
 end
 
@@ -411,13 +411,13 @@ const VoidInt    = Union{Void, Int}
 const VoidSymbol = Union{Void, Symbol}
 
 """
-    addcomponent(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the model. The component is added at the end of 
 the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
+function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
                       first::VoidInt=nothing, last::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # check that first and last are within the model's time index range
@@ -489,25 +489,25 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
         if param.default != nothing
-            set_parameter!(md, comp_name, name(param), param.default)
+            set_param!(md, comp_name, name(param), param.default)
         end
     end
     
     return nothing
 end
 
-function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+function add_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                       first::VoidInt=nothing, last::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
-    addcomponent(md, compdef(comp_id), comp_name, first=first, last=last, before=before, after=after)
+    add_comp!(md, compdef(comp_id), comp_name, first=first, last=last, before=before, after=after)
 end
 
-function replace_component(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidInt=nothing, last::VoidInt=nothing,
                            before::VoidSymbol=nothing, after::VoidSymbol=nothing)
     delete!(md, comp_name)
-    addcomponent(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+    add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
 """
