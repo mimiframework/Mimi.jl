@@ -24,6 +24,7 @@ export
     disconnect!, # disconnect_parameter!; frontrunner: disconnect!
     explore,
     getdataframe,
+    getproperty,
     gettime,
     get_parameter_value,
     get_variable_value,
@@ -38,6 +39,7 @@ export
     replace_component, # Add !, comp vs, component, replace!
     set_dimension!, # Think hard about axis-dimension-index-blabla
     set_leftover_params!, #rethink in general
+    setproperty!,
     set_parameter!, # Just make parameter match other parts
     variables # Just make sure it matches vars vs variables
 
