@@ -22,12 +22,19 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
 
             dffields = map(string, names(df))         # convert to string once before creating specs
 
-            if dffields[1] == "time" # a 'time' field necessitates a line plot
+            # check if there are too many dimensions to map and if so, warn
+            if length(dffields) > 3
+                error()
+                    
+            # a 'time' field necessitates a line plot  
+            elseif dffields[1] == "time"
                 if length(dffields) > 2
                     spec = createspec_multilineplot(name, df, dffields)
                 else
                     spec = createspec_lineplot(name, df, dffields)
                 end
+            
+            #otherwise we are dealing with a barplot
             else
                 spec = createspec_barplot(name, df, dffields)
             end
@@ -36,7 +43,11 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         return spec
         
     catch err
-        warn("spec conversion failed for $comp_name.$item_name")
+        if length(dims) >= 3
+            warn("$comp_name.$item_name has over 3 graphing dims, not yet implemented in explorer")
+        else
+            warn("spec conversion failed for $comp_name.$item_name")
+        end
         rethrow(err)
     end
 end

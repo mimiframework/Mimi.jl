@@ -96,12 +96,6 @@ connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:var
 connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
 ```
 
-To finish connecting components:
-```julia
-add_connector_comps(mymodel)
-
-```
-
 If you wish to delete a component that has already been added, do the following:
 ```julia
 delete!(mymodel, :ComponentName)

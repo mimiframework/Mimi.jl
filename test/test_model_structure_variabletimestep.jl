@@ -6,7 +6,7 @@ using Base.Test
 using Mimi
 
 import Mimi: 
-    add_connector_comps, connect_param!, unconnected_params, set_dimension!, 
+    connect_param!, unconnected_params, set_dimension!, 
     reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
     compdef, getproperty, setproperty!, dimension, dimensions, compdefs
 
@@ -82,7 +82,6 @@ connect_param!(m, :C => :parC, :B => :varB)
 #  Tests for connecting scalar parameters   #
 #############################################
 
-add_connector_comps(m)
 run(m)
 
 @test all([m[:A, :varA][t] == 1 for t in 1:2])
