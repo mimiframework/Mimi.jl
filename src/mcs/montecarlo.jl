@@ -82,7 +82,6 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
         # println("results_df: $results_df")
 
     else
-        # println("Matrix with dims $dims")
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[:trialnum] = trialnum
         # println("size of trial_df: $(size(trial_df))")

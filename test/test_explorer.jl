@@ -60,14 +60,15 @@ s = spec_list(m)
 w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
 
+#5.  errors and warnings
 @defcomp MyComp2 begin
 
-    a = Parameter(index = [regions, four, five])
+    a = Parameter(index = [time, regions, four])
     x = Variable(index=[time, regions])
     
     function run_timestep(p, v, d, t)
         for r in d.regions
-            v.x[t, r] = 0
+            v.x[t, r] = rand(10)[1]
         end
     end
 end
@@ -76,14 +77,11 @@ m2 = Model()
 set_dimension!(m2, :time, 2000:2100)
 set_dimension!(m2, :regions, 3)
 set_dimension!(m2, :four, 4)
-set_dimension!(m2, :five, 5)
 
 add_comp!(m2, MyComp2)
-set_param!(m2, :MyComp2, :a, ones(3, 4, 5)) 
+set_param!(m2, :MyComp2, :a, ones(101, 3, 4)) 
 
 run(m2)
 
-#5.  errors
-#spec creation for MyComp.a should fail, havn't handled this case yet
-@test_warn "spec conversion failed for MyComp2.a" w = explore(m2)
-@test typeof(w) == Electron.Window
+#spec creation for MyComp.a should fail and error, haven't handled case of > 3 dims yet
+@test_warn "MyComp2.a has over 3 graphing dims, not yet implemented in explorer" w = explore(m2)

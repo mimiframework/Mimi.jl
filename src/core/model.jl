@@ -106,6 +106,8 @@ end
 
 List all the components in model `m`.
 """
+@modelegate components(m::Model) => mi
+
 @modelegate compdefs(m::Model) => md
 
 @modelegate compdef(m::Model, comp_name::Symbol) => md

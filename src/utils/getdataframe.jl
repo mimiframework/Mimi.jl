@@ -9,7 +9,6 @@ nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Void,DataFrame}=nothing)
     mi = m.mi
     md = mi.md
-    comp_inst = compinstance(mi, comp_name)
 
     dims = dimensions(m, comp_name, item_name)
 
@@ -21,65 +20,84 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     end
 
     num_dims = length(dims)
-    if ! (num_dims in (1,2))
+    if num_dims == 0
         error("Can't create a dataframe from scalar value :$item_name")
     end
 
-    dim1 = dims[1]
-    keys = dim_keys(md, dim1)
-
-    if dim1 == :time
-        first = findfirst(keys, comp_inst.first)
-        last  = findfirst(keys, comp_inst.last)
-    end
+    data = mi[comp_name, item_name]
 
     if num_dims == 1
-        df[dim1] = keys
+        dim1 = dims[1]
+        df[dim1] = keys = dim_keys(md, dim1)
+
         if dim1 == :time
-            df[item_name] = vcat(repeat([NaN], inner=first - 1), mi[comp_name, item_name], 
+            ci = compinstance(mi, comp_name)
+            first = findfirst(keys, ci.first)
+            last  = findfirst(keys, ci.last)
+
+            df[item_name] = vcat(repeat([NaN], inner=first - 1), data, 
                                  repeat([NaN], inner=length(keys) - last))
         else
-            df[item_name] = mi[comp_name, item_name]  # TBD need to fix this?
+            df[item_name] = data
         end
-        return df
+    else
+        df = _df_helper(m, comp_name, item_name, dims, data)
+    end
 
-    elseif num_dims == 2
+    return df
+end
+
+function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector{Symbol}, data::AbstractArray)
+    md = m.md
+    num_dims = length(dims)
+    dim1 = dims[1]
+    keys1 = dim_keys(md, dim1)
+
+    df = DataFrame()
+
+    if num_dims == 2
         dim2 = dims[2]
         len_dim1 = dim_count(md, dim1)
         len_dim2 = dim_count(md, dim2)
-        df[dim1] = repeat(keys, inner = [len_dim2])
+        df[dim1] = repeat(keys1, inner = [len_dim2])
         df[dim2] = repeat(dim_keys(md, dim2), outer = [len_dim1])
 
-        data = m[comp_name, item_name]
         if dim1 == :time
+            ci = compinstance(m.mi, comp_name)
+            first = findfirst(keys1, ci.first)
+            last  = findfirst(keys1, ci.last)
+
             top    = fill(NaN, first - 1, len_dim2)
             bottom = fill(NaN, len_dim1 - last, len_dim2)
             data = vcat(top, data, bottom)
         end
 
         df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...)
-
-        return df
     else
-        error("DataFrames with 0 or > 2 dimensions are not yet implemented")
+        # Indexes is #, :, :, ... for each index of first dimension
+        indexes = repmat(Any[Colon()], num_dims)
+
+        for i in 1:size(data)[1]
+            indexes[1] = i
+            subdf = _df_helper(m, comp_name, item_name, dims[2:end], data[indexes...])
+            subdf[dims[1]] = keys1[i]
+
+            if i == 1
+                # add required columns in the first iteration
+                df_names = names(df)
+                for name in names(subdf)
+                    if ! (name in df_names)
+                        df[name] = []
+                    end
+                end
+            end
+            df = vcat(df, subdf)
+        end        
     end
-end
 
-"""
-    getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
-
-Return the values for variable or parameter `item_name` in `comp_name` of 
-model `m` as a DataFrame.
-"""
-function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
-    mi = m.mi
-    if mi == nothing
-        error("Cannot get DataFrame: model has not been built yet")
-    end
-
-    df = _load_dataframe(m, comp_name, item_name)
     return df
 end
+
 
 """
     getdataframe(m::Model, comp_name::Symbol, pairs::Pair...)
@@ -112,56 +130,17 @@ function getdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
     return getdataframe(m, expanded...)
 end
 
-# TBD
-# The following 2 functions are modified from James' version. Before these
-# can be completed and tested, we need to finish implementing TimestepArray.
-#
-# function getdataframe_NEW(m::Model, comp_name::Symbol, item_name::Symbol)
-#     mi = m.mi
-#     dims = dimensions(m, comp_name, item_name)
-#     num_dims = length(dims)
-#     data = m[comp_name, item_name]
-    
-#     if num_dims == 0
-#         return data
-        
-#     elseif num_dims == 1
-#         dim1 = dims[1]
-#         keys = dim_keys(m.md, dim1)
-        
-#         df = DataFrame()
-#         df[dim1] = keys
-#         df[item_name] = data
-#         return df
-#     else
-#         return _getdataframe_helper(m, item_name, dims, data)
-#     end
-# end
+"""
+    getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
 
-# function _getdataframe_helper(m::Model, item_name::Symbol, dims::Vector{Symbol}, data::AbstractArray)
-#     md = m.md
-#     num_dims = length(dims)
-#     df = DataFrame()
+Return the values for variable or parameter `item_name` in `comp_name` of 
+model `m` as a DataFrame.
+"""
+function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
+    if m.mi == nothing
+        error("Cannot get DataFrame: model has not been built yet")
+    end
 
-#     if num_dims == 2
-#         dim1 = dims[1]
-#         dim2 = dims[2]
-#         len_dim1 = dim_count(md, dim1)
-#         len_dim2 = dim_count(md, dim2)
-#         df[dim1] = repeat(dim_keys(md, dim1), inner=[len_dim2])
-#         df[dim2] = repeat(dim_keys(md, dim2), outer=[len_dim1])
-#         df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...)
-#     else
-#         # Indexes is #, :, :, ... for each index of first dimension
-#         indexes = repmat(Any[Colon()], num_dims)
-#         keys = dim_keys(md, dim1)
-#         for i in 1:size(data)[1]
-#             indexes[1] = i
-#             subdf = _getdataframe_helper(m, item_name, dims[2:end], data[indexes...])
-#             subdf[dims[1]] = keys[i]
-#             df = vcat(df, subdf)
-#         end
-#     end
-
-#     return df
-# end
+    df = _load_dataframe(m, comp_name, item_name)
+    return df
+end
