@@ -1,7 +1,7 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
+function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)    
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)

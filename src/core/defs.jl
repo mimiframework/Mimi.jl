@@ -489,7 +489,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
         if param.default != nothing
-            set_param!(md, comp_name, name(param), param.default)
+            set_param!(md, comp_name, name(param), param.datatype(param.default))
         end
     end
     

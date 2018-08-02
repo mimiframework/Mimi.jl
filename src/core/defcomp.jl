@@ -109,7 +109,7 @@ end
 # Generates an expression to construct a Variable or Parameter
 function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit)
     func_name = elt_type == :Parameter ? :addparameter : :addvariable
-    args = [datatype, dimensions, desc, unit]
+    args = [eval(datatype), dimensions, desc, unit]
     if elt_type == :Parameter
         push!(args, dflt)
     end
