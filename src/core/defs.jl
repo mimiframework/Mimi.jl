@@ -295,7 +295,11 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
         dtype = data_type == Number ? number_type(md) : data_type
 
         # convert the number type and, if NamedArray, convert to Array
-        value = convert(Array{dtype, num_dims}, value)
+        if dtype <: AbstractArray
+            value = convert(dtype, value)
+        else
+            value = convert(Array{dtype, num_dims}, value)
+        end
         
         if comp_param_dims[1] == :time
             T = eltype(value)
@@ -489,7 +493,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
         if param.default != nothing
-            set_param!(md, comp_name, name(param), param.datatype(param.default))
+            set_param!(md, comp_name, name(param), param.default)
         end
     end
     
