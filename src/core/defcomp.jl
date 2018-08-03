@@ -107,9 +107,20 @@ function _check_for_known_element(name)
 end
 
 # Generates an expression to construct a Variable or Parameter
-function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit)
+function _generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit)
+    if vartype == nothing
+        # If no explicit type is given, use the type of the default
+        if (elt_type == :Parameter && dflt != nothing)
+            datatype = typeof(dflt)
+        else
+            datatype = Number
+        end
+    else
+        datatype = vartype
+    end
+
     func_name = elt_type == :Parameter ? :addparameter : :addvariable
-    args = [datatype, dimensions, desc, unit]
+    args = [eval(datatype), dimensions, desc, unit]
     if elt_type == :Parameter
         push!(args, dflt)
     end
@@ -253,8 +264,7 @@ macro defcomp(comp_name, ex)
             dims = Tuple(dimensions) # just for printing
             debug("    index $dims, unit '$unit', desc '$desc'")
 
-            datatype = vartype == nothing ? Number : vartype
-            addexpr(_generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit))
+            addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, eval(dflt), desc, unit))
 
         else
             error("Unrecognized element type: $elt_type")

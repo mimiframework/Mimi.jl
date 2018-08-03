@@ -16,9 +16,9 @@ end
 function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
-    if !(eltype(ext_param.values) <: datatype(param_def))
-        t1 = eltype(ext_param.values)
-        t2 = datatype(param_def)
+    t1 = eltype(ext_param.values)
+    t2 = eltype(datatype(param_def))
+    if !(t1 <: t2)
         error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
 
