@@ -275,8 +275,6 @@ an array, or a NamedAray. Optional argument 'dims' is a list of the dimension na
 the provided data, and will be used to check that they match the model's index labels.
 """
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    comp_def = compdef(md, comp_name)
-
     # perform possible dimension and labels checks
     if isa(value, NamedArray)
         dims = dimnames(value)
@@ -289,18 +287,18 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
     comp_param_dims = parameter_dimensions(md, comp_name, param_name)
     num_dims = length(comp_param_dims)
     
-    if length(comp_param_dims) > 0
-        comp_def = compdef(md, comp_name)
-        data_type = datatype(parameter(comp_def, param_name))
-        dtype = data_type == Number ? number_type(md) : data_type
+    comp_def = compdef(md, comp_name)
+    data_type = datatype(parameter(comp_def, param_name))
+    dtype = data_type == Number ? number_type(md) : data_type
 
+    if length(comp_param_dims) > 0
         # convert the number type and, if NamedArray, convert to Array
         if dtype <: AbstractArray
             value = convert(dtype, value)
         else
             value = convert(Array{dtype, num_dims}, value)
         end
-        
+
         if comp_param_dims[1] == :time
             T = eltype(value)
 
@@ -319,9 +317,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
                     first_index = findfirst(times, first)                  
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, num_dims}(value)
                 end 
-                
             end
-
         else
             values = value
         end
@@ -329,6 +325,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
         set_external_array_param!(md, param_name, values, comp_param_dims)
 
     else # scalar parameter case
+        value = convert(dtype, value)
         set_external_scalar_param!(md, param_name, value)
     end
 
