@@ -60,6 +60,11 @@ function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, S
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
+function disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
+    disconnect_param!(m.md, comp_name, param_name)
+    decache(m)
+end
+
 function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     set_external_param!(m.md, name, value)
     decache(m)
