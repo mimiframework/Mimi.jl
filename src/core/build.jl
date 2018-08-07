@@ -67,8 +67,8 @@ end
 """
     _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
-Instantiate a component and its variables (but not its parameters). Return 
-the resulting ComponentInstance.
+Instantiate a component `comp_def` in ModelDef `md` and its variables (but not its parameters). 
+Return the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
@@ -169,6 +169,12 @@ function build(md::ModelDef)
     return mi
 end
 
+"""
+    create_marginal_model(base::Model, delta::Float64=1.0)
+
+Create a marginal model using `base` as the baseline model and creating the `marginal` model
+using a delta of `delta`, which defaults to `1.0`.
+"""
 function create_marginal_model(base::Model, delta::Float64=1.0)
     # Make sure the base has a ModelInstance before we copy since this
     # copies the ModelDef to avoid being affected by later changes.

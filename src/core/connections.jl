@@ -1,5 +1,8 @@
 """
-Removes any parameter connections for a given parameter in a given component.
+    disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+
+Remove any parameter connections for a given parameter `param_name` in a given component
+`comp_name` of model `md`.
 """
 function disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     # println("disconnect_param!($comp_name, $param_name)")
@@ -51,9 +54,10 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
 end
 
 """
-    connect_param!(md::ModelDef, component::Symbol, name::Symbol, parametername::Symbol)
+    connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol
 
-Connect a parameter in a component to an external parameter.
+Connect a parameter `param_name` in the component `comp_name` of model `md` to
+the external parameter `ext_param_name`. 
 """
 function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
     comp_def = compdef(md, comp_name)
@@ -72,9 +76,16 @@ function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext
 end
 
 """
-    connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
+        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; 
+        ignoreunits::Bool=false)
 
-Bind the parameter of one component to a variable in another component.
+Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
+to a variable `src_var_name` in another component `src_comp_name` of the same model
+using `backup` to provide default values and the `ignoreunits` flag to indicate the need
+to check match units between the two.  The `offset` argument indcates the offset
+between the destination and the source ie. the value would be `1` if the destination 
+component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
@@ -145,9 +156,15 @@ function connect_param!(md::ModelDef,
 end
 
 """
-    connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+        backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
 
-Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
+Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
+to a variable `src[2]` in another component `src[1]` of the same model
+using `backup` to provide default values and the `ignoreunits` flag to indicate the need
+to check match units between the two.  The `offset` argument indcates the offset
+between the destination and the source ie. the value would be `1` if the destination 
+component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
@@ -155,6 +172,8 @@ function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbo
 end
 
 """
+    connected_params(md::ModelDef, comp_name::Symbol)
+
 Return list of parameters that have been set for component c in model m.
 """
 function connected_params(md::ModelDef, comp_name::Symbol)

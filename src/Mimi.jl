@@ -17,7 +17,7 @@ export
     MarginalModel,
     Model,
     add_comp!,  
-    components, #TODO components -> comps?
+    components,
     connect_param!,
     create_marginal_model,
     disconnect_param!,
@@ -34,13 +34,13 @@ export
     modeldef,
     name,
     new_comp,
-    parameters, #TODO:  parameters -> params?
+    parameters, 
     replace_comp!, 
-    set_dimension!, # TODO:  Think hard about the terminology of axis-dimension-index-blabla
-    set_leftover_params!, #TODO:  Rething this function in general
+    set_dimension!, # Think about the terminology of axis-dimension-index-blabla
+    set_leftover_params!, # Rethink this function in general
     setproperty!,
     set_param!, 
-    variables  #TODO:  variables -> vars?
+    variables 
 
 include("core/types.jl")
 

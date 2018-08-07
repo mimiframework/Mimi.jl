@@ -30,6 +30,8 @@ function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
 end
 
 """
+    RandomVariable{T}
+
 A RandomVariable can be "assigned" to different model parameters. Its
 value can be used directly or applied by adding to, or multiplying by, 
 reference values for the indicated parameter. Note that the distribution
@@ -64,6 +66,8 @@ struct TransformSpec
 end
 
 """
+    CorrelationSpec
+
 Defines a target rank correlation to establish between the two named random vars.
 """
 struct CorrelationSpec
@@ -92,6 +96,8 @@ function Base.reset(s::SampleStore{T}) where T
 end
 
 """
+    MonteCarloSimulation
+    
 Holds all the data that defines a Monte Carlo simulation.
 """
 mutable struct MonteCarloSimulation

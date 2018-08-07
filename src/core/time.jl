@@ -2,22 +2,48 @@
 #  1. TIMESTEP
 #
 
+"""
+	gettime(ts::FixedTimestep)
+
+Return the time (year) represented by Timestep `ts` 
+"""
 function gettime(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	return FIRST + (ts.t - 1) * STEP
 end
 
+"""
+	gettime(ts::VariableTimestep)
+
+Return the time (year) represented by Timestep `ts` 
+"""
 function gettime(ts::VariableTimestep)
 	return ts.current
 end
 
+"""
+	is_first(ts::AbstractTimestep)
+
+Return true or false, true if `ts` is the first timestep to be run.
+"""
 function is_first(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
+"""
+	is_last(ts::FixedTimestep)
+
+Return true or false, true if `ts` is the last timestep to be run.
+"""
 function is_last(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	return gettime(ts) == LAST
 end
 
+"""
+	is_last(ts::VariableTimestep)
+
+Return true or false, true if `ts` is the last timestep to be run.  Note that you may
+run `next_timestep` on `ts`, as ths final timestep has not been run through yet.
+"""
 function is_last(ts::VariableTimestep{TIMES}) where {TIMES}
 	return gettime(ts) == TIMES[end]
 end
@@ -98,6 +124,11 @@ function time_index(c::Clock)
 	return c.ts.t
 end
 
+"""
+	gettime(c::Clock)
+
+Return the current time of the timestep held by the `c` clock.
+"""
 function gettime(c::Clock)
 	return gettime(c.ts)
 end
@@ -402,10 +433,20 @@ end
 # 	return 1 <= ts.t <= size(arr, 1)	
 # end
 
+"""
+	hasvalue(arr::TimestepArray, ts::FixedTimestep) 
+
+Return `true` or `false` regarding whether the TimestepArray `arr` contains the Timestep `ts`.
+"""
 function hasvalue(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, N, FIRST, STEP, LAST}
 	return 1 <= ts.t <= size(arr, 1)	
 end
 
+"""
+	hasvalue(arr::TimestepArray, ts::VariableTimestep) 
+
+Return `true` or `false` regarding whether the TimestepArray `arr` contains the Timestep `ts`.
+"""
 function hasvalue(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, ts::VariableTimestep{TIMES}) where {T, N, TIMES}
 	return 1 <= ts.t <= size(arr, 1)	
 end
@@ -418,6 +459,12 @@ function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::Varia
 	return D_FIRST[1] <= gettime(ts) <= last_period(arr)	
 end
 
+"""
+	hasvalue(arr::TimestepArray, ts::FixedTimestep, idxs::Int...) 
+
+Return `true` or `false` regarding whether the TimestepArray `arr` contains the Timestep `ts` within
+indices `indxs`.
+"""
 # Array and Timestep have different FIRST, validating all dimensions
 function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, 
 	ts::FixedTimestep{T_FIRST, STEP, LAST}, 
@@ -425,6 +472,12 @@ function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N},
 	return D_FIRST <= gettime(ts) <= last_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
 end
 
+"""
+	hasvalue(arr::TimestepArray, ts::VariableTimestep, idxs::Int...)
+
+Return `true` or `false` regarding whether the TimestepArray `arr` contains the Timestep `ts` within
+indices `indxs`.
+"""
 # Array and Timestep different TIMES, validating all dimensions
 function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, 
 	ts::VariableTimestep{T_FIRST}, 

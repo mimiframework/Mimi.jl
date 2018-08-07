@@ -28,6 +28,8 @@ end
 import MacroTools.prettify
 
 """
+    MacroTools.prettify(s::String)
+    
 Accepts a camelcase or snakecase string, and makes it human-readable
 e.g. camelCase -> Camel Case; snake_case -> Snake Case
 """

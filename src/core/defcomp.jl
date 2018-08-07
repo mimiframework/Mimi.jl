@@ -138,6 +138,18 @@ end
 
 _generate_dims_expr(name::Symbol) = _generate_dims_expr(name, [], nothing)
 
+"""
+    defcomp(comp_name::Symbol, ex::Expr)
+
+Define a Mimi component `comp_name` with the expressions in `ex`.    The following 
+types of expressions are supported:
+
+1. dimension_name = Index()     #defines a dimension
+2. parameter = Parameter(index = [dimension_name], units = "unit_name", default = default_value)    #defines a parameter with optional arguments
+3. variable = Variable(index = [dimension_name], units = "unit_name")    #defines a variable with optional arguments
+4. init(p, v, d)                #defines an init function for the component
+5. run_timestep(p, v, d, t)     #defines a run_timestep function for the component
+"""
 #
 # Parse a @defcomp definition, converting it into a series of function calls that
 # create the corresponding ComponentDef instance. At model build time, the ModelDef
@@ -269,6 +281,7 @@ end
     defmodel(model_name::Symbol, ex::Expr)
 
 Define a Mimi model. The following types of expressions are supported:
+
 1. component(name)                          # add comp to model
 2. dst_component.name = ex::Expr            # provide a value for a parameter
 3. src_component.name => dst_component.name # connect a variable to a parameter

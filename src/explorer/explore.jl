@@ -5,6 +5,11 @@ global app = nothing
 #include functions and modules
 include("buildspecs.jl")
 
+"""
+    explore(model; title = "Electron")
+
+Produce a UI to explore the parameters and variables of `model` in a Window with title `title`.
+"""
 function explore(model; title = "Electron")
     
     #get variable data

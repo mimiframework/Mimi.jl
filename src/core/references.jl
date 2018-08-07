@@ -1,4 +1,6 @@
 """
+    set_param!(ref::ComponentReference, name::Symbol, value)
+
 Set a component parameter as `set_param!(reference, name, value)`.
 """
 function set_param!(ref::ComponentReference, name::Symbol, value)
@@ -6,6 +8,8 @@ function set_param!(ref::ComponentReference, name::Symbol, value)
 end
 
 """
+    set_param!(ref.model, ref.comp_name, name, value)
+
 Set a component parameter as `reference[symbol] = value`.
 """
 function Base.setindex!(ref::ComponentReference, value, name::Symbol)
@@ -13,14 +17,18 @@ function Base.setindex!(ref::ComponentReference, value, name::Symbol)
 end
 
 """
-Connect two components as `connect_param!(reference1, name1, reference2, name2)`.
+    connect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)
+
+Connect two components as `connect_param!(dst, dst_name, src, src_name)`.
 """
 function connect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)
     connect_param!(dst.model, dst.comp_id, dst_name, src.comp_id, src_name)
 end
 
 """
-Connect two components with the same name as `connect_param!(reference1, reference2, name)`.
+    connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
+    
+Connect two components with the same name as `connect_param!(dst, src, name)`.
 """
 function connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
     connect_param!(dst.model, dst.comp_id, name, src.comp_id, name)
@@ -28,6 +36,8 @@ end
 
 
 """
+    Base.getindex(comp_ref::ComponentReference, var_name::Symbol)
+
 Get a variable reference as `comp_ref[var_name]`.
 """
 function Base.getindex(comp_ref::ComponentReference, var_name::Symbol)
@@ -35,6 +45,8 @@ function Base.getindex(comp_ref::ComponentReference, var_name::Symbol)
 end
 
 """
+    Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
+    
 Connect two components as `comp_ref[var_name] = var_ref`.
 """
 function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)

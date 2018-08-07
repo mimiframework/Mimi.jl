@@ -14,7 +14,11 @@ macro modelegate(ex)
     error("Calls to @modelegate must be of the form 'func(m::Model, args...) => X', where X is either mi or md'. Expression was: $ex")
 end
 
+"""
+    modeldef(m)
 
+Return the `ModelDef` contained by Model `m`.
+"""
 modeldef(m::Model) = m.md
 
 modelinstance(m::Model) = m.mi
@@ -43,6 +47,17 @@ function decache(m::Model)
     m.mi = nothing
 end
 
+"""
+    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, 
+        src_var_name::Symbol, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+
+Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
+to a variable `src_var_name` in another component `src_comp_name` of the same model
+using `backup` to provide default values and the `ignoreunits` flag to indicate the need
+to check match units between the two.  The `offset` argument indcates the offset
+between the destination and the source ie. the value would be `1` if the destination 
+component parameter should only be calculated for the second timestep and beyond.
+"""
 function connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
@@ -53,7 +68,13 @@ end
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
 
-Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
+Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
+to a variable `src[2]` in another component `src[1]` of the same model
+using `backup` to provide default values and the `ignoreunits` flag to indicate the need
+to check match units between the two.  The `offset` argument indcates the offset
+between the destination and the source ie. the value would be `1` if the destination 
+component parameter should only be calculated for the second timestep and beyond.
+
 """
 function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
@@ -84,7 +105,14 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     decache(m)
 end
 
+"""
+    add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
+        first=nothing, last=nothing, before=nothing, after=nothing)
 
+Add the component indicated by `comp_id` to the model indicated by `m`. The component is added at the end of 
+the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
+differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the new name.
+"""
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                       first=nothing, last=nothing, before=nothing, after=nothing)
     add_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
@@ -92,6 +120,14 @@ function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.com
     return ComponentReference(m, comp_name)
 end
 
+"""
+    replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        first::VoidSymbol=nothing, last::VoidSymbol=nothing,
+        before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+        
+Replace the component with name `comp_name` in model `md`  with the component
+`comp_id` using the same name.  
+"""
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidSymbol=nothing, last::VoidSymbol=nothing,
                            before::VoidSymbol=nothing, after::VoidSymbol=nothing)
@@ -100,11 +136,10 @@ function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id
     return ComponentReference(m, comp_name)
 end
 
-
 """
     components(m::Model)
 
-List all the components in model `m`.
+Return an iterator on the components in model `m`.
 """
 @modelegate components(m::Model) => mi
 
@@ -235,6 +270,13 @@ function Base.delete!(m::Model, comp_name::Symbol)
     decache(m)
 end
 
+"""
+    set_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)
+
+Set the parameter of a component in a model to a given value. Value can by a scalar,
+an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
+the provided data, and will be used to check that they match the model's index labels.
+"""
 function set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     set_param!(m.md, comp_name, param_name, value, dims)    
     decache(m)

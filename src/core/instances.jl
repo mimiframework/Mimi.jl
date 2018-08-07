@@ -2,12 +2,22 @@
 # Functions pertaining to instantiated models and their components
 #
 
+"""
+    modeldef(mi)
+
+Return the `ModelDef` contained by ModelInstance `mi`.
+"""
 modeldef(mi::ModelInstance) = mi.md
 
 compinstance(mi::ModelInstance, name::Symbol) = mi.components[name]
 
 compdef(ci::ComponentInstance) = compdef(ci.comp_id)
 
+"""
+    name(ci::ComponentInstance)
+
+Return the name of the component `ci`.
+"""
 name(ci::ComponentInstance) = ci.comp_name
 
 """
@@ -17,6 +27,13 @@ Return an iterator on the components in model instance `mi`.
 """
 components(mi::ModelInstance) = values(mi.components)
 
+"""
+    add_comp!(mi::ModelInstance, ci::ComponentInstance)
+
+Add the component `ci` to the `ModelInstance` `mi`'s list of components, and add
+the `first` and `last` of `mi` to the ends of the `firsts` and `lasts` lists of 
+`mi`, respectively.
+"""
 function add_comp!(mi::ModelInstance, ci::ComponentInstance) 
     mi.components[name(ci)] = ci
 
@@ -115,6 +132,11 @@ function get_property_obj(obj::ComponentInstanceVariables{NAMES, TYPES},
     return obj.values[index_pos]
 end
 
+"""
+    get_param_value(ci::ComponentInstance, name::Symbol)
+
+Return the value of parameter `name` in component `ci`.
+"""
 # Convenience functions that can be called with a name symbol rather than Val(name)
 function get_param_value(ci::ComponentInstance, name::Symbol)
     try 
@@ -128,6 +150,11 @@ function get_param_value(ci::ComponentInstance, name::Symbol)
     end
 end
 
+"""
+    get_var_value(ci::ComponentInstance, name::Symbol)
+
+Return the value of variable `name` in component `ci`.
+"""
 function get_var_value(ci::ComponentInstance, name::Symbol)
     try
         # println("Getting $name from $(ci.variables)")
@@ -170,6 +197,11 @@ Return the `ComponentInstanceParameters` for `comp_name` in ModelInstance 'mi'.
 """
 parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, comp_name))
 
+"""
+    parameters(ci::ComponentInstance)
+
+Return an iterable over the parameters in `ci`.
+"""
 parameters(ci::ComponentInstance) = ci.parameters
 
 
