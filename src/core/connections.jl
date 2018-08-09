@@ -292,7 +292,6 @@ end
 Add a one dimensional time-indexed array parameter indicated by `name` and
 `value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
-#TODO: should we take dims out of the call?
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
     # println("set_external_array_param!: dims=$dims, setting dims to [:time]")
     param = ArrayModelParameter(value, [:time])  # must be :time
@@ -305,7 +304,6 @@ end
 Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
-#TODO: Does dims have to be :time?  or include :time?
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
