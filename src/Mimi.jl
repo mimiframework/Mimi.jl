@@ -23,7 +23,7 @@ export
     disconnect_param!,
     explore,
     getdataframe,
-    getproperty, #TODO: does this need a docstring since it's @generated?
+    getproperty, 
     gettime,
     get_param_value,
     get_var_value,
@@ -38,7 +38,7 @@ export
     replace_comp!, 
     set_dimension!, 
     set_leftover_params!, 
-    setproperty!, #TODO: does this need a docstring since it's @generated?
+    setproperty!, 
     set_param!, 
     variables 
 
