@@ -230,7 +230,7 @@ end
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
 
-Returns the size of index `dim_name`` in model instance `mi`.
+Return the size of index `dim_name`` in model instance `mi`.
 """
 dim_count(mi::ModelInstance, dim_name::Symbol) = dim_count(mi.md, dim_name)
 

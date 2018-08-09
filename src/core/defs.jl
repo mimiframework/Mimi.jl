@@ -51,8 +51,8 @@ end
 """
     name(def::NamedDef) = def.name 
 
-Gets the name of all NamedDefs (DatumDef, ComponentDef, and DimensionDef) of the
-NamedDef `def`.
+Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `ComponentDef`, 
+and `DimensionDef`.
 """
 # Gets the name of all NamedDefs: DatumDef, ComponentDef, DimensionDef
 name(def::NamedDef) = def.name
@@ -77,7 +77,7 @@ end
 """
     new_comp(comp_id::ComponentId, verbose::Bool=true)
 
-Create an empty `ComponentDef`` to the global component registry with the given
+Add an empty `ComponentDef` to the global component registry with the given
 `comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
 `addparameter`, etc.
 """
@@ -98,7 +98,7 @@ end
 """
     delete!(m::ModelDef, component::Symbol
 
-Delete a component by name from a model definition.
+Delete a `component` by name from a model definition `m`.
 """
 function Base.delete!(md::ModelDef, comp_name::Symbol)
     if ! haskey(md.comp_defs, comp_name)
@@ -191,8 +191,8 @@ isuniform(md::ModelDef) = md.is_uniform
 """
     set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range}) 
 
-Set the values of `md` dimension `name` to integers 1 through `count`, if keys is
-an integer; or to the values in the vector or range if keys is either of those types.
+Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
+an integer; or to the values in the vector or range if `keys` is either of those types.
 """
 function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
     if haskey(md, name)
@@ -292,9 +292,10 @@ end
 """
     set_param!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
-Set the parameter of a component in a model to a given value. Value can by a scalar,
-an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
-the provided data, and will be used to check that they match the model's index labels.
+Set the parameter `name` of a component `comp_name` in a model `m` to a given `value`. The
+`value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a 
+list of the dimension names ofthe provided data, and will be used to check that 
+they match the model's index labels.
 """
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     comp_def = compdef(md, comp_name)
@@ -376,7 +377,7 @@ variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(m
 """
     variable_names(md::ModelDef, comp_name::Symbol)
 
-Return a list of all variable names for a given component in a model def.
+Return a list of all variable names for a given component `comp_name` in a model def `md`.
 """
 variable_names(md::ModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
 
@@ -540,7 +541,8 @@ end
         before::VoidSymbol=nothing, after::VoidSymbol=nothing)
 
 Replace the component with name `comp_name` in model `md`  with the component
-`comp_id` using the same name.       
+`comp_id` using the same name.  The component is added at the end of 
+the list unless one of the keywords, `first`, `last`, `before`, `after`.
 """
 function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidInt=nothing, last::VoidInt=nothing,
@@ -552,7 +554,7 @@ end
 """
     copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
 
-Create a mostly-shallow copy of `comp_def`, but make a deep copy of its
+Create a mostly-shallow copy of `comp_def` (named `comp_name`), but make a deep copy of its
 ComponentId so we can rename the copy without affecting the original.
 """
 function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
@@ -575,7 +577,7 @@ end
 """
     copy_external_params(md::ModelDef)
 
-Make copies of ModelParameter subtypes representing external parameters. 
+Make copies of ModelParameter subtypes representing external parameters of model `md`. 
 This is used both in the copy() function below, and in the MCS subsystem 
 to restore values between trials.
 
@@ -604,7 +606,7 @@ end
 """
     copy(md::ModelDef)
 
-Create a copy of a ModelDef object that is not entirely shallow, nor completely deep.
+Create a copy of a ModelDef `md` object that is not entirely shallow, nor completely deep.
 The aim is to copy the full structure, reusing references to immutable elements.
 """
 function Base.copy(md::ModelDef)

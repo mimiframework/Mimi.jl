@@ -54,7 +54,7 @@ end
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indcates the offset
+to check match units between the two.  The `offset` argument indicates the offset
 between the destination and the source ie. the value would be `1` if the destination 
 component parameter should only be calculated for the second timestep and beyond.
 """
@@ -71,7 +71,7 @@ end
 Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indcates the offset
+to check match units between the two.  The `offset` argument indicates the offset
 between the destination and the source ie. the value would be `1` if the destination 
 component parameter should only be calculated for the second timestep and beyond.
 
@@ -159,7 +159,7 @@ Return an iterator on the components in model `m`.
 """
     datumdef(comp_def::ComponentDef, item::Symbol)
 
-Return a DatumDef for `item` in the given component.
+Return a DatumDef for `item` in the given component `comp_def`.
 """
 function datumdef(comp_def::ComponentDef, item::Symbol)
     if haskey(comp_def.variables, item)
@@ -177,7 +177,8 @@ datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, com
 """
     dimensions(m::Model, comp_name::Symbol, datum_name::Symbol)
 
-Return the dimension names for the variable or parameter in the given component.
+Return the dimension names for the variable or parameter `datum_name`
+in the given component `comp_name` in model `m`.
 """
 dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(m, comp_name), datum_name)
 
@@ -189,8 +190,8 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 """
     set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
 
-Set the values of `Model` dimension `name` to integers 1 through `count`, if keys is
-an integer; or to the values in the vector or range if keys is either of those types.
+Set the values of `m` dimension `name` to integers 1 through `count`, if `keys`` is
+an integer; or to the values in the vector or range if `keys`` is either of those types.
 """
 function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
     set_dimension!(m.md, name, keys)
@@ -243,7 +244,8 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 """
     set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 
-Adds a one or two dimensional (optionally, time-indexed) array parameter to the model.
+Add a one or two dimensional (optionally, time-indexed) array parameter `name` 
+with value `value` to the model `m`.
 """
 function set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
     set_external_array_param!(m.md, name, value, dims)
@@ -253,7 +255,7 @@ end
 """
     set_external_scalar_param!(m::Model, name::Symbol, value::Any)
 
-Add a scalar type parameter to the model.
+Add a scalar type parameter `name` with value `value` to the model `m`.
 """
 function set_external_scalar_param!(m::Model, name::Symbol, value::Any)
     set_external_scalar_param!(m.md, name, value)
@@ -263,7 +265,7 @@ end
 """
     delete!(m::ModelDef, component::Symbol
 
-Delete a component by name from a models' ModelDef, and nullify the ModelInstance.
+Delete a `component`` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
 """
 function Base.delete!(m::Model, comp_name::Symbol)
     delete!(m.md, comp_name)
@@ -273,9 +275,10 @@ end
 """
     set_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
-Set the parameter of a component in a model to a given value. Value can by a scalar,
-an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
-the provided data, and will be used to check that they match the model's index labels.
+Set the parameter of a component `comp_name` in a model `m` to a given `value`. 
+The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' 
+is a list of the dimension names of the provided data, and will be used to check 
+that they match the model's index labels.
 """
 function set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     set_param!(m.md, comp_name, param_name, value, dims)    
@@ -308,7 +311,7 @@ end
 """
     update_external_param(m::Model, name::Symbol, value)
 
-Update the value of an external model parameter, referenced by name.
+Update the `value` of an external model parameter in model `m`, referenced by `name`.
 """
 function update_external_param(m::Model, name::Symbol, value)
     ext_params = external_params(m)

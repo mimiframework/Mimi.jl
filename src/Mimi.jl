@@ -23,7 +23,7 @@ export
     disconnect_param!,
     explore,
     getdataframe,
-    getproperty,
+    getproperty, #TODO: does this need a docstring since it's @generated?
     gettime,
     get_param_value,
     get_var_value,
@@ -36,9 +36,9 @@ export
     new_comp,
     parameters, 
     replace_comp!, 
-    set_dimension!, # Think about the terminology of axis-dimension-index-blabla
-    set_leftover_params!, # Rethink this function in general
-    setproperty!,
+    set_dimension!, 
+    set_leftover_params!, 
+    setproperty!, #TODO: does this need a docstring since it's @generated?
     set_param!, 
     variables 
 
@@ -65,7 +65,7 @@ include("utils/misc.jl")
 """
     load_comps(dirname::String="./components")
 
-Call include() on all the files in the indicated directory.
+Call include() on all the files in the indicated directory `dirname`.
 This avoids having modelers create a long list of include()
 statements. Just put all the components in a directory.
 """
