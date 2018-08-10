@@ -1,14 +1,15 @@
 ## Mimi UI
+using VegaLite
 
 global app = nothing
 
 #include functions and modules
 include("buildspecs.jl")
 
-function explore(model; title = "Electron")
+function explore(m::Model; title = "Electron")
     
     #get variable data
-    speclist = spec_list(model)
+    speclist = spec_list(m)
     speclistJSON = JSON.json(speclist)
 
     #start Electron app
@@ -29,4 +30,13 @@ function explore(model; title = "Electron")
     
     return w
 
+end
+
+function explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
+    dim_name::Union{Void, Symbol} = nothing)
+
+    #TODO-EXPLORER: add case for handling a given dim_name?
+
+    spec = Mimi._spec_for_item(model, comp_name, datum_name)["VLspec"]
+    specJSON = JSON.json(spec)
 end
