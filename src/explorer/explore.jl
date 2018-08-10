@@ -39,4 +39,8 @@ function explore(m::Model, comp_name::Symbol, datum_name::Symbol;
 
     spec = Mimi._spec_for_item(model, comp_name, datum_name)["VLspec"]
     specJSON = JSON.json(spec)
+
+    #TODO-EXPLORER ... show plot here and return it 
 end
+
+#TODO-EXPLORER ... wrapper functions for saving plots needed?
