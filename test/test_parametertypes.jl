@@ -30,8 +30,8 @@ end
     d = Parameter()
     e = Parameter(index=[four])
     f::Array{Float64, 2} = Parameter()
-    g::Int = Parameter(default=10.0)    # value should be Int64 despite Float64 default
-    h = Parameter(default=10)           # should be "numtype", despite Int64 default
+    g::Int = Parameter(default=10.0)    # value should be Int despite Float64 default
+    h = Parameter(default=10)           # should be "numtype", despite Int default
 
     x = Variable(index=[time, regions])
     
@@ -76,7 +76,7 @@ extpars = external_params(m)
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{numtype, 1}
 @test typeof(extpars[:f].value) == Array{Float64, 2}
-@test typeof(extpars[:g].value) == Int64
+@test typeof(extpars[:g].value) <: Int
 @test typeof(extpars[:h].value) == numtype
 
 # test updating parameters
