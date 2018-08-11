@@ -73,7 +73,7 @@ add_comp!(mymodel, ComponentC; first=2010, last=2100)
 
 ## Accessing Results
 
-## Plotting
+## Plotting and the Explorer UI
 
 This release of Mimi does not include the plotting functionality previously offered by Mimi.  While the previous files are still included, the functions are not exported as efforts are made to simplify and improve the plotting associated with Mimi.  
 
@@ -114,5 +114,3 @@ The function `setleftoverparameters` is now written as `set_leftover_params!`.
 ### Using NamedArrays for setting parameters
 
 ### The internal 'build' function and model instances
-
-###  The explorer UI

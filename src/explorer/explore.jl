@@ -35,12 +35,8 @@ end
 function explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
     dim_name::Union{Void, Symbol} = nothing)
 
-    #TODO-EXPLORER: add case for handling a given dim_name?
+    #TODO: add case for handling a given dim_name?  look at other functionalities of old plot call
 
-    spec = Mimi._spec_for_item(model, comp_name, datum_name)["VLspec"]
-    specJSON = JSON.json(spec)
-
-    #TODO-EXPLORER ... show plot here and return it 
+    spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
+    VegaLite.VLSpec{:plot}(spec)
 end
-
-#TODO-EXPLORER ... wrapper functions for saving plots needed?
