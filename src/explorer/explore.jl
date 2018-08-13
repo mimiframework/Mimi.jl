@@ -8,6 +8,10 @@ include("buildspecs.jl")
 
 function explore(m::Model; title = "Electron")
     
+    if m.mi == nothing
+        error("A model must be run before it can be plotted")
+    end
+
     #get variable data
     speclist = spec_list(m)
     speclistJSON = JSON.json(speclist)
@@ -33,9 +37,14 @@ function explore(m::Model; title = "Electron")
 end
 
 function explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
-    dim_name::Union{Void, Symbol} = nothing)
+    dim_name::Union{Void, Symbol} = nothing, legend=nothing, 
+    x_label=nothing, y_label=nothing)
 
-    #TODO: add case for handling a given dim_name?  look at other functionalities of old plot call
+    if m.mi == nothing
+        error("A model must be run before it can be plotted")
+    end
+    
+    #TODO: add keyword argument cases
 
     spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
     VegaLite.VLSpec{:plot}(spec)
