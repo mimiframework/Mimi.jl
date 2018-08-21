@@ -8,6 +8,10 @@ using Mimi:
     datumdef, prettify, TimestepArray
 
 """
+    Plots.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
+        dim_name::Union{Void, Symbol} = nothing, legend=nothing, 
+        x_label=nothing, y_label=nothing)
+
 Extends the Plots module to be able to take a model information parameters for
 convenience. More advanced plotting may require accessing the Plots module directly.
 """

@@ -140,7 +140,7 @@ end
 
 # TBD: Modify lhs() to return an array of SampleStore{T} instances?
 """
-get_trial(mcs::MonteCarloSimulation, trialnum::Int)
+    get_trial(mcs::MonteCarloSimulation, trialnum::Int)
 
 Return a NamedTuple with the data for next trial. Note that the `trialnum`
 parameter is used only to support a 1-deep data cache that allows this
@@ -211,6 +211,8 @@ function Base.rand!(mcs::MonteCarloSimulation)
 end
 
 """
+    _copy_mcs_params(mcs::MonteCarloSimulation)
+
 Copy the parameters that are perturbed in this MCS so we can restore them after each trial.
 This is necessary when we are applying distributions by adding or multiplying original values.
 """
@@ -334,7 +336,7 @@ function _reset_rvs!(mcs::MonteCarloSimulation)
 end
 
 """
-_reset_results!(mcs::MonteCarloSimulation)
+    _reset_results!(mcs::MonteCarloSimulation)
 
 Reset all MCS results storage to a vector of empty dicts
 """

@@ -100,9 +100,9 @@ end
 
 
 """
-    getdataframe(m::Model, comp_name::Symbol, pairs::Pair...)
+    getdataframe(m::Model, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)
 
-Return a DataFrame with values for the given variables or parameters 
+Return a DataFrame with values for the given variables or parameters of model `m`
 indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
 If more than one pair is provided, all must refer to items with the same
 dimensions, which are used to join the respective item values.
@@ -124,6 +124,14 @@ function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)
     return df
 end
 
+"""
+    getdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}})
+
+Return a DataFrame with values for the given variables or parameters 
+indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
+If more than one pair is provided, all must refer to items with the same
+dimensions, which are used to join the respective item values.
+"""
 function getdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
     comp_name = pair.first
     expanded = [comp_name => param_name for param_name in pair.second]
