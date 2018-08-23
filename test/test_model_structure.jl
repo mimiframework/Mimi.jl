@@ -16,7 +16,7 @@ reset_compdefs()
 @defcomp A begin
     varA::Int = Variable(index=[time])
     parA::Int = Parameter()
-    
+
     function run_timestep(p, v, d, t)
         v.varA[t] = p.parA
     end
@@ -132,3 +132,71 @@ add_comp!(m, D)
 
 
 end # module
+
+##########################################
+#   Test check # of function arguments   #
+##########################################
+
+function defcomp_error1()
+    try
+        @defcomp Error1 begin
+            function run_timestep(p, v, d) 
+            end   
+        end
+    catch err
+        rethrow(err)
+    end
+end
+@test_throws UndefVarError defcomp_error1()
+
+function defcomp_error2()
+    try
+        @defcomp Error2 begin
+            function run_timestep(p, v, d, t) 
+            end   
+            function init(p, v)
+            end
+        end
+    catch err
+        rethrow(err)
+    end
+end
+@test_throws UndefVarError defcomp_error2()
+
+##########################################
+#   Test init function                   #
+##########################################
+
+reset_compdefs()
+
+@defcomp A begin
+    varA::Int = Variable(index=[time])
+    parA::Int = Parameter()
+    parB::Int = Parameter()
+
+    function init(p, v, d)
+        v.varA[1] = p.parA
+    end
+
+    function run_timestep(p, v, d, t)
+        if !is_first(t)
+            v.varA[t] = p.parB
+        end
+    end
+end
+
+m = Model()
+set_dimension!(m, :time, 2015:5:2100)
+add_comp!(m, A)
+set_param!(m, :A, :parA, 1)
+set_param!(m, :A, :parB, 10)
+run(m)
+
+results = m[:A, :varA]
+for i in 1:18
+    if i == 1
+        @test results[i] == 1
+    else
+        @test results[i] == 10
+    end
+end
