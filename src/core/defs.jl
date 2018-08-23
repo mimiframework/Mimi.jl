@@ -191,10 +191,7 @@ isuniform(md::ModelDef) = md.is_uniform
 
 # Helper function invoked when the user resets the time dimension with set_dimension!
 # This function calls set_run_period on each component definition to reset the first and last values.
-function reset_run_periods!(md, keys)
-
-    first = keys[1]
-    last = keys[end]
+function reset_run_periods!(md, first, last)
 
     for comp_def in values(md.comp_defs)
         if comp_def.first < first 
@@ -219,7 +216,7 @@ function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tup
     if haskey(md, name)
         warn("Redefining dimension :$name")
         if name == :time 
-            reset_run_periods!(md, keys)
+            reset_run_periods!(md, keys[1], keys[end])
         end
     end
     if name == :time 
