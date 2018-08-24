@@ -42,7 +42,6 @@ t = FixedTimestep{2001, 1, 3000}(1)
 t2 = next_timestep(t)
 
 @test x[t2] == 11
-#@test indices(x) == (2000:2003,) #may remove this function
 
 x[t2] = 99
 @test x[t2] == 99

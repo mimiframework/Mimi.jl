@@ -134,36 +134,6 @@ add_comp!(m, D)
 end # module
 
 ##########################################
-#   Test check # of function arguments   #
-##########################################
-
-function defcomp_error1()
-    try
-        @defcomp Error1 begin
-            function run_timestep(p, v, d) 
-            end   
-        end
-    catch err
-        rethrow(err)
-    end
-end
-@test_throws UndefVarError defcomp_error1()
-
-function defcomp_error2()
-    try
-        @defcomp Error2 begin
-            function run_timestep(p, v, d, t) 
-            end   
-            function init(p, v)
-            end
-        end
-    catch err
-        rethrow(err)
-    end
-end
-@test_throws UndefVarError defcomp_error2()
-
-##########################################
 #   Test init function                   #
 ##########################################
 
