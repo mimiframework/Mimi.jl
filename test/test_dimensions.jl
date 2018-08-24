@@ -42,7 +42,7 @@ end
 
 # Test resetting the time dimension
 
-@defcomp foo2 begin end 
+@defcomp foo2 begin x = Parameter(index=[time]) end 
 m = Model()
 set_dimension!(m, :time, 2000:2100)
 @test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
@@ -52,6 +52,10 @@ add_comp!(m, foo2; first = 2005, last = 2095)
 set_dimension!(m, :time, 1990:2200)
 @test m.md.comp_defs[:foo2].first == 2005
 @test m.md.comp_defs[:foo2].last == 2095
+
+# Test parameter connections
+@test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
+set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
 
 # Test that foo's time dimension is updated
 set_dimension!(m, :time, 2010:2050)
