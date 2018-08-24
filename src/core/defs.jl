@@ -200,7 +200,7 @@ function reset_run_periods!(md, first, last)
         if comp_def.last > last 
             warn("Resetting $(comp_def.name) component's last timestep to $last")
         end
-        set_run_period!(comp_def, maximum([comp_def.first, first]), minimum([comp_def.last, last]))
+        set_run_period!(comp_def, max(comp_def.first, first), min(comp_def.last, last))
     end
 
     nothing
