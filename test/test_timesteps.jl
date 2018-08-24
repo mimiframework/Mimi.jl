@@ -27,7 +27,7 @@ t2 = next_timestep(t1)
 
 t3 = FixedTimestep{2000, 1, 2050}(51)
 @test is_last(t3)
-@test_throws ErrorException t3_next = t + 2 #can't go beyond last timestep
+@test_throws ErrorException t3_next = t3 + 2 #can't go beyond last timestep
 
 t4 = next_timestep(t3)
 @test_throws ErrorException t_next = t4 + 1
