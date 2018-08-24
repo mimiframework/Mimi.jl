@@ -52,7 +52,7 @@ t2 = next_timestep(t1)
 t3 = VariableTimestep{years}(42)
 @test is_last(t3)
 @test ! is_first(t3)
-@test_throws ErrorException t3_next = t + 2 #can't go beyond last timestep
+@test_throws ErrorException t3_next = t3 + 2 #can't go beyond last timestep
 
 t4 = next_timestep(t3)
 @test_throws ErrorException t_next = t4 + 1
