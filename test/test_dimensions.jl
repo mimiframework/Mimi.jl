@@ -38,3 +38,22 @@ end
 
 @test getindex(dim_varargs, :bar) == 2
 @test getindex(dim_varargs, :) == [1,2,3]
+
+
+# Test resetting the time dimension
+
+@defcomp foo begin end 
+m = Model()
+set_dimension!(m, :time, 2000:2100)
+@test_throws ErrorException add_comp!(m, foo; first = 2005, last = 2105)   # Can't add a component longer than a model
+add_comp!(m, foo; first = 2005, last = 2095)
+
+# Test that foo's time dimension is unchanged
+set_dimension!(m, :time, 1990:2200)
+@test m.md.comp_defs[:foo].first == 2005
+@test m.md.comp_defs[:foo].last == 2095
+
+# Test that foo's time dimension is updated
+set_dimension!(m, :time, 2010:2050)
+@test m.md.comp_defs[:foo].first == 2010
+@test m.md.comp_defs[:foo].last == 2050
