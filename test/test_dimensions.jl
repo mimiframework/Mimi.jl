@@ -42,18 +42,18 @@ end
 
 # Test resetting the time dimension
 
-@defcomp foo begin end 
+@defcomp foo2 begin end 
 m = Model()
 set_dimension!(m, :time, 2000:2100)
-@test_throws ErrorException add_comp!(m, foo; first = 2005, last = 2105)   # Can't add a component longer than a model
-add_comp!(m, foo; first = 2005, last = 2095)
+@test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
+add_comp!(m, foo2; first = 2005, last = 2095)
 
 # Test that foo's time dimension is unchanged
 set_dimension!(m, :time, 1990:2200)
-@test m.md.comp_defs[:foo].first == 2005
-@test m.md.comp_defs[:foo].last == 2095
+@test m.md.comp_defs[:foo2].first == 2005
+@test m.md.comp_defs[:foo2].last == 2095
 
 # Test that foo's time dimension is updated
 set_dimension!(m, :time, 2010:2050)
-@test m.md.comp_defs[:foo].first == 2010
-@test m.md.comp_defs[:foo].last == 2050
+@test m.md.comp_defs[:foo2].first == 2010
+@test m.md.comp_defs[:foo2].last == 2050
