@@ -190,7 +190,7 @@ isuniform(md::ModelDef) = md.is_uniform
 
 
 # Helper function invoked when the user resets the time dimension with set_dimension!
-# This function calls set_run_period on each component definition to reset the first and last values.
+# This function calls set_run_period! on each component definition to reset the first and last values.
 function reset_run_periods!(md, first, last)
 
     for comp_def in values(md.comp_defs)
