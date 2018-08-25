@@ -130,43 +130,37 @@ end
 add_comp!(m, D)
 @test_throws ErrorException Mimi.build(m)
 
-
-end # module
-
 ##########################################
 #   Test init function                   #
 ##########################################
 
-reset_compdefs()
-
-@defcomp A begin
-    varA::Int = Variable(index=[time])
-    parA::Int = Parameter()
-    parB::Int = Parameter()
+@defcomp E begin
+    varE::Int = Variable()
+    parE1::Int = Parameter()
+    parE2::Int = Parameter()
 
     function init(p, v, d)
-        v.varA[1] = p.parA
+        v.varE= p.parE1
     end
 
     function run_timestep(p, v, d, t)
         if !is_first(t)
-            v.varA[t] = p.parB
+            v.varE = p.parE2
         end
     end
 end
 
 m = Model()
-set_dimension!(m, :time, 2015:5:2100)
-add_comp!(m, A)
-set_param!(m, :A, :parA, 1)
-set_param!(m, :A, :parB, 10)
-run(m)
+set_dimension!(m, :time, 2015:5:2100) #run for several timesteps
+add_comp!(m, E)
+set_param!(m, :E, :parE1, 1)
+set_param!(m, :E, :parE2, 10)
 
-results = m[:A, :varA]
-for i in 1:18
-    if i == 1
-        @test results[i] == 1
-    else
-        @test results[i] == 10
-    end
-end
+run(m)
+@test m[:E, :varE] == 10
+
+set_dimension!(m, :time, 2015) #run for just one timestep, so init sets the value here
+run(m)
+@test m[:E, :varE] == 1
+
+end # module
