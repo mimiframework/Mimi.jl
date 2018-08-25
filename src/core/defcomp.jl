@@ -25,7 +25,7 @@ is_builtin(module_name, comp_name) = (module_name == :Main && comp_name in built
 # :(setproperty!(p, Val(:foo), (getproperty(v, Val(:bar)))[1]))
 #
 function _replace_dots(ex)
-    debug("\nreplace_dots($ex)\n")
+    # debug("\nreplace_dots($ex)\n")
 
     if @capture(ex, obj_.field_ = rhs_)
         return :(setproperty!($obj, Val($(QuoteNode(field))), $rhs))
@@ -107,20 +107,9 @@ function _check_for_known_element(name)
 end
 
 # Generates an expression to construct a Variable or Parameter
-function _generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit)
-    if vartype == nothing
-        # If no explicit type is given, use the type of the default
-        if (elt_type == :Parameter && dflt != nothing)
-            datatype = typeof(dflt)
-        else
-            datatype = Number
-        end
-    else
-        datatype = vartype
-    end
-
+function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit)
     func_name = elt_type == :Parameter ? :addparameter : :addvariable
-    args = [eval(datatype), dimensions, desc, unit]
+    args = [datatype, dimensions, desc, unit]
     if elt_type == :Parameter
         push!(args, dflt)
     end
@@ -218,9 +207,6 @@ macro defcomp(comp_name, ex)
             error("Element syntax error: $elt")           
         end
 
-        # vartype = vartype == nothing ? ::Float64 : vartype
-        # debug("name: $name, vartype: $vartype, elt_type: $elt_type, args: $args")
-
         # elt_type is one of {:Variable, :Parameter, :Index}
         if elt_type == :Index
             expr = _generate_dims_expr(name, args, vartype)
@@ -265,6 +251,7 @@ macro defcomp(comp_name, ex)
                             push!(known_dims, dim)
                         end
                     end
+
                 elseif @capture(arg, default = dflt_)
                     if elt_type == :Variable
                         error("Default values are permitted only for Parameters, not for Variables")
@@ -273,10 +260,15 @@ macro defcomp(comp_name, ex)
                 end
             end
 
-            dims = Tuple(dimensions) # just for printing
-            debug("    index $dims, unit '$unit', desc '$desc'")
+            debug("    index $(Tuple(dimensions)), unit '$unit', desc '$desc'")
 
-            addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, eval(dflt), desc, unit))
+            dflt = eval(dflt)
+            if (dflt != nothing && length(dimensions) != ndims(dflt))
+                error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+            end
+
+            vartype = vartype == nothing ? Number : eval(vartype)
+            addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else
             error("Unrecognized element type: $elt_type")
