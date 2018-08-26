@@ -9,13 +9,33 @@ import Mimi:
 
 reset_compdefs()
 
+#
+# Test that parameter type mismatches are caught
+#
+expr = @macroexpand @defcomp BadComp1 begin
+    a = Parameter(index=[time, regions], default=[10, 11, 12])  # should be 2D default
+    function run_timestep(p, v, d, t)
+    end
+end
+@test_throws ErrorException eval(expr)
+
+expr = @macroexpand @defcomp BadComp2 begin
+    a = Parameter(default=[10, 11, 12])  # should be scalar default
+    function run_timestep(p, v, d, t)
+    end
+end
+@test_throws ErrorException eval(expr)
+
+
 @defcomp MyComp begin
-    a = Parameter(index=[time, regions])
-    b = Parameter(index=[time])
+    a = Parameter(index=[time, regions], default=ones(101,3))
+    b = Parameter(index=[time], default=1:101)
     c = Parameter(index=[regions])
     d = Parameter()
     e = Parameter(index=[four])
     f::Array{Float64, 2} = Parameter()
+    g::Int = Parameter(default=10.0)    # value should be Int despite Float64 default
+    h = Parameter(default=10)           # should be "numtype", despite Int default
 
     x = Variable(index=[time, regions])
     
@@ -26,16 +46,19 @@ reset_compdefs()
     end
 end
 
-m = Model()
+# Check that explicit number type for model works as expected
+numtype = Float32
+m = Model(numtype)
+
 set_dimension!(m, :time, 2000:2100)
 set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
 add_comp!(m, MyComp)
-set_param!(m, :MyComp, :a, ones(101,3))
-set_param!(m, :MyComp, :b, 1:101)
+# set_param!(m, :MyComp, :a, ones(101,3))
+# set_param!(m, :MyComp, :b, 1:101)
 set_param!(m, :MyComp, :c, [4,5,6])
-set_param!(m, :MyComp, :d, .5)
+set_param!(m, :MyComp, :d, 0.5)   # 32-bit float constant
 set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
@@ -51,12 +74,14 @@ extpars = external_params(m)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, Float64}
-@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, Float64}
-@test typeof(extpars[:c].values) == Array{Float64, 1}
-@test typeof(extpars[:d].value) == Float64
-@test typeof(extpars[:e].values) == Array{Float64, 1}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, numtype}
+@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, numtype}
+@test typeof(extpars[:c].values) == Array{numtype, 1}
+@test typeof(extpars[:d].value) == numtype
+@test typeof(extpars[:e].values) == Array{numtype, 1}
 @test typeof(extpars[:f].value) == Array{Float64, 2}
+@test typeof(extpars[:g].value) <: Int
+@test typeof(extpars[:h].value) == numtype
 
 # test updating parameters
 @test_throws ErrorException update_external_param(m, :a, 5) #expects an array
@@ -70,9 +95,9 @@ update_external_param(m, :d, 5) # should work, will convert to float
 @test_throws ErrorException update_external_param(m, :e, ones(10)) #wrong size
 update_external_param(m, :e, [4,5,6,7])
 
-@test length(extpars) == 6
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, Float64}
-@test typeof(extpars[:d].value) == Float64
-@test typeof(extpars[:e].values) == Array{Float64, 1}
+@test length(extpars) == 8
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, numtype}
+@test typeof(extpars[:d].value) == numtype
+@test typeof(extpars[:e].values) == Array{numtype, 1}
 
 end #module
