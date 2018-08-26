@@ -1,4 +1,3 @@
-# using Plots
 using Mimi
 using GraphPlot
 using Compose
