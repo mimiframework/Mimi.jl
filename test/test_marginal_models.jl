@@ -6,7 +6,7 @@ using Base.Test
 import Mimi:
     reset_compdefs
 
-    reset_compdefs()
+reset_compdefs()
 
 @defcomp compA begin
     varA = Variable(index=[time])
