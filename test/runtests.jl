@@ -90,5 +90,8 @@ end
     @info("test_explorer.jl")
     include("test_explorer.jl")
 
+    @info("test_plotting.jl")
+    include("test_plotting.jl")
+
     include("mcs/run_tests.jl")
 end
