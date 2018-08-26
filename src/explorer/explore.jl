@@ -9,7 +9,7 @@ include("buildspecs.jl")
 """
     explore(m::Model; title = "Electron")
 
-Produce a UI to explore the parameters and variables of `model` in a Window with title `title`.
+Produce a UI to explore the parameters and variables of Model `m` in a Window with title `title`.
 """
 function explore(m::Model; title = "Electron")
     
@@ -41,16 +41,18 @@ function explore(m::Model; title = "Electron")
 
 end
 
-function explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
-    dim_name::Union{Void, Symbol} = nothing, legend=nothing, 
-    x_label=nothing, y_label=nothing)
+"""
+    explore(m::Model, comp_name::Symbol, datum_name::Symbol)
+
+Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`.
+"""
+
+function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
 
     if m.mi == nothing
         error("A model must be run before it can be plotted")
     end
     
-    #TODO: add keyword argument cases
-
     spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
     VegaLite.VLSpec{:plot}(spec)
 end

@@ -1,6 +1,7 @@
 module TestPlotting
 
 using Mimi
+using Base.Test
 
 import Mimi: 
     reset_compdefs
@@ -52,6 +53,7 @@ connect_param!(m, :LongComponent, :x, :ConnectorComponent, :output)
 
 run(m)
 
-plot_comp_graph(m)
+graph = plot_comp_graph(m)
+@test typeof(graph) == Mimi.Compose.Context
 
 end #module

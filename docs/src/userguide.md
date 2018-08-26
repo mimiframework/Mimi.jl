@@ -138,11 +138,11 @@ getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variable
 
 Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function described below.
 
-In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view and save a plot.
+In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view a plot and optionally save it to a file.
 
 ```julia
 run(m)
-plot_comp_graph(m; filename = "MyFilePath.png"
+plot_comp_graph(m; filename = "MyFilePath.png")
 ```
 ![Plot Component Graph Example](figs/plot_comp_graph_example.png)
 

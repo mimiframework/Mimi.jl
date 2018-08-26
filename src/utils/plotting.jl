@@ -15,14 +15,21 @@ function _open_file(filename)
 end
 
 """
-    plot_comp_graph(m::Model, filename="/tmp/mimi_components.pdf")
+    plot_comp_graph(m::Model, filename::Union{Void, Symbol} = nothing)
 
-Plot the DAG of component connectoins within model `m` and save to `filename`.
+Plot the DAG of component connections within model `m` and save to `filename`. If
+no `filename` is given, plot will simply display.
 """
-function plot_comp_graph(m::Model, filename="/tmp/mimi_components.pdf")
+function plot_comp_graph(m::Model, filename::Union{Void, String} = nothing)
+    
     graph = comp_graph(m.md)
     names = map(i -> get_prop(graph, i, :name), vertices(graph))
 
-    draw(PDF(filename, 16cm, 16cm), gplot(graph, nodelabel=names, nodesize=6, nodelabelsize=6))
-    _open_file(filename)
+    plot = gplot(graph, nodelabel=names, nodesize=6, nodelabelsize=6)
+    if filename != nothing
+        draw(PDF(filename, 16cm, 16cm), plot)
+        return _open_file(filename)
+    else
+        return plot
+    end
 end
