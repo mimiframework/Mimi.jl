@@ -70,7 +70,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 * If any variables of one component are parameters for another, `connect_param!` is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
 * Finally, the model can be run using the command `run(model_name)`.
 * To access model results, use `model_name[:component, :variable_name]`.
-* To observe model results in a graphical form ,use `explore(model_name)` to open the UI window.
+* To observe model results in a graphical form ,use `explore(model_name)` to open the UI window, or use `explore(model_name, :component_name, :variable_name)` or `explore(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
 
 ```julia
 module my_model
@@ -113,8 +113,12 @@ run(m)
 #Check model results
 m[:emissions, :E]
 
-#Observe model result graphs
+#Plot model results
+explore(m, :emissions, :E)
+
+#Observe all model result graphs in UI
 explore(m)
+
 
 ```
 

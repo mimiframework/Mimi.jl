@@ -10,7 +10,7 @@ This guide is organized into six main sections for understanding how to use Mimi
 2) Constructing a model
 3) Running the model
 4) Accessing results
-5) Plotting
+5) Plotting and the Explorer UI
 6) Advanced topics
 
 ## Defining Components
@@ -134,24 +134,39 @@ getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variable
 
 ```
 
-## Plotting
-![Plotting Example](figs/plotting_example.png)
+## Plotting and the Explorer UI
 
+Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function described below.
 
-Mimi provides support for plotting using the [Plots](https://github.com/tbreloff/Plots.jl) module. Mimi extends Plots by adding an additional method to the `Plots.plot` function. Specifically, it adds a new method with the signature
+In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view a plot and optionally save it to a file.
 
 ```julia
-function Plots.plot(m::Model, component::Symbol, parameter::Symbol ; index::Symbol, legend::Symbol, x_label::String, y_label::String)
+run(m)
+plot_comp_graph(m; filename = "MyFilePath.png")
 ```
-A few important things to note:
+![Plot Component Graph Example](figs/plot_comp_graph_example.png)
 
-- The model `m` must be built and run before it is passed into `plot`
-- `index`, `legend`, `x_label`, and `y_label` are optional keyword arguments. If no values are provided, the plot will index by `time` and use the data it has to best fill in the axis labels.
-- `legend` should be a `Symbol` that refers to an index on the model set by a call to `setindex`
+Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.  The `explore` function allows the user to view and explore the variables and parameters of a model run.  The explorer can be used in two primary ways.
 
-This method returns a ``Plots.Plot`` object, so calling it in an instance of an IJulia Notebook will display the plot. Because this method is defined on the Plots package, it is easy to use the other features of the Plots package. For example, calling `savefig("x")` will save the plot as `x.png`, etc. See the [Plots Documentaton](https://juliaplots.github.io/) for a full list of capabilities.
+ In order to invoke the explorer UI and explore all of the variables and parameters in a model, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
+ 
+ ```julia
+ run1 = run(my_model)
+ explore(run1, title = "run1 results")
+ 
+ ```
 
+ ![Explorer Model Example](figs/explorer_model_example.png)
 
+Alternatively, in order to view just one parameter or variable, call the function `explore` as below to return a plot object and automatically display the plot in a viewer, assuming `explore` is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You can save a plot by calling the `save` function.
+
+```julia
+run1 = run(my_model)
+p = explore(run1, component1, parameter1)
+save("figure.svg", p)
+```
+
+![Explorer Single Plot Example](figs/explorer_single_plot_example.png)
 
 ## Advanced Topics
 
@@ -265,13 +280,3 @@ If defined for a specific component, this function will run **before** the times
 
 end
 ```
-
-###  The explorer UI
- 
- The `explore` function allows the user to view and explore the variables and parameters of a model run.  To invoke the explorer UI, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
- 
- ```julia
- run1 = run(my_model)
- explore(run1, title = "run1 results")
- 
- ```
