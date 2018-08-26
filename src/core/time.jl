@@ -190,15 +190,16 @@ function Base.getindex(v::TimestepVector{VariableTimestep{D_FIRST}, T}, ts::Vari
 	return v.data[t]
 end
 
-# int indexing version supports old style components 
+# int indexing version supports old-style components and internal functions, not
+# part of the public API
 
-# function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::AnyIndex) where {T, FIRST, STEP}
-# 	return v.data[i]
-# end
+function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::AnyIndex) where {T, FIRST, STEP}
+	return v.data[i]
+end
 
-# function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::AnyIndex) where {T, TIMES}
-# 	return v.data[i]
-# end
+function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::AnyIndex) where {T, TIMES}
+	return v.data[i]
+end
 
 function Base.setindex!(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, val, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, FIRST, STEP, LAST} 
 	setindex!(v.data, val, ts.t)
@@ -218,15 +219,16 @@ function Base.setindex!(v::TimestepVector{VariableTimestep{D_FIRST}, T}, val, ts
 	setindex!(v.data, val, t)
 end
 
-# int indexing version supports old style components 
+# int indexing version supports old-style components and internal functions, not
+# part of the public API
 
-# function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex) where {T, Start, STEP}
-# 	setindex!(v.data, val, i)
-# end
+function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex) where {T, Start, STEP}
+	setindex!(v.data, val, i)
+end
 
-# function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex) where {T, TIMES}
-# 	setindex!(v.data, val, i)
-# end
+function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex) where {T, TIMES}
+	setindex!(v.data, val, i)
+end
 
 function Base.length(v::TimestepVector)
 	return length(v.data)
@@ -256,17 +258,18 @@ function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_FIRST}, T}, ts::Va
 	return return mat.data[t, i]
 end
 
-# int indexing version supports old style components
+# int indexing version supports old-style components and internal functions, not
+# part of the public API
 
-# function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
-# 	return mat.data[idx1, idx2]
-# end
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
+	return mat.data[idx1, idx2]
+end
 
-# function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
-# 	return mat.data[idx1, idx2]
-# end
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
+	return mat.data[idx1, idx2]
+end
 
-function Base.setindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, ts::FixedTimestep{FIRST, STEP, LAST}, idx::AnyIndex) where {T, FIRST, STEP, LAST} 
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, ts::FixedTimestep{FIRST, STEP, LAST}, idx::AnyIndex) where {T, FIRST, STEP, LAST} 
 	setindex!(mat.data, val, ts.t, idx)
 end
 
@@ -284,15 +287,16 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{D_FIRST}, T}, val, 
 	setindex!(mat.data, val, t, idx)
 end
 
-# int indexing version supports old style components
+# int indexing version supports old-style components and internal functions, not
+# part of the public API
 
-# function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
-# 	setindex!(mat.data, val, idx1, idx2)
-# end
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
+	setindex!(mat.data, val, idx1, idx2)
+end
 
-# function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
-# 	setindex!(mat.data, val, idx1, idx2)
-# end
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
+	setindex!(mat.data, val, idx1, idx2)
+end
 
 #
 # 4. TimestepArray methods
@@ -335,15 +339,16 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::
 	return arr.data[t, idxs...]
 end
 
-# Old-style: first index is Int or Range, rather than a Timestep
+# int indexing version supports old-style components and internal functions, not
+# part of the public API; first index is Int or Range, rather than a Timestep
 
-# function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, FIRST, STEP}
-# 	return arr.data[idx1, idx2, idxs...]
-# end
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, FIRST, STEP}
+	return arr.data[idx1, idx2, idxs...]
+end
 
-# function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, TIMES}
-# 	return arr.data[idx1, idx2, idxs...]
-# end
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, TIMES}
+	return arr.data[idx1, idx2, idxs...]
+end
 
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, val, ts::FixedTimestep{FIRST, STEP, LAST}, idxs::AnyIndex...) where {T, N, FIRST, STEP, LAST}
 	setindex!(arr.data, val, ts.t, idxs...)
@@ -363,15 +368,16 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, val
 	setindex!(arr.data, val, t, idxs...)
 end
 
-# Old-style: first index is Int or Range, rather than a Timestep
+# int indexing version supports old-style components and internal functions, not
+# part of the public API; first index is Int or Range, rather than a Timestep
 
-# function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, FIRST, STEP}
-# 	setindex!(arr.data, val, idx1, idx2, idxs...)
-# end
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, FIRST, STEP}
+	setindex!(arr.data, val, idx1, idx2, idxs...)
+end
 
-# function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, TIMES}
-# 	setindex!(arr.data, val, idx1, idx2, idxs...)
-# end
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, TIMES}
+	setindex!(arr.data, val, idx1, idx2, idxs...)
+end
 
 """
 	hasvalue(arr::TimestepArray, ts::FixedTimestep) 

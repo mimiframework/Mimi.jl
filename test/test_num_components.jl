@@ -1,5 +1,12 @@
+module TestNumComponents
+
 using Base.Test
 using Mimi
+
+import Mimi:
+  reset_compdefs
+
+reset_compdefs()
 
 @defcomp ArgTester begin
   varA = Variable(index=[time])
@@ -15,3 +22,5 @@ m = Model()
 # trying to run model with no components
 set_dimension!(m, :time, 1:10)
 @test_throws ErrorException run(m)
+
+end #module

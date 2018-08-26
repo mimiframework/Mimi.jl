@@ -1,9 +1,13 @@
+module TestParameterTypes
+
 using Mimi
 using Base.Test
 
 import Mimi: 
     external_params, update_external_param, TimestepMatrix, TimestepVector, 
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, reset_compdefs
+
+reset_compdefs()
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
@@ -70,3 +74,5 @@ update_external_param(m, :e, [4,5,6,7])
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, Float64}
 @test typeof(extpars[:d].value) == Float64
 @test typeof(extpars[:e].values) == Array{Float64, 1}
+
+end #module

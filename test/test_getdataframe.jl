@@ -1,5 +1,10 @@
+module TestGetDataframe
+
 using Mimi
 using Base.Test
+
+import Mimi:
+    reset_compdefs
 
 reset_compdefs()
 
@@ -83,3 +88,5 @@ run(new_model)
 
 # Test 3 getting DF for a dimensional parameter
 @test size(getdataframe(new_model, :testcomp4, :par1)) == (8, 4)
+
+end #module

@@ -6,7 +6,9 @@ import Mimi:
     dataframe_or_scalar, createspec_singlevalue, 
     createspec_lineplot, createspec_multilineplot, createspec_barplot,
     getmultiline, getline, getbar, _spec_for_item, spec_list, explore, 
-    getdataframe
+    getdataframe, reset_compdefs
+
+reset_compdefs()
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
@@ -85,3 +87,4 @@ run(m2)
 
 #spec creation for MyComp.a should fail and error, haven't handled case of > 3 dims yet
 @test_warn "MyComp2.a has over 3 graphing dims, not yet implemented in explorer" w = explore(m2)
+

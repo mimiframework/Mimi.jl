@@ -1,7 +1,12 @@
+module TestMarginalModels
+
 using Mimi
 using Base.Test
 
-Mimi.reset_compdefs()
+import Mimi:
+    reset_compdefs
+
+    reset_compdefs()
 
 @defcomp compA begin
     varA = Variable(index=[time])
@@ -41,3 +46,5 @@ run(mm2)
 for i in collect(1:10)
     @test mm2[:compA, :varA][i] == 2*i 
 end
+
+end #module

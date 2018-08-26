@@ -1,10 +1,13 @@
+module TestTimestepArrays
+
 using Mimi
 using Base.Test
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    isuniform, first_period, last_period, 
-    first_and_step
+    isuniform, first_period, last_period, first_and_step, reset_compdefs
+
+reset_compdefs()
 
 a = collect(reshape(1:16,4,4))
 
@@ -30,7 +33,7 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 @test length(x) == 4
 @test endof(x) == 4
 
-#1b.  test hasvalue, getindex, and setindex (with both matching years and
+#1b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
 t = FixedTimestep{2001, 1, 3000}(1)
@@ -52,6 +55,9 @@ t3 = FixedTimestep{2000, 1, 2003}(1)
 x[t3] = 100
 @test x[t3] == 100
 
+x[1] = 101
+@test x[1] == 101
+
 ##############################################
 # 2. Test TimestepVector - Variable Timestep #
 ##############################################
@@ -59,7 +65,7 @@ x[t3] = 100
 years = ([2000:5:2005; 2015:10:2025]...)
 x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 
-#2a.  test hasvalue, getindex, and setindex (with both matching years and
+#2a.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
 t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
@@ -82,6 +88,9 @@ t3 = VariableTimestep{years}()
 x[t3] = 100
 @test x[t3] == 100
 
+x[1] = 101
+@test x[1] == 101
+
 ###########################################
 # 3. Test TimestepMatrix - Fixed Timestep #
 ###########################################
@@ -92,7 +101,7 @@ years = (collect(2000:1:2003)...)
 
 y = TimestepMatrix{FixedTimestep{2000, 1}, Int}(a[:,1:2])
 
-#3b.  test hasvalue, getindex, and setindex (with both matching years and
+#3b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
 t = FixedTimestep{2001, 1, 3000}(1)
@@ -118,6 +127,10 @@ t3 = FixedTimestep{2000, 1, 2005}(1)
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
+y[:,:] = 11
+@test all([y[i,1] == 11 for i in 1:4])
+@test all([y[1,j] == 11 for j in 1:2])    
+
 #3c.  interval wider than 1
 z = TimestepMatrix{FixedTimestep{2000, 2}, Int}(a[:,3:4])
 t = FixedTimestep{1980, 2, 3000}(11)
@@ -136,7 +149,7 @@ t2 = next_timestep(t)
 years = ([2000:5:2005; 2015:10:2025]...)
 y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
 
-#4a.  test hasvalue, getindex, setindex, and endof (with both matching years and
+#4a.  test hasvalue, getindex, setindex!, and endof (with both matching years and
 # mismatched years)
 
 t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
@@ -162,8 +175,12 @@ t3 = VariableTimestep{years}()
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
+y[:,:] = 11
+@test all([y[i,1] == 11 for i in 1:4])
+@test all([y[1,j] == 11 for j in 1:2])    
+
 ##################################
-# 5. Test TimeStepAarray methods #
+# 5. Test TimestepArray methods #
 ##################################
 
 x_years = (2000:5:2015...) #fixed
@@ -193,3 +210,5 @@ fill!(x, 2)
 fill!(y, 2)
 @test x.data == fill(2, (4))
 @test y.data == fill(2, (4, 2))
+
+end #module

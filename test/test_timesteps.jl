@@ -6,9 +6,9 @@ using Base.Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty, Clock, time_index, get_timestep_instance
+    gettime, getproperty, Clock, time_index, get_timestep_instance, reset_compdefs
 
-Mimi.reset_compdefs()
+reset_compdefs()
 
 ########################################################################
 #  Test basic timestep functions and Base functions for Fixed Timestep #
@@ -57,13 +57,6 @@ t3 = VariableTimestep{years}(42)
 t4 = next_timestep(t3)
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
-
-####################
-# Test basic Clock #
-####################
-
-c = Clock{FixedTimestep}(2010, 1, 2100)
-@test time_index(c) == 1
 
 #########################################################
 #  Test a model with components with different offsets  #

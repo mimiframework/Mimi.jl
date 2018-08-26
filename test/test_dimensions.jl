@@ -1,10 +1,13 @@
+module TestDimensions
+
 using Mimi
 using Base.Test
 
 import Mimi:
-    AbstractDimension, RangeDimension, Dimension, key_type
+    AbstractDimension, RangeDimension, Dimension, key_type,
+    reset_compdefs
 
-Mimi.reset_compdefs()
+reset_compdefs()
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
 dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
@@ -73,3 +76,5 @@ while !done(rangedim2, state)
     @test get(rangedim2, Base.keys(rangedim2)[index]) == index
     index += 1
 end
+
+end #module

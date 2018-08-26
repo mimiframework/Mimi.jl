@@ -1,6 +1,10 @@
+module TestComponentsOrdering
 
 using Mimi
 using Base.Test
+
+import Mimi:
+    reset_compdefs
 
 reset_compdefs()
 
@@ -46,3 +50,5 @@ add_comp!(my_model, testcomp1)
 @test_throws ErrorException add_comp!(my_model, testcomp2, before=:testcomp3)
 
 @test_throws ErrorException add_comp!(my_model, testcomp2, after=:testcomp3)
+
+end #module

@@ -1,6 +1,7 @@
+module TestMain
+
 using Base.Test
 using Mimi
-# using DataFrames
 
 import Mimi: 
     reset_compdefs, reset_variables, @defmodel, 
@@ -72,3 +73,5 @@ set_dimension!(m, :index1, 5)
 add_comp!(m, foo1)
 
 @test :var1 in variable_names(x1, :foo1)
+
+end #module

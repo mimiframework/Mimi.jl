@@ -1,7 +1,13 @@
+module TestParameterLabels
+
 using Mimi
 using NamedArrays
 using Base.Test
 
+import Mimi:
+    reset_compdefs
+
+reset_compdefs()
 
 ############################################
 #    BASIC TEST - use NamedArrays (1/3)    #
@@ -272,3 +278,5 @@ for t in range(1, length(time_labels))
         @test(model1[:compA, :y][t, r] == model3[:compA, :y][t, r])
     end
 end
+
+end #module
