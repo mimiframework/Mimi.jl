@@ -6,6 +6,11 @@ global app = nothing
 #include functions and modules
 include("buildspecs.jl")
 
+"""
+    explore(m::Model; title = "Electron")
+
+Produce a UI to explore the parameters and variables of `model` in a Window with title `title`.
+"""
 function explore(m::Model; title = "Electron")
     
     if m.mi == nothing

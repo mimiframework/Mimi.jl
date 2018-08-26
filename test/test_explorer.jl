@@ -50,7 +50,7 @@ run(m)
 
 #3.  full specs for VegaLit
 
-#TODO:  reatespec_singlevalue, createspec_multilineplot, 
+#TODO:  createspec_singlevalue, createspec_multilineplot, 
 #createspec_lineplot, createspec_barplot, _spec_for_item
 
 s = spec_list(m)

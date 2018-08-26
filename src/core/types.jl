@@ -363,6 +363,14 @@ end
 # 6. User-facing Model types providing a simplified API to model definitions and instances.
 #
 
+"""
+    Model
+
+A user-facing API containing a `ModelInstance` (`mi`) and a `ModelDef` (`md`).  
+This `Model` can be created with the optional keyword argument `number_type` indicating
+the default type of number used for the `ModelDef`.  If not specified the `Model` assumes
+a `number_type` of `Float64`.
+"""
 #
 # Provides user-facing API to ModelInstance and ModelDef
 #
@@ -380,6 +388,12 @@ mutable struct Model
     end
 end
 
+""" 
+    MarginalModel
+
+A Mimi `Model` whose results are obtained by subtracting results of one `base` Model 
+from those of another `marginal` Model` that has a difference of `delta`.
+"""
 #
 # A "model" whose results are obtained by subtracting results of one model from those of another.
 #
@@ -402,6 +416,8 @@ end
 #
 
 """
+    ComponentReference
+
 A container for a component, for interacting with it within a model.
 """
 struct ComponentReference
@@ -410,6 +426,8 @@ struct ComponentReference
 end
 
 """
+    VariableReference
+    
 A container for a variable within a component, to improve connect_param! aesthetics,
 by supporting subscripting notation via getindex & setindex .
 """

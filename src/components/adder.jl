@@ -1,6 +1,6 @@
 using Mimi
 
-# When evaluated in the __init__() function, the surrounding modudle
+# When evaluated in the __init__() function, the surrounding module
 # is Main rather than Mimi.
 @defcomp adder begin
     add    = Parameter(index=[time])
