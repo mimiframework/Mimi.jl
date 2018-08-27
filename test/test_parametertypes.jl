@@ -1,9 +1,13 @@
+module TestParameterTypes
+
 using Mimi
 using Base.Test
 
 import Mimi: 
     external_params, update_external_param, TimestepMatrix, TimestepVector, 
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, reset_compdefs
+
+reset_compdefs()
 
 #
 # Test that parameter type mismatches are caught
@@ -95,3 +99,5 @@ update_external_param(m, :e, [4,5,6,7])
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, numtype}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{numtype, 1}
+
+end #module

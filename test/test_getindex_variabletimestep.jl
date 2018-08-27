@@ -1,3 +1,5 @@
+module TestGetIndex_VariableTimestep
+
 using Mimi
 using Base.Test
 
@@ -55,3 +57,5 @@ run(my_model)
 @test_throws ErrorException my_model[:testcomp2, :var2]
 
 #Possibly more tests after adding another component
+
+end #module

@@ -1,15 +1,20 @@
+module TestDimensions
+
 using Mimi
 using Base.Test
 
 import Mimi:
-    Dimension, key_type
+    AbstractDimension, RangeDimension, Dimension, key_type,
+    reset_compdefs
 
-Mimi.reset_compdefs()
+reset_compdefs()
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
 dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
-dim_range = Dimension(2010:2100)    # Range		
+dim_range = Dimension(2010:2100)    # Range	
+rangedim = RangeDimension(2010:2100) # RangeDimension type	
 dim_vals = Dimension(4) # Same as 1:4
+dim_vals_abstract = AbstractDimension(dim_vals) #Abstract
 
 @test key_type(dim_varargs) == Symbol
 @test key_type(dim_vec) == Symbol
@@ -20,21 +25,56 @@ dim_vals = Dimension(4) # Same as 1:4
 @test length(dim_vec) == 3
 @test length(dim_vals) == 4
 @test length(dim_range) == 91
-
+@test length(rangedim) == 91
 @test start(dim_varargs) == 1
+
 @test start(dim_vec) == 1
 @test start(dim_vals) == 1
 @test start(dim_range) == 1
+@test start(rangedim) == 2010
 
 @test endof(dim_varargs) == :baz
 @test endof(dim_vec) == :baz
 @test endof(dim_range) == 2100
 @test endof(dim_vals) == 4
 
+
+@test Base.keys(rangedim) == [2010:2100...]
+@test Base.values(rangedim) == [1:91...]
+
 for i = 1:length(dim_range)
     @test getindex(dim_range, 2010 + i - 1) == i
 end
-@test getindex(dim_range, :) == [1:91...]
+@test dim_range[:] == [1:91...]
+@test dim_varargs[:bar] == 2
+@test dim_varargs[:] == [1,2,3]
+@test dim_vals_abstract[1:4...]== [1:4...]
+# @test rangedim[2011] == 2 # TODO: this errors..
 
-@test getindex(dim_varargs, :bar) == 2
-@test getindex(dim_varargs, :) == [1,2,3]
+@test get(dim_varargs, :bar, 999) == 2
+@test get(dim_varargs, :new, 4) == 4 #adds a key/value pair
+@test get(rangedim, 2010, 1) == 1 
+# @test get(rangedim, 2101, 92) == 92 # TODO:  this errors ...
+
+#test iteratable
+dim_vals2 = Dimension(2:2:8)
+keys = [2,4,6,8]
+index = 1
+state = start(dim_vals2)
+while !done(dim_vals2, state)
+    (i, state) = next(dim_vals, state)
+    @test dim_vals2[keys[index]] == index
+    index += 1
+end
+
+rangedim2 = RangeDimension(2:2:8)
+keys = [2,4,6,8]
+index = 1
+state = start(rangedim2)
+while !done(rangedim2, state)
+    (i, state) = next(rangedim2, state)
+    @test get(rangedim2, Base.keys(rangedim2)[index]) == index
+    index += 1
+end
+
+end #module

@@ -55,11 +55,8 @@ end
     @info("test_getindex_variabletimestep.jl") 
     include("test_getindex_variabletimestep.jl")
 
-    @info("test_num_components.jl")
-    include("test_num_components.jl")
-
-    @info("test_components_ordering.jl")
-    include("test_components_ordering.jl")
+    @info("test_components.jl")
+    include("test_components.jl")
 
     @info("test_variables_model_instance.jl")
     include("test_variables_model_instance.jl")
