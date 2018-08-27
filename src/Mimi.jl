@@ -35,6 +35,7 @@ export
     name,
     new_comp,
     parameters, 
+    plot_comp_graph,
     replace_comp!, 
     set_dimension!, 
     set_leftover_params!, 
@@ -57,7 +58,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-# include("utils/plotting.jl")
+include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")

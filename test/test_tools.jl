@@ -1,8 +1,12 @@
+module TestTools
+
 using Base.Test
 using Mimi
 
 import Mimi:
-    getproperty
+    getproperty, reset_compdefs
+
+reset_compdefs()
 
 #utils: prettify
 @test Mimi.prettify("camelCaseBasic") == Mimi.prettify(:camelCaseBasic) == "Camel Case Basic"
@@ -43,3 +47,5 @@ foo[:input] = 3.14
 bar[:intermed] = foo[:intermed]
 
 run(m)
+
+end #module

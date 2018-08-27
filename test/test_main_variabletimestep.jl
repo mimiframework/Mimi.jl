@@ -1,11 +1,12 @@
+module TestMain_VariableTimestep
+
 using Base.Test
 using Mimi
-# using DataFrames
 
 import Mimi: 
     reset_compdefs, reset_variables, @defmodel, 
     variable, variable_names, external_param, build, 
-    compdef
+    compdef, compdefs, dimensions, dimension, compinstance
 
 reset_compdefs()
 
@@ -71,3 +72,5 @@ set_dimension!(m, :index1, 5)
 add_comp!(m, foo1)
 
 @test :var1 in variable_names(x1, :foo1)
+
+end #module

@@ -6,38 +6,57 @@ using Base.Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty
+    gettime, getproperty, Clock, time_index, get_timestep_instance, reset_compdefs
 
-Mimi.reset_compdefs()
+reset_compdefs()
 
-#####################################################
-#  Test basic timestep functions for Fixed Timestep #
-#####################################################
+########################################################################
+#  Test basic timestep functions and Base functions for Fixed Timestep #
+########################################################################
 
-t = FixedTimestep{1850, 10, 3000}(1)
-@test is_first(t)
+t1 = FixedTimestep{1850, 10, 3000}(1)
+@test is_first(t1)
+@test_throws ErrorException t1_prev = t1-1 #first timestep, so cannot get previous
 
-t1 = next_timestep(t)
-@test t1.t == 2
+t2 = next_timestep(t1)
+@test t2.t == 2
+@test_throws ErrorException t2_prev = t2 - 2 #can't get before first timestep
 
-t = FixedTimestep{2000, 1, 2050}(51)
-@test is_last(t)
-t = next_timestep(t)
-@test_throws ErrorException next_timestep(t)
+@test t2 == t1 + 1
+@test t1 == t2 - 1
 
-########################################################
-#  Test basic timestep functions for Variable Timestep #
-########################################################
+t3 = FixedTimestep{2000, 1, 2050}(51)
+@test is_last(t3)
+@test_throws ErrorException t3_next = t3 + 2 #can't go beyond last timestep
+
+t4 = next_timestep(t3)
+@test_throws ErrorException t_next = t4 + 1
+@test_throws ErrorException next_timestep(t4)
+
+###########################################################################
+#  Test basic timestep functions and Base functions for Variable Timestep #
+###########################################################################
 years = ([2000:1:2024; 2025:5:2105]...)
 
-t = VariableTimestep{years}()
-@test is_first(t)
+t1 = VariableTimestep{years}()
+@test is_first(t1)
+@test_throws ErrorException t1_prev = t1-1 #first timestep, so cannot get previous
 
-t = VariableTimestep{years}(42)
-@test is_last(t)
-@test ! is_first(t)
-t = next_timestep(t)
-@test_throws ErrorException next_timestep(t)
+t2 = next_timestep(t1)
+@test t2.t == 2
+@test_throws ErrorException t2_prev = t2 - 2 #can't get before first timestep
+
+@test t2 == t1 + 1
+@test t1 == t2 - 1
+
+t3 = VariableTimestep{years}(42)
+@test is_last(t3)
+@test ! is_first(t3)
+@test_throws ErrorException t3_next = t3 + 2 #can't go beyond last timestep
+
+t4 = next_timestep(t3)
+@test_throws ErrorException t_next = t4 + 1
+@test_throws ErrorException next_timestep(t4)
 
 #########################################################
 #  Test a model with components with different offsets  #
@@ -97,6 +116,34 @@ end
 for i in 6:11
     @test m[:Bar, :output][i] == i*i
 end
+
+##################################################
+#  test get_timestep_instance
+##################################################
+m = Model()
+
+#fixed timestep to start
+set_dimension!(m, :time, 2000:2009)
+
+vector = ones(5)
+matrix = ones(3,2)
+
+t_vector= get_timestep_instance(m.md, Float64, 1, vector)
+t_matrix = get_timestep_instance(m.md, Float64, 2, matrix)
+
+@test typeof(t_vector) <: TimestepVector
+@test typeof(t_matrix) <: TimestepMatrix
+
+@test_throws ErrorException get_timestep_instance(m.md, Float64, 3, vector) #too many dims
+
+#try with variable timestep
+set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
+
+t_vector= get_timestep_instance(m.md, Float64, 1, vector)
+t_matrix = get_timestep_instance(m.md, Float64, 2, matrix)
+
+@test typeof(t_vector) <: TimestepVector
+@test typeof(t_matrix) <: TimestepMatrix
 
 ##################################################
 #  Now build a model with connecting components  #

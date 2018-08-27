@@ -1,5 +1,16 @@
+module TestConnectorComp
+
 using Mimi
 using Base.Test
+
+import Mimi:
+    reset_compdefs
+
+reset_compdefs()
+
+#
+# Test the pre-defined connector component
+#
 
 #--------------------------------------
 #  Manual way of using ConnectorComp
@@ -176,3 +187,5 @@ result = getdataframe(model5, :Short=>:b, :Long=>:out)
 [(@test isnan(result[i, :b])) for i in 46:63]
 [(@test result[i, :out]==0) for i in 1:12]
 [(@test result[i, :out]==0) for i in 46:63]
+
+end #module

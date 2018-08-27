@@ -1,5 +1,10 @@
+module TestAdder
+
 using Mimi
 using Base.Test
+
+import Mimi:
+    reset_compdefs
 
 reset_compdefs()
 
@@ -37,3 +42,5 @@ run(model2)
 for i in 1:10
     @test model2[:compA, :output][i] == 3i
 end
+
+end #module
