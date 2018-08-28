@@ -43,20 +43,15 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
 
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol) 
-            # if length(index_values[dim]) != size(ext_param.values)[i]
+            param_length = size(ext_param.values)[i]
             if dim == :time 
-                first = comp_def.first 
-                last = comp_def.last 
-                t = md.dimensions[:time]
-                n1 = t[last] - t[first] + 1
-                n2 = size(ext_param.values)[i]
-                if n1 != n2
-                    error("Mismatched data size for a parameter connection: $(comp_def.comp_id): dim :time has $n1 elements; parameter :$param_name has $n2 elements.")
-                end
-            elseif dim_count(md, dim) != size(ext_param.values)[i]
-                n1 = dim_count(md, dim)
-                n2 = size(ext_param.values)[i]
-                error("Mismatched data size for a parameter connection: $(comp_def.comp_id): dim :$dim has $n1 elements; parameter :$param_name has $n2 elements.")
+                t = dimensions(md)[:time]
+                comp_length = t[last_period(comp_def)] - t[first_period(comp_def)] + 1
+            else
+                comp_length = dim_count(md, dim)
+            end
+            if param_length != comp_length
+                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
             end
         end
     end
