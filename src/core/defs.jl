@@ -219,14 +219,19 @@ end
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
-    if name == :time
-        reset_run_periods!(md, keys[1], keys[end])
-        md.is_uniform = isuniform(keys)
-    end
-    if haskey(md, name)
+function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
+    redefined = haskey(md, name)
+    if redefined
         warn("Redefining dimension :$name")
     end
+
+    if name == :time
+        md.is_uniform = isuniform(keys)
+        if redefined 
+            reset_run_periods!(md, keys[1], keys[end])
+        end
+    end
+    
     dim = Dimension(keys)
     md.dimensions[name] = dim
     return dim
