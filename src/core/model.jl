@@ -318,7 +318,7 @@ end
 
 Update the `value` of an external model parameter in model `m`, referenced by `name`.
 """
-function update_external_param(m::Model, name::Symbol, value)
+function update_external_param!(m::Model, name::Symbol, value; update_timesteps = false)
     ext_params = external_params(m)
     if ! haskey(ext_params, name)
         error("Cannot update parameter; $name not found in model's external parameters.")
@@ -326,35 +326,69 @@ function update_external_param(m::Model, name::Symbol, value)
 
     param = ext_params[name]
 
-    if isa(param, ScalarModelParameter)
-        if size(value) != size(param.value)
-            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
+    if param isa ScalarModelParameter
+        if update_timesteps
+            error("Cannot update timesteps; parameter $name is a scalar parameter.")
         end
-        if ! (value isa typeof(param.value))
-            try
-                value = convert(typeof(param.value), value)
-            catch e
-                error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
-            end
+        _update_scalar_param!(param, value)
+    else
+        _update_array_param!(m, name, value, update_timesteps)
+    end
+
+    decache(m)
+end
+
+function _update_scalar_param!(param::ScalarModelParameter, value)
+    if ! (value isa typeof(param.value))
+        try
+            value = convert(typeof(param.value), value)
+        catch e
+            error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
         end
-        param.value = value
-    else # ArrayModelParameter
-        if !(typeof(value) <: AbstractArray)
-            error("Cannot update array parameter $name with a scalar value.")
-        elseif size(value) != size(param.values)
-            error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
-        elseif !(eltype(value) <: eltype(param.values))
-            try
-                value = convert(Array{eltype(param.values)}, value)
-            catch e
-                error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
-            end
+    end
+    param.value = value
+    nothing
+end
+
+function _update_array_param!(m::Model, name, value, update_timesteps)
+    param = external_params(m)[name]
+
+    if !(typeof(value) <: AbstractArray)
+        error("Cannot update array parameter $name with a value of type $(typeof(value)).")
+    elseif size(value) != size(param.values)
+        error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
+    elseif !(eltype(value) <: eltype(param.values)) 
+        try
+            value = convert(Array{eltype(param.values)}, value)
+        catch e
+            error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
         end
+    end
+
+    if !update_timesteps
         if param.values isa TimestepArray
             param.values.data = value
         else
             param.values = value
         end
+    else
+        if !(param.values isa TimestepArray)
+            error("Cannot update timesteps; parameter $name is not a TimestepArray.")
+        else
+            m.md.external_params[name] = ArrayModelParameter(_new_timestep_array(m, param, value), param.dimensions)
+        end
     end
-    decache(m)
+    nothing
 end
+
+function _new_timestep_array(m::Model, param::ArrayModelParameter{TimestepArray{T_TS1, T, N}}, value) where {T_TS1, T, N}
+    model_times = dim_keys(m.md, :time)
+    if m.md.is_uniform
+        new_timestep_array = TimestepArray{FixedTimestep{model_times[1], model_times[2] - model_times[1], LAST} where LAST, T, N}(value)
+    else
+        TIMES = tuple(model_times...)
+        new_timestep_array = TimestepArray{VariableTimestep{TIMES}, T, N}(value)
+    end
+    return new_timestep_array
+end
+
