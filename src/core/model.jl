@@ -327,21 +327,20 @@ function update_external_param(m::Model, name::Symbol, value)
     param = ext_params[name]
 
     if isa(param, ScalarModelParameter)
+        if size(value) != size(param.value)
+            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
+        end
         if ! (value isa typeof(param.value))
             try
                 value = convert(typeof(param.value), value)
             catch e
                 error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
             end
-        elseif size(value) != size(param.value)
-            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
-        else
-            param.value = value
         end
-
+        param.value = value
     else # ArrayModelParameter
         if !(typeof(value) <: AbstractArray)
-            error("Cannot update an array parameter $name with a scalar value.")
+            error("Cannot update array parameter $name with a scalar value.")
         elseif size(value) != size(param.values)
             error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
         elseif !(eltype(value) <: eltype(param.values))
@@ -350,12 +349,11 @@ function update_external_param(m::Model, name::Symbol, value)
             catch e
                 error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
             end
-        else # perform the update
-            if param.values isa TimestepArray
-                param.values.data = value
-            else
-                param.values = value
-            end
+        end
+        if param.values isa TimestepArray
+            param.values.data = value
+        else
+            param.values = value
         end
     end
     decache(m)
