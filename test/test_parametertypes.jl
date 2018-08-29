@@ -84,15 +84,16 @@ extpars = external_params(m)
 @test typeof(extpars[:h].value) == numtype
 
 # test updating parameters
-@test_throws ErrorException update_external_param(m, :a, 5) #expects an array
-@test_throws ErrorException update_external_param(m, :a, ones(101)) #wrong size
-@test_throws ErrorException update_external_param(m, :a, fill("hi", 101, 3)) #wrong type
-update_external_param(m, :a, zeros(101,3))
+@test_throws ErrorException update_external_param(m, :a, 5) # expects an array
+@test_throws ErrorException update_external_param(m, :a, ones(101)) # wrong size
+@test_throws ErrorException update_external_param(m, :a, fill("hi", 101, 3)) # wrong type
+update_external_param(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 
-@test_throws ErrorException update_external_param(m, :d, ones(5)) #wrong type; should be scalar
+@test_throws ErrorException update_external_param(m, :d, ones(5)) # wrong type; should be scalar
 update_external_param(m, :d, 5) # should work, will convert to float
-@test_throws ErrorException update_external_param(m, :e, 5) #wrong type; should be array
-@test_throws ErrorException update_external_param(m, :e, ones(10)) #wrong size
+@test extpars[:d].value == 5
+@test_throws ErrorException update_external_param(m, :e, 5) # wrong type; should be array
+@test_throws ErrorException update_external_param(m, :e, ones(10)) # wrong size
 update_external_param(m, :e, [4,5,6,7])
 
 @test length(extpars) == 8
