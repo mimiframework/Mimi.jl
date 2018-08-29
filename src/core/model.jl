@@ -110,6 +110,11 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     decache(m)
 end
 
+function update_external_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_external_params!(m.md, parameters; update_timesteps = update_timesteps)
+    decache(m)
+end
+
 """
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
         first=nothing, last=nothing, before=nothing, after=nothing)
@@ -319,7 +324,12 @@ end
 Update the `value` of an external model parameter in model `m`, referenced by `name`.
 """
 function update_external_param!(m::Model, name::Symbol, value; update_timesteps = false)
-    ext_params = external_params(m)
+    update_external_param!(m.md, name, value, update_timesteps = update_timesteps)
+    decache(m)
+end 
+
+function update_external_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    ext_params = md.external_params
     if ! haskey(ext_params, name)
         error("Cannot update parameter; $name not found in model's external parameters.")
     end
@@ -328,14 +338,13 @@ function update_external_param!(m::Model, name::Symbol, value; update_timesteps 
 
     if param isa ScalarModelParameter
         if update_timesteps
-            error("Cannot update timesteps; parameter $name is a scalar parameter.")
+            warn("Cannot update timesteps; parameter $name is a scalar parameter.")
         end
         _update_scalar_param!(param, value)
     else
-        _update_array_param!(m, name, value, update_timesteps)
+        _update_array_param!(md, name, value, update_timesteps)
     end
 
-    decache(m)
 end
 
 function _update_scalar_param!(param::ScalarModelParameter, value)
@@ -350,8 +359,8 @@ function _update_scalar_param!(param::ScalarModelParameter, value)
     nothing
 end
 
-function _update_array_param!(m::Model, name, value, update_timesteps)
-    param = external_params(m)[name]
+function _update_array_param!(md::ModelDef, name, value, update_timesteps)
+    param = md.external_params[name]
 
     if !(typeof(value) <: AbstractArray)
         error("Cannot update array parameter $name with a value of type $(typeof(value)).")
@@ -373,18 +382,20 @@ function _update_array_param!(m::Model, name, value, update_timesteps)
         end
     else
         if !(param.values isa TimestepArray)
-            error("Cannot update timesteps; parameter $name is not a TimestepArray.")
+            warn("Cannot update timesteps; parameter $name is not a TimestepArray.")
+            param.values = value
         else
-            m.md.external_params[name] = ArrayModelParameter(_new_timestep_array(m, param, value), param.dimensions)
+            md.external_params[name] = ArrayModelParameter(_new_timestep_array(md, param, value), param.dimensions)
         end
     end
     nothing
 end
 
-function _new_timestep_array(m::Model, param::ArrayModelParameter{TimestepArray{T_TS1, T, N}}, value) where {T_TS1, T, N}
-    model_times = dim_keys(m.md, :time)
-    if m.md.is_uniform
-        new_timestep_array = TimestepArray{FixedTimestep{model_times[1], model_times[2] - model_times[1], LAST} where LAST, T, N}(value)
+function _new_timestep_array(md::ModelDef, param::ArrayModelParameter{TimestepArray{T_TS1, T, N}}, value) where {T_TS1, T, N}
+    model_times = dim_keys(md, :time)
+    if md.is_uniform
+        first, stepsize = first_and_step(md)
+        new_timestep_array = TimestepArray{FixedTimestep{first, stepsize, LAST} where LAST, T, N}(value)
     else
         TIMES = tuple(model_times...)
         new_timestep_array = TimestepArray{VariableTimestep{TIMES}, T, N}(value)

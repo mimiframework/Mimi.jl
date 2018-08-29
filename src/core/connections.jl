@@ -232,6 +232,14 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
+function update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T 
+    parameters = Dict(Symbol(k) => v for (k, v) in parameters)
+    for (param_name, value) in parameters
+        update_external_param!(md, param_name, value; update_timesteps = update_timesteps)
+    end
+    nothing
+end
+
 internal_param_conns(md::ModelDef) = md.internal_param_conns
 
 external_param_conns(md::ModelDef) = md.external_param_conns
