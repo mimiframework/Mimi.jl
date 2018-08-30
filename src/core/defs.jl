@@ -554,16 +554,16 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         error("Cannot replace '$comp_name'; component not found in model.")
     end
 
-    # Get original position if new before or after not specified
+    # TODO: Get original position if new before or after not specified
     # if before == nothing && after == nothing
     #     comps = collect(keys(md.comp_defs))
     #     next_idx = findfirst(comps, comp_name) + 1
     #     before = comps[next_idx]
     # end 
 
-    # # Get original first and last if new run period not specified
-    # first = first == nothing ? md.comp_defs[comp_name].first : first
-    # last = last == nothing? md.comp_defs[comp_name].last : last
+    # Get original first and last if new run period not specified
+    first = first == nothing ? md.comp_defs[comp_name].first : first
+    last = last == nothing? md.comp_defs[comp_name].last : last
 
     if reconnect
         # Assert that new component definition has same parameters and variables needed for the connections
@@ -571,53 +571,54 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         old_comp = md.comp_defs[comp_name]
         new_comp = compdef(comp_id)
 
-        # datum_map = (k, v) -> (k, v.datatype, v.dimensions)  # Want to compare datum names, type, and dimensions as a tuple. Should we compare all values of the DatumDef?
-        datum_map = kv -> (kv[1], kv[2].datatype, kv[2].dimensions)  # Want to compare datum names, type, and dimensions as a tuple. Should we compare all values of the DatumDef?
+        function compare_datum(dict1, dict2)
+            set1 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict1])
+            set2 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict2])
+            return set1 >= set2
+        end
 
         # Check incoming parameters
         incoming_params = map(ipc -> ipc.dst_par_name, internal_param_conns(md, comp_name))
         param_filter = (k, v) -> k in incoming_params
         old_params = filter(param_filter, old_comp.parameters)
         new_params = new_comp.parameters
-        old_set = Set(map(datum_map, collect(old_params)))
-        new_set = Set(map(datum_map, collect(new_params)))
-        if !(new_set >= old_set)
+        if !compare_datum(new_params, old_params)
             error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
         end
         
         # Check outgoing variables
         outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, md.internal_param_conns))
         var_filter = (k, v) -> k in outgoing_vars
-        old_vars = collect(filter(var_filter, old_comp.variables))
-        new_vars = collect(new_comp.variables)
-        if !(Set(map(datum_map, new_vars)) >= Set(map(datum_map, old_vars)))
+        old_vars = filter(var_filter, old_comp.variables)
+        new_vars = new_comp.variables
+        if !compare_datum(new_vars, old_vars)
             error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")
         end
         
-        # Check external parameter connections; don't error in this case? just warn?
+        # Check external parameter connections
         remove = []
         for epc in external_param_conns(md, comp_name)
-            p = epc.param_name
-            if ! haskey(new_params, p)
-                warn("Removing external parameter connection from component $comp_name; parameter $p no longer exists in component.")
+            param_name = epc.param_name
+            if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just warn?
+                warn("Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component.")
                 push!(remove, epc)
             else
-                old_p = old_comp.parameters[p]
-                new_p = new_params[p]
+                old_p = old_comp.parameters[param_name]
+                new_p = new_params[param_name]
                 if new_p.dimensions != old_p.dimensions
-                    error("Cannot replace and reconnect; parameter $p in new component has different dimensions.")
+                    error("Cannot replace and reconnect; parameter $param_name in new component has different dimensions.")
                 end
                 if new_p.datatype != old_p.datatype
-                    error("Cannot replace and reconnect; parameter $p in new component has different datatype.")
+                    error("Cannot replace and reconnect; parameter $param_name in new component has different datatype.")
                 end
             end
         end
         filter!(epc -> !(epc in remove), md.external_param_conns) 
 
-        # Now delete old component from comp_defs, leaving md's parameter connections 
+        # Delete old component from comp_defs, leaving the existing parameter connections 
         delete!(md.comp_defs, comp_name)      
     else
-        delete!(md, comp_name)  # Built-in Mimi delete function deletes all internal and external parameter connections
+        delete!(md, comp_name)  # Built-in Mimi delete function deletes all internal and external parameter connections as well
     end
 
     # Re-add
