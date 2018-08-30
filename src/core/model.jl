@@ -135,8 +135,9 @@ Replace the component with name `comp_name` in model `md`  with the component
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+                           before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+                           reconnect=true)
+    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect = reconnect)
     decache(m)
     return ComponentReference(m, comp_name)
 end

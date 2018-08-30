@@ -547,9 +547,82 @@ the list unless one of the keywords, `first`, `last`, `before`, `after`.
 """
 function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidInt=nothing, last::VoidInt=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    delete!(md, comp_name)
+                           before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+                           reconnect::Bool=true)
+
+    if ! haskey(md.comp_defs, comp_name)
+        error("Cannot replace '$comp_name'; component not found in model.")
+    end
+
+    # Get original position if new before or after not specified
+    # if before == nothing && after == nothing
+    #     comps = collect(keys(md.comp_defs))
+    #     next_idx = findfirst(comps, comp_name) + 1
+    #     before = comps[next_idx]
+    # end 
+
+    # # Get original first and last if new run period not specified
+    # first = first == nothing ? md.comp_defs[comp_name].first : first
+    # last = last == nothing? md.comp_defs[comp_name].last : last
+
+    if reconnect
+        # Assert that new component definition has same parameters and variables needed for the connections
+
+        old_comp = md.comp_defs[comp_name]
+        new_comp = compdef(comp_id)
+
+        # datum_map = (k, v) -> (k, v.datatype, v.dimensions)  # Want to compare datum names, type, and dimensions as a tuple. Should we compare all values of the DatumDef?
+        datum_map = kv -> (kv[1], kv[2].datatype, kv[2].dimensions)  # Want to compare datum names, type, and dimensions as a tuple. Should we compare all values of the DatumDef?
+
+        # Check incoming parameters
+        incoming_params = map(ipc -> ipc.dst_par_name, internal_param_conns(md, comp_name))
+        param_filter = (k, v) -> k in incoming_params
+        old_params = filter(param_filter, old_comp.parameters)
+        new_params = new_comp.parameters
+        old_set = Set(map(datum_map, collect(old_params)))
+        new_set = Set(map(datum_map, collect(new_params)))
+        if !(new_set >= old_set)
+            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
+        end
+        
+        # Check outgoing variables
+        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, md.internal_param_conns))
+        var_filter = (k, v) -> k in outgoing_vars
+        old_vars = collect(filter(var_filter, old_comp.variables))
+        new_vars = collect(new_comp.variables)
+        if !(Set(map(datum_map, new_vars)) >= Set(map(datum_map, old_vars)))
+            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")
+        end
+        
+        # Check external parameter connections; don't error in this case? just warn?
+        remove = []
+        for epc in external_param_conns(md, comp_name)
+            p = epc.param_name
+            if ! haskey(new_params, p)
+                warn("Removing external parameter connection from component $comp_name; parameter $p no longer exists in component.")
+                push!(remove, epc)
+            else
+                old_p = old_comp.parameters[p]
+                new_p = new_params[p]
+                if new_p.dimensions != old_p.dimensions
+                    error("Cannot replace and reconnect; parameter $p in new component has different dimensions.")
+                end
+                if new_p.datatype != old_p.datatype
+                    error("Cannot replace and reconnect; parameter $p in new component has different datatype.")
+                end
+            end
+        end
+        filter!(epc -> !(epc in remove), md.external_param_conns) 
+
+        # Now delete old component from comp_defs, leaving md's parameter connections 
+        delete!(md.comp_defs, comp_name)      
+    else
+        delete!(md, comp_name)  # Built-in Mimi delete function deletes all internal and external parameter connections
+    end
+
+    # Re-add
     add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+
 end
 
 """
