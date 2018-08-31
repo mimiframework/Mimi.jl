@@ -187,6 +187,31 @@ dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim
 Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
 isuniform(md::ModelDef) = md.is_uniform
+
+
+# Helper function invoked when the user resets the time dimension with set_dimension!
+# This function calls set_run_period! on each component definition to reset the first and last values.
+function reset_run_periods!(md, first, last)
+    for comp_def in compdefs(md)
+        change = false
+        if first_period(comp_def) < first 
+            warn("Resetting $(comp_def.name) component's first timestep to $first")
+            change = true
+        else
+            first = first_period(comp_def)
+        end 
+        if last_period(comp_def) > last 
+            warn("Resetting $(comp_def.name) component's last timestep to $last")
+            change = true
+        else 
+            last = last_period(comp_def)
+        end
+        if change
+            set_run_period!(comp_def, first, last)
+        end
+    end
+    nothing
+end
  
 """
     set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range}) 
@@ -194,13 +219,19 @@ isuniform(md::ModelDef) = md.is_uniform
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
-    if haskey(md, name)
+function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
+    redefined = haskey(md, name)
+    if redefined
         warn("Redefining dimension :$name")
     end
-    if name == :time 
+
+    if name == :time
         md.is_uniform = isuniform(keys)
+        if redefined 
+            reset_run_periods!(md, keys[1], keys[end])
+        end
     end
+    
     dim = Dimension(keys)
     md.dimensions[name] = dim
     return dim
