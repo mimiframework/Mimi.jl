@@ -563,7 +563,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
 
     # Get original first and last if new run period not specified
     first = first == nothing ? md.comp_defs[comp_name].first : first
-    last = last == nothing? md.comp_defs[comp_name].last : last
+    last = last == nothing ? md.comp_defs[comp_name].last : last
 
     if reconnect
         # Assert that new component definition has same parameters and variables needed for the connections
@@ -615,10 +615,11 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         end
         filter!(epc -> !(epc in remove), md.external_param_conns) 
 
-        # Delete old component from comp_defs, leaving the existing parameter connections 
+        # Delete the old component from comp_defs, leaving the existing parameter connections 
         delete!(md.comp_defs, comp_name)      
     else
-        delete!(md, comp_name)  # Built-in Mimi delete function deletes all internal and external parameter connections as well
+        # Delete the old component and all its internal and external parameter connections
+        delete!(md, comp_name)  
     end
 
     # Re-add
