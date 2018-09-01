@@ -217,10 +217,11 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 
 ### Updating an external parameter
 
-When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
+When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function.  If the external parameter being set has a `:time` dimension, and not only values pertaining to those times, but also time keys that are connected to those values have changed, use the optional argument `update_timesteps` as shown below.
 
 ```julia
-update_external_param(mymodel, :parametername, newvalues)
+update_external_param(mymodel, :parametername, newvalues) #don't need to update timestep times
+update_external_param(mymodel, :parametername, newvalues, udpate_timesteps=true) #do need to update timestep times
 ```
 
 Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
