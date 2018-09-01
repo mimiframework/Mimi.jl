@@ -44,6 +44,10 @@ end
 end
 
 m = Model()
+
+# make sure you can't add a component before setting time dimension
+@test_throws ErrorException add_comp!(m, A)
+
 set_dimension!(m, :time, 2015:5:2100)
 
 add_comp!(m, A)
