@@ -475,6 +475,12 @@ differs from that in the `comp_def`, a copy of `comp_def` is made and assigned t
 function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
                       first::VoidInt=nothing, last::VoidInt=nothing, 
                       before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+
+    # check that a time dimension has been set
+    if !haskey(dimensions(md), :time)
+        error("Cannot add component to model without first setting time dimension.")
+    end
+    
     # check that first and last are within the model's time index range
     time_index = dim_keys(md, :time)
 
