@@ -17,13 +17,13 @@ export
     MarginalModel,
     Model,
     add_comp!,  
-    components, #TODO components -> comps?
+    components,
     connect_param!,
     create_marginal_model,
     disconnect_param!,
     explore,
     getdataframe,
-    getproperty,
+    getproperty, 
     gettime,
     get_param_value,
     get_var_value,
@@ -34,13 +34,14 @@ export
     modeldef,
     name,
     new_comp,
-    parameters, #TODO:  parameters -> params?
+    parameters, 
+    plot_comp_graph,
     replace_comp!, 
-    set_dimension!, # TODO:  Think hard about the terminology of axis-dimension-index-blabla
-    set_leftover_params!, #TODO:  Rething this function in general
-    setproperty!,
+    set_dimension!, 
+    set_leftover_params!, 
+    setproperty!, 
     set_param!, 
-    variables  #TODO:  variables -> vars?
+    variables 
 
 include("core/types.jl")
 
@@ -57,7 +58,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-# include("utils/plotting.jl")
+include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
@@ -65,7 +66,7 @@ include("utils/misc.jl")
 """
     load_comps(dirname::String="./components")
 
-Call include() on all the files in the indicated directory.
+Call include() on all the files in the indicated directory `dirname`.
 This avoids having modelers create a long list of include()
 statements. Just put all the components in a directory.
 """

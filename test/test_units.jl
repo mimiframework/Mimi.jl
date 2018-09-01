@@ -3,7 +3,9 @@ module TestUnits
 using Base.Test
 using Mimi
 
-import Mimi: verify_units, connect_param!, ComponentReference, @defmodel
+import Mimi: verify_units, connect_param!, ComponentReference, @defmodel, reset_compdefs
+
+reset_compdefs()
 
 # Try directly using verify_units
 @test verify_units("kg", "kg")

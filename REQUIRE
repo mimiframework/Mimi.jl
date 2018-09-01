@@ -9,6 +9,7 @@ ExcelFiles
 IterTools
 IterableTables
 FileIO
+GraphPlot
 JSON 0.17.1
 LightGraphs 0.12.0
 MacroTools 0.4.0
@@ -19,3 +20,4 @@ StringBuilders 0.0.1
 TableTraits
 ProgressMeter 0.5.5
 Query
+VegaLite

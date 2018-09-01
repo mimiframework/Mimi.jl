@@ -1,8 +1,13 @@
+module TestMult_GetDataframe
+
 using Mimi
 using NamedArrays
 using Base.Test
 
-Mimi.reset_compdefs()
+import Mimi:
+    reset_compdefs
+
+reset_compdefs()
 
 #####################################
 #  LARGER MULTIREGIONAL TEST (2/3)  #
@@ -194,3 +199,5 @@ dataframe = getdataframe(my_model, :testcomp1 => :var1)
 
 #Test trying to getdataframe from component that does not exist
 @test_throws ErrorException getdataframe(my_model, :testcomp1 => :var2)
+
+end #module

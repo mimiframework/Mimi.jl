@@ -1,9 +1,13 @@
+module TestParameterTypes
+
 using Mimi
 using Base.Test
 
 import Mimi: 
     external_params, update_external_param, TimestepMatrix, TimestepVector, 
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, reset_compdefs
+
+reset_compdefs()
 
 #
 # Test that parameter type mismatches are caught
@@ -30,8 +34,8 @@ end
     d = Parameter()
     e = Parameter(index=[four])
     f::Array{Float64, 2} = Parameter()
-    g::Int = Parameter(default=10.0)    # value should be Int64 despite Float64 default
-    h = Parameter(default=10)           # should be "numtype", despite Int64 default
+    g::Int = Parameter(default=10.0)    # value should be Int despite Float64 default
+    h = Parameter(default=10)           # should be "numtype", despite Int default
 
     x = Variable(index=[time, regions])
     
@@ -76,7 +80,7 @@ extpars = external_params(m)
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{numtype, 1}
 @test typeof(extpars[:f].value) == Array{Float64, 2}
-@test typeof(extpars[:g].value) == Int64
+@test typeof(extpars[:g].value) <: Int
 @test typeof(extpars[:h].value) == numtype
 
 # test updating parameters
@@ -95,3 +99,5 @@ update_external_param(m, :e, [4,5,6,7])
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, numtype}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{numtype, 1}
+
+end #module

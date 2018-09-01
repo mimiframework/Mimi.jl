@@ -16,7 +16,7 @@ reset_compdefs()
 @defcomp A begin
     varA::Int = Variable(index=[time])
     parA::Int = Parameter()
-    
+
     function run_timestep(p, v, d, t)
         v.varA[t] = p.parA
     end
@@ -44,6 +44,10 @@ end
 end
 
 m = Model()
+
+# make sure you can't add a component before setting time dimension
+@test_throws ErrorException add_comp!(m, A)
+
 set_dimension!(m, :time, 2015:5:2100)
 
 add_comp!(m, A)
@@ -130,5 +134,37 @@ end
 add_comp!(m, D)
 @test_throws ErrorException Mimi.build(m)
 
+##########################################
+#   Test init function                   #
+##########################################
+
+@defcomp E begin
+    varE::Int = Variable()
+    parE1::Int = Parameter()
+    parE2::Int = Parameter()
+
+    function init(p, v, d)
+        v.varE= p.parE1
+    end
+
+    function run_timestep(p, v, d, t)
+        if !is_first(t)
+            v.varE = p.parE2
+        end
+    end
+end
+
+m = Model()
+set_dimension!(m, :time, 2015:5:2100) #run for several timesteps
+add_comp!(m, E)
+set_param!(m, :E, :parE1, 1)
+set_param!(m, :E, :parE2, 10)
+
+run(m)
+@test m[:E, :varE] == 10
+
+set_dimension!(m, :time, 2015) #run for just one timestep, so init sets the value here
+run(m)
+@test m[:E, :varE] == 1
 
 end # module

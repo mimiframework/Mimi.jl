@@ -1,5 +1,8 @@
 """
-Removes any parameter connections for a given parameter in a given component.
+    disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+
+Remove any parameter connections for a given parameter `param_name` in a given component
+`comp_name` of model `md`.
 """
 function disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     # println("disconnect_param!($comp_name, $param_name)")
@@ -40,20 +43,25 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
 
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol) 
-            # if length(index_values[dim]) != size(ext_param.values)[i]
-            if dim_count(md, dim) != size(ext_param.values)[i]
-                n1 = dim_count(md, dim)
-                n2 = size(ext_param.values)[i]
-                error("Mismatched data size for a parameter connection: $(comp_def.comp_id): dim :$dim has $n1 elements; parameter :$param_name has $n2 elements.")
+            param_length = size(ext_param.values)[i]
+            if dim == :time 
+                t = dimensions(md)[:time]
+                comp_length = t[last_period(comp_def)] - t[first_period(comp_def)] + 1
+            else
+                comp_length = dim_count(md, dim)
+            end
+            if param_length != comp_length
+                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
             end
         end
     end
 end
 
 """
-    connect_param!(md::ModelDef, component::Symbol, name::Symbol, parametername::Symbol)
+    connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
 
-Connect a parameter in a component to an external parameter.
+Connect a parameter `param_name` in the component `comp_name` of model `md` to
+the external parameter `ext_param_name`. 
 """
 function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
     comp_def = compdef(md, comp_name)
@@ -72,9 +80,16 @@ function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext
 end
 
 """
-    connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
+        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; 
+        ignoreunits::Bool=false)
 
-Bind the parameter of one component to a variable in another component.
+Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
+to a variable `src_var_name` in another component `src_comp_name` of the same model
+using `backup` to provide default values and the `ignoreunits` flag to indicate the need
+to check match units between the two.  The `offset` argument indicates the offset
+between the destination and the source ie. the value would be `1` if the destination 
+component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
@@ -145,9 +160,15 @@ function connect_param!(md::ModelDef,
 end
 
 """
-    connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+    connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+        backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
 
-Bind the parameter of one component to a variable in another component, using `backup` to provide default values.
+Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
+to a variable `src[2]` in another component `src[1]` of the same model
+using `backup` to provide default values and the `ignoreunits` flag to indicate the need
+to check match units between the two.  The `offset` argument indicates the offset
+between the destination and the source ie. the value would be `1` if the destination 
+component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
                            backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
@@ -155,7 +176,9 @@ function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbo
 end
 
 """
-Return list of parameters that have been set for component c in model m.
+    connected_params(md::ModelDef, comp_name::Symbol)
+
+Return list of parameters that have been set for component `comp_name` in model `md`.
 """
 function connected_params(md::ModelDef, comp_name::Symbol)
     ext_set_params = map(x->x.param_name,   external_param_conns(md, comp_name))
@@ -168,7 +191,7 @@ end
     unconnected_params(md::ModelDef)
 
 Return a list of tuples (componentname, parametername) of parameters
-that have not been connected to a value in the model.
+that have not been connected to a value in the model `md`.
 """
 function unconnected_params(md::ModelDef)
     unconnected = Vector{Tuple{Symbol,Symbol}}()
@@ -184,11 +207,11 @@ function unconnected_params(md::ModelDef)
 end
 
 """
-    set_leftover_params!(m::Model, parameters::Dict{Any,Any})
+    set_leftover_params!(m::Model, parameters::Dict)
 
-Set all the parameters in a model that don't have a value and are not connected
-to some other component to a value from a dictionary. This method assumes the dictionary
-keys are strings that match the names of unset parameters in the model.
+Set all of the parameters in model `m` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are strings that match the names of unset parameters in the model.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(k => v for (k, v) in parameters)
@@ -270,7 +293,8 @@ end
 """
     set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
 
-Adds a one dimensional time-indexed array parameter to the model.
+Add a one dimensional time-indexed array parameter indicated by `name` and
+`value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
     # println("set_external_array_param!: dims=$dims, setting dims to [:time]")
@@ -281,7 +305,8 @@ end
 """
     set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
 
-Adds a multi-dimensional time-indexed array parameter to the model.
+Add a multi-dimensional time-indexed array parameter `name` with value
+`value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
@@ -291,7 +316,7 @@ end
 """
     set_external_array_param!(m::Model, name::Symbol, value::AbstractArray, dims)
 
-Add an array type parameter to the model.
+Add an array type parameter `name` with value `value` and `dims` dimensions to the model 'm'.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractArray, dims)
     numtype = md.number_type
@@ -308,7 +333,7 @@ end
 """
     set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
 
-Add a scalar type parameter to the model.
+Add a scalar type parameter `name` with the value `value` to the model `md`.
 """
 function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
     p = ScalarModelParameter(value)
@@ -372,7 +397,7 @@ end
 """
     dependencies(md::ModelDef, comp_name::Symbol)
 
-Return the set of component names that `comp_name` depends one, i.e.,
+Return the set of component names that `comp_name` in `md` depends one, i.e.,
 sources for which `comp_name` is the destination of an internal connection.
 """
 function dependencies(md::ModelDef, comp_name::Symbol)
@@ -416,11 +441,11 @@ end
 """
     _topological_sort(md::ModelDef)
 
-Build a directed acyclic graph referencing the positions of the 
-components in the OrderedDict, tracing dependencies to create the DAG.
-Perform a topological sort on the graph for the given model and
-return a vector of component names in the order that will ensure
-dependencies are processed prior to dependent components.
+Build a directed acyclic graph referencing the positions of the components in 
+the OrderedDict of model `md`, tracing dependencies to create the DAG.
+Perform a topological sort on the graph for the given model and return a vector 
+of component names in the order that will ensure dependencies are processed 
+prior to dependent components.
 """
 function _topological_sort(md::ModelDef)
     graph = comp_graph(md)
