@@ -132,7 +132,7 @@ Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 
 model definition.
 """
-function update_external_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+function update_external_params!(m::Model, parameters::Dict; update_timesteps = false)
     update_external_params!(m.md, parameters; update_timesteps = update_timesteps)
     decache(m)
 end

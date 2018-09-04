@@ -423,7 +423,7 @@ Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 
 model definition.
 """
-function update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T 
+function update_external_params!(md::ModelDef, parameters::Dict; update_timesteps = false)
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
         update_external_param!(md, param_name, value; update_timesteps = update_timesteps)
