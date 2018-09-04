@@ -374,32 +374,22 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps)
         end
     end
 
-    if !update_timesteps
+    if update_timesteps
+        if param.values isa TimestepArray 
+            T = eltype(value)
+            N = length(size(value))
+            new_timestep_array = get_timestep_array(md, T, N, value)
+            md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
+        else
+            warn("Cannot update timesteps; parameter $name is not a TimestepArray.")
+            param.values = value
+        end
+    else
         if param.values isa TimestepArray
             param.values.data = value
         else
             param.values = value
         end
-    else
-        if !(param.values isa TimestepArray)
-            warn("Cannot update timesteps; parameter $name is not a TimestepArray.")
-            param.values = value
-        else
-            md.external_params[name] = ArrayModelParameter(_new_timestep_array(md, param, value), param.dimensions)
-        end
     end
     nothing
 end
-
-function _new_timestep_array(md::ModelDef, param::ArrayModelParameter{TimestepArray{T_TS1, T, N}}, value) where {T_TS1, T, N}
-    model_times = dim_keys(md, :time)
-    if md.is_uniform
-        first, stepsize = first_and_step(md)
-        new_timestep_array = TimestepArray{FixedTimestep{first, stepsize, LAST} where LAST, T, N}(value)
-    else
-        TIMES = tuple(model_times...)
-        new_timestep_array = TimestepArray{VariableTimestep{TIMES}, T, N}(value)
-    end
-    return new_timestep_array
-end
-

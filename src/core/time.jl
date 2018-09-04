@@ -163,6 +163,17 @@ function get_timestep_instance(md::ModelDef, T, num_dims, value)
 	end
 end
 
+# Generic-size Array version of get_timestep_instance()
+function get_timestep_array(md::ModelDef, T, N, value)
+	if isuniform(md)
+        first, stepsize = first_and_step(md)
+        return TimestepArray{FixedTimestep{first, stepsize}, T, N}(value)
+    else
+        TIMES = (time_labels(md)...)
+        return TimestepArray{VariableTimestep{TIMES}, T, N}(value)
+    end
+end
+
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 
 # TBD: can it be reduced to this?
