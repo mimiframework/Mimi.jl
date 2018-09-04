@@ -570,7 +570,7 @@ function Base.start(iter::MCSIterator)
 end
 
 Base.next(iter, idx) = (get_trial(iter.mcs, idx), idx + 1)
-Base.done(iter, idx) = (idx == iter.mcs.trials)
+Base.done(iter, idx) = (idx > iter.mcs.trials)
 Base.length(iter) = iter.mcs.trials
 
 Base.eltype(::Type{MCSIterator{T}}) where T = T

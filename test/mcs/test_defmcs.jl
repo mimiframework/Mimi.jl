@@ -53,6 +53,10 @@ output_dir = joinpath(tempdir(), "mcs")
 
 generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
+# Test that the proper number of trials were saved
+d = readcsv(joinpath(output_dir, "trialdata.csv"))
+@test size(d)[1] == N+1 # extra row for column names
+
 # Run trials 1:N, and save results to the indicated directory
 
 Mimi.set_model!(mcs, m)
