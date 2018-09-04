@@ -232,21 +232,6 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
-"""
-    update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
-
-For each (k, v) in the provided `parameters` dictionary, update_external_param! 
-is called to update the external parameter by name k to value v, with optional 
-Boolean argument update_timesteps.
-"""
-function update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T 
-    parameters = Dict(Symbol(k) => v for (k, v) in parameters)
-    for (param_name, value) in parameters
-        update_external_param!(md, param_name, value; update_timesteps = update_timesteps)
-    end
-    nothing
-end
-
 internal_param_conns(md::ModelDef) = md.internal_param_conns
 
 external_param_conns(md::ModelDef) = md.external_param_conns
@@ -353,6 +338,97 @@ Add a scalar type parameter `name` with the value `value` to the model `md`.
 function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
     p = ScalarModelParameter(value)
     set_external_param!(md, name, p)
+end
+
+"""
+    update_external_param(md::ModelDef, name::Symbol, value; update_timesteps = false)
+
+Update the `value` of an external model parameter in ModelDef `md`, referenced 
+by `name`. Optional boolean argument `update_timesteps` with default value 
+`false` indicates whether to update the time keys associated with the parameter 
+values to match the model's time index.
+"""
+function update_external_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    ext_params = md.external_params
+    if ! haskey(ext_params, name)
+        error("Cannot update parameter; $name not found in model's external parameters.")
+    end
+
+    param = ext_params[name]
+
+    if param isa ScalarModelParameter
+        if update_timesteps
+            warn("Cannot update timesteps; parameter $name is a scalar parameter.")
+        end
+        _update_scalar_param!(param, value)
+    else
+        _update_array_param!(md, name, value, update_timesteps)
+    end
+
+end
+
+function _update_scalar_param!(param::ScalarModelParameter, value)
+    if ! (value isa typeof(param.value))
+        try
+            value = convert(typeof(param.value), value)
+        catch e
+            error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+        end
+    end
+    param.value = value
+    nothing
+end
+
+function _update_array_param!(md::ModelDef, name, value, update_timesteps)
+    param = md.external_params[name]
+
+    if !(typeof(value) <: AbstractArray)
+        error("Cannot update array parameter $name with a value of type $(typeof(value)).")
+    elseif size(value) != size(param.values)
+        error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
+    elseif !(eltype(value) <: eltype(param.values)) 
+        try
+            value = convert(Array{eltype(param.values)}, value)
+        catch e
+            error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
+        end
+    end
+
+    if update_timesteps
+        if param.values isa TimestepArray 
+            T = eltype(value)
+            N = length(size(value))
+            new_timestep_array = get_timestep_array(md, T, N, value)
+            md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
+        else
+            warn("Cannot update timesteps; parameter $name is not a TimestepArray.")
+            param.values = value
+        end
+    else
+        if param.values isa TimestepArray
+            param.values.data = value
+        else
+            param.values = value
+        end
+    end
+    nothing
+end
+
+"""
+    update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
+
+For each (k, v) in the provided `parameters` dictionary, update_external_param! 
+is called to update the external parameter by name k to value v, with optional 
+Boolean argument update_timesteps. Each key k must be a symbol or convert to a
+symbol matching the name of an external parameter that already exists in the 
+model definition.
+"""
+function update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T 
+    parameters = Dict(Symbol(k) => v for (k, v) in parameters)
+    for (param_name, value) in parameters
+        update_external_param!(md, param_name, value; update_timesteps = update_timesteps)
+    end
+    nothing
 end
 
 
