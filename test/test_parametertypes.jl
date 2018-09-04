@@ -4,8 +4,8 @@ using Mimi
 using Base.Test
 
 import Mimi: 
-    external_params, update_external_param!, TimestepMatrix, TimestepVector, 
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep, reset_compdefs
+    external_params, TimestepMatrix, TimestepVector, ArrayModelParameter, 
+    ScalarModelParameter, FixedTimestep, reset_compdefs
 
 reset_compdefs()
 
@@ -104,12 +104,9 @@ update_external_param!(m, :e, [4,5,6,7])
 
 
 #------------------------------------------------------------------------------
-# Test updating TimestepArrays with update_external_parameter
+# Test updating TimestepArrays with update_external_param!
 #------------------------------------------------------------------------------
 
-using Mimi
-using Base.Test
-import Mimi: update_external_param!
 @defcomp MyComp2 begin 
     x=Parameter(index=[time]) 
     y=Variable(index=[time])
@@ -167,5 +164,20 @@ run(m)
 @test m[:MyComp2, :y][1] == 2   # 2005
 @test m[:MyComp2, :y][2] == 3   # 2020
 
+
+# 3. Test updating from a dictionary
+
+m = Model()
+set_dimension!(m, :time, [2000, 2005, 2020])
+add_comp!(m, MyComp2)
+set_param!(m, :MyComp2, :x, [1, 2, 3])
+set_dimension!(m, :time, [2005, 2020, 2050])
+update_external_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
+x = m.md.external_params[:x]
+@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Float64, 1}
+@test x.values.data == [2., 3., 4.]
+run(m)
+@test m[:MyComp2, :y][1] == 2   # 2005
+@test m[:MyComp2, :y][2] == 3   # 2020
 
 end #module
