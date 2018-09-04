@@ -232,6 +232,13 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
+"""
+    update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
+
+For each (k, v) in the provided `parameters` dictionary, update_external_param! 
+is called to update the external parameter by name k to value v, with optional 
+Boolean argument update_timesteps.
+"""
 function update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T 
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
