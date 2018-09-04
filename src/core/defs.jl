@@ -539,11 +539,16 @@ end
 """
     replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
         first::VoidInt=nothing, last::VoidInt=nothing,
-        before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+        before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+        reconnect::Bool=true)
 
-Replace the component with name `comp_name` in model `md`  with the component
-`comp_id` using the same name.  The component is added at the end of 
-the list unless one of the keywords, `first`, `last`, `before`, `after`.
+Replace the component with name `comp_name` in model definition `md` with the 
+component `comp_id` using the same name. The component is added in the same 
+position as the old component, unless one of the keywords `before` or `after` 
+is specified. The component is added with the same first and last values, 
+unless the keywords `first` or `last` are specified. Optional boolean argument 
+`reconnect` with default value `true` indicates whether the existing parameter 
+connections should be maintained in the new component.
 """
 function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidInt=nothing, last::VoidInt=nothing,

@@ -109,6 +109,7 @@ set_param!(m, :X, :x, zeros(6))                         # Set external parameter
 
 
 # 7. Test component name that doesn't exist
+
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
