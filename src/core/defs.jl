@@ -554,24 +554,31 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         error("Cannot replace '$comp_name'; component not found in model.")
     end
 
-    # TODO: Get original position if new before or after not specified
-    # if before == nothing && after == nothing
-    #     comps = collect(keys(md.comp_defs))
-    #     next_idx = findfirst(comps, comp_name) + 1
-    #     before = comps[next_idx]
-    # end 
+    # Get original position if new before or after not specified
+    if before == nothing && after == nothing
+        comps = collect(keys(md.comp_defs))
+        n = length(comps)
+        if n > 1
+            idx = findfirst(comps, comp_name)
+            if idx == n 
+                after = comps[idx - 1]
+            else
+                before = comps[idx + 1]
+            end
+        end
+    end 
 
     # Get original first and last if new run period not specified
-    first = first == nothing ? md.comp_defs[comp_name].first : first
-    last = last == nothing ? md.comp_defs[comp_name].last : last
+    old_comp = md.comp_defs[comp_name]
+    first = first == nothing ? old_comp.first : first
+    last = last == nothing ? old_comp.last : last
 
     if reconnect
         # Assert that new component definition has same parameters and variables needed for the connections
 
-        old_comp = md.comp_defs[comp_name]
         new_comp = compdef(comp_id)
 
-        function compare_datum(dict1, dict2)
+        function _compare_datum(dict1, dict2)
             set1 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict1])
             set2 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict2])
             return set1 >= set2
@@ -582,7 +589,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         param_filter = (k, v) -> k in incoming_params
         old_params = filter(param_filter, old_comp.parameters)
         new_params = new_comp.parameters
-        if !compare_datum(new_params, old_params)
+        if !_compare_datum(new_params, old_params)
             error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
         end
         
@@ -591,7 +598,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         var_filter = (k, v) -> k in outgoing_vars
         old_vars = filter(var_filter, old_comp.variables)
         new_vars = new_comp.variables
-        if !compare_datum(new_vars, old_vars)
+        if !_compare_datum(new_vars, old_vars)
             error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")
         end
         

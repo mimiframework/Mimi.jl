@@ -115,4 +115,17 @@ add_comp!(m, X)
 @test_throws ErrorException replace_comp!(m, X_repl, :Z)    # Component Z does not exist in the model, cannot be replaced
 
 
+# 8. Test original postion placement functionality
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, X, :c1)    
+add_comp!(m, X, :c2)
+add_comp!(m, X, :c3)
+replace_comp!(m, X_repl, :c3)   # test replacing the last component
+@test collect(values(m.md.comp_defs))[3].comp_id.comp_name == :X_repl
+replace_comp!(m, X_repl, :c2)        # test replacing not the last one
+@test collect(values(m.md.comp_defs))[2].comp_id.comp_name == :X_repl
+
+
 end # module
