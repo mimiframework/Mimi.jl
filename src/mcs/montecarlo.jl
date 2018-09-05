@@ -551,7 +551,7 @@ function Base.start(mcs::MonteCarloSimulation)
 end
 
 Base.next(mcs::MonteCarloSimulation, trialnum) = (get_trial(mcs, trialnum), trialnum + 1)
-Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum == mcs.trials)
+Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum > mcs.trials)
 
 TableTraits.isiterable(mcs::MonteCarloSimulation) = true
 TableTraits.isiterabletable(mcs::MonteCarloSimulation) = true
