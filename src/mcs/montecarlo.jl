@@ -551,7 +551,7 @@ function Base.start(mcs::MonteCarloSimulation)
 end
 
 Base.next(mcs::MonteCarloSimulation, trialnum) = (get_trial(mcs, trialnum), trialnum + 1)
-Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum == mcs.trials)
+Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum > mcs.trials)
 
 TableTraits.isiterable(mcs::MonteCarloSimulation) = true
 TableTraits.isiterabletable(mcs::MonteCarloSimulation) = true
@@ -570,7 +570,7 @@ function Base.start(iter::MCSIterator)
 end
 
 Base.next(iter, idx) = (get_trial(iter.mcs, idx), idx + 1)
-Base.done(iter, idx) = (idx == iter.mcs.trials)
+Base.done(iter, idx) = (idx > iter.mcs.trials)
 Base.length(iter) = iter.mcs.trials
 
 Base.eltype(::Type{MCSIterator{T}}) where T = T
