@@ -204,9 +204,9 @@ function Base.rand!(mcs::MonteCarloSimulation)
     rvdict = mcs.rvdict
     trials = mcs.trials
 
-    for rv in mcs.dist_rvs
+    for (name, rv) in mcs.rvdict
         values = rand(rv.dist, trials)
-        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
+        rvdict[name] = RandomVariable(name, SampleStore(values))
     end
 end
 
