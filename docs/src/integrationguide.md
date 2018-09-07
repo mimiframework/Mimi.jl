@@ -105,7 +105,7 @@ The full API:
 
 ### Updating an external parameter
 
-The function `update_external_parameter` is now written as `update_external_param`.
+The function `update_external_parameter` is now written as `update_external_param!`, and `update_external_parameters` is now written as `udpate_external_params!`.  There is also a new optional argument `update_timesteps` which can be used if the external parameter being set has a `:time` dimension, and not only values pertaining to those times, but also time keys that are connected to those values have changed.
 
 ### Setting parameters with a dictionary
 

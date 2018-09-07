@@ -341,7 +341,7 @@ function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
 end
 
 """
-    update_external_param(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    update_external_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
 
 Update the `value` of an external model parameter in ModelDef `md`, referenced 
 by `name`. Optional boolean argument `update_timesteps` with default value 
