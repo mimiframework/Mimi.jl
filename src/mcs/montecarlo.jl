@@ -202,8 +202,16 @@ function Base.rand!(mcs::MonteCarloSimulation)
     trials = mcs.trials
 
     for rv in mcs.dist_rvs
-        values = rand(rv.dist, trials)
-        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
+        dist = distribution(rv)
+        if dist isa SampleStore
+            dist = distribution(dist) # get the original distribution
+            if dist == nothing
+                reset(dist)           # restart with idx=1  
+                continue              # reuse loaded values
+            end
+        end
+        values = rand(dist, trials)
+        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values, dist=dist))
     end
 end
 

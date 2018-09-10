@@ -164,7 +164,7 @@ function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Void}
                 values = values[indices]   # reorder to respect correlations
             end
             
-            rvdict[name] = RandomVariable(name, SampleStore(values))
+            rvdict[name] = RandomVariable(name, SampleStore(values, dist=dist))
         end
     end
     return nothing
