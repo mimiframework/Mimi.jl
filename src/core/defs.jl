@@ -576,17 +576,104 @@ end
 """
     replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
         first::VoidInt=nothing, last::VoidInt=nothing,
-        before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+        before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+        reconnect::Bool=true)
 
-Replace the component with name `comp_name` in model `md`  with the component
-`comp_id` using the same name.  The component is added at the end of 
-the list unless one of the keywords, `first`, `last`, `before`, `after`.
+Replace the component with name `comp_name` in model definition `md` with the 
+component `comp_id` using the same name. The component is added in the same 
+position as the old component, unless one of the keywords `before` or `after` 
+is specified. The component is added with the same first and last values, 
+unless the keywords `first` or `last` are specified. Optional boolean argument 
+`reconnect` with default value `true` indicates whether the existing parameter 
+connections should be maintained in the new component.
 """
 function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidInt=nothing, last::VoidInt=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    delete!(md, comp_name)
+                           before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+                           reconnect::Bool=true)
+
+    if ! haskey(md.comp_defs, comp_name)
+        error("Cannot replace '$comp_name'; component not found in model.")
+    end
+
+    # Get original position if new before or after not specified
+    if before == nothing && after == nothing
+        comps = collect(keys(md.comp_defs))
+        n = length(comps)
+        if n > 1
+            idx = findfirst(comps, comp_name)
+            if idx == n 
+                after = comps[idx - 1]
+            else
+                before = comps[idx + 1]
+            end
+        end
+    end 
+
+    # Get original first and last if new run period not specified
+    old_comp = md.comp_defs[comp_name]
+    first = first == nothing ? old_comp.first : first
+    last = last == nothing ? old_comp.last : last
+
+    if reconnect
+        # Assert that new component definition has same parameters and variables needed for the connections
+
+        new_comp = compdef(comp_id)
+
+        function _compare_datum(dict1, dict2)
+            set1 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict1])
+            set2 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict2])
+            return set1 >= set2
+        end
+
+        # Check incoming parameters
+        incoming_params = map(ipc -> ipc.dst_par_name, internal_param_conns(md, comp_name))
+        param_filter = (k, v) -> k in incoming_params
+        old_params = filter(param_filter, old_comp.parameters)
+        new_params = new_comp.parameters
+        if !_compare_datum(new_params, old_params)
+            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
+        end
+        
+        # Check outgoing variables
+        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, md.internal_param_conns))
+        var_filter = (k, v) -> k in outgoing_vars
+        old_vars = filter(var_filter, old_comp.variables)
+        new_vars = new_comp.variables
+        if !_compare_datum(new_vars, old_vars)
+            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")
+        end
+        
+        # Check external parameter connections
+        remove = []
+        for epc in external_param_conns(md, comp_name)
+            param_name = epc.param_name
+            if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just warn?
+                warn("Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component.")
+                push!(remove, epc)
+            else
+                old_p = old_comp.parameters[param_name]
+                new_p = new_params[param_name]
+                if new_p.dimensions != old_p.dimensions
+                    error("Cannot replace and reconnect; parameter $param_name in new component has different dimensions.")
+                end
+                if new_p.datatype != old_p.datatype
+                    error("Cannot replace and reconnect; parameter $param_name in new component has different datatype.")
+                end
+            end
+        end
+        filter!(epc -> !(epc in remove), md.external_param_conns) 
+
+        # Delete the old component from comp_defs, leaving the existing parameter connections 
+        delete!(md.comp_defs, comp_name)      
+    else
+        # Delete the old component and all its internal and external parameter connections
+        delete!(md, comp_name)  
+    end
+
+    # Re-add
     add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+
 end
 
 """
