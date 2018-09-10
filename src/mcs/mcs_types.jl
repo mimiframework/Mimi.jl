@@ -50,11 +50,17 @@ distribution(ss::SampleStore) = ss.dist
 # versus those loaded from a file, which would be treated as immutable?
 #
 
+function Base.quantile(ss::SampleStore{T}, q::Float64) where T
+    return quantile(sort(ss.values), q)
+end
+
+
 # TBD: This interpolates values between those in the vector. Is this reasonable?
 # Probably shouldn't use correlation on values loaded from a file rather than 
 # from a proper distribution.
 function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
-    return quantile.(sort(ss.values), probs)
+    return quantile.(ss, probs)
+    # return quantile.(sort(ss.values), probs)
 end
 
 
