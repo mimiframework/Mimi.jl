@@ -165,6 +165,11 @@ end
 
 # Generic-size Array version of get_timestep_instance()
 function get_timestep_array(md::ModelDef, T, N, value)
+
+	if N == 1 || N == 2
+		return get_timestep_instance(md, T, N, value)
+	end
+
 	if isuniform(md)
         first, stepsize = first_and_step(md)
         return TimestepArray{FixedTimestep{first, stepsize}, T, N}(value)
