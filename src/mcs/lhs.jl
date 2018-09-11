@@ -113,7 +113,7 @@ skip: (list of params)) Parameters to process later because they are
 
 Returns DataFrame with `trials` rows of values for the `rvlist`.
 """
-function lhs(rvlist::Vector{RandomVariable{<: Distribution}}, trials::Int; 
+function lhs(rvlist::Vector{RandomVariable}, trials::Int; 
              corrmatrix::Union{Matrix{Float64},Void}=nothing,
              asDataFrame::Bool=true)
 

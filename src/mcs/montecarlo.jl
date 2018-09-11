@@ -175,7 +175,7 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int;
 
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
-        rvlist = collect(values(mcs.rvdict))
+        rvlist = mcs.dist_rvs
 
         # update the dict in mcs
         lhs!(mcs, corrmatrix=corrmatrix)
