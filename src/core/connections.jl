@@ -380,18 +380,28 @@ function _update_scalar_param!(param::ScalarModelParameter, value)
 end
 
 function _update_array_param!(md::ModelDef, name, value, update_timesteps)
+    # Get original parameter
     param = md.external_params[name]
-
+    
+    # Check type of provided parameter
     if !(typeof(value) <: AbstractArray)
         error("Cannot update array parameter $name with a value of type $(typeof(value)).")
-    elseif size(value) != size(param.values)
-        error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
     elseif !(eltype(value) <: eltype(param.values)) 
         try
             value = convert(Array{eltype(param.values)}, value)
         catch e
             error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
         end
+    end
+
+    # Check size of provided parameter
+    if update_timesteps && param.values isa TimestepArray
+        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...)
+    else 
+        expected_size = size(param.values)
+    end
+    if size(value) != expected_size
+        error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).")
     end
 
     if update_timesteps

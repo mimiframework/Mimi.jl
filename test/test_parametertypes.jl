@@ -180,4 +180,23 @@ run(m)
 @test m[:MyComp2, :y][1] == 2   # 2005
 @test m[:MyComp2, :y][2] == 3   # 2020
 
+
+# 4. Test updating the time index to a different length
+
+m = Model()
+set_dimension!(m, :time, 2000:2002)     # length 3
+add_comp!(m, MyComp2)
+set_param!(m, :MyComp2, :x, [1, 2, 3])
+set_dimension!(m, :time, 1999:2003)     # length 5
+
+update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
+x = m.md.external_params[:x]
+@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Float64, 1}
+@test x.values.data == [2., 3., 4., 5., 6.]
+
+run(m)
+@test m[:MyComp2, :y][1] == 3.  # 2000
+@test m[:MyComp2, :y][2] == 4.  # 2001
+@test m[:MyComp2, :y][3] == 5.  # 2002
+
 end #module
