@@ -128,15 +128,22 @@ end
 """
     replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
         first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-        before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+        before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+        reconnect::Bool=true)
         
-Replace the component with name `comp_name` in model `md`  with the component
-`comp_id` using the same name.  
+Replace the component with name `comp_name` in model `m` with the component
+`comp_id` using the same name.  The component is added in the same position as 
+the old component, unless one of the keywords `before` or `after` is specified.
+The component is added with the same first and last values, unless the keywords 
+`first` or `last` are specified. Optional boolean argument `reconnect` with 
+default value `true` indicates whether the existing parameter connections 
+should be maintained in the new component.  
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                            first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+                           before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+                           reconnect::Bool=true)
+    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
     decache(m)
     return ComponentReference(m, comp_name)
 end
