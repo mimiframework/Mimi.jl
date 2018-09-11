@@ -96,14 +96,16 @@ dims(c::LeafComponentInstance) = c.dim_dict
 variables(c::LeafComponentInstance) = c.variables
 parameters(c::LeafComponentInstance) = c.parameters
 
+# Convert a list of args with optional type specs to just the arg symbols
+_arg_names(args::Vector) = [a isa Symbol ? a : a.args[1] for a in args]
+
 macro delegate(ex)
-    if @capture(ex, fname_(varname_::MetaComponentInstance, args__) => rhs_)
-        result = esc(:($fname($varname::Model, $(args...)) = $fname($varname.$rhs, $(args...))))
-        println(result)
+    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
+        argnames = _arg_names(args)
+        result = esc(:($fname($varname::$T, $(args...)) = $fname($varname.$rhs, $(argnames...))))
         return result
     end
-
-    error("Calls to @delegate must be of the form 'func(m::Model, args...) => X', where X is a field of X to delegate to'. Expression was: $ex")
+    error("Calls to @delegate must be of the form 'func(obj, args...) => X', where X is a field of obj to delegate to'. Expression was: $ex")
 end
 
 @delegate compid(c::MetaComponentInstance) => leaf
