@@ -51,7 +51,7 @@ end
 
 output_dir = joinpath(tempdir(), "mcs")
 
-generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
+generate_trials!(mcs, N, sampling=LHS, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Test that the proper number of trials were saved
 d = readcsv(joinpath(output_dir, "trialdata.csv"))
@@ -172,3 +172,14 @@ run_mcs(mcs, N;
         post_trial_func=post_trial)
 
 @test loop_counter == N
+
+N = 1000
+
+generate_trials!(mcs, N, sampling=RANDOM)
+trial1 = copy(mcs.rvdict[:name1].dist.values)
+
+generate_trials!(mcs, N, sampling=RANDOM)
+trial2 = copy(mcs.rvdict[:name1].dist.values)
+
+@test length(trial1) == length(trial2)
+@test trial1 != trial2

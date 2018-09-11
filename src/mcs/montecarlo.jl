@@ -170,7 +170,7 @@ method other than LHS. (Currently, only LHS and RANDOM are possible.)
 """
 function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
                           filename::String="",
-                          sampling::SamplingOptions=LHS)
+                          sampling::SamplingOptions=RANDOM)
     mcs.trials = trials
 
     if sampling == LHS
@@ -181,10 +181,7 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int;
         lhs!(mcs, corrmatrix=corrmatrix)
 
     else    # sampling == RANDOM
-        # we pre-generate the trial data only if we're saving it
-        if filename != ""
-            rand!(mcs)
-        end
+        rand!(mcs)
     end
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
@@ -205,8 +202,16 @@ function Base.rand!(mcs::MonteCarloSimulation)
     trials = mcs.trials
 
     for rv in mcs.dist_rvs
-        values = rand(rv.dist, trials)
-        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
+        dist = distribution(rv)
+        if dist isa SampleStore
+            dist = distribution(dist) # get the original distribution
+            if dist == nothing
+                reset(dist)           # restart with idx=1  
+                continue              # reuse loaded values
+            end
+        end
+        values = rand(dist, trials)
+        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values, dist=dist))
     end
 end
 
