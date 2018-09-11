@@ -144,20 +144,15 @@ function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Void}
     trials = mcs.trials
     rvdict = mcs.rvdict
     num_rvs = length(rvdict)
-    rvlist = collect(values(rvdict))
+    rvlist = mcs.dist_rvs
 
     samples = lhs(rvlist, mcs.trials, corrmatrix=corrmatrix, asDataFrame=false)
 
     for (i, rv) in enumerate(rvlist)
         dist = rv.dist
-        
-        # We check when computing the correlation matrix that we aren't trying
-        # to correlate SampleStores, thus we ignore them in this loop.
-        if dist isa Distribution
-            name = rv.name
-            values = samples[:, i]
-            rvdict[name] = RandomVariable(name, SampleStore(values, dist=dist))
-        end
+        name = rv.name
+        values = samples[:, i]
+        rvdict[name] = RandomVariable(name, SampleStore(values))
     end
     return nothing
 end

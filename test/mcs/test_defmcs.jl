@@ -175,10 +175,23 @@ run_mcs(mcs, N;
 
 N = 1000
 
+# Test new values generated for RANDOM sampling
+
 generate_trials!(mcs, N, sampling=RANDOM)
 trial1 = copy(mcs.rvdict[:name1].dist.values)
 
 generate_trials!(mcs, N, sampling=RANDOM)
+trial2 = copy(mcs.rvdict[:name1].dist.values)
+
+@test length(trial1) == length(trial2)
+@test trial1 != trial2
+
+# Test new values generated for LHS sampling
+
+generate_trials!(mcs, N, sampling=LHS)
+trial1 = copy(mcs.rvdict[:name1].dist.values)
+
+generate_trials!(mcs, N, sampling=LHS)
 trial2 = copy(mcs.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)

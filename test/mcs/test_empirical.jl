@@ -76,9 +76,9 @@ set_dimension!(m, :time, 2000:2001)
 add_comp!(m, test)
 set_model!(mcs_test, m)
 
-generate_trials!(mcs_test, num_trials; filename = "$output_dir/trials.csv", sampling = RANDOM)
+generate_trials!(mcs_test, num_trials; sampling = RANDOM)
 
-run_mcs(mcs_test, num_trials; 
+run_mcs(mcs_test, num_trials;
     output_dir = output_dir,
     scenario_args = scenario_args,
     scenario_func = scenario_func, 
@@ -95,4 +95,16 @@ end
 
 rm(output_dir, recursive = true)
 
-# TODO: Also should test in the case of sampling = LHS, which would currently error
+# Test in the case of sampling = LHS
+
+generate_trials!(mcs_test, num_trials; sampling = LHS)
+trial1 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
+
+for rv in values(mcs_test.rvdict)
+    @test rv.dist isa Mimi.SampleStore
+end
+
+generate_trials!(mcs_test, num_trials; sampling = LHS)
+trial2 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
+
+@test trial1!=trial2

@@ -162,11 +162,12 @@ end
 
 """
     generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
-                     filename::String="", sampling::SamplingOptions)
+                     filename::String="", sampling::SamplingOptions=RANDOM)
 
 Generate the given number of trials for the given MonteCarloSimulation instance. 
-Call this before running the MCS to enable saving of inputs to to choose a sampling 
-method other than LHS. (Currently, only LHS and RANDOM are possible.)
+Call this before running the MCS to pre-generate data to be used by all 
+scenarios. Also enables saving of inputs or choosing a sampling method other 
+than RANDOM. (Currently, only LHS and RANDOM are possible.)
 """
 function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
                           filename::String="",
@@ -175,11 +176,7 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int;
 
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
-        rvlist = collect(values(mcs.rvdict))
-
-        # update the dict in mcs
         lhs!(mcs, corrmatrix=corrmatrix)
-
     else    # sampling == RANDOM
         rand!(mcs)
     end
@@ -202,16 +199,8 @@ function Base.rand!(mcs::MonteCarloSimulation)
     trials = mcs.trials
 
     for rv in mcs.dist_rvs
-        dist = distribution(rv)
-        if dist isa SampleStore
-            dist = distribution(dist) # get the original distribution
-            if dist == nothing
-                reset(dist)           # restart with idx=1  
-                continue              # reuse loaded values
-            end
-        end
-        values = rand(dist, trials)
-        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values, dist=dist))
+        values = rand(rv.dist, trials)
+        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
     end
 end
 
