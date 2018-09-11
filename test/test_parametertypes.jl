@@ -85,17 +85,17 @@ extpars = external_params(m)
 
 # test updating parameters
 
-@test_throws ErrorException update_external_param!(m, :a, 5) # expects an array
-@test_throws ErrorException update_external_param!(m, :a, ones(101)) # wrong size
-@test_throws ErrorException update_external_param!(m, :a, fill("hi", 101, 3)) # wrong type
-update_external_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
+@test_throws ErrorException update_param!(m, :a, 5) # expects an array
+@test_throws ErrorException update_param!(m, :a, ones(101)) # wrong size
+@test_throws ErrorException update_param!(m, :a, fill("hi", 101, 3)) # wrong type
+update_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 
-@test_throws ErrorException update_external_param!(m, :d, ones(5)) # wrong type; should be scalar
-update_external_param!(m, :d, 5) # should work, will convert to float
+@test_throws ErrorException update_param!(m, :d, ones(5)) # wrong type; should be scalar
+update_param!(m, :d, 5) # should work, will convert to float
 @test extpars[:d].value == 5
-@test_throws ErrorException update_external_param!(m, :e, 5) # wrong type; should be array
-@test_throws ErrorException update_external_param!(m, :e, ones(10)) # wrong size
-update_external_param!(m, :e, [4,5,6,7])
+@test_throws ErrorException update_param!(m, :e, 5) # wrong type; should be array
+@test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
+update_param!(m, :e, [4,5,6,7])
 
 @test length(extpars) == 8
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, numtype}
@@ -104,7 +104,7 @@ update_external_param!(m, :e, [4,5,6,7])
 
 
 #------------------------------------------------------------------------------
-# Test updating TimestepArrays with update_external_param!
+# Test updating TimestepArrays with update_param!
 #------------------------------------------------------------------------------
 
 @defcomp MyComp2 begin 
@@ -123,7 +123,7 @@ add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, 2001:2003)
 
-update_external_param!(m, :x, [4, 5, 6], update_timesteps = false)
+update_param!(m, :x, [4, 5, 6], update_timesteps = false)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2000, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [4., 5., 6.]
@@ -131,7 +131,7 @@ run(m)
 @test m[:MyComp2, :y][1] == 5   # 2001
 @test m[:MyComp2, :y][2] == 6   # 2002
 
-update_external_param!(m, :x, [2, 3, 4], update_timesteps = true)
+update_param!(m, :x, [2, 3, 4], update_timesteps = true)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [2., 3., 4.]
@@ -148,7 +148,7 @@ add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, [2005, 2020, 2050])
 
-update_external_param!(m, :x, [4, 5, 6], update_timesteps = false)
+update_param!(m, :x, [4, 5, 6], update_timesteps = false)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020)}, Float64, 1}
 @test x.values.data == [4., 5., 6.]
@@ -156,7 +156,7 @@ run(m)
 @test m[:MyComp2, :y][1] == 5   # 2005
 @test m[:MyComp2, :y][2] == 6   # 2020
 
-update_external_param!(m, :x, [2, 3, 4], update_timesteps = true)
+update_param!(m, :x, [2, 3, 4], update_timesteps = true)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Float64, 1}
 @test x.values.data == [2., 3., 4.]
@@ -172,7 +172,7 @@ set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, [2005, 2020, 2050])
-update_external_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
+update_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Float64, 1}
 @test x.values.data == [2., 3., 4.]

@@ -341,14 +341,14 @@ function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
 end
 
 """
-    update_external_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
 
 Update the `value` of an external model parameter in ModelDef `md`, referenced 
 by `name`. Optional boolean argument `update_timesteps` with default value 
 `false` indicates whether to update the time keys associated with the parameter 
 values to match the model's time index.
 """
-function update_external_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
     ext_params = md.external_params
     if ! haskey(ext_params, name)
         error("Cannot update parameter; $name not found in model's external parameters.")
@@ -415,18 +415,18 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps)
 end
 
 """
-    update_external_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, update_external_param! 
+For each (k, v) in the provided `parameters` dictionary, update_param! 
 is called to update the external parameter by name k to value v, with optional 
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 
 model definition.
 """
-function update_external_params!(md::ModelDef, parameters::Dict; update_timesteps = false)
+function update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
-        update_external_param!(md, param_name, value; update_timesteps = update_timesteps)
+        update_param!(md, param_name, value; update_timesteps = update_timesteps)
     end
     nothing
 end

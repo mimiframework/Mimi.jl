@@ -111,29 +111,29 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
-    update_external_param(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m::Model, name::Symbol, value; update_timesteps = false)
 
 Update the `value` of an external model parameter in model `m`, referenced by 
 `name`. Optional boolean argument `update_timesteps` with default value `false` 
 indicates whether to update the time keys associated with the parameter values 
 to match the model's time index.
 """
-function update_external_param!(m::Model, name::Symbol, value; update_timesteps = false)
-    update_external_param!(m.md, name, value, update_timesteps = update_timesteps)
+function update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m.md, name, value, update_timesteps = update_timesteps)
     decache(m)
 end
 
 """
-    update_external_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, update_external_param! 
+For each (k, v) in the provided `parameters` dictionary, update_param! 
 is called to update the external parameter by name k to value v, with optional 
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 
 model definition.
 """
-function update_external_params!(m::Model, parameters::Dict; update_timesteps = false)
-    update_external_params!(m.md, parameters; update_timesteps = update_timesteps)
+function update_params!(m::Model, parameters::Dict; update_timesteps = false)
+    update_params!(m.md, parameters; update_timesteps = update_timesteps)
     decache(m)
 end
 
