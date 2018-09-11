@@ -1,33 +1,6 @@
 using IterableTables
 using NamedTuples
-
-@enum ScenarioLoopPlacement OUTER INNER
-@enum SamplingOptions LHS RANDOM
-
-# SampleStore is a faux Distribution that implements base.rand() 
-# to yield stored values.
-mutable struct SampleStore{T}
-    values::Vector{T}   # generally Int or Float64
-    idx::Int            # index of next value to return
-
-    function SampleStore(values::Vector{T}) where T
-        return new{T}(values, 1)
-    end
-end
-
-Base.eltype(ss::SampleStore) = eltype(ss.values)
-
-#
-# TBD: maybe have a different SampleStore subtype for values drawn from a dist
-# versus those loaded from a file, which would be treated as immutable?
-#
-
-# TBD: This interpolates values between those in the vector. Is this reasonable?
-# Probably shouldn't use correlation on values loaded from a file rather than 
-# from a proper distribution.
-function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
-    return quantile.(sort(ss.values), probs)
-end
+using Distributions
 
 """
     RandomVariable{T}
@@ -49,6 +22,47 @@ struct RandomVariable{T}
 end
 
 Base.eltype(rv::RandomVariable) = eltype(rv.dist)
+
+distribution(rv::RandomVariable) = rv.dist
+
+
+@enum ScenarioLoopPlacement OUTER INNER
+@enum SamplingOptions LHS RANDOM
+
+# SampleStore is a faux Distribution that implements base.rand() 
+# to yield stored values.
+mutable struct SampleStore{T}
+    values::Vector{T}   # generally Int or Float64
+    idx::Int            # index of next value to return
+    dist::Union{Void, Distribution}
+
+    function SampleStore(values::Vector{T}; dist::Union{Void, Distribution}=nothing) where T
+        return new{T}(values, 1, dist)
+    end
+end
+
+Base.eltype(ss::SampleStore) = eltype(ss.values)
+
+distribution(ss::SampleStore) = ss.dist
+
+#
+# TBD: maybe have a different SampleStore subtype for values drawn from a dist
+# versus those loaded from a file, which would be treated as immutable?
+#
+
+function Base.quantile(ss::SampleStore{T}, q::Float64) where T
+    return quantile(sort(ss.values), q)
+end
+
+
+# TBD: This interpolates values between those in the vector. Is this reasonable?
+# Probably shouldn't use correlation on values loaded from a file rather than 
+# from a proper distribution.
+function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
+    return quantile.(ss, probs)
+    # return quantile.(sort(ss.values), probs)
+end
+
 
 struct TransformSpec
     paramname::Symbol
@@ -108,7 +122,7 @@ mutable struct MonteCarloSimulation
     translist::Vector{TransformSpec}
     corrlist::Vector{CorrelationSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
-    dist_rvs::Vector{RandomVariable{<: Distribution}}
+    dist_rvs::Vector{RandomVariable}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
@@ -125,7 +139,7 @@ mutable struct MonteCarloSimulation
         self.translist = translist
         self.corrlist = corrlist
         self.savelist = savelist
-        self.dist_rvs = [rv for rv in rvlist if rv.dist isa Distribution]
+        self.dist_rvs = [rv for rv in rvlist]
         self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
 
         # These are parallel arrays; each model has a corresponding results dict

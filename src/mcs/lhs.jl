@@ -117,9 +117,10 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
              corrmatrix::Union{Matrix{Float64},Void}=nothing,
              asDataFrame::Bool=true)
 
-    ranks = corrmatrix == nothing ? nothing : _gen_rank_values(length(rvlist), trials, corrmatrix)
+    num_rvs = length(rvlist)             
+    ranks = corrmatrix == nothing ? nothing : _gen_rank_values(num_rvs, trials, corrmatrix)
 
-    samples = zeros(trials, length(rvlist))
+    samples = zeros(trials, num_rvs)
 
     for (i, rv) in enumerate(rvlist)
         values = quantile.(rv.dist, _get_percentiles(trials))  # extract values from the RV for these percentiles
@@ -144,27 +145,18 @@ function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Void}
     rvdict = mcs.rvdict
     num_rvs = length(rvdict)
     rvlist = collect(values(rvdict))
-    ranks = corrmatrix == nothing ? nothing : _gen_rank_values(num_rvs, trials, corrmatrix)
 
-    samples = zeros(trials, num_rvs)
+    samples = lhs(rvlist, mcs.trials, corrmatrix=corrmatrix, asDataFrame=false)
 
     for (i, rv) in enumerate(rvlist)
         dist = rv.dist
-        name = rv.name
-
+        
         # We check when computing the correlation matrix that we aren't trying
         # to correlate SampleStores, thus we ignore them in this loop.
         if dist isa Distribution
-            values = quantile.(dist, _get_percentiles(trials))  # extract values from the RV for these percentiles
-
-            if corrmatrix == nothing
-                shuffle!(values)           # randomize the stratified samples
-            else
-                indices = ranks[:, i]
-                values = values[indices]   # reorder to respect correlations
-            end
-            
-            rvdict[name] = RandomVariable(name, SampleStore(values))
+            name = rv.name
+            values = samples[:, i]
+            rvdict[name] = RandomVariable(name, SampleStore(values, dist=dist))
         end
     end
     return nothing
@@ -224,9 +216,9 @@ function correlation_matrix(mcs::MonteCarloSimulation)
         n2 = corr.name2
 
         # We don't support correlation between stored samples
-        if rvdict[n1].dist isa SampleStore || rvdict[n2].dist isa SampleStore
-            error("Correlations with SampleStores is not supported ($n1, $n2)")
-        end
+        # if rvdict[n1].dist isa SampleStore || rvdict[n2].dist isa SampleStore
+        #     error("Correlations with SampleStores is not supported ($n1, $n2)")
+        # end
 
         i = names[n1]
         j = names[n2]
