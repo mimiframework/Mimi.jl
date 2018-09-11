@@ -34,10 +34,9 @@ distribution(rv::RandomVariable) = rv.dist
 mutable struct SampleStore{T}
     values::Vector{T}   # generally Int or Float64
     idx::Int            # index of next value to return
-    dist::Union{Void, Distribution}
 
-    function SampleStore(values::Vector{T}; dist::Union{Void, Distribution}=nothing) where T
-        return new{T}(values, 1, dist)
+    function SampleStore(values::Vector{T}) where T
+        return new{T}(values, 1)
     end
 end
 
