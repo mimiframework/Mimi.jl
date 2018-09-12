@@ -411,7 +411,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps)
             new_timestep_array = get_timestep_array(md, T, N, value)
             md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
         else
-            warn("Cannot update timesteps; parameter $name is not a TimestepArray.")
+            error("Cannot update timesteps; parameter $name is not a TimestepArray.")
             param.values = value
         end
     else

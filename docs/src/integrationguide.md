@@ -105,11 +105,17 @@ The full API:
 
 ### Updating an external parameter
 
-The function `update_external_parameter` is now written as `update_param!`, and `update_external_parameters` is now written as `udpate_params!`.  There is also a new optional argument `update_timesteps` which can be used if the external parameter being set has a `:time` dimension, and not only values pertaining to those times, but also time keys that are connected to those values have changed.
+To update an external parameter, use the functions `update_param!` and `udpate_params!` (previously known as `update_external_parameter` and `update_external_parameters`, respectively.)  Their calling signatures are:
+
+*  `update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)`
+
+* `update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)`
+
+For external parameters with a `:time` dimension, passing `update_timesteps=true` indicates that the time _keys_ (i.e., year labels) should also be updated in addition to updating the parameter values.
 
 ### Setting parameters with a dictionary
 
-The function `setleftoverparameters` is now written as `set_leftover_params!`.
+The function `set_leftover_params!` replaces the function `setleftoverparameters`.
 
 ### Using NamedArrays for setting parameters
 
