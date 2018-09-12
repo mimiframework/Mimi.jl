@@ -281,7 +281,7 @@ function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractAr
     if num_dims in (1, 2) && param_dims[1] == :time   
         value = convert(Array{md.number_type}, value)
 
-        values = get_timestep_instance(md, eltype(value), num_dims, value)
+        values = get_timestep_array(md, eltype(value), num_dims, value)
                  
     else
          values = value

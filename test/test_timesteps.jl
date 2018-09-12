@@ -6,7 +6,7 @@ using Base.Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty, Clock, time_index, get_timestep_instance, reset_compdefs
+    gettime, getproperty, Clock, time_index, get_timestep_array, reset_compdefs
 
 reset_compdefs()
 
@@ -118,7 +118,7 @@ for i in 6:11
 end
 
 ##################################################
-#  test get_timestep_instance
+#  test get_timestep_array
 ##################################################
 m = Model()
 
@@ -128,19 +128,18 @@ set_dimension!(m, :time, 2000:2009)
 vector = ones(5)
 matrix = ones(3,2)
 
-t_vector= get_timestep_instance(m.md, Float64, 1, vector)
-t_matrix = get_timestep_instance(m.md, Float64, 2, matrix)
+t_vector= get_timestep_array(m.md, Float64, 1, vector)
+t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 
 @test typeof(t_vector) <: TimestepVector
 @test typeof(t_matrix) <: TimestepMatrix
 
-@test_throws ErrorException get_timestep_instance(m.md, Float64, 3, vector) #too many dims
 
 #try with variable timestep
 set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
 
-t_vector= get_timestep_instance(m.md, Float64, 1, vector)
-t_matrix = get_timestep_instance(m.md, Float64, 2, matrix)
+t_vector= get_timestep_array(m.md, Float64, 1, vector)
+t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 
 @test typeof(t_vector) <: TimestepVector
 @test typeof(t_matrix) <: TimestepMatrix
