@@ -349,6 +349,10 @@ by `name`. Optional boolean argument `update_timesteps` with default value
 values to match the model's time index.
 """
 function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
+end
+
+function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
     ext_params = md.external_params
     if ! haskey(ext_params, name)
         error("Cannot update parameter; $name not found in model's external parameters.")
@@ -357,12 +361,12 @@ function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = fal
     param = ext_params[name]
 
     if param isa ScalarModelParameter
-        if update_timesteps
-            warn("Cannot update timesteps; parameter $name is a scalar parameter.")
+        if update_timesteps && raise_error
+            error("Cannot update timesteps; parameter $name is a scalar parameter.")
         end
         _update_scalar_param!(param, value)
     else
-        _update_array_param!(md, name, value, update_timesteps)
+        _update_array_param!(md, name, value, update_timesteps, raise_error)
     end
 
 end
@@ -379,7 +383,7 @@ function _update_scalar_param!(param::ScalarModelParameter, value)
     nothing
 end
 
-function _update_array_param!(md::ModelDef, name, value, update_timesteps)
+function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise_error)
     # Get original parameter
     param = md.external_params[name]
     
@@ -410,8 +414,9 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps)
             N = length(size(value))
             new_timestep_array = get_timestep_array(md, T, N, value)
             md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
-        else
+        elseif raise_error
             error("Cannot update timesteps; parameter $name is not a TimestepArray.")
+        else
             param.values = value
         end
     else
@@ -436,7 +441,7 @@ model definition.
 function update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
-        update_param!(md, param_name, value; update_timesteps = update_timesteps)
+        _update_param!(md, param_name, value, update_timesteps; raise_error = false)
     end
     nothing
 end

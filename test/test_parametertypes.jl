@@ -199,4 +199,37 @@ run(m)
 @test m[:MyComp2, :y][2] == 4.  # 2001
 @test m[:MyComp2, :y][3] == 5.  # 2002
 
+
+# 5. Test all the warning and error cases
+
+@defcomp MyComp3 begin 
+    regions=Index()
+    x=Parameter(index=[time])       # One timestep array parameter
+    y=Parameter(index=[regions])    # One non-timestep array parameter
+    z=Parameter()                   # One scalar parameter
+end 
+
+m = Model()                             # Build the model
+set_dimension!(m, :time, 2000:2002)     # Set the time dimension
+set_dimension!(m, :regions, [:A, :B])
+add_comp!(m, MyComp3)
+set_param!(m, :MyComp3, :x, [1, 2, 3])
+set_param!(m, :MyComp3, :y, [10, 20])
+set_param!(m, :MyComp3, :z, 0)
+
+@test_throws ErrorException update_param!(m, :x, [1, 2, 3, 4]) # Will throw an error because size
+@test_throws ErrorException update_param!(m, :y, [10, 15], update_timesteps=true) # Not a timestep array
+update_param!(m, :y, [10, 15])
+@test m.md.external_params[:y].values == [10., 15.]
+@test_throws ErrorException update_param!(m, :z, 1, update_timesteps=true) # Scalar parameter
+update_param!(m, :z, 1)
+@test m.md.external_params[:z].value == 1
+
+set_dimension!(m, :time, 2005:2007)     # Reset the time dimensions
+update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) # Won't error when updating from a dictionary
+@test m.md.external_params[:x].values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1},Float64,1}
+@test m.md.external_params[:x].values.data == [3.,4.,5.]
+@test m.md.external_params[:y].values == [10.,20.]
+@test m.md.external_params[:z].value == 0
+
 end #module
