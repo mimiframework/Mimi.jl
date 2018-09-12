@@ -35,6 +35,20 @@ This suggests three types of elements:
 
 * A `MetaComponent`'s `run_timestep` function is optional. The default function simply calls `run_timestep(subcomps::Vector)` to iterate over sub-components and calls `run_timestep` on each. If a `MetaComponent` defines its own `run_timestep` function, it should either call `run_timestep` on the vector of sub-components or perform a variant of this function itself.
 
+## Questions
+
+* Currently, `run()` calls `_run_components(mi, clock, firsts, lasts, comp_clocks)` with flat lists of firsts, lasts, and comp_clocks. How to handle this with recursive component structure?
+
+  * Aggregate from the bottom up building `_firsts` and `_lasts` in each `MetaComponent` holding the values for its sub-component.
+
+  * Also store the `MetaComponent`'s own summary `first` and `last` which are just `min(firsts)` and `max(lasts)`, respectively.
+
+* What about `clocks`? The main question is _Which function advances the clock?_
+
+  * Currently, the `ModelInstance` advances the global clock, and each `ComponentInstance` advances its own clock.
+  * Simplest to treat the same as `firsts` and `lasts`: build a list of clocks for each `MetaComponentInstance` that is passed down when iterating over sub-components. Each component advances it's own clock after processing its children. 
+
+
 ### Other stuff
 
 * This is a good opportunity to reconsider the treatment of external parameters. The main question is about naming these and whether they need to be globally unique or merely unique within a (meta) component.
