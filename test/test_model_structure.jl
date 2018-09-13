@@ -163,7 +163,7 @@ set_param!(m, :E, :parE2, 10)
 run(m)
 @test m[:E, :varE] == 10
 
-set_dimension!(m, :time, 2015) #run for just one timestep, so init sets the value here
+set_dimension!(m, :time, [2015]) #run for just one timestep, so init sets the value here
 run(m)
 @test m[:E, :varE] == 1
 

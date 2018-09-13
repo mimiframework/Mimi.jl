@@ -318,7 +318,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     run_timestep::Union{Void, Function}
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
-                               vars::TV, pars::TP, 
+                               vars::TV, pars::TP,
+                               first::Int, last::Int, 
                                name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
                                                                    TP <: ComponentInstanceParameters}
         self = new{TV, TP}()
@@ -327,8 +328,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
         self.variables = vars
         self.parameters = pars
-        self.first = comp_def.first
-        self.last = comp_def.last        
+        self.first = first
+        self.last = last        
 
         comp_module = eval(Main, comp_id.module_name)
 

@@ -75,10 +75,6 @@ comps = compdefs(my_model)
 @test [compkeys(my_model.md)...] == [:testcomp1, :testcomp2, :testcomp3]
 @test hascomp(my_model.md, :testcomp1) == true && hascomp(my_model.md, :testcomp4) == false
 
-def = compdef(:testcomp3)
-@test first_period(def) == 2015
-@test last_period(def) == 2110
-
 @test compmodule(testcomp3) == :TestComponents
 @test compname(testcomp3) == :testcomp3
 
@@ -87,6 +83,7 @@ add_comp!(my_model, testcomp3, :testcomp3_v2)
 @test numcomponents(my_model) == 4
 
 #Test some component dimensions fcns, other dimensions testing in test_dimensions
+def = compdef(:testcomp3)
 def_dims = dimensions(def)
 @test eltype(def_dims) == Mimi.DimensionDef && length(def_dims) == 1
 @test [def_dims...][1].name == :time
@@ -103,6 +100,15 @@ reset_compdefs(false)
 #------------------------------------------------------------------------------
 #   Tests for component run periods when resetting the model's time dimension
 #------------------------------------------------------------------------------
+
+@defcomp testcomp1 begin
+    var1 = Variable(index=[time])
+    par1 = Parameter(index=[time])
+    
+    function run_timestep(p, v, d, t)
+        v.var1[t] = p.par1[t]
+    end
+end
 
 # 1. Test resetting the time dimension without explicit first/last values 
 
@@ -128,7 +134,8 @@ cd = m.md.comp_defs[:C]     # Get the component definition in the model
 @test cd.first == 0         # First and last values should still be zero
 @test cd.last == 0
 
-update_param!(m, :par1, zeros(16); update_timesteps=true)
+# update_param!(m, :par1, zeros(16); update_timesteps=true)
+set_param!(m, :C, :par1, zeros(16))
 Mimi.build(m)               # Build the model
 ci = m.mi.components[:C]    # Get the component instance
 @test ci.first == 2005      # The component instance's first and last values should match the model's index
