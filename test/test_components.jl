@@ -99,4 +99,66 @@ reset_compdefs()
 reset_compdefs(false)
 @test length(_compdefs) == 0 
 
+
+#------------------------------------------------------------------------------
+#   Tests for component run periods when resetting the model's time dimension
+#------------------------------------------------------------------------------
+
+# 1. Test resetting the time dimension without explicit first/last values 
+
+cd = compdef(testcomp1)    
+@test cd.first == 0         # original component definition's first and last values are unset
+@test cd.last == 0
+
+m = Model()
+set_dimension!(m, :time, 2001:2005)
+add_comp!(m, testcomp1, :C) # Don't set the first and last values here
+cd = m.md.comp_defs[:C]     # Get the component definition in the model
+@test cd.first == 0         # First and last values should still be zero because they were not explicitly set
+@test cd.last == 0
+
+set_param!(m, :C, :par1, zeros(5))
+Mimi.build(m)               # Build the model
+ci = m.mi.components[:C]    # Get the component instance
+@test ci.first == 2001      # The component instance's first and last values should match the model's index
+@test ci.last == 2005
+
+set_dimension!(m, :time, 2005:2020) # Reset the time dimension
+cd = m.md.comp_defs[:C]     # Get the component definition in the model
+@test cd.first == 0         # First and last values should still be zero
+@test cd.last == 0
+
+update_param!(m, :par1, zeros(16); update_timesteps=true)
+Mimi.build(m)               # Build the model
+ci = m.mi.components[:C]    # Get the component instance
+@test ci.first == 2005      # The component instance's first and last values should match the model's index
+@test ci.last == 2020
+
+
+# 2. Test resetting the time dimension with explicit first/last values
+
+m = Model()
+set_dimension!(m, :time, 2000:2100)
+add_comp!(m, testcomp1, :C; first=2010, last=2090)  # Give explicit first and last values for the component
+cd = m.md.comp_defs[:C]     # Get the component definition in the model
+@test cd.first == 2010      # First and last values are defined in the comp def because they were explicitly given
+@test cd.last == 2090
+
+set_param!(m, :C, :par1, zeros(81))
+Mimi.build(m)               # Build the model
+ci = m.mi.components[:C]    # Get the component instance
+@test ci.first == 2010      # The component instance's first and last values are the same as in the comp def
+@test ci.last == 2090
+
+set_dimension!(m, :time, 2000:2200) # Reset the time dimension
+cd = m.md.comp_defs[:C]     # Get the component definition in the model
+@test cd.first == 2010      # First and last values should still be the same
+@test cd.last == 2090
+
+Mimi.build(m)               # Build the model
+ci = m.mi.components[:C]    # Get the component instance
+@test ci.first == 2010      # The component instance's first and last values are the same as the comp def
+@test ci.last == 2090
+
+
 end #module
