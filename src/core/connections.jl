@@ -46,8 +46,8 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
             param_length = size(ext_param.values)[i]
             if dim == :time 
                 t = dimensions(md)[:time]
-                first = first_period(comp_def, md)
-                last = last_period(comp_def, md)
+                first = first_period(md, comp_def)
+                last = last_period(md, comp_def)
                 comp_length = t[last] - t[first] + 1
             else
                 comp_length = dim_count(md, dim)

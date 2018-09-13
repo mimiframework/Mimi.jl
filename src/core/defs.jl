@@ -36,10 +36,10 @@ function reset_compdefs(reload_builtins=true)
 end
 
 first_period(comp_def::ComponentDef) = comp_def.first
-first_period(comp_def::ComponentDef, md::ModelDef) = first_period(comp_def) != 0 ? first_period(comp_def) : time_labels(md)[1]
+first_period(md::ModelDef, comp_def::ComponentDef) = first_period(comp_def) == 0 ? time_labels(md)[1] : first_period(comp_def)
 
 last_period(comp_def::ComponentDef) = comp_def.last
-last_period(comp_def::ComponentDef, md::ModelDef) = last_period(comp_def) != 0 ? last_period(comp_def) : time_labels(md)[end]
+last_period(md::ModelDef, comp_def::ComponentDef) = last_period(comp_def) == 0 ? time_labels(md)[end] : last_period(comp_def)
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -362,7 +362,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
                 values = value
             else
                 # Want to use the first from the comp_def if it has it, if not use ModelDef
-                first = first_period(comp_def, md)
+                first = first_period(md, comp_def)
 
                 if isuniform(md)
                     _, stepsize = first_and_step(md)
@@ -446,8 +446,8 @@ end
 # Return the number of timesteps a given component in a model will run for.
 function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
-    first = first_period(comp_def, md)
-    last  = last_period(comp_def, md)
+    first = first_period(md, comp_def)
+    last  = last_period(md, comp_def)
     times = time_labels(md)
     first_index = findfirst(times, first)
     last_index = findfirst(times, last)
