@@ -1,23 +1,21 @@
-julia 0.7.0-beta2.0
-CSVFiles 0.5.1
-DataFrames 0.8.4
-DataStructures 0.4.6
-Distributions 0.11.0
-Documenter 0.9.0
-Electron 0.1.1
+julia 0.7.0
+CSVFiles
+DataFrames
+DataStructures
+Distributions
+Documenter
+Electron
 ExcelFiles
 IterTools
 IterableTables
 FileIO
-JSON 0.17.1
-LightGraphs 0.12.0
-MacroTools 0.4.0
-MetaGraphs 0.4.0
-#NamedArrays 0.5.3
-Random
-Statistics
+JSON
+LightGraphs
+MacroTools
+MetaGraphs
+NamedArrays
 StatsBase
-StringBuilders 0.0.1
+StringBuilders
 TableTraits
-ProgressMeter 0.5.5
+ProgressMeter
 Query
