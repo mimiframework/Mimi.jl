@@ -113,15 +113,15 @@ end
 # 1. Test resetting the time dimension without explicit first/last values 
 
 cd = compdef(testcomp1)    
-@test cd.first == 0         # original component definition's first and last values are unset
-@test cd.last == 0
+@test cd.first == nothing   # original component definition's first and last values are unset
+@test cd.last == nothing
 
 m = Model()
 set_dimension!(m, :time, 2001:2005)
 add_comp!(m, testcomp1, :C) # Don't set the first and last values here
 cd = m.md.comp_defs[:C]     # Get the component definition in the model
-@test cd.first == 0         # First and last values should still be zero because they were not explicitly set
-@test cd.last == 0
+@test cd.first == nothing   # First and last values should still be nothing because they were not explicitly set
+@test cd.last == nothing
 
 set_param!(m, :C, :par1, zeros(5))
 Mimi.build(m)               # Build the model
@@ -131,8 +131,8 @@ ci = m.mi.components[:C]    # Get the component instance
 
 set_dimension!(m, :time, 2005:2020) # Reset the time dimension
 cd = m.md.comp_defs[:C]     # Get the component definition in the model
-@test cd.first == 0         # First and last values should still be zero
-@test cd.last == 0
+@test cd.first == nothing   # First and last values should still be nothing
+@test cd.last == nothing
 
 # update_param!(m, :par1, zeros(16); update_timesteps=true)
 set_param!(m, :C, :par1, zeros(16))

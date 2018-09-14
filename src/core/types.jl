@@ -203,8 +203,8 @@ mutable struct ComponentDef  <: NamedDef
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
-    first::Int
-    last::Int
+    first::Union{Void, Int}
+    last::Union{Void, Int}
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension!, etc.
@@ -215,7 +215,7 @@ mutable struct ComponentDef  <: NamedDef
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
-        self.first = self.last = 0
+        self.first = self.last = nothing
         return self
     end
 end
