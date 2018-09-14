@@ -79,8 +79,8 @@ As mentioned above, a parameter can have no index (a scalar), or one or multiple
 
 ### Updating an external parameter
 
-When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
-</code></pre><p>julia update_external_param(mymodel, :parametername, newvalues)</p><pre><code class="language-none">
+When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. If the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
+</code></pre><p>julia update_param!(mymodel, :parametername, newvalues) # update values only </p><p>update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys</p><pre><code class="language-none">
 Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
 ### Setting parameters with a dictionary
@@ -96,7 +96,7 @@ When a user sets a parameter, Mimi checks that the size and dimensions match wha
 ### The internal &#39;build&#39; function and model instances
 
  When you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays have been allocated. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model&#39;s structure mostly the same. For example:
-</code></pre><p>julia instance1 = Mimi.build(mymodel) run(instance1)</p><p>update_external_param(mymodel, paramname, newvalue) instance2 = Mimi.build(mymodel) run(instance2)</p><p>result1 = instance1[:Comp, :Var] result2 = instance2[:Comp, :Var]</p><pre><code class="language-none">
+</code></pre><p>julia instance1 = Mimi.build(mymodel) run(instance1)</p><p>update_param!(mymodel, paramname, newvalue) instance2 = Mimi.build(mymodel) run(instance2)</p><p>result1 = instance1[:Comp, :Var] result2 = instance2[:Comp, :Var]</p><pre><code class="language-none">
 Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.
 
 ### The init function ###
