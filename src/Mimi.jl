@@ -41,6 +41,8 @@ export
     set_leftover_params!, 
     setproperty!, 
     set_param!, 
+    update_param!,
+    update_params!,
     variables 
 
 include("core/types.jl")

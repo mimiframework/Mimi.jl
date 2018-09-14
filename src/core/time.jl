@@ -145,22 +145,16 @@ end
 # 3a.  General
 #
 
-function get_timestep_instance(md::ModelDef, T, num_dims, value)
-	if !(num_dims in (1, 2))
-		error("TimeStepVector or TimestepMatrix support only 1 or 2 dimensions, not $num_dims")
-	end
-
-	timestep_array_type = num_dims == 1 ? TimestepVector : TimestepMatrix
+# Get a timestep array of type T with N dimensions. Time labels will match those from the time dimension in md
+function get_timestep_array(md::ModelDef, T, N, value)
 
 	if isuniform(md)
-		first, stepsize = first_and_step(md)
-		return timestep_array_type{FixedTimestep{first, stepsize}, T}(value)
-	else
-
-		times = time_labels(md)		
-		return timestep_array_type{VariableTimestep{(times...)}, T}(value)	
-
-	end
+        first, stepsize = first_and_step(md)
+        return TimestepArray{FixedTimestep{first, stepsize}, T, N}(value)
+    else
+        TIMES = (time_labels(md)...)
+        return TimestepArray{VariableTimestep{TIMES}, T, N}(value)
+    end
 end
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}

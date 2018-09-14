@@ -111,6 +111,33 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
+    update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+
+Update the `value` of an external model parameter in model `m`, referenced by 
+`name`. Optional boolean argument `update_timesteps` with default value `false` 
+indicates whether to update the time keys associated with the parameter values 
+to match the model's time index.
+"""
+function update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m.md, name, value, update_timesteps = update_timesteps)
+    decache(m)
+end
+
+"""
+    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+
+For each (k, v) in the provided `parameters` dictionary, update_param! 
+is called to update the external parameter by name k to value v, with optional 
+Boolean argument update_timesteps. Each key k must be a symbol or convert to a
+symbol matching the name of an external parameter that already exists in the 
+model definition.
+"""
+function update_params!(m::Model, parameters::Dict; update_timesteps = false)
+    update_params!(m.md, parameters; update_timesteps = update_timesteps)
+    decache(m)
+end
+
+"""
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
         first=nothing, last=nothing, before=nothing, after=nothing)
 
@@ -316,54 +343,4 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
     run(m.mi, ntimesteps, dim_keys)
     nothing
 end
-
-#
-# TBD: This function is currently used only in test/test_parametertypes. Is it still needed?
-#
-"""
-    update_external_param(m::Model, name::Symbol, value)
-
-Update the `value` of an external model parameter in model `m`, referenced by `name`.
-"""
-function update_external_param(m::Model, name::Symbol, value)
-    ext_params = external_params(m)
-    if ! haskey(ext_params, name)
-        error("Cannot update parameter; $name not found in model's external parameters.")
-    end
-
-    param = ext_params[name]
-
-    if isa(param, ScalarModelParameter)
-        if ! (value isa typeof(param.value))
-            try
-                value = convert(typeof(param.value), value)
-            catch e
-                error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
-            end
-        elseif size(value) != size(param.value)
-            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
-        else
-            param.value = value
-        end
-
-    else # ArrayModelParameter
-        if !(typeof(value) <: AbstractArray)
-            error("Cannot update an array parameter $name with a scalar value.")
-        elseif size(value) != size(param.values)
-            error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
-        elseif !(eltype(value) <: eltype(param.values))
-            try
-                value = convert(Array{eltype(param.values)}, value)
-            catch e
-                error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
-            end
-        else # perform the update
-            if param.values isa TimestepArray
-                param.values.data = value
-            else
-                param.values = value
-            end
-        end
-    end
-    decache(m)
-end
+ 
