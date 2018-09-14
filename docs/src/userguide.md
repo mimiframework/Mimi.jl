@@ -217,10 +217,12 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 
 ### Updating an external parameter
 
-When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided value(s). It is possible to later change the value(s) associated with that parameter name. Use the following available function:
+When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. If the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
 
 ```julia
-update_external_param(mymodel, :parametername, newvalues)
+update_param!(mymodel, :parametername, newvalues) # update values only 
+
+update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
 ```
 
 Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
@@ -247,7 +249,7 @@ When a user sets a parameter, Mimi checks that the size and dimensions match wha
 instance1 = Mimi.build(mymodel)
 run(instance1)
 
-update_external_param(mymodel, paramname, newvalue)
+update_param!(mymodel, paramname, newvalue)
 instance2 = Mimi.build(mymodel)
 run(instance2)
 
