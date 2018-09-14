@@ -48,6 +48,12 @@ function Base.show(io::IO, comp_id::ComponentId)
     print(io, "$(comp_id.module_name).$(comp_id.comp_name)")
 end
 
+"""
+    name(def::NamedDef) = def.name 
+
+Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `ComponentDef`, 
+and `DimensionDef`.
+"""
 # Gets the name of all NamedDefs: DatumDef, ComponentDef, DimensionDef
 name(def::NamedDef) = def.name
 
@@ -69,13 +75,13 @@ function dump_components()
 end
 
 """
-    new_component(comp_id::ComponentId)
+    new_comp(comp_id::ComponentId, verbose::Bool=true)
 
-Create an empty `ComponentDef`` to the global component registry with the given
+Add an empty `ComponentDef` to the global component registry with the given
 `comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
 `addparameter`, etc.
 """
-function new_component(comp_id::ComponentId, verbose::Bool=true)
+function new_comp(comp_id::ComponentId, verbose::Bool=true)
     if verbose
         if haskey(_compdefs, comp_id)
             warn("Redefining component $comp_id")
@@ -92,7 +98,7 @@ end
 """
     delete!(m::ModelDef, component::Symbol
 
-Delete a component by name from a model definition.
+Delete a `component` by name from a model definition `m`.
 """
 function Base.delete!(md::ModelDef, comp_name::Symbol)
     if ! haskey(md.comp_defs, comp_name)
@@ -182,13 +188,50 @@ Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
 isuniform(md::ModelDef) = md.is_uniform
 
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})    
-    if haskey(md, name)
+
+# Helper function invoked when the user resets the time dimension with set_dimension!
+# This function calls set_run_period! on each component definition to reset the first and last values.
+function reset_run_periods!(md, first, last)
+    for comp_def in compdefs(md)
+        change = false
+        if first_period(comp_def) < first 
+            warn("Resetting $(comp_def.name) component's first timestep to $first")
+            change = true
+        else
+            first = first_period(comp_def)
+        end 
+        if last_period(comp_def) > last 
+            warn("Resetting $(comp_def.name) component's last timestep to $last")
+            change = true
+        else 
+            last = last_period(comp_def)
+        end
+        if change
+            set_run_period!(comp_def, first, last)
+        end
+    end
+    nothing
+end
+ 
+"""
+    set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range}) 
+
+Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
+an integer; or to the values in the vector or range if `keys` is either of those types.
+"""
+function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+    redefined = haskey(md, name)
+    if redefined
         warn("Redefining dimension :$name")
     end
-    if name == :time 
+
+    if name == :time
         md.is_uniform = isuniform(keys)
+        if redefined 
+            reset_run_periods!(md, keys[1], keys[end])
+        end
     end
+    
     dim = Dimension(keys)
     md.dimensions[name] = dim
     return dim
@@ -234,14 +277,24 @@ function addparameter(comp_id::ComponentId, name, datatype, dimensions, descript
     addparameter(compdef(comp_id), name, datatype, dimensions, description, unit, default)
 end
 
+"""
+    parameters(comp_def::ComponentDef)
+
+Return a list of the parameter definitions for `comp_def`.
+"""
 parameters(comp_def::ComponentDef) = values(comp_def.parameters)
 
+"""
+    parameters(comp_id::ComponentDef)
+
+Return a list of the parameter definitions for `comp_id`.
+"""
 parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
 
 """
     parameter_names(md::ModelDef, comp_name::Symbol)
 
-Return a list of all parameter names for a given component in a model def.
+Return a list of all parameter names for a given component `comp_name` in a model def `md`.
 """
 parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
@@ -268,15 +321,14 @@ function parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbo
 end
 
 """
-    set_parameter!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+    set_param!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
-Set the parameter of a component in a model to a given value. Value can by a scalar,
-an array, or a NamedAray. Optional argument 'dims' is a list of the dimension names of
-the provided data, and will be used to check that they match the model's index labels.
+Set the parameter `name` of a component `comp_name` in a model `m` to a given `value`. The
+`value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a 
+list of the dimension names ofthe provided data, and will be used to check that 
+they match the model's index labels.
 """
-function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    comp_def = compdef(md, comp_name)
-
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     # perform possible dimension and labels checks
     if isa(value, NamedArray)
         dims = dimnames(value)
@@ -289,14 +341,18 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
     comp_param_dims = parameter_dimensions(md, comp_name, param_name)
     num_dims = length(comp_param_dims)
     
-    if length(comp_param_dims) > 0
-        comp_def = compdef(md, comp_name)
-        data_type = datatype(parameter(comp_def, param_name))
-        dtype = data_type == Number ? number_type(md) : data_type
+    comp_def = compdef(md, comp_name)
+    data_type = datatype(parameter(comp_def, param_name))
+    dtype = data_type == Number ? number_type(md) : data_type
 
+    if length(comp_param_dims) > 0
         # convert the number type and, if NamedArray, convert to Array
-        value = convert(Array{dtype, num_dims}, value)
-        
+        if dtype <: AbstractArray
+            value = convert(dtype, value)
+        else
+            value = convert(Array{dtype, num_dims}, value)
+        end
+
         if comp_param_dims[1] == :time
             T = eltype(value)
 
@@ -315,9 +371,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
                     first_index = findfirst(times, first)                  
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
                 end 
-                
             end
-
         else
             values = value
         end
@@ -325,10 +379,11 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
         set_external_array_param!(md, param_name, values, comp_param_dims)
 
     else # scalar parameter case
+        value = convert(dtype, value)
         set_external_scalar_param!(md, param_name, value)
     end
 
-    connect_parameter(md, comp_name, param_name, param_name)
+    connect_param!(md, comp_name, param_name, param_name)
     nothing
 end
 
@@ -354,7 +409,7 @@ variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(m
 """
     variable_names(md::ModelDef, comp_name::Symbol)
 
-Return a list of all variable names for a given component in a model def.
+Return a list of all variable names for a given component `comp_name` in a model def `md`.
 """
 variable_names(md::ModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
 
@@ -411,15 +466,21 @@ const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
 """
-    addcomponent(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_def` to the model. The component is added at the end of 
+Add the component indicated by `comp_def` to the model indcated by `md`. The component is added at the end of 
 the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
-                      first::NothingInt=nothing, last::NothingInt=nothing, 
-                      before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
+                   first::NothingInt=nothing, last::NothingInt=nothing, 
+                   before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+
+    # check that a time dimension has been set
+    if !haskey(dimensions(md), :time)
+        error("Cannot add component to model without first setting time dimension.")
+    end
+    
     # check that first and last are within the model's time index range
     time_index = dim_keys(md, :time)
 
@@ -489,29 +550,136 @@ function addcomponent(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
         if param.default != nothing
-            set_parameter!(md, comp_name, name(param), param.default)
+            set_param!(md, comp_name, name(param), param.default)
         end
     end
     
     return nothing
 end
 
-function addcomponent(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      first::NothingInt=nothing, last::NothingInt=nothing, 
-                      before::NothingSymbol=nothing, after::NothingSymbol=nothing)
-    # println("Adding component $comp_id as :$comp_name")
-    addcomponent(md, compdef(comp_id), comp_name, first=first, last=last, before=before, after=after)
-end
+"""
+    add_comp!(md::ModelDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name, 
+        first=nothing, last=nothing, before=nothing, after=nothing)
 
-function replace_component(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::NothingInt=nothing, last::NothingInt=nothing,
-                           before::NothingSymbol=nothing, after::NothingSymbol=nothing)
-    delete!(md, comp_name)
-    addcomponent(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+Add the component indicated by `comp_id` to the model indicated by `md`. The component is added at the end of 
+the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
+differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
+"""
+
+function add_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+                   first::NothingInt=nothing, last::NothingInt=nothing, 
+                   before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+    # println("Adding component $comp_id as :$comp_name")
+    add_comp!(md, compdef(comp_id), comp_name, first=first, last=last, before=before, after=after)
 end
 
 """
-Create a mostly-shallow copy of `comp_def`, but make a deep copy of its
+    replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing, last::NothingInt=nothing,
+        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+        reconnect::Bool=true)
+
+Replace the component with name `comp_name` in model definition `md` with the 
+component `comp_id` using the same name. The component is added in the same 
+position as the old component, unless one of the keywords `before` or `after` 
+is specified. The component is added with the same first and last values, 
+unless the keywords `first` or `last` are specified. Optional boolean argument 
+`reconnect` with default value `true` indicates whether the existing parameter 
+connections should be maintained in the new component.
+"""
+function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+                           first::NothingInt=nothing, last::NothingInt=nothing,
+                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+                           reconnect::Bool=true)
+
+    if ! haskey(md.comp_defs, comp_name)
+        error("Cannot replace '$comp_name'; component not found in model.")
+    end
+
+    # Get original position if new before or after not specified
+    if before == nothing && after == nothing
+        comps = collect(keys(md.comp_defs))
+        n = length(comps)
+        if n > 1
+            idx = findfirst(comps, comp_name)
+            if idx == n 
+                after = comps[idx - 1]
+            else
+                before = comps[idx + 1]
+            end
+        end
+    end 
+
+    # Get original first and last if new run period not specified
+    old_comp = md.comp_defs[comp_name]
+    first = first == nothing ? old_comp.first : first
+    last = last == nothing ? old_comp.last : last
+
+    if reconnect
+        # Assert that new component definition has same parameters and variables needed for the connections
+
+        new_comp = compdef(comp_id)
+
+        function _compare_datum(dict1, dict2)
+            set1 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict1])
+            set2 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict2])
+            return set1 >= set2
+        end
+
+        # Check incoming parameters
+        incoming_params = map(ipc -> ipc.dst_par_name, internal_param_conns(md, comp_name))
+        param_filter = (k, v) -> k in incoming_params
+        old_params = filter(param_filter, old_comp.parameters)
+        new_params = new_comp.parameters
+        if !_compare_datum(new_params, old_params)
+            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
+        end
+        
+        # Check outgoing variables
+        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, md.internal_param_conns))
+        var_filter = (k, v) -> k in outgoing_vars
+        old_vars = filter(var_filter, old_comp.variables)
+        new_vars = new_comp.variables
+        if !_compare_datum(new_vars, old_vars)
+            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")
+        end
+        
+        # Check external parameter connections
+        remove = []
+        for epc in external_param_conns(md, comp_name)
+            param_name = epc.param_name
+            if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just warn?
+                warn("Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component.")
+                push!(remove, epc)
+            else
+                old_p = old_comp.parameters[param_name]
+                new_p = new_params[param_name]
+                if new_p.dimensions != old_p.dimensions
+                    error("Cannot replace and reconnect; parameter $param_name in new component has different dimensions.")
+                end
+                if new_p.datatype != old_p.datatype
+                    error("Cannot replace and reconnect; parameter $param_name in new component has different datatype.")
+                end
+            end
+        end
+        filter!(epc -> !(epc in remove), md.external_param_conns) 
+
+        # Delete the old component from comp_defs, leaving the existing parameter connections 
+        delete!(md.comp_defs, comp_name)      
+    else
+        # Delete the old component and all its internal and external parameter connections
+        delete!(md, comp_name)  
+    end
+
+    # Re-add
+    add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+
+end
+
+"""
+    copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
+
+Create a mostly-shallow copy of `comp_def` (named `comp_name`), but make a deep copy of its
 ComponentId so we can rename the copy without affecting the original.
 """
 function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
@@ -534,7 +702,7 @@ end
 """
     copy_external_params(md::ModelDef)
 
-Make copies of ModelParameter subtypes representing external parameters. 
+Make copies of ModelParameter subtypes representing external parameters of model `md`. 
 This is used both in the copy() function below, and in the MCS subsystem 
 to restore values between trials.
 
@@ -563,7 +731,7 @@ end
 """
     copy(md::ModelDef)
 
-Create a copy of a ModelDef object that is not entirely shallow, nor completely deep.
+Create a copy of a ModelDef `md` object that is not entirely shallow, nor completely deep.
 The aim is to copy the full structure, reusing references to immutable elements.
 """
 function Base.copy(md::ModelDef)

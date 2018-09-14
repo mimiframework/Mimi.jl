@@ -28,13 +28,13 @@ With this change, all previous "direct" access of data in the `Model` instance a
 To simplify coding the delegated calls, a new macro, `@modelegate` allows you to write, e.g., 
 
 ```
-@modelegate external_parameter_connections(m::Model) => mi
+@modelegate external_param_conns(m::Model) => mi
 ```
 
 which translates to:
 
 ```
-external_parameter_connections(m::Model) = external_parameter_connections(m.mi)
+external_param_conns(m::Model) = external_param_conns.mi)
 ```
 
 The right-hand side can also be `=> md` to indicate delegation to the `ModelDef` rather than to the `ModelInstance`. See `model.jl` for numerous examples.
@@ -112,17 +112,16 @@ which produces these function calls:
 quote
     my_model = Model()
     set_dimension!(my_model, :time, 2015:5:2110)
-    addcomponent(my_model, Main.grosseconomy, :grosseconomy)
-    addcomponent(my_model, Main.emissions, :emissions)
-    set_parameter!(my_model, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
-    set_parameter!(my_model, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
-    set_parameter!(my_model, :grosseconomy, :s, ones(20) * 0.22)
-    set_parameter!(my_model, :grosseconomy, :depk, 0.1)
-    set_parameter!(my_model, :grosseconomy, :k0, 130.0)
-    set_parameter!(my_model, :grosseconomy, :share, 0.3)
-    set_parameter!(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
-    connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-    add_connector_comps(my_model)
+    add_comp!(my_model, Main.grosseconomy, :grosseconomy)
+    add_comp!(my_model, Main.emissions, :emissions)
+    set_param!(my_model, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
+    set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
+    set_param!(my_model, :grosseconomy, :s, ones(20) * 0.22)
+    set_param!(my_model, :grosseconomy, :depk, 0.1)
+    set_param!(my_model, :grosseconomy, :k0, 130.0)
+    set_param!(my_model, :grosseconomy, :share, 0.3)
+    set_param!(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
+    connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 end
 ```
 

@@ -1,5 +1,16 @@
+module TestConnectorComp
+
 using Mimi
 using Test
+
+import Mimi:
+    reset_compdefs
+
+reset_compdefs()
+
+#
+# Test the pre-defined connector component
+#
 
 #--------------------------------------
 #  Manual way of using ConnectorComp
@@ -28,18 +39,18 @@ m = Model()
 set_dimension!(m, :time, 2000:3000)
 nsteps = Mimi.dim_count(m.md, :time)
 
-addcomponent(m, ShortComponent; first=2100)
-addcomponent(m, ConnectorCompVector, :MyConnector) # can give it your own name
-addcomponent(m, LongComponent; first=2000)
+add_comp!(m, ShortComponent; first=2100)
+add_comp!(m, ConnectorCompVector, :MyConnector) # can give it your own name
+add_comp!(m, LongComponent; first=2000)
 
 comp_def = compdef(m, :MyConnector)
 @test Mimi.compname(comp_def.comp_id) == :ConnectorCompVector
 
-set_parameter!(m, :ShortComponent, :a, 2.)
-set_parameter!(m, :LongComponent, :y, 1.)
-connect_parameter(m, :MyConnector, :input1, :ShortComponent, :b)
-set_parameter!(m, :MyConnector, :input2, zeros(nsteps))
-connect_parameter(m, :LongComponent, :x, :MyConnector, :output)
+set_param!(m, :ShortComponent, :a, 2.)
+set_param!(m, :LongComponent, :y, 1.)
+connect_param!(m, :MyConnector, :input1, :ShortComponent, :b)
+set_param!(m, :MyConnector, :input2, zeros(nsteps))
+connect_param!(m, :LongComponent, :x, :MyConnector, :output)
 
 run(m)
 
@@ -59,12 +70,12 @@ b = getdataframe(m, :ShortComponent, :b)
 
 model2 = Model()
 set_dimension!(model2, :time, 2000:2010)
-addcomponent(model2, ShortComponent; start=2005)
-addcomponent(model2, LongComponent)
+add_comp!(model2, ShortComponent; start=2005)
+add_comp!(model2, LongComponent)
 
-set_parameter!(model2, :ShortComponent, :a, 2.)
-set_parameter!(model2, :LongComponent, :y, 1.)
-connect_parameter(model2, :LongComponent, :x, :ShortComponent, :b, zeros(11))
+set_param!(model2, :ShortComponent, :a, 2.)
+set_param!(model2, :LongComponent, :y, 1.)
+connect_param!(model2, :LongComponent, :x, :ShortComponent, :b, zeros(11))
 
 run(model2)
 
@@ -78,12 +89,12 @@ run(model2)
 
 model3 = Model()
 set_dimension!(model3, :time, 2000:2010)
-addcomponent(model3, ShortComponent; last=2005)
-addcomponent(model3, LongComponent)
+add_comp!(model3, ShortComponent; last=2005)
+add_comp!(model3, LongComponent)
 
-set_parameter!(model3, :ShortComponent, :a, 2.)
-set_parameter!(model3, :LongComponent, :y, 1.)
-connect_parameter(model3, :LongComponent, :x, :ShortComponent, :b, zeros(11))
+set_param!(model3, :ShortComponent, :a, 2.)
+set_param!(model3, :LongComponent, :y, 1.)
+connect_param!(model3, :LongComponent, :x, :ShortComponent, :b, zeros(11))
 
 run(model3)
 
@@ -129,11 +140,11 @@ end
 model4 = Model()
 set_dimension!(model4, :time, 2000:5:2100)
 set_dimension!(model4, :regions, [:A, :B, :C])
-addcomponent(model4, Short; start=2020)
-addcomponent(model4, Long)
+add_comp!(model4, Short; start=2020)
+add_comp!(model4, Long)
 
-set_parameter!(model4, :Short, :a, [1,2,3])
-connect_parameter(model4, :Long, :x, :Short, :b, zeros(21,3))
+set_param!(model4, :Short, :a, [1,2,3])
+connect_param!(model4, :Long, :x, :Short, :b, zeros(21,3))
 
 run(model4)
 
@@ -151,11 +162,11 @@ b3 = getdataframe(model4, :Short, :b)
 model5 = Model()
 set_dimension!(model5, :time, 2000:5:2100)
 set_dimension!(model5, :regions, [:A, :B, :C])
-addcomponent(model5, Short; first=2020, last=2070)
-addcomponent(model5, Long)
+add_comp!(model5, Short; first=2020, last=2070)
+add_comp!(model5, Long)
 
-set_parameter!(model5, :Short, :a, [1,2,3])
-connect_parameter(model5, :Long=>:x, :Short=>:b, zeros(21,3))
+set_param!(model5, :Short, :a, [1,2,3])
+connect_param!(model5, :Long=>:x, :Short=>:b, zeros(21,3))
 
 run(model5)
 
@@ -176,3 +187,5 @@ result = getdataframe(model5, :Short=>:b, :Long=>:out)
 [(@test isnan(result[i, :b])) for i in 46:63]
 [(@test result[i, :out]==0) for i in 1:12]
 [(@test result[i, :out]==0) for i in 46:63]
+
+end #module

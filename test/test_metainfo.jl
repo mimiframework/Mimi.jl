@@ -1,7 +1,12 @@
-module MyModel
+module TestMetaInfo
 
 using Test
 using Mimi
+
+import Mimi: 
+    compdef, reset_compdefs, first_period, last_period
+
+reset_compdefs()
 
 @defcomp ch4forcing1 begin
     c_N2Oconcentration = Parameter(index=[time],unit="ppbv")
@@ -35,7 +40,10 @@ end
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
-@test c2.comp_id.module_name == :MyModel
+@test c1 == compdef(:ch4forcing1)
+@test_throws ErrorException compdef(:missingcomp)
+
+@test c2.comp_id.module_name == :TestMetaInfo
 @test c2.comp_id.comp_name == :ch4forcing1
 @test c2.name == :ch4forcing2
 
@@ -44,5 +52,8 @@ vars = Mimi.variable_names(c2)
 
 pars = Mimi.parameter_names(c2)
 @test length(pars) == 6
+
+@test first_period(c1) == 2010
+@test last_period(c1) == 2100
 
 end # module

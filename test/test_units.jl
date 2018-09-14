@@ -3,7 +3,9 @@ module TestUnits
 using Test
 using Mimi
 
-import Mimi: verify_units, connect_parameter, ComponentReference, @defmodel
+import Mimi: verify_units, connect_param!, ComponentReference, @defmodel, reset_compdefs
+
+reset_compdefs()
 
 # Try directly using verify_units
 @test verify_units("kg", "kg")
@@ -38,7 +40,7 @@ baz = ComponentReference(m, :Baz)
 @test_throws ErrorException bar[:input] = foo[:output]
 
 # ...unless we pass ignoreunits=true
-connect_parameter(m, :Bar, :input,  :Foo, :output, ignoreunits=true)
+connect_param!(m, :Bar, :input,  :Foo, :output, ignoreunits=true)
 
 # But we can connect foo and baz
 baz[:input] = foo[:output]

@@ -1,12 +1,15 @@
 using Mimi
 using Test
 using DataFrames
+using VegaLite
 
 import Mimi: 
     dataframe_or_scalar, createspec_singlevalue, 
     createspec_lineplot, createspec_multilineplot, createspec_barplot,
     getmultiline, getline, getbar, _spec_for_item, spec_list, explore, 
-    getdataframe
+    getdataframe, reset_compdefs
+
+reset_compdefs()
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
@@ -30,13 +33,13 @@ set_dimension!(m, :time, 2000:2100)
 set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
-addcomponent(m, MyComp)
-set_parameter!(m, :MyComp, :a, ones(101,3))
-set_parameter!(m, :MyComp, :b, 1:101)
-set_parameter!(m, :MyComp, :c, [4,5,6])
-set_parameter!(m, :MyComp, :d, .5)
-set_parameter!(m, :MyComp, :e, [1,2,3,4])
-set_parameter!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
+add_comp!(m, MyComp)
+set_param!(m, :MyComp, :a, ones(101,3))
+set_param!(m, :MyComp, :b, 1:101)
+set_param!(m, :MyComp, :c, [4,5,6])
+set_param!(m, :MyComp, :d, .5)
+set_param!(m, :MyComp, :e, [1,2,3,4])
+set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
 run(m)
 
@@ -49,25 +52,32 @@ run(m)
 
 #3.  full specs for VegaLit
 
-#TODO:  reatespec_singlevalue, createspec_multilineplot, 
+#TODO:  createspec_singlevalue, createspec_multilineplot, 
 #createspec_lineplot, createspec_barplot, _spec_for_item
 
 s = spec_list(m)
 @test typeof(s) == Array{Any, 1}
 @test length(s) == 7
 
-#4.  explore
+#4.  explore(m::Model, title = "Electron")
 w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
 
+#5.  explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
+#       dim_name::Union{Void, Symbol} = nothing)
+
+p = explore(m, :MyComp, :a)
+@test typeof(p) == VegaLite.VLSpec{:plot}
+
+#6.  errors and warnings
 @defcomp MyComp2 begin
 
-    a = Parameter(index = [regions, four, five])
+    a = Parameter(index = [time, regions, four])
     x = Variable(index=[time, regions])
     
     function run_timestep(p, v, d, t)
         for r in d.regions
-            v.x[t, r] = 0
+            v.x[t, r] = rand(10)[1]
         end
     end
 end
@@ -76,14 +86,12 @@ m2 = Model()
 set_dimension!(m2, :time, 2000:2100)
 set_dimension!(m2, :regions, 3)
 set_dimension!(m2, :four, 4)
-set_dimension!(m2, :five, 5)
 
-addcomponent(m2, MyComp2)
-set_parameter!(m2, :MyComp2, :a, ones(3, 4, 5)) 
+add_comp!(m2, MyComp2)
+set_param!(m2, :MyComp2, :a, ones(101, 3, 4)) 
 
 run(m2)
 
-#5.  errors
-#spec creation for MyComp.a should fail, havn't handled this case yet
-@test_warn "spec conversion failed for MyComp2.a" w = explore(m2)
-@test typeof(w) == Electron.Window
+#spec creation for MyComp.a should fail and error, haven't handled case of > 3 dims yet
+@test_warn "MyComp2.a has over 3 graphing dims, not yet implemented in explorer" w = explore(m2)
+

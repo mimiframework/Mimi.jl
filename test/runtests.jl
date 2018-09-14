@@ -27,6 +27,9 @@ using Test
     @info("test_model_structure_variabletimestep.jl") 
     include("test_model_structure_variabletimestep.jl")
 
+    @info("test_replace_comp.jl")
+    include("test_replace_comp.jl")
+
     @info("test_tools.jl")
     include("test_tools.jl")
 
@@ -48,11 +51,8 @@ using Test
     @info("test_getindex_variabletimestep.jl") 
     include("test_getindex_variabletimestep.jl")
 
-    @info("test_num_components.jl")
-    include("test_num_components.jl")
-
-    @info("test_components_ordering.jl")
-    include("test_components_ordering.jl")
+    @info("test_components.jl")
+    include("test_components.jl")
 
     @info("test_variables_model_instance.jl")
     include("test_variables_model_instance.jl")
@@ -82,6 +82,9 @@ using Test
 
     @info("test_explorer.jl")
     include("test_explorer.jl")
+
+    @info("test_plotting.jl")
+    include("test_plotting.jl")
 
     include("mcs/run_tests.jl")
 end

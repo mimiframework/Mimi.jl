@@ -12,50 +12,36 @@ using StringBuilders
 
 export
     @defcomp,
-    @modelegate,
     MarginalModel,
     Model,
-    addcomponent,
-    add_connector_comps,
-    add_dimension!,
-    addparameter,
-    compdef,
-    compdefs,
-    compinstance,
-    compkeys,
+    add_comp!,  
     components,
-    connect_parameter,
+    connect_param!,
     create_marginal_model,
-    datatype,
-    description,
-    dimension,
-    dimensions,
-    disconnect!,
+    disconnect_param!,
     explore,
     getdataframe,
-    getproperty,
+    getproperty, 
     gettime,
-    get_parameter_value,
-    get_variable_value,
+    get_param_value,
+    get_var_value,
     hasvalue,
-    interpolate,
     is_first,
     is_last,
     load_comps,
     modeldef,
     name,
-    new_component,
-    parameters,
-    # plot,
-    # plot_comp_graph,
-    replace_component,
-    run_timestep,
-    set_dimension!,
-    set_leftover_params!,
-    set_parameter!,
-    setproperty!,
-    unit,
-    variables
+    new_comp,
+    parameters, 
+    plot_comp_graph,
+    replace_comp!, 
+    set_dimension!, 
+    set_leftover_params!, 
+    setproperty!, 
+    set_param!, 
+    update_param!,
+    update_params!,
+    variables 
 
 include("core/types.jl")
 
@@ -72,7 +58,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-# include("utils/plotting.jl")
+include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
@@ -80,7 +66,7 @@ include("utils/misc.jl")
 """
     load_comps(dirname::String="./components")
 
-Call include() on all the files in the indicated directory.
+Call include() on all the files in the indicated directory `dirname`.
 This avoids having modelers create a long list of include()
 statements. Just put all the components in a directory.
 """

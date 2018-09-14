@@ -6,7 +6,7 @@ using IterTools
 
 using Test
 
-N = 1000
+N = 100
 
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
@@ -49,13 +49,18 @@ function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-output_dir = "/tmp/mcs"
+output_dir = joinpath(tempdir(), "mcs")
 
-generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
+generate_trials!(mcs, N, sampling=LHS, filename=joinpath(output_dir, "trialdata.csv"))
+
+# Test that the proper number of trials were saved
+d = readcsv(joinpath(output_dir, "trialdata.csv"))
+@test size(d)[1] == N+1 # extra row for column names
 
 # Run trials 1:N, and save results to the indicated directory
 
 Mimi.set_model!(mcs, m)
+
 
 run_mcs(mcs, N, output_dir=output_dir)
 
@@ -103,6 +108,7 @@ function inner_loop_func(mcs::MonteCarloSimulation, tup)
     (scen, rate) = tup
     Mimi.log_info("inner loop: scen:$scen, rate:$rate")
 end
+
 
 loop_counter = 0
 
@@ -166,3 +172,27 @@ run_mcs(mcs, N;
         post_trial_func=post_trial)
 
 @test loop_counter == N
+
+N = 1000
+
+# Test new values generated for RANDOM sampling
+
+generate_trials!(mcs, N, sampling=RANDOM)
+trial1 = copy(mcs.rvdict[:name1].dist.values)
+
+generate_trials!(mcs, N, sampling=RANDOM)
+trial2 = copy(mcs.rvdict[:name1].dist.values)
+
+@test length(trial1) == length(trial2)
+@test trial1 != trial2
+
+# Test new values generated for LHS sampling
+
+generate_trials!(mcs, N, sampling=LHS)
+trial1 = copy(mcs.rvdict[:name1].dist.values)
+
+generate_trials!(mcs, N, sampling=LHS)
+trial2 = copy(mcs.rvdict[:name1].dist.values)
+
+@test length(trial1) == length(trial2)
+@test trial1 != trial2

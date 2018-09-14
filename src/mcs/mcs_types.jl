@@ -1,35 +1,11 @@
 using IterableTables
+using NamedTuples
+using Distributions
 using Statistics
 
-@enum ScenarioLoopPlacement OUTER INNER
-@enum SamplingOptions LHS RANDOM
-
-# SampleStore is a faux Distribution that implements base.rand() 
-# to yield stored values.
-mutable struct SampleStore{T}
-    values::Vector{T}   # generally Int or Float64
-    idx::Int            # index of next value to return
-
-    function SampleStore(values::Vector{T}) where T
-        return new{T}(values, 1)
-    end
-end
-
-Base.eltype(ss::SampleStore) = eltype(ss.values)
-
-#
-# TBD: maybe have a different SampleStore subtype for values drawn from a dist
-# versus those loaded from a file, which would be treated as immutable?
-#
-
-# TBD: This interpolates values between those in the vector. Is this reasonable?
-# Probably shouldn't use correlation on values loaded from a file rather than 
-# from a proper distribution.
-function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
-    return quantile.(sort(ss.values), probs)
-end
-
 """
+    RandomVariable{T}
+
 A RandomVariable can be "assigned" to different model parameters. Its
 value can be used directly or applied by adding to, or multiplying by, 
 reference values for the indicated parameter. Note that the distribution
@@ -48,6 +24,45 @@ end
 
 Base.eltype(rv::RandomVariable) = eltype(rv.dist)
 
+distribution(rv::RandomVariable) = rv.dist
+
+
+@enum ScenarioLoopPlacement OUTER INNER
+@enum SamplingOptions LHS RANDOM
+
+# SampleStore is a faux Distribution that implements base.rand() 
+# to yield stored values.
+mutable struct SampleStore{T}
+    values::Vector{T}   # generally Int or Float64
+    idx::Int            # index of next value to return
+
+    function SampleStore(values::Vector{T}) where T
+        return new{T}(values, 1)
+    end
+end
+
+Base.eltype(ss::SampleStore) = eltype(ss.values)
+
+distribution(ss::SampleStore) = ss.dist
+
+#
+# TBD: maybe have a different SampleStore subtype for values drawn from a dist
+# versus those loaded from a file, which would be treated as immutable?
+#
+
+function Base.quantile(ss::SampleStore{T}, q::Float64) where T
+    return quantile(sort(ss.values), q)
+end
+
+
+# TBD: This interpolates values between those in the vector. Is this reasonable?
+# Probably shouldn't use correlation on values loaded from a file rather than 
+# from a proper distribution.
+function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
+    return quantile.(ss, probs)
+end
+
+
 struct TransformSpec
     paramname::Symbol
     op::Symbol
@@ -64,6 +79,8 @@ struct TransformSpec
 end
 
 """
+    CorrelationSpec
+
 Defines a target rank correlation to establish between the two named random vars.
 """
 struct CorrelationSpec
@@ -92,6 +109,8 @@ function Base.reset(s::SampleStore{T}) where T
 end
 
 """
+    MonteCarloSimulation
+    
 Holds all the data that defines a Monte Carlo simulation.
 """
 mutable struct MonteCarloSimulation
@@ -102,7 +121,7 @@ mutable struct MonteCarloSimulation
     translist::Vector{TransformSpec}
     corrlist::Vector{CorrelationSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
-    dist_rvs::Vector{RandomVariable{<: Distribution}}
+    dist_rvs::Vector{RandomVariable}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
@@ -119,7 +138,7 @@ mutable struct MonteCarloSimulation
         self.translist = translist
         self.corrlist = corrlist
         self.savelist = savelist
-        self.dist_rvs = [rv for rv in rvlist if rv.dist isa Distribution]
+        self.dist_rvs = [rv for rv in rvlist]
         self.nt_type = NamedTuple{(collect(keys(self.rvdict))...,)}
 
         # These are parallel arrays; each model has a corresponding results dict

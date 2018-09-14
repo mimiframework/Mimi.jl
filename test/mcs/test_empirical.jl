@@ -35,3 +35,77 @@ expected = [1.47, 1.92, 2.33, 3.01, 4.16, 5.85, 9.16]
 println("quantiles: $q\n expected: $expected")
 
 @test isapprox(q, expected, atol=0.01)
+
+
+# Test that the EmpiricalDistribution gets saved as a SampleStore and values 
+# get re-used across multiple scenarios
+
+num_scenarios = 4
+num_trials = 5
+output_dir = "./out/"
+
+results = zeros(num_scenarios, num_trials)
+
+_values = collect(1:10)
+_probs = 0.1 * ones(10)
+
+mcs_test = @defmcs begin
+    p = EmpiricalDistribution(_values, _probs)
+end 
+
+@defcomp test begin
+    p = Parameter(default = 5)
+    function run_timestep(p, v, d, t) end
+end
+
+scenario_args = [
+    :num => collect(1:num_scenarios)
+]
+
+function scenario_func(mcs::MonteCarloSimulation, tup::Tuple)
+    nothing
+end
+
+function post_trial_func(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    m, = mcs.models
+    scenario_num, = tup
+    results[scenario_num, trialnum] = m[:test, :p]
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2001)
+add_comp!(m, test)
+set_model!(mcs_test, m)
+
+generate_trials!(mcs_test, num_trials; sampling = RANDOM)
+
+run_mcs(mcs_test, num_trials;
+    output_dir = output_dir,
+    scenario_args = scenario_args,
+    scenario_func = scenario_func, 
+    post_trial_func = post_trial_func
+    )
+
+for rv in values(mcs_test.rvdict)
+    @test rv.dist isa Mimi.SampleStore
+end
+
+for i = 1:num_scenarios
+    @test results[i, :] == results[1, :]
+end
+
+rm(output_dir, recursive = true)
+
+# Test in the case of sampling = LHS
+
+generate_trials!(mcs_test, num_trials; sampling = LHS)
+trial1 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
+
+for rv in values(mcs_test.rvdict)
+    @test rv.dist isa Mimi.SampleStore
+end
+
+generate_trials!(mcs_test, num_trials; sampling = LHS)
+trial2 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
+
+@test trial1!=trial2

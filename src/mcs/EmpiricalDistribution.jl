@@ -3,6 +3,8 @@ using Statistics
 using Distributions
 using Random
 
+# N.B. See Mimi/WIP/load_empirical_dist.jl for helper functions.
+
 struct EmpiricalDistribution{T}
     values::Vector{T}
     weights::ProbabilityWeights
@@ -33,37 +35,6 @@ struct EmpiricalDistribution{T}
         return new{T}(values, weights, Categorical(probs))
     end
 end
-
-# """
-# EmpiricalDistribution(obj::Any,
-#                       value_col::Union{Symbol, String, Int},
-#                       prob_col::Union{Nothing, Symbol, String, Int}=nothing;
-#                       value_type::DataType=Any)
-
-# Load empirical values from an object returned by load() and generate a distribution. 
-# Typical usage might be:
-
-# `d = EmpiricalDistribution(load("foo.xlsx", otherpars=...), :valcolname, :probcolname)`
-
-# The `value_col` identifies by the column name or integer index for the values 
-# to use, and the optional `prob_col` identifies the column name or integer index for the
-# probabilities to use. If `prob_col` is not provide, equal probabilities are assumed 
-# for each value.
-# """
-# function EmpiricalDistribution(obj::Any,
-#                                value_col::Union{Symbol, AbstractString, Int},
-#                                prob_col::Union{Nothing, Symbol, AbstractString, Int}=nothing;
-#                                value_type::DataType=Any)
-#     probs = nothing
-
-#     values = isa(value_col, Symbol) ? df[value_col] : df.columns[value_col]
-        
-#     if prob_col != nothing
-#         probs = Vector{Float64}(isa(prob_col, Symbol) ? df[prob_col] : df.columns[prob_col])
-#     end
-
-#     return EmpiricalDistribution(values, probs)
-# end
 
 #
 # Delegate a few functions that we require in our application. 

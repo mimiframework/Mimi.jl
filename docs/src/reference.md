@@ -1,49 +1,35 @@
 # Reference
 
 ```@docs
-
-    @defcomp,
-    @modelegate,
-    MarginalModel,
-    Model,
-    addcomponent,
-    add_connector_comps,
-    add_dimension!,
-    addparameter,
-    compdef,
-    compdefs,
-    compinstance,
-    compkeys,
-    components,
-    connect_parameter,
-    create_marginal_model,
-    datatype,
-    description,
-    dimension,
-    dimensions,
-    disconnect!,
-    explore,
-    getdataframe,
-    getproperty,
-    gettime,
-    get_parameter_value,
-    get_variable_value,
-    hasvalue,
-    interpolate,
-    is_first,
-    is_last,
-    load_comps,
-    modeldef,
-    name,
-    new_component,
-    parameters,
-    replace_component,
-    run_timestep,
-    set_dimension!,
-    set_leftover_params!,
-    set_parameter!,
-    setproperty!,
-    unit,
-    variables
-
+@defcomp
+MarginalModel
+Model
+add_comp!  
+components 
+connect_param!
+create_marginal_model
+disconnect_param!
+explore
+getdataframe
+getproperty
+gettime
+get_param_value
+get_var_value
+hasvalue
+is_first
+is_last
+load_comps
+modeldef
+name
+new_comp
+parameters
+plot_comp_graph
+replace_comp! 
+set_dimension! 
+set_leftover_params! 
+setproperty!
+set_param! 
+variables  
+update_param!
+update_params!
 ```

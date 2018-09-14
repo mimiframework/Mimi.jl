@@ -25,7 +25,7 @@ is_builtin(module_name, comp_name) = (module_name == :Main && comp_name in built
 # :(setproperty!(p, Val(:foo), (getproperty(v, Val(:bar)))[1]))
 #
 function _replace_dots(ex)
-    debug("\nreplace_dots($ex)\n")
+    # debug("\nreplace_dots($ex)\n")
 
     if @capture(ex, obj_.field_ = rhs_)
         return :(setproperty!($obj, Val($(QuoteNode(field))), $rhs))
@@ -138,6 +138,18 @@ end
 
 _generate_dims_expr(name::Symbol) = _generate_dims_expr(name, [], nothing)
 
+"""
+    defcomp(comp_name::Symbol, ex::Expr)
+
+Define a Mimi component `comp_name` with the expressions in `ex`.    The following 
+types of expressions are supported:
+
+1. `dimension_name = Index()`   #defines a dimension
+2. `parameter = Parameter(index = [dimension_name], units = "unit_name", default = default_value)`    #defines a parameter with optional arguments
+3. `variable = Variable(index = [dimension_name], units = "unit_name")`    #defines a variable with optional arguments
+4. `init(p, v, d)`              #defines an init function for the component
+5. `run_timestep(p, v, d, t)`   #defines a run_timestep function for the component
+"""
 #
 # Parse a @defcomp definition, converting it into a series of function calls that
 # create the corresponding ComponentDef instance. At model build time, the ModelDef
@@ -168,10 +180,10 @@ macro defcomp(comp_name, ex)
     end
     
     # For some reason this was difficult to do at the higher language level. 
-    # This fails: :(comp = new_component($(esc(mod_name).esc(comp_name))))
-    # newcomp = Expr(:(=), :comp, Expr(:call, :new_component, QuoteNode(mod_name), QuoteNode(comp_name)))
+    # This fails: :(comp = new_comp($(esc(mod_name).esc(comp_name))))
+    # newcomp = Expr(:(=), :comp, Expr(:call, :new_comp, QuoteNode(mod_name), QuoteNode(comp_name)))
     verbose = ! is_builtin(mod_name, comp_name)
-    newcomp = :(comp = new_component($comp_name, $verbose))
+    newcomp = :(comp = new_comp($comp_name, $verbose))
     addexpr(esc(newcomp))
 
     for elt in elements
@@ -194,9 +206,6 @@ macro defcomp(comp_name, ex)
         if ! @capture(elt, (name_::vartype_ | name_) = elt_type_(args__))
             error("Element syntax error: $elt")           
         end
-
-        # vartype = vartype == nothing ? ::Float64 : vartype
-        # debug("name: $name, vartype: $vartype, elt_type: $elt_type, args: $args")
 
         # elt_type is one of {:Variable, :Parameter, :Index}
         if elt_type == :Index
@@ -242,6 +251,7 @@ macro defcomp(comp_name, ex)
                             push!(known_dims, dim)
                         end
                     end
+
                 elseif @capture(arg, default = dflt_)
                     if elt_type == :Variable
                         error("Default values are permitted only for Parameters, not for Variables")
@@ -250,11 +260,15 @@ macro defcomp(comp_name, ex)
                 end
             end
 
-            dims = Tuple(dimensions) # just for printing
-            debug("    index $dims, unit '$unit', desc '$desc'")
+            debug("    index $(Tuple(dimensions)), unit '$unit', desc '$desc'")
 
-            datatype = vartype == nothing ? Number : vartype
-            addexpr(_generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit))
+            dflt = eval(dflt)
+            if (dflt != nothing && length(dimensions) != ndims(dflt))
+                error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+            end
+
+            vartype = vartype == nothing ? Number : eval(vartype)
+            addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else
             error("Unrecognized element type: $elt_type")
@@ -269,10 +283,11 @@ end
     defmodel(model_name::Symbol, ex::Expr)
 
 Define a Mimi model. The following types of expressions are supported:
-1. component(name)                          # add comp to model
-2. dst_component.name = ex::Expr            # provide a value for a parameter
-3. src_component.name => dst_component.name # connect a variable to a parameter
-4. index[name] = iterable-of-values         # define values for an index
+
+1. `component(name)`                            # add comp to model
+2. `dst_component.name = ex::Expr`              # provide a value for a parameter
+3. `src_component.name => dst_component.name`   # connect a variable to a parameter
+4. `index[name] = iterable-of-values`           # define values for an index
 """
 macro defmodel(model_name, ex)
     @capture(ex, elements__)
@@ -298,7 +313,7 @@ macro defmodel(model_name, ex)
 
             comp_mod = comp_mod == nothing ? curr_module : comp_mod
             name = alias == nothing ? comp_name : alias
-            expr = :(addcomponent($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
+            expr = :(add_comp!($(esc(model_name)), $(esc(module_name)).$comp_name, $(QuoteNode(name))))
 
         elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||
                 @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_))
@@ -306,7 +321,7 @@ macro defmodel(model_name, ex)
                 error("Subscripted connection source must have subscript [t - x] where x is an integer > 0")
             end
 
-            expr = :(connect_parameter($(esc(model_name)),
+            expr = :(connect_param!($(esc(model_name)),
                                        $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
                                        $(QuoteNode(src_comp)), $(QuoteNode(src_name)), offset=$(esc(offset))))
 
@@ -314,7 +329,7 @@ macro defmodel(model_name, ex)
             expr = :(set_dimension!($(esc(model_name)), $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(set_parameter!($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
+            expr = :(set_param!($(esc(model_name)), $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.
@@ -324,9 +339,6 @@ macro defmodel(model_name, ex)
 
         push!(result.args, expr)
     end
-
-    # Finally, add a call to create connector components in the new ModelDef
-    push!(result.args, :(add_connector_comps($(esc(model_name)))))
 
     return result
 end

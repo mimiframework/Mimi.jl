@@ -1,5 +1,10 @@
+module TestAdder
+
 using Mimi
 using Test
+
+import Mimi:
+    reset_compdefs
 
 reset_compdefs()
 
@@ -9,13 +14,13 @@ reset_compdefs()
 
 model1 = Model()
 set_dimension!(model1, :time, 1:10)
-addcomponent(model1, adder)
+add_comp!(model1, adder)
 
 x = collect(1:10)
 y = collect(2:2:20)
 
-set_parameter!(model1, :adder, :input, x)
-set_parameter!(model1, :adder, :add, y)
+set_param!(model1, :adder, :input, x)
+set_param!(model1, :adder, :add, y)
 
 run(model1)
 
@@ -29,11 +34,13 @@ end
 
 model2 = Model()
 set_dimension!(model2, :time, 1:10)
-addcomponent(model2, adder, :compA)
-set_parameter!(model2, :compA, :input, x)
-set_parameter!(model2, :compA, :add, y)
+add_comp!(model2, adder, :compA)
+set_param!(model2, :compA, :input, x)
+set_param!(model2, :compA, :add, y)
 run(model2)
 
 for i in 1:10
     @test model2[:compA, :output][i] == 3i
 end
+
+end #module

@@ -83,7 +83,6 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
         # println("results_df: $results_df")
 
     else
-        # println("Matrix with dims $dims")
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[:trialnum] = trialnum
         # println("size of trial_df: $(size(trial_df))")
@@ -142,7 +141,7 @@ end
 
 # TBD: Modify lhs() to return an array of SampleStore{T} instances?
 """
-get_trial(mcs::MonteCarloSimulation, trialnum::Int)
+    get_trial(mcs::MonteCarloSimulation, trialnum::Int)
 
 Return a NamedTuple with the data for next trial. Note that the `trialnum`
 parameter is used only to support a 1-deep data cache that allows this
@@ -164,29 +163,23 @@ end
 
 """
     generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
-                     filename::String="", sampling::SamplingOptions)
+                     filename::String="", sampling::SamplingOptions=RANDOM)
 
 Generate the given number of trials for the given MonteCarloSimulation instance. 
-Call this before running the MCS to enable saving of inputs to to choose a sampling 
-method other than LHS. (Currently, only LHS and RANDOM are possible.)
+Call this before running the MCS to pre-generate data to be used by all 
+scenarios. Also enables saving of inputs or choosing a sampling method other 
+than RANDOM. (Currently, only LHS and RANDOM are possible.)
 """
 function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
                           filename::String="",
-                          sampling::SamplingOptions=LHS)
+                          sampling::SamplingOptions=RANDOM)
     mcs.trials = trials
 
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
-        rvlist = collect(values(mcs.rvdict))
-
-        # update the dict in mcs
         lhs!(mcs, corrmatrix=corrmatrix)
-
     else    # sampling == RANDOM
-        # we pre-generate the trial data only if we're saving it
-        if filename != ""
-            rand!(mcs)
-        end
+        rand!(mcs)
     end
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
@@ -208,11 +201,13 @@ function Random.rand!(mcs::MonteCarloSimulation)
 
     for rv in mcs.dist_rvs
         values = rand(rv.dist, trials)
-        rvdict[name] = RandomVariable(rv.name, SampleStore(values))
+        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
     end
 end
 
 """
+    _copy_mcs_params(mcs::MonteCarloSimulation)
+
 Copy the parameters that are perturbed in this MCS so we can restore them after each trial.
 This is necessary when we are applying distributions by adding or multiplying original values.
 """
@@ -336,7 +331,7 @@ function _reset_rvs!(mcs::MonteCarloSimulation)
 end
 
 """
-_reset_results!(mcs::MonteCarloSimulation)
+    _reset_results!(mcs::MonteCarloSimulation)
 
 Reset all MCS results storage to a vector of empty dicts
 """
@@ -552,10 +547,11 @@ function Base.iterate(mcs::MonteCarloSimulation)
 end
 
 function Base.iterate(mcs::MonteCarloSimulation, trialnum)
-    if trialnum == mcs.trials
+    if trialnum > mcs.trials
         return nothing
     else
-        return get_trial(mcs, trialnum+1), trialnum + 1
+        trialnum += 1
+        return get_trial(mcs, trialnum), trialnum
     end
 end
 
@@ -577,10 +573,11 @@ function Base.iterate(iter::MCSIterator)
 end
 
 function Base.iterate(iter::MCSIterator, idx)
-    if idx == iter.mcs.trials
+    if idx > iter.mcs.trials
         return nothing
     else
-        return get_trial(iter.mcs, idx+1), idx+1
+        idx += 1
+        return get_trial(iter.mcs, idx), idx
     end
 end
 

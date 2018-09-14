@@ -3,6 +3,11 @@ module TestReferences
 using Test
 using Mimi
 
+import Mimi:
+    reset_compdefs, getproperty
+
+reset_compdefs()
+
 @defcomp Foo begin
     input = Parameter()
     intermed = Variable(index=[time])

@@ -49,16 +49,18 @@ The `generate_trials!` function can be used to pre-generate data for the given n
 
 ```
 generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
-                 filename::String="", sampling::SamplingOptions=LHS)
+                 filename::String="", sampling::SamplingOptions=RANDOM)
 ```
+
+If the `mcs` parameter has multiple scenarios and the `scenario_loop` placement is set to `OUTER`, this function must be called if the user wants to ensure the same trial data be used in each scenario. If this function is not called, new trial data will be generated for each scenario. 
 
 The `sampling` parameter is of type `SamplingOptions`, an `enum` with two values, `LHS`, and `RANDOM`. Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling.
 
 Note that in the current implementation, rank correlation between parameters is supported only for the `LHS` option.
 
-Also note that if the `filename` argument is used, all random variable draws are made prior to running the model(s) and saved to the given filename. Internally, any `Distribution` instance is converted to a `SampleStore` and the values are subsequently returned in the order generated when `rand!` is called.
+Also note that if the `filename` argument is used, all random variable draws are saved to the given filename. Internally, any `Distribution` instance is converted to a `SampleStore` and the values are subsequently returned in the order generated when `rand!` is called.
 
-If this function is not called prior to calling `run_mcs`, Latin Hypercube sampling is used for all distributions and trial data are not saved.
+If this function is not called prior to calling `run_mcs`, random sampling is used for all distributions and trial data are not saved.
 
 ## Assigning distributions
 

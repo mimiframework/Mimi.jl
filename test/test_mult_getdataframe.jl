@@ -1,8 +1,13 @@
+module TestMult_GetDataframe
+
 using Mimi
 using NamedArrays
 using Test
 
-Mimi.reset_compdefs()
+import Mimi:
+    reset_compdefs
+
+reset_compdefs()
 
 #####################################
 #  LARGER MULTIREGIONAL TEST (2/3)  #
@@ -100,19 +105,19 @@ function run_my_model()
     set_dimension!(my_model, :time, collect(2015:5:2110))
     set_dimension!(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
-    addcomponent(my_model, grosseconomy)
-    addcomponent(my_model, emissions)
+    add_comp!(my_model, grosseconomy)
+    add_comp!(my_model, emissions)
 
-    set_parameter!(my_model, :grosseconomy, :l, l)
-    set_parameter!(my_model, :grosseconomy, :tfp, tfp)
-    set_parameter!(my_model, :grosseconomy, :s, s)
-    set_parameter!(my_model, :grosseconomy, :depk,depk)
-    set_parameter!(my_model, :grosseconomy, :k0, k0)
-    set_parameter!(my_model, :grosseconomy, :share, 0.3)
+    set_param!(my_model, :grosseconomy, :l, l)
+    set_param!(my_model, :grosseconomy, :tfp, tfp)
+    set_param!(my_model, :grosseconomy, :s, s)
+    set_param!(my_model, :grosseconomy, :depk,depk)
+    set_param!(my_model, :grosseconomy, :k0, k0)
+    set_param!(my_model, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    set_parameter!(my_model, :emissions, :sigma, sigma2)
-    connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    set_param!(my_model, :emissions, :sigma, sigma2)
+    connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model)
     return(my_model)
@@ -183,9 +188,9 @@ end
 
 
 par = collect(2015:5:2110)
-addcomponent(my_model, testcomp1)
+add_comp!(my_model, testcomp1)
 
-set_parameter!(my_model, :testcomp1, :par1, par)
+set_param!(my_model, :testcomp1, :par1, par)
 run(my_model)
 
 #Regular getdataframe
@@ -194,3 +199,5 @@ dataframe = getdataframe(my_model, :testcomp1 => :var1)
 
 #Test trying to getdataframe from component that does not exist
 @test_throws ErrorException getdataframe(my_model, :testcomp1 => :var2)
+
+end #module

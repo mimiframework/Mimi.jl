@@ -2,7 +2,7 @@
 
 ## Thoughts on matching indices across models that may have different timesteps, regional aggregations, etc.
 
-The basic idea is to allow a keyword arg to connect_parameter() to identify a connector 
+The basic idea is to allow a keyword arg to connect_param!() to identify a connector 
 component that performs the mapping between disparate dimension definitions.
 
 We could provide a couple more "standard" connectors
@@ -20,7 +20,7 @@ We could provide a couple more "standard" connectors
 
 We can create macro to define connector components that perform these dimension adjustments.
 We would define a new macro that simplifies creation of a `@defcomp` of a given name 
-that can be specified in connect_parameter to perform the defined mapping.
+that can be specified in connect_param! to perform the defined mapping.
 
 To map across both time and regions, we could implement a pair of connector components
 that might look like the following, which would be called for each timestep `t` in 

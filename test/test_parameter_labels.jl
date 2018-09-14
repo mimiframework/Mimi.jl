@@ -1,7 +1,13 @@
+module TestParameterLabels
+
 using Mimi
 using NamedArrays
 using Test
 
+import Mimi:
+    reset_compdefs
+
+reset_compdefs()
 
 ############################################
 #    BASIC TEST - use NamedArrays (1/3)    #
@@ -41,14 +47,14 @@ end
 model1 = Model()
 set_dimension!(model1, :time, time_labels)
 set_dimension!(model1, :regions, region_labels)
-addcomponent(model1, compA)
-set_parameter!(model1, :compA, :x, x)
+add_comp!(model1, compA)
+set_param!(model1, :compA, :x, x)
 
 model2 = Model()
 set_dimension!(model2, :time, time_labels)
 set_dimension!(model2, :regions, region_labels)
-addcomponent(model2, compA)
-set_parameter!(model2, :compA, :x, x2) # should perform parameter dimension check
+add_comp!(model2, compA)
+set_param!(model2, :compA, :x, x2) # should perform parameter dimension check
 
 run(model1)
 run(model2)
@@ -157,19 +163,19 @@ function run_my_model()
     set_dimension!(my_model, :time, collect(2015:5:2110))
     set_dimension!(my_model, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
-    addcomponent(my_model, grosseconomy)
-    addcomponent(my_model, emissions)
+    add_comp!(my_model, grosseconomy)
+    add_comp!(my_model, emissions)
 
-    set_parameter!(my_model, :grosseconomy, :l, l)
-    set_parameter!(my_model, :grosseconomy, :tfp, tfp)
-    set_parameter!(my_model, :grosseconomy, :s, s)
-    set_parameter!(my_model, :grosseconomy, :depk, depk)
-    set_parameter!(my_model, :grosseconomy, :k0, k0)
-    set_parameter!(my_model, :grosseconomy, :share, 0.3)
+    set_param!(my_model, :grosseconomy, :l, l)
+    set_param!(my_model, :grosseconomy, :tfp, tfp)
+    set_param!(my_model, :grosseconomy, :s, s)
+    set_param!(my_model, :grosseconomy, :depk, depk)
+    set_param!(my_model, :grosseconomy, :k0, k0)
+    set_param!(my_model, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    set_parameter!(my_model, :emissions, :sigma, sigma2)
-    connect_parameter(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    set_param!(my_model, :emissions, :sigma, sigma2)
+    connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model)
     return(my_model)
@@ -220,19 +226,19 @@ function run_my_model2()
     set_dimension!(my_model2, :time, collect(2015:5:2110))
     set_dimension!(my_model2, :regions, ["Region1", "Region2", "Region3"])  #Note that the regions of your model must be specified here
 
-    addcomponent(my_model2, grosseconomy)
-    addcomponent(my_model2, emissions)
+    add_comp!(my_model2, grosseconomy)
+    add_comp!(my_model2, emissions)
 
-    set_parameter!(my_model2, :grosseconomy, :l, l2)
-    set_parameter!(my_model2, :grosseconomy, :tfp, tfp2)
-    set_parameter!(my_model2, :grosseconomy, :s, s2)
-    set_parameter!(my_model2, :grosseconomy, :depk,depk2)
-    set_parameter!(my_model2, :grosseconomy, :k0, k02)
-    set_parameter!(my_model2, :grosseconomy, :share, 0.3)
+    set_param!(my_model2, :grosseconomy, :l, l2)
+    set_param!(my_model2, :grosseconomy, :tfp, tfp2)
+    set_param!(my_model2, :grosseconomy, :s, s2)
+    set_param!(my_model2, :grosseconomy, :depk,depk2)
+    set_param!(my_model2, :grosseconomy, :k0, k02)
+    set_param!(my_model2, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    set_parameter!(my_model2, :emissions, :sigma, sigma2)
-    connect_parameter(my_model2, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    set_param!(my_model2, :emissions, :sigma, sigma2)
+    connect_param!(my_model2, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model2)
     return(my_model2)
@@ -257,14 +263,14 @@ end
 
 
 ######################################################
-#  set_parameter! option with list of dimension names  #
+#  set_param! option with list of dimension names  #
 ######################################################
 
 model3 = Model()
 set_dimension!(model3, :time, collect(2015:5:2110))
 set_dimension!(model3, :regions, ["Region1", "Region2", "Region3"])
-addcomponent(model3, compA)
-set_parameter!(model3, :compA, :x, x, [:time, :regions])
+add_comp!(model3, compA)
+set_param!(model3, :compA, :x, x, [:time, :regions])
 run(model3)
 
 for t in range(1, length(time_labels))
@@ -272,3 +278,5 @@ for t in range(1, length(time_labels))
         @test(model1[:compA, :y][t, r] == model3[:compA, :y][t, r])
     end
 end
+
+end #module

@@ -9,6 +9,7 @@ ExcelFiles
 IterTools
 IterableTables
 FileIO
+GraphPlot
 JSON
 LightGraphs
 MacroTools
@@ -19,3 +20,4 @@ StringBuilders
 TableTraits
 ProgressMeter
 Query
+VegaLite

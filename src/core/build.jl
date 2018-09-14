@@ -1,7 +1,7 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
+function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)    
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)
@@ -67,8 +67,8 @@ end
 """
     _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
-Instantiate a component and its variables (but not its parameters). Return 
-the resulting ComponentInstance.
+Instantiate a component `comp_def` in the model `md` and its variables (but not its parameters). 
+Return the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
@@ -98,6 +98,9 @@ function build(m::Model)
 end
 
 function build(md::ModelDef)
+
+    add_connector_comps(md)
+    
     # check if all parameters are set
     not_set = unconnected_params(md)
     if ! isempty(not_set)
@@ -159,13 +162,20 @@ function build(md::ModelDef)
         pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
 
         ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
-        addcomponent(mi, ci)
+        add_comp!(mi, ci)
     end
 
     save_dim_dict_reference(mi)
     return mi
 end
 
+"""
+    create_marginal_model(base::Model, delta::Float64=1.0)
+
+Create a `MarginalModel` where `base` is the baseline model and `delta` is the 
+difference used to create the `marginal` model.  Return the resulting `MarginaModel`
+which shares the internal `ModelDef` between the `base` and `marginal`.
+"""
 function create_marginal_model(base::Model, delta::Float64=1.0)
     # Make sure the base has a ModelInstance before we copy since this
     # copies the ModelDef to avoid being affected by later changes.

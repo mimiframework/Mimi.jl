@@ -1,3 +1,5 @@
+module TestGetIndex_VariableTimestep
+
 using Mimi
 using Test
 
@@ -38,11 +40,11 @@ end
 
 
 set_dimension!(my_model, :time, [2000:1:2014; 2015:5:2110])
-addcomponent(my_model, testcomp1)
+add_comp!(my_model, testcomp1)
 
 par = collect([2000:1:2014; 2015:5:2110])
 
-set_parameter!(my_model, :testcomp1, :par1, par)
+set_param!(my_model, :testcomp1, :par1, par)
 run(my_model)
 
 # Regular get index
@@ -55,3 +57,5 @@ run(my_model)
 @test_throws ErrorException my_model[:testcomp2, :var2]
 
 #Possibly more tests after adding another component
+
+end #module
