@@ -49,7 +49,7 @@ distribution(ss::SampleStore) = ss.dist
 # versus those loaded from a file, which would be treated as immutable?
 #
 
-function Base.quantile(ss::SampleStore{T}, q::Float64) where T
+function Statistics.quantile(ss::SampleStore{T}, q::Float64) where T
     return quantile(sort(ss.values), q)
 end
 

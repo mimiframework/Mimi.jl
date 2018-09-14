@@ -45,7 +45,7 @@ Base.keys(dim::RangeDimension)   = collect(dim.range)
 Base.values(dim::RangeDimension) = collect(1:length(dim.range))
 
 # Get last value from OrderedDict of keys
-Base.endof(dim::AbstractDimension) = dim.dict.keys[length(dim)]
+Base.lastindex(dim::AbstractDimension) = dim.dict.keys[length(dim)]
 
 #
 # Compute the index of a "key" (e.g., a year) in the range. 

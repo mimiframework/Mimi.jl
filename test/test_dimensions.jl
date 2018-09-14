@@ -33,10 +33,10 @@ dim_vals_abstract = AbstractDimension(dim_vals) # Abstract
 @test iterate(dim_range) == 1
 @test iterate(rangedim) == 2010
 
-@test endof(dim_varargs) == :baz
-@test endof(dim_vec) == :baz
-@test endof(dim_range) == 2100
-@test endof(dim_vals) == 4
+@test lastindex(dim_varargs) == :baz
+@test lastindex(dim_vec) == :baz
+@test lastindex(dim_range) == 2100
+@test lastindex(dim_vals) == 4
 
 
 @test Base.keys(rangedim) == [2010:2100...]
