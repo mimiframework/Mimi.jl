@@ -397,7 +397,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
 
     # Check size of provided parameter
     if update_timesteps && param.values isa TimestepArray
-        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...)
+        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...,)
     else 
         expected_size = size(param.values)
     end

@@ -403,9 +403,8 @@ end
 	hasvalue(arr::TimestepArray, ts::FixedTimestep, idxs::Int...) 
 
 Return `true` or `false`, `true` if the TimestepArray `arr` contains the Timestep `ts` within
-indices `idxs`.
+indices `idxs`. Used when Array and Timestep have different FIRST, validating all dimensions.
 """
-# Array and Timestep have different FIRST, validating all dimensions
 function hasvalue(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N}, 
 	ts::FixedTimestep{T_FIRST, STEP, LAST}, 
 	idxs::Int...) where {T, N, D_FIRST, T_FIRST, STEP, LAST}
@@ -416,9 +415,8 @@ end
 	hasvalue(arr::TimestepArray, ts::VariableTimestep, idxs::Int...)
 
 Return `true` or `false`, `true` if the TimestepArray `arr` contains the Timestep `ts` within
-indices `idxs`.
+indices `idxs`. Used when Array and Timestep different TIMES, validating all dimensions.
 """
-# Array and Timestep different TIMES, validating all dimensions
 function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, 
 	ts::VariableTimestep{T_FIRST}, 
 	idxs::Int...) where {T, N, D_FIRST, T_FIRST}

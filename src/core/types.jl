@@ -375,9 +375,6 @@ This `Model` can be created with the optional keyword argument `number_type` ind
 the default type of number used for the `ModelDef`.  If not specified the `Model` assumes
 a `number_type` of `Float64`.
 """
-#
-# Provides user-facing API to ModelInstance and ModelDef
-#
 mutable struct Model
     md::ModelDef
     mi::Union{Nothing, ModelInstance}
@@ -398,9 +395,6 @@ end
 A Mimi `Model` whose results are obtained by subtracting results of one `base` Model 
 from those of another `marginal` Model` that has a difference of `delta`.
 """
-#
-# A "model" whose results are obtained by subtracting results of one model from those of another.
-#
 struct MarginalModel
     base::Model
     marginal::Model

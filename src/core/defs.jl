@@ -54,7 +54,6 @@ end
 Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `ComponentDef`, 
 and `DimensionDef`.
 """
-# Gets the name of all NamedDefs: DatumDef, ComponentDef, DimensionDef
 name(def::NamedDef) = def.name
 
 number_type(md::ModelDef) = md.number_type
@@ -565,7 +564,6 @@ Add the component indicated by `comp_id` to the model indicated by `md`. The com
 the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-
 function add_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                    first::NothingInt=nothing, last::NothingInt=nothing, 
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)

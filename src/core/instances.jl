@@ -132,12 +132,14 @@ function get_property_obj(obj::ComponentInstanceVariables{NAMES, TYPES},
     return obj.values[index_pos]
 end
 
+#
+# Convenience functions that can be called with a name symbol rather than Val(name)
+#
 """
     get_param_value(ci::ComponentInstance, name::Symbol)
 
 Return the value of parameter `name` in component `ci`.
 """
-# Convenience functions that can be called with a name symbol rather than Val(name)
 function get_param_value(ci::ComponentInstance, name::Symbol)
     try 
         return getproperty(ci.parameters, Val(name))
