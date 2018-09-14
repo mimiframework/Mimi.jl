@@ -36,8 +36,10 @@ function reset_compdefs(reload_builtins=true)
 end
 
 first_period(comp_def::ComponentDef) = comp_def.first
+first_period(md::ModelDef, comp_def::ComponentDef) = first_period(comp_def) == nothing ? time_labels(md)[1] : first_period(comp_def)
 
 last_period(comp_def::ComponentDef) = comp_def.last
+last_period(md::ModelDef, comp_def::ComponentDef) = last_period(comp_def) == nothing ? time_labels(md)[end] : last_period(comp_def)
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -194,13 +196,13 @@ isuniform(md::ModelDef) = md.is_uniform
 function reset_run_periods!(md, first, last)
     for comp_def in compdefs(md)
         change = false
-        if first_period(comp_def) < first 
+        if first_period(comp_def) != nothing && first_period(comp_def) < first 
             warn("Resetting $(comp_def.name) component's first timestep to $first")
             change = true
         else
             first = first_period(comp_def)
         end 
-        if last_period(comp_def) > last 
+        if last_period(comp_def) != nothing && last_period(comp_def) > last 
             warn("Resetting $(comp_def.name) component's last timestep to $last")
             change = true
         else 
@@ -359,15 +361,14 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
             if num_dims == 0
                 values = value
             else
-                first = first_period(comp_def)
+                # Want to use the first from the comp_def if it has it, if not use ModelDef
+                first = first_period(md, comp_def)
 
                 if isuniform(md)
-                    #want to use the first from the comp_def not the ModelDef
                     _, stepsize = first_and_step(md)
                     values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims}(value)
                 else
                     times = time_labels(md)  
-                    #use the first from the comp_def 
                     first_index = findfirst(times, first)                  
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, num_dims}(value)
                 end 
@@ -445,8 +446,8 @@ end
 # Return the number of timesteps a given component in a model will run for.
 function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
-    first = first_period(comp_def)
-    last  = last_period(comp_def)
+    first = first_period(md, comp_def)
+    last  = last_period(md, comp_def)
     times = time_labels(md)
     first_index = findfirst(times, first)
     last_index = findfirst(times, last)
@@ -484,15 +485,11 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # check that first and last are within the model's time index range
     time_index = dim_keys(md, :time)
 
-    if first == nothing
-        first = time_index[1]
-    elseif first < time_index[1]
+    if first != nothing && first < time_index[1]
         error("Cannot add component $name with first time before first of model's time index range.")
     end
 
-    if last == nothing
-        last = time_index[end]
-    elseif last > time_index[end]
+    if last != nothing && last > time_index[end]
         error("Cannot add component $name with last time after end of model's time index range.")
     end
 

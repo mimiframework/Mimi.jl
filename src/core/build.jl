@@ -36,7 +36,7 @@ function _vars_type(md::ModelDef, comp_def::ComponentDef)
     var_defs = variables(comp_def)    
     vnames = Tuple([name(vdef) for vdef in var_defs])
     
-    first = comp_def.first
+    first = first_period(md, comp_def)
     vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
 
     return ComponentInstanceVariables{vnames, vtypes}
@@ -72,7 +72,7 @@ Return the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    first = comp_def.first
+    first = first_period(md, comp_def)
     vtype = _vars_type(md, comp_def)
     
     vals = [_instantiate_datum(md, def, first) for def in variables(comp_def)]
@@ -161,7 +161,10 @@ function build(md::ModelDef)
         ptypes = Tuple{map(typeof, pvals)...}
         pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
 
-        ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
+        first = first_period(md, comp_def)
+        last = last_period(md, comp_def)
+
+        ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
         add_comp!(mi, ci)
     end
 

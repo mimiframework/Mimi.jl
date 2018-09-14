@@ -119,7 +119,7 @@ end
 
 m = Model()
 set_dimension!(m, :time, 2000:2002)
-add_comp!(m, MyComp2)
+add_comp!(m, MyComp2; first=2000, last=2002)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, 2001:2003)
 
@@ -144,7 +144,7 @@ run(m)
 
 m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
-add_comp!(m, MyComp2)
+add_comp!(m, MyComp2; first=2000, last=2020)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, [2005, 2020, 2050])
 
@@ -171,7 +171,7 @@ m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
-set_dimension!(m, :time, [2005, 2020, 2050])
+set_dimension!(m, :time, [2005, 2020, 2050])    # Component transitions to new time steps
 update_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Float64, 1}
@@ -179,6 +179,7 @@ x = m.md.external_params[:x]
 run(m)
 @test m[:MyComp2, :y][1] == 2   # 2005
 @test m[:MyComp2, :y][2] == 3   # 2020
+@test m[:MyComp2, :y][3] == 4   # 2050
 
 
 # 4. Test updating the time index to a different length
@@ -189,15 +190,14 @@ add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, 1999:2003)     # length 5
 
+@test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
 update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
 
 run(m)
-@test m[:MyComp2, :y][1] == 3.  # 2000
-@test m[:MyComp2, :y][2] == 4.  # 2001
-@test m[:MyComp2, :y][3] == 5.  # 2002
+@test m[:MyComp2, :y] == [2., 3., 4., 5., 6.]
 
 
 # 5. Test all the warning and error cases
