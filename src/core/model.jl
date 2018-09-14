@@ -70,7 +70,7 @@ function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
 end
 
@@ -150,12 +150,12 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 @modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
-    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})
 
 Set the values of `Model` dimension `name` to integers 1 through `count`, if keys is
 an integer; or to the values in the vector or range if keys is either of those types.
 """
-function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
+function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
     set_dimension!(m.md, name, keys)
     decache(m)
 end

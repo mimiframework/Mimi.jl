@@ -1,6 +1,6 @@
 
 using Mimi
-using Base.Test
+using Test
 
 reset_compdefs()
 

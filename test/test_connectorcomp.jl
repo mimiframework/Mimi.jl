@@ -1,5 +1,5 @@
 using Mimi
-using Base.Test
+using Test
 
 #--------------------------------------
 #  Manual way of using ConnectorComp

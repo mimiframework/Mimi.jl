@@ -246,7 +246,7 @@ mutable struct ModelDef
     
     function ModelDef(number_type=Float64)
         self = new()
-        self.module_name = module_name(current_module())
+        self.module_name = nameof(@__MODULE__)
         self.comp_defs = OrderedDict{Symbol, ComponentDef}()
         self.dimensions = Dict{Symbol, Dimension}()
         self.number_type = number_type
@@ -333,7 +333,11 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         comp_module = eval(Main, comp_id.module_name)
 
         # the try/catch allows components with no run_timestep function (as in some of our test cases)
-        self.run_timestep = func = try eval(comp_module, Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)")) end
+        self.run_timestep = func = try 
+            eval(comp_module, Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)"))
+        catch err
+            nothing
+        end
            
         return self
     end

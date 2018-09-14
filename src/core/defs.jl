@@ -182,7 +182,7 @@ Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
 
 isuniform(md::ModelDef) = md.is_uniform
 
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})    
+function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})    
     if haskey(md, name)
         warn("Redefining dimension :$name")
     end
@@ -214,7 +214,7 @@ function isuniform(values::Int)
     return true
 end
 
-# function isuniform(values::Range{Int})
+# function isuniform(values::AbstractRange{Int})
 #     return isuniform(collect(values))
 # end
 
@@ -313,7 +313,7 @@ function set_parameter!(md::ModelDef, comp_name::Symbol, param_name::Symbol, val
                     times = time_labels(md)  
                     #use the first from the comp_def 
                     first_index = findfirst(times, first)                  
-                    values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, num_dims}(value)
+                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
                 end 
                 
             end

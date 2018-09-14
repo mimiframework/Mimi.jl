@@ -136,7 +136,7 @@ The full signature for the `run_mcs` is:
 
 ```
 function run_mcs(mcs::MonteCarloSimulation, 
-                 trials::Union{Int, Vector{Int}, Range{Int}},
+                 trials::Union{Int, Vector{Int}, AbstractRange{Int}},
                  models_to_run::Int=length(mcs.models);
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 

@@ -1,6 +1,6 @@
 module TestUnits
 
-using Base.Test
+using Test
 using Mimi
 
 import Mimi: verify_units, connect_parameter, ComponentReference, @defmodel

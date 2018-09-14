@@ -153,7 +153,7 @@ macro defcomp(comp_name, ex)
     if @capture(comp_name, mod_name_.cmpname_)       # e.g., Mimi.adder
         comp_name = cmpname
     else
-        mod_name = Base.module_name(current_module())
+        mod_name = nameof(@__MODULE__)
     end
     
     # We'll return a block of expressions that will define the component. First,
@@ -209,7 +209,7 @@ macro defcomp(comp_name, ex)
             desc = ""
             unit = ""
             dflt = nothing
-            dimensions = Array{Symbol}(0)
+            dimensions = Array{Symbol}(undef, 0)
 
             for arg in args
                 debug("    arg: $arg")
@@ -277,7 +277,7 @@ Define a Mimi model. The following types of expressions are supported:
 macro defmodel(model_name, ex)
     @capture(ex, elements__)
 
-    curr_module = Base.module_name(current_module())
+    curr_module = nameof(@__MODULE__)
 
     # Allow explicit definition of module to define model in
     if @capture(model_name, module_name_.model_)       # e.g., Mimi.adder

@@ -1,5 +1,5 @@
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     Dimension, key_type
@@ -8,7 +8,7 @@ Mimi.reset_compdefs()
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
 dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
-dim_range = Dimension(2010:2100)    # Range		
+dim_range = Dimension(2010:2100)    # AbstractRange		
 dim_vals = Dimension(4) # Same as 1:4
 
 @test key_type(dim_varargs) == Symbol
@@ -21,10 +21,10 @@ dim_vals = Dimension(4) # Same as 1:4
 @test length(dim_vals) == 4
 @test length(dim_range) == 91
 
-@test start(dim_varargs) == 1
-@test start(dim_vec) == 1
-@test start(dim_vals) == 1
-@test start(dim_range) == 1
+@test iterate(dim_varargs) == 1
+@test iterate(dim_vec) == 1
+@test iterate(dim_vals) == 1
+@test iterate(dim_range) == 1
 
 @test endof(dim_varargs) == :baz
 @test endof(dim_vec) == :baz

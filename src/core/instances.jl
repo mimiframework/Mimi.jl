@@ -215,7 +215,7 @@ function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
 
     else
         last_index = findfirst(time_keys, last)
-        times = (time_keys[1:last_index]...)
+        times = (time_keys[1:last_index]...,)
         return Clock{VariableTimestep}(times)
 
     end
@@ -309,7 +309,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         for i = 1:length(firsts)
             first_index = findfirst(t, firsts[i])
             last_index = findfirst(t, lasts[i])
-            times = (t[first_index:last_index]...)
+            times = (t[first_index:last_index]...,)
             comp_clocks[i] = Clock{VariableTimestep}(times)
         end
     end

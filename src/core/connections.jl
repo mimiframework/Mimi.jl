@@ -123,7 +123,7 @@ function connect_parameter(md::ModelDef,
                 times = time_labels(md)
                 #use the first from the comp_def 
                 first_index = findfirst(times, first)
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, dim_count}(backup)
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
             end
             
         end
@@ -251,7 +251,7 @@ function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_di
     set_external_scalar_param!(md, name, value)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     
     num_dims = length(param_dims)
 

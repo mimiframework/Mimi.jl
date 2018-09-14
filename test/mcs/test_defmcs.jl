@@ -4,7 +4,7 @@ using Query
 using DataFrames
 using IterTools
 
-using Base.Test
+using Test
 
 N = 1000
 

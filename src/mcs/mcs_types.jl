@@ -1,5 +1,5 @@
 using IterableTables
-using NamedTuples
+using Statistics
 
 @enum ScenarioLoopPlacement OUTER INNER
 @enum SamplingOptions LHS RANDOM
@@ -25,7 +25,7 @@ Base.eltype(ss::SampleStore) = eltype(ss.values)
 # TBD: This interpolates values between those in the vector. Is this reasonable?
 # Probably shouldn't use correlation on values loaded from a file rather than 
 # from a proper distribution.
-function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
+function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
     return quantile.(sort(ss.values), probs)
 end
 
@@ -120,7 +120,7 @@ mutable struct MonteCarloSimulation
         self.corrlist = corrlist
         self.savelist = savelist
         self.dist_rvs = [rv for rv in rvlist if rv.dist isa Distribution]
-        self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
+        self.nt_type = NamedTuple{(collect(keys(self.rvdict))...,)}
 
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{Model}(0)

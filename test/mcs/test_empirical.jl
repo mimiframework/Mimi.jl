@@ -1,5 +1,6 @@
 using ExcelFiles
 using Mimi
+using Statistics
 using Test
 
 include("../../wip/load_empirical_dist.jl")

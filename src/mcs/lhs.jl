@@ -12,6 +12,7 @@
 # http://nullege.com/codes/show/src@m@o@model-builder-HEAD@Bayes@lhs.py
 #
 import StatsBase
+using Statistics
 
 """
     rank_corr_coef(m::Matrix{Float64})

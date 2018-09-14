@@ -132,7 +132,7 @@ function get_timestep_instance(md::ModelDef, T, num_dims, value)
 	else
 
 		times = time_labels(md)		
-		return timestep_array_type{VariableTimestep{(times...)}, T}(value)	
+		return timestep_array_type{VariableTimestep{(times...,)}, T}(value)	
 
 	end
 end
@@ -140,7 +140,7 @@ end
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 
 # TBD: can it be reduced to this?
-# const AnyIndex = Union{Int, Range}
+# const AnyIndex = Union{Int, AbstractRange}
 
 #
 # 3b. TimestepVector
@@ -354,7 +354,7 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, ts::
 	return arr.data[t, idxs...]
 end
 
-# Old-style: first index is Int or Range, rather than a Timestep
+# Old-style: first index is Int or AbstractRange, rather than a Timestep
 # function Base.getindex(arr::TimestepArray, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...)
 # 	return arr.data[idx1, idx2, idxs...]
 # end
@@ -389,7 +389,7 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N}, val
 	setindex!(arr.data, val, t, idxs...)
 end
 
-# Old-style: first index is Int or Range, rather than a Timestep
+# Old-style: first index is Int or AbstractRange, rather than a Timestep
 # function Base.setindex!(arr::TimestepArray, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...)
 # 	setindex!(arr.data, val, idx1, idx2, idxs...)
 # end

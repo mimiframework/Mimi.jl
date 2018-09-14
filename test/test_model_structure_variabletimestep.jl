@@ -2,7 +2,7 @@ module TestModelStructure_VariableTimestep
 
 #tests the framework of components and connections
 
-using Base.Test
+using Test
 using Mimi
 
 import Mimi: 

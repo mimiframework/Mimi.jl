@@ -1,6 +1,6 @@
 module TestReferences
 
-using Base.Test
+using Test
 using Mimi
 
 @defcomp Foo begin

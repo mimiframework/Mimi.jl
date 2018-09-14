@@ -1,5 +1,5 @@
 using Mimi
-using Base.Test
+using Test
 
 import Mimi: 
     external_params, update_external_param, TimestepMatrix, TimestepVector, 

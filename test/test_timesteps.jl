@@ -1,7 +1,7 @@
 module TestTimesteps
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 

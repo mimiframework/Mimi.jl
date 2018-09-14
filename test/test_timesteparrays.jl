@@ -1,5 +1,5 @@
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 

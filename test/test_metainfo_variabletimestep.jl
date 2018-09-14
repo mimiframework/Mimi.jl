@@ -1,6 +1,6 @@
 module MyModel
 
-using Base.Test
+using Test
 using Mimi
 
 Mimi.reset_compdefs()

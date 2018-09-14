@@ -1,6 +1,6 @@
 module MyModel
 
-using Base.Test
+using Test
 using Mimi
 
 @defcomp ch4forcing1 begin

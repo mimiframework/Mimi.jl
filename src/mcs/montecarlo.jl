@@ -1,6 +1,7 @@
 using IterTools
 using IterableTables
 using TableTraits
+using Random
 using ProgressMeter
 
 # Temporary: for 0.7/1.0, we can just remove this and use the logging macros provided.
@@ -196,12 +197,12 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int;
 end
 
 """
-    Base.rand!(mcs::MonteCarloSimulation)
+    Random.rand!(mcs::MonteCarloSimulation)
 
 Replace all RVs originally of type Distribution with SampleStores with 
 values drawn from that original distribution.
 """
-function Base.rand!(mcs::MonteCarloSimulation)
+function Random.rand!(mcs::MonteCarloSimulation)
     rvdict = mcs.rvdict
     trials = mcs.trials
 
@@ -352,7 +353,7 @@ end
 
 """
     run_mcs(mcs::MonteCarloSimulation, 
-            trials::Union{Int, Vector{Int}, Range{Int}},
+            trials::Union{Int, Vector{Int}, AbstractRange{Int}},
             models_to_run::Int=length(mcs.models);
             ntimesteps::Int=typemax(Int), 
             output_dir::Union{Nothing, AbstractString}=nothing, 
@@ -388,7 +389,7 @@ is specified, the `scenario_func` is called after any `pre_trial_func` but befor
 is run.
 """
 function run_mcs(mcs::MonteCarloSimulation, 
-                 trials::Union{Vector{Int}, Range{Int}},
+                 trials::Union{Vector{Int}, AbstractRange{Int}},
                  models_to_run::Int=length(mcs.models);     # run all models by default
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 
@@ -544,13 +545,19 @@ set_model!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.
 #
 # Iterator functions for MonteCarloSimulation directly, and for use as an IterableTable.
 #
-function Base.start(mcs::MonteCarloSimulation)
+function Base.iterate(mcs::MonteCarloSimulation)
     _reset_rvs!(mcs)
-    return 1
+    trialnum = 1
+    return get_trial(mcs, trialnum), trialnum
 end
 
-Base.next(mcs::MonteCarloSimulation, trialnum) = (get_trial(mcs, trialnum), trialnum + 1)
-Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum == mcs.trials)
+function Base.iterate(mcs::MonteCarloSimulation, trialnum)
+    if trialnum == mcs.trials
+        return nothing
+    else
+        return get_trial(mcs, trialnum+1), trialnum + 1
+    end
+end
 
 TableTraits.isiterable(mcs::MonteCarloSimulation) = true
 TableTraits.isiterabletable(mcs::MonteCarloSimulation) = true
@@ -563,13 +570,20 @@ column_types(mcs::MonteCarloSimulation) = [eltype(fld) for fld in values(mcs.rvd
 column_names(iter::MCSIterator) = column_names(iter.mcs)
 column_types(iter::MCSIterator) = IterableTables.column_types(iter.mcs)
 
-function Base.start(iter::MCSIterator)
+function Base.iterate(iter::MCSIterator)
     _reset_rvs!(iter.mcs)
-    return 1
+    idx = 1
+    return get_trial(iter.mcs, idx), idx
 end
 
-Base.next(iter, idx) = (get_trial(iter.mcs, idx), idx + 1)
-Base.done(iter, idx) = (idx == iter.mcs.trials)
+function Base.iterate(iter::MCSIterator, idx)
+    if idx == iter.mcs.trials
+        return nothing
+    else
+        return get_trial(iter.mcs, idx+1), idx+1
+    end
+end
+
 Base.length(iter) = iter.mcs.trials
 
 Base.eltype(::Type{MCSIterator{T}}) where T = T

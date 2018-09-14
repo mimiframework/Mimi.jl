@@ -1,6 +1,6 @@
 using Mimi
 using NamedArrays
-using Base.Test
+using Test
 
 
 ############################################

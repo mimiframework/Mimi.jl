@@ -1,5 +1,5 @@
 using Mimi
-using Base.Test
+using Test
 using DataFrames
 
 import Mimi: 
