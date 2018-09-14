@@ -1,5 +1,4 @@
 using IterableTables
-using NamedTuples
 using Distributions
 using Statistics
 
