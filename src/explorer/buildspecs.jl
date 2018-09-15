@@ -44,9 +44,9 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         
     catch err
         if length(dims) >= 3
-            warn("$comp_name.$item_name has over 3 graphing dims, not yet implemented in explorer")
+            @warn "$comp_name.$item_name has over 3 graphing dims, not yet implemented in explorer"
         else
-            warn("spec conversion failed for $comp_name.$item_name")
+            @warn "spec conversion failed for $comp_name.$item_name"
         end
         rethrow(err)
     end

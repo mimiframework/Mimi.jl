@@ -83,7 +83,7 @@ Add an empty `ComponentDef` to the global component registry with the given
 function new_comp(comp_id::ComponentId, verbose::Bool=true)
     if verbose
         if haskey(_compdefs, comp_id)
-            warn("Redefining component $comp_id")
+            @warn "Redefining component $comp_id"
         else
             println("new component $comp_id")
         end
@@ -194,13 +194,13 @@ function reset_run_periods!(md, first, last)
     for comp_def in compdefs(md)
         change = false
         if first_period(comp_def) < first 
-            warn("Resetting $(comp_def.name) component's first timestep to $first")
+            @warn "Resetting $(comp_def.name) component's first timestep to $first"
             change = true
         else
             first = first_period(comp_def)
         end 
         if last_period(comp_def) > last 
-            warn("Resetting $(comp_def.name) component's last timestep to $last")
+            @warn "Resetting $(comp_def.name) component's last timestep to $last"
             change = true
         else 
             last = last_period(comp_def)
@@ -221,7 +221,7 @@ an integer; or to the values in the vector or range if `keys` is either of those
 function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
     redefined = haskey(md, name)
     if redefined
-        warn("Redefining dimension :$name")
+        @warn "Redefining dimension :$name"
     end
 
     if name == :time
@@ -647,7 +647,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         for epc in external_param_conns(md, comp_name)
             param_name = epc.param_name
             if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just warn?
-                warn("Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component.")
+                @warn "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
                 push!(remove, epc)
             else
                 old_p = old_comp.parameters[param_name]

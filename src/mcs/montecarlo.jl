@@ -4,32 +4,6 @@ using TableTraits
 using Random
 using ProgressMeter
 
-# Temporary: for 0.7/1.0, we can just remove this and use the logging macros provided.
-@enum LogLevel WARN=1 INFO=2 DEBUG=3
-_LogLevel = WARN
-
-function log_level!(level::LogLevel)
-    global _LogLevel
-    _LogLevel = level
-end
-
-log_level() = _LogLevel
-
-function log_debug(msg)
-    _LogLevel >= DEBUG && println("DEBUG: ", msg)
-    nothing
-end
-
-function log_info(msg)
-    _LogLevel >= INFO && println("INFO: ", msg)
-    nothing
-end
-
-function log_warn(msg)
-    _LogLevel >= WARN && warn(msg)
-    nothing
-end
-
 function Base.show(io::IO, mcs::MonteCarloSimulation)
     println("MonteCarloSimulation")
     
@@ -63,7 +37,7 @@ end
 
 # Store results for a single parameter
 function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
-    log_debug("\nStoring trial results for $datum_key")
+    @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
     dims = dimensions(m, comp_name, datum_name)
@@ -127,7 +101,7 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
         for datum_key in mcs.savelist
             (comp_name, datum_name) = datum_key
             filename = joinpath(sub_dir, "$datum_name.csv")
-            log_info("Writing $comp_name.$datum_name to $filename")
+            @info "Writing $comp_name.$datum_name to $filename"
             save(filename, results[datum_key])
         end
     end
@@ -444,7 +418,7 @@ function run_mcs(mcs::MonteCarloSimulation,
 
     for outer_tup in arg_tuples_outer
         if has_outer_scenario
-            log_debug("Calling outer scenario_func with $outer_tup")
+            @debug "Calling outer scenario_func with $outer_tup"
             scenario_func(mcs, outer_tup)
 
             # we'll store the results of each in a subdir composed of tuple values
@@ -458,7 +432,7 @@ function run_mcs(mcs::MonteCarloSimulation,
         _reset_rvs!(mcs)
 
         for (i, trialnum) in enumerate(trials)
-            log_debug("Running trial $trialnum")
+            @debug "Running trial $trialnum"
 
             for inner_tup in arg_tuples_inner
                 tup = has_inner_scenario ? inner_tup : outer_tup
@@ -466,24 +440,24 @@ function run_mcs(mcs::MonteCarloSimulation,
                 _perturb_params!(mcs, trialnum)
 
                 if pre_trial_func != nothing
-                    log_debug("Calling pre_trial_func($trialnum, $tup)")
+                    @debug "Calling pre_trial_func($trialnum, $tup)"
                     pre_trial_func(mcs, trialnum, ntimesteps, tup)
                 end               
 
                 if has_inner_scenario
-                    log_debug("Calling inner scenario_func with $inner_tup")
+                    @debug "Calling inner scenario_func with $inner_tup"
                     scenario_func(mcs, inner_tup)
 
                     output_dir = _compute_output_dir(orig_output_dir, inner_tup)
                 end
 
                 for m in mcs.models[1:models_to_run]    # note that list of models may be changed in scenario_func
-                    log_debug("Running model")
+                    @debug "Running model"
                     run(m, ntimesteps=ntimesteps)
                 end
                 
                 if post_trial_func != nothing
-                    log_debug("Calling post_trial_func($trialnum, $tup)")
+                    @debug "Calling post_trial_func($trialnum, $tup)"
                     post_trial_func(mcs, trialnum, ntimesteps, tup)
                 end
 

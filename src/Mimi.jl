@@ -5,8 +5,6 @@ using DataStructures
 using Distributions
 using Electron
 using JSON 
-# using LightGraphs
-# using MetaGraphs
 using NamedArrays
 using StringBuilders
 

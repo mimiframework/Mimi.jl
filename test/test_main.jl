@@ -10,7 +10,7 @@ import Mimi:
 
 reset_compdefs()
 
-@defcomp foo1 begin
+@defcomp TestMain.foo1 begin
     index1 = Index()
 
     par1 = Parameter()
@@ -36,7 +36,6 @@ end
     component(foo1)
 
     foo1.par1 = 5.0
-    # foo1.par2 = []
 end
 
 @test length(compdefs()) == 4   # adder, 2 connectors, and foo1

@@ -3,14 +3,6 @@
 #
 using MacroTools
 
-_Debug = false
-
-function debug(msg)
-    if _Debug
-        println(msg)
-    end
-end
-
 # Store a list of built-in components so we can suppress messages about creating them
 # TBD: and (later) suppress their return in the list of components at the user level.
 const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
@@ -25,7 +17,7 @@ is_builtin(module_name, comp_name) = (module_name == :Main && comp_name in built
 # :(setproperty!(p, Val(:foo), (getproperty(v, Val(:bar)))[1]))
 #
 function _replace_dots(ex)
-    # debug("\nreplace_dots($ex)\n")
+    # @debug "\nreplace_dots($ex)\n"
 
     if @capture(ex, obj_.field_ = rhs_)
         return :(setproperty!($obj, Val($(QuoteNode(field))), $rhs))
@@ -40,7 +32,7 @@ function _replace_dots(ex)
         return :(getproperty($obj, Val($(QuoteNode(field))))[$(args...)])
 
     else
-        #debug("No dots to replace")
+        # @debug "No dots to replace"
         return ex
     end
 end
@@ -90,7 +82,7 @@ function _generate_init_func(module_name, comp_name, args, body)
         end
     )
     func = esc(func)
-    debug("init func: $func")
+    @debug "init func: $func"
     return func
 end
 
@@ -115,12 +107,12 @@ function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc
     end
     # expr = :($func_name($(esc(:comp)), $(QuoteNode(name)), $datatype, $dimensions, $desc, $unit))
     expr = :($func_name($(esc(:comp)), $(QuoteNode(name)), $(args...)))
-    debug("Returning: $expr\n")
+    @debug "Returning: $expr\n"
     return expr
 end
 
 function _generate_dims_expr(name, args, vartype)
-    debug("  Index $name")
+    @debug "  Index $name"
 
     # Args are not permitted; we attempt capture only to check syntax
     if length(args) > 0
@@ -158,7 +150,7 @@ macro defcomp(comp_name, ex)
     known_dims = Set{Symbol}()
 
     @capture(ex, elements__)
-    debug("Component $comp_name")
+    @debug "Component $comp_name"
 
     # Allow explicit definition of module to define component in
     if @capture(comp_name, mod_name_.cmpname_)       # e.g., Mimi.adder
@@ -186,7 +178,7 @@ macro defcomp(comp_name, ex)
     addexpr(esc(newcomp))
 
     for elt in elements
-        debug("elt: $elt")
+        @debug "elt: $elt"
        
         if @capture(elt, function fname_(args__) body__ end) 
             if fname == :run_timestep
@@ -213,14 +205,14 @@ macro defcomp(comp_name, ex)
             addexpr(expr)
 
         elseif elt_type in (:Variable, :Parameter)
-            debug("  $elt_type $name")
+            @debug "  $elt_type $name"
             desc = ""
             unit = ""
             dflt = nothing
             dimensions = Array{Symbol}(undef, 0)
 
             for arg in args
-                debug("    arg: $arg")
+                @debug "    arg: $arg"
                 if @capture(arg, argname_ = value_)
                     _check_for_known_argname(argname)
 
@@ -240,7 +232,7 @@ macro defcomp(comp_name, ex)
                     unit = value
 
                 elseif @capture(arg, index = [dims__])
-                    debug("    dims: $dims")
+                    @debug "    dims: $dims"
                     append!(dimensions, dims)
 
                     # Add undeclared dimensions on-the-fly
@@ -255,11 +247,11 @@ macro defcomp(comp_name, ex)
                     if elt_type == :Variable
                         error("Default values are permitted only for Parameters, not for Variables")
                     end
-                    debug("Default for parameter $name is $dflt")
+                    @debug "Default for parameter $name is $dflt"
                 end
             end
 
-            debug("    index $(Tuple(dimensions)), unit '$unit', desc '$desc'")
+            @debug "    index $(Tuple(dimensions)), unit '$unit', desc '$desc'"
 
             dflt = eval(dflt)
             if (dflt != nothing && length(dimensions) != ndims(dflt))
@@ -274,8 +266,8 @@ macro defcomp(comp_name, ex)
         end
     end
 
+    addexpr(:(nothing))
     return result
-
 end
 
 """

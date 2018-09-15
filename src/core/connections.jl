@@ -1,3 +1,6 @@
+using LightGraphs
+using MetaGraphs
+
 """
     disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
 
