@@ -10,7 +10,7 @@ import Mimi:
 
 reset_compdefs()
 
-@defcomp TestMain.foo1 begin
+@defcomp foo1 begin
     index1 = Index()
 
     par1 = Parameter()
@@ -73,4 +73,4 @@ add_comp!(m, foo1)
 
 @test :var1 in variable_names(x1, :foo1)
 
-end #module
+end # module
