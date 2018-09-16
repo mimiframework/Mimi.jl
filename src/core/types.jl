@@ -42,7 +42,7 @@ mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N}
 	end
 
     function TimestepArray{T_TS, T, N}(lengths::Int...) where {T_TS, T, N}
-		return new(Array{T, N}(lengths...))
+		return new(Array{T, N}(undef, lengths...))
 	end
 end
 
@@ -104,6 +104,14 @@ mutable struct ScalarModelParameter{T} <: ModelParameter
 
     function ScalarModelParameter{T}(value::T) where T
         new(value)
+    end
+
+    function ScalarModelParameter{T1}(value::T2) where {T1, T2}
+        try
+            new(T1(value))
+        catch err
+            error("Failed to convert $value::$T2 to $T1")
+        end
     end
 end
 
@@ -246,7 +254,7 @@ mutable struct ModelDef
     
     function ModelDef(number_type=Float64)
         self = new()
-        self.module_name = nameof(@__MODULE__)
+        self.module_name = nameof(@__MODULE__)                  # TBD: fix this; should by module model is defined in
         self.comp_defs = OrderedDict{Symbol, ComponentDef}()
         self.dimensions = Dict{Symbol, Dimension}()
         self.number_type = number_type
@@ -322,19 +330,23 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
                                name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
                                                                    TP <: ComponentInstanceParameters}
         self = new{TV, TP}()
+        
         self.comp_id = comp_id = comp_def.comp_id
         self.comp_name = name
         self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
+        
         self.variables = vars
         self.parameters = pars
-        self.first = comp_def.first
-        self.last = comp_def.last        
 
-        comp_module = eval(Main, comp_id.module_name)
+        self.first = comp_def.first
+        self.last  = comp_def.last
+
+        comp_module = Base.eval(Main, comp_id.module_name)
+        func_name = Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)")
 
         # the try/catch allows components with no run_timestep function (as in some of our test cases)
         self.run_timestep = func = try 
-            eval(comp_module, Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)"))
+            Base.eval(comp_module, func_name)
         catch err
             nothing
         end

@@ -45,9 +45,7 @@ end
 # Support for dot-overloading in run_timestep functions
 #
 function _index_pos(names, propname, var_or_par)
-    index_pos = findfirst(names, propname)
-    # println("findfirst($names, $propname) returned $index_pos")
-
+    index_pos = findfirst(name -> name == propname, names)
     index_pos == 0 && error("Unknown $var_or_par name $propname.")
     return index_pos
 end
@@ -248,7 +246,7 @@ function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
         return Clock{FixedTimestep}(first, stepsize, last)
 
     else
-        last_index = findfirst(time_keys, last)
+        last_index = findfirst(t -> t == last, times)
         times = (time_keys[1:last_index]...,)
         return Clock{VariableTimestep}(times)
 
@@ -339,10 +337,10 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         _, stepsize = first_and_step(t)
         comp_clocks = [Clock{FixedTimestep}(first, stepsize, last) for (first, last) in zip(firsts, lasts)]
     else
-        comp_clocks = Array{Clock{VariableTimestep}}(length(firsts))
+        comp_clocks = Array{Clock{VariableTimestep}}(undef, length(firsts))
         for i = 1:length(firsts)
-            first_index = findfirst(t, firsts[i])
-            last_index = findfirst(t, lasts[i])
+            first_index = findfirst(x -> x == firsts[i], t)
+            last_index  = findfirst(x -> x == lasts[i], t)
             times = (t[first_index:last_index]...,)
             comp_clocks[i] = Clock{VariableTimestep}(times)
         end

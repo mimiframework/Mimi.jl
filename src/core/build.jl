@@ -23,7 +23,7 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
             # need to make sure we define the timestep to begin at the first from 
             # the function argument
       
-            first_index = findfirst(times, first) 
+            first_index = findfirst(t -> t == first, times) 
             T = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, dtype, num_dims}
         end
     end
@@ -54,11 +54,11 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
     # This is necessary only if dims[1] == :time, otherwise "else" handles it, too
     elseif num_dims == 1 && dims[1] == :time
         value = dtype(dim_count(md, :time))
-
+        
     else # if dims[1] != :time
         # TBD: Handle unnamed indices properly
         counts = dim_counts(md, Vector{Symbol}(dims))
-        value = dtype(counts...)
+        value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)
     end
 
     return value

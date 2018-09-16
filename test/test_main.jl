@@ -45,7 +45,7 @@ end
 
 @test length(dimension(x1.md, :index1)) == 3
 
-# @test_throws MethodError x1.Parameters.par1 = Array{Float64}(1,2)
+# @test_throws MethodError x1.Parameters.par1 = Array{Float64}(undef, 1, 2)
 
 par1 = external_param(x1, :par1)
 @test par1.value == 5.0

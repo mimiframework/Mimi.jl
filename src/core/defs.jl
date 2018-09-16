@@ -367,7 +367,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
                 else
                     times = time_labels(md)  
                     #use the first from the comp_def 
-                    first_index = findfirst(times, first)                  
+                    first_index = findfirst(t -> t == first, times)                
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
                 end 
             end
@@ -447,8 +447,8 @@ function getspan(md::ModelDef, comp_name::Symbol)
     first = first_period(comp_def)
     last  = last_period(comp_def)
     times = time_labels(md)
-    first_index = findfirst(times, first)
-    last_index = findfirst(times, last)
+    first_index = findfirst(x -> x == first, times)
+    last_index  = findfirst(x -> x == last, times)
     return size(times[first_index:last_index])
 end
 
@@ -599,7 +599,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         comps = collect(keys(md.comp_defs))
         n = length(comps)
         if n > 1
-            idx = findfirst(comps, comp_name)
+            idx = findfirst(x -> x == comp_name, comps)
             if idx == n 
                 after = comps[idx - 1]
             else

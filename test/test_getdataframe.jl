@@ -88,7 +88,7 @@ set_dimension!(new_model, :time, years)
 set_dimension!(new_model, :regions, regions)
 set_dimension!(new_model, :rates, rates)
 
-data = Array{Int}(length(years), length(regions), length(rates))
+data = Array{Int}(undef, length(years), length(regions), length(rates))
 data[:] = 1:(length(years) * length(regions) * length(rates))
 
 add_comp!(new_model, testcomp4)

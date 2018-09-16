@@ -77,8 +77,8 @@ using Test
 
     # fails currently: requires either not having Refs typed (which prevents reassignment)
     # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
-    # @info("test_connectorcomp.jl")
-    # include("test_connectorcomp.jl")
+    @info("test_connectorcomp.jl")
+    include("test_connectorcomp.jl")
 
     @info("test_explorer.jl")
     include("test_explorer.jl")
@@ -86,5 +86,5 @@ using Test
     @info("test_plotting.jl")
     include("test_plotting.jl")
 
-    include("mcs/run_tests.jl")
+    include("mcs/runtests.jl")
 end

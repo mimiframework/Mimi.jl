@@ -134,13 +134,13 @@ function connect_param!(md::ModelDef,
         else
             
             if isuniform(md)
-                #use the first from the comp_def not the ModelDef
+                # use the first from the comp_def not the ModelDef
                 _, stepsize = first_and_step(md)
                 values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
-                #use the first from the comp_def 
-                first_index = findfirst(times, first)
+                # use the first from the comp_def 
+                first_index = findfirst(t -> t == first, times) 
                 values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
             end
             
@@ -324,7 +324,7 @@ function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractAr
     if !(typeof(value) <: Array{numtype})
         numtype = number_type(md)
         # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(value)
+        value = Array{numtype}(undef, value)
     end
     param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)

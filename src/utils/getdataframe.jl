@@ -32,8 +32,8 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
 
         if dim1 == :time
             ci = compinstance(mi, comp_name)
-            first = findfirst(keys, ci.first)
-            last  = findfirst(keys, ci.last)
+            first = findfirst(key -> key == ci.first, keys)
+            last  = findfirst(key -> key == ci.last, keys)
 
             df[item_name] = vcat(repeat([NaN], inner=first - 1), data, 
                                  repeat([NaN], inner=length(keys) - last))
@@ -64,8 +64,8 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
 
         if dim1 == :time
             ci = compinstance(m.mi, comp_name)
-            first = findfirst(keys1, ci.first)
-            last  = findfirst(keys1, ci.last)
+            first = findfirst(key -> key == ci.first, keys1)
+            last  = findfirst(key -> key == ci.last, keys1)
 
             top    = fill(NaN, first - 1, len_dim2)
             bottom = fill(NaN, len_dim1 - last, len_dim2)
