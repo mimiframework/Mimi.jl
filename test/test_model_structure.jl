@@ -144,7 +144,7 @@ add_comp!(m, D)
     parE2::Int = Parameter()
 
     function init(p, v, d)
-        v.varE= p.parE1
+        v.varE = p.parE1
     end
 
     function run_timestep(p, v, d, t)

@@ -7,7 +7,7 @@ using MacroTools
 # TBD: and (later) suppress their return in the list of components at the user level.
 const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
 
-is_builtin(module_name, comp_name) = (module_name == :Mimi && comp_name in built_in_comps)
+is_builtin(comp_name) = comp_name in built_in_comps
 
 #
 # TBD: this should be deleted
@@ -41,7 +41,7 @@ function _replace_dots(ex)
     end
 end
 
-function _generate_run_func(module_name, comp_name, args, body)
+function _generate_run_func(comp_name, args, body)
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
     end
@@ -56,20 +56,22 @@ function _generate_run_func(module_name, comp_name, args, body)
 
     # Generate unique function name for each component so we can store a function pointer.
     # (Methods requiring dispatch cannot be invoked directly. Could use FunctionWrapper here...)
-    funcname = Symbol("run_timestep_$(module_name)_$(comp_name)")
+    func_name = Symbol("run_timestep_$comp_name")
 
+    # Needs "global" so function is defined outside the "let" statement
     func = :(
-        function $(funcname)($(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
-                             $(d)::Dict{Symbol, Vector{Int}}, $(t)::T) where {T <: Mimi.AbstractTimestep}
+        global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
+                                     $(v)::Mimi.ComponentInstanceVariables, 
+                                     $(d)::Dict{Symbol, Vector{Int}}, 
+                                     $(t)::T) where {T <: Mimi.AbstractTimestep}
             $(body...)
-            
             return nothing
         end
     )
     return func
 end
 
-function _generate_init_func(module_name, comp_name, args, body)
+function _generate_init_func(comp_name, args, body)
 
     if length(args) != 3
         error("Can't generate init function; requires 3 arguments but got $args")
@@ -85,15 +87,14 @@ function _generate_init_func(module_name, comp_name, args, body)
     (p, v, d) = args
 
     # TBD: handle this as with run_timestep, i.e.
-    funcname = Symbol("init_$(module_name)_$(comp_name)")
+    func_name = Symbol("init_$comp_name")
 
     # TBD: can we then eliminate the first two args?
     func = :(
-        function Mimi.init(::Val{$(QuoteNode(module_name))}, ::Val{$(QuoteNode(comp_name))}, 
-                           $(p)::Mimi.ComponentInstanceParameters, $(v)::Mimi.ComponentInstanceVariables, 
-                           $(d)::Dict{Symbol, Vector{Int}})
+        global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
+                                     $(v)::Mimi.ComponentInstanceVariables, 
+                                     $(d)::Dict{Symbol, Vector{Int}})
             $(body...)
-
             return nothing
         end
     )
@@ -171,41 +172,24 @@ macro defcomp(comp_name, ex)
     if @capture(comp_name, module_name_.cmpname_)       # e.g., Mimi.adder
         comp_name = cmpname
     end
-    
-    ######
-    # TODO: eliminate the quote block; use :(let ... end)
-    ######
 
     # We'll return a block of expressions that will define the component. First,
     # save the ComponentId to a variable with the same name as the component.
-    result = quote
-        let module_name = $(QuoteNode(module_name))
-            if module_name == nothing
-                # @__MODULE is evaluated when the expanded macro is interpreted
-                module_name = nameof(@__MODULE__)
-            end
-            global const $comp_name = Mimi.ComponentId(module_name, $(QuoteNode(comp_name)))
+    # @__MODULE__ is evaluated when the expanded macro is interpreted
+    result = :(
+        let current_module = @__MODULE__
+            global const $comp_name = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name)))
         end
-    end
-
-    #####
-    # This isn't quite right yet; this is here to move forward with 1.0 migration 
-    #####
-    if module_name == nothing
-        module_name = :Main
-    end
-
-    # This is where we append expressions...
-    let_block = result.args[end].args[end].args
+    )
 
     # helper function used in loop below
     function addexpr(expr)
-        # push!(result.args, expr)
+        let_block = result.args[end].args
         push!(let_block, expr)
     end
-    
-    verbose = ! is_builtin(module_name, comp_name)
-    newcomp = :(comp = new_comp($comp_name, $verbose))
+
+    # verbose = :(! $comp_name in $built_in_comps))
+    newcomp = :(comp = new_comp($comp_name, true))
     addexpr(newcomp)
 
     for elt in elements
@@ -213,10 +197,10 @@ macro defcomp(comp_name, ex)
        
         if @capture(elt, function fname_(args__) body__ end)
             if fname == :run_timestep
-                expr = _generate_run_func(module_name, comp_name, args, body)
+                expr = _generate_run_func(comp_name, args, body)
 
             elseif fname == :init
-                expr = _generate_init_func(module_name, comp_name, args, body)
+                expr = _generate_init_func(comp_name, args, body)
             else
                 error("@defcomp can contain only these functions: init(p, v, d) and run_timestep(p, v, d, t)")
             end
@@ -314,43 +298,33 @@ Define a Mimi model. The following types of expressions are supported:
 macro defmodel(model_name, ex)
     @capture(ex, elements__)
 
-    # Allow explicit definition of module to define model in
-    if @capture(model_name, module_name_.model_)       # e.g., Mimi.adder       ### MODULE SPEC SHOULD BE DEPRECATED
-        model_name = model
-    end
-
-    result = quote
-        let module_name = $module_name, comp_mod = nothing
+    # @__MODULE__ is evaluated in calling module when macro is interpreted
+    result = :(
+        let calling_module = @__MODULE__, comp_mod_name = nothing
             global $model_name = Model()
-            
-            if module_name == nothing
-                # @__MODULE is evaluated when the expanded macro is interpreted
-                    module_name = nameof(@__MODULE__)
-                end
-            end
-    end
-
-    # This is where we append expressions...
-    let_block = result.args[end].args[end].args
-
+        end
+    )
+    
     # helper function used in loop below
     function addexpr(expr)
-        # push!(result.args, expr)
+        let_block = result.args[end].args
         push!(let_block, expr)
     end
 
     for elt in elements
         offset = 0
 
-        if @capture(elt, component(comp_mod_.comp_name_)         | component(comp_name_) |
-                         component(comp_mod_.comp_name_, alias_) | component(comp_name_, alias_))
+        if @capture(elt, component(comp_mod_name_name_.comp_name_)    | component(comp_name_) |
+                         component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
 
-            expr = (comp_mod == nothing ? :(comp_mod = module_name) : :(comp_mod = $(QuoteNode(comp_mod))))
+            # set local copy of comp_mod_name to the stated or default component module
+            expr = (comp_mod_name == nothing ? :(comp_mod_name = nameof(calling_module)) : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
             addexpr(expr)
 
-            name = alias == nothing ? comp_name : alias
-            expr = :(add_comp!($model_name, eval(comp_mod).$comp_name, $(QuoteNode(name))))
+            name = (alias == nothing ? comp_name : alias)
+            expr = :(add_comp!($model_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
 
+        # TBD: extend comp.var syntax to allow module name, e.g., FUND.economy.ygross
         elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||
                 @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_))
             if (arg != nothing && (! @capture(arg, t - offset_) || offset <= 0))
@@ -359,14 +333,14 @@ macro defmodel(model_name, ex)
 
             expr = :(Mimi.connect_param!($model_name,
                                          $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
-                                         $(QuoteNode(src_comp)), $(QuoteNode(src_name)), offset=$(esc(offset))))
+                                         $(QuoteNode(src_comp)), $(QuoteNode(src_name)), 
+                                         offset=$offset))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
             expr = :(Mimi.set_dimension!($model_name, $(QuoteNode(idx_name)), $rhs))
 
         elseif @capture(elt, comp_name_.param_name_ = rhs_)
             expr = :(Mimi.set_param!($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
-            # expr = :(set_param!($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $(esc(rhs))))
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

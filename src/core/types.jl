@@ -323,6 +323,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     first::Int
     last::Int
 
+    init::Union{Nothing, Function}
     run_timestep::Union{Nothing, Function}
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
@@ -341,15 +342,23 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         self.first = comp_def.first
         self.last  = comp_def.last
 
-        comp_module = Base.eval(Main, comp_id.module_name)
-        func_name = Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)")
+        comp_name   = comp_id.comp_name
+        module_name = comp_id.module_name
+        comp_module = Base.eval(Main, module_name)
 
-        # the try/catch allows components with no run_timestep function (as in some of our test cases)
-        self.run_timestep = func = try 
-            Base.eval(comp_module, func_name)
-        catch err
-            nothing
+        function get_func(name)
+            # TBD: use FunctionWrapper here?
+            func_name = Symbol("$(name)_$(comp_name)")
+            try
+                Base.eval(comp_module, func_name)
+            catch err
+                @warn "Failed to evaluate function name $func_name in module $comp_module"
+                nothing
+            end        
         end
+
+        self.init = get_func("init")
+        self.run_timestep = get_func("run_timestep")
            
         return self
     end

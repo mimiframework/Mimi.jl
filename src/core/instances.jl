@@ -41,6 +41,11 @@ function add_comp!(mi::ModelInstance, ci::ComponentInstance)
     push!(mi.lasts, ci.last)
 end
 
+
+#####
+# TBD: redo this using named tuples
+#####
+
 #
 # Support for dot-overloading in run_timestep functions
 #
@@ -246,10 +251,9 @@ function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
         return Clock{FixedTimestep}(first, stepsize, last)
 
     else
-        last_index = findfirst(t -> t == last, times)
+        last_index = findfirst(t -> t == last, time_keys)
         times = (time_keys[1:last_index]...,)
         return Clock{VariableTimestep}(times)
-
     end
 end
 
@@ -272,23 +276,17 @@ function reset_variables(ci::ComponentInstance)
     end
 end
 
-# Fall-back for components without init methods
-function init(module_name, comp_name, p::ComponentInstanceParameters, v::Mimi.ComponentInstanceVariables, d::Union{Nothing, Dict})
-    nothing
-end
-
-# TBD: store this as with ci.run_timestep to avoid dynamic dispatch?
 function init(mi::ModelInstance)
     for ci in components(mi)
-        init(mi, ci)
+        init(ci)
     end
 end
 
-function init(mi::ModelInstance, ci::ComponentInstance)
+function init(ci::ComponentInstance)
     reset_variables(ci)
-    module_name = compmodule(ci.comp_id)
-
-    init(Val(module_name), Val(ci.comp_name), ci.parameters, ci.variables, ci.dim_dict)
+    if ci.init != nothing
+        ci.init(ci.parameters, ci.variables, ci.dim_dict)
+    end
 end
 
 function run_timestep(ci::ComponentInstance, clock::Clock)
