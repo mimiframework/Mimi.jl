@@ -12,19 +12,23 @@ reset_compdefs()
 #
 # Test that parameter type mismatches are caught
 #
-expr = @macroexpand @defcomp BadComp1 begin
-    a = Parameter(index=[time, regions], default=[10, 11, 12])  # should be 2D default
-    function run_timestep(p, v, d, t)
+expr = :(
+    @defcomp BadComp1 begin
+        a = Parameter(index=[time, regions], default=[10, 11, 12])  # should be 2D default
+        function run_timestep(p, v, d, t)
+        end
     end
-end
-@test_throws ErrorException eval(expr)
+)
+@test_throws LoadError eval(expr)
 
-expr = @macroexpand @defcomp BadComp2 begin
-    a = Parameter(default=[10, 11, 12])  # should be scalar default
-    function run_timestep(p, v, d, t)
+expr = :(
+    @defcomp BadComp2 begin
+        a = Parameter(default=[10, 11, 12])  # should be scalar default
+        function run_timestep(p, v, d, t)
+        end
     end
-end
-@test_throws ErrorException eval(expr)
+)
+@test_throws LoadError eval(expr)
 
 
 @defcomp MyComp begin

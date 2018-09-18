@@ -74,7 +74,7 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
             data = vcat(top, data, bottom)
         end
 
-        df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
+        df[item_name] = cat([vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
     else
         # Indexes is #, :, :, ... for each index of first dimension
         indexes = repeat(Any[Colon()], num_dims)

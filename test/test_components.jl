@@ -1,7 +1,7 @@
 module TestComponents
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     reset_compdefs, compdefs, compdef, compkeys, hascomp, _compdefs, first_period, 
@@ -59,7 +59,7 @@ add_comp!(my_model, testcomp1)
 
 # Testing to catch if before or after does not exist
 @test_throws ErrorException add_comp!(my_model, testcomp2, before=:testcomp3)
-@test_throws ErrorException add_comp!(my_model, testcomp2, after=:testcomp3)
+@test_throws ArgumentError add_comp!(my_model, testcomp2, after=:testcomp3)
 
 #Add more components to model
 add_comp!(my_model, testcomp2)
