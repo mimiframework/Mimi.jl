@@ -155,7 +155,7 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
     for dim in dims
         if haskey(md, dim)
             if isa(value, NamedArray)
-                labels = names(value, findnext(dims, dim, 1))
+                labels = names(value, findnext(isequal(dim), dims, 1))
                 dim_vals = dim_keys(md, dim)
                 for i in 1:length(labels)
                     if labels[i] != dim_vals[i]
@@ -367,7 +367,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
                 else
                     times = time_labels(md)  
                     #use the first from the comp_def 
-                    first_index = findfirst(t -> t == first, times)                
+                    first_index = findfirst(isequal(first), times)                
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
                 end 
             end
@@ -447,8 +447,8 @@ function getspan(md::ModelDef, comp_name::Symbol)
     first = first_period(comp_def)
     last  = last_period(comp_def)
     times = time_labels(md)
-    first_index = findfirst(x -> x == first, times)
-    last_index  = findfirst(x -> x == last, times)
+    first_index = findfirst(isequal(first), times)
+    last_index  = findfirst(isequal(last), times)
     return size(times[first_index:last_index])
 end
 
@@ -599,7 +599,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         comps = collect(keys(md.comp_defs))
         n = length(comps)
         if n > 1
-            idx = findfirst(x -> x == comp_name, comps)
+            idx = findfirst(isequal(comp_name), comps)
             if idx == n 
                 after = comps[idx - 1]
             else
@@ -626,8 +626,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
 
         # Check incoming parameters
         incoming_params = map(ipc -> ipc.dst_par_name, internal_param_conns(md, comp_name))
-        param_filter = (k, v) -> k in incoming_params
-        old_params = filter(param_filter, old_comp.parameters)
+        old_params = filter(pair -> pair.first in incoming_params, old_comp.parameters)
         new_params = new_comp.parameters
         if !_compare_datum(new_params, old_params)
             error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
@@ -635,8 +634,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         
         # Check outgoing variables
         outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, md.internal_param_conns))
-        var_filter = (k, v) -> k in outgoing_vars
-        old_vars = filter(var_filter, old_comp.variables)
+        old_vars = filter(pair -> pair.first in outgoing_vars, old_comp.variables)
         new_vars = new_comp.variables
         if !_compare_datum(new_vars, old_vars)
             error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")

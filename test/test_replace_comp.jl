@@ -1,6 +1,6 @@
 module TestReplaceComp
 
-using Base.Test
+using Test
 using Mimi
 
 

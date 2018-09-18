@@ -48,7 +48,7 @@ set_dimension!(m, :time, years)
 
 @test_throws ErrorException add_comp!(m, A, last = 2210) 
 @test_throws ErrorException add_comp!(m, A, first = 2010) 
-@test_throws ErrorException add_comp!(m, A, after=:B)
+@test_throws ArgumentError add_comp!(m, A, after=:B)
 add_comp!(m, A, first = 2050, last = 2150) #test specific last and first
 
 add_comp!(m, B, before=:A)

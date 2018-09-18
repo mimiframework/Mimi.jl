@@ -9,50 +9,12 @@ const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatr
 
 is_builtin(comp_name) = comp_name in built_in_comps
 
-#
-# TBD: this should be deleted
-#
-
-#
-# Main> MacroTools.prewalk(replace_dots, :(p.foo[1,2] = v.bar))
-# :((getproperty(p, Val(:foo)))[1, 2] = getproperty(v, Val(:bar)))
-#
-# Main> MacroTools.prewalk(replace_dots, :(p.foo = v.bar[1]))
-# :(setproperty!(p, Val(:foo), (getproperty(v, Val(:bar)))[1]))
-#
-function _replace_dots(ex)
-    # @debug "\nreplace_dots($ex)\n"
-
-    if @capture(ex, obj_.field_ = rhs_)
-        return :(setproperty!($obj, Val($(QuoteNode(field))), $rhs))
-    
-    elseif @capture(ex, obj_.field_)
-        return :(getproperty($obj, Val($(QuoteNode(field)))))
-
-    elseif @capture(ex, obj_.field_[args__] = rhs_)
-        return :(getproperty($obj, Val($(QuoteNode(field))))[$(args...)] = $rhs)
-
-    elseif @capture(ex, obj_.field_[args__])
-        return :(getproperty($obj, Val($(QuoteNode(field))))[$(args...)])
-
-    else
-        # @debug "No dots to replace"
-        return ex
-    end
-end
-
 function _generate_run_func(comp_name, args, body)
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
     end
 
     (p, v, d, t) = args
-
-    ######
-    # We should be able to delete this for 1.0
-    ######
-    # replace each expression with its dot-replaced equivalent
-    body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
 
     # Generate unique function name for each component so we can store a function pointer.
     # (Methods requiring dispatch cannot be invoked directly. Could use FunctionWrapper here...)
@@ -62,7 +24,7 @@ function _generate_run_func(comp_name, args, body)
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
                                      $(v)::Mimi.ComponentInstanceVariables, 
-                                     $(d)::Dict{Symbol, Vector{Int}}, 
+                                     $(d)::Mimi.DimDict, 
                                      $(t)::T) where {T <: Mimi.AbstractTimestep}
             $(body...)
             return nothing
@@ -77,23 +39,15 @@ function _generate_init_func(comp_name, args, body)
         error("Can't generate init function; requires 3 arguments but got $args")
     end
 
-    ######
-    # We should be able to delete this for 1.0
-    ######    
-    # replace each expression with its dot-replaced equivalent
-    body = [MacroTools.prewalk(_replace_dots, expr) for expr in body]
-
     # add types to the parameters  
     (p, v, d) = args
 
-    # TBD: handle this as with run_timestep, i.e.
     func_name = Symbol("init_$comp_name")
 
-    # TBD: can we then eliminate the first two args?
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
                                      $(v)::Mimi.ComponentInstanceVariables, 
-                                     $(d)::Dict{Symbol, Vector{Int}})
+                                     $(d)::Mimi.DimDict)
             $(body...)
             return nothing
         end

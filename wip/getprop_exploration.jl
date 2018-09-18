@@ -14,8 +14,6 @@ struct ComponentInstance{V <: NamedTuple, P <: NamedTuple}
     params::ComponentInstanceParameters{P}
 end
 
-# ComponentInstanceParameters(names, types, values) = ComponentInstanceParameters(NamedTuple{names, types}(values))
-
 function ComponentInstanceParameters(names, types, values)
     NT = NamedTuple{names, types}
     ComponentInstanceParameters{NT}(NT(values))

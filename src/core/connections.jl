@@ -140,7 +140,7 @@ function connect_param!(md::ModelDef,
             else
                 times = time_labels(md)
                 # use the first from the comp_def 
-                first_index = findfirst(t -> t == first, times) 
+                first_index = findfirst(isequal(first), times) 
                 values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
             end
             

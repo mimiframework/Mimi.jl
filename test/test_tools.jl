@@ -15,10 +15,10 @@ reset_compdefs()
 @test Mimi.prettify("_snake__case__weird_") == Mimi.prettify(:_snake__case__weird_) == "Snake Case Weird"
 
 #utils: interpolate
-step = 2;
-last = 10;
-ts = 10;
-@test Mimi.interpolate(collect(0:step:last), ts) == collect(0:step/ts:last)
+stepsize = 2       # N.B. ERROR: cannot assign variable Base.step from module Main
+final = 10         # N.B. ERROR: cannot assign variable Base.last from module Main
+ts = 10
+@test Mimi.interpolate(collect(0:stepsize:final), ts) == collect(0:stepsize/ts:final)
 
 @defcomp Foo begin
     input = Parameter()

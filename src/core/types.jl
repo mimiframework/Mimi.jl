@@ -275,44 +275,62 @@ end
 # Supertype for variables and parameters in component instances
 abstract type ComponentInstanceData end
 
+struct ComponentInstanceParameters{NT <: NamedTuple} <: ComponentInstanceData
+    nt::NT
+    
+    function ComponentInstanceParameters{NT}(nt::NT) where {NT <: NamedTuple}
+        return new{NT}(nt)
+    end
+end
+
+function ComponentInstanceParameters(names, types, values)
+    NT = NamedTuple{names, types}
+    ComponentInstanceParameters{NT}(NT(values))
+end
+
+function ComponentInstanceParameters{NT}(values::T) where {NT <: NamedTuple, T <: AbstractArray}
+    ComponentInstanceParameters{NT}(NT(values))
+end
+
+struct ComponentInstanceVariables{NT <: NamedTuple} <: ComponentInstanceData
+    nt::NT
+
+    function ComponentInstanceVariables{NT}(nt::NT) where {NT <: NamedTuple}
+        return new{NT}(nt)
+    end
+end
+
+function ComponentInstanceVariables{NT}(values::T) where {NT <: NamedTuple, T <: AbstractArray}
+    ComponentInstanceVariables{NT}(NT(values))
+end
+
+function ComponentInstanceVariables(names, types, values)
+    NT = NamedTuple{names, types}
+    ComponentInstanceVariables{NT}(NT(values))
+end
+
+# A container class that wraps the dimension dictionary when passed to run_timestep()
+# and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
+struct DimDict
+    dict::Dict{Symbol, Vector{Int}}
+end
+
+# Special case support for Dicts so we can use dot notation on dimension.
+# The run_timestep() and init() funcs pass a DimDict of dimensions by name 
+# as the "d" parameter.
+@inline function Base.getproperty(dimdict::DimDict, property::Symbol)
+    return getfield(dimdict, :dict)[property]
+end
+
+# TBD: try with out where clause, i.e., just obj::ComponentInstanceData
+nt(obj::T)  where {T <: ComponentInstanceData} = getfield(obj, :nt)
+Base.names(obj::T)  where {T <: ComponentInstanceData} = keys(nt(obj))
+Base.values(obj::T) where {T <: ComponentInstanceData} = values(nt(obj))
+types(obj::T) where {T <: ComponentInstanceData} = typeof(nt(obj)).parameters[2].parameters
+
 # An instance of this type is passed to the run_timestep function of a
 # component, typically as the `p` argument. The main role of this type
 # is to provide the convenient `p.nameofparameter` syntax.
-# NAMES should be a Tuple of Symbols, namely the names of the parameters
-struct ComponentInstanceParameters{NAMES,TYPES} <: ComponentInstanceData
-    # This field has one element for each parameter. The order must match
-    # the order of NAMES
-    # The elements can either be of type Ref (for scalar values) or of
-    # some array type
-    values::TYPES
-    names::NTuple{N, Symbol} where N
-    types::DataType
-
-    function ComponentInstanceParameters{NAMES,TYPES}(values) where {NAMES,TYPES}
-        # println("comp inst params:\n  values=$values\n\n  names=$NAMES\n\n  types=$TYPES\n\n")
-        return new(Tuple(values), NAMES, TYPES)
-    end
-end
-
-# An instance of this type is passed to the run_timestep function of a
-# component, typically as the `v` argument. The main role of this type
-# is to provide the convenient `v.nameofparameter` syntax.
-# NAMES should be a Tuple of Symbols, namely the names of the variables
-struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
-    # This field has one element for each variable. The order must match
-    # the order of NAMES
-    # The elements can either be of type Ref (for scalar values) or of
-    # some array type
-    values::TYPES
-    names::NTuple{N, Symbol} where N
-    types::DataType
-
-    function ComponentInstanceVariables{NAMES,TYPES}(values) where {NAMES,TYPES}
-        # println("comp inst vars:\n  values=$values\n\n  names=$NAMES\n\n  types=$TYPES\n\n")
-        return new(Tuple(values), NAMES, TYPES)
-    end
-end
-
 mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
     comp_name::Symbol
     comp_id::ComponentId
@@ -334,7 +352,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         
         self.comp_id = comp_id = comp_def.comp_id
         self.comp_name = name
-        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
+        self.dim_dict = Dict{Symbol, Vector{Int}}()    # set in "build" stage
         
         self.variables = vars
         self.parameters = pars
@@ -346,13 +364,14 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         module_name = comp_id.module_name
         comp_module = Base.eval(Main, module_name)
 
+        # TBD: use FunctionWrapper here?
         function get_func(name)
-            # TBD: use FunctionWrapper here?
             func_name = Symbol("$(name)_$(comp_name)")
             try
                 Base.eval(comp_module, func_name)
             catch err
-                @warn "Failed to evaluate function name $func_name in module $comp_module"
+                # No need to warn about this...
+                # @warn "Failed to evaluate function name $func_name in module $comp_module"
                 nothing
             end        
         end

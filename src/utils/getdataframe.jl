@@ -15,7 +15,9 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     # Create a new df if one was not passed in
     df = df == nothing ? DataFrame() : df
 
-    if haskey(df.colindex, item_name)
+    # TBD: colindex isn't part of the API, so figure out a new way to do this...
+    colindex = getfield(df, :colindex)
+    if haskey(colindex, item_name)
         error("An item named $item_name already exists in this DataFrame")
     end
 
@@ -32,8 +34,8 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
 
         if dim1 == :time
             ci = compinstance(mi, comp_name)
-            first = findfirst(key -> key == ci.first, keys)
-            last  = findfirst(key -> key == ci.last, keys)
+            first = findfirst(isequal(ci.first), keys)
+            last  = findfirst(isequal(ci.last), keys)
 
             df[item_name] = vcat(repeat([NaN], inner=first - 1), data, 
                                  repeat([NaN], inner=length(keys) - last))
@@ -64,18 +66,18 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
 
         if dim1 == :time
             ci = compinstance(m.mi, comp_name)
-            first = findfirst(key -> key == ci.first, keys1)
-            last  = findfirst(key -> key == ci.last, keys1)
+            first = findfirst(isequal(ci.first), keys1)
+            last  = findfirst(isequal(ci.last), keys1)
 
             top    = fill(NaN, first - 1, len_dim2)
             bottom = fill(NaN, len_dim1 - last, len_dim2)
             data = vcat(top, data, bottom)
         end
 
-        df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...)
+        df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
     else
         # Indexes is #, :, :, ... for each index of first dimension
-        indexes = repmat(Any[Colon()], num_dims)
+        indexes = repeat(Any[Colon()], num_dims)
 
         for i in 1:size(data)[1]
             indexes[1] = i

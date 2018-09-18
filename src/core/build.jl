@@ -23,23 +23,13 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
             # need to make sure we define the timestep to begin at the first from 
             # the function argument
       
-            first_index = findfirst(t -> t == first, times) 
+            first_index = findfirst(isequal(first), times) 
             T = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, dtype, num_dims}
         end
     end
 
     # println("_instance_datatype($def) returning $T")
     return T
-end
-
-function _vars_type(md::ModelDef, comp_def::ComponentDef)
-    var_defs = variables(comp_def)    
-    vnames = Tuple([name(vdef) for vdef in var_defs])
-    
-    first = comp_def.first
-    vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
-
-    return ComponentInstanceVariables{vnames, vtypes}
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
@@ -64,6 +54,17 @@ function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
     return value
 end
 
+function _vars_NT_type(md::ModelDef, comp_def::ComponentDef)
+    var_defs = variables(comp_def)    
+    vnames = Tuple([name(vdef) for vdef in var_defs])
+    
+    first = comp_def.first
+    vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
+
+    NT = NamedTuple{vnames, vtypes}
+    return NT
+end
+
 """
     _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
@@ -73,10 +74,13 @@ Return the resulting ComponentInstance.
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
     first = comp_def.first
-    vtype = _vars_type(md, comp_def)
-    
-    vals = [_instantiate_datum(md, def, first) for def in variables(comp_def)]
-    return vtype(vals)
+    var_defs = variables(comp_def)    
+
+    names  = ([name(vdef) for vdef in var_defs]...,)
+    types  = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
+    values = [_instantiate_datum(md, def, first) for def in var_defs]
+
+    return ComponentInstanceVariables(names, types, values)
 end
 
 # Save a reference to the model's dimension dictionary to make it 
@@ -159,7 +163,7 @@ function build(md::ModelDef)
         pnames = Tuple(parameter_names(comp_def))
         pvals  = [par_values[pname] for pname in pnames]
         ptypes = Tuple{map(typeof, pvals)...}
-        pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
+        pars = ComponentInstanceParameters(pnames, ptypes, pvals)
 
         ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
         add_comp!(mi, ci)
