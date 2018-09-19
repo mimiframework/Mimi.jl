@@ -112,7 +112,7 @@ function connect_param!(md::ModelDef,
         end
 
         # Check that the backup value is the right size
-        if getspan(md, dst_comp_name) != size(backup)[1]
+        if getspan(md, dst_comp_name) != size(backup)
             error("Backup data must span the whole length of the component.")
         end
 

@@ -108,7 +108,7 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
 end
 
 function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
-    mkpath(dirname(filename), 0o770)   # ensure that the specified path exists
+    mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
     save(filename, mcs)
     return nothing
 end
@@ -129,7 +129,7 @@ function get_trial(mcs::MonteCarloSimulation, trialnum::Int)
     end
 
     vals = [rand(rv.dist) for rv in values(mcs.rvdict)]
-    mcs.current_data = mcs.nt_type(vals...)
+    mcs.current_data = mcs.nt_type((vals...,))
     mcs.current_trial = trialnum
     
     return mcs.current_data
@@ -186,7 +186,7 @@ Copy the parameters that are perturbed in this MCS so we can restore them after 
 This is necessary when we are applying distributions by adding or multiplying original values.
 """
 function _copy_mcs_params(mcs::MonteCarloSimulation)
-    param_vec = Vector{Dict{Symbol, ModelParameter}}(length(mcs.models))
+    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(mcs.models))
 
     for (i, m) in enumerate(mcs.models)
         md = m.mi.md
@@ -316,7 +316,7 @@ end
 # Append a string representation of the tuple args to the given directory name
 function _compute_output_dir(orig_output_dir, tup)
     output_dir = (orig_output_dir == nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
-    mkpath(output_dir, 0o750)
+    mkpath(output_dir, mode=0o750)
     return output_dir
 end
 
@@ -396,7 +396,7 @@ function run_mcs(mcs::MonteCarloSimulation,
 
         # precompute all combinations of scenario arguments so we can run
         # a single loop regardless of the number of scenario arguments.
-        arg_tuples = product(scen_values...)
+        arg_tuples = Iterators.product(scen_values...)
 
         if has_outer_scenario
             arg_tuples_outer = arg_tuples

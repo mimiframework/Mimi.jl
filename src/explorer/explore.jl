@@ -27,11 +27,11 @@ function explore(m::Model; title = "Electron")
     end
 
     #load main html file
-    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\", "/")
+    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\" => "/")
 
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
-    slashes = is_windows() ? "///" : "//"
+    slashes = Sys.iswindows() ? "///" : "//"
     w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
 
     #refresh variable list
@@ -53,5 +53,7 @@ function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
     end
     
     spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
-    VegaLite.VLSpec{:plot}(spec)
+    spec===nothing && error("Spec cannot be built.")        
+
+    return VegaLite.VLSpec{:plot}(spec)
 end

@@ -3,11 +3,11 @@ using GraphPlot
 using Compose
 
 function _open_file(filename)
-    if is_apple()
+    if Sys.isapple()
         run(`open $(filename)`)
-    elseif is_linux()
+    elseif Sys.islinux()
         run(`xdg-open $(filename)`)
-    elseif is_windows()
+    elseif Sys.iswindows()
         run(`$(ENV["COMSPEC"]) /c start $(filename)`)
     else
         @warn "Showing plots is not supported on $(Sys.KERNEL)"

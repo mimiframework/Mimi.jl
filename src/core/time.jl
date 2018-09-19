@@ -284,12 +284,20 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, idx1::Int, idx2::Int) where {T, FIRST, STEP}
+	setindex!(mat.data, val, idx1, idx2)
+end
+
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
+	mat.data[idx1,idx2] .= val
+end
+
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, val, idx1::Int, idx2::Int) where {T, TIMES}
 	setindex!(mat.data, val, idx1, idx2)
 end
 
 function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
-	setindex!(mat.data, val, idx1, idx2)
+	mat.data[idx1,idx2] .= val
 end
 
 #

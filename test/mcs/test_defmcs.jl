@@ -3,6 +3,7 @@ using Distributions
 using Query
 using DataFrames
 using IterTools
+using DelimitedFiles
 
 using Test
 
@@ -54,7 +55,7 @@ output_dir = joinpath(tempdir(), "mcs")
 generate_trials!(mcs, N, sampling=LHS, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Test that the proper number of trials were saved
-d = readcsv(joinpath(output_dir, "trialdata.csv"))
+d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names
 
 # Run trials 1:N, and save results to the indicated directory
@@ -97,7 +98,7 @@ function outer_loop_func(mcs::MonteCarloSimulation, tup)
 
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    Mimi.log_info("outer loop: scen:$scen, rate:$rate")
+    @info("outer loop: scen:$scen, rate:$rate")
 end
 
 function inner_loop_func(mcs::MonteCarloSimulation, tup)
@@ -106,7 +107,7 @@ function inner_loop_func(mcs::MonteCarloSimulation, tup)
 
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    Mimi.log_info("inner loop: scen:$scen, rate:$rate")
+    @info("inner loop: scen:$scen, rate:$rate")
 end
 
 

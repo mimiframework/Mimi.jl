@@ -61,17 +61,23 @@ end
 #test iteratable
 dim_vals2 = Dimension(2:2:8)
 intkeys = [2,4,6,8]
-index = 1
-for pair in dim_vals2
-    @test dim_vals2[intkeys[index]] == index
-    index += 1
+# Work around new global scoping rules
+# Without the `let`, `index` is unknown in the for loop
+let index = 1
+    for pair in dim_vals2
+        @test dim_vals2[intkeys[index]] == index
+        index += 1
+    end
 end
 
 rangedim2 = RangeDimension(2:2:8)
-index = 1
-for pair in rangedim2   # uses iterate()
-    @test get(rangedim2, Base.keys(rangedim2)[index]) == index
-    index += 1
+# Work around new global scoping rules
+# Without the `let`, `index` is unknown in the for loop
+let index = 1
+    for pair in rangedim2   # uses iterate()
+        @test get(rangedim2, Base.keys(rangedim2)[index]) == index
+        index += 1
+    end
 end
 
 @test getindex(dim_varargs, :bar) == 2

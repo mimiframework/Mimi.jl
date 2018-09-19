@@ -143,12 +143,11 @@ mutable struct MonteCarloSimulation
         self.dist_rvs = [rv for rv in rvlist]
 
         names = (keys(self.rvdict)...,)
-        types = [eltype(fld) for fld in values(mcs.rvdict)]
+        types = [eltype(fld) for fld in values(self.rvdict)]
         self.nt_type = NamedTuple{names, Tuple{types...}}
-        println("nt_type: $nt_type")
         
         # These are parallel arrays; each model has a corresponding results dict
-        self.models = Vector{Model}(0)
+        self.models = Vector{Model}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
         # save_dict[:mcs] = self
         return self

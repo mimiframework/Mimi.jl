@@ -13,6 +13,7 @@
 #
 import StatsBase
 using Statistics
+using LinearAlgebra
 
 """
     rank_corr_coef(m::Matrix{Float64})
@@ -22,7 +23,7 @@ coefficients representing the rank correlations pairs of columns.
 """
 function rank_corr_coef(m::Matrix{Float64})
     cols = size(m, 2)
-    corrCoef = eye(cols)    # identity matrix
+    corrCoef = Matrix(1.0I, cols, cols)    # identity matrix
 
     for i in 1:cols
         for j in (i + 1):cols
@@ -60,9 +61,9 @@ function _gen_rank_values(params::Int, trials::Int, corrmatrix::Matrix{Float64})
         S[:, i] = vdwScores
     end
 
-    P = Matrix(cholfact(corrmatrix)[:L])    # 0.7 drops the :L?
+    P = Matrix(cholesky(corrmatrix, Val(false)).L)
     E = rank_corr_coef(S)
-    Q = Matrix(cholfact(E)[:L])             # 0.7 drops the :L?
+    Q = Matrix(cholesky(E, Val(false)).L)
     final = (S * inv(Q)') * P'
 
     ranks = zeros(Int, trials, params)
@@ -124,7 +125,7 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
     samples = zeros(trials, num_rvs)
 
     for (i, rv) in enumerate(rvlist)
-        values = quantile.(rv.dist, _get_percentiles(trials))  # extract values from the RV for these percentiles
+        values = quantile.(Ref(rv.dist), _get_percentiles(trials))  # extract values from the RV for these percentiles
 
         if corrmatrix == nothing
             shuffle!(values)           # randomize the stratified samples
@@ -205,7 +206,7 @@ function correlation_matrix(mcs::MonteCarloSimulation)
     names = Dict([(rv.name, i) for (i, rv) in enumerate(values(rvdict))])
 
     count = length(rvdict)
-    corrmatrix = eye(count, count)
+    corrmatrix = Matrix(1.0I, count, count)
 
     for corr in mcs.corrlist
         n1 = corr.name1
