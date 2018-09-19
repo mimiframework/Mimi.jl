@@ -36,6 +36,11 @@ struct EmpiricalDistribution{T}
     end
 end
 
+Base.length(d::EmpiricalDistribution) = length(d.values)
+Base.eltype(d::EmpiricalDistribution{T}) where T = T
+
+Base.iterate(d::EmpiricalDistribution, state...) = (rand(d), 1)   # return arbitrary state since we ignore it
+
 #
 # Delegate a few functions that we require in our application. 
 # No need to be exhaustive here.

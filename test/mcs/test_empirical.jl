@@ -1,5 +1,6 @@
 using ExcelFiles
 using Mimi
+using Random
 using Statistics
 using Test
 
@@ -26,7 +27,7 @@ filename = joinpath(@__DIR__, "RB-ECS-distribution.xls")
 d = load_empirical_dist(filename, "Sheet1!A2:A1001", "Sheet1!B2:B1001")
 
 # Set the seed to get repeatable results (with some caveats...)
-srand(1234567)
+Random.seed!(1234567)
 
 # Get the statistical outline of the distribution
 q = quantile.(d, [0.01, 0.10, 0.25, 0.50, 0.75, 0.90, 0.99])

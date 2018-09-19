@@ -36,7 +36,7 @@ t4 = next_timestep(t3)
 ###########################################################################
 #  Test basic timestep functions and Base functions for Variable Timestep #
 ###########################################################################
-years = ([2000:1:2024; 2025:5:2105]...)
+years = Tuple([2000:1:2024; 2025:5:2105])
 
 t1 = VariableTimestep{years}()
 @test is_first(t1)

@@ -63,18 +63,18 @@ using Test
     @info("test_mult_getdataframe.jl")        
     include("test_mult_getdataframe.jl")    
 
-    @info("test_timesteparrays.jl")
-    include("test_timesteparrays.jl")
- 
     @info("test_clock.jl")
     include("test_clock.jl")
  
-    @info("test_dimensions")
-    include("test_dimensions.jl")
-
     @info("test_timesteps.jl")           
     include("test_timesteps.jl") 
 
+    @info("test_timesteparrays.jl")
+    include("test_timesteparrays.jl")
+
+    @info("test_dimensions")
+    include("test_dimensions.jl")
+    
     # fails currently: requires either not having Refs typed (which prevents reassignment)
     # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
     @info("test_connectorcomp.jl")

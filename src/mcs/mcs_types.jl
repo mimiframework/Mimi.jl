@@ -107,6 +107,9 @@ function Base.reset(s::SampleStore{T}) where T
     return nothing
 end
 
+# debugging tool
+# global save_dict = Dict()
+
 """
     MonteCarloSimulation
     
@@ -138,11 +141,16 @@ mutable struct MonteCarloSimulation
         self.corrlist = corrlist
         self.savelist = savelist
         self.dist_rvs = [rv for rv in rvlist]
-        self.nt_type = NamedTuple{(collect(keys(self.rvdict))...,)}
 
+        names = (keys(self.rvdict)...,)
+        types = [eltype(fld) for fld in values(mcs.rvdict)]
+        self.nt_type = NamedTuple{names, Tuple{types...}}
+        println("nt_type: $nt_type")
+        
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{Model}(0)
         self.results = [Dict{Tuple, DataFrame}()]
+        # save_dict[:mcs] = self
         return self
     end
 end

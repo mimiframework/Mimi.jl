@@ -14,7 +14,9 @@ dim_vec = Dimension([:foo, :bar, :baz]) # Vector
 dim_range = Dimension(2010:2100)     # AbstractRange	
 rangedim = RangeDimension(2010:2100) # RangeDimension type	
 dim_vals = Dimension(4) # Same as 1:4
-dim_vals_abstract = AbstractDimension(dim_vals) # Abstract
+
+# RJP: unclear what was intended here, but you cannot instantiate an abstract type...
+# dim_vals_abstract = AbstractDimension(dim_vals) # Abstract
 
 @test key_type(dim_varargs) == Symbol
 @test key_type(dim_vec) == Symbol
@@ -26,12 +28,10 @@ dim_vals_abstract = AbstractDimension(dim_vals) # Abstract
 @test length(dim_vals) == 4
 @test length(dim_range) == 91
 @test length(rangedim) == 91
-@test iterate(dim_varargs) == 1
 
-@test iterate(dim_vec) == 1
-@test iterate(dim_vals) == 1
-@test iterate(dim_range) == 1
-@test iterate(rangedim) == 2010
+# Test iteration
+@test [x.first for x in dim_varargs] == collect(keys(dim_varargs))
+@test [x.first for x in dim_range]   == collect(keys(dim_range))
 
 @test lastindex(dim_varargs) == :baz
 @test lastindex(dim_vec) == :baz
@@ -48,7 +48,9 @@ end
 @test dim_range[:] == [1:91...]
 @test dim_varargs[:bar] == 2
 @test dim_varargs[:] == [1,2,3]
-@test dim_vals_abstract[1:4...]== [1:4...]
+
+# @test dim_vals_abstract[1:4...]== [1:4...]
+
 # @test rangedim[2011] == 2 # TODO: this errors..
 
 @test get(dim_varargs, :bar, 999) == 2
@@ -58,21 +60,16 @@ end
 
 #test iteratable
 dim_vals2 = Dimension(2:2:8)
-keys = [2,4,6,8]
+intkeys = [2,4,6,8]
 index = 1
-state = iterate(dim_vals2)
-while state != nothing
-    (i, state) = iterate(dim_vals2, state)
-    @test dim_vals2[keys[index]] == index
+for pair in dim_vals2
+    @test dim_vals2[intkeys[index]] == index
     index += 1
 end
 
 rangedim2 = RangeDimension(2:2:8)
-keys = [2,4,6,8]
 index = 1
-state = iterate(rangedim2)
-while state != nothing
-    (i, state) = iterate(rangedim2, state)
+for pair in rangedim2   # uses iterate()
     @test get(rangedim2, Base.keys(rangedim2)[index]) == index
     index += 1
 end

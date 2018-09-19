@@ -517,15 +517,14 @@ set_model!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.
 function Base.iterate(mcs::MonteCarloSimulation)
     _reset_rvs!(mcs)
     trialnum = 1
-    return get_trial(mcs, trialnum), trialnum
+    return get_trial(mcs, trialnum), trialnum + 1
 end
 
 function Base.iterate(mcs::MonteCarloSimulation, trialnum)
     if trialnum > mcs.trials
         return nothing
     else
-        trialnum += 1
-        return get_trial(mcs, trialnum), trialnum
+        return get_trial(mcs, trialnum), trialnum + 1
     end
 end
 
@@ -543,18 +542,17 @@ column_types(iter::MCSIterator) = IterableTables.column_types(iter.mcs)
 function Base.iterate(iter::MCSIterator)
     _reset_rvs!(iter.mcs)
     idx = 1
-    return get_trial(iter.mcs, idx), idx
+    return get_trial(iter.mcs, idx), idx + 1
 end
 
 function Base.iterate(iter::MCSIterator, idx)
     if idx > iter.mcs.trials
         return nothing
     else
-        idx += 1
-        return get_trial(iter.mcs, idx), idx
+        return get_trial(iter.mcs, idx), idx + 1
     end
 end
 
-Base.length(iter) = iter.mcs.trials
+Base.length(iter::MCSIterator) = iter.mcs.trials
 
 Base.eltype(::Type{MCSIterator{T}}) where T = T
