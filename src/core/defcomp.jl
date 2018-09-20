@@ -3,6 +3,13 @@
 #
 using MacroTools
 
+global defcomp_verbosity = true
+
+function set_defcomp_verbosity(value::Bool)
+    global defcomp_verbosity = value
+    nothing
+end
+
 # Store a list of built-in components so we can suppress messages about creating them
 # TBD: and (later) suppress their return in the list of components at the user level.
 const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
@@ -142,8 +149,7 @@ macro defcomp(comp_name, ex)
         push!(let_block, expr)
     end
 
-    # verbose = :(! $comp_name in $built_in_comps))
-    newcomp = :(comp = new_comp($comp_name, true))
+    newcomp = :(comp = new_comp($comp_name, $defcomp_verbosity))
     addexpr(newcomp)
 
     for elt in elements
@@ -235,7 +241,9 @@ macro defcomp(comp_name, ex)
         end
     end
 
-    addexpr(:($comp_name))
+    # addexpr(:($comp_name))
+    addexpr(:(nothing))         # reduces noise
+
     return esc(result)
 end
 

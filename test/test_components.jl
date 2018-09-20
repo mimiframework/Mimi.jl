@@ -59,6 +59,8 @@ add_comp!(my_model, testcomp1)
 
 # Testing to catch if before or after does not exist
 @test_throws ErrorException add_comp!(my_model, testcomp2, before=:testcomp3)
+
+# N.B. Throws ArgumentError in v1.0, but ErrorException in 0.7!
 @test_throws ArgumentError add_comp!(my_model, testcomp2, after=:testcomp3)
 
 #Add more components to model
@@ -91,7 +93,7 @@ def_dims = dimensions(def)
 @test eltype(def_dims) == Mimi.DimensionDef && length(def_dims) == 1
 @test [def_dims...][1].name == :time
 
-dump_components() #view all components and their info
+# dump_components() #view all components and their info
 
 #Test reset_compdefs methods
 reset_compdefs()

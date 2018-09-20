@@ -30,7 +30,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
         dim1name = dims[1]
         dim1 = dimension(md, dim1name)
         df[dim1name] = collect(keys(dim1))
-        println("dim: $dim1name size(df): $(size(df))")
+        # @info "dim: $dim1name size(df): $(size(df))"
 
         if dim1name == :time
             ci = compinstance(mi, comp_name)
@@ -41,7 +41,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
             shifted_data = vcat(repeat([NaN], inner=first - 1), 
                                 data[1:(last-first+1)], # ignore padding after these values
                                 repeat([NaN], inner=length(dim1) - last))
-            println("len shifted: $(length(shifted_data))")
+            # @info "len shifted: $(length(shifted_data))"
             df[item_name] = shifted_data
         else
             df[item_name] = data

@@ -13,7 +13,6 @@ reset_compdefs()
     intermed = Variable(index=[time])
     
     function run_timestep(p, v, d, t)
-        println("Foo run_timestep")
         v.intermed[t] = p.input
     end
 end
@@ -23,11 +22,9 @@ end
     output = Variable(index=[time])
     
     function run_timestep(p, v, d, t)
-        println("Bar run_timestep")
         v.output[t] = p.intermed[t]
     end
 end
-
 
 
 @defmodel m begin

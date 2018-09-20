@@ -33,7 +33,7 @@ Random.seed!(1234567)
 q = quantile.(Ref(d), [0.01, 0.10, 0.25, 0.50, 0.75, 0.90, 0.99])
 
 expected = [1.47, 1.92, 2.33, 3.01, 4.16, 5.85, 9.16]
-println("quantiles: $q\n expected: $expected")
+# @info "quantiles: $q\n expected: $expected"
 
 @test isapprox(q, expected, atol=0.01)
 

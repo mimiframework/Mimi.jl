@@ -101,7 +101,6 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
         for datum_key in mcs.savelist
             (comp_name, datum_name) = datum_key
             filename = joinpath(sub_dir, "$datum_name.csv")
-            @info "Writing $comp_name.$datum_name to $filename"
             save(filename, results[datum_key])
         end
     end

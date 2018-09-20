@@ -98,7 +98,7 @@ function outer_loop_func(mcs::MonteCarloSimulation, tup)
 
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    @info("outer loop: scen:$scen, rate:$rate")
+    @debug "outer loop: scen:$scen, rate:$rate"
 end
 
 function inner_loop_func(mcs::MonteCarloSimulation, tup)
@@ -107,7 +107,7 @@ function inner_loop_func(mcs::MonteCarloSimulation, tup)
 
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    @info("inner loop: scen:$scen, rate:$rate")
+    @debug "inner loop: scen:$scen, rate:$rate"
 end
 
 

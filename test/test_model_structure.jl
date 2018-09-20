@@ -1,6 +1,6 @@
 module TestModelStructure
 
-#tests the framework of components and connections
+# tests the framework of components and connections
 
 using Test
 using Mimi
@@ -155,7 +155,10 @@ add_comp!(m, D)
 end
 
 m = Model()
-set_dimension!(m, :time, 2015:5:2100) #run for several timesteps
+
+# run for several timesteps
+set_dimension!(m, :time, 2015:5:2100)
+
 add_comp!(m, E)
 set_param!(m, :E, :parE1, 1)
 set_param!(m, :E, :parE2, 10)
@@ -163,7 +166,14 @@ set_param!(m, :E, :parE2, 10)
 run(m)
 @test m[:E, :varE] == 10
 
-set_dimension!(m, :time, 2015) #run for just one timestep, so init sets the value here
+# run for just one timestep, so init sets the value here
+# This results in 2 warnings, so we test for both.
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    (:warn, "Resetting E component's last timestep to 2015"),
+    set_dimension!(m, :time, 2015)
+)
+
 run(m)
 @test m[:E, :varE] == 1
 

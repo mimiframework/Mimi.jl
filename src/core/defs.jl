@@ -85,7 +85,7 @@ function new_comp(comp_id::ComponentId, verbose::Bool=true)
         if haskey(_compdefs, comp_id)
             @warn "Redefining component $comp_id"
         else
-            println("new component $comp_id")
+            @info "new component $comp_id"
         end
     end
 

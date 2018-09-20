@@ -93,7 +93,10 @@ set_dimension!(m, :time, 2000:2100)
 add_comp!(m, foo2; first = 2005, last = 2095)
 
 # Test that foo's time dimension is unchanged
-set_dimension!(m, :time, 1990:2200)
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    set_dimension!(m, :time, 1990:2200)
+)
 @test m.md.comp_defs[:foo2].first == 2005
 @test m.md.comp_defs[:foo2].last == 2095
 
@@ -102,7 +105,12 @@ set_dimension!(m, :time, 1990:2200)
 set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
 
 # Test that foo's time dimension is updated
-set_dimension!(m, :time, 2010:2050)
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    (:warn, "Resetting foo2 component's first timestep to 2010"),
+    (:warn, "Resetting foo2 component's last timestep to 2050"),
+    set_dimension!(m, :time, 2010:2050)
+)
 @test m.md.comp_defs[:foo2].first == 2010
 @test m.md.comp_defs[:foo2].last == 2050
 
