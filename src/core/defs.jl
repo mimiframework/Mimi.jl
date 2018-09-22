@@ -467,8 +467,8 @@ const NothingSymbol = Union{Nothing, Symbol}
 """
     add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_def` to the model indcated by `md`. The component is added at the end of 
-the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
+Add the component indicated by `comp_def` to the model indcated by `md`. The component is added at the 
+end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
 function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;

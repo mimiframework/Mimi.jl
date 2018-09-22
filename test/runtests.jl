@@ -6,6 +6,12 @@ Mimi.set_defcomp_verbosity(false)
 
 @testset "Mimi" begin
 
+    # Delete here and re-enable below once working again  
+    @info("test_connectorcomp.jl")
+    include("test_connectorcomp.jl")
+
+    
+
     @info("test_main.jl")
     include("test_main.jl")
 
@@ -78,8 +84,7 @@ Mimi.set_defcomp_verbosity(false)
     @info("test_dimensions")
     include("test_dimensions.jl")
     
-    # fails currently: requires either not having Refs typed (which prevents reassignment)
-    # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
+    # fails currently
     # TODO Reenable
     # @info("test_connectorcomp.jl")
     # include("test_connectorcomp.jl")

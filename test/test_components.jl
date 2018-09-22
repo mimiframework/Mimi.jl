@@ -10,16 +10,16 @@ import Mimi:
 
 reset_compdefs()
 
-@test length(_compdefs) == 3 #adder, ConnectorCompVector, ConnectorCompMatrix
+@test length(_compdefs) == 3 # adder, ConnectorCompVector, ConnectorCompMatrix
 
 my_model = Model()
 
-#Try running model with no components
+# Try running model with no components
 @test length(compdefs(my_model)) == 0
 @test numcomponents(my_model) == 0
 @test_throws ErrorException run(my_model)
 
-#Now add several components to the module
+# Now add several components to the module
 @defcomp testcomp1 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
@@ -47,11 +47,14 @@ end
     end
 end
 
-#Start building up the model
+# Can't add component before setting time dimension
+@test_throws ErrorException add_comp!(my_model, testcomp1)
+
+# Start building up the model
 set_dimension!(my_model, :time, 2015:5:2110)
 add_comp!(my_model, testcomp1)
 
-#Testing that you cannot add two components of the same name
+# Testing that you cannot add two components of the same name
 @test_throws ErrorException add_comp!(my_model, testcomp1)
 
 # Testing to catch adding component twice

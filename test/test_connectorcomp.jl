@@ -40,7 +40,7 @@ set_dimension!(m, :time, 2000:3000)
 nsteps = Mimi.dim_count(m.md, :time)
 
 add_comp!(m, ShortComponent; first=2100)
-add_comp!(m, Mimi.ConnectorCompVector, :MyConnector) # can give it your own name
+add_comp!(m, Mimi.ConnectorCompVector, :MyConnector) # Rename component in this model
 add_comp!(m, LongComponent; first=2000)
 
 comp_def = compdef(m, :MyConnector)
