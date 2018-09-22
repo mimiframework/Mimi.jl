@@ -18,8 +18,7 @@ export
     create_marginal_model,
     disconnect_param!,
     explore,
-    getdataframe,
-    getproperty, 
+    getdataframe, 
     gettime,
     get_param_value,
     get_var_value,
@@ -56,7 +55,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-# include("utils/plotting.jl")
+#include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
