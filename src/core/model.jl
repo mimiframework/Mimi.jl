@@ -337,7 +337,7 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
         error("Cannot run a model with no components.")
     end
 
-    if m.mi == nothing
+    if m.mi === nothing
         build(m)
     end
 

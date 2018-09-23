@@ -97,7 +97,7 @@ function _generate_dims_expr(name, args, vartype)
     end
 
     # Ditto types for Index, e.g., region::Foo = Index()
-    if vartype != nothing
+    if vartype !== nothing
         error("Index $name: Type specification ($vartype) is not supported")
     end
 
@@ -229,11 +229,11 @@ macro defcomp(comp_name, ex)
             @debug "    index $(Tuple(dimensions)), unit '$unit', desc '$desc'"
 
             dflt = eval(dflt)
-            if (dflt != nothing && length(dimensions) != ndims(dflt))
+            if (dflt !== nothing && length(dimensions) != ndims(dflt))
                 error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
             end
 
-            vartype = vartype == nothing ? Number : eval(vartype)
+            vartype = vartype === nothing ? Number : eval(vartype)
             addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else
@@ -280,16 +280,16 @@ macro defmodel(model_name, ex)
                          component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
 
             # set local copy of comp_mod_name to the stated or default component module
-            expr = (comp_mod_name == nothing ? :(comp_mod_name = nameof(calling_module)) : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
+            expr = (comp_mod_name === nothing ? :(comp_mod_name = nameof(calling_module)) : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
             addexpr(expr)
 
-            name = (alias == nothing ? comp_name : alias)
+            name = (alias === nothing ? comp_name : alias)
             expr = :(add_comp!($model_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
 
         # TBD: extend comp.var syntax to allow module name, e.g., FUND.economy.ygross
         elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||
                 @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_))
-            if (arg != nothing && (! @capture(arg, t - offset_) || offset <= 0))
+            if (arg !== nothing && (! @capture(arg, t - offset_) || offset <= 0))
                 error("Subscripted connection source must have subscript [t - x] where x is an integer > 0")
             end
 

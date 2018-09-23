@@ -104,7 +104,7 @@ function connect_param!(md::ModelDef,
     # remove any existing connections for this dst parameter
     disconnect_param!(md, dst_comp_name, dst_par_name)
 
-    if backup != nothing
+    if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
             dims = dimnames(backup)
@@ -311,7 +311,7 @@ Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
-    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end
 
@@ -328,7 +328,7 @@ function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractAr
         # Need to force a conversion (simple convert may alias in v0.6)
         value = Array{numtype}(undef, value)
     end
-    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end
 
@@ -457,7 +457,7 @@ function add_connector_comps(md::ModelDef)
 
         # first need to see if we need to add any connector components for this component
         internal_conns  = filter(x -> x.dst_comp_name == comp_name, conns)
-        need_conn_comps = filter(x -> x.backup != nothing, internal_conns)
+        need_conn_comps = filter(x -> x.backup !== nothing, internal_conns)
 
         # println("Need connectors comps: $need_conn_comps")
 

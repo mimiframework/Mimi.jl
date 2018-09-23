@@ -13,7 +13,7 @@ Produce a UI to explore the parameters and variables of Model `m` in a Window wi
 """
 function explore(m::Model; title = "Electron")
     
-    if m.mi == nothing
+    if m.mi === nothing
         error("A model must be run before it can be plotted")
     end
 
@@ -22,7 +22,7 @@ function explore(m::Model; title = "Electron")
     speclistJSON = JSON.json(speclist)
 
     #start Electron app
-    if app == nothing
+    if app === nothing
         global app = Application()
     end
 
@@ -48,7 +48,7 @@ Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`.
 """
 function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
 
-    if m.mi == nothing
+    if m.mi === nothing
         error("A model must be run before it can be plotted")
     end
     

@@ -56,7 +56,7 @@ function spec_list(model::Model)
 
         for item_name in items
             spec = _spec_for_item(model, comp_name, item_name)
-            if spec !== nothing
+            if spec !=== nothing
                 push!(allspecs, spec) 
             end
         end

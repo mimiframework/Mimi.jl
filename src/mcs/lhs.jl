@@ -120,14 +120,14 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
              asDataFrame::Bool=true)
 
     num_rvs = length(rvlist)             
-    ranks = corrmatrix == nothing ? nothing : _gen_rank_values(num_rvs, trials, corrmatrix)
+    ranks = corrmatrix === nothing ? nothing : _gen_rank_values(num_rvs, trials, corrmatrix)
 
     samples = zeros(trials, num_rvs)
 
     for (i, rv) in enumerate(rvlist)
         values = quantile.(Ref(rv.dist), _get_percentiles(trials))  # extract values from the RV for these percentiles
 
-        if corrmatrix == nothing
+        if corrmatrix === nothing
             shuffle!(values)           # randomize the stratified samples
         else
             indices = ranks[:, i]

@@ -26,7 +26,7 @@ function plot_comp_graph(m::Model, filename::Union{Nothing, String} = nothing)
     names = map(i -> get_prop(graph, i, :name), vertices(graph))
 
     plot = gplot(graph, nodelabel=names, nodesize=6, nodelabelsize=6)
-    if filename != nothing
+    if filename !== nothing
         draw(PDF(filename, 16cm, 16cm), plot)
         return _open_file(filename)
     else

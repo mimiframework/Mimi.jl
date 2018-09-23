@@ -36,10 +36,10 @@ function reset_compdefs(reload_builtins=true)
 end
 
 first_period(comp_def::ComponentDef) = comp_def.first
-first_period(md::ModelDef, comp_def::ComponentDef) = first_period(comp_def) == nothing ? time_labels(md)[1] : first_period(comp_def)
+first_period(md::ModelDef, comp_def::ComponentDef) = first_period(comp_def) === nothing ? time_labels(md)[1] : first_period(comp_def)
 
 last_period(comp_def::ComponentDef) = comp_def.last
-last_period(md::ModelDef, comp_def::ComponentDef) = last_period(comp_def) == nothing ? time_labels(md)[end] : last_period(comp_def)
+last_period(md::ModelDef, comp_def::ComponentDef) = last_period(comp_def) === nothing ? time_labels(md)[end] : last_period(comp_def)
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -198,14 +198,14 @@ function reset_run_periods!(md, first, last)
         first_per = first_period(comp_def)
         last_per  = last_period(comp_def)
 
-        if first_per != nothing && first_per < first 
+        if first_per !== nothing && first_per < first 
             @warn "Resetting $(comp_def.name) component's first timestep to $first"
             changed = true
         else
             first = first_per
         end 
 
-        if last_per != nothing && last_per > last 
+        if last_per !== nothing && last_per > last 
             @warn "Resetting $(comp_def.name) component's last timestep to $last"
             changed = true
         else 
@@ -340,7 +340,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
         dims = dimnames(value)
     end
 
-    if dims != nothing
+    if dims !== nothing
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
@@ -490,15 +490,15 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # check that first and last are within the model's time index range
     time_index = dim_keys(md, :time)
 
-    if first != nothing && first < time_index[1]
+    if first !== nothing && first < time_index[1]
         error("Cannot add component $name with first time before first of model's time index range.")
     end
 
-    if last != nothing && last > time_index[end]
+    if last !== nothing && last > time_index[end]
         error("Cannot add component $name with last time after end of model's time index range.")
     end
 
-    if before != nothing && after != nothing
+    if before !== nothing && after !== nothing
         error("Cannot specify both 'before' and 'after' parameters")
     end
 
@@ -515,12 +515,12 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 
     set_run_period!(comp_def, first, last)
 
-    if before == nothing && after == nothing
+    if before === nothing && after === nothing
         md.comp_defs[comp_name] = comp_def   # just add it to the end
     else
         new_comps = OrderedDict{Symbol, ComponentDef}()
 
-        if before != nothing
+        if before !== nothing
             if ! hascomp(md, before)
                 error("Component to add before ($before) does not exist")
             end
@@ -532,7 +532,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
                 new_comps[i] = md.comp_defs[i]
             end
 
-        else    # after != nothing, since we've handled all other possibilities above
+        else    # after !== nothing, since we've handled all other possibilities above
             if ! hascomp(md, after)
                 error("Component to add before ($before) does not exist")
             end
@@ -551,7 +551,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
 
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
-        if param.default != nothing
+        if param.default !== nothing
             set_param!(md, comp_name, name(param), param.default)
         end
     end
@@ -598,7 +598,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
     end
 
     # Get original position if new before or after not specified
-    if before == nothing && after == nothing
+    if before === nothing && after === nothing
         comps = collect(keys(md.comp_defs))
         n = length(comps)
         if n > 1
@@ -613,8 +613,8 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
 
     # Get original first and last if new run period not specified
     old_comp = md.comp_defs[comp_name]
-    first = first == nothing ? old_comp.first : first
-    last = last == nothing ? old_comp.last : last
+    first = first === nothing ? old_comp.first : first
+    last = last === nothing ? old_comp.last : last
 
     if reconnect
         # Assert that new component definition has same parameters and variables needed for the connections
@@ -749,7 +749,7 @@ function Base.copy(md::ModelDef)
     mdcopy.backups = copy(md.backups)
     mdcopy.external_params = copy_external_params(md)
 
-    mdcopy.sorted_comps = md.sorted_comps == nothing ? nothing : copy(md.sorted_comps)    
+    mdcopy.sorted_comps = md.sorted_comps === nothing ? nothing : copy(md.sorted_comps)    
     
     mdcopy.is_uniform = md.is_uniform
 

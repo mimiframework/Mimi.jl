@@ -186,7 +186,7 @@ which shares the internal `ModelDef` between the `base` and `marginal`.
 function create_marginal_model(base::Model, delta::Float64=1.0)
     # Make sure the base has a ModelInstance before we copy since this
     # copies the ModelDef to avoid being affected by later changes.
-    if base.mi == nothing
+    if base.mi === nothing
         build(base)
     end
 

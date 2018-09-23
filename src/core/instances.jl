@@ -234,13 +234,13 @@ end
 
 function init(ci::ComponentInstance)
     reset_variables(ci)
-    if ci.init != nothing
+    if ci.init !== nothing
         ci.init(ci.parameters, ci.variables, DimDict(ci.dim_dict))
     end
 end
 
 function run_timestep(ci::ComponentInstance, clock::Clock)
-    if ci.run_timestep == nothing
+    if ci.run_timestep === nothing
         return
     end
 
@@ -276,7 +276,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         error("Cannot run the model: no components have been created.")
     end
 
-    t::Vector{Int} = dimkeys == nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
+    t::Vector{Int} = dimkeys === nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
     
     firsts = mi.firsts
     lasts = mi.lasts

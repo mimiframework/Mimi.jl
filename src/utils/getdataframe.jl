@@ -13,7 +13,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     dims = dimensions(m, comp_name, item_name)
 
     # Create a new df if one was not passed in
-    df = df == nothing ? DataFrame() : df
+    df = df === nothing ? DataFrame() : df
 
     if haskey(df, item_name)
         error("An item named $item_name already exists in this DataFrame")
@@ -157,7 +157,7 @@ Return the values for variable or parameter `item_name` in `comp_name` of
 model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
-    if m.mi == nothing
+    if m.mi === nothing
         error("Cannot get DataFrame: model has not been built yet")
     end
 

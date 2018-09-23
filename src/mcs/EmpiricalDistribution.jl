@@ -16,7 +16,7 @@ struct EmpiricalDistribution{T}
     # N.B. This doesn't copy the values vector, so caller must, if required
     function EmpiricalDistribution(values::Vector{T}, probs::Union{Nothing, Vector{Float64}}=nothing) where T
         n = length(values)
-        if probs == nothing
+        if probs === nothing
             probs = Vector{Float64}(n)
             probs[:] = 1/n
         elseif length(probs) != n

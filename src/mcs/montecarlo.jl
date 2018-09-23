@@ -314,7 +314,7 @@ end
 
 # Append a string representation of the tuple args to the given directory name
 function _compute_output_dir(orig_output_dir, tup)
-    output_dir = (orig_output_dir == nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
+    output_dir = (orig_output_dir === nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
     mkpath(output_dir, mode=0o750)
     return output_dir
 end
@@ -367,12 +367,12 @@ function run_mcs(mcs::MonteCarloSimulation,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
                  scenario_args=nothing)
 
-    if (scenario_func == nothing) != (scenario_args == nothing)
+    if (scenario_func === nothing) != (scenario_args === nothing)
         error("run_mcs: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
     end
 
     for m in mcs.models
-        if m.mi == nothing
+        if m.mi === nothing
             build(m)
         end
     end
@@ -384,8 +384,8 @@ function run_mcs(mcs::MonteCarloSimulation,
     orig_output_dir = output_dir
 
     # booleans vars to simplify the repeated tests in the loop below
-    has_output_dir     = (orig_output_dir != nothing)
-    has_scenario_func  = (scenario_func != nothing)
+    has_output_dir     = (orig_output_dir !== nothing)
+    has_scenario_func  = (scenario_func !== nothing)
     has_outer_scenario = (has_scenario_func && scenario_placement == OUTER)
     has_inner_scenario = (has_scenario_func && scenario_placement == INNER)
 
@@ -438,7 +438,7 @@ function run_mcs(mcs::MonteCarloSimulation,
 
                 _perturb_params!(mcs, trialnum)
 
-                if pre_trial_func != nothing
+                if pre_trial_func !== nothing
                     @debug "Calling pre_trial_func($trialnum, $tup)"
                     pre_trial_func(mcs, trialnum, ntimesteps, tup)
                 end               
@@ -455,7 +455,7 @@ function run_mcs(mcs::MonteCarloSimulation,
                     run(m, ntimesteps=ntimesteps)
                 end
                 
-                if post_trial_func != nothing
+                if post_trial_func !== nothing
                     @debug "Calling post_trial_func($trialnum, $tup)"
                     post_trial_func(mcs, trialnum, ntimesteps, tup)
                 end

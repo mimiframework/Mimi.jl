@@ -92,7 +92,7 @@ macro defmcs(expr)
                     if (@capture(pair, [dims__] => distname_(distargs__)) ||
                         @capture(pair,     dim_ => distname_(distargs__)))
 
-                        dims = _make_dims(dims == nothing ? [dim] : dims)
+                        dims = _make_dims(dims === nothing ? [dim] : dims)
 
                         rvname = _make_rvname(extvar)
                         saverv(rvname, distname, distargs)
@@ -124,7 +124,7 @@ macro defmcs(expr)
 
                 # For "anonymous" RVs, e.g., ext_var2[2010:2100, :] *= Uniform(0.8, 1.2), we
                 # gensym a name based on the external var name and process it as a named RV.
-                if rvname == nothing
+                if rvname === nothing
                     param_name = @capture(extvar, name_[args__]) ? name : extvar
                     rvname = _make_rvname(param_name)
                     saverv(rvname, distname, distargs)
