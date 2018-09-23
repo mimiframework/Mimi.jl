@@ -53,7 +53,7 @@ function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
     end
     
     spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
-    spec===nothing && error("Spec cannot be built.")        
+    spec === nothing && error("Spec cannot be built.")        
 
     return VegaLite.VLSpec{:plot}(spec)
 end
