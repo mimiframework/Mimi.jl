@@ -123,7 +123,7 @@ end
 
 m = Model()
 set_dimension!(m, :time, 2000:2002)
-add_comp!(m, MyComp2)
+add_comp!(m, MyComp2; first=2000, last=2002)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_logs (:warn, "Redefining dimension :time") (:warn, "Resetting MyComp2 component's first timestep to 2001") set_dimension!(m, :time, 2001:2003)
@@ -149,10 +149,14 @@ run(m)
 
 m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
-add_comp!(m, MyComp2)
+add_comp!(m, MyComp2; first=2000, last=2020)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
-@test_logs (:warn, "Redefining dimension :time") (:warn, "Resetting MyComp2 component's first timestep to 2005") set_dimension!(m, :time, [2005, 2020, 2050])
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    # (:warn, "Resetting MyComp2 component's first timestep to 2005"),
+    set_dimension!(m, :time, [2005, 2020, 2050])
+)
 
 update_param!(m, :x, [4, 5, 6], update_timesteps = false)
 x = m.md.external_params[:x]
@@ -179,7 +183,7 @@ add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 @test_logs(
     (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting MyComp2 component's first timestep to 2005"),
+    # (:warn, "Resetting MyComp2 component's first timestep to 2005"),
     set_dimension!(m, :time, [2005, 2020, 2050])
 )
 
@@ -190,6 +194,7 @@ x = m.md.external_params[:x]
 run(m)
 @test m[:MyComp2, :y][1] == 2   # 2005
 @test m[:MyComp2, :y][2] == 3   # 2020
+@test m[:MyComp2, :y][3] == 4   # 2050
 
 
 # 4. Test updating the time index to a different length
@@ -201,15 +206,14 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_logs (:warn, "Redefining dimension :time") set_dimension!(m, :time, 1999:2003)     # length 5
 
+@test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
 update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
 x = m.md.external_params[:x]
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
 
 run(m)
-@test m[:MyComp2, :y][1] == 3.  # 2000
-@test m[:MyComp2, :y][2] == 4.  # 2001
-@test m[:MyComp2, :y][3] == 5.  # 2002
+@test m[:MyComp2, :y] == [2., 3., 4., 5., 6.]
 
 
 # 5. Test all the warning and error cases
@@ -240,7 +244,7 @@ update_param!(m, :z, 1)
 # Reset the time dimensions
 @test_logs(
     (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting MyComp3 component's first timestep to 2005"),
+    # (:warn, "Resetting MyComp3 component's first timestep to 2005"),
     set_dimension!(m, :time, 2005:2007)
 )
 update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) # Won't error when updating from a dictionary

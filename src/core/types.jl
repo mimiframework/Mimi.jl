@@ -211,8 +211,8 @@ mutable struct ComponentDef  <: NamedDef
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
-    first::Int
-    last::Int
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension!, etc.
@@ -223,7 +223,7 @@ mutable struct ComponentDef  <: NamedDef
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
-        self.first = self.last = 0
+        self.first = self.last = nothing
         return self
     end
 end
@@ -345,7 +345,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     run_timestep::Union{Nothing, Function}
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
-                               vars::TV, pars::TP, 
+                               vars::TV, pars::TP,
+                               first::Int, last::Int, 
                                name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
                                                                    TP <: ComponentInstanceParameters}
         self = new{TV, TP}()
@@ -356,9 +357,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
         
         self.variables = vars
         self.parameters = pars
-
-        self.first = comp_def.first
-        self.last  = comp_def.last
+        self.first = first
+        self.last = last
 
         comp_name   = comp_id.comp_name
         module_name = comp_id.module_name

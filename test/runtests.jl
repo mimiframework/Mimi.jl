@@ -6,12 +6,6 @@ Mimi.set_defcomp_verbosity(false)
 
 @testset "Mimi" begin
 
-    # Delete here and re-enable below once working again  
-    @info("test_connectorcomp.jl")
-    include("test_connectorcomp.jl")
-
-    
-
     @info("test_main.jl")
     include("test_main.jl")
 

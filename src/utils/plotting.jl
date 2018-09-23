@@ -15,12 +15,12 @@ function _open_file(filename)
 end
 
 """
-    plot_comp_graph(m::Model, filename::Union{Void, Symbol} = nothing)
+    plot_comp_graph(m::Model, filename::Union{Nothing, Symbol} = nothing)
 
 Plot the DAG of component connections within model `m` and save to `filename`. If
 no `filename` is given, plot will simply display.
 """
-function plot_comp_graph(m::Model, filename::Union{Void, String} = nothing)
+function plot_comp_graph(m::Model, filename::Union{Nothing, String} = nothing)
     
     graph = comp_graph(m.md)
     names = map(i -> get_prop(graph, i, :name), vertices(graph))

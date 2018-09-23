@@ -28,7 +28,7 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
         end
     end
 
-    # println("_instance_datatype($def) returning $T")
+    # @info "_instance_datatype returning $T"
     return T
 end
 
@@ -73,7 +73,7 @@ Return the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    first = comp_def.first
+    first = first_period(md, comp_def)
     var_defs = variables(comp_def)    
 
     names  = ([name(vdef) for vdef in var_defs]...,)
@@ -165,7 +165,10 @@ function build(md::ModelDef)
         ptypes = Tuple{map(typeof, pvals)...}
         pars = ComponentInstanceParameters(pnames, ptypes, pvals)
 
-        ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
+        first = first_period(md, comp_def)
+        last = last_period(md, comp_def)
+
+        ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
         add_comp!(mi, ci)
     end
 

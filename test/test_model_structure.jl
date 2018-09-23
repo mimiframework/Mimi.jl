@@ -170,8 +170,8 @@ run(m)
 # This results in 2 warnings, so we test for both.
 @test_logs(
     (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting E component's last timestep to 2015"),
-    set_dimension!(m, :time, 2015)
+    # (:warn, "Resetting E component's last timestep to 2015"),
+    set_dimension!(m, :time, [2015])
 )
 
 run(m)

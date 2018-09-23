@@ -49,7 +49,9 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
             param_length = size(ext_param.values)[i]
             if dim == :time 
                 t = dimensions(md)[:time]
-                comp_length = t[last_period(comp_def)] - t[first_period(comp_def)] + 1
+                first = first_period(md, comp_def)
+                last = last_period(md, comp_def)
+                comp_length = t[last] - t[first] + 1
             else
                 comp_length = dim_count(md, dim)
             end
@@ -124,7 +126,7 @@ function connect_param!(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        first = first_period(dst_comp_def)
+        first = first_period(md, dst_comp_def)
         T = eltype(backup)        
         
         dim_count = length(dst_dims)
