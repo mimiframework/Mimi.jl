@@ -30,4 +30,6 @@ set_leftover_params!
 setproperty!
 set_param! 
 variables  
+update_param!
+update_params!
 ```

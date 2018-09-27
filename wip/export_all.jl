@@ -3,12 +3,12 @@
 #
 macro import_all(pkg)
     function ok_to_import(symbol)
-        ! (symbol in (:eval, :show) || string(symbol)[1] == '#')
+        ! (symbol in (:eval, :show, :include) || string(symbol)[1] == '#')
     end
 
-    symbols = Iterators.filter(ok_to_import, names(eval(pkg), true))
+    symbols = Iterators.filter(ok_to_import, names(eval(pkg), all=true))
     symlist = join(symbols, ",")
-    return parse("import $pkg: $symlist")
+    return Meta.parse("import $pkg: $symlist")
 end
 
 using Mimi

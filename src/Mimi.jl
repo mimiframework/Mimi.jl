@@ -1,5 +1,3 @@
-__precompile__()
-
 module Mimi
 
 using DataFrames
@@ -7,8 +5,6 @@ using DataStructures
 using Distributions
 using Electron
 using JSON 
-using LightGraphs
-using MetaGraphs
 using NamedArrays
 using StringBuilders
 
@@ -22,8 +18,7 @@ export
     create_marginal_model,
     disconnect_param!,
     explore,
-    getdataframe,
-    getproperty, 
+    getdataframe, 
     gettime,
     get_param_value,
     get_var_value,
@@ -35,12 +30,14 @@ export
     name,
     new_comp,
     parameters, 
-    plot_comp_graph,
+    # plot_comp_graph,
     replace_comp!, 
     set_dimension!, 
     set_leftover_params!, 
     setproperty!, 
     set_param!, 
+    update_param!,
+    update_params!,
     variables 
 
 include("core/types.jl")
@@ -58,7 +55,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-include("utils/plotting.jl")
+#include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")

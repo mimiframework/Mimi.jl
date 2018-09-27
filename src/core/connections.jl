@@ -1,3 +1,6 @@
+using LightGraphs
+using MetaGraphs
+
 """
     disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
 
@@ -46,7 +49,9 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
             param_length = size(ext_param.values)[i]
             if dim == :time 
                 t = dimensions(md)[:time]
-                comp_length = t[last_period(comp_def)] - t[first_period(comp_def)] + 1
+                first = first_period(md, comp_def)
+                last = last_period(md, comp_def)
+                comp_length = t[last] - t[first] + 1
             else
                 comp_length = dim_count(md, dim)
             end
@@ -81,8 +86,8 @@ end
 
 """
     connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
-        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; 
-        ignoreunits::Bool=false)
+        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Nothing, Array}=nothing; 
+        ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
@@ -94,12 +99,12 @@ component parameter should only be calculated for the second timestep and beyond
 function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol,
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
     disconnect_param!(md, dst_comp_name, dst_par_name)
 
-    if backup != nothing
+    if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
             dims = dimnames(backup)
@@ -109,7 +114,7 @@ function connect_param!(md::ModelDef,
         end
 
         # Check that the backup value is the right size
-        if getspan(md, dst_comp_name) != size(backup)[1]
+        if getspan(md, dst_comp_name) != size(backup)
             error("Backup data must span the whole length of the component.")
         end
 
@@ -121,7 +126,7 @@ function connect_param!(md::ModelDef,
         dst_dims  = dimensions(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        first = first_period(dst_comp_def)
+        first = first_period(md, dst_comp_def)
         T = eltype(backup)        
         
         dim_count = length(dst_dims)
@@ -131,14 +136,14 @@ function connect_param!(md::ModelDef,
         else
             
             if isuniform(md)
-                #use the first from the comp_def not the ModelDef
+                # use the first from the comp_def not the ModelDef
                 _, stepsize = first_and_step(md)
                 values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
-                #use the first from the comp_def 
-                first_index = findfirst(times, first)
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, dim_count}(backup)
+                # use the first from the comp_def 
+                first_index = findfirst(isequal(first), times) 
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
             end
             
         end
@@ -161,7 +166,7 @@ end
 
 """
     connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-        backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
 to a variable `src[2]` in another component `src[1]` of the same model
@@ -171,7 +176,7 @@ between the destination and the source ie. the value would be `1` if the destina
 component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_param!(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
@@ -270,21 +275,18 @@ function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     md.external_params[name] = value
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_scalar_param!(md, name, value)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
-    
-    num_dims = length(param_dims)
-
-    if num_dims in (1, 2) && param_dims[1] == :time   
+function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
+                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
+    if param_dims[1] == :time   
         value = convert(Array{md.number_type}, value)
-
-        values = get_timestep_instance(md, eltype(value), num_dims, value)
-                 
+        num_dims = length(param_dims)
+        values = get_timestep_array(md, eltype(value), num_dims, value)      
     else
-         values = value
+        values = value
     end
 
     set_external_array_param!(md, name, values, param_dims)
@@ -309,7 +311,7 @@ Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
-    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end
 
@@ -324,9 +326,9 @@ function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractAr
     if !(typeof(value) <: Array{numtype})
         numtype = number_type(md)
         # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(value)
+        value = Array{numtype}(undef, value)
     end
-    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end
 
@@ -340,6 +342,112 @@ function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
     set_external_param!(md, name, p)
 end
 
+"""
+    update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+
+Update the `value` of an external model parameter in ModelDef `md`, referenced 
+by `name`. Optional boolean argument `update_timesteps` with default value 
+`false` indicates whether to update the time keys associated with the parameter 
+values to match the model's time index.
+"""
+function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
+end
+
+function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
+    ext_params = md.external_params
+    if ! haskey(ext_params, name)
+        error("Cannot update parameter; $name not found in model's external parameters.")
+    end
+
+    param = ext_params[name]
+
+    if param isa ScalarModelParameter
+        if update_timesteps && raise_error
+            error("Cannot update timesteps; parameter $name is a scalar parameter.")
+        end
+        _update_scalar_param!(param, value)
+    else
+        _update_array_param!(md, name, value, update_timesteps, raise_error)
+    end
+
+end
+
+function _update_scalar_param!(param::ScalarModelParameter, value)
+    if ! (value isa typeof(param.value))
+        try
+            value = convert(typeof(param.value), value)
+        catch e
+            error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
+        end
+    end
+    param.value = value
+    nothing
+end
+
+function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise_error)
+    # Get original parameter
+    param = md.external_params[name]
+    
+    # Check type of provided parameter
+    if !(typeof(value) <: AbstractArray)
+        error("Cannot update array parameter $name with a value of type $(typeof(value)).")
+    elseif !(eltype(value) <: eltype(param.values)) 
+        try
+            value = convert(Array{eltype(param.values)}, value)
+        catch e
+            error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
+        end
+    end
+
+    # Check size of provided parameter
+    if update_timesteps && param.values isa TimestepArray
+        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...,)
+    else 
+        expected_size = size(param.values)
+    end
+    if size(value) != expected_size
+        error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).")
+    end
+
+    if update_timesteps
+        if param.values isa TimestepArray 
+            T = eltype(value)
+            N = length(size(value))
+            new_timestep_array = get_timestep_array(md, T, N, value)
+            md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
+        elseif raise_error
+            error("Cannot update timesteps; parameter $name is not a TimestepArray.")
+        else
+            param.values = value
+        end
+    else
+        if param.values isa TimestepArray
+            param.values.data = value
+        else
+            param.values = value
+        end
+    end
+    nothing
+end
+
+"""
+    update_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
+
+For each (k, v) in the provided `parameters` dictionary, update_param! 
+is called to update the external parameter by name k to value v, with optional 
+Boolean argument update_timesteps. Each key k must be a symbol or convert to a
+symbol matching the name of an external parameter that already exists in the 
+model definition.
+"""
+function update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)
+    parameters = Dict(Symbol(k) => v for (k, v) in parameters)
+    for (param_name, value) in parameters
+        _update_param!(md, param_name, value, update_timesteps; raise_error = false)
+    end
+    nothing
+end
+
 
 function add_connector_comps(md::ModelDef)
      conns = md.internal_param_conns        # we modify this, so we don't use functional API
@@ -349,7 +457,7 @@ function add_connector_comps(md::ModelDef)
 
         # first need to see if we need to add any connector components for this component
         internal_conns  = filter(x -> x.dst_comp_name == comp_name, conns)
-        need_conn_comps = filter(x -> x.backup != nothing, internal_conns)
+        need_conn_comps = filter(x -> x.backup !== nothing, internal_conns)
 
         # println("Need connectors comps: $need_conn_comps")
 

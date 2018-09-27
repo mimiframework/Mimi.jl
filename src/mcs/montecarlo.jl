@@ -1,33 +1,8 @@
 using IterTools
 using IterableTables
 using TableTraits
+using Random
 using ProgressMeter
-
-# Temporary: for 0.7/1.0, we can just remove this and use the logging macros provided.
-@enum LogLevel WARN=1 INFO=2 DEBUG=3
-_LogLevel = WARN
-
-function log_level!(level::LogLevel)
-    global _LogLevel
-    _LogLevel = level
-end
-
-log_level() = _LogLevel
-
-function log_debug(msg)
-    _LogLevel >= DEBUG && println("DEBUG: ", msg)
-    nothing
-end
-
-function log_info(msg)
-    _LogLevel >= INFO && println("INFO: ", msg)
-    nothing
-end
-
-function log_warn(msg)
-    _LogLevel >= WARN && warn(msg)
-    nothing
-end
 
 function Base.show(io::IO, mcs::MonteCarloSimulation)
     println("MonteCarloSimulation")
@@ -62,7 +37,7 @@ end
 
 # Store results for a single parameter
 function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
-    log_debug("\nStoring trial results for $datum_key")
+    @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
     dims = dimensions(m, comp_name, datum_name)
@@ -126,14 +101,13 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
         for datum_key in mcs.savelist
             (comp_name, datum_name) = datum_key
             filename = joinpath(sub_dir, "$datum_name.csv")
-            log_info("Writing $comp_name.$datum_name to $filename")
             save(filename, results[datum_key])
         end
     end
 end
 
 function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
-    mkpath(dirname(filename), 0o770)   # ensure that the specified path exists
+    mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
     save(filename, mcs)
     return nothing
 end
@@ -154,7 +128,7 @@ function get_trial(mcs::MonteCarloSimulation, trialnum::Int)
     end
 
     vals = [rand(rv.dist) for rv in values(mcs.rvdict)]
-    mcs.current_data = mcs.nt_type(vals...)
+    mcs.current_data = mcs.nt_type((vals...,))
     mcs.current_trial = trialnum
     
     return mcs.current_data
@@ -162,29 +136,23 @@ end
 
 """
     generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
-                     filename::String="", sampling::SamplingOptions)
+                     filename::String="", sampling::SamplingOptions=RANDOM)
 
 Generate the given number of trials for the given MonteCarloSimulation instance. 
-Call this before running the MCS to enable saving of inputs to to choose a sampling 
-method other than LHS. (Currently, only LHS and RANDOM are possible.)
+Call this before running the MCS to pre-generate data to be used by all 
+scenarios. Also enables saving of inputs or choosing a sampling method other 
+than RANDOM. (Currently, only LHS and RANDOM are possible.)
 """
 function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
                           filename::String="",
-                          sampling::SamplingOptions=LHS)
+                          sampling::SamplingOptions=RANDOM)
     mcs.trials = trials
 
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
-        rvlist = collect(values(mcs.rvdict))
-
-        # update the dict in mcs
         lhs!(mcs, corrmatrix=corrmatrix)
-
     else    # sampling == RANDOM
-        # we pre-generate the trial data only if we're saving it
-        if filename != ""
-            rand!(mcs)
-        end
+        rand!(mcs)
     end
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
@@ -195,12 +163,12 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int;
 end
 
 """
-    Base.rand!(mcs::MonteCarloSimulation)
+    Random.rand!(mcs::MonteCarloSimulation)
 
 Replace all RVs originally of type Distribution with SampleStores with 
 values drawn from that original distribution.
 """
-function Base.rand!(mcs::MonteCarloSimulation)
+function Random.rand!(mcs::MonteCarloSimulation)
     rvdict = mcs.rvdict
     trials = mcs.trials
 
@@ -217,7 +185,7 @@ Copy the parameters that are perturbed in this MCS so we can restore them after 
 This is necessary when we are applying distributions by adding or multiplying original values.
 """
 function _copy_mcs_params(mcs::MonteCarloSimulation)
-    param_vec = Vector{Dict{Symbol, ModelParameter}}(length(mcs.models))
+    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(mcs.models))
 
     for (i, m) in enumerate(mcs.models)
         md = m.mi.md
@@ -346,20 +314,20 @@ end
 
 # Append a string representation of the tuple args to the given directory name
 function _compute_output_dir(orig_output_dir, tup)
-    output_dir = (orig_output_dir == nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
-    mkpath(output_dir, 0o750)
+    output_dir = (orig_output_dir === nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
+    mkpath(output_dir, mode=0o750)
     return output_dir
 end
 
 """
     run_mcs(mcs::MonteCarloSimulation, 
-            trials::Union{Int, Vector{Int}, Range{Int}},
+            trials::Union{Int, Vector{Int}, AbstractRange{Int}},
             models_to_run::Int=length(mcs.models);
             ntimesteps::Int=typemax(Int), 
-            output_dir::Union{Void, AbstractString}=nothing, 
-            pre_trial_func::Union{Void, Function}=nothing, 
-            post_trial_func::Union{Void, Function}=nothing,
-            scenario_func::Union{Void, Function}=nothing,
+            output_dir::Union{Nothing, AbstractString}=nothing, 
+            pre_trial_func::Union{Nothing, Function}=nothing, 
+            post_trial_func::Union{Nothing, Function}=nothing,
+            scenario_func::Union{Nothing, Function}=nothing,
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing)
 
@@ -389,22 +357,22 @@ is specified, the `scenario_func` is called after any `pre_trial_func` but befor
 is run.
 """
 function run_mcs(mcs::MonteCarloSimulation, 
-                 trials::Union{Vector{Int}, Range{Int}},
+                 trials::Union{Vector{Int}, AbstractRange{Int}},
                  models_to_run::Int=length(mcs.models);     # run all models by default
                  ntimesteps::Int=typemax(Int), 
-                 output_dir::Union{Void, AbstractString}=nothing, 
-                 pre_trial_func::Union{Void, Function}=nothing, 
-                 post_trial_func::Union{Void, Function}=nothing,
-                 scenario_func::Union{Void, Function}=nothing,
+                 output_dir::Union{Nothing, AbstractString}=nothing, 
+                 pre_trial_func::Union{Nothing, Function}=nothing, 
+                 post_trial_func::Union{Nothing, Function}=nothing,
+                 scenario_func::Union{Nothing, Function}=nothing,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
                  scenario_args=nothing)
 
-    if (scenario_func == nothing) != (scenario_args == nothing)
+    if (scenario_func === nothing) != (scenario_args === nothing)
         error("run_mcs: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
     end
 
     for m in mcs.models
-        if m.mi == nothing
+        if m.mi === nothing
             build(m)
         end
     end
@@ -416,8 +384,8 @@ function run_mcs(mcs::MonteCarloSimulation,
     orig_output_dir = output_dir
 
     # booleans vars to simplify the repeated tests in the loop below
-    has_output_dir     = (orig_output_dir != nothing)
-    has_scenario_func  = (scenario_func != nothing)
+    has_output_dir     = (orig_output_dir !== nothing)
+    has_scenario_func  = (scenario_func !== nothing)
     has_outer_scenario = (has_scenario_func && scenario_placement == OUTER)
     has_inner_scenario = (has_scenario_func && scenario_placement == INNER)
 
@@ -427,7 +395,7 @@ function run_mcs(mcs::MonteCarloSimulation,
 
         # precompute all combinations of scenario arguments so we can run
         # a single loop regardless of the number of scenario arguments.
-        arg_tuples = product(scen_values...)
+        arg_tuples = Iterators.product(scen_values...)
 
         if has_outer_scenario
             arg_tuples_outer = arg_tuples
@@ -449,7 +417,7 @@ function run_mcs(mcs::MonteCarloSimulation,
 
     for outer_tup in arg_tuples_outer
         if has_outer_scenario
-            log_debug("Calling outer scenario_func with $outer_tup")
+            @debug "Calling outer scenario_func with $outer_tup"
             scenario_func(mcs, outer_tup)
 
             # we'll store the results of each in a subdir composed of tuple values
@@ -463,32 +431,32 @@ function run_mcs(mcs::MonteCarloSimulation,
         _reset_rvs!(mcs)
 
         for (i, trialnum) in enumerate(trials)
-            log_debug("Running trial $trialnum")
+            @debug "Running trial $trialnum"
 
             for inner_tup in arg_tuples_inner
                 tup = has_inner_scenario ? inner_tup : outer_tup
 
                 _perturb_params!(mcs, trialnum)
 
-                if pre_trial_func != nothing
-                    log_debug("Calling pre_trial_func($trialnum, $tup)")
+                if pre_trial_func !== nothing
+                    @debug "Calling pre_trial_func($trialnum, $tup)"
                     pre_trial_func(mcs, trialnum, ntimesteps, tup)
                 end               
 
                 if has_inner_scenario
-                    log_debug("Calling inner scenario_func with $inner_tup")
+                    @debug "Calling inner scenario_func with $inner_tup"
                     scenario_func(mcs, inner_tup)
 
                     output_dir = _compute_output_dir(orig_output_dir, inner_tup)
                 end
 
                 for m in mcs.models[1:models_to_run]    # note that list of models may be changed in scenario_func
-                    log_debug("Running model")
+                    @debug "Running model"
                     run(m, ntimesteps=ntimesteps)
                 end
                 
-                if post_trial_func != nothing
-                    log_debug("Calling post_trial_func($trialnum, $tup)")
+                if post_trial_func !== nothing
+                    @debug "Calling post_trial_func($trialnum, $tup)"
                     post_trial_func(mcs, trialnum, ntimesteps, tup)
                 end
 
@@ -545,13 +513,19 @@ set_model!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.
 #
 # Iterator functions for MonteCarloSimulation directly, and for use as an IterableTable.
 #
-function Base.start(mcs::MonteCarloSimulation)
+function Base.iterate(mcs::MonteCarloSimulation)
     _reset_rvs!(mcs)
-    return 1
+    trialnum = 1
+    return get_trial(mcs, trialnum), trialnum + 1
 end
 
-Base.next(mcs::MonteCarloSimulation, trialnum) = (get_trial(mcs, trialnum), trialnum + 1)
-Base.done(mcs::MonteCarloSimulation, trialnum) = (trialnum == mcs.trials)
+function Base.iterate(mcs::MonteCarloSimulation, trialnum)
+    if trialnum > mcs.trials
+        return nothing
+    else
+        return get_trial(mcs, trialnum), trialnum + 1
+    end
+end
 
 TableTraits.isiterable(mcs::MonteCarloSimulation) = true
 TableTraits.isiterabletable(mcs::MonteCarloSimulation) = true
@@ -564,13 +538,20 @@ column_types(mcs::MonteCarloSimulation) = [eltype(fld) for fld in values(mcs.rvd
 column_names(iter::MCSIterator) = column_names(iter.mcs)
 column_types(iter::MCSIterator) = IterableTables.column_types(iter.mcs)
 
-function Base.start(iter::MCSIterator)
+function Base.iterate(iter::MCSIterator)
     _reset_rvs!(iter.mcs)
-    return 1
+    idx = 1
+    return get_trial(iter.mcs, idx), idx + 1
 end
 
-Base.next(iter, idx) = (get_trial(iter.mcs, idx), idx + 1)
-Base.done(iter, idx) = (idx == iter.mcs.trials)
-Base.length(iter) = iter.mcs.trials
+function Base.iterate(iter::MCSIterator, idx)
+    if idx > iter.mcs.trials
+        return nothing
+    else
+        return get_trial(iter.mcs, idx), idx + 1
+    end
+end
+
+Base.length(iter::MCSIterator) = iter.mcs.trials
 
 Base.eltype(::Type{MCSIterator{T}}) where T = T

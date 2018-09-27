@@ -1,6 +1,6 @@
 module TestMetaInfo
 
-using Base.Test
+using Test
 using Mimi
 
 import Mimi: 
@@ -53,7 +53,7 @@ vars = Mimi.variable_names(c2)
 pars = Mimi.parameter_names(c2)
 @test length(pars) == 6
 
-@test first_period(c1) == 2010
-@test last_period(c1) == 2100
+@test first_period(test_model.md, c1) == 2010
+@test last_period(test_model.md, c1) == 2100
 
 end # module

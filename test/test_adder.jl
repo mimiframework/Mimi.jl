@@ -1,7 +1,7 @@
 module TestAdder
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     reset_compdefs
@@ -14,7 +14,7 @@ reset_compdefs()
 
 model1 = Model()
 set_dimension!(model1, :time, 1:10)
-add_comp!(model1, adder)
+add_comp!(model1, Mimi.adder)
 
 x = collect(1:10)
 y = collect(2:2:20)
@@ -34,7 +34,7 @@ end
 
 model2 = Model()
 set_dimension!(model2, :time, 1:10)
-add_comp!(model2, adder, :compA)
+add_comp!(model2, Mimi.adder, :compA)
 set_param!(model2, :compA, :input, x)
 set_param!(model2, :compA, :add, y)
 run(model2)

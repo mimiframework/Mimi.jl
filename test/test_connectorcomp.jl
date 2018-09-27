@@ -1,10 +1,10 @@
 module TestConnectorComp
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
-    reset_compdefs
+    reset_compdefs, compdef
 
 reset_compdefs()
 
@@ -21,8 +21,8 @@ reset_compdefs()
     y = Parameter()
     z = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::Timestep)
-        v.z[ts] = p.x[ts] + p.y
+    function run_timestep(p, v, d, t)
+        v.z[t] = p.x[t] + p.y
     end
 end
 
@@ -30,8 +30,8 @@ end
     a = Parameter()
     b = Variable(index=[time])
     
-    function run_timestep(p, v, d, ts::Timestep)
-        v.b[ts] = p.a * ts.t
+    function run_timestep(p, v, d, t)
+        v.b[t] = p.a * t.t
     end
 end
 
@@ -40,7 +40,7 @@ set_dimension!(m, :time, 2000:3000)
 nsteps = Mimi.dim_count(m.md, :time)
 
 add_comp!(m, ShortComponent; first=2100)
-add_comp!(m, ConnectorCompVector, :MyConnector) # can give it your own name
+add_comp!(m, Mimi.ConnectorCompVector, :MyConnector) # Rename component in this model
 add_comp!(m, LongComponent; first=2000)
 
 comp_def = compdef(m, :MyConnector)
@@ -49,13 +49,26 @@ comp_def = compdef(m, :MyConnector)
 set_param!(m, :ShortComponent, :a, 2.)
 set_param!(m, :LongComponent, :y, 1.)
 connect_param!(m, :MyConnector, :input1, :ShortComponent, :b)
+
 set_param!(m, :MyConnector, :input2, zeros(nsteps))
 connect_param!(m, :LongComponent, :x, :MyConnector, :output)
 
 run(m)
 
-@test length(m[:ShortComponent, :b]) == 901
-@test length(m[:MyConnector, :input1]) == 901
+b = m[:ShortComponent, :b]
+input1 = m[:MyConnector, :input1]
+
+# TBD: unclear whether this is an error. Using shorter time (later start)
+# results in an array of the same size as the original, but padded with NaNs.
+# This is because we allocate based on the length of the time dimension,
+# ignoring the start period.
+
+@test length(b) == 1001
+@test all(isnan, b[902:end])
+
+@test length(input1) == 1001
+@test all(isnan, input1[902:end])
+
 @test length(m[:MyConnector, :input2]) ==  1001 # TBD: was 100 -- accidental deletion or...?
 @test length(m[:LongComponent, :z]) == 1001
 
@@ -70,7 +83,7 @@ b = getdataframe(m, :ShortComponent, :b)
 
 model2 = Model()
 set_dimension!(model2, :time, 2000:2010)
-add_comp!(model2, ShortComponent; start=2005)
+add_comp!(model2, ShortComponent; first=2005)
 add_comp!(model2, LongComponent)
 
 set_param!(model2, :ShortComponent, :a, 2.)
@@ -117,7 +130,7 @@ b2 = getdataframe(model3, :ShortComponent, :b)
     x = Parameter(index = [time, regions])
     out = Variable(index = [time, regions])
     
-    function run_timestep(p, v, d, ts::Timestep)
+    function run_timestep(p, v, d, ts)
         for r in d.regions
             v.out[ts, r] = p.x[ts, r]
         end
@@ -130,7 +143,7 @@ end
     a = Parameter(index=[regions])
     b = Variable(index=[time, regions])
     
-    function run_timestep(p, v, d, ts::Timestep)
+    function run_timestep(p, v, d, ts)
         for r in d.regions
             v.b[ts, r] = ts.t + p.a[r]
         end
@@ -140,7 +153,7 @@ end
 model4 = Model()
 set_dimension!(model4, :time, 2000:5:2100)
 set_dimension!(model4, :regions, [:A, :B, :C])
-add_comp!(model4, Short; start=2020)
+add_comp!(model4, Short; first=2020)
 add_comp!(model4, Long)
 
 set_param!(model4, :Short, :a, [1,2,3])

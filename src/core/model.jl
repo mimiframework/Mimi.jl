@@ -49,7 +49,7 @@ end
 
 """
     connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, 
-        src_var_name::Symbol, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+        src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
@@ -60,7 +60,8 @@ component parameter should only be calculated for the second timestep and beyond
 """
 function connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; 
+                           ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
                       ignoreunits=ignoreunits, offset=offset)
 end
@@ -77,7 +78,8 @@ component parameter should only be calculated for the second timestep and beyond
 
 """
 function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; 
+                           ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
@@ -91,12 +93,12 @@ function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
 end
 
@@ -107,6 +109,33 @@ end
 
 function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     set_leftover_params!(m.md, parameters)
+    decache(m)
+end
+
+"""
+    update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+
+Update the `value` of an external model parameter in model `m`, referenced by 
+`name`. Optional boolean argument `update_timesteps` with default value `false` 
+indicates whether to update the time keys associated with the parameter values 
+to match the model's time index.
+"""
+function update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m.md, name, value, update_timesteps = update_timesteps)
+    decache(m)
+end
+
+"""
+    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+
+For each (k, v) in the provided `parameters` dictionary, update_param! 
+is called to update the external parameter by name k to value v, with optional 
+Boolean argument update_timesteps. Each key k must be a symbol or convert to a
+symbol matching the name of an external parameter that already exists in the 
+model definition.
+"""
+function update_params!(m::Model, parameters::Dict; update_timesteps = false)
+    update_params!(m.md, parameters; update_timesteps = update_timesteps)
     decache(m)
 end
 
@@ -127,16 +156,23 @@ end
 
 """
     replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-        before::VoidSymbol=nothing, after::VoidSymbol=nothing)
+        first::NothingSymbol=nothing, last::NothingSymbol=nothing,
+        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+        reconnect::Bool=true)
         
-Replace the component with name `comp_name` in model `md`  with the component
-`comp_id` using the same name.  
+Replace the component with name `comp_name` in model `m` with the component
+`comp_id` using the same name.  The component is added in the same position as 
+the old component, unless one of the keywords `before` or `after` is specified.
+The component is added with the same first and last values, unless the keywords 
+`first` or `last` are specified. Optional boolean argument `reconnect` with 
+default value `true` indicates whether the existing parameter connections 
+should be maintained in the new component.  
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing)
-    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
+                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+                           reconnect::Bool=true)
+    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
     decache(m)
     return ComponentReference(m, comp_name)
 end
@@ -193,12 +229,12 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 @modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
-    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})
 
 Set the values of `m` dimension `name` to integers 1 through `count`, if `keys`` is
 an integer; or to the values in the vector or range if `keys`` is either of those types.
 """
-function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
+function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
     set_dimension!(m.md, name, keys)
     decache(m)
 end
@@ -296,12 +332,12 @@ end
 Run model `m` once.
 """
 function Base.run(m::Model; ntimesteps::Int=typemax(Int), 
-                  dim_keys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+                  dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if numcomponents(m) == 0
         error("Cannot run a model with no components.")
     end
 
-    if m.mi == nothing
+    if m.mi === nothing
         build(m)
     end
 
@@ -309,54 +345,4 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
     run(m.mi, ntimesteps, dim_keys)
     nothing
 end
-
-#
-# TBD: This function is currently used only in test/test_parametertypes. Is it still needed?
-#
-"""
-    update_external_param(m::Model, name::Symbol, value)
-
-Update the `value` of an external model parameter in model `m`, referenced by `name`.
-"""
-function update_external_param(m::Model, name::Symbol, value)
-    ext_params = external_params(m)
-    if ! haskey(ext_params, name)
-        error("Cannot update parameter; $name not found in model's external parameters.")
-    end
-
-    param = ext_params[name]
-
-    if isa(param, ScalarModelParameter)
-        if ! (value isa typeof(param.value))
-            try
-                value = convert(typeof(param.value), value)
-            catch e
-                error("Cannot update parameter $name; expected type $(typeof(param.value)) but got $(typeof(value)).")
-            end
-        elseif size(value) != size(param.value)
-            error("Cannot update parameter $name; expected array of size $(size(param.value)) but got array of size $(size(value)).")
-        else
-            param.value = value
-        end
-
-    else # ArrayModelParameter
-        if !(typeof(value) <: AbstractArray)
-            error("Cannot update an array parameter $name with a scalar value.")
-        elseif size(value) != size(param.values)
-            error("Cannot update parameter $name; expected array of size $(size(param.values)) but got array of size $(size(value)).")
-        elseif !(eltype(value) <: eltype(param.values))
-            try
-                value = convert(Array{eltype(param.values)}, value)
-            catch e
-                error("Cannot update parameter $name; expected array of type $(eltype(param.values)) but got $(eltype(value)).")
-            end
-        else # perform the update
-            if param.values isa TimestepArray
-                param.values.data = value
-            else
-                param.values = value
-            end
-        end
-    end
-    decache(m)
-end
+ 

@@ -1,6 +1,6 @@
 module TestMain
 
-using Base.Test
+using Test
 using Mimi
 
 import Mimi: 
@@ -36,7 +36,6 @@ end
     component(foo1)
 
     foo1.par1 = 5.0
-    # foo1.par2 = []
 end
 
 @test length(compdefs()) == 4   # adder, 2 connectors, and foo1
@@ -46,7 +45,7 @@ end
 
 @test length(dimension(x1.md, :index1)) == 3
 
-# @test_throws MethodError x1.Parameters.par1 = Array{Float64}(1,2)
+# @test_throws MethodError x1.Parameters.par1 = Array{Float64}(undef, 1, 2)
 
 par1 = external_param(x1, :par1)
 @test par1.value == 5.0
@@ -74,4 +73,4 @@ add_comp!(m, foo1)
 
 @test :var1 in variable_names(x1, :foo1)
 
-end #module
+end # module

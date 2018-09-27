@@ -1,10 +1,10 @@
 module TestReferences
 
-using Base.Test
+using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, getproperty
+    reset_compdefs, getproperty, @defmodel
 
 reset_compdefs()
 
@@ -26,7 +26,8 @@ end
     end
 end
 
-@Mimi.defmodel m begin
+
+@defmodel m begin
     index[time] = [1]
     component(Foo)
     component(Bar)

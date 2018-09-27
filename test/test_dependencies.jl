@@ -1,4 +1,4 @@
-if Pkg.installed("InfoZIP") == nothing
+if Pkg.installed("InfoZIP") === nothing
     Pkg.add("InfoZIP")
 end
 

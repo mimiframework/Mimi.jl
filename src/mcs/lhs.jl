@@ -12,6 +12,8 @@
 # http://nullege.com/codes/show/src@m@o@model-builder-HEAD@Bayes@lhs.py
 #
 import StatsBase
+using Statistics
+using LinearAlgebra
 
 """
     rank_corr_coef(m::Matrix{Float64})
@@ -21,7 +23,7 @@ coefficients representing the rank correlations pairs of columns.
 """
 function rank_corr_coef(m::Matrix{Float64})
     cols = size(m, 2)
-    corrCoef = eye(cols)    # identity matrix
+    corrCoef = Matrix(1.0I, cols, cols)    # identity matrix
 
     for i in 1:cols
         for j in (i + 1):cols
@@ -59,9 +61,9 @@ function _gen_rank_values(params::Int, trials::Int, corrmatrix::Matrix{Float64})
         S[:, i] = vdwScores
     end
 
-    P = Matrix(cholfact(corrmatrix)[:L])
+    P = Matrix(cholesky(corrmatrix, Val(false)).L)
     E = rank_corr_coef(S)
-    Q = Matrix(cholfact(E)[:L])
+    Q = Matrix(cholesky(E, Val(false)).L)
     final = (S * inv(Q)') * P'
 
     ranks = zeros(Int, trials, params)
@@ -87,7 +89,7 @@ function _get_percentiles(trials::Int)
 end
 
 """
-    lhs(rvlist::Vector{RandomVariable}, trials::Int; corrmatrix::Union{Matrix{Float64},Void}=nothing, asDataFrame::Bool=true)
+    lhs(rvlist::Vector{RandomVariable}, trials::Int; corrmatrix::Union{Matrix{Float64},Nothing}=nothing, asDataFrame::Bool=true)
              
 Produce an array or DataFrame of 'trials' rows of values for the given parameter
 list, respecting the correlation matrix 'corrmatrix' if one is specified, using Latin
@@ -114,17 +116,18 @@ skip: (list of params)) Parameters to process later because they are
 Returns DataFrame with `trials` rows of values for the `rvlist`.
 """
 function lhs(rvlist::Vector{RandomVariable}, trials::Int; 
-             corrmatrix::Union{Matrix{Float64},Void}=nothing,
+             corrmatrix::Union{Matrix{Float64},Nothing}=nothing,
              asDataFrame::Bool=true)
 
-    ranks = corrmatrix == nothing ? nothing : _gen_rank_values(length(rvlist), trials, corrmatrix)
+    num_rvs = length(rvlist)             
+    ranks = corrmatrix === nothing ? nothing : _gen_rank_values(num_rvs, trials, corrmatrix)
 
-    samples = zeros(trials, length(rvlist))
+    samples = zeros(trials, num_rvs)
 
     for (i, rv) in enumerate(rvlist)
-        values = quantile.(rv.dist, _get_percentiles(trials))  # extract values from the RV for these percentiles
+        values = quantile.(Ref(rv.dist), _get_percentiles(trials))  # extract values from the RV for these percentiles
 
-        if corrmatrix == nothing
+        if corrmatrix === nothing
             shuffle!(values)           # randomize the stratified samples
         else
             indices = ranks[:, i]
@@ -137,35 +140,21 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
     return asDataFrame ? DataFrame(samples, map(rv->rv.name, rvlist)) : samples
 end
 
-function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Void}=nothing)
+function lhs!(mcs::MonteCarloSimulation; corrmatrix::Union{Matrix{Float64},Nothing}=nothing)
     # TBD: verify that any correlated values are actual distributions, not stored vectors?
 
     trials = mcs.trials
     rvdict = mcs.rvdict
     num_rvs = length(rvdict)
-    rvlist = collect(values(rvdict))
-    ranks = corrmatrix == nothing ? nothing : _gen_rank_values(num_rvs, trials, corrmatrix)
+    rvlist = mcs.dist_rvs
 
-    samples = zeros(trials, num_rvs)
+    samples = lhs(rvlist, mcs.trials, corrmatrix=corrmatrix, asDataFrame=false)
 
     for (i, rv) in enumerate(rvlist)
         dist = rv.dist
         name = rv.name
-
-        # We check when computing the correlation matrix that we aren't trying
-        # to correlate SampleStores, thus we ignore them in this loop.
-        if dist isa Distribution
-            values = quantile.(dist, _get_percentiles(trials))  # extract values from the RV for these percentiles
-
-            if corrmatrix == nothing
-                shuffle!(values)           # randomize the stratified samples
-            else
-                indices = ranks[:, i]
-                values = values[indices]   # reorder to respect correlations
-            end
-            
-            rvdict[name] = RandomVariable(name, SampleStore(values))
-        end
+        values = samples[:, i]
+        rvdict[name] = RandomVariable(name, SampleStore(values))
     end
     return nothing
 end
@@ -217,16 +206,16 @@ function correlation_matrix(mcs::MonteCarloSimulation)
     names = Dict([(rv.name, i) for (i, rv) in enumerate(values(rvdict))])
 
     count = length(rvdict)
-    corrmatrix = eye(count, count)
+    corrmatrix = Matrix(1.0I, count, count)
 
     for corr in mcs.corrlist
         n1 = corr.name1
         n2 = corr.name2
 
         # We don't support correlation between stored samples
-        if rvdict[n1].dist isa SampleStore || rvdict[n2].dist isa SampleStore
-            error("Correlations with SampleStores is not supported ($n1, $n2)")
-        end
+        # if rvdict[n1].dist isa SampleStore || rvdict[n2].dist isa SampleStore
+        #     error("Correlations with SampleStores is not supported ($n1, $n2)")
+        # end
 
         i = names[n1]
         j = names[n2]

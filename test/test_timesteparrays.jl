@@ -1,7 +1,7 @@
 module TestTimestepArrays
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
@@ -24,14 +24,14 @@ a = collect(reshape(1:16,4,4))
 ###########################################
 # 1. Test TimestepVector - Fixed Timestep #
 ###########################################
-years = (collect(2000:1:2003)...)
+years = collect(2000:1:2003)
 
-#1a.  test constructor, endof, and length (with both 
+#1a.  test constructor, lastindex, and length (with both 
 # matching years and mismatched years)
 
 x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 @test length(x) == 4
-@test endof(x) == 4
+@test lastindex(x) == 4
 
 #1b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
@@ -62,13 +62,14 @@ x[1] = 101
 # 2. Test TimestepVector - Variable Timestep #
 ##############################################
 
-years = ([2000:5:2005; 2015:10:2025]...)
+years = (2000, 2005, 2015, 2025)
 x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 
 #2a.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
-t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
+y2 = Tuple([2005:5:2010; 2015:10:3000])
+t = VariableTimestep{y2}()
 
 @test hasvalue(x, t) 
 @test !hasvalue(x, VariableTimestep{years}(10)) 
@@ -94,7 +95,7 @@ x[1] = 101
 ###########################################
 # 3. Test TimestepMatrix - Fixed Timestep #
 ###########################################
-years = (collect(2000:1:2003)...)
+years = Tuple(2000:1:2003)
 
 #3a.  test constructor (with both matching years 
 # and mismatched years)
@@ -146,13 +147,13 @@ t2 = next_timestep(t)
 # 4. Test TimestepMatrix - Variable Timestep #
 ##############################################
 
-years = ([2000:5:2005; 2015:10:2025]...)
+years = Tuple([2000:5:2005; 2015:10:2025])
 y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
 
-#4a.  test hasvalue, getindex, setindex!, and endof (with both matching years and
+#4a.  test hasvalue, getindex, setindex!, and lastindex (with both matching years and
 # mismatched years)
 
-t = VariableTimestep{([2005:5:2010; 2015:10:3000]...)}()
+t = VariableTimestep{Tuple([2005:5:2010; 2015:10:3000])}()
 
 @test hasvalue(y, t, 1) 
 @test !hasvalue(y, VariableTimestep{years}(10)) 
@@ -183,8 +184,8 @@ y[:,:] = 11
 # 5. Test TimestepArray methods #
 ##################################
 
-x_years = (2000:5:2015...) #fixed
-y_years = ([2000:5:2005; 2015:10:2025]...) #variable
+x_years = Tuple(2000:5:2015) #fixed
+y_years = Tuple([2000:5:2005; 2015:10:2025]) #variable
 
 x_vec = TimestepVector{FixedTimestep{2000, 5}, Int}(a[:,3]) 
 x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int}(a[:,1:2])
