@@ -47,23 +47,40 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         
 end
 
-# Create VegaLite specs for each variable and parameter in the model
-function spec_list(model::Model)
-    allspecs = []
+function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dimensions(m, comp_name, item_name)
+
+    if length(dims) == 0
+        value = m[comp_name, item_name]
+        name = "$comp_name : $item_name = $value"
+    elseif length(dims) > 2
+        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        return nothing
+    else
+        name = "$comp_name : $item_name"          # the name is needed for the list label
+    end
+
+    menu_item = Dict("name" => name, "comp_name" => comp_name, "item_name" => item_name)
+    return menu_item
+end
+
+# Create the list of variables and parameters
+function menu_item_list(model::Model)
+    all_menuitems = []
 
     for comp_name in map(name, compdefs(model)) 
         items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
 
         for item_name in items
-            spec = _spec_for_item(model, comp_name, item_name)
-            if spec !== nothing
-                push!(allspecs, spec) 
+            menu_item = _menu_item(model, comp_name, item_name)
+            if menu_item !== nothing
+                push!(all_menuitems, menu_item) 
             end
         end
     end
 
     # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(allspecs, by = x -> lowercase(x["name"]))
+    return sort(all_menuitems, by = x -> lowercase(x["name"]))
 end
 
 # So we can control these in one place...

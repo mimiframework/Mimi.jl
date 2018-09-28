@@ -17,10 +17,6 @@ function explore(m::Model; title = "Electron")
         error("A model must be run before it can be plotted")
     end
 
-    #get variable data
-    speclist = spec_list(m)
-    speclistJSON = JSON.json(speclist)
-
     #start Electron app
     if app === nothing
         global app = Application()
@@ -37,14 +33,17 @@ function explore(m::Model; title = "Electron")
     #set async block to process messages
     @async for msg in msgchannel(w)
 
-        name = msg["name"]
-        id = msg["id"]
+        spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
+        specJSON = JSON.json(spec)
 
-        run(w, "display($speclistJSON, $id)")
+        run(w, "display($specJSON)")
     end
 
     #refresh variable list
-    result = run(w, "refresh($speclistJSON)")
+    menulist = menu_item_list(m)
+    menulistJSON = JSON.json(menulist)
+
+    result = run(w, "refresh($menulistJSON)")
     
     return w
 
