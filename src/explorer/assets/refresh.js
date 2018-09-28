@@ -18,7 +18,7 @@ function refresh(speclist) {
             var name = speclist[i]["name"]
             var id = i
             return function() {
-                ipcRenderer.send('msg-for-julia-process', {cmd: 'display_spec', name: name, id: id})  
+                sendMessageToJulia({cmd: 'display_spec', name: name, id: id})
             }
         })()
 
