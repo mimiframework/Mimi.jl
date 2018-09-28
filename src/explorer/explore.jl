@@ -34,7 +34,18 @@ function explore(m::Model; title = "Electron")
     slashes = Sys.iswindows() ? "///" : "//"
     w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
 
+    #set window msg handler
+    function handle(message)
+        name = message["name"]
+        id = message["id"]
+
+        @info name id 
+        run(w, "display($speclistJSON, $id)")
+    end
+    Electron.set_msg_handler(handle, w)
+
     #refresh variable list
+    run(w, "const {ipcRenderer} = require('electron')");
     result = run(w, "refresh($speclistJSON)")
     
     return w

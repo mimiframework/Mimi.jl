@@ -12,16 +12,33 @@ function refresh(speclist) {
         var newButton = document.createElement("button");
         newButton.setAttribute("class", "tab");
         
-        // Return a closure with a copy of the spec that's private to the function
+        // Set onclick for button
         newButton.onclick = (function() {
-            var spec = speclist[i]["VLspec"];
 
+            var name = speclist[i]["name"]
+            var id = i
             return function() {
-                vegaEmbed("#vis", spec, {actions: false});
+                ipcRenderer.send('msg-for-julia-process', {cmd: 'display_spec', name: name, id: id})  
             }
-        }())
+        })()
+
+        // // Return a closure with a copy of the spec that's private to the function
+        // newButton.onclick = (function() {
+        //     var spec = speclist[i]["VLspec"];
+
+        //     return function() {
+        //         vegaEmbed("#vis", spec, {actions: false});
+        //     }
+        // }())
 
         newButton.appendChild(document.createTextNode(speclist[i]["name"]));
         element.appendChild(newButton);
     }
+}
+
+function display(speclist, id) {
+
+    var spec = speclist[id]["VLspec"];
+    vegaEmbed("#vis", spec, {actions: false});
+    
 }
