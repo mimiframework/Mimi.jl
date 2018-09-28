@@ -58,3 +58,25 @@ This suggests three types of elements:
 ### Other stuff
 
 * This might be is a good time to reconsider the implementation of external parameters. The main question is about naming these and whether they need to be globally unique or merely unique within a (meta) component.
+
+* Unit conversion components should be simple "multiplier" components that are bound with specific conversion factors, conceptually like a "closure" on a component.
+
+* An "identity" component takes an input (external input, bound constant) and allows multiple components to access it. One issue is how to handle the type of argument. Could function wrappers be useful here?
+  * Identity is simply a unit conversion of 1.
+
+* If > 1 component exports parameters of the same name, it's an error. At least one comp must rename.
+
+* David suggested making composite comps immutable, generating a new one each time a change is made. (Why not just have the CompositeComponentInstance be immutable?)
+
+## Notes from 9/21/18 Meeting
+
+```
+@defcomp foo begin
+  Component(bar; export=[var_1, var_2, param_1])
+  Component(Mimi.adder, comp_1;         # rename locally as :comp_1
+            bind=[par_3 => 5,           # set a parameter to a fixed value
+                  par_4 => bar.var_1])  # connect a parameter to a variable
+
+
+end
+```
