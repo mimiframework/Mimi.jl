@@ -37,11 +37,9 @@ function explore(m::Model; title = "Electron")
     #set async block to process messages
     @async for msg in msgchannel(w)
 
-        # useful dispaly for debugging!
-        # name = msg["name"]
-        # id = msg["id"]
+        name = msg["name"]
+        id = msg["id"]
 
-        @info name id 
         run(w, "display($speclistJSON, $id)")
     end
 
