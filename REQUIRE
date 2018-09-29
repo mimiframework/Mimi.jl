@@ -9,7 +9,7 @@ ExcelFiles
 IterTools
 IterableTables
 FileIO
-#GraphPlot
+GraphPlot 0.3.0
 JSON
 LightGraphs
 MacroTools
