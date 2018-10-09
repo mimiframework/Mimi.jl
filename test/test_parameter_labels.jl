@@ -2,7 +2,7 @@ module TestParameterLabels
 
 using Mimi
 using NamedArrays
-using Base.Test
+using Test
 
 import Mimi:
     reset_compdefs
@@ -27,7 +27,7 @@ reset_compdefs()
     end
 end
     
-x = Array{Float64}(20,3)
+x = Array{Float64}(undef, 20, 3)
 for t in 1:20
     x[t,1] = 1
     x[t,2] = 2
@@ -37,11 +37,11 @@ end
 region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
 
-x2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
+x2 = NamedArray(Array{Float64}(undef, 20, 3), (time_labels, region_labels), (:time, :regions))
 for t in time_labels
-    x2[t,"Region1"] = 1
-    x2[t,"Region2"] = 2
-    x2[t,"Region3"] = 3
+    x2[:time => t, :regions => "Region1"] = 1
+    x2[:time => t, :regions => "Region2"] = 2
+    x2[:time => t, :regions => "Region3"] = 3
 end
 
 model1 = Model()
@@ -59,8 +59,8 @@ set_param!(model2, :compA, :x, x2) # should perform parameter dimension check
 run(model1)
 run(model2)
 
-for t in range(1, length(time_labels))
-    for r in range(1, length(region_labels))
+for t in 1:length(time_labels)
+    for r in 1:length(region_labels)
         @test(model1[:compA, :y][t, r] == model2[:compA, :y][t, r])
     end
 end
@@ -124,21 +124,21 @@ end
 end
 
 #DEFINE ALL THE PARAMETERS
-l = Array{Float64}(20,3)
+l = Array{Float64}(undef, 20, 3)
 for t in 1:20
     l[t,1] = (1. + 0.015)^t *2000
     l[t,2] = (1. + 0.02)^t * 1250
     l[t,3] = (1. + 0.03)^t * 1700
 end
 
-tfp = Array{Float64}(20,3)
+tfp = Array{Float64}(undef, 20, 3)
 for t in 1:20
     tfp[t,1] = (1 + 0.06)^t * 3.2
     tfp[t,2] = (1 + 0.03)^t * 1.8
     tfp[t,3] = (1 + 0.05)^t * 2.5
 end
 
-s = Array{Float64}(20,3)
+s = Array{Float64}(undef, 20, 3)
 for t in 1:20
     s[t,1] = 0.21
     s[t,2] = 0.15
@@ -148,7 +148,7 @@ end
 depk = [0.11, 0.135 ,0.15]
 k0   = [50.5, 22., 33.5]
 
-sigma = Array{Float64}(20,3)
+sigma = Array{Float64}(undef, 20, 3)
 for t in 1:20
     sigma[t,1] = (1. - 0.05)^t * 0.58
     sigma[t,2] = (1. - 0.04)^t * 0.5
@@ -187,35 +187,35 @@ end
 region_labels = ["Region1", "Region2", "Region3"]
 time_labels = collect(2015:5:2110)
 
-l2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
-for t in 1:20
-    l2[time_labels[t],1] = (1. + 0.015)^t *2000
-    l2[time_labels[t],2] = (1. + 0.02)^t * 1250
-    l2[time_labels[t],3] = (1. + 0.03)^t * 1700
+l2 = NamedArray(Array{Float64}(undef, 20, 3), (time_labels, region_labels), (:time, :regions))
+for t in 1:length(time_labels)
+    l2[:time => time_labels[t], :regions => region_labels[1]] = (1. + 0.015)^t *2000
+    l2[:time => time_labels[t], :regions => region_labels[2]] = (1. + 0.02)^t * 1250
+    l2[:time => time_labels[t], :regions => region_labels[3]] = (1. + 0.03)^t * 1700
 end
 
-tfp2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
-for t in 1:20
-    tfp2[time_labels[t],1] = (1 + 0.06)^t * 3.2
-    tfp2[time_labels[t],2] = (1 + 0.03)^t * 1.8
-    tfp2[time_labels[t],3] = (1 + 0.05)^t * 2.5
+tfp2 = NamedArray(Array{Float64}(undef, 20, 3), (time_labels, region_labels), (:time, :regions))
+for t in 1:length(time_labels)
+    tfp2[:time => time_labels[t], :regions => region_labels[1]] = (1 + 0.06)^t * 3.2
+    tfp2[:time => time_labels[t], :regions => region_labels[2]] = (1 + 0.03)^t * 1.8
+    tfp2[:time => time_labels[t], :regions => region_labels[3]] = (1 + 0.05)^t * 2.5
 end
 
-s2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
-for t in 1:20
-    s2[time_labels[t],1] = 0.21
-    s2[time_labels[t],2] = 0.15
-    s2[time_labels[t],3] = 0.28
+s2 = NamedArray(Array{Float64}(undef, 20, 3), (time_labels, region_labels), (:time, :regions))
+for t in 1:length(time_labels)
+    s2[t, 1] = 0.21
+    s2[t, 2] = 0.15
+    s2[t, 3] = 0.28
 end
 
 depk2 = NamedArray([0.11, 0.135 ,0.15], (region_labels,), (:regions,))
 k02   = NamedArray([50.5, 22., 33.5], (region_labels,), (:regions,))
 
-sigma2 = NamedArray(Array{Float64}(20,3), (time_labels, region_labels), (:time, :regions))
-for t in 1:20
-    sigma2[time_labels[t],1] = (1. - 0.05)^t * 0.58
-    sigma2[time_labels[t],2] = (1. - 0.04)^t * 0.5
-    sigma2[time_labels[t],3] = (1. - 0.045)^t * 0.6
+sigma2 = NamedArray(Array{Float64}(undef, 20, 3), (time_labels, region_labels), (:time, :regions))
+for t in 1:length(time_labels)
+    sigma2[t, 1] = (1. - 0.05)^t * 0.58
+    sigma2[t, 2] = (1. - 0.04)^t * 0.5
+    sigma2[t, 3] = (1. - 0.045)^t * 0.6
 end
 
 
@@ -250,8 +250,8 @@ run2 = run_my_model2()
 
 #Check results
 
-for t in range(1, length(time_labels))
-    for r in range(1, length(region_labels))
+for t in 1:length(time_labels)
+    for r in 1:length(region_labels)
         @test(run1[:grosseconomy, :YGROSS][t, r] == run2[:grosseconomy, :YGROSS][t, r])
         #println(run1[:grosseconomy, :YGROSS][t, r],", ", run2[:grosseconomy, :YGROSS][t, r])
         @test(run1[:grosseconomy, :K][t, r] == run2[:grosseconomy, :K][t, r])
@@ -273,8 +273,8 @@ add_comp!(model3, compA)
 set_param!(model3, :compA, :x, x, [:time, :regions])
 run(model3)
 
-for t in range(1, length(time_labels))
-    for r in range(1, length(region_labels))
+for t in 1:length(time_labels)
+    for r in 1:length(region_labels)
         @test(model1[:compA, :y][t, r] == model3[:compA, :y][t, r])
     end
 end

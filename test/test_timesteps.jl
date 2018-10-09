@@ -1,7 +1,7 @@
 module TestTimesteps
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
@@ -36,7 +36,7 @@ t4 = next_timestep(t3)
 ###########################################################################
 #  Test basic timestep functions and Base functions for Variable Timestep #
 ###########################################################################
-years = ([2000:1:2024; 2025:5:2105]...)
+years = Tuple([2000:1:2024; 2025:5:2105])
 
 t1 = VariableTimestep{years}()
 @test is_first(t1)
@@ -136,7 +136,10 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 
 
 #try with variable timestep
-set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
+)
 
 t_vector= get_timestep_array(m.md, Float64, 1, vector)
 t_matrix = get_timestep_array(m.md, Float64, 2, matrix)

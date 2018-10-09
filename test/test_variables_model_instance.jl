@@ -1,7 +1,7 @@
 module TestVariablesModelInstance
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     reset_compdefs, variable_names, compinstance, get_var_value, get_param_value, 
@@ -68,7 +68,7 @@ vars2 = variables(ci)
 @test dim_count(mi, :time) == 20
 key_dict = dim_key_dict(mi)
 value_dict = dim_value_dict(mi)
-@test Array{Int64}(key_dict[:time]) == [2015:5:2110...] && length(key_dict) == 1
+@test [key_dict[:time]...] == [2015:5:2110...] && length(key_dict) == 1
 @test value_dict[:time] == [1:1:20...] && length(value_dict) == 1
 
 end #module

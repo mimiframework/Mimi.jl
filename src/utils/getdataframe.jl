@@ -1,21 +1,21 @@
 using DataFrames
 
 """
-    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol), df::Union{Void,DataFrame}=nothing)
+    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol), df::Union{Nothing,DataFrame}=nothing)
 
 Load a DataFrame from the variable or parameter `item_name` in component `comp_name`. If `df` is
 nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 """
-function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Void,DataFrame}=nothing)
+function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Nothing,DataFrame}=nothing)
     mi = m.mi
     md = mi.md
 
     dims = dimensions(m, comp_name, item_name)
 
     # Create a new df if one was not passed in
-    df = df == nothing ? DataFrame() : df
+    df = df === nothing ? DataFrame() : df
 
-    if haskey(df.colindex, item_name)
+    if haskey(df, item_name)
         error("An item named $item_name already exists in this DataFrame")
     end
 
@@ -27,16 +27,22 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     data = mi[comp_name, item_name]
 
     if num_dims == 1
-        dim1 = dims[1]
-        df[dim1] = keys = dim_keys(md, dim1)
+        dim1name = dims[1]
+        dim1 = dimension(md, dim1name)
+        df[dim1name] = collect(keys(dim1))
+        # @info "dim: $dim1name size(df): $(size(df))"
 
-        if dim1 == :time
+        if dim1name == :time
             ci = compinstance(mi, comp_name)
-            first = findfirst(keys, ci.first)
-            last  = findfirst(keys, ci.last)
+            first = dim1[ci.first]  # Dimension converts year key to index in array
+            last  = dim1[ci.last]
 
-            df[item_name] = vcat(repeat([NaN], inner=first - 1), data, 
-                                 repeat([NaN], inner=length(keys) - last))
+            # Pad the array with NaNs outside this component's bounds
+            shifted_data = vcat(repeat([NaN], inner=first - 1), 
+                                data[1:(last-first+1)], # ignore padding after these values
+                                repeat([NaN], inner=length(dim1) - last))
+            # @info "len shifted: $(length(shifted_data))"
+            df[item_name] = shifted_data
         else
             df[item_name] = data
         end
@@ -50,32 +56,38 @@ end
 function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector{Symbol}, data::AbstractArray)
     md = m.md
     num_dims = length(dims)
-    dim1 = dims[1]
-    keys1 = dim_keys(md, dim1)
+
+    dim1name = dims[1]
+    dim1 = dimension(md, dim1name)
+    keys1 = collect(keys(dim1))
+    len_dim1 = length(dim1)
 
     df = DataFrame()
 
     if num_dims == 2
-        dim2 = dims[2]
-        len_dim1 = dim_count(md, dim1)
-        len_dim2 = dim_count(md, dim2)
-        df[dim1] = repeat(keys1, inner = [len_dim2])
-        df[dim2] = repeat(dim_keys(md, dim2), outer = [len_dim1])
+        dim2name = dims[2]
+        dim2 = dimension(md, dim2name)
+        keys2 = collect(keys(dim2))
+        len_dim2 = length(dim2)
 
-        if dim1 == :time
+        df[dim1name] = repeat(keys1, inner = [len_dim2])
+        df[dim2name] = repeat(keys2, outer = [len_dim1])
+
+        if dim1name == :time
             ci = compinstance(m.mi, comp_name)
-            first = findfirst(keys1, ci.first)
-            last  = findfirst(keys1, ci.last)
+            t = dimension(m, :time)
+            first = t[ci.first]
+            last  = t[ci.last]
 
             top    = fill(NaN, first - 1, len_dim2)
             bottom = fill(NaN, len_dim1 - last, len_dim2)
             data = vcat(top, data, bottom)
         end
 
-        df[item_name] = cat(1, [vec(data[i, :]) for i = 1:len_dim1]...)
+        df[item_name] = cat([vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
     else
         # Indexes is #, :, :, ... for each index of first dimension
-        indexes = repmat(Any[Colon()], num_dims)
+        indexes = repeat(Any[Colon()], num_dims)
 
         for i in 1:size(data)[1]
             indexes[1] = i
@@ -145,7 +157,7 @@ Return the values for variable or parameter `item_name` in `comp_name` of
 model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
-    if m.mi == nothing
+    if m.mi === nothing
         error("Cannot get DataFrame: model has not been built yet")
     end
 

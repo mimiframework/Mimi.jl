@@ -1,6 +1,6 @@
 using IterableTables
-using NamedTuples
 using Distributions
+using Statistics
 
 """
     RandomVariable{T}
@@ -49,7 +49,7 @@ distribution(ss::SampleStore) = ss.dist
 # versus those loaded from a file, which would be treated as immutable?
 #
 
-function Base.quantile(ss::SampleStore{T}, q::Float64) where T
+function Statistics.quantile(ss::SampleStore{T}, q::Float64) where T
     return quantile(sort(ss.values), q)
 end
 
@@ -57,9 +57,8 @@ end
 # TBD: This interpolates values between those in the vector. Is this reasonable?
 # Probably shouldn't use correlation on values loaded from a file rather than 
 # from a proper distribution.
-function Base.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
+function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
     return quantile.(ss, probs)
-    # return quantile.(sort(ss.values), probs)
 end
 
 
@@ -108,6 +107,9 @@ function Base.reset(s::SampleStore{T}) where T
     return nothing
 end
 
+# debugging tool
+# global save_dict = Dict()
+
 """
     MonteCarloSimulation
     
@@ -139,11 +141,15 @@ mutable struct MonteCarloSimulation
         self.corrlist = corrlist
         self.savelist = savelist
         self.dist_rvs = [rv for rv in rvlist]
-        self.nt_type = NamedTuples.make_tuple(collect(keys(self.rvdict)))
 
+        names = (keys(self.rvdict)...,)
+        types = [eltype(fld) for fld in values(self.rvdict)]
+        self.nt_type = NamedTuple{names, Tuple{types...}}
+        
         # These are parallel arrays; each model has a corresponding results dict
-        self.models = Vector{Model}(0)
+        self.models = Vector{Model}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
+        # save_dict[:mcs] = self
         return self
     end
 end

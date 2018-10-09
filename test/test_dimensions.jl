@@ -1,7 +1,7 @@
 module TestDimensions
 
 using Mimi
-using Base.Test
+using Test
 
 import Mimi:
     AbstractDimension, RangeDimension, Dimension, key_type,
@@ -11,10 +11,12 @@ reset_compdefs()
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
 dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
-dim_range = Dimension(2010:2100)    # Range	
+dim_range = Dimension(2010:2100)     # AbstractRange	
 rangedim = RangeDimension(2010:2100) # RangeDimension type	
 dim_vals = Dimension(4) # Same as 1:4
-dim_vals_abstract = AbstractDimension(dim_vals) #Abstract
+
+# RJP: unclear what was intended here, but you cannot instantiate an abstract type...
+# dim_vals_abstract = AbstractDimension(dim_vals) # Abstract
 
 @test key_type(dim_varargs) == Symbol
 @test key_type(dim_vec) == Symbol
@@ -26,17 +28,15 @@ dim_vals_abstract = AbstractDimension(dim_vals) #Abstract
 @test length(dim_vals) == 4
 @test length(dim_range) == 91
 @test length(rangedim) == 91
-@test start(dim_varargs) == 1
 
-@test start(dim_vec) == 1
-@test start(dim_vals) == 1
-@test start(dim_range) == 1
-@test start(rangedim) == 2010
+# Test iteration
+@test [x.first for x in dim_varargs] == collect(keys(dim_varargs))
+@test [x.first for x in dim_range]   == collect(keys(dim_range))
 
-@test endof(dim_varargs) == :baz
-@test endof(dim_vec) == :baz
-@test endof(dim_range) == 2100
-@test endof(dim_vals) == 4
+@test lastindex(dim_varargs) == :baz
+@test lastindex(dim_vec) == :baz
+@test lastindex(dim_range) == 2100
+@test lastindex(dim_vals) == 4
 
 
 @test Base.keys(rangedim) == [2010:2100...]
@@ -48,7 +48,9 @@ end
 @test dim_range[:] == [1:91...]
 @test dim_varargs[:bar] == 2
 @test dim_varargs[:] == [1,2,3]
-@test dim_vals_abstract[1:4...]== [1:4...]
+
+# @test dim_vals_abstract[1:4...]== [1:4...]
+
 # @test rangedim[2011] == 2 # TODO: this errors..
 
 @test get(dim_varargs, :bar, 999) == 2
@@ -58,23 +60,24 @@ end
 
 #test iteratable
 dim_vals2 = Dimension(2:2:8)
-keys = [2,4,6,8]
-index = 1
-state = start(dim_vals2)
-while !done(dim_vals2, state)
-    (i, state) = next(dim_vals, state)
-    @test dim_vals2[keys[index]] == index
-    index += 1
+intkeys = [2,4,6,8]
+# Work around new global scoping rules
+# Without the `let`, `index` is unknown in the for loop
+let index = 1
+    for pair in dim_vals2
+        @test dim_vals2[intkeys[index]] == index
+        index += 1
+    end
 end
 
 rangedim2 = RangeDimension(2:2:8)
-keys = [2,4,6,8]
-index = 1
-state = start(rangedim2)
-while !done(rangedim2, state)
-    (i, state) = next(rangedim2, state)
-    @test get(rangedim2, Base.keys(rangedim2)[index]) == index
-    index += 1
+# Work around new global scoping rules
+# Without the `let`, `index` is unknown in the for loop
+let index = 1
+    for pair in rangedim2   # uses iterate()
+        @test get(rangedim2, Base.keys(rangedim2)[index]) == index
+        index += 1
+    end
 end
 
 @test getindex(dim_varargs, :bar) == 2
@@ -90,7 +93,10 @@ set_dimension!(m, :time, 2000:2100)
 add_comp!(m, foo2; first = 2005, last = 2095)
 
 # Test that foo's time dimension is unchanged
-set_dimension!(m, :time, 1990:2200)
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    set_dimension!(m, :time, 1990:2200)
+)
 @test m.md.comp_defs[:foo2].first == 2005
 @test m.md.comp_defs[:foo2].last == 2095
 
@@ -99,7 +105,12 @@ set_dimension!(m, :time, 1990:2200)
 set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
 
 # Test that foo's time dimension is updated
-set_dimension!(m, :time, 2010:2050)
+@test_logs(
+    (:warn, "Redefining dimension :time"),
+    (:warn, "Resetting foo2 component's first timestep to 2010"),
+    (:warn, "Resetting foo2 component's last timestep to 2050"),
+    set_dimension!(m, :time, 2010:2050)
+)
 @test m.md.comp_defs[:foo2].first == 2010
 @test m.md.comp_defs[:foo2].last == 2050
 
