@@ -38,7 +38,6 @@ function _instantiate_datum(md::ModelDef, def::DatumDef)
       
     # Array datum, with :time dimension
     elseif dims[1] == :time 
-        times = time_labels(md)
 
         if num_dims == 1
             value = dtype(dim_count(md, :time))
@@ -49,7 +48,6 @@ function _instantiate_datum(md::ModelDef, def::DatumDef)
 
     # Array datum, without :time dimension
     else 
-        # if dims[1] != :time
         # TBD: Handle unnamed indices properly
         counts = dim_counts(md, Vector{Symbol}(dims))
         value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)

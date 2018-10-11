@@ -1,5 +1,4 @@
 module TestConnectorComp
-# @testset "ConnectorComp" begin
 
 using Mimi
 using Test
@@ -237,5 +236,5 @@ x = model5[:Long, :x]
     x[dim[first]:dim[last], :] == 
     [[i + 1 for i in 1:(years[end]-late_start + 1)] [i + 2 for i in 1:(years[end]-late_start + 1)]]
 
-# end  # testset
+
 end #module

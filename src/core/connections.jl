@@ -114,8 +114,8 @@ function connect_param!(md::ModelDef,
         end
 
         # Check that the backup value is the right size
-        if size(backup)[1] != length(time_labels(md))  # TODO: should it be the length of the whole model or the lenght of the component? for now, lenght of the model
-            error("Can't connect parameter: backup data size $(size(backup)) differs from model's time span $(length(time_labels(md))).")
+        if size(backup)[1] != getspan(md, dst_comp_name)[1]
+            error("Cannot connect parameter, backup data's length differs from component's time span. Expected length $(getspan(md, dst_comp_name)[1]) but got length $(size(backup)[1]).")
         end
 
         dst_comp_def = compdef(md, dst_comp_name)
