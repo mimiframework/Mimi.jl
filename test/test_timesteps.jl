@@ -87,26 +87,31 @@ end
     end
 end
 
+years = 2000:2010
+first_foo = 2005
+
 m = Model()
-set_dimension!(m, :time, 2000:2010)
+set_dimension!(m, :time, years)
 
 # test that you can only add components with first/last within model's time index range
 @test_throws ErrorException add_comp!(m, Foo; first=1900)
 @test_throws ErrorException add_comp!(m, Foo; last=2100)
 
-foo = add_comp!(m, Foo; first=2005) #offset for foo
+foo = add_comp!(m, Foo; first=first_foo) #offset for foo
 bar = add_comp!(m, Bar)
 
 set_param!(m, :Foo, :inputF, 5.)
-set_param!(m, :Bar, :inputB, collect(1:11))
+set_param!(m, :Bar, :inputB, collect(1:length(years)))
 
 run(m)
 
-@test length(m[:Foo, :output]) == 11
-@test length(m[:Bar, :output]) == 11
+@test length(m[:Foo, :output]) == length(years)
+@test length(m[:Bar, :output]) == length(years)
 
+dim = Mimi.Dimension(years)
+foo_output = m[:Foo, :output][dim[first_foo]:dim[years[end]]]
 for i in 1:6
-    @test m[:Foo, :output][i] == 5+i
+    @test foo_output[i] == 5+i
 end
 
 for i in 1:5
@@ -161,11 +166,11 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 end
 
 m2 = Model()
-set_dimension!(m2, :time, 2000:2010)
+set_dimension!(m2, :time, years)
 bar = add_comp!(m2, Bar)
-foo2 = add_comp!(m2, Foo2, first=2005)
+foo2 = add_comp!(m2, Foo2, first=first_foo)
 
-set_param!(m2, :Bar, :inputB, collect(1:11))
+set_param!(m2, :Bar, :inputB, collect(1:length(years)))
 
 # TBD: Connecting components with different "first" times creates a mismatch
 # in understanding how to translate the index back to a year.
@@ -173,8 +178,9 @@ connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
+foo_output2 = m2[:Foo2, :output][dim[first_foo]:dim[years[end]]]
 for i in 1:6
-    @test m2[:Foo2, :output][i] == (i+5)^2
+    @test foo_output2[i] == (i+5)^2
 end
 
 #########################################
