@@ -77,11 +77,12 @@ Mimi.set_defcomp_verbosity(false)
 
     @info("test_dimensions")
     include("test_dimensions.jl")
+
+    @info("test_datum_storage.jl")
+    include("test_datum_storage.jl")
     
-    # fails currently
-    # TODO Reenable
-    # @info("test_connectorcomp.jl")
-    # include("test_connectorcomp.jl")
+    @info("test_connectorcomp.jl")
+    include("test_connectorcomp.jl")
 
     @info("test_explorer.jl")
     include("test_explorer.jl")
