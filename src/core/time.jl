@@ -74,7 +74,7 @@ function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, S
 	if is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
 	elseif ts.t - val <= 0
-		error("Cannot get requested timestep, preceeds first timestep.")		
+		error("Cannot get requested timestep, precedes first timestep.")		
 	end
 	return FixedTimestep{FIRST, STEP, LAST}(ts.t - val)
 end
@@ -83,7 +83,7 @@ function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 	if is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
 	elseif ts.t - val <= 0
-		error("Cannot get requested timestep, preceeds first timestep.")		
+		error("Cannot get requested timestep, precedes first timestep.")		
 	end
 	return VariableTimestep{TIMES}(ts.t - val)
 end

@@ -114,8 +114,8 @@ function connect_param!(md::ModelDef,
         end
 
         # Check that the backup value is the right size
-        if getspan(md, dst_comp_name) != size(backup)
-            error("Backup data must span the whole length of the component.")
+        if size(backup)[1] != length(time_labels(md))  # TODO: should it be the length of the whole model or the lenght of the component? for now, lenght of the model
+            error("Can't connect parameter: backup data size $(size(backup)) differs from model's time span $(length(time_labels(md))).")
         end
 
         dst_comp_def = compdef(md, dst_comp_name)
@@ -149,6 +149,10 @@ function connect_param!(md::ModelDef,
         end
 
         set_external_array_param!(md, dst_par_name, values, dst_dims)
+        backup_param_name = dst_par_name
+
+    else 
+        backup_param_name = nothing 
     end
 
     # Check the units, if provided
@@ -158,7 +162,7 @@ function connect_param!(md::ModelDef,
     end
 
     # println("connect($src_comp_name.$src_var_name => $dst_comp_name.$dst_par_name)")
-    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
+    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, backup_param_name, offset=offset)
     add_internal_param_conn(md, conn)
 
     return nothing
@@ -464,7 +468,7 @@ function add_connector_comps(md::ModelDef)
         for (i, conn) in enumerate(need_conn_comps)
             push!(md.backups, conn.backup)
 
-            num_dims = length(size(external_param(md, conn.backup)))
+            num_dims = length(size(external_param(md, conn.backup).values))
 
             if ! (num_dims in (1, 2))
                 error("Connector components for parameters with > 2 dimensions are not implemented.")
@@ -488,6 +492,10 @@ function add_connector_comps(md::ModelDef)
             push!(conns, InternalParameterConnection(conn_comp_name, :output, 
                                                      conn.dst_comp_name, conn.dst_par_name, 
                                                      conn.ignoreunits))
+
+            # add a connection between ConnectorComp and the external backup data
+            push!(md.external_param_conns, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
+
         end
     end
 
