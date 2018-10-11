@@ -27,7 +27,6 @@ function _instance_datatype(md::ModelDef, def::DatumDef)
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-# function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int, last::Int) # only need the component first and last if we manually need to set NaN values; if we use 'missing' values they get set automatically
 function _instantiate_datum(md::ModelDef, def::DatumDef)
     dtype = _instance_datatype(md, def)
     dims = dimensions(def)
@@ -43,19 +42,10 @@ function _instantiate_datum(md::ModelDef, def::DatumDef)
 
         if num_dims == 1
             value = dtype(dim_count(md, :time))
-            # indices = 1:length(times)
         else 
             counts = dim_counts(md, Vector{Symbol}(dims))
             value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)
-            # indices = [(i, (1:c for c in counts[2:end])...) for i in 1:length(times)]
         end
-
-        # Fill in missing values before and after first and last times (don't need to do this for missing, only if we use NaNs)
-        # for (i, t) in enumerate(times)
-        #     if t < first || t > last
-        #         value[indices[i]...] = NaN
-        #     end
-        # end
 
     # Array datum, without :time dimension
     else 
@@ -88,12 +78,10 @@ Return the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    # first, last = first_period(md, comp_def), last_period(md, comp_def)
     var_defs = variables(comp_def)    
 
     names  = ([name(vdef) for vdef in var_defs]...,)
     types  = Tuple{[_instance_datatype(md, vdef) for vdef in var_defs]...}
-    # values = [_instantiate_datum(md, def, first, last) for def in var_defs]
     values = [_instantiate_datum(md, def) for def in var_defs]
 
     return ComponentInstanceVariables(names, types, values)
