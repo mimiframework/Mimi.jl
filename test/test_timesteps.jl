@@ -6,7 +6,8 @@ using Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty, Clock, time_index, get_timestep_array, reset_compdefs
+    gettime, getproperty, Clock, time_index, get_timestep_array, reset_compdefs, 
+    is_timestep, is_time
 
 reset_compdefs()
 
@@ -16,10 +17,14 @@ reset_compdefs()
 
 t1 = FixedTimestep{1850, 10, 3000}(1)
 @test is_first(t1)
+@test is_timestep(t1, 1)
+@test is_time(t1, 1850)
 @test_throws ErrorException t1_prev = t1-1 #first timestep, so cannot get previous
 
 t2 = next_timestep(t1)
 @test t2.t == 2
+@test is_timestep(t2, 2)
+@test is_time(t2, 1860)
 @test_throws ErrorException t2_prev = t2 - 2 #can't get before first timestep
 
 @test t2 == t1 + 1
@@ -30,6 +35,8 @@ t3 = FixedTimestep{2000, 1, 2050}(51)
 @test_throws ErrorException t3_next = t3 + 2 #can't go beyond last timestep
 
 t4 = next_timestep(t3)
+@test is_timestep(t4, 52)
+@test is_time(t4, 2051)
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 
@@ -40,10 +47,14 @@ years = Tuple([2000:1:2024; 2025:5:2105])
 
 t1 = VariableTimestep{years}()
 @test is_first(t1)
+@test is_timestep(t1, 1)
+@test is_time(t1, 2000)
 @test_throws ErrorException t1_prev = t1-1 #first timestep, so cannot get previous
 
 t2 = next_timestep(t1)
 @test t2.t == 2
+@test is_timestep(t2, 2)
+@test is_time(t2,2001)
 @test_throws ErrorException t2_prev = t2 - 2 #can't get before first timestep
 
 @test t2 == t1 + 1
@@ -55,6 +66,8 @@ t3 = VariableTimestep{years}(42)
 @test_throws ErrorException t3_next = t3 + 2 #can't go beyond last timestep
 
 t4 = next_timestep(t3)
+@test is_timestep(t4, 43)
+@test is_time(t4, 2106) #note here that this comes back to an assumption made in variable timesteps that we may assume the next step is 1 year
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 

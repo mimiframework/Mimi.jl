@@ -21,12 +21,30 @@ function gettime(ts::VariableTimestep)
 end
 
 """
+	is_time(ts::AbstractTimestep, t::Int)
+
+Return true or false, true if the current time (year) for `ts` is `t`
+"""
+function is_time(ts::AbstractTimestep, t::Int) 
+	return gettime(ts) == t
+end
+
+"""
 	is_first(ts::AbstractTimestep)
 
 Return true or false, true if `ts` is the first timestep to be run.
 """
 function is_first(ts::AbstractTimestep)
 	return ts.t == 1
+end
+
+"""
+	is_timestep(ts::AbstractTimestep, t::Int)
+
+Return true or false, true if `ts` timestep is step `t`.
+"""
+function is_timestep(ts::AbstractTimestep, t::Int)
+	return ts.t == t
 end
 
 """
