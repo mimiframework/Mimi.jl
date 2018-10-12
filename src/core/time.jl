@@ -25,7 +25,7 @@ end
 
 Return true or false, true if the current time (year) for `ts` is `t`
 """
-function istime(ts::AbstractTimestep, t::Int) 
+function is_time(ts::AbstractTimestep, t::Int) 
 	return gettime(ts) == t
 end
 
@@ -39,9 +39,9 @@ function is_first(ts::AbstractTimestep)
 end
 
 """
-	is_timestep(ts::AbstractTimestep)
+	is_timestep(ts::AbstractTimestep, t::Int)
 
-Return true or false, true if `ts` timestep `t`.
+Return true or false, true if `ts` timestep is step `t`.
 """
 function is_timestep(ts::AbstractTimestep, t::Int)
 	return ts.t == t

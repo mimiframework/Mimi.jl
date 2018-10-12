@@ -90,13 +90,13 @@ As previously mentioned, some relevant function names have changed.  These chang
 |`isstart`                  |`is_first`                 |
 |`isstop`                   |`is_last`                  |    
 
-As mentioned in earlier in this document, the fourth argument in `run_timestep` is an `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` and is a type defined within Mimi in "src/time.jl".  In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Defining the `AbstractTimestep` object as `t`, indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`
+As mentioned in earlier in this document, the fourth argument in `run_timestep` is an `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` and is a type defined within Mimi in "src/time.jl".  In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Defining the `AbstractTimestep` object as `t`, indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`.  There are also new useful functions including `is_time(t, y)` and `is_timestep(t, s)`.
 
 The full API:
 
 - you may index into a variable or parameter with `[t]` or `[t +/- x]` as usual
 - to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
-- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, as listed above
+- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, `is_time(t, y)`, and `is_timestep(t, s)`as listed above
 - to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called.  
 
 ### Parameter connections between different length components
