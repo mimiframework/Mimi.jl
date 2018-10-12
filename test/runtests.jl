@@ -78,7 +78,6 @@ Mimi.set_defcomp_verbosity(false)
     @info("test_dimensions")
     include("test_dimensions.jl")
     
-    # fails currently
     # TODO Reenable
     # @info("test_connectorcomp.jl")
     # include("test_connectorcomp.jl")
@@ -86,9 +85,8 @@ Mimi.set_defcomp_verbosity(false)
     @info("test_explorer.jl")
     include("test_explorer.jl")
 
-    # TODO Reenable
-    # @info("test_plotting.jl")
-    # include("test_plotting.jl")
+    @info("test_plotting.jl")
+    include("test_plotting.jl")
 
     include("mcs/runtests.jl")
 end
