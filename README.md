@@ -21,6 +21,8 @@ Mimi is a package that provides a component model for integrated assessment mode
 
 Also see the [OptiMimi](http://github.com/jrising/OptiMimi.jl) package for optimizing parameters within Mimi models.
 
+[Julia 1.0](https://julialang.org/blog/2018/08/one-point-zero): Mimi has not yet been ported to Julia 1.0, and thus is not compatible with Julia 1.0 (or [Julia v0.7](https://docs.julialang.org/en/v0.7.0/NEWS/)which provides deprecation warnings for Julia 1.0).  The next release of Mimi will provide this compatibility.
+
 ## Installation
 
 Mimi is an installable package. To install Mimi, use the following:
