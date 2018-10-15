@@ -27,53 +27,56 @@ dim = Mimi.Dimension(years)
 
 #------------------------------------------------------------------------------
 #  1. Manual way of using ConnectorComp
+#       TODO: are we no longer allowing users to add ConnectorComps manually?
+#       Currently deprecated because of checks for full/backup data during
+#       calls to connect_param!
 #------------------------------------------------------------------------------
 
-m = Model()
-set_dimension!(m, :time, years)
+# m = Model()
+# set_dimension!(m, :time, years)
 
-add_comp!(m, Short; first=late_start)
-add_comp!(m, Mimi.ConnectorCompVector, :MyConnector) # Rename component in this model
-add_comp!(m, Long)
+# add_comp!(m, Short; first=late_start)
+# add_comp!(m, Mimi.ConnectorCompVector, :MyConnector) # Rename component in this model
+# add_comp!(m, Long)
 
-comp_def = compdef(m, :MyConnector)
-@test Mimi.compname(comp_def.comp_id) == :ConnectorCompVector
+# comp_def = compdef(m, :MyConnector)
+# @test Mimi.compname(comp_def.comp_id) == :ConnectorCompVector
 
-set_param!(m, :Short, :a, 2.)
-connect_param!(m, :MyConnector, :input1, :Short, :b)
+# set_param!(m, :Short, :a, 2.)
+# connect_param!(m, :MyConnector, :input1, :Short, :b)
 
-set_param!(m, :MyConnector, :input2, zeros(length(years)))
-connect_param!(m, :Long, :x, :MyConnector, :output)
+# set_param!(m, :MyConnector, :input2, zeros(length(years)))
+# connect_param!(m, :Long, :x, :MyConnector, :output)
 
-run(m)
+# run(m)
 
-b = m[:Short, :b]
-input1 = m[:MyConnector, :input1]
-output = m[:MyConnector, :output]
-x = m[:Long, :x]
+# b = m[:Short, :b]
+# input1 = m[:MyConnector, :input1]
+# output = m[:MyConnector, :output]
+# x = m[:Long, :x]
 
-# Test that all allocated datum arrays are the full length of the time dimension
-@test length(b) == length(years)
-@test length(input1) == length(years)
-@test length(output) == length(years)
-@test length(x) == length(years)
+# # Test that all allocated datum arrays are the full length of the time dimension
+# @test length(b) == length(years)
+# @test length(input1) == length(years)
+# @test length(output) == length(years)
+# @test length(x) == length(years)
 
-# Test the values are the right values before the late start
-@test all(ismissing, b[1:dim[late_start]-1])
-@test all(ismissing, input1[1:dim[late_start]-1])
-@test all(iszero, output[1:dim[late_start]-1])
-@test all(iszero, x[1:dim[late_start]-1])
+# # Test the values are the right values before the late start
+# @test all(ismissing, b[1:dim[late_start]-1])
+# @test all(ismissing, input1[1:dim[late_start]-1])
+# @test all(iszero, output[1:dim[late_start]-1])
+# @test all(iszero, x[1:dim[late_start]-1])
 
-# Test the values are right after the late start
-@test b[dim[late_start]:end] == 
-    input1[dim[late_start]:end] == 
-    output[dim[late_start]:end] == 
-    x[dim[late_start]:end] == 
-    [2 * i for i in 1:(years[end]-late_start + 1)]
+# # Test the values are right after the late start
+# @test b[dim[late_start]:end] == 
+#     input1[dim[late_start]:end] == 
+#     output[dim[late_start]:end] == 
+#     x[dim[late_start]:end] == 
+#     [2 * i for i in 1:(years[end]-late_start + 1)]
 
-# Test the dataframe size
-b = getdataframe(m, :Short, :b)
-@test size(b) == (length(years), 2)
+# # Test the dataframe size
+# b = getdataframe(m, :Short, :b)
+# @test size(b) == (length(years), 2)
 
 
 #------------------------------------------------------------------------------
@@ -255,19 +258,7 @@ set_param!(model6, :Short, :a, 2)
 @test_throws ErrorException connect_param!(model6, :Long=>:x, :Short=>:b, zeros(length(years)))
 
 # B. test no backup data provided
-# TODO: do we want this to error?
-connect_param!(model6, :Long=>:x, :Short=>:b)   # Connect long to short without any backup
-
-run(model6)     # TODO: doesn't error, is that okay?
-
-@test length(components(model6.mi)) == 2    # no ConnectorComp added because no backup data given  
-@test length(model6.md.comp_defs) == 2      
-
-b = model6[:Short, :b]
-x = model6[:Long, :x]
-
-@test all(ismissing, b[1:dim[late_start]-1])
-@test all(ismissing, x[1:dim[late_start]-1])    # Values are `missing` in Long's :x parameter because no backup data
+@test_throws ErrorException connect_param!(model6, :Long=>:x, :Short=>:b)   # Error because no backup data provided
 
 
 #------------------------------------------------------------------------------
@@ -297,9 +288,8 @@ run(model7)
 short_par = model7[:Short, :par]
 short_var = model7[:Short, :var]
 
-@test short_par == years    # TODO: is this the functionality we want? it has values instead of 
-                            # `missing`` for years when this component doesn't run, because they are 
-                            # coming from the longer component that did run
+@test short_par == years    # The parameter has values instead of `missing` for years when this component doesn't run, 
+                            # because they are coming from the longer component that did run
 
 @test all(ismissing, short_var[1:dim[late_start]-1])
 @test short_var[dim[late_start]:end] == years[dim[late_start]:end]

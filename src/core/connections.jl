@@ -104,6 +104,9 @@ function connect_param!(md::ModelDef,
     # remove any existing connections for this dst parameter
     disconnect_param!(md, dst_comp_name, dst_par_name)
 
+    dst_comp_def = compdef(md, dst_comp_name)
+    src_comp_def = compdef(md, src_comp_name)
+
     if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
@@ -117,9 +120,6 @@ function connect_param!(md::ModelDef,
         if size(backup)[1] != getspan(md, dst_comp_name)[1]
             error("Cannot connect parameter, backup data's length differs from component's time span. Expected length $(getspan(md, dst_comp_name)[1]) but got length $(size(backup)[1]).")
         end
-
-        dst_comp_def = compdef(md, dst_comp_name)
-        src_comp_def = compdef(md, src_comp_name)
 
         # some other check for second dimension??
         dst_param = parameter(dst_comp_def, dst_par_name)
@@ -152,6 +152,14 @@ function connect_param!(md::ModelDef,
         backup_param_name = dst_par_name
 
     else 
+        # If backup not provided, make sure the source component covers the span of the destination component
+        src_first, src_last = first_period(md, src_comp_def), last_period(md, src_comp_def)
+        dst_first, dst_last = first_period(md, dst_comp_def), last_period(md, dst_comp_def)
+        if dst_first < src_first || dst_last > src_last
+            error("Cannot connect parameter; $src_comp_name only runs from $src_first to $src_last, whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years. Try calling: 
+    `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`")
+        end 
+
         backup_param_name = nothing 
     end
 
