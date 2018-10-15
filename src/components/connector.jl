@@ -6,12 +6,14 @@ using Mimi
     output =  Variable(index = [time])
 
     function run_timestep(p, v, d, ts)
-        if !ismissing(p.input1[ts])
+        try 
             v.output[ts] = p.input1[ts]
-        elseif !ismissing(p.input2[ts])
-            v.output[ts] = p.input2[ts]
-        else
-            error("Neither of the inputs to ConnectorCompVector have data for the current timestep: $(gettime(ts)).")
+        catch 
+            try 
+                v.output[ts] = p.input2[ts]
+            catch 
+                error("Neither of the inputs to ConnectorCompVector have data for the current timestep: $(gettime(ts)).")
+            end
         end
     end
 end
@@ -25,12 +27,14 @@ end
 
     function run_timestep(p, v, d, ts)
         for r in d.regions
-            if !ismissing(p.input1[ts, r])
+            try 
                 v.output[ts, r] = p.input1[ts, r]
-            elseif !ismissing(p.input2[ts, r])
-                v.output[ts, r] = p.input2[ts, r]
-            else
-                error("Neither of the inputs to ConnectorCompMatrix have data for the current timestep: $(gettime(ts)).")
+            catch 
+                try 
+                    v.output[ts, r] = p.input2[ts, r]
+                catch 
+                    error("Neither of the inputs to ConnectorCompMatrix have data for the current timestep: $(gettime(ts)).")
+                end
             end
         end
     end

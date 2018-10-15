@@ -10,9 +10,9 @@ import Mimi:
 
 reset_compdefs()
 
-########################################################################
-#  Test basic timestep functions and Base functions for Fixed Timestep #
-########################################################################
+#------------------------------------------------------------------------------
+#  Test basic timestep functions and Base functions for Fixed Timestep 
+#------------------------------------------------------------------------------
 
 t1 = FixedTimestep{1850, 10, 3000}(1)
 @test is_first(t1)
@@ -33,9 +33,10 @@ t4 = next_timestep(t3)
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 
-###########################################################################
-#  Test basic timestep functions and Base functions for Variable Timestep #
-###########################################################################
+
+#------------------------------------------------------------------------------
+#  Test basic timestep functions and Base functions for Variable Timestep 
+#------------------------------------------------------------------------------
 years = Tuple([2000:1:2024; 2025:5:2105])
 
 t1 = VariableTimestep{years}()
@@ -58,9 +59,10 @@ t4 = next_timestep(t3)
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 
-#########################################################
-#  Test a model with components with different offsets  #
-#########################################################
+
+#------------------------------------------------------------------------------
+#  Test a model with components with different offsets  
+#------------------------------------------------------------------------------
 
 # we'll have Bar run from 2000 to 2010
 # and Foo from 2005 to 2010
@@ -122,9 +124,10 @@ for i in 6:11
     @test m[:Bar, :output][i] == i*i
 end
 
-##################################################
+#------------------------------------------------------------------------------
 #  test get_timestep_array
-##################################################
+#------------------------------------------------------------------------------
+
 m = Model()
 
 #fixed timestep to start
@@ -152,9 +155,10 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 @test typeof(t_vector) <: TimestepVector
 @test typeof(t_matrix) <: TimestepMatrix
 
-##################################################
-#  Now build a model with connecting components  #
-##################################################
+
+#------------------------------------------------------------------------------
+#  Now build a model with connecting components  
+#------------------------------------------------------------------------------
 
 @defcomp Foo2 begin
     inputF = Parameter(index=[time])
@@ -183,31 +187,29 @@ for i in 1:6
     @test foo_output2[i] == (i+5)^2
 end
 
-#########################################
-#  Connect them in the other direction  #
-#########################################
+#------------------------------------------------------------------------------
+#  Connect them in the other direction  
+#------------------------------------------------------------------------------
 
 @defcomp Bar2 begin
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
     
     function run_timestep(p, v, d, ts)
-        if gettime(ts) < 2005
-            v.output[ts] = 0
-        else
-            v.output[ts] = p.inputB[ts] * ts.t
-        end
+        v.output[ts] = p.inputB[ts] * ts.t
     end
 end
 
+years = 2000:2010
+
 m3 = Model()
 
-set_dimension!(m3, :time, 2000:2010)
+set_dimension!(m3, :time, years)
 add_comp!(m3, Foo, first=2005)
 add_comp!(m3, Bar2)
 
 set_param!(m3, :Foo, :inputF, 5.)
-connect_param!(m3, :Bar2, :inputB, :Foo, :output)
+connect_param!(m3, :Bar2, :inputB, :Foo, :output, zeros(length(years)))
 run(m3)
 
 @test length(m3[:Foo, :output]) == 11
