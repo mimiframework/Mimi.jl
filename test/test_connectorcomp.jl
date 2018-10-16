@@ -112,7 +112,8 @@ x = model2[:Long, :x]
     x[dim[late_start]:end] == 
     [2 * i for i in 1:(years[end]-late_start + 1)]
 
-
+@test Mimi.datum_size(model2.md, Mimi.compdef(model2.md, :Long), :x) == (length(years),)
+ 
 #------------------------------------------------------------------------------
 #  3. Test with a short component that ends early (and test Variable timesteps)
 #------------------------------------------------------------------------------
@@ -256,6 +257,8 @@ set_param!(model6, :Short, :a, 2)
 
 # A. test wrong size (needs to be length of component, not length of model)
 @test_throws ErrorException connect_param!(model6, :Long=>:x, :Short=>:b, zeros(length(years)))
+@test_throws ErrorException connect_param!(model5, :Long_multi=>:x, :Short_multi=>:b, zeros(length(years), length(regions)+1)) # test case with >1 dimension
+
 
 # B. test no backup data provided
 @test_throws ErrorException connect_param!(model6, :Long=>:x, :Short=>:b)   # Error because no backup data provided

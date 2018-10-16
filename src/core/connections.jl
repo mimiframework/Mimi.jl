@@ -116,9 +116,9 @@ function connect_param!(md::ModelDef,
             dims = nothing
         end
 
-        # Check that the backup value is the right size
-        if size(backup)[1] != getspan(md, dst_comp_name)[1]
-            error("Cannot connect parameter, backup data's length differs from component's time span. Expected length $(getspan(md, dst_comp_name)[1]) but got length $(size(backup)[1]).")
+        # Check that the backup data is the right size
+        if size(backup) != datum_size(md, dst_comp_def, dst_par_name)
+            error("Cannot connect parameter; the provided backup data is the wrong size. Expected size $(datum_size(md, dst_comp_def, dst_par_name)) but got $(size(backup)).")
         end
 
         # some other check for second dimension??
