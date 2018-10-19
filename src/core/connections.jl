@@ -504,6 +504,10 @@ function add_connector_comps(md::ModelDef)
             # add a connection between ConnectorComp and the external backup data
             push!(md.external_param_conns, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
 
+            src_comp_def = compdef(md, conn.src_comp_name)
+            set_param!(md, conn_comp_name, :first, first_period(md, src_comp_def))
+            set_param!(md, conn_comp_name, :last, last_period(md, src_comp_def))
+
         end
     end
 

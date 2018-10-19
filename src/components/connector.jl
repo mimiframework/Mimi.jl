@@ -5,16 +5,15 @@ using Mimi
     input2 = Parameter(index = [time])
     output =  Variable(index = [time])
 
+    first = Parameter() # first year to use the shorter data
+    last = Parameter()  # last year to use the shorter data
+
     function run_timestep(p, v, d, ts)
-        try 
+        if gettime(ts) >= p.first && gettime(ts) <= p.last
             v.output[ts] = p.input1[ts]
-        catch 
-            try 
-                v.output[ts] = p.input2[ts]
-            catch 
-                error("Neither of the inputs to ConnectorCompVector have data for the current timestep: $(gettime(ts)).")
-            end
-        end
+        else
+            v.output[ts] = p.input2[ts]
+        end 
     end
 end
 
@@ -25,17 +24,14 @@ end
     input2 = Parameter(index = [time, regions])
     output =  Variable(index = [time, regions])
 
+    first = Parameter() # first year to use the shorter data
+    last = Parameter()  # last year to use the shorter data
+
     function run_timestep(p, v, d, ts)
-        for r in d.regions
-            try 
-                v.output[ts, r] = p.input1[ts, r]
-            catch 
-                try 
-                    v.output[ts, r] = p.input2[ts, r]
-                catch 
-                    error("Neither of the inputs to ConnectorCompMatrix have data for the current timestep: $(gettime(ts)).")
-                end
-            end
+        if gettime(ts) >= p.first && gettime(ts) <= p.last 
+            v.output[ts, :] = p.input1[ts, :]
+        else
+            v.output[ts, :] = p.input2[ts, :]
         end
     end
 end
