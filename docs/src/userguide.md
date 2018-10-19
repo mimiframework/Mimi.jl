@@ -38,9 +38,9 @@ using Mimi
   f = Parameter(index = [regions])
 
   function run_timestep(p, v, d, t)
-    vars.A[t] = params.c + params.d[t]
-    for r in dims.regions
-      vars.B[t, r] = params.f[r] * params.e[t, r]
+    v.A[t] = p.c + p.d[t]
+    for r in d.regions
+      v.B[t, r] = p.f[r] * p.e[t, r]
     end
   end
 
