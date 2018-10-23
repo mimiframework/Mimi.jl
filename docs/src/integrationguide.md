@@ -58,11 +58,6 @@ In an effort to standardize the function naming protocol within Mimi, and to str
 
 Changes to various optional keyword arguments:
 
- - `connect_param!`:  In the case that a component parameter is connected to a variable from a prior timestep, it is necessary to use the `offset` keyword argument to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps as below.  Also notice the use of `=>` for readability, as opposed to all arguments being separated by commas.  This old syntax will, however, still work.
-
-```julia
-connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
-```
 - `add_comp!`:  Previously the optional keyword arguments `start` and `stop` could be used to specify times for components that do not run for the full length of the model. These arguments are now `first` and `last` respectively.
 
 ```julia

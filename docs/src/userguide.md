@@ -88,12 +88,11 @@ set_param!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimen
 
 ```
 
-To make an internal connection, the syntax is as follows.  Note that there is an optional keyword argument offset, that should be used in the case that a component parameter is connected to a variable from a prior timestep to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps.
+To make an internal connection, the syntax is as follows.  
 
 ```julia
 connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
-# Note: offset=1 => dependence is on on prior timestep, i.e., not a cycle
-connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
+connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
 ```
 
 If you wish to delete a component that has already been added, do the following:
