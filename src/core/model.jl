@@ -49,22 +49,20 @@ end
 
 """
     connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, 
-        src_var_name::Symbol, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false) #OFFSET: offset::Int=0
+        src_var_name::Symbol, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  
-
-Not yet implemented: The `offset` argument indicates the offset
+to check match units between the two.  The `offset` argument indicates the offset
 between the destination and the source ie. the value would be `1` if the destination 
 component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false) #OFFSET: offset::Int=0
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
-                      ignoreunits=ignoreunits) #OFFSET: offset=offset
+                      ignoreunits=ignoreunits, offset=offset)
 end
 
 """
@@ -81,8 +79,8 @@ component parameter should only be calculated for the second timestep and beyond
 
 """
 function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false) #OFFSET: offset::Int=0
-    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits) #OFFSET: offset=offset
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 function disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
