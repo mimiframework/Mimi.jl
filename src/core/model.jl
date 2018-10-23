@@ -71,9 +71,7 @@ end
 Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  
-
-Not yet implemented: The `offset` argument indicates the offset
+to check match units between the two.  The `offset` argument indicates the offset
 between the destination and the source ie. the value would be `1` if the destination 
 component parameter should only be calculated for the second timestep and beyond.
 
