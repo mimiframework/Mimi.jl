@@ -173,7 +173,7 @@ between the destination and the source ie. the value would be `1` if the destina
 component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false), offset::Int=0)
+                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_param!(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 

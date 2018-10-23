@@ -137,7 +137,7 @@ struct InternalParameterConnection <: AbstractConnection
     offset::Int
 
     function InternalParameterConnection(src_comp::Symbol, src_var::Symbol, dst_comp::Symbol, dst_par::Symbol,
-                                         ignoreunits::Bool, backup::Union{Symbol, Void}=nothing, offset::Int=0)
+                                         ignoreunits::Bool, backup::Union{Symbol, Void}=nothing; offset::Int=0)
         self = new(src_comp, src_var, dst_comp, dst_par, ignoreunits, backup, offset)
         return self
     end
