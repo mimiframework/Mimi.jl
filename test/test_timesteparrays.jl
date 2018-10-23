@@ -21,9 +21,9 @@ a = collect(reshape(1:16,4,4))
 @test first_and_step([2,3,4]) == (2,1)
 @test first_and_step([1:2:10...]) == (1,2)
 
-###########################################
-# 1. Test TimestepVector - Fixed Timestep #
-###########################################
+#------------------------------------------------------------------------------
+# 1. Test TimestepVector - Fixed Timestep 
+#------------------------------------------------------------------------------
 years = collect(2000:1:2003)
 
 #1a.  test constructor, lastindex, and length (with both 
@@ -58,9 +58,10 @@ x[t3] = 100
 x[1] = 101
 @test x[1] == 101
 
-##############################################
-# 2. Test TimestepVector - Variable Timestep #
-##############################################
+
+#------------------------------------------------------------------------------
+# 2. Test TimestepVector - Variable Timestep 
+#------------------------------------------------------------------------------
 
 years = (2000, 2005, 2015, 2025)
 x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
@@ -92,9 +93,10 @@ x[t3] = 100
 x[1] = 101
 @test x[1] == 101
 
-###########################################
-# 3. Test TimestepMatrix - Fixed Timestep #
-###########################################
+
+#------------------------------------------------------------------------------
+# 3. Test TimestepMatrix - Fixed Timestep 
+#------------------------------------------------------------------------------
 years = Tuple(2000:1:2003)
 
 #3a.  test constructor (with both matching years 
@@ -143,9 +145,10 @@ t2 = next_timestep(t)
 @test z[t2,1] == 10
 @test z[t2,2] == 14
 
-##############################################
-# 4. Test TimestepMatrix - Variable Timestep #
-##############################################
+
+#------------------------------------------------------------------------------
+# 4. Test TimestepMatrix - Variable Timestep 
+#------------------------------------------------------------------------------
 
 years = Tuple([2000:5:2005; 2015:10:2025])
 y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
@@ -180,9 +183,10 @@ y[:,:] = 11
 @test all([y[i,1] == 11 for i in 1:4])
 @test all([y[1,j] == 11 for j in 1:2])    
 
-##################################
-# 5. Test TimestepArray methods #
-##################################
+
+#------------------------------------------------------------------------------
+# 5. Test TimestepArray methods 
+#------------------------------------------------------------------------------
 
 x_years = Tuple(2000:5:2015) #fixed
 y_years = Tuple([2000:5:2005; 2015:10:2025]) #variable
@@ -211,5 +215,35 @@ fill!(x, 2)
 fill!(y, 2)
 @test x.data == fill(2, (4))
 @test y.data == fill(2, (4, 2))
+
+
+#------------------------------------------------------------------------------
+# 6. Test that getindex for TimestepArrays doesn't allow access to `missing`
+#       values during `run` that haven't been computed yet.
+#------------------------------------------------------------------------------
+
+@defcomp foo begin
+    par = Parameter(index=[time])
+    var = Variable(index=[time])
+    function run_timestep(p, v, d, t)
+        if is_last(t)
+            v.var[t] = 0
+        else
+            v.var[t] = p.par[t+1]   # This is where the error will be thrown, if connected to an internal variable that has not yet been computed.
+        end
+    end 
+end 
+
+years = 2000:2010
+
+m = Model()
+set_dimension!(m, :time, years)
+add_comp!(m, foo, :first)
+add_comp!(m, foo, :second)
+connect_param!(m, :second=>:par, :first=>:var)
+set_param!(m, :first, :par, 1:length(years))
+
+@test_throws ErrorException run(m)
+
 
 end #module

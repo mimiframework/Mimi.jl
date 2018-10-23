@@ -42,14 +42,18 @@ end
     end
 end
 
-m = Model()
 years = [2015:5:2100; 2110:10:2200]
+first_A = 2050
+last_A = 2150
+
+m = Model()
 set_dimension!(m, :time, years)
 
 @test_throws ErrorException add_comp!(m, A, last = 2210) 
 @test_throws ErrorException add_comp!(m, A, first = 2010) 
 @test_throws ArgumentError add_comp!(m, A, after=:B)
-add_comp!(m, A, first = 2050, last = 2150) #test specific last and first
+# @test_throws ErrorException add_comp!(m, A, after=:B)
+add_comp!(m, A, first = first_A, last = last_A) #test specific last and first
 
 add_comp!(m, B, before=:A)
 
@@ -84,9 +88,13 @@ connect_param!(m, :C => :parC, :B => :varB)
 
 run(m)
 
-@test all([m[:A, :varA][t] == 1 for t in 1:2])
-@test all([m[:A, :varA][t] == 10 for t in 3:16])
+# @test all([m[:A, :varA][t] == 1 for t in 1:2])
+# @test all([m[:A, :varA][t] == 10 for t in 3:16])
 
+dim = Mimi.Dimension(years)
+varA = m[:A, :varA][dim[first_A]:dim[last_A]]
+@test all([varA[i] == 1 for i in 1:2])
+@test all([varA[i] == 10 for i in 3:16])
 
 ##########################
 #   tests for indexing   #

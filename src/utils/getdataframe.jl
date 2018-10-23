@@ -21,7 +21,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
 
     num_dims = length(dims)
     if num_dims == 0
-        error("Can't create a dataframe from scalar value :$item_name")
+        error("Cannot create a dataframe for a scalar parameter :$item_name")
     end
 
     data = mi[comp_name, item_name]
@@ -32,15 +32,17 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
         df[dim1name] = collect(keys(dim1))
         # @info "dim: $dim1name size(df): $(size(df))"
 
-        if dim1name == :time
+        # df[item_name] = data
+
+        if dim1name == :time && size(data)[1] != length(time_labels(md))
             ci = compinstance(mi, comp_name)
             first = dim1[ci.first]  # Dimension converts year key to index in array
             last  = dim1[ci.last]
 
             # Pad the array with NaNs outside this component's bounds
-            shifted_data = vcat(repeat([NaN], inner=first - 1), 
+            shifted_data = vcat(repeat([missing], inner=first - 1), 
                                 data[1:(last-first+1)], # ignore padding after these values
-                                repeat([NaN], inner=length(dim1) - last))
+                                repeat([missing], inner=length(dim1) - last))
             # @info "len shifted: $(length(shifted_data))"
             df[item_name] = shifted_data
         else
@@ -73,19 +75,34 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         df[dim1name] = repeat(keys1, inner = [len_dim2])
         df[dim2name] = repeat(keys2, outer = [len_dim1])
 
-        if dim1name == :time
+        if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
             ci = compinstance(m.mi, comp_name)
             t = dimension(m, :time)
             first = t[ci.first]
             last  = t[ci.last]
 
-            top    = fill(NaN, first - 1, len_dim2)
-            bottom = fill(NaN, len_dim1 - last, len_dim2)
+            top    = fill(missing, first - 1, len_dim2)
+            bottom = fill(missing, len_dim1 - last, len_dim2)
             data = vcat(top, data, bottom)
         end
 
         df[item_name] = cat([vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
     else
+
+        # shift the data to be padded with missings if this data is shorter than the model
+        if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
+            ci = compinstance(m.mi, comp_name)
+            t = dimension(m, :time)
+            first = t[ci.first]
+            last  = t[ci.last]
+
+            rest_dim_lens = [length(dimension(md, dimname)) for dimname in dims[2:end]]
+            top = fill(missing, first - 1, rest_dim_lens...)
+            bottom = fill(missing, len_dim1 - last, rest_dim_lens...)
+
+            data = vcat(top, data, bottom)  
+        end
+
         # Indexes is #, :, :, ... for each index of first dimension
         indexes = repeat(Any[Colon()], num_dims)
 
@@ -158,7 +175,7 @@ model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
     if m.mi === nothing
-        error("Cannot get DataFrame: model has not been built yet")
+        error("Cannot get DataFrame: model has not been built yet.")
     end
 
     df = _load_dataframe(m, comp_name, item_name)

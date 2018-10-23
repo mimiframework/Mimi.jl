@@ -171,6 +171,19 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
     end
 end
 
+function datum_size(md::ModelDef, comp_def::ComponentDef, datum_name::Symbol)
+    dims = dimensions(comp_def, datum_name)
+    if dims[1] == :time
+        time_length = getspan(md, comp_def)[1]
+        rest_dims = filter(x->x!=:time, dims)
+        datum_size = (time_length, dim_counts(md, rest_dims)...,)
+    else
+        datum_size = (dim_counts(md, dims)...,)
+    end
+    return datum_size
+end
+
+
 dimensions(md::ModelDef) = md.dimensions
 dimensions(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
 dimension(md::ModelDef, name::Symbol) = md.dimensions[name]
@@ -451,6 +464,10 @@ end
 # Return the number of timesteps a given component in a model will run for.
 function getspan(md::ModelDef, comp_name::Symbol)
     comp_def = compdef(md, comp_name)
+    return getspan(md, comp_def)
+end
+
+function getspan(md::ModelDef, comp_def::ComponentDef)
     first = first_period(md, comp_def)
     last  = last_period(md, comp_def)
     times = time_labels(md)
