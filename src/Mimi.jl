@@ -42,8 +42,9 @@ export
     variables 
 
 include("core/types.jl")
+include("core/composite.jl")
 
-# After loading types, the rest can just be alphabetical
+# After loading types and delegation macro, the rest can just be alphabetical
 include("core/build.jl")
 include("core/connections.jl")
 include("core/defs.jl")

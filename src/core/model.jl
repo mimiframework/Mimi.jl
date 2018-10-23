@@ -4,16 +4,6 @@
 #
 using MacroTools
 
-# Simplify delegation of calls to ::Model to internal ModelInstance or ModelDelegate objects.
-macro modelegate(ex)
-    if @capture(ex, fname_(varname_::Model, args__) => rhs_)
-        result = esc(:($fname($varname::Model, $(args...)) = $fname($varname.$rhs, $(args...))))
-        #println(result)
-        return result
-    end
-    error("Calls to @modelegate must be of the form 'func(m::Model, args...) => X', where X is either mi or md'. Expression was: $ex")
-end
-
 """
     modeldef(m)
 
@@ -23,23 +13,23 @@ modeldef(m::Model) = m.md
 
 modelinstance(m::Model) = m.mi
 
-@modelegate compinstance(m::Model, name::Symbol) => mi
+@delegate compinstance(m::Model, name::Symbol) => mi
 
-@modelegate number_type(m::Model) => md
+@delegate number_type(m::Model) => md
 
-@modelegate external_param_conns(m::Model) => md
+@delegate external_param_conns(m::Model) => md
 
-@modelegate internal_param_conns(m::Model) => md
+@delegate internal_param_conns(m::Model) => md
 
-@modelegate external_params(m::Model) => md
+@delegate external_params(m::Model) => md
 
-@modelegate external_param(m::Model, name::Symbol) => md
+@delegate external_param(m::Model, name::Symbol) => md
 
-@modelegate connected_params(m::Model, comp_name::Symbol) => md
+@delegate connected_params(m::Model, comp_name::Symbol) => md
 
-@modelegate unconnected_params(m::Model) => md
+@delegate unconnected_params(m::Model) => md
 
-@modelegate add_connector_comps(m::Model) => md
+@delegate add_connector_comps(m::Model) => md
 
 # Forget any previously built model instance (i.e., after changing the model def).
 # This should be called by all functions that modify the Model's underlying ModelDef.
@@ -182,27 +172,27 @@ end
 
 Return an iterator on the components in model `m`.
 """
-@modelegate components(m::Model) => mi
+@delegate components(m::Model) => mi
 
-@modelegate compdefs(m::Model) => md
+@delegate compdefs(m::Model) => md
 
-@modelegate compdef(m::Model, comp_name::Symbol) => md
+@delegate compdef(m::Model, comp_name::Symbol) => md
 
-@modelegate numcomponents(m::Model) => md
+@delegate numcomponents(m::Model) => md
 
-@modelegate first_and_step(m::Model) => md
+@delegate first_and_step(m::Model) => md
 
-@modelegate time_labels(m::Model) => md
+@delegate time_labels(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
-@modelegate getspan(m::Model, comp_name::Symbol) => md
+@delegate getspan(m::Model, comp_name::Symbol) => md
 
 """
-    datumdef(comp_def::ComponentDef, item::Symbol)
+    datumdef(comp_def::LeafComponentDef, item::Symbol)
 
 Return a DatumDef for `item` in the given component `comp_def`.
 """
-function datumdef(comp_def::ComponentDef, item::Symbol)
+function datumdef(comp_def::LeafComponentDef, item::Symbol)
     if haskey(comp_def.variables, item)
         return comp_def.variables[item]
 
@@ -211,6 +201,10 @@ function datumdef(comp_def::ComponentDef, item::Symbol)
     else
         error("Cannot access data item; :$item is not a variable or a parameter in component $(comp_def.comp_id).")
     end
+end
+
+# TBD: what to do here? Do we expose non-exported data?
+function datumdef(comp_def::CompositeComponentDef, item::Symbol)
 end
 
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
@@ -223,10 +217,10 @@ in the given component `comp_name` in model `m`.
 """
 dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(m, comp_name), datum_name)
 
-@modelegate dimension(m::Model, dim_name::Symbol) => md
+@delegate dimension(m::Model, dim_name::Symbol) => md
 
 # Allow access of the form my_model[:grosseconomy, :tfp]
-@modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
+@delegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
     set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})
@@ -239,15 +233,15 @@ function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, 
     decache(m)
 end
 
-@modelegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
+@delegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
 
-@modelegate parameter_names(m::Model, comp_name::Symbol) => md
+@delegate parameter_names(m::Model, comp_name::Symbol) => md
 
-@modelegate parameter_dimensions(m::Model, comp_name::Symbol, param_name::Symbol) => md
+@delegate parameter_dimensions(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-@modelegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
+@delegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-parameter(m::Model, comp_def::ComponentDef, param_name::Symbol) = parameter(comp_def, param_name)
+parameter(m::Model, comp_def::AbstractComponentDef, param_name::Symbol) = parameter(comp_def, param_name)
 
 parameter(m::Model, comp_name::Symbol, param_name::Symbol) = parameter(m, compdef(m, comp_name), param_name)
 
@@ -280,7 +274,7 @@ Return a list of the variable definitions for `comp_name` in model `m`.
 """
 variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 
-@modelegate variable_names(m::Model, comp_name::Symbol) => md
+@delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
     set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)

@@ -19,7 +19,7 @@ function verify_units(one::AbstractString, two::AbstractString)
     return one == two
 end
 
-function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
+function _check_labels(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(ext_param.values)

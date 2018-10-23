@@ -1,4 +1,33 @@
 #
+# 0. Macro used in several places, so centralized here even though not type-related
+#
+using MacroTools
+
+# Convert a list of args with optional type specs to just the arg symbols
+_arg_names(args::Vector) = [a isa Symbol ? a : a.args[1] for a in args]
+
+"""
+Macro to define a method that simply delegate to a method with the same signature
+but using the specified field name of the original first argument as the first arg
+in the delegated call. That is,
+
+    `@delegate compid(ci::MetaComponentInstance, i::Int, f::Float64) => leaf`
+
+expands to:
+
+    `compid(ci::MetaComponentInstance, i::Int, f::Float64) = compid(ci.leaf, i, f)`
+"""
+macro delegate(ex)
+    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
+        argnames = _arg_names(args)
+        result = esc(:($fname($varname::$T, $(args...)) = $fname($varname.$rhs, $(argnames...))))
+        return result
+    end
+    error("Calls to @delegate must be of the form 'func(obj, args...) => X', where X is a field of obj to delegate to'. Expression was: $ex")
+end
+
+
+#
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
@@ -168,6 +197,8 @@ struct ComponentId
     comp_name::Symbol
 end
 
+ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
+
 # Indicates that the object has a `name` attribute
 abstract type NamedDef end
 
@@ -204,21 +235,29 @@ mutable struct DimensionDef <: NamedDef
     name::Symbol
 end
 
-mutable struct ComponentDef  <: NamedDef
-    name::Symbol
+# Stores references to the name of a component variable or parameter
+struct DatumReference
     comp_id::ComponentId
+    datum_name::Symbol
+end
+
+# Supertype of LeafComponentDef and LeafComponentInstance
+abstract type AbstractComponentDef <: NamedDef end
+
+mutable struct LeafComponentDef <: AbstractComponentDef
+    comp_id::ComponentId
+    name::Symbol
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
 
-    # ComponentDefs are created "empty"; elements are subsequently added 
-    # to them via addvariable, add_dimension!, etc.
-    function ComponentDef(comp_id::ComponentId)
+    # LeafComponentDefs are created "empty". Elements are subsequently added.
+    function LeafComponentDef(comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name)
         self = new()
-        self.name = comp_id.comp_name
         self.comp_id = comp_id
+        self.name = comp_name
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
@@ -227,17 +266,21 @@ mutable struct ComponentDef  <: NamedDef
     end
 end
 
-# Declarative definition of a model, used to create a ModelInstance
-mutable struct ModelDef
-    module_name::Symbol     # the module in which this model was defined
+# *Def implementation doesn't need to be performance-optimized since these
+# are used only to create *Instance objects that are used at run-time. With
+# this in mind, we don't create dictionaries of vars, params, or dims in the
+# CompositeComponentDef since this would complicate matters if a user decides 
+# to add/modify/remove a component. Instead of maintaining a secondary dict, 
+# we just iterate over sub-components at run-time as needed. 
 
-    # Components keyed by symbolic name, allowing a given component
-    # to occur multiple times within a model.
-    comp_defs::OrderedDict{Symbol, ComponentDef}
+global const BindingTypes = Union{Int, Float64, DatumReference}
 
-    dimensions::Dict{Symbol, Dimension}
-
-    number_type::DataType
+mutable struct CompositeComponentDef <: AbstractComponentDef
+    comp_id::ComponentId
+    name::Symbol
+    comps::Vector{AbstractComponentDef}
+    bindings::Vector{Pair{DatumReference, BindingTypes}}
+    exports::Vector{Pair{DatumReference, Symbol}}
 
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
@@ -249,27 +292,118 @@ mutable struct ModelDef
 
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
+    function CompositeComponentDef(comp_id::ComponentId, name::Symbol, 
+                                   comps::Vector{AbstractComponentDef},
+                                   bindings::Vector{Pair{DatumReference, BindingTypes}},
+                                   exports::Vector{Pair{DatumReference, Symbol}})
+        internal_param_conns = Vector{InternalParameterConnection}() 
+        external_param_conns = Vector{ExternalParameterConnection}()
+        external_params = Dict{Symbol, ModelParameter}()
+        backups = Vector{Symbol}()
+        sorted_comps = nothing
+        is_uniform = true
+
+        return new(comp_id, name, comps, bindings, exports, 
+                   internal_param_conns, external_param_conns,
+                   backups, external_params, sorted_comps)
+    end   
+
+    function CompositeComponentDef(comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name)
+        comps    = Vector{AbstractComponentDef}()
+        bindings = Vector{Pair{DatumReference, BindingTypes}}()
+        exports  = Vector{Pair{DatumReference, Symbol}}()
+        return new(comp_id, comp_name, comps, bindings, exports)
+    end    
+end
+
+mutable struct ModelDef
+    ccd::CompositeComponentDef
+    dimensions::Dict{Symbol, Dimension}
+    number_type::DataType
     is_uniform::Bool
     
-    function ModelDef(number_type=Float64)
-        self = new()
-        self.module_name = nameof(@__MODULE__)                  # TBD: fix this; should by module model is defined in
-        self.comp_defs = OrderedDict{Symbol, ComponentDef}()
-        self.dimensions = Dict{Symbol, Dimension}()
-        self.number_type = number_type
-        self.internal_param_conns = Vector{InternalParameterConnection}() 
-        self.external_param_conns = Vector{ExternalParameterConnection}()
-        self.external_params = Dict{Symbol, ModelParameter}()
-        self.backups = Vector{Symbol}()
-        self.sorted_comps = nothing
-        self.is_uniform = true
-        return self
+    function ModelDef(ccd::CompositeComponentDef, number_type::DataType=Float64)
+        dimensions = Dict{Symbol, Dimension}()
+        is_uniform = true
+        return new(ccd, dimensions, number_type, is_uniform)
     end
 end
 
 #
 # 5. Types supporting instantiated models and their components
 #
+
+abstract type AbstractComponentInstance end
+
+mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
+    comp_name::Symbol
+    comp_id::ComponentId
+    variables::TV
+    parameters::TP
+    dim_dict::Dict{Symbol, Vector{Int}}
+    first::Int
+    last::Int
+    init::Union{Nothing, Function}
+    run_timestep::Union{Nothing, Function}
+
+    function LeafComponentInstance{TV, TP}(comp_def::LeafComponentDef, vars::TV, pars::TP, 
+                                           name::Symbol=name(comp_def);
+                                           is_composite::Bool=false) where {TV <: ComponentInstanceVariables,
+                                                                            TP <: ComponentInstanceParameters}
+        self = new{TV, TP}()
+        self.comp_id = comp_id = comp_def.comp_id
+        self.comp_name = name
+        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
+        self.variables = vars
+        self.parameters = pars
+        self.first = comp_def.first
+        self.last = comp_def.last
+
+        comp_module = Base.eval(Main, comp_id.module_name)
+
+        # The try/catch allows components with no run_timestep function (as in some of our test cases)
+        # All CompositeComponentInstances use a standard method that just loops over inner components.
+        # TBD: use FunctionWrapper here?
+        function get_func(name)
+            func_name = Symbol("$(name)_$(comp_name)")
+            try
+                Base.eval(comp_module, func_name)
+            catch err
+                nothing
+            end        
+        end
+
+        # TBD: is `is_composite` necessary?
+        self.run_timestep = is_composite ? nothing : get_func("run_timestep")
+        self.init         = is_composite ? nothing : get_func("init")
+
+        return self
+    end
+end
+
+mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
+
+    # TV, TP, and dim_dict are computed by aggregating all the vars and params from the CompositeComponent's
+    # sub-components. Might be simplest to implement using a LeafComponentInstance that holds all the
+    # "summary" values and references, the init and run_timestep funcs, and a vector of sub-components.
+    leaf::LeafComponentInstance{TV, TP}
+    comps::Vector{AbstractComponentInstance}
+    firsts::Vector{Int}        # in order corresponding with components
+    lasts::Vector{Int}
+    clocks::Union{Nothing, Vector{Clock}}
+
+    function CompositeComponentInstance{TV, TP}(
+        comp_def::CompositeComponentDef, vars::TV, pars::TP,
+        name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+
+        leaf = LeafComponentInstance{TV, TP}(comp_def, vars, pars, name, true)
+        comps  = Vector{AbstractComponentInstance}()
+        firsts = Vector{Int}()
+        lasts  = Vector{Int}()
+        clocks = nothing
+        return new{TV, TP}(leaf, comps, firsts, lasts, clocks)
+    end
+end
 
 # Supertype for variables and parameters in component instances
 abstract type ComponentInstanceData end
@@ -327,64 +461,10 @@ Base.names(obj::T)  where {T <: ComponentInstanceData} = keys(nt(obj))
 Base.values(obj::T) where {T <: ComponentInstanceData} = values(nt(obj))
 types(obj::T) where {T <: ComponentInstanceData} = typeof(nt(obj)).parameters[2].parameters
 
-# An instance of this type is passed to the run_timestep function of a
-# component, typically as the `p` argument. The main role of this type
-# is to provide the convenient `p.nameofparameter` syntax.
-mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-    comp_name::Symbol
-    comp_id::ComponentId
-    variables::TV
-    parameters::TP
-    dim_dict::Dict{Symbol, Vector{Int}}
-
-    first::Int
-    last::Int
-
-    init::Union{Nothing, Function}
-    run_timestep::Union{Nothing, Function}
-    
-    function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
-                               vars::TV, pars::TP,
-                               first::Int, last::Int, 
-                               name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
-                                                                   TP <: ComponentInstanceParameters}
-        self = new{TV, TP}()
-        
-        self.comp_id = comp_id = comp_def.comp_id
-        self.comp_name = name
-        self.dim_dict = Dict{Symbol, Vector{Int}}()    # set in "build" stage
-        
-        self.variables = vars
-        self.parameters = pars
-        self.first = first
-        self.last = last
-
-        comp_name   = comp_id.comp_name
-        module_name = comp_id.module_name
-        comp_module = Base.eval(Main, module_name)
-
-        # TBD: use FunctionWrapper here?
-        function get_func(name)
-            func_name = Symbol("$(name)_$(comp_name)")
-            try
-                Base.eval(comp_module, func_name)
-            catch err
-                # No need to warn about this...
-                # @warn "Failed to evaluate function name $func_name in module $comp_module"
-                nothing
-            end        
-        end
-
-        self.init = get_func("init")
-        self.run_timestep = get_func("run_timestep")
-           
-        return self
-    end
-end
-
 # This type holds the values of a built model and can actually be run.
 mutable struct ModelInstance
     md::ModelDef
+    cci::Union{Nothing, CompositeComponentInstance}
 
     # Ordered list of components (including hidden ConnectorComps)
     components::OrderedDict{Symbol, ComponentInstance}
@@ -405,7 +485,6 @@ end
 #
 # 6. User-facing Model types providing a simplified API to model definitions and instances.
 #
-
 """
     Model
 
@@ -416,8 +495,11 @@ a `number_type` of `Float64`.
 """
 mutable struct Model
     md::ModelDef
-    mi::Union{Nothing, ModelInstance}
 
+    # TBD: need only one of these...
+    mi::Union{Nothing, ModelInstance}    
+    cci::Union{Nothing, CompositeComponentInstance}
+    
     function Model(number_type::DataType=Float64)
         return new(ModelDef(number_type), nothing)
     end

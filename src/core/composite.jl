@@ -1,138 +1,14 @@
-# Convert a list of args with optional type specs to just the arg symbols
-_arg_names(args::Vector) = [a isa Symbol ? a : a.args[1] for a in args]
-
-# TBD: move this to a more central location
-"""
-Macro to define a method that simply delegate to a method with the same signature
-but using the specified field name of the original first argument as the first arg
-in the delegated call. That is,
-
-    `@delegate compid(ci::MetaComponentInstance, i::Int, f::Float64) => leaf`
-
-expands to:
-
-    `compid(ci::MetaComponentInstance, i::Int, f::Float64) = compid(ci.leaf, i, f)`
-"""
-macro delegate(ex)
-    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
-        argnames = _arg_names(args)
-        result = esc(:($fname($varname::$T, $(args...)) = $fname($varname.$rhs, $(argnames...))))
-        return result
-    end
-    error("Calls to @delegate must be of the form 'func(obj, args...) => X', where X is a field of obj to delegate to'. Expression was: $ex")
-end
-
-
-abstract struct AbstractComponentDef <: NamedDef end
-
-mutable struct LeafComponentDef <: AbstractComponentDef
-    name::Symbol
-    comp_id::ComponentId
-    variables::OrderedDict{Symbol, DatumDef}
-    parameters::OrderedDict{Symbol, DatumDef}
-    dimensions::OrderedDict{Symbol, DimensionDef}
-    first::Int
-    last::Int
-end
-
-# *Def implementation doesn't need to be performance-optimized since these
-# are used only to create *Instance objects that are used at run-time. With
-# this in mind, we don't create dictionaries of vars, params, or dims in the
-# MetaComponentDef since this would complicate matters if a user decides to
-# add/modify/remove a component. Instead of maintaining a secondary dict, we
-# just iterate over sub-components at run-time as needed.
-
-global const BindingTypes = Union{Int, Float64, Tuple{ComponentId, Symbol}}
-
-struct CompositeComponentDef <: AbstractComponentDef
-    comp_id::ComponentId
-    name::Symbol
-    comps::Vector{AbstractComponent}
-    bindings::Vector{Pair{Symbol, BindingTypes}}
-    exports::Vector{Pair{Symbol, Tuple{ComponentId, Symbol}}}
-end
-
-abstract struct AbstractComponentInstance end
-
-mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
-    comp_name::Symbol
-    comp_id::ComponentId
-    variables::TV
-    parameters::TP
-    dim_dict::Dict{Symbol, Vector{Int}}
-
-    first::Int
-    last::Int
-
-    init::Union{Void, Function}  # use same implementation here?
-    run_timestep::Union{Void, Function}
-    
-    function LeafComponentInstance{TV, TP}(comp_def::ComponentDef, vars::TV, pars::TP, name::Symbol=name(comp_def);
-                                           is_composite::Bool=false) where {TV <: ComponentInstanceVariables, 
-                                                                            TP <: ComponentInstanceParameters}
-        self = new{TV, TP}()
-        self.comp_id = comp_id = comp_def.comp_id
-        self.comp_name = name
-        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
-        self.variables = vars
-        self.parameters = pars
-        self.first = comp_def.first
-        self.last = comp_def.last        
-
-        comp_module = eval(Main, comp_id.module_name)
-
-        # The try/catch allows components with no run_timestep function (as in some of our test cases)
-        # All CompositeComponentInstances use a standard method that just loops over inner components.
-        mod_and_comp = "$(comp_id.module_name)_$(comp_id.comp_name)"
-        self.run_timestep = is_composite ? nothing else try eval(comp_module, Symbol("run_timestep_$(mod_and_comp)")) end           
-        self.init         = is_composite ? nothing else try eval(comp_module, Symbol("init_$(mod_and_comp)")) end
-        return self
-    end
-end
-
-struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
-
-    # TV, TP, and dim_dict are computed by aggregating all the vars and params from the CompositeComponent's 
-    # sub-components. Might be simplest to implement using a LeafComponentInstance that holds all the 
-    # "summary" values and references, the init and run_timestep funcs, and a vector of sub-components.
-    leaf::LeafComponentInstance{TV, TP}
-    comps::Vector{AbstractComponentInstance}
-    firsts::Vector{Int}        # in order corresponding with components
-    lasts::Vector{Int}
-    clocks::Union{Void, Vector{Clock{T}}}
-
-    function CompositeComponentInstance{TV, TP}(
-        comp_def::CompositeComponentDef, vars::TV, pars::TP,
-        name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-
-        self = new{TV, TP}()
-        self.leaf = LeafComponentInstance{TV, TP}(comp_def, vars, pars, name)
-        self.firsts = Vector{Int}()
-        self.lasts  = Vector{Int}()
-        self.clocks = nothing
-    end
-end
+using MacroTools
 
 components(obj::CompositeComponentInstance) = obj.comps
 
-struct Model
-    ccd::CompositeComponentDef
-    cci::union{Void, CompositeComponentInstance}
-
-    function Model(cc::CompositeComponentDef)
-        return new(cc, nothing)
-    end
-end
-
-# We delegate from CompositeComponentInstance to the internal LeafComponentInstance.
 compid(ci::LeafComponentInstance) = ci.comp_id
 name(ci::LeafComponentInstance) = ci.comp_name
 dims(ci::LeafComponentInstance) = ci.dim_dict
 variables(ci::LeafComponentInstance) = ci.variables
 parameters(ci::LeafComponentInstance) = ci.parameters
-init_func(ci::LeafComponentInstance) = ci.init
-timestep_func(ci::LeafComponentInstance) = ci.run_timestep
 
+# CompositeComponentInstance delegates these to its internal LeafComponentInstance
 @delegate compid(ci::CompositeComponentInstance) => leaf
 @delegate name(ci::CompositeComponentInstance) => leaf
 @delegate dims(ci::CompositeComponentInstance) => leaf
@@ -156,9 +32,8 @@ end
 function init(ci::LeafComponentInstance)
     reset_variables(ci)
 
-    fn = init_func(ci)
-    if fn != nothing
-        fn(parameters(ci), variables(ci), dims(ci))
+    if ci.init != nothing
+        ci.init(parameters(ci), variables(ci), dims(ci))
     end
     return nothing
 end
@@ -171,9 +46,8 @@ function init(cci::CompositeComponentInstance)
 end
 
 function run_timestep(ci::LeafComponentInstance, clock::Clock)
-    fn = timestep_func(ci)
-    if fn != nothing
-        fn(parameters(ci), variables(ci), dims(ci), clock.ts)
+    if ci.run_timestep != nothing
+        ci.run_timestep(parameters(ci), variables(ci), dims(ci), clock.ts)
     end
 
     # TBD: move this outside this func if components share a clock
@@ -245,8 +119,8 @@ Define a Mimi CompositeComponent `cc_name` with the expressions in `ex`.  Expres
 are all variations on `component(...)`, which adds a component to the composite. The
 calling signature for `component()` processed herein is:
 
-    `component(comp_id::ComponentId, name::Symbol=comp_id.comp_name; 
-               exports::Union{Void,Vector}, bindings::Union{Void,Vector{Pair}})`
+    `component(comp_id::ComponentId, name::Symbol=comp_id.comp_name;
+               exports::Union{Nothing,Vector}, bindings::Union{Nothing,Vector{Pair}})`
 
 In this macro, the vector of symbols to export is expressed without the `:`, e.g.,
 `exports=[var_1, var_2, param_1])`. The names must be variable or parameter names in
@@ -273,7 +147,7 @@ macro defcomposite(cc_name, ex)
             global $cc_name = CompositeComponentDef()
         end
     )
-    
+
     # helper function used in loop below
     function addexpr(expr)
         let_block = result.args[end].args
@@ -288,7 +162,7 @@ macro defcomposite(cc_name, ex)
 
         if @capture(elt, (component(args__; kwargs__) | component(args__)))
 
-            #   component(comp_mod_name_.comp_name_) | 
+            #   component(comp_mod_name_.comp_name_) |
             #   component(comp_mod_name_.comp_name_, alias_)))
 
             # splitarg produces a tuple for each arg of the form (arg_name, arg_type, slurp, default)
@@ -310,11 +184,11 @@ macro defcomposite(cc_name, ex)
             end
 
             arg1 = args[1]
-            arg2 = length(args) == 2 ? args[2] else nothing
+            arg2 = length(args) == 2 ? args[2] : nothing
 
             for (arg_name, arg_type, slurp, default) in kwarg_tups
                 if arg_name in valid_kws
-                    if hasmethod(Base.iterate, (typeof(default),)
+                    if hasmethod(Base.iterate, typeof(default))
                         append!(kw_values[arg_name], default)
                     else
                         @error "Value of $arg_name argument must be iterable"
@@ -333,7 +207,7 @@ macro defcomposite(cc_name, ex)
 
             # name = (alias === nothing ? comp_name : alias)
             # expr = :(add_comp!($cc_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
-            
+
             expr = :(CompositeComponentDef($comp_id, $comp_name, $comps, bindings=$bindings, exports=$exports))
             addexpr(expr)
         end

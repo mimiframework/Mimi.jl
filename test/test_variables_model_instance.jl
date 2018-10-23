@@ -41,7 +41,7 @@ citer = components(mi)
 
 @test typeof(md) == Mimi.ModelDef && md == mi.md
 @test typeof(ci) <: Mimi.ComponentInstance && ci == mi.components[:testcomp1]
-@test typeof(cdef) <: Mimi.ComponentDef && cdef == compdef(ci.comp_id)
+@test typeof(cdef) <: Mimi.LeafComponentDef && cdef == compdef(ci.comp_id)
 @test name(ci) == :testcomp1
 @test typeof(citer) <: Base.ValueIterator && length(citer) == 1 && eltype(citer) == Mimi.ComponentInstance
 

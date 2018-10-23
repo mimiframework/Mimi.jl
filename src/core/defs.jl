@@ -1,5 +1,5 @@
 # Global component registry: @defcomp stores component definitions here
-global const _compdefs = Dict{ComponentId, ComponentDef}()
+global const _compdefs = Dict{ComponentId, AbstractComponentDef}()
 
 compdefs() = collect(values(_compdefs))
 
@@ -35,11 +35,14 @@ function reset_compdefs(reload_builtins=true)
     end
 end
 
-first_period(comp_def::ComponentDef) = comp_def.first
-first_period(md::ModelDef, comp_def::ComponentDef) = first_period(comp_def) === nothing ? time_labels(md)[1] : first_period(comp_def)
+first_period(comp_def::LeafComponentDef) = comp_def.first
+last_period(comp_def::LeafComponentDef) = comp_def.last
 
-last_period(comp_def::ComponentDef) = comp_def.last
-last_period(md::ModelDef, comp_def::ComponentDef) = last_period(comp_def) === nothing ? time_labels(md)[end] : last_period(comp_def)
+first_period(ccd::CompositeComponentDef) = length(ccd.comps) ? min([first_period(cd) for cd in ccd.comps]) : nothing
+last_period(ccd::CompositeComponentDef)  = length(ccd.comps) ? max([last_period(cd)  for cd in ccd.comps]) : nothing
+
+first_period(md::ModelDef, comp_def::AbstractComponentDef) = first_period(comp_def) === nothing ? time_labels(md)[1] : first_period(comp_def)
+last_period(md::ModelDef, comp_def::AbstractComponentDef)  = last_period(comp_def)  === nothing ? time_labels(md)[end] : last_period(comp_def)
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -47,21 +50,22 @@ compmodule(comp_id::ComponentId) = comp_id.module_name
 compname(comp_id::ComponentId) = comp_id.comp_name
 
 function Base.show(io::IO, comp_id::ComponentId)
-    print(io, "$(comp_id.module_name).$(comp_id.comp_name)")
+    print(io, "<ComponentId $(comp_id.module_name).$(comp_id.comp_name)>")
 end
 
 """
     name(def::NamedDef) = def.name 
 
-Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `ComponentDef`, 
-and `DimensionDef`.
+Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `LeavComponentDef`, 
+`CompositeComponentDef`, and `DimensionDef`.
 """
 name(def::NamedDef) = def.name
 
 number_type(md::ModelDef) = md.number_type
 
-numcomponents(md::ModelDef) = length(md.comp_defs)
+@delegate numcomponents(md::ModelDef) => ccd
 
+numcomponents(ccd::CompositeComponentDef) = length(ccd.comps)
 
 function dump_components()
     for comp in compdefs()
@@ -78,9 +82,9 @@ end
 """
     new_comp(comp_id::ComponentId, verbose::Bool=true)
 
-Add an empty `ComponentDef` to the global component registry with the given
-`comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
-`addparameter`, etc.
+Add an empty `LeafComponentDef` to the global component registry with the given
+`comp_id`. The empty `LeafComponentDef` must be populated with calls to `addvariable`,
+`addparameter`, etc. Use `@defcomposite` to create composite components.
 """
 function new_comp(comp_id::ComponentId, verbose::Bool=true)
     if verbose
@@ -91,7 +95,7 @@ function new_comp(comp_id::ComponentId, verbose::Bool=true)
         end
     end
 
-    comp_def = ComponentDef(comp_id)
+    comp_def = LeafComponentDef(comp_id)
     _compdefs[comp_id] = comp_def
     return comp_def
 end
@@ -118,18 +122,20 @@ end
 #
 # Dimensions
 #
-function add_dimension!(comp::ComponentDef, name)
+
+# TBD: is this needed for composites too?
+function add_dimension!(comp::LeafComponentDef, name)
     comp.dimensions[name] = dim_def = DimensionDef(name)
     return dim_def
 end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
-dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
+dimensions(comp_def::LeafComponentDef) = values(comp_def.dimensions)
 
 dimensions(def::DatumDef) = def.dimensions
 
-dimensions(comp_def::ComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
+dimensions(comp_def::LeafComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
 
 dim_count(def::DatumDef) = length(def.dimensions)
 
@@ -171,7 +177,8 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
     end
 end
 
-function datum_size(md::ModelDef, comp_def::ComponentDef, datum_name::Symbol)
+# TBD: is this needed for composites?
+function datum_size(md::ModelDef, comp_def::LeafComponentDef, datum_name::Symbol)
     dims = dimensions(comp_def, datum_name)
     if dims[1] == :time
         time_length = getspan(md, comp_def)[1]
@@ -271,14 +278,10 @@ function isuniform(values)
    end
 end
 
-#needed when time dimension is defined using a single integer
+# needed when time dimension is defined using a single integer
 function isuniform(values::Int)
     return true
 end
-
-# function isuniform(values::AbstractRange{Int})
-#     return isuniform(collect(values))
-# end
 
 #
 # Parameters
@@ -286,7 +289,7 @@ end
 
 external_params(md::ModelDef) = md.external_params
 
-function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
+function addparameter(comp_def::LeafComponentDef, name, datatype, dimensions, description, unit, default)
     p = DatumDef(name, datatype, dimensions, description, unit, :parameter, default)
     comp_def.parameters[name] = p
     return p
@@ -297,14 +300,22 @@ function addparameter(comp_id::ComponentId, name, datatype, dimensions, descript
 end
 
 """
-    parameters(comp_def::ComponentDef)
+    parameters(comp_def::LeafComponentDef)
 
 Return a list of the parameter definitions for `comp_def`.
 """
-parameters(comp_def::ComponentDef) = values(comp_def.parameters)
+parameters(comp_def::LeafComponentDef) = values(comp_def.parameters)
+
+function parameters(ccd::CompositeComponentDef)
+    params = Vector{DatumDef}()
+    for cd in ccd.comps
+        append!(params, collect(parameters(cd)))
+    end
+end
+
 
 """
-    parameters(comp_id::ComponentDef)
+    parameters(comp_id::ComponentId)
 
 Return a list of the parameter definitions for `comp_id`.
 """
@@ -317,15 +328,24 @@ Return a list of all parameter names for a given component `comp_name` in a mode
 """
 parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
-parameter_names(comp_def::ComponentDef) = [name(param) for param in parameters(comp_def)]
+parameter_names(comp_def::AbstractComponentDef) = [name(param) for param in parameters(comp_def)]
 
 parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
 
-function parameter(comp_def::ComponentDef, name::Symbol) 
+function parameter(comp_def::LeafComponentDef, name::Symbol) 
     try
         return comp_def.parameters[name]
     catch
         error("Parameter $name was not found in component $(comp_def.name)")
+    end
+end
+
+# TBD: use ccd.external_params or ccd.exports?
+function parameter(ccd::CompositeComponentDef, name::Symbol) 
+    try
+        return ccd.parameters[name]
+    catch
+        error("Parameter $name was not found in component $(ccd.name)")
     end
 end
 
@@ -409,11 +429,18 @@ end
 #
 # Variables
 #
-variables(comp_def::ComponentDef) = values(comp_def.variables)
+variables(comp_def::LeafComponentDef) = values(comp_def.variables)
+
+function variables(ccd::CompositeComponentDef)
+    vars = Vector{DatumDef}()
+    for cd in ccd.comps
+        append!(vars, collect(variables(cd)))
+    end
+end
 
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
-function variable(comp_def::ComponentDef, var_name::Symbol)
+function variable(comp_def::LeafComponentDef, var_name::Symbol)
     try
         return comp_def.variables[var_name]
     catch
@@ -432,7 +459,7 @@ Return a list of all variable names for a given component `comp_name` in a model
 """
 variable_names(md::ModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
 
-variable_names(comp_def::ComponentDef) = [name(var) for var in variables(comp_def)]
+variable_names(comp_def::AbstractComponentDef) = [name(var) for var in variables(comp_def)]
 
 
 function variable_unit(md::ModelDef, comp_name::Symbol, var_name::Symbol)
@@ -445,14 +472,14 @@ function variable_dimensions(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     return var.dimensions
 end
 
-# Add a variable to a ComponentDef
-function addvariable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
+# Add a variable to a LeafComponentDef
+function addvariable(comp_def::LeafComponentDef, name, datatype, dimensions, description, unit)
     v = DatumDef(name, datatype, dimensions, description, unit, :variable)
     comp_def.variables[name] = v
     return v
 end
 
-# Add a variable to a ComponentDef referenced by ComponentId
+# Add a variable to a LeafComponentDef referenced by ComponentId
 function addvariable(comp_id::ComponentId, name, datatype, dimensions, description, unit)
     addvariable(compdef(comp_id), name, datatype, dimensions, description, unit)
 end
@@ -467,7 +494,7 @@ function getspan(md::ModelDef, comp_name::Symbol)
     return getspan(md, comp_def)
 end
 
-function getspan(md::ModelDef, comp_def::ComponentDef)
+function getspan(md::ModelDef, comp_def::AbstractComponentDef)
     first = first_period(md, comp_def)
     last  = last_period(md, comp_def)
     times = time_labels(md)
@@ -476,7 +503,7 @@ function getspan(md::ModelDef, comp_def::ComponentDef)
     return size(times[first_index:last_index])
 end
 
-function set_run_period!(comp_def::ComponentDef, first, last)
+function set_run_period!(comp_def::LeafComponentDef, first, last)
     comp_def.first = first
     comp_def.last = last
     return nothing
@@ -489,18 +516,18 @@ const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
 """
-    add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(md::ModelDef, comp_def::LeafComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the model indcated by `md`. The component is added at the 
 end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
+function add_comp!(md::ModelDef, comp_def::LeafComponentDef, comp_name::Symbol;
                    first::NothingInt=nothing, last::NothingInt=nothing, 
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
     # check that a time dimension has been set
-    if !haskey(dimensions(md), :time)
+    if ! haskey(dimensions(md), :time)
         error("Cannot add component to model without first setting time dimension.")
     end
     
@@ -535,7 +562,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     if before === nothing && after === nothing
         md.comp_defs[comp_name] = comp_def   # just add it to the end
     else
-        new_comps = OrderedDict{Symbol, ComponentDef}()
+        new_comps = OrderedDict{Symbol, AbstractComponentDef}()
 
         if before !== nothing
             if ! hascomp(md, before)
@@ -693,14 +720,14 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
 end
 
 """
-    copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
+    copy_comp_def(comp_def::AbstractComponentDef, comp_name::Symbol)
 
 Create a mostly-shallow copy of `comp_def` (named `comp_name`), but make a deep copy of its
 ComponentId so we can rename the copy without affecting the original.
 """
-function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
+function copy_comp_def(comp_def::LeafComponentDef, comp_name::Symbol)
     comp_id = comp_def.comp_id
-    obj     = ComponentDef(comp_id)
+    obj     = LeafComponentDef(comp_id)
 
     # Use the comp_id as is, since this identifies the run_timestep function, but
     # use an alternate name to reference it in the model's component list.
@@ -711,6 +738,34 @@ function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
     obj.dimensions = comp_def.dimensions
     obj.first      = comp_def.first
     obj.last       = comp_def.last
+
+    return obj
+end
+
+function copy_comp_def(ccd::CompositeComponentDef, comp_name::Symbol)
+    comp_id = ccd.comp_id
+    obj = CompositeComponentDef(comp_id)
+    obj.name = comp_name
+
+    append!(obj.comps, [copy_comp_def(cd) for cd in ccd.comps])
+
+    append!(obj.bindings, ccd.bindings) # TBD: need to copy these deeply?
+    append!(obj.exports, ccd.exports)   # TBD: ditto?
+
+    # TBD: what to do with these?
+    # internal_param_conns::Vector{InternalParameterConnection}
+    # external_param_conns::Vector{ExternalParameterConnection}
+
+    # Names of external params that the ConnectorComps will use as their :input2 parameters.
+    append!(obj.backups, ccd.backups)
+
+    external_params::Dict{Symbol, ModelParameter}
+
+    if ccd.sorted_comps === nothing
+        obj.sorted_comps = nothing
+    else
+        append!(obj.sorted_comps, ccd.sorted_comps)
+    end
 
     return obj
 end

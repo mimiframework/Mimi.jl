@@ -56,25 +56,13 @@ function _instantiate_datum(md::ModelDef, def::DatumDef)
     return value
 end
 
-# Deprecated?
-# function _vars_NT_type(md::ModelDef, comp_def::ComponentDef)
-#     var_defs = variables(comp_def)    
-#     vnames = Tuple([name(vdef) for vdef in var_defs])
-    
-#     first = comp_def.first
-#     vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
-
-#     NT = NamedTuple{vnames, vtypes}
-#     return NT
-# end
-
 """
-    _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
+    _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
 
 Instantiate a component `comp_def` in the model `md` and its variables (but not its parameters). 
 Return the resulting ComponentInstance.
 """
-function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
+function _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
     comp_name = name(comp_def)
     var_defs = variables(comp_def)    
 
