@@ -7,7 +7,7 @@ using Electron
 import Mimi: 
     dataframe_or_scalar, createspec_singlevalue, 
     createspec_lineplot, createspec_multilineplot, createspec_barplot,
-    getmultiline, getline, getbar, _spec_for_item, spec_list, explore, 
+    getmultiline, getline, getbar, _spec_for_item, menu_item_list, explore, 
     getdataframe, reset_compdefs
 
 reset_compdefs()
@@ -56,7 +56,7 @@ run(m)
 #TODO:  createspec_singlevalue, createspec_multilineplot, 
 #createspec_lineplot, createspec_barplot, _spec_for_item
 
-s = spec_list(m)
+s = menu_item_list(m)
 @test typeof(s) == Array{Any, 1}
 @test length(s) == 7
 
