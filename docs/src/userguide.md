@@ -38,9 +38,9 @@ using Mimi
   f = Parameter(index = [regions])
 
   function run_timestep(p, v, d, t)
-    vars.A[t] = params.c + params.d[t]
-    for r in dims.regions
-      vars.B[t, r] = params.f[r] * params.e[t, r]
+    v.A[t] = p.c + p.d[t]
+    for r in d.regions
+      v.B[t, r] = p.f[r] * p.e[t, r]
     end
   end
 
@@ -88,12 +88,11 @@ set_param!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimen
 
 ```
 
-To make an internal connection, the syntax is as follows.  Note that there is an optional keyword argument offset, that should be used in the case that a component parameter is connected to a variable from a prior timestep to prevent a cycle.  The offset value is an `Int` specifying the offset in terms of timesteps.
+To make an internal connection, the syntax is as follows.  
 
 ```julia
 connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
-# Note: offset=1 => dependence is on on prior timestep, i.e., not a cycle
-connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename, offset = 1)
+connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
 ```
 
 If you wish to delete a component that has already been added, do the following:
@@ -180,13 +179,15 @@ In the run_timestep functions which the user defines, it may be useful to use an
 is_first(t) # returns true or false, true if t is the first timestep to be run
 is_last(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
+is_time(t, s) # Return true or false, true if the current time (year) for t is y
+is_timestep(t, y) # rReturn true or false, true if t timestep is step s.
 ```
 
 The API details for AbstractTimestep object `t` are as follows:
 
 - you may index into a variable or parameter with `[t]` or `[t +/- x]` as usual
 - to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
-- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, as listed above
+- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, `is_time(t, s)`, and `is_timestep(t, y)` as listed above
 - to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called. 
 
 ### Parameter connections between different length components

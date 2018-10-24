@@ -61,23 +61,22 @@ abstract type AbstractDimension end
 const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}
 const DimensionRangeTypes = Union{UnitRange{Int}, StepRange{Int, Int}}
 
-struct Dimension <: AbstractDimension
-    dict::OrderedDict{DimensionKeyTypes, Int}
-    key_type::DataType
+struct Dimension{T <: DimensionKeyTypes} <: AbstractDimension
+    dict::OrderedDict{T, Int}
 
-    function Dimension(keys::Vector{T}) where T <: DimensionKeyTypes
-        dict = OrderedDict{T, Int}(collect(zip(keys, 1:length(keys))))
-        return new(dict, T)
+    function Dimension(keys::Vector{T}) where {T <: DimensionKeyTypes}
+        dict = OrderedDict(collect(zip(keys, 1:length(keys))))
+        return new{T}(dict)
     end
 
-    function Dimension(rng::DimensionRangeTypes)
+    function Dimension(rng::T) where {T <: DimensionRangeTypes}
         return Dimension(collect(rng))
     end
 
     Dimension(i::Int) = Dimension(1:i)
 
     # Support Dimension(:foo, :bar, :baz)
-    function Dimension(keys::T...) where T <: DimensionKeyTypes
+    function Dimension(keys::T...) where {T <: DimensionKeyTypes}
         vector = [key for key in keys]
         return Dimension(vector)
     end

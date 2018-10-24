@@ -92,9 +92,9 @@ end
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `offset` argument indicates the offset between the destination 
+and the source ie. the value would be `1` if the destination component parameter 
+should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
@@ -103,6 +103,9 @@ function connect_param!(md::ModelDef,
 
     # remove any existing connections for this dst parameter
     disconnect_param!(md, dst_comp_name, dst_par_name)
+
+    dst_comp_def = compdef(md, dst_comp_name)
+    src_comp_def = compdef(md, src_comp_name)
 
     if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
@@ -113,13 +116,10 @@ function connect_param!(md::ModelDef,
             dims = nothing
         end
 
-        # Check that the backup value is the right size
-        if getspan(md, dst_comp_name) != size(backup)
-            error("Backup data must span the whole length of the component.")
+        # Check that the backup data is the right size
+        if size(backup) != datum_size(md, dst_comp_def, dst_par_name)
+            error("Cannot connect parameter; the provided backup data is the wrong size. Expected size $(datum_size(md, dst_comp_def, dst_par_name)) but got $(size(backup)).")
         end
-
-        dst_comp_def = compdef(md, dst_comp_name)
-        src_comp_def = compdef(md, src_comp_name)
 
         # some other check for second dimension??
         dst_param = parameter(dst_comp_def, dst_par_name)
@@ -149,6 +149,18 @@ function connect_param!(md::ModelDef,
         end
 
         set_external_array_param!(md, dst_par_name, values, dst_dims)
+        backup_param_name = dst_par_name
+
+    else 
+        # If backup not provided, make sure the source component covers the span of the destination component
+        src_first, src_last = first_period(md, src_comp_def), last_period(md, src_comp_def)
+        dst_first, dst_last = first_period(md, dst_comp_def), last_period(md, dst_comp_def)
+        if dst_first < src_first || dst_last > src_last
+            error("Cannot connect parameter; $src_comp_name only runs from $src_first to $src_last, whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years. Try calling: 
+    `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`")
+        end 
+
+        backup_param_name = nothing 
     end
 
     # Check the units, if provided
@@ -158,7 +170,7 @@ function connect_param!(md::ModelDef,
     end
 
     # println("connect($src_comp_name.$src_var_name => $dst_comp_name.$dst_par_name)")
-    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
+    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, backup_param_name, offset=offset)
     add_internal_param_conn(md, conn)
 
     return nothing
@@ -464,7 +476,7 @@ function add_connector_comps(md::ModelDef)
         for (i, conn) in enumerate(need_conn_comps)
             push!(md.backups, conn.backup)
 
-            num_dims = length(size(external_param(md, conn.backup)))
+            num_dims = length(size(external_param(md, conn.backup).values))
 
             if ! (num_dims in (1, 2))
                 error("Connector components for parameters with > 2 dimensions are not implemented.")
@@ -488,11 +500,19 @@ function add_connector_comps(md::ModelDef)
             push!(conns, InternalParameterConnection(conn_comp_name, :output, 
                                                      conn.dst_comp_name, conn.dst_par_name, 
                                                      conn.ignoreunits))
+
+            # add a connection between ConnectorComp and the external backup data
+            push!(md.external_param_conns, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
+
+            src_comp_def = compdef(md, conn.src_comp_name)
+            set_param!(md, conn_comp_name, :first, first_period(md, src_comp_def))
+            set_param!(md, conn_comp_name, :last, last_period(md, src_comp_def))
+
         end
     end
 
     # Save the sorted component order for processing
-    md.sorted_comps = _topological_sort(md)
+    # md.sorted_comps = _topological_sort(md)
 
     return nothing
 end
@@ -539,9 +559,10 @@ function comp_graph(md::ModelDef)
         end
     end
 
-    if is_cyclic(graph)
-        error("Component graph contains a cycle")
-    end
+    #TODO:  for now we can allow cycles since we aren't using the offset
+    # if is_cyclic(graph)
+    #     error("Component graph contains a cycle")
+    # end
 
     return graph
 end

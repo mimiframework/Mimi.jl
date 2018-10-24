@@ -25,16 +25,17 @@ export
     hasvalue,
     is_first,
     is_last,
+    is_time,
+    is_timestep,
     load_comps,
     modeldef,
     name,
     new_comp,
     parameters, 
-    # plot_comp_graph,
+    plot_comp_graph,
     replace_comp!, 
     set_dimension!, 
     set_leftover_params!, 
-    setproperty!, 
     set_param!, 
     update_param!,
     update_params!,
@@ -55,7 +56,7 @@ include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/graph.jl")
-#include("utils/plotting.jl")
+include("utils/plotting.jl")
 include("utils/getdataframe.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")

@@ -21,12 +21,30 @@ function gettime(ts::VariableTimestep)
 end
 
 """
+	is_time(ts::AbstractTimestep, t::Int)
+
+Return true or false, true if the current time (year) for `ts` is `t`
+"""
+function is_time(ts::AbstractTimestep, t::Int) 
+	return gettime(ts) == t
+end
+
+"""
 	is_first(ts::AbstractTimestep)
 
 Return true or false, true if `ts` is the first timestep to be run.
 """
 function is_first(ts::AbstractTimestep)
 	return ts.t == 1
+end
+
+"""
+	is_timestep(ts::AbstractTimestep, t::Int)
+
+Return true or false, true if `ts` timestep is step `t`.
+"""
+function is_timestep(ts::AbstractTimestep, t::Int)
+	return ts.t == t
 end
 
 """
@@ -74,7 +92,7 @@ function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, S
 	if is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
 	elseif ts.t - val <= 0
-		error("Cannot get requested timestep, preceeds first timestep.")		
+		error("Cannot get requested timestep, precedes first timestep.")		
 	end
 	return FixedTimestep{FIRST, STEP, LAST}(ts.t - val)
 end
@@ -83,7 +101,7 @@ function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 	if is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
 	elseif ts.t - val <= 0
-		error("Cannot get requested timestep, preceeds first timestep.")		
+		error("Cannot get requested timestep, precedes first timestep.")		
 	end
 	return VariableTimestep{TIMES}(ts.t - val)
 end
@@ -167,21 +185,41 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 #
 
 function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, FIRST, STEP, LAST} 
-	return v.data[ts.t]
+	data = v.data[ts.t]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, ts::VariableTimestep{TIMES}) where {T, TIMES}
-	return v.data[ts.t]
+	data = v.data[ts.t]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 function Base.getindex(v::TimestepVector{FixedTimestep{D_FIRST, STEP}, T}, ts::FixedTimestep{T_FIRST, STEP, LAST}) where {T, D_FIRST, T_FIRST, STEP, LAST} 
 	t = Int(ts.t + (T_FIRST - D_FIRST) / STEP)
-	return v.data[t]
+	data = v.data[t]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 function Base.getindex(v::TimestepVector{VariableTimestep{D_FIRST}, T}, ts::VariableTimestep{T_FIRST}) where {T, D_FIRST, T_FIRST}
 	t = ts.t + findfirst(isequal(T_FIRST[1]), D_FIRST) - 1
-	return v.data[t]
+	data = v.data[t]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 # int indexing version supports old-style components and internal functions, not
@@ -235,21 +273,41 @@ Base.lastindex(v::TimestepVector) = length(v)
 #
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, ts::FixedTimestep{FIRST, STEP, LAST}, i::AnyIndex) where {T, FIRST, STEP, LAST} 
-	return mat.data[ts.t, i]
+	data = mat.data[ts.t, i]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, ts::VariableTimestep{TIMES}, i::AnyIndex) where {T, TIMES}
-	return mat.data[ts.t, i]
+	data = mat.data[ts.t, i]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{D_FIRST, STEP}, T}, ts::FixedTimestep{T_FIRST, STEP, LAST}, i::AnyIndex) where {T, D_FIRST, T_FIRST, STEP, LAST} 
 	t = Int(ts.t + (T_FIRST - D_FIRST) / STEP)
-	return return mat.data[t, i]
+	data = mat.data[t, i]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_FIRST}, T}, ts::VariableTimestep{T_FIRST}, i::AnyIndex) where {T, D_FIRST, T_FIRST}
 	t = ts.t + findfirst(isequal(T_FIRST[1]), D_FIRST) - 1
-	return return mat.data[t, i]
+	data = mat.data[t, i]
+	if data === missing
+		error("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed.")
+	else
+		return data
+	end
 end
 
 # int indexing version supports old-style components and internal functions, not

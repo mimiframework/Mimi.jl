@@ -16,12 +16,12 @@
 #
 using DataStructures
 
-key_type(dim::Dimension) = dim.key_type
+key_type(dim::Dimension{T}) where {T <: DimensionKeyTypes} = T
 
 #
 # Iteration and basic dictionary methods are delegated to the internal dict
 #
-Base.length(dim::Dimension)      = length(dim.dict)
+Base.length(dim::Dimension) = length(dim.dict)
 Base.iterate(dim::Dimension, state...) = iterate(dim.dict, state...)
 
 Base.keys(dim::Dimension)   = keys(dim.dict)
