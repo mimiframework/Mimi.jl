@@ -203,9 +203,8 @@ function datumdef(comp_def::LeafComponentDef, item::Symbol)
     end
 end
 
-# TBD: what to do here? Do we expose non-exported data?
-function datumdef(comp_def::CompositeComponentDef, item::Symbol)
-end
+# TBD: what to do here? Do we expose non-exported data? Have an internal LeafComponentDef that stores this stuff?
+@delegate datumdef(comp_def::CompositeComponentDef, item::Symbol) => leaf
 
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 

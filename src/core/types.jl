@@ -301,7 +301,6 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
         external_params = Dict{Symbol, ModelParameter}()
         backups = Vector{Symbol}()
         sorted_comps = nothing
-        is_uniform = true
 
         return new(comp_id, name, comps, bindings, exports, 
                    internal_param_conns, external_param_conns,
@@ -373,7 +372,8 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
             end        
         end
 
-        # TBD: is `is_composite` necessary?
+        # `is_composite` indicates a LeafComponentInstance used to store summary
+        # data for CompositeComponentInstance and is not itself runnable.
         self.run_timestep = is_composite ? nothing : get_func("run_timestep")
         self.init         = is_composite ? nothing : get_func("init")
 
@@ -387,7 +387,7 @@ mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <
     # sub-components. Might be simplest to implement using a LeafComponentInstance that holds all the
     # "summary" values and references, the init and run_timestep funcs, and a vector of sub-components.
     leaf::LeafComponentInstance{TV, TP}
-    comps::Vector{AbstractComponentInstance}
+    comp_dict::OrderedDict{Symbol, AbstractComponentInstance}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
     clocks::Union{Nothing, Vector{Clock}}
@@ -397,11 +397,11 @@ mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <
         name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
 
         leaf = LeafComponentInstance{TV, TP}(comp_def, vars, pars, name, true)
-        comps  = Vector{AbstractComponentInstance}()
+        comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
         firsts = Vector{Int}()
         lasts  = Vector{Int}()
         clocks = nothing
-        return new{TV, TP}(leaf, comps, firsts, lasts, clocks)
+        return new{TV, TP}(leaf, comp_dict, firsts, lasts, clocks)
     end
 end
 
@@ -461,24 +461,13 @@ Base.names(obj::T)  where {T <: ComponentInstanceData} = keys(nt(obj))
 Base.values(obj::T) where {T <: ComponentInstanceData} = values(nt(obj))
 types(obj::T) where {T <: ComponentInstanceData} = typeof(nt(obj)).parameters[2].parameters
 
-# This type holds the values of a built model and can actually be run.
+# ModelInstance holds the built model that is ready to be run
 mutable struct ModelInstance
     md::ModelDef
     cci::Union{Nothing, CompositeComponentInstance}
 
-    # Ordered list of components (including hidden ConnectorComps)
-    components::OrderedDict{Symbol, ComponentInstance}
-  
-    firsts::Vector{Int}        # in order corresponding with components
-    lasts::Vector{Int}
-
     function ModelInstance(md::ModelDef)
-        self = new()
-        self.md = md
-        self.components = OrderedDict{Symbol, ComponentInstance}()    
-        self.firsts = Vector{Int}()
-        self.lasts = Vector{Int}()
-        return self
+        return new(md, nothing)
     end
 end
 
@@ -495,10 +484,7 @@ a `number_type` of `Float64`.
 """
 mutable struct Model
     md::ModelDef
-
-    # TBD: need only one of these...
-    mi::Union{Nothing, ModelInstance}    
-    cci::Union{Nothing, CompositeComponentInstance}
+    mi::Union{Nothing, ModelInstance}
     
     function Model(number_type::DataType=Float64)
         return new(ModelDef(number_type), nothing)

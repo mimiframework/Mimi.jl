@@ -131,13 +131,24 @@ end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
-dimensions(comp_def::LeafComponentDef) = values(comp_def.dimensions)
+dimensions(cd::LeafComponentDef) = values(cd.dimensions)
+
+function dimensions(ccd::CompositeComponentDef)
+    dims = Vector{DimensionDef}()
+    for cd in components(ccd)
+        append!(dims, dimensions(cd))
+    end
+
+    # use Set to eliminate duplicates
+    return collect(Set(dims))
+end
 
 dimensions(def::DatumDef) = def.dimensions
 
+# TBD: make this work for AbstractComponentDef?
 dimensions(comp_def::LeafComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
 
-dim_count(def::DatumDef) = length(def.dimensions)
+dim_count(def::DatumDef) = length(dimensions(def))
 
 datatype(def::DatumDef) = def.datatype
 
@@ -340,10 +351,9 @@ function parameter(comp_def::LeafComponentDef, name::Symbol)
     end
 end
 
-# TBD: use ccd.external_params or ccd.exports?
 function parameter(ccd::CompositeComponentDef, name::Symbol) 
     try
-        return ccd.parameters[name]
+        return ccd.external_params[name]
     catch
         error("Parameter $name was not found in component $(ccd.name)")
     end
@@ -716,7 +726,6 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
 
     # Re-add
     add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
-
 end
 
 """
@@ -749,7 +758,7 @@ function copy_comp_def(ccd::CompositeComponentDef, comp_name::Symbol)
 
     append!(obj.comps, [copy_comp_def(cd) for cd in ccd.comps])
 
-    append!(obj.bindings, ccd.bindings) # TBD: need to copy these deeply?
+    append!(obj.bindings, ccd.bindings) # TBD: need to deepcopy these?
     append!(obj.exports, ccd.exports)   # TBD: ditto?
 
     # TBD: what to do with these?
