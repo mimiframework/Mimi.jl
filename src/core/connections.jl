@@ -92,9 +92,9 @@ end
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `offset` argument indicates the offset between the destination 
+and the source ie. the value would be `1` if the destination component parameter 
+should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
@@ -512,7 +512,7 @@ function add_connector_comps(md::ModelDef)
     end
 
     # Save the sorted component order for processing
-    md.sorted_comps = _topological_sort(md)
+    # md.sorted_comps = _topological_sort(md)
 
     return nothing
 end
@@ -559,9 +559,10 @@ function comp_graph(md::ModelDef)
         end
     end
 
-    if is_cyclic(graph)
-        error("Component graph contains a cycle")
-    end
+    #TODO:  for now we can allow cycles since we aren't using the offset
+    # if is_cyclic(graph)
+    #     error("Component graph contains a cycle")
+    # end
 
     return graph
 end
