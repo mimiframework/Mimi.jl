@@ -1,3 +1,6 @@
+# Mimi.jl v0.5.1 Release Notes
+* Disable topological ordering, remove offset keyword
+
 # Mimi.jl v0.5.0 Release Notes
 * Major redesign with lots of breaking changes
 
