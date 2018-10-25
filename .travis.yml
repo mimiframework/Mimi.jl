@@ -22,5 +22,5 @@ script:
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
   - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
-  - julia -e 'using Pkg; Pkg.add("Documenter")'
+  - julia -e 'using Pkg; ps=PackageSpec(name="Documenter", version="0.19"); Pkg.add(ps); Pkg.pin(ps)'
   - julia -e 'using Pkg; ENV["DOCUMENTER_DEBUG"]=true; cd(Pkg.dir("Mimi")); include(joinpath("docs","make.jl"))'
