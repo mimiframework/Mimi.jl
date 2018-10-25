@@ -4,7 +4,7 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, compdef, ComponentId, DatumRef, CompositeComponentDef, NewModel
+    reset_compdefs, compdef, ComponentId, DatumReference, CompositeComponentDef, AbstractComponentDef, BindingTypes, ModelDef
 
 reset_compdefs()
 
@@ -39,21 +39,30 @@ end
 
 # Test the calls the macro will produce
 let calling_module = @__MODULE__
-    global MyComposite
+    global MyComposite = Model()
 
     ccname = :testcomp
     ccid  = ComponentId(calling_module, ccname)
     comps = [compdef(Comp1), compdef(Comp2), compdef(Comp3)]
     
-    bindings = [DatumRef(Comp2, :par1) => 5,                        # bind Comp1.par1 to constant value of 5
-                DatumRef(Comp2, :par1) => DatumRef(Comp1, :var1),   # connect target Comp2.par1 to source Comp1.var1
-                DatumRef(Comp3, :par1) => DatumRef(Comp2, :var1)]
+    bindings = [
+        DatumReference(Comp2, :par1) => 5,                              # bind Comp1.par1 to constant value of 5
+        DatumReference(Comp2, :par1) => DatumReference(Comp1, :var1),   # connect target Comp2.par1 to source Comp1.var1
+        DatumReference(Comp3, :par1) => DatumReference(Comp2, :var1)
+    ]
 
-    exports  = [DatumRef(Comp1, :par1) => :c1p1,        # i.e., export Comp1.par1 as :c1p1
-                DatumRef(Comp2, :par2) => :c2p2,
-                DatumRef(Comp3, :var1) => :c3v1]
+    exports = [
+        DatumReference(Comp1, :par1) => :c1p1,        # i.e., export Comp1.par1 as :c1p1
+        DatumReference(Comp2, :par2) => :c2p2,
+        DatumReference(Comp3, :var1) => :c3v1
+    ]
 
-    MyComposite = NewModel(CompositeComponentDef(ccid, ccname, comps, bindings, exports))
+    ccd = CompositeComponentDef(ccid, ccname, 
+                                Vector{AbstractComponentDef}(comps), 
+                                Vector{Pair{DatumReference, BindingTypes}}(bindings),
+                                exports)
+
+    MyComposite.md = ModelDef(ccd)
     nothing
 end
 

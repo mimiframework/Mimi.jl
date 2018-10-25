@@ -10,11 +10,9 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 modeldef(mi::ModelInstance) = mi.md
 
 compinstance(cci::CompositeComponentInstance, name::Symbol) = cci.comp_dict[name]
-
 @delegate compinstance(mi::ModelInstance, name::Symbol) => cci
 
 compdef(lci::LeafComponentInstance) = compdef(lci.comp_id)
-
 @delegate compdef(cci::CompositeComponentInstance) => leaf
 
 """
@@ -23,30 +21,27 @@ compdef(lci::LeafComponentInstance) = compdef(lci.comp_id)
 Return the name of the component `ci`.
 """
 name(lci::LeafComponentInstance) = lci.comp_name
+@delegate name(ci::CompositeComponentInstance) => leaf
 
 compid(ci::LeafComponentInstance) = ci.comp_id
-dims(ci::LeafComponentInstance) = ci.dim_dict
-variables(ci::LeafComponentInstance) = ci.variables
-parameters(ci::LeafComponentInstance) = ci.parameters
-first_period(ci::LeafComponentInstance) = ci.first
-last_period(ci::LeafComponentInstance)  = ci.last
-
-# CompositeComponentInstance delegates these to its internal LeafComponentInstance
-@delegate name(ci::CompositeComponentInstance) => leaf
 @delegate compid(ci::CompositeComponentInstance) => leaf
+
+dims(ci::LeafComponentInstance) = ci.dim_dict
 @delegate dims(ci::CompositeComponentInstance) => leaf
-@delegate variables(ci::CompositeComponentInstance) => leaf
-@delegate parameters(ci::CompositeComponentInstance) => leaf
-@delegate first_period(cci:CompositeComponentInstance) => leaf
-@delegate last_period(cci:CompositeComponentInstance)  => leaf
+
+first_period(ci::LeafComponentInstance) = ci.first
+@delegate first_period(ci::CompositeComponentInstance) => leaf
+
+last_period(ci::LeafComponentInstance)  = ci.last
+@delegate last_period(ci::CompositeComponentInstance)  => leaf
 
 """
     components(mi::ModelInstance)
 
 Return an iterator over components in model instance `mi`.
 """
-@delegate components(mi::ModelInstance) => cci@delegate variables(m::Model) => cci
-@delegate parameters(m::Model) => cci
+@delegate components(mi::ModelInstance) => cci
+
 @delegate firsts(m::Model) => cci
 @delegate lasts(m::Model) => cci
 @delegate clocks(m::Model) => cci
@@ -183,6 +178,9 @@ variables(mi::ModelInstance, comp_name::Symbol) = variables(compinstance(mi, com
 
 variables(ci::LeafComponentInstance) = ci.variables
 
+@delegate variables(m::Model) => cci
+@delegate variables(ci::CompositeComponentInstance) => leaf
+
 """
     parameters(mi::ModelInstance, comp_name::Symbol)
 
@@ -196,6 +194,9 @@ parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, c
 Return an iterator over the parameters in `ci`.
 """
 parameters(ci::LeafComponentInstance) = ci.parameters
+
+@delegate parameters(m::Model) => cci
+@delegate parameters(ci::CompositeComponentInstance) => leaf
 
 
 function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)

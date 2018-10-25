@@ -33,10 +33,6 @@ function show(io::IO, m::Model)
     end
 end
 
-function get_connections(m::Model, ci::ComponentInstance, which::Symbol)
-    return get_connections(m, name(ci.comp), which)
-end
-
 function _filter_connections(conns::Vector{InternalParameterConnection}, comp_name::Symbol, which::Symbol)
     if which == :all
         f = obj -> (obj.src_comp_name == comp_name || obj.dst_comp_name == comp_name)
@@ -49,6 +45,18 @@ function _filter_connections(conns::Vector{InternalParameterConnection}, comp_na
     end
 
     return collect(Iterators.filter(f, conns))
+end
+
+function get_connections(m::Model, ci::LeafComponentInstance, which::Symbol)
+    return get_connections(m, name(ci.comp), which)
+end
+
+function get_connections(m::Model, cci::CompositeComponentInstance, which::Symbol)
+    conns = []
+    for ci in components(cci)
+        append!(conns, get_connections(m, ci, which))
+    end
+    return conns
 end
 
 function get_connections(m::Model, comp_name::Symbol, which::Symbol)

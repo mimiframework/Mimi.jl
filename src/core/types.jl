@@ -276,9 +276,9 @@ end
 global const BindingTypes = Union{Int, Float64, DatumReference}
 
 mutable struct CompositeComponentDef <: AbstractComponentDef
-    comp_id::ComponentId
-    name::Symbol
-    comps::Vector{AbstractComponentDef}
+    comp_id::Union{Nothing, ComponentId}        # allow anonynous top-level CompositeComponentDefs (must be referenced by a ModelDef)
+    name::Union{Nothing, Symbol}
+    comps::Vector{<:AbstractComponentDef}
     bindings::Vector{Pair{DatumReference, BindingTypes}}
     exports::Vector{Pair{DatumReference, Symbol}}
 
@@ -293,7 +293,7 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
     function CompositeComponentDef(comp_id::ComponentId, name::Symbol, 
-                                   comps::Vector{AbstractComponentDef},
+                                   comps::Vector{<:AbstractComponentDef},
                                    bindings::Vector{Pair{DatumReference, BindingTypes}},
                                    exports::Vector{Pair{DatumReference, Symbol}})
         internal_param_conns = Vector{InternalParameterConnection}() 
@@ -307,12 +307,18 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
                    backups, external_params, sorted_comps)
     end   
 
-    function CompositeComponentDef(comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name)
+    function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}, 
+                                   comp_name::Union{Nothing, Symbol}=comp_id.comp_name)
         comps    = Vector{AbstractComponentDef}()
         bindings = Vector{Pair{DatumReference, BindingTypes}}()
         exports  = Vector{Pair{DatumReference, Symbol}}()
         return new(comp_id, comp_name, comps, bindings, exports)
-    end    
+    end
+
+    function CompositeComponentDef()
+        # Create an anonymous CompositeComponentDef that must be referenced by a ModelDef
+        return CompositeComponentDef(nothing, nothing)
+    end
 end
 
 mutable struct ModelDef
@@ -326,84 +332,16 @@ mutable struct ModelDef
         is_uniform = true
         return new(ccd, dimensions, number_type, is_uniform)
     end
+
+    function ModelDef(number_type::DataType=Float64)
+        ccd = CompositeComponentDef()   # anonymous top-level CompositeComponentDef
+        return ModelDef(ccd, number_type)
+    end
 end
 
 #
 # 5. Types supporting instantiated models and their components
 #
-
-abstract type AbstractComponentInstance end
-
-mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
-    comp_name::Symbol
-    comp_id::ComponentId
-    variables::TV
-    parameters::TP
-    dim_dict::Dict{Symbol, Vector{Int}}
-    first::Int
-    last::Int
-    init::Union{Nothing, Function}
-    run_timestep::Union{Nothing, Function}
-
-    function LeafComponentInstance{TV, TP}(comp_def::LeafComponentDef, vars::TV, pars::TP, 
-                                           name::Symbol=name(comp_def);
-                                           is_composite::Bool=false) where {TV <: ComponentInstanceVariables,
-                                                                            TP <: ComponentInstanceParameters}
-        self = new{TV, TP}()
-        self.comp_id = comp_id = comp_def.comp_id
-        self.comp_name = name
-        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
-        self.variables = vars
-        self.parameters = pars
-        self.first = comp_def.first
-        self.last = comp_def.last
-
-        comp_module = Base.eval(Main, comp_id.module_name)
-
-        # The try/catch allows components with no run_timestep function (as in some of our test cases)
-        # All CompositeComponentInstances use a standard method that just loops over inner components.
-        # TBD: use FunctionWrapper here?
-        function get_func(name)
-            func_name = Symbol("$(name)_$(comp_name)")
-            try
-                Base.eval(comp_module, func_name)
-            catch err
-                nothing
-            end        
-        end
-
-        # `is_composite` indicates a LeafComponentInstance used to store summary
-        # data for CompositeComponentInstance and is not itself runnable.
-        self.run_timestep = is_composite ? nothing : get_func("run_timestep")
-        self.init         = is_composite ? nothing : get_func("init")
-
-        return self
-    end
-end
-
-mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
-
-    # TV, TP, and dim_dict are computed by aggregating all the vars and params from the CompositeComponent's
-    # sub-components. Might be simplest to implement using a LeafComponentInstance that holds all the
-    # "summary" values and references, the init and run_timestep funcs, and a vector of sub-components.
-    leaf::LeafComponentInstance{TV, TP}
-    comp_dict::OrderedDict{Symbol, AbstractComponentInstance}
-    firsts::Vector{Int}        # in order corresponding with components
-    lasts::Vector{Int}
-    clocks::Union{Nothing, Vector{Clock}}
-
-    function CompositeComponentInstance{TV, TP}(
-        comp_def::CompositeComponentDef, vars::TV, pars::TP,
-        name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-
-        leaf = LeafComponentInstance{TV, TP}(comp_def, vars, pars, name, true)
-        comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
-        firsts = Vector{Int}()
-        lasts  = Vector{Int}()
-        clocks = nothing
-        return new{TV, TP}(leaf, comp_dict, firsts, lasts, clocks)
-    end
-end
 
 # Supertype for variables and parameters in component instances
 abstract type ComponentInstanceData end
@@ -460,6 +398,79 @@ nt(obj::T)  where {T <: ComponentInstanceData} = getfield(obj, :nt)
 Base.names(obj::T)  where {T <: ComponentInstanceData} = keys(nt(obj))
 Base.values(obj::T) where {T <: ComponentInstanceData} = values(nt(obj))
 types(obj::T) where {T <: ComponentInstanceData} = typeof(nt(obj)).parameters[2].parameters
+
+abstract type AbstractComponentInstance end
+
+mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
+    comp_name::Symbol
+    comp_id::ComponentId
+    variables::TV
+    parameters::TP
+    dim_dict::Dict{Symbol, Vector{Int}}
+    first::Int
+    last::Int
+    init::Union{Nothing, Function}
+    run_timestep::Union{Nothing, Function}
+
+    function LeafComponentInstance{TV, TP}(comp_def::LeafComponentDef, vars::TV, pars::TP, 
+                                           name::Symbol=name(comp_def);
+                                           is_composite::Bool=false) where {TV <: ComponentInstanceVariables,
+                                                                            TP <: ComponentInstanceParameters}
+        self = new{TV, TP}()
+        self.comp_id = comp_id = comp_def.comp_id
+        self.comp_name = name
+        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
+        self.variables = vars
+        self.parameters = pars
+        self.first = comp_def.first
+        self.last = comp_def.last
+
+        comp_module = Base.eval(Main, comp_id.module_name)
+
+        # The try/catch allows components with no run_timestep function (as in some of our test cases)
+        # All CompositeComponentInstances use a standard method that just loops over inner components.
+        # TBD: use FunctionWrapper here?
+        function get_func(name)
+            func_name = Symbol("$(name)_$(comp_name)")
+            try
+                Base.eval(comp_module, func_name)
+            catch err
+                nothing
+            end        
+        end
+
+        # `is_composite` indicates a LeafComponentInstance used to store summary
+        # data for CompositeComponentInstance and is not itself runnable.
+        self.run_timestep = is_composite ? nothing : get_func("run_timestep")
+        self.init         = is_composite ? nothing : get_func("init")
+
+        return self
+    end
+end
+
+mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
+
+    # TV, TP, and dim_dict are computed by aggregating all the vars and params from the CompositeComponent's
+    # sub-components. Might be simplest to implement using a LeafComponentInstance that holds all the
+    # "summary" values and references, the init and run_timestep funcs, and a vector of sub-components.
+    leaf::LeafComponentInstance{TV, TP}
+    comp_dict::OrderedDict{Symbol, <: AbstractComponentInstance}
+    firsts::Vector{Int}        # in order corresponding with components
+    lasts::Vector{Int}
+    clocks::Union{Nothing, Vector{Clock}}
+
+    function CompositeComponentInstance{TV, TP}(
+        comp_def::CompositeComponentDef, vars::TV, pars::TP,
+        name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+
+        leaf = LeafComponentInstance{TV, TP}(comp_def, vars, pars, name, true)
+        comps_dict = OrderedDict{Symbol, <: AbstractComponentInstance}()
+        firsts = Vector{Int}()
+        lasts  = Vector{Int}()
+        clocks = nothing
+        return new{TV, TP}(leaf, comp_dict, firsts, lasts, clocks)
+    end
+end
 
 # ModelInstance holds the built model that is ready to be run
 mutable struct ModelInstance
