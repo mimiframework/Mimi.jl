@@ -182,7 +182,7 @@ end
 struct ExternalParameterConnection  <: AbstractConnection
     comp_name::Symbol
     param_name::Symbol      # name of the parameter in the component
-    external_param::Symbol  # name of the parameter stored in md.external_params
+    external_param::Symbol  # name of the parameter stored in md.ccd.external_params
 end
 
 #
@@ -231,7 +231,7 @@ mutable struct DatumDef <: NamedDef
 
 end
 
-mutable struct DimensionDef <: NamedDef
+struct DimensionDef <: NamedDef
     name::Symbol
 end
 
@@ -278,7 +278,7 @@ global const BindingTypes = Union{Int, Float64, DatumReference}
 mutable struct CompositeComponentDef <: AbstractComponentDef
     comp_id::Union{Nothing, ComponentId}        # allow anonynous top-level CompositeComponentDefs (must be referenced by a ModelDef)
     name::Union{Nothing, Symbol}
-    comps::Vector{<:AbstractComponentDef}
+    comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Pair{DatumReference, BindingTypes}}
     exports::Vector{Pair{DatumReference, Symbol}}
 
@@ -292,7 +292,8 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
 
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
-    function CompositeComponentDef(comp_id::ComponentId, name::Symbol, 
+    function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}, 
+                                   comp_name::Union{Nothing, Symbol}, 
                                    comps::Vector{<:AbstractComponentDef},
                                    bindings::Vector{Pair{DatumReference, BindingTypes}},
                                    exports::Vector{Pair{DatumReference, Symbol}})
@@ -302,7 +303,9 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
         backups = Vector{Symbol}()
         sorted_comps = nothing
 
-        return new(comp_id, name, comps, bindings, exports, 
+        comps_dict = OrderedDict{Symbol, AbstractComponentDef}([name(cd) => cd for cd in comps])
+
+        return new(comp_id, comp_name, comps_dict, bindings, exports, 
                    internal_param_conns, external_param_conns,
                    backups, external_params, sorted_comps)
     end   
@@ -312,7 +315,7 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
         comps    = Vector{AbstractComponentDef}()
         bindings = Vector{Pair{DatumReference, BindingTypes}}()
         exports  = Vector{Pair{DatumReference, Symbol}}()
-        return new(comp_id, comp_name, comps, bindings, exports)
+        return CompositeComponentDef(comp_id, comp_name, comps, bindings, exports)
     end
 
     function CompositeComponentDef()
@@ -448,16 +451,16 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
     end
 end
 
-mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
+mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, 
+                                          TP <: ComponentInstanceParameters} <: AbstractComponentInstance
 
     # TV, TP, and dim_dict are computed by aggregating all the vars and params from the CompositeComponent's
-    # sub-components. Might be simplest to implement using a LeafComponentInstance that holds all the
-    # "summary" values and references, the init and run_timestep funcs, and a vector of sub-components.
+    # sub-components. We use a LeafComponentInstance to holds all the "summary" values and references.
     leaf::LeafComponentInstance{TV, TP}
     comp_dict::OrderedDict{Symbol, <: AbstractComponentInstance}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
-    clocks::Union{Nothing, Vector{Clock}}
+    clocks::Vector{Clock}
 
     function CompositeComponentInstance{TV, TP}(
         comp_def::CompositeComponentDef, vars::TV, pars::TP,
@@ -467,7 +470,7 @@ mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, TP <
         comps_dict = OrderedDict{Symbol, <: AbstractComponentInstance}()
         firsts = Vector{Int}()
         lasts  = Vector{Int}()
-        clocks = nothing
+        clocks = Vector{Clock}()
         return new{TV, TP}(leaf, comp_dict, firsts, lasts, clocks)
     end
 end
@@ -503,7 +506,7 @@ mutable struct Model
 
     # Create a copy of a model, e.g., to create marginal models
     function Model(m::Model)
-        return new(copy(m.md), nothing)
+        return new(deepcopy(m.md), nothing)
     end
 end
 

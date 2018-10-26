@@ -60,7 +60,7 @@ end
     _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
 
 Instantiate a component `comp_def` in the model `md` and its variables (but not its parameters). 
-Return the resulting ComponentInstance.
+Return the resulting ComponentInstanceVariables.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
     comp_name = name(comp_def)
@@ -87,12 +87,11 @@ end
 
 function build(m::Model)
     # Reference a copy in the ModelInstance to avoid changes underfoot
-    m.mi = build(copy(m.md))
+    m.mi = build(deepcopy(m.md))
     return nothing
 end
 
 function build(md::ModelDef)
-
     add_connector_comps(md)
     
     # check if all parameters are set
@@ -133,7 +132,7 @@ function build(md::ModelDef)
 
     # Make the external parameter connections for the hidden ConnectorComps.
     # Connect each :input2 to its associated backup value.
-    for (i, backup) in enumerate(md.backups)
+    for (i, backup) in enumerate(backups(md))
         comp_name = connector_comp_name(i)
         param = external_param(md, backup)
 
@@ -158,7 +157,7 @@ function build(md::ModelDef)
         first = first_period(md, comp_def)
         last = last_period(md, comp_def)
 
-        ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
+        ci = LeafComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
         add_comp!(mi, ci)
     end
 

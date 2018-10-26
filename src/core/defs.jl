@@ -18,13 +18,17 @@ function compdef(comp_name::Symbol)
     end
 end
 
-compdefs(md::ModelDef) = values(md.comp_defs)
+# TBD: Might need an option like `deep=True` to recursively descend through composites
+compdefs(ccd::CompositeComponentDef) = values(ccd.comps_dict)
+compkeys(ccd::CompositeComponentDef) = keys(ccd.comps_dict)
+hascomp(ccd::CompositeComponentDef, comp_name::Symbol) = haskey(ccd.comps_dict, comp_name)
+compdef(ccd::CompositeComponentDef, comp_name::Symbol) = ccd.comps_dict[comp_name]
 
-compkeys(md::ModelDef) = keys(md.comp_defs)
+@delegate compdefs(md::ModelDef) => ccd
+@delegate compkeys(md::ModelDef) => ccd
+@delegate hascomp(md::ModelDef, comp_name::Symbol) => ccd
+@delegate compdef(md::ModelDef, comp_name::Symbol) => ccd
 
-hascomp(md::ModelDef, comp_name::Symbol) = haskey(md.comp_defs, comp_name)
-
-compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
 
 function reset_compdefs(reload_builtins=true)
     empty!(_compdefs)
@@ -36,12 +40,29 @@ function reset_compdefs(reload_builtins=true)
 end
 
 first_period(comp_def::LeafComponentDef) = comp_def.first
-last_period(comp_def::LeafComponentDef) = comp_def.last
+last_period(comp_def::LeafComponentDef)  = comp_def.last
 
-first_period(ccd::CompositeComponentDef) = length(ccd.comps) ? min([first_period(cd) for cd in ccd.comps]) : nothing
-last_period(ccd::CompositeComponentDef)  = length(ccd.comps) ? max([last_period(cd)  for cd in ccd.comps]) : nothing
+function first_period(ccd::CompositeComponentDef)
+    if length(ccd.comps_dict) > 0
+        firsts = [first_period(cd) for cd in compdefs(ccd)]
+        if findfirst(isequal(nothing), firsts) == nothing   # i.e., there are no `nothing`s
+            return min(Vector{Int}(firsts)...)
+        end
+    end
+    nothing     # use model's first period
+end
 
-first_period(md::ModelDef, comp_def::AbstractComponentDef) = first_period(comp_def) === nothing ? time_labels(md)[1] : first_period(comp_def)
+function last_period(ccd::CompositeComponentDef)
+    if length(ccd.comps_dict) > 0
+        lasts = [last_period(cd) for cd in compdefs(ccd)]
+        if findfirst(isequal(nothing), lasts) == nothing   # i.e., there are no `nothing`s
+            return max(Vector{Int}(lasts)...)
+        end
+    end
+    nothing     # use model's last period
+end
+
+first_period(md::ModelDef, comp_def::AbstractComponentDef) = first_period(comp_def) === nothing ? time_labels(md)[1]   : first_period(comp_def)
 last_period(md::ModelDef, comp_def::AbstractComponentDef)  = last_period(comp_def)  === nothing ? time_labels(md)[end] : last_period(comp_def)
 
 # Return the module object for the component was defined in
@@ -65,7 +86,7 @@ number_type(md::ModelDef) = md.number_type
 
 @delegate numcomponents(md::ModelDef) => ccd
 
-numcomponents(ccd::CompositeComponentDef) = length(ccd.comps)
+numcomponents(ccd::CompositeComponentDef) = length(ccd.comps_dict)
 
 function dump_components()
     for comp in compdefs()
@@ -101,22 +122,24 @@ function new_comp(comp_id::ComponentId, verbose::Bool=true)
 end
 
 """
-    delete!(m::ModelDef, component::Symbol
+    delete!(m::ModelDef, component::Symbol)
 
 Delete a `component` by name from a model definition `m`.
 """
-function Base.delete!(md::ModelDef, comp_name::Symbol)
-    if ! haskey(md.comp_defs, comp_name)
-        error("Cannot delete '$comp_name' from model; component does not exist.")
+@delegate Base.delete!(md::ModelDef, comp_name::Symbol) => ccd
+
+function Base.delete!(ccd::CompositeComponentDef, comp_name::Symbol)
+    if ! hascomp(ccd, comp_name)
+        error("Cannot delete '$comp_name': component does not exist.")
     end
 
-    delete!(md.comp_defs, comp_name)
+    delete!(ccd.comps_dict, comp_name)
 
     ipc_filter = x -> x.src_comp_name != comp_name && x.dst_comp_name != comp_name
-    filter!(ipc_filter, md.internal_param_conns)
+    filter!(ipc_filter, ccd.internal_param_conns)
 
     epc_filter = x -> x.comp_name != comp_name
-    filter!(epc_filter, md.external_param_conns)  
+    filter!(epc_filter, ccd.external_param_conns)  
 end
 
 #
@@ -135,7 +158,7 @@ dimensions(cd::LeafComponentDef) = values(cd.dimensions)
 
 function dimensions(ccd::CompositeComponentDef)
     dims = Vector{DimensionDef}()
-    for cd in components(ccd)
+    for cd in compdefs(ccd)
         append!(dims, dimensions(cd))
     end
 
@@ -298,7 +321,8 @@ end
 # Parameters
 #
 
-external_params(md::ModelDef) = md.external_params
+@delegate external_params(md::ModelDef) => ccd
+external_params(ccd::CompositeComponentDef) = ccd.external_params
 
 function addparameter(comp_def::LeafComponentDef, name, datatype, dimensions, description, unit, default)
     p = DatumDef(name, datatype, dimensions, description, unit, :parameter, default)
@@ -319,9 +343,10 @@ parameters(comp_def::LeafComponentDef) = values(comp_def.parameters)
 
 function parameters(ccd::CompositeComponentDef)
     params = Vector{DatumDef}()
-    for cd in ccd.comps
-        append!(params, collect(parameters(cd)))
+    for cd in values(ccd.comps_dict)
+        append!(params, parameters(cd))
     end
+    return params
 end
 
 
@@ -351,6 +376,7 @@ function parameter(comp_def::LeafComponentDef, name::Symbol)
     end
 end
 
+# TBD: should this find the parameter regardless of whether it's exported?
 function parameter(ccd::CompositeComponentDef, name::Symbol) 
     try
         return ccd.external_params[name]
@@ -374,7 +400,7 @@ end
 
 Set the parameter `name` of a component `comp_name` in a model `m` to a given `value`. The
 `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a 
-list of the dimension names ofthe provided data, and will be used to check that 
+list of the dimension names of the provided data, and will be used to check that 
 they match the model's index labels.
 """
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
@@ -443,9 +469,10 @@ variables(comp_def::LeafComponentDef) = values(comp_def.variables)
 
 function variables(ccd::CompositeComponentDef)
     vars = Vector{DatumDef}()
-    for cd in ccd.comps
-        append!(vars, collect(variables(cd)))
+    for cd in values(ccd.comps_dict)
+        append!(vars, variables(cd))
     end
+    return vars
 end
 
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
@@ -525,6 +552,10 @@ end
 const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
+function _append_comp!(md::ModelDef, comp_name::Symbol, comp_def::AbstractComponentDef)
+    md.ccd.comps_dict[comp_name] = comp_def
+end
+
 """
     add_comp!(md::ModelDef, comp_def::LeafComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
@@ -570,7 +601,7 @@ function add_comp!(md::ModelDef, comp_def::LeafComponentDef, comp_name::Symbol;
     set_run_period!(comp_def, first, last)
 
     if before === nothing && after === nothing
-        md.comp_defs[comp_name] = comp_def   # just add it to the end
+        _append_comp!(md, comp_name, comp_def)   # just add it to the end
     else
         new_comps = OrderedDict{Symbol, AbstractComponentDef}()
 
@@ -579,11 +610,11 @@ function add_comp!(md::ModelDef, comp_def::LeafComponentDef, comp_name::Symbol;
                 error("Component to add before ($before) does not exist")
             end
 
-            for i in compkeys(md)
-                if i == before
+            for k in compkeys(md)
+                if k == before
                     new_comps[comp_name] = comp_def
                 end
-                new_comps[i] = md.comp_defs[i]
+                new_comps[k] = compdef(md, k)
             end
 
         else    # after !== nothing, since we've handled all other possibilities above
@@ -591,16 +622,16 @@ function add_comp!(md::ModelDef, comp_def::LeafComponentDef, comp_name::Symbol;
                 error("Component to add before ($before) does not exist")
             end
 
-            for i in compkeys(md)
-                new_comps[i] = md.comp_defs[i]
-                if i == after
+            for k in compkeys(md)
+                new_comps[k] = compdef(md, k)
+                if k == after
                     new_comps[comp_name] = comp_def
                 end
             end
         end
 
-        md.comp_defs = new_comps
-        # println("md.comp_defs: $(md.comp_defs)")
+        md.ccd.comps_dict = new_comps
+        # println("md.ccd.comp_defs: $(md.ccd.comp_defs)")
     end
 
     # Set parameters to any specified defaults
@@ -647,13 +678,13 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
                            before::NothingSymbol=nothing, after::NothingSymbol=nothing,
                            reconnect::Bool=true)
 
-    if ! haskey(md.comp_defs, comp_name)
+    if ! hascomp(md, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
     end
 
     # Get original position if new before or after not specified
     if before === nothing && after === nothing
-        comps = collect(keys(md.comp_defs))
+        comps = collect(compkeys(md))
         n = length(comps)
         if n > 1
             idx = findfirst(isequal(comp_name), comps)
@@ -666,7 +697,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
     end 
 
     # Get original first and last if new run period not specified
-    old_comp = md.comp_defs[comp_name]
+    old_comp = compdef(md, comp_name)
     first = first === nothing ? old_comp.first : first
     last = last === nothing ? old_comp.last : last
 
@@ -690,7 +721,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         end
         
         # Check outgoing variables
-        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, md.internal_param_conns))
+        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, internal_param_conns(md)))
         old_vars = filter(pair -> pair.first in outgoing_vars, old_comp.variables)
         new_vars = new_comp.variables
         if !_compare_datum(new_vars, old_vars)
@@ -715,10 +746,10 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
                 end
             end
         end
-        filter!(epc -> !(epc in remove), md.external_param_conns) 
+        filter!(epc -> !(epc in remove), external_param_conns(md))
 
-        # Delete the old component from comp_defs, leaving the existing parameter connections 
-        delete!(md.comp_defs, comp_name)      
+        # Delete the old component from comps_dict, leaving the existing parameter connections 
+        delete!(md.ccd.comps_dict, comp_name)      
     else
         # Delete the old component and all its internal and external parameter connections
         delete!(md, comp_name)  
@@ -728,111 +759,17 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
     add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
+#
+# TBD: we can probably remove most of this copying code and just rely on deepcopy().
+#
+
 """
     copy_comp_def(comp_def::AbstractComponentDef, comp_name::Symbol)
 
-Create a mostly-shallow copy of `comp_def` (named `comp_name`), but make a deep copy of its
-ComponentId so we can rename the copy without affecting the original.
+Copy the given `comp_def`, naming the copy `comp_name`.
 """
-function copy_comp_def(comp_def::LeafComponentDef, comp_name::Symbol)
-    comp_id = comp_def.comp_id
-    obj     = LeafComponentDef(comp_id)
-
-    # Use the comp_id as is, since this identifies the run_timestep function, but
-    # use an alternate name to reference it in the model's component list.
+function copy_comp_def(comp_def::AbstractComponentDef, comp_name::Symbol)
+    obj  = deepcopy(comp_def)
     obj.name = comp_name
-
-    obj.variables  = comp_def.variables
-    obj.parameters = comp_def.parameters
-    obj.dimensions = comp_def.dimensions
-    obj.first      = comp_def.first
-    obj.last       = comp_def.last
-
     return obj
-end
-
-function copy_comp_def(ccd::CompositeComponentDef, comp_name::Symbol)
-    comp_id = ccd.comp_id
-    obj = CompositeComponentDef(comp_id)
-    obj.name = comp_name
-
-    append!(obj.comps, [copy_comp_def(cd) for cd in ccd.comps])
-
-    append!(obj.bindings, ccd.bindings) # TBD: need to deepcopy these?
-    append!(obj.exports, ccd.exports)   # TBD: ditto?
-
-    # TBD: what to do with these?
-    # internal_param_conns::Vector{InternalParameterConnection}
-    # external_param_conns::Vector{ExternalParameterConnection}
-
-    # Names of external params that the ConnectorComps will use as their :input2 parameters.
-    append!(obj.backups, ccd.backups)
-
-    external_params::Dict{Symbol, ModelParameter}
-
-    if ccd.sorted_comps === nothing
-        obj.sorted_comps = nothing
-    else
-        append!(obj.sorted_comps, ccd.sorted_comps)
-    end
-
-    return obj
-end
-
-"""
-    copy_external_params(md::ModelDef)
-
-Make copies of ModelParameter subtypes representing external parameters of model `md`. 
-This is used both in the copy() function below, and in the MCS subsystem 
-to restore values between trials.
-
-"""
-function copy_external_params(md::ModelDef)
-    external_params = Dict{Symbol, ModelParameter}(key => copy(obj) for (key, obj) in md.external_params)
-    return external_params
-end
-
-Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter{T}(copy(obj.value))
-
-Base.copy(obj::ArrayModelParameter{T})  where T = ArrayModelParameter{T}(copy(obj.values), obj.dimensions)
-
-function Base.copy(obj::TimestepVector{T_ts, T}) where {T_ts, T}
-    return TimestepVector{T_ts, T}(copy(obj.data))
-end
-
-function Base.copy(obj::TimestepMatrix{T_ts, T}) where {T_ts, T}
-    return TimestepMatrix{T_ts, T}(copy(obj.data))
-end
-
-function Base.copy(obj::TimestepArray{T_ts, T, N}) where {T_ts, T, N}
-    return TimestepArray{T_ts, T, N}(copy(obj.data))
-end
-
-"""
-    copy(md::ModelDef)
-
-Create a copy of a ModelDef `md` object that is not entirely shallow, nor completely deep.
-The aim is to copy the full structure, reusing references to immutable elements.
-"""
-function Base.copy(md::ModelDef)
-    mdcopy = ModelDef(md.number_type)
-    mdcopy.module_name = md.module_name
-    
-    merge!(mdcopy.comp_defs, md.comp_defs)
-    
-    mdcopy.dimensions = deepcopy(md.dimensions)
-
-    # These are vectors of immutable structs, so we can (shallow) copy them safely
-    mdcopy.internal_param_conns = copy(md.internal_param_conns)
-    mdcopy.external_param_conns = copy(md.external_param_conns)
-
-    # Names of external params that the ConnectorComps will use as their :input2 parameters.
-    mdcopy.backups = copy(md.backups)
-    mdcopy.external_params = copy_external_params(md)
-
-    mdcopy.sorted_comps = md.sorted_comps === nothing ? nothing : copy(md.sorted_comps)    
-    
-    mdcopy.is_uniform = md.is_uniform
-
-    return mdcopy
 end

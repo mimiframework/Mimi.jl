@@ -41,7 +41,7 @@ connect_param!(model1, :Long, :x, :Short, :b, zeros(length(years)))
 run(model1)
 
 @test length(components(model1.mi)) == 3    # ConnectorComp is added to the list of components in the model isntance
-@test length(model1.md.comp_defs) == 2      # The ConnectorComp shows up in the model instance but not the model definition
+@test length(compdefs(model1.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model1[:Short, :b]
 x = model1[:Long, :x]
@@ -83,7 +83,7 @@ connect_param!(model2, :Long, :x, :Short, :b, zeros(length(years_variable)))
 run(model2)
 
 @test length(components(model2.mi)) == 3    
-@test length(model2.md.comp_defs) == 2      # The ConnectorComp shows up in the model instance but not the model definition
+@test length(compdefs(model2.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model2[:Short, :b]
 x = model2[:Long, :x]
@@ -137,7 +137,7 @@ connect_param!(model3, :Long_multi, :x, :Short_multi, :b, zeros(length(years), l
 run(model3)
 
 @test length(components(model3.mi)) == 3    
-@test length(model3.md.comp_defs) == 2      # The ConnectorComp shows up in the model instance but not the model definition
+@test length(compdefs(model3.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model3[:Short_multi, :b]
 x = model3[:Long_multi, :x]
@@ -173,7 +173,7 @@ connect_param!(model4, :Long_multi=>:x, :Short_multi=>:b, zeros(length(years), l
 run(model4)
 
 @test length(components(model4.mi)) == 3    
-@test length(model4.md.comp_defs) == 2      # The ConnectorComp shows up in the model instance but not the model definition
+@test length(compdefs(model4.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model4[:Short_multi, :b]
 x = model4[:Long_multi, :x]

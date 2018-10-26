@@ -39,6 +39,7 @@ end
 
 # Test the calls the macro will produce
 let calling_module = @__MODULE__
+    # calling_module = TestComposite
     global MyComposite = Model()
 
     ccname = :testcomp
@@ -63,6 +64,7 @@ let calling_module = @__MODULE__
                                 exports)
 
     MyComposite.md = ModelDef(ccd)
+    set_dimension!(MyComposite, :time, 2005:2020)
     nothing
 end
 

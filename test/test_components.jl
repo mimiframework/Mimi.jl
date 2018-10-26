@@ -124,7 +124,7 @@ cd = compdef(testcomp1)
 m = Model()
 set_dimension!(m, :time, 2001:2005)
 add_comp!(m, testcomp1, :C) # Don't set the first and last values here
-cd = m.md.comp_defs[:C]     # Get the component definition in the model
+cd = compdef(m.md, :C)      # Get the component definition in the model
 @test cd.first === nothing   # First and last values should still be nothing because they were not explicitly set
 @test cd.last === nothing
 
@@ -135,7 +135,7 @@ ci = m.mi.components[:C]    # Get the component instance
 @test ci.last == 2005
 
 set_dimension!(m, :time, 2005:2020) # Reset the time dimension
-cd = m.md.comp_defs[:C]     # Get the component definition in the model
+cd = compdef(m.md, :C)       # Get the component definition in the model
 @test cd.first === nothing   # First and last values should still be nothing
 @test cd.last === nothing
 
@@ -151,7 +151,7 @@ ci = m.mi.components[:C]    # Get the component instance
 m = Model()
 set_dimension!(m, :time, 2000:2100)
 add_comp!(m, testcomp1, :C; first=2010, last=2090)  # Give explicit first and last values for the component
-cd = m.md.comp_defs[:C]     # Get the component definition in the model
+cd = compdef(m.md, :C)      # Get the component definition in the model
 @test cd.first == 2010      # First and last values are defined in the comp def because they were explicitly given
 @test cd.last == 2090
 
@@ -162,7 +162,7 @@ ci = m.mi.components[:C]    # Get the component instance
 @test ci.last == 2090
 
 set_dimension!(m, :time, 2000:2200) # Reset the time dimension
-cd = m.md.comp_defs[:C]     # Get the component definition in the model
+cd = compdef(m.md, :C)      # Get the component definition in the model
 @test cd.first == 2010      # First and last values should still be the same
 @test cd.last == 2090
 

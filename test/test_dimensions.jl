@@ -97,8 +97,8 @@ add_comp!(m, foo2; first = 2005, last = 2095)
     (:warn, "Redefining dimension :time"),
     set_dimension!(m, :time, 1990:2200)
 )
-@test m.md.comp_defs[:foo2].first == 2005
-@test m.md.comp_defs[:foo2].last == 2095
+@test first_period(compdef(m.md, :foo2)) == 2005
+@test last_period(compdef(m.md, :foo2))  == 2095
 
 # Test parameter connections
 @test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
@@ -111,7 +111,7 @@ set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
     (:warn, "Resetting foo2 component's last timestep to 2050"),
     set_dimension!(m, :time, 2010:2050)
 )
-@test m.md.comp_defs[:foo2].first == 2010
-@test m.md.comp_defs[:foo2].last == 2050
+@test first_period(compdef(m.md, :foo2)) == 2010
+@test last_period(compdef(m.md, :foo2))  == 2050
 
 end #module

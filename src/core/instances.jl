@@ -16,7 +16,7 @@ compdef(lci::LeafComponentInstance) = compdef(lci.comp_id)
 @delegate compdef(cci::CompositeComponentInstance) => leaf
 
 """
-    name(ci::ComponentInstance)
+    name(ci::AbstractComponentInstance)
 
 Return the name of the component `ci`.
 """
@@ -189,7 +189,7 @@ Return the `ComponentInstanceParameters` for `comp_name` in ModelInstance 'mi'.
 parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, comp_name))
 
 """
-    parameters(ci::ComponentInstance)
+    parameters(ci::AbstractComponentInstance)
 
 Return an iterator over the parameters in `ci`.
 """

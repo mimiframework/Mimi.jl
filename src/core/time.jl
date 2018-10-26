@@ -165,7 +165,6 @@ end
 
 # Get a timestep array of type T with N dimensions. Time labels will match those from the time dimension in md
 function get_timestep_array(md::ModelDef, T, N, value)
-
 	if isuniform(md)
         first, stepsize = first_and_step(md)
         return TimestepArray{FixedTimestep{first, stepsize}, T, N}(value)
@@ -176,9 +175,6 @@ function get_timestep_array(md::ModelDef, T, N, value)
 end
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
-
-# TBD: can it be reduced to this?
-# const AnyIndex = Union{Int, AbstractRange}
 
 #
 # 3b. TimestepVector

@@ -5,7 +5,9 @@ using Test
 
 import Mimi:
     reset_compdefs, variable_names, compinstance, get_var_value, get_param_value, 
-    set_param_value, set_var_value, dim_count, dim_key_dict, dim_value_dict, compdef
+    set_param_value, set_var_value, dim_count, dim_key_dict, dim_value_dict, compdef,
+    AbstractComponentInstance, AbstractComponentDef, TimestepArray, ComponentInstanceParameters, 
+    ComponentInstanceVariables
 
 reset_compdefs()
 
@@ -40,29 +42,29 @@ cdef = compdef(ci)
 citer = components(mi)
 
 @test typeof(md) == Mimi.ModelDef && md == mi.md
-@test typeof(ci) <: Mimi.ComponentInstance && ci == mi.components[:testcomp1]
-@test typeof(cdef) <: Mimi.LeafComponentDef && cdef == compdef(ci.comp_id)
+@test typeof(ci) <: AbstractComponentInstance && ci == compinstance(mi, :testcomp1)
+@test typeof(cdef) <: AbstractComponentDef && cdef == compdef(ci.comp_id)
 @test name(ci) == :testcomp1
-@test typeof(citer) <: Base.ValueIterator && length(citer) == 1 && eltype(citer) == Mimi.ComponentInstance
+@test typeof(citer) <: Base.ValueIterator && length(citer) == 1 && eltype(citer) <: AbstractComponentInstance
 
 #test convenience functions that can be called with name symbol
 
 param_value = get_param_value(ci, :par1)
-@test typeof(param_value)<: Mimi.TimestepArray
+@test typeof(param_value)<: TimestepArray
 @test_throws ErrorException get_param_value(ci, :missingpar)
 
 var_value = get_var_value(ci, :var1)
 @test_throws ErrorException get_var_value(ci, :missingvar)
-@test typeof(var_value) <: Mimi.TimestepArray
+@test typeof(var_value) <: TimestepArray
 
 params = parameters(mi, :testcomp1)
 params2 = parameters(mi, :testcomp1)
-@test typeof(params) <: Mimi.ComponentInstanceParameters
+@test typeof(params) <: ComponentInstanceParameters
 @test params == params2
 
 vars = variables(mi, :testcomp1)
 vars2 = variables(ci)
-@test typeof(vars) <: Mimi.ComponentInstanceVariables
+@test typeof(vars) <: ComponentInstanceVariables
 @test vars == vars2
 
 @test dim_count(mi, :time) == 20

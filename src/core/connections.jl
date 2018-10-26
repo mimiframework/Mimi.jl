@@ -62,6 +62,12 @@ function _check_labels(md::ModelDef, comp_def::AbstractComponentDef, param_name:
     end
 end
 
+@delegate backups(md::ModelDef) => ccd
+backups(ccd::CompositeComponentDef) = ccd.backups
+
+@delegate add_backup!(md::ModelDef, obj) => ccd
+add_backup!(ccd::CompositeComponentDef, obj) = push!(ccd.backups, obj)
+
 """
     connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
 
@@ -79,7 +85,7 @@ function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext
     disconnect_param!(md, comp_name, param_name)
 
     conn = ExternalParameterConnection(comp_name, param_name, ext_param_name)
-    add_external_param_conn(md, conn)
+    add_external_param_conn!(md, conn)
 
     return nothing
 end
@@ -171,7 +177,7 @@ function connect_param!(md::ModelDef,
 
     # println("connect($src_comp_name.$src_var_name => $dst_comp_name.$dst_par_name)")
     conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, backup_param_name, offset=offset)
-    add_internal_param_conn(md, conn)
+    add_internal_param_conn!(md, conn)
 
     return nothing
 end
@@ -233,11 +239,11 @@ the dictionary keys are strings that match the names of unset parameters in the 
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(k => v for (k, v) in parameters)
     leftovers = unconnected_params(md)
-    external_params = md.external_params
+    external_params = external_params(md)
 
     for (comp_name, param_name) in leftovers
         # check whether we need to set the external parameter
-        if ! haskey(md.external_params, param_name)
+        if ! haskey(external_params, param_name)
             value = parameters[string(param_name)]
             param_dims = parameter_dimensions(md, comp_name, param_name)
 
@@ -249,9 +255,11 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
-internal_param_conns(md::ModelDef) = md.internal_param_conns
+@delegate external_param_conns(md::ModelDef) => ccd
+external_param_conns(ccd::CompositeComponentDef) = ccd.external_param_conns
 
-external_param_conns(md::ModelDef) = md.external_param_conns
+@delegate internal_param_conns(md::ModelDef) => ccd
+internal_param_conns(ccd::CompositeComponentDef) = ccd.internal_param_conns
 
 # Find internal param conns to a given destination component
 function internal_param_conns(md::ModelDef, dst_comp_name::Symbol)
@@ -263,9 +271,11 @@ function external_param_conns(md::ModelDef, comp_name::Symbol)
     return filter(x -> x.comp_name == comp_name, external_param_conns(md))
 end
 
-function external_param(md::ModelDef, name::Symbol)
+@delegate external_param(md::ModelDef, name::Symbol) => ccd
+
+function external_param(ccd::CompositeComponentDef, name::Symbol)
     try
-        return md.external_params[name]
+        return ccd.external_params[name]
     catch err
         if err isa KeyError
             error("$name not found in external parameter list")
@@ -275,16 +285,22 @@ function external_param(md::ModelDef, name::Symbol)
     end
 end
 
-function add_internal_param_conn(md::ModelDef, conn::InternalParameterConnection)
-    push!(md.internal_param_conns, conn)
+@delegate add_internal_param_conn!(md::ModelDef, conn::InternalParameterConnection) => ccd
+
+function add_internal_param_conn!(ccd::CompositeComponentDef, conn::InternalParameterConnection)
+    push!(ccd.internal_param_conns, conn)
 end
 
-function add_external_param_conn(md::ModelDef, conn::ExternalParameterConnection)
-    push!(md.external_param_conns, conn)
+@delegate add_external_param_conn!(md::ModelDef, conn::ExternalParameterConnection) => ccd
+
+function add_external_param_conn!(ccd::CompositeComponentDef, conn::ExternalParameterConnection)
+    push!(ccd.external_param_conns, conn)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
-    md.external_params[name] = value
+@delegate set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter) => ccd
+
+function set_external_param!(ccd::CompositeComponentDef, name::Symbol, value::ModelParameter)
+    ccd.external_params[name] = value
 end
 
 function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
@@ -294,7 +310,7 @@ end
 function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
     if param_dims[1] == :time   
-        value = convert(Array{md.number_type}, value)
+        value = convert(Array{number_type(md)}, value)
         num_dims = length(param_dims)
         values = get_timestep_array(md, eltype(value), num_dims, value)      
     else
@@ -332,9 +348,7 @@ end
 
 Add an array type parameter `name` with value `value` and `dims` dimensions to the model 'm'.
 """
-function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractArray, dims)
-    numtype = md.number_type
-    
+function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractArray, dims)   
     if !(typeof(value) <: Array{numtype})
         numtype = number_type(md)
         # Need to force a conversion (simple convert may alias in v0.6)
@@ -367,7 +381,7 @@ function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = fal
 end
 
 function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
-    ext_params = md.external_params
+    ext_params = external_params(md)
     if ! haskey(ext_params, name)
         error("Cannot update parameter; $name not found in model's external parameters.")
     end
@@ -399,11 +413,12 @@ end
 
 function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise_error)
     # Get original parameter
-    param = md.external_params[name]
+    param = external_param(md, name)
     
     # Check type of provided parameter
     if !(typeof(value) <: AbstractArray)
         error("Cannot update array parameter $name with a value of type $(typeof(value)).")
+
     elseif !(eltype(value) <: eltype(param.values)) 
         try
             value = convert(Array{eltype(param.values)}, value)
@@ -427,7 +442,8 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
             T = eltype(value)
             N = length(size(value))
             new_timestep_array = get_timestep_array(md, T, N, value)
-            md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
+            set_external_param!(md, name, ArrayModelParameter(new_timestep_array, param.dimensions))
+
         elseif raise_error
             error("Cannot update timesteps; parameter $name is not a TimestepArray.")
         else
@@ -462,7 +478,7 @@ end
 
 
 function add_connector_comps(md::ModelDef)
-     conns = md.internal_param_conns        # we modify this, so we don't use functional API
+    conns = internal_param_conns(md)
 
     for comp_def in compdefs(md)
         comp_name = name(comp_def)
@@ -474,7 +490,7 @@ function add_connector_comps(md::ModelDef)
         # println("Need connectors comps: $need_conn_comps")
 
         for (i, conn) in enumerate(need_conn_comps)
-            push!(md.backups, conn.backup)
+            add_backup!(md, conn.backup)
 
             num_dims = length(size(external_param(md, conn.backup).values))
 
@@ -492,17 +508,17 @@ function add_connector_comps(md::ModelDef)
             add_comp!(md, conn_comp_def, conn_comp_name, before=comp_name)
            
             # add a connection between src_component and the ConnectorComp
-            push!(conns, InternalParameterConnection(conn.src_comp_name, conn.src_var_name,
-                                                     conn_comp_name, :input1, 
-                                                     conn.ignoreunits))
+            add_internal_param_conn!(md, InternalParameterConnection(conn.src_comp_name, conn.src_var_name,
+                                                                     conn_comp_name, :input1,
+                                                                     conn.ignoreunits))
 
             # add a connection between ConnectorComp and dst_component
-            push!(conns, InternalParameterConnection(conn_comp_name, :output, 
-                                                     conn.dst_comp_name, conn.dst_par_name, 
-                                                     conn.ignoreunits))
+            add_internal_param_conn!(md, InternalParameterConnection(conn_comp_name, :output, 
+                                                                     conn.dst_comp_name, conn.dst_par_name, 
+                                                                     conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
-            push!(md.external_param_conns, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
+            add_external_param_conn!(md, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
 
             src_comp_def = compdef(md, conn.src_comp_name)
             set_param!(md, conn_comp_name, :first, first_period(md, src_comp_def))
@@ -512,7 +528,7 @@ function add_connector_comps(md::ModelDef)
     end
 
     # Save the sorted component order for processing
-    md.sorted_comps = _topological_sort(md)
+    # md.sorted_comps = _topological_sort(md)
 
     return nothing
 end

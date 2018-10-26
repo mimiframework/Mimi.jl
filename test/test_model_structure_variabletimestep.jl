@@ -117,9 +117,9 @@ a = collect(keys(time))
 ################################
 
 @test_throws ErrorException delete!(m, :D)
-@test length(m.md.internal_param_conns) == 2
+@test length(internal_param_conns(m.md)) == 2
 delete!(m, :A)
-@test length(m.md.internal_param_conns) == 1
+@test length(internal_param_conns(m.md)) == 1
 @test !(:A in compdefs(m))
 @test length(compdefs(m)) == 2
 

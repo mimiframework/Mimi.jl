@@ -133,7 +133,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 )
 
 update_param!(m, :x, [4, 5, 6], update_timesteps = false)
-x = m.md.external_params[:x]
+x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2000, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [4., 5., 6.]
 run(m)
@@ -141,7 +141,7 @@ run(m)
 @test m[:MyComp2, :y][2] == 6   # 2002
 
 update_param!(m, :x, [2, 3, 4], update_timesteps = true)
-x = m.md.external_params[:x]
+x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [2., 3., 4.]
 run(m)
@@ -163,7 +163,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 )
 
 update_param!(m, :x, [4, 5, 6], update_timesteps = false)
-x = m.md.external_params[:x]
+x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020)}, Float64, 1}
 @test x.values.data == [4., 5., 6.]
 run(m)
@@ -171,7 +171,7 @@ run(m)
 @test m[:MyComp2, :y][2] == 6   # 2020
 
 update_param!(m, :x, [2, 3, 4], update_timesteps = true)
-x = m.md.external_params[:x]
+x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Float64, 1}
 @test x.values.data == [2., 3., 4.]
 run(m)
@@ -192,7 +192,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 )
 
 update_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
-x = m.md.external_params[:x]
+x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Float64, 1}
 @test x.values.data == [2., 3., 4.]
 run(m)
@@ -212,7 +212,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
 update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
-x = m.md.external_params[:x]
+x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Float64, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
 
@@ -240,10 +240,10 @@ set_param!(m, :MyComp3, :z, 0)
 @test_throws ErrorException update_param!(m, :x, [1, 2, 3, 4]) # Will throw an error because size
 @test_throws ErrorException update_param!(m, :y, [10, 15], update_timesteps=true) # Not a timestep array
 update_param!(m, :y, [10, 15])
-@test m.md.external_params[:y].values == [10., 15.]
+@test external_param(m.md, :y).values == [10., 15.]
 @test_throws ErrorException update_param!(m, :z, 1, update_timesteps=true) # Scalar parameter
 update_param!(m, :z, 1)
-@test m.md.external_params[:z].value == 1
+@test external_param(m.md, :z).value == 1
 
 # Reset the time dimensions
 @test_logs(
@@ -253,9 +253,9 @@ update_param!(m, :z, 1)
 )
 update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) # Won't error when updating from a dictionary
 
-@test m.md.external_params[:x].values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1},Float64,1}
-@test m.md.external_params[:x].values.data == [3.,4.,5.]
-@test m.md.external_params[:y].values == [10.,20.]
-@test m.md.external_params[:z].value == 0
+@test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1},Float64,1}
+@test external_param(m.md, :x).values.data == [3.,4.,5.]
+@test external_param(m.md, :y).values == [10.,20.]
+@test external_param(m.md, :z).value == 0
 
 end #module
