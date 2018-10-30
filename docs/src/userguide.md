@@ -208,11 +208,10 @@ As mentioned above, a parameter can have no index (a scalar), or one or multiple
 
 ```julia
 @defcomp MyComponent begin
-  p1 = Parameter(index=[4]) # an array of length 4
-  p2::Array{Float64, 2} = Parameter() # a two dimensional array of unspecified length
+  p1::Array{Float64, 2} = Parameter() # a two dimensional array of unspecified length
 end
 ```
-In both of these cases, the parameter's values are stored of as an array (p1 is one dimensional, and p2 is two dimensional). But with respect to the model, they are considered "scalar" parameters, simply because they do not use any of the model's indices (namely 'time', or 'regions').
+In this case, the parameter's values are stored of as an array (p1 is two dimensional). But with respect to the model, it is considered a "scalar" parameter, simply because it does not use any of the model's indices (namely 'time', or 'regions').
 
 ### Updating an external parameter
 
