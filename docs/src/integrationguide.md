@@ -97,6 +97,24 @@ The full API:
 ### Parameter connections between different length components
 
 ### More on parameter indices
+The ability to set a parameter with the syntax below is temporarily not available.  It will be reinstated soon.  Users should now replaces this notation with an explicit dimension name, as shown below.   
+
+ ```julia
+ @defcomp MyComponent begin
+   p1 = Parameter(index=[4]) # an array of length 4
+ end
+ ```
+ should be changed to 
+
+ ```julia
+ @defcomp MyComponent begin
+   p1 = Parameter(index=[dim]) # an array of length 4
+ end
+ ```
+ and then set using 
+ ```julia
+ set_dimension!(m, :dim, 1:4)
+ ```
 
 ### Updating an external parameter
 
