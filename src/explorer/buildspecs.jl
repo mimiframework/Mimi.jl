@@ -1,4 +1,5 @@
 ## Mimi UI
+using Dates
 
 function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
@@ -9,67 +10,77 @@ end
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
 
-    try
-        # Control flow logic selects the correct plot type based on dimensions
-        # and dataframe fields
-        if length(dims) == 0
-            value = m[comp_name, item_name]
-            name = "$comp_name : $item_name = $value"
-            spec = createspec_singlevalue(name)
-        else
-            name = "$comp_name : $item_name"          # the name is needed for the list label
-            df = getdataframe(m, comp_name, item_name)
+    # Control flow logic selects the correct plot type based on dimensions
+    # and dataframe fields
+    if length(dims) == 0
+        value = m[comp_name, item_name]
+        name = "$comp_name : $item_name = $value"
+        spec = createspec_singlevalue(name)
+    elseif length(dims) > 2
+        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        return nothing
+    else
+        name = "$comp_name : $item_name"          # the name is needed for the list label
+        df = getdataframe(m, comp_name, item_name)
 
-            dffields = map(string, names(df))         # convert to string once before creating specs
+        dffields = map(string, names(df))         # convert to string once before creating specs
 
-            # check if there are too many dimensions to map and if so, warn
-            if length(dffields) > 3
-                error()
-                    
-            # a 'time' field necessitates a line plot  
-            elseif dffields[1] == "time"
-                if length(dffields) > 2
-                    spec = createspec_multilineplot(name, df, dffields)
-                else
-                    spec = createspec_lineplot(name, df, dffields)
-                end
-            
-            #otherwise we are dealing with a barplot
+        # check if there are too many dimensions to map and if so, warn
+        if length(dffields) > 3
+            error()
+                
+        # a 'time' field necessitates a line plot  
+        elseif dffields[1] == "time"
+            if length(dffields) > 2
+                spec = createspec_multilineplot(name, df, dffields)
             else
-                spec = createspec_barplot(name, df, dffields)
+                spec = createspec_lineplot(name, df, dffields)
             end
-        end
-
-        return spec
         
-    catch err
-        if length(dims) >= 3
-            warn("$comp_name.$item_name has over 3 graphing dims, not yet implemented in explorer")
+        #otherwise we are dealing with a barplot
         else
-            warn("spec conversion failed for $comp_name.$item_name")
+            spec = createspec_barplot(name, df, dffields)
         end
-        rethrow(err)
     end
+
+    return spec
+        
 end
 
-# Create VegaLite specs for each variable and parameter in the model
-function spec_list(model::Model)
-    allspecs = []
+function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dimensions(m, comp_name, item_name)
+
+    if length(dims) == 0
+        value = m[comp_name, item_name]
+        name = "$comp_name : $item_name = $value"
+    elseif length(dims) > 2
+        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        return nothing
+    else
+        name = "$comp_name : $item_name"          # the name is needed for the list label
+    end
+
+    menu_item = Dict("name" => name, "comp_name" => comp_name, "item_name" => item_name)
+    return menu_item
+end
+
+# Create the list of variables and parameters
+function menu_item_list(model::Model)
+    all_menuitems = []
 
     for comp_name in map(name, compdefs(model)) 
         items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
 
         for item_name in items
-            try
-                spec = _spec_for_item(model, comp_name, item_name)
-                push!(allspecs, spec) 
-            catch
+            menu_item = _menu_item(model, comp_name, item_name)
+            if menu_item !== nothing
+                push!(all_menuitems, menu_item) 
             end
         end
     end
 
     # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(allspecs, by = x -> lowercase(x["name"]))
+    return sort(all_menuitems, by = x -> lowercase(x["name"]))
 end
 
 # So we can control these in one place...
@@ -158,13 +169,13 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     # loop over rows and create a dictionary for each row
     if plottype == :multiline
-        cols = (df.columns[1], df.columns[2], df.columns[3])
+        cols = (df[1], df[2], df[3])
         datastring = getmultiline(cols, dffields)
     elseif plottype == :line
-        cols = (df.columns[1], df.columns[2])
+        cols = (df[1], df[2])
         datastring = getline(cols, dffields)
     else
-        cols = (df.columns[1], df.columns[2])
+        cols = (df[1], df[2])
         datastring = getbar(cols, dffields)
     end
 

@@ -1,5 +1,3 @@
-__precompile__()
-
 module Mimi
 
 using DataFrames
@@ -7,8 +5,6 @@ using DataStructures
 using Distributions
 using Electron
 using JSON 
-using LightGraphs
-using MetaGraphs
 using NamedArrays
 using StringBuilders
 
@@ -22,14 +18,15 @@ export
     create_marginal_model,
     disconnect_param!,
     explore,
-    getdataframe,
-    getproperty, 
+    getdataframe, 
     gettime,
     get_param_value,
     get_var_value,
     hasvalue,
     is_first,
     is_last,
+    is_time,
+    is_timestep,
     load_comps,
     modeldef,
     name,
@@ -39,7 +36,6 @@ export
     replace_comp!, 
     set_dimension!, 
     set_leftover_params!, 
-    setproperty!, 
     set_param!, 
     update_param!,
     update_params!,

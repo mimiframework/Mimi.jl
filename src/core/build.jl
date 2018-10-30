@@ -1,7 +1,7 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)    
+function _instance_datatype(md::ModelDef, def::DatumDef)    
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)
@@ -13,56 +13,60 @@ function _instance_datatype(md::ModelDef, def::DatumDef, first::Int)
         T = Array{dtype, num_dims}
     
     else   
-
         if isuniform(md)
-            # take the first from the function argument, not the model def
-            _, stepsize = first_and_step(md)
-            T = TimestepArray{FixedTimestep{first, stepsize}, dtype, num_dims}
+            first, stepsize = first_and_step(md)
+            T = TimestepArray{FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims}
         else
             times = time_labels(md)
-            # need to make sure we define the timestep to begin at the first from 
-            # the function argument
-      
-            first_index = findfirst(times, first) 
-            T = TimestepArray{VariableTimestep{(times[first_index:end]...)}, dtype, num_dims}
+            T = TimestepArray{VariableTimestep{(times...,)}, Union{dtype, Missing}, num_dims}
         end
     end
 
-    # println("_instance_datatype($def) returning $T")
+    # @info "_instance_datatype returning $T"
     return T
 end
 
-function _vars_type(md::ModelDef, comp_def::ComponentDef)
-    var_defs = variables(comp_def)    
-    vnames = Tuple([name(vdef) for vdef in var_defs])
-    
-    first = first_period(md, comp_def)
-    vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
-
-    return ComponentInstanceVariables{vnames, vtypes}
-end
-
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-function _instantiate_datum(md::ModelDef, def::DatumDef, first::Int)
-    dtype = _instance_datatype(md, def, first)
+function _instantiate_datum(md::ModelDef, def::DatumDef)
+    dtype = _instance_datatype(md, def)
     dims = dimensions(def)
     num_dims = length(dims)
     
+    # Scalar datum
     if num_dims == 0
         value = dtype(0)
       
-    # This is necessary only if dims[1] == :time, otherwise "else" handles it, too
-    elseif num_dims == 1 && dims[1] == :time
-        value = dtype(dim_count(md, :time))
+    # Array datum, with :time dimension
+    elseif dims[1] == :time 
 
-    else # if dims[1] != :time
+        if num_dims == 1
+            value = dtype(dim_count(md, :time))
+        else 
+            counts = dim_counts(md, Vector{Symbol}(dims))
+            value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)
+        end
+
+    # Array datum, without :time dimension
+    else 
         # TBD: Handle unnamed indices properly
         counts = dim_counts(md, Vector{Symbol}(dims))
-        value = dtype(counts...)
+        value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)
     end
 
     return value
 end
+
+# Deprecated?
+# function _vars_NT_type(md::ModelDef, comp_def::ComponentDef)
+#     var_defs = variables(comp_def)    
+#     vnames = Tuple([name(vdef) for vdef in var_defs])
+    
+#     first = comp_def.first
+#     vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
+
+#     NT = NamedTuple{vnames, vtypes}
+#     return NT
+# end
 
 """
     _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
@@ -72,11 +76,13 @@ Return the resulting ComponentInstance.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
-    first = first_period(md, comp_def)
-    vtype = _vars_type(md, comp_def)
-    
-    vals = [_instantiate_datum(md, def, first) for def in variables(comp_def)]
-    return vtype(vals)
+    var_defs = variables(comp_def)    
+
+    names  = ([name(vdef) for vdef in var_defs]...,)
+    types  = Tuple{[_instance_datatype(md, vdef) for vdef in var_defs]...}
+    values = [_instantiate_datum(md, def) for def in var_defs]
+
+    return ComponentInstanceVariables(names, types, values)
 end
 
 # Save a reference to the model's dimension dictionary to make it 
@@ -141,7 +147,7 @@ function build(md::ModelDef)
     # Connect each :input2 to its associated backup value.
     for (i, backup) in enumerate(md.backups)
         comp_name = connector_comp_name(i)
-        param = external_param(md, backups)
+        param = external_param(md, backup)
 
         par_values = par_dict[comp_name]
         par_values[:input2] = param isa ScalarModelParameter ? param : value(param)
@@ -159,7 +165,7 @@ function build(md::ModelDef)
         pnames = Tuple(parameter_names(comp_def))
         pvals  = [par_values[pname] for pname in pnames]
         ptypes = Tuple{map(typeof, pvals)...}
-        pars = ComponentInstanceParameters{pnames, ptypes}(pvals)
+        pars = ComponentInstanceParameters(pnames, ptypes, pvals)
 
         first = first_period(md, comp_def)
         last = last_period(md, comp_def)
@@ -182,7 +188,7 @@ which shares the internal `ModelDef` between the `base` and `marginal`.
 function create_marginal_model(base::Model, delta::Float64=1.0)
     # Make sure the base has a ModelInstance before we copy since this
     # copies the ModelDef to avoid being affected by later changes.
-    if base.mi == nothing
+    if base.mi === nothing
         build(base)
     end
 

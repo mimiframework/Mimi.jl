@@ -1,12 +1,8 @@
 using Mimi
-using Base.Test
+using Test
 
-# For now, use the warn function; for 0.7/1.0, remove this and use real logging...
-macro info(msg)
-    msg = "\n$msg"
-    :(Base.println_with_color(:light_blue, $msg, bold=true))
-end
-
+# reduce the chatter during testing
+Mimi.set_defcomp_verbosity(false)
 
 @testset "Mimi" begin
 
@@ -70,22 +66,23 @@ end
     @info("test_mult_getdataframe.jl")        
     include("test_mult_getdataframe.jl")    
 
-    @info("test_timesteparrays.jl")
-    include("test_timesteparrays.jl")
- 
     @info("test_clock.jl")
     include("test_clock.jl")
  
-    @info("test_dimensions")
-    include("test_dimensions.jl")
-
     @info("test_timesteps.jl")           
     include("test_timesteps.jl") 
 
-    # fails currently: requires either not having Refs typed (which prevents reassignment)
-    # or by having lighter typing, e.g., TimestepArray but not a parameterized version.
-    # @info("test_connectorcomp.jl")
-    # include("test_connectorcomp.jl")
+    @info("test_timesteparrays.jl")
+    include("test_timesteparrays.jl")
+
+    @info("test_dimensions")
+    include("test_dimensions.jl")
+
+    @info("test_datum_storage.jl")
+    include("test_datum_storage.jl")
+    
+    @info("test_connectorcomp.jl")
+    include("test_connectorcomp.jl")
 
     @info("test_explorer.jl")
     include("test_explorer.jl")
@@ -93,5 +90,5 @@ end
     @info("test_plotting.jl")
     include("test_plotting.jl")
 
-    include("mcs/run_tests.jl")
+    include("mcs/runtests.jl")
 end

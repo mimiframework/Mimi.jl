@@ -49,7 +49,7 @@ end
 
 """
     connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, 
-        src_var_name::Symbol, backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+        src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
@@ -60,7 +60,8 @@ component parameter should only be calculated for the second timestep and beyond
 """
 function connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; 
+                           ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
                       ignoreunits=ignoreunits, offset=offset)
 end
@@ -77,7 +78,8 @@ component parameter should only be calculated for the second timestep and beyond
 
 """
 function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; 
+                           ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
@@ -91,12 +93,12 @@ function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
     decache(m)
 end
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_param!(m.md, name, value; param_dims = param_dims)
 end
 
@@ -154,8 +156,8 @@ end
 
 """
     replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-        before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+        first::NothingSymbol=nothing, last::NothingSymbol=nothing,
+        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
         reconnect::Bool=true)
         
 Replace the component with name `comp_name` in model `m` with the component
@@ -167,8 +169,8 @@ default value `true` indicates whether the existing parameter connections
 should be maintained in the new component.  
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::VoidSymbol=nothing, last::VoidSymbol=nothing,
-                           before::VoidSymbol=nothing, after::VoidSymbol=nothing,
+                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
+                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
                            reconnect::Bool=true)
     replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
     decache(m)
@@ -227,12 +229,12 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 @modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
-    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, Range})
+    set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})
 
 Set the values of `m` dimension `name` to integers 1 through `count`, if `keys`` is
 an integer; or to the values in the vector or range if `keys`` is either of those types.
 """
-function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, Range})
+function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
     set_dimension!(m.md, name, keys)
     decache(m)
 end
@@ -330,12 +332,12 @@ end
 Run model `m` once.
 """
 function Base.run(m::Model; ntimesteps::Int=typemax(Int), 
-                  dim_keys::Union{Void, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+                  dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if numcomponents(m) == 0
         error("Cannot run a model with no components.")
     end
 
-    if m.mi == nothing
+    if m.mi === nothing
         build(m)
     end
 

@@ -1,3 +1,6 @@
+using LightGraphs
+using MetaGraphs
+
 """
     disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
 
@@ -83,8 +86,8 @@ end
 
 """
     connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
-        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Void, Array}=nothing; 
-        ignoreunits::Bool=false)
+        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Nothing, Array}=nothing; 
+        ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
@@ -96,12 +99,15 @@ should only be calculated for the second timestep and beyond.
 function connect_param!(md::ModelDef, 
                            dst_comp_name::Symbol, dst_par_name::Symbol, 
                            src_comp_name::Symbol, src_var_name::Symbol,
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
     disconnect_param!(md, dst_comp_name, dst_par_name)
 
-    if backup != nothing
+    dst_comp_def = compdef(md, dst_comp_name)
+    src_comp_def = compdef(md, src_comp_name)
+
+    if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
             dims = dimnames(backup)
@@ -110,13 +116,10 @@ function connect_param!(md::ModelDef,
             dims = nothing
         end
 
-        # Check that the backup value is the right size
-        if getspan(md, dst_comp_name) != size(backup)[1]
-            error("Backup data must span the whole length of the component.")
+        # Check that the backup data is the right size
+        if size(backup) != datum_size(md, dst_comp_def, dst_par_name)
+            error("Cannot connect parameter; the provided backup data is the wrong size. Expected size $(datum_size(md, dst_comp_def, dst_par_name)) but got $(size(backup)).")
         end
-
-        dst_comp_def = compdef(md, dst_comp_name)
-        src_comp_def = compdef(md, src_comp_name)
 
         # some other check for second dimension??
         dst_param = parameter(dst_comp_def, dst_par_name)
@@ -133,19 +136,31 @@ function connect_param!(md::ModelDef,
         else
             
             if isuniform(md)
-                #use the first from the comp_def not the ModelDef
+                # use the first from the comp_def not the ModelDef
                 _, stepsize = first_and_step(md)
                 values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
-                #use the first from the comp_def 
-                first_index = findfirst(times, first)
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...)}, T, dim_count}(backup)
+                # use the first from the comp_def 
+                first_index = findfirst(isequal(first), times) 
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
             end
             
         end
 
         set_external_array_param!(md, dst_par_name, values, dst_dims)
+        backup_param_name = dst_par_name
+
+    else 
+        # If backup not provided, make sure the source component covers the span of the destination component
+        src_first, src_last = first_period(md, src_comp_def), last_period(md, src_comp_def)
+        dst_first, dst_last = first_period(md, dst_comp_def), last_period(md, dst_comp_def)
+        if dst_first < src_first || dst_last > src_last
+            error("Cannot connect parameter; $src_comp_name only runs from $src_first to $src_last, whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years. Try calling: 
+    `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`")
+        end 
+
+        backup_param_name = nothing 
     end
 
     # Check the units, if provided
@@ -155,7 +170,7 @@ function connect_param!(md::ModelDef,
     end
 
     # println("connect($src_comp_name.$src_var_name => $dst_comp_name.$dst_par_name)")
-    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, offset=offset)
+    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, backup_param_name, offset=offset)
     add_internal_param_conn(md, conn)
 
     return nothing
@@ -163,7 +178,7 @@ end
 
 """
     connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-        backup::Union{Void, Array}=nothing; ignoreunits::Bool=false)
+        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
 to a variable `src[2]` in another component `src[1]` of the same model
@@ -173,7 +188,7 @@ between the destination and the source ie. the value would be `1` if the destina
 component parameter should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Void, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_param!(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
@@ -272,12 +287,12 @@ function set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     md.external_params[name] = value
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Void,Array{Symbol}} = nothing)
+function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_scalar_param!(md, name, value)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, Range, Tuple}; param_dims::Union{Void,Array{Symbol}} = nothing)
-
+function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
+                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
     if param_dims[1] == :time   
         value = convert(Array{md.number_type}, value)
         num_dims = length(param_dims)
@@ -308,7 +323,7 @@ Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the model `md`.  In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
-    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end
 
@@ -323,9 +338,9 @@ function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractAr
     if !(typeof(value) <: Array{numtype})
         numtype = number_type(md)
         # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(value)
+        value = Array{numtype}(undef, value)
     end
-    param = ArrayModelParameter(value, dims == nothing ? Vector{Symbol}() : dims)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
 end
 
@@ -399,7 +414,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
 
     # Check size of provided parameter
     if update_timesteps && param.values isa TimestepArray
-        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...)
+        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...,)
     else 
         expected_size = size(param.values)
     end
@@ -454,14 +469,14 @@ function add_connector_comps(md::ModelDef)
 
         # first need to see if we need to add any connector components for this component
         internal_conns  = filter(x -> x.dst_comp_name == comp_name, conns)
-        need_conn_comps = filter(x -> x.backup != nothing, internal_conns)
+        need_conn_comps = filter(x -> x.backup !== nothing, internal_conns)
 
         # println("Need connectors comps: $need_conn_comps")
 
         for (i, conn) in enumerate(need_conn_comps)
             push!(md.backups, conn.backup)
 
-            num_dims = length(size(external_param(md, conn.backup)))
+            num_dims = length(size(external_param(md, conn.backup).values))
 
             if ! (num_dims in (1, 2))
                 error("Connector components for parameters with > 2 dimensions are not implemented.")
@@ -485,6 +500,14 @@ function add_connector_comps(md::ModelDef)
             push!(conns, InternalParameterConnection(conn_comp_name, :output, 
                                                      conn.dst_comp_name, conn.dst_par_name, 
                                                      conn.ignoreunits))
+
+            # add a connection between ConnectorComp and the external backup data
+            push!(md.external_param_conns, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
+
+            src_comp_def = compdef(md, conn.src_comp_name)
+            set_param!(md, conn_comp_name, :first, first_period(md, src_comp_def))
+            set_param!(md, conn_comp_name, :last, last_period(md, src_comp_def))
+
         end
     end
 

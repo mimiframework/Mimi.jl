@@ -3,24 +3,24 @@ os:
   - linux
   - osx
 julia:
-  - 0.6
+  - 1.0
+  - nightly
 notifications:
   email: false
 branches:
   only:
   - master
   - /release-.*/
-before_install:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+  - /v(\d+)\.(\d+)\.(\d+)/
+env:
+  - PYTHON=""
 script:
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi 
-  - julia -e 'ENV["PYTHON"]=""; Pkg.add("PyCall")'
-  - julia -e 'Pkg.clone(pwd())'
-  - julia -e 'Pkg.build("Mimi")'
-  - $TESTCMD --check-bounds=yes -e 'Pkg.test("Mimi", coverage=true)'
-  - julia -e 'include("test/test_dependencies.jl"); run_dependency_tests()'
+  - $TESTCMD --check-bounds=yes -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("Mimi"); Pkg.test("Mimi"; coverage=true)'
+#  - julia --check-bounds=yes -e 'include("test/test_dependencies.jl"); run_dependency_tests()'
 after_success:
-  - julia -e 'cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
-  - julia -e 'cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
-  - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'ENV["DOCUMENTER_DEBUG"]=true; cd(Pkg.dir("Mimi")); include(joinpath("docs","make.jl"))'
+  - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+  - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
+  - julia -e 'using Pkg; Pkg.add("Documenter")'
+  - julia -e 'using Pkg; ENV["DOCUMENTER_DEBUG"]=true; cd(Pkg.dir("Mimi")); include(joinpath("docs","make.jl"))'

@@ -1,12 +1,13 @@
 using Mimi
-using Base.Test
+using Test
 using DataFrames
 using VegaLite
+using Electron
 
 import Mimi: 
     dataframe_or_scalar, createspec_singlevalue, 
     createspec_lineplot, createspec_multilineplot, createspec_barplot,
-    getmultiline, getline, getbar, _spec_for_item, spec_list, explore, 
+    getmultiline, getline, getbar, _spec_for_item, menu_item_list, explore, 
     getdataframe, reset_compdefs
 
 reset_compdefs()
@@ -55,7 +56,7 @@ run(m)
 #TODO:  createspec_singlevalue, createspec_multilineplot, 
 #createspec_lineplot, createspec_barplot, _spec_for_item
 
-s = spec_list(m)
+s = menu_item_list(m)
 @test typeof(s) == Array{Any, 1}
 @test length(s) == 7
 
@@ -64,7 +65,7 @@ w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
 
 #5.  explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
-#       dim_name::Union{Void, Symbol} = nothing)
+#       dim_name::Union{Nothing, Symbol} = nothing)
 
 p = explore(m, :MyComp, :a)
 @test typeof(p) == VegaLite.VLSpec{:plot}
@@ -93,5 +94,5 @@ set_param!(m2, :MyComp2, :a, ones(101, 3, 4))
 run(m2)
 
 #spec creation for MyComp.a should fail and error, haven't handled case of > 3 dims yet
-@test_warn "MyComp2.a has over 3 graphing dims, not yet implemented in explorer" w = explore(m2)
-
+# TODO Reenable
+# @test_warn "has >2 graphing dims" explore(m2)

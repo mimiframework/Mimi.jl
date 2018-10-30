@@ -13,29 +13,37 @@ Produce a UI to explore the parameters and variables of Model `m` in a Window wi
 """
 function explore(m::Model; title = "Electron")
     
-    if m.mi == nothing
+    if m.mi === nothing
         error("A model must be run before it can be plotted")
     end
 
-    #get variable data
-    speclist = spec_list(m)
-    speclistJSON = JSON.json(speclist)
-
     #start Electron app
-    if app == nothing
+    if app === nothing
         global app = Application()
     end
 
     #load main html file
-    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\", "/")
+    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\" => "/")
 
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
-    slashes = is_windows() ? "///" : "//"
+    slashes = Sys.iswindows() ? "///" : "//"
     w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
 
+    #set async block to process messages
+    @async for msg in msgchannel(w)
+
+        spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
+        specJSON = JSON.json(spec)
+
+        run(w, "display($specJSON)")
+    end
+
     #refresh variable list
-    result = run(w, "refresh($speclistJSON)")
+    menulist = menu_item_list(m)
+    menulistJSON = JSON.json(menulist)
+
+    result = run(w, "refresh($menulistJSON)")
     
     return w
 
@@ -46,13 +54,14 @@ end
 
 Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`.
 """
-
 function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
 
-    if m.mi == nothing
+    if m.mi === nothing
         error("A model must be run before it can be plotted")
     end
     
     spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
-    VegaLite.VLSpec{:plot}(spec)
+    spec === nothing && error("Spec cannot be built.")        
+
+    return VegaLite.VLSpec{:plot}(spec)
 end

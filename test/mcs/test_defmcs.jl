@@ -3,8 +3,9 @@ using Distributions
 using Query
 using DataFrames
 using IterTools
+using DelimitedFiles
 
-using Base.Test
+using Test
 
 N = 100
 
@@ -54,7 +55,7 @@ output_dir = joinpath(tempdir(), "mcs")
 generate_trials!(mcs, N, sampling=LHS, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Test that the proper number of trials were saved
-d = readcsv(joinpath(output_dir, "trialdata.csv"))
+d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names
 
 # Run trials 1:N, and save results to the indicated directory
@@ -97,7 +98,7 @@ function outer_loop_func(mcs::MonteCarloSimulation, tup)
 
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    Mimi.log_info("outer loop: scen:$scen, rate:$rate")
+    @debug "outer loop: scen:$scen, rate:$rate"
 end
 
 function inner_loop_func(mcs::MonteCarloSimulation, tup)
@@ -106,7 +107,7 @@ function inner_loop_func(mcs::MonteCarloSimulation, tup)
 
     # unpack tuple (better to use NT here?)
     (scen, rate) = tup
-    Mimi.log_info("inner loop: scen:$scen, rate:$rate")
+    @debug "inner loop: scen:$scen, rate:$rate"
 end
 
 
@@ -156,7 +157,7 @@ run_mcs(mcs, N;
 @test loop_counter == 6 * N + 60
 
 
-function post_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Union{Void,Tuple})
+function post_trial(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
     global loop_counter    
     loop_counter += 1
 

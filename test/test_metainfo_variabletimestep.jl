@@ -1,6 +1,6 @@
 module TestMetaInfo_VariableTimestep
 
-using Base.Test
+using Test
 using Mimi
 
 import Mimi: 

@@ -42,7 +42,7 @@ mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N}
 	end
 
     function TimestepArray{T_TS, T, N}(lengths::Int...) where {T_TS, T, N}
-		return new(Array{T, N}(lengths...))
+		return new(Array{T, N}(undef, lengths...))
 	end
 end
 
@@ -61,23 +61,22 @@ abstract type AbstractDimension end
 const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}
 const DimensionRangeTypes = Union{UnitRange{Int}, StepRange{Int, Int}}
 
-struct Dimension <: AbstractDimension
-    dict::OrderedDict{DimensionKeyTypes, Int}
-    key_type::DataType
+struct Dimension{T <: DimensionKeyTypes} <: AbstractDimension
+    dict::OrderedDict{T, Int}
 
-    function Dimension(keys::Vector{T}) where T <: DimensionKeyTypes
-        dict = OrderedDict{T, Int}(collect(zip(keys, 1:length(keys))))
-        return new(dict, T)
+    function Dimension(keys::Vector{T}) where {T <: DimensionKeyTypes}
+        dict = OrderedDict(collect(zip(keys, 1:length(keys))))
+        return new{T}(dict)
     end
 
-    function Dimension(rng::DimensionRangeTypes)
+    function Dimension(rng::T) where {T <: DimensionRangeTypes}
         return Dimension(collect(rng))
     end
 
     Dimension(i::Int) = Dimension(1:i)
 
     # Support Dimension(:foo, :bar, :baz)
-    function Dimension(keys::T...) where T <: DimensionKeyTypes
+    function Dimension(keys::T...) where {T <: DimensionKeyTypes}
         vector = [key for key in keys]
         return Dimension(vector)
     end
@@ -104,6 +103,14 @@ mutable struct ScalarModelParameter{T} <: ModelParameter
 
     function ScalarModelParameter{T}(value::T) where T
         new(value)
+    end
+
+    function ScalarModelParameter{T1}(value::T2) where {T1, T2}
+        try
+            new(T1(value))
+        catch err
+            error("Failed to convert $value::$T2 to $T1")
+        end
     end
 end
 
@@ -133,11 +140,11 @@ struct InternalParameterConnection <: AbstractConnection
     dst_comp_name::Symbol
     dst_par_name::Symbol
     ignoreunits::Bool
-    backup::Union{Symbol, Void} # a Symbol identifying the external param providing backup data, or nothing
+    backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
     offset::Int
 
     function InternalParameterConnection(src_comp::Symbol, src_var::Symbol, dst_comp::Symbol, dst_par::Symbol,
-                                         ignoreunits::Bool, backup::Union{Symbol, Void}=nothing; offset::Int=0)
+                                         ignoreunits::Bool, backup::Union{Symbol, Nothing}=nothing; offset::Int=0)
         self = new(src_comp, src_var, dst_comp, dst_par, ignoreunits, backup, offset)
         return self
     end
@@ -203,8 +210,8 @@ mutable struct ComponentDef  <: NamedDef
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
-    first::Union{Void, Int}
-    last::Union{Void, Int}
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
 
     # ComponentDefs are created "empty"; elements are subsequently added 
     # to them via addvariable, add_dimension!, etc.
@@ -240,13 +247,13 @@ mutable struct ModelDef
 
     external_params::Dict{Symbol, ModelParameter}
 
-    sorted_comps::Union{Void, Vector{Symbol}}
+    sorted_comps::Union{Nothing, Vector{Symbol}}
 
     is_uniform::Bool
     
     function ModelDef(number_type=Float64)
         self = new()
-        self.module_name = module_name(current_module())
+        self.module_name = nameof(@__MODULE__)                  # TBD: fix this; should by module model is defined in
         self.comp_defs = OrderedDict{Symbol, ComponentDef}()
         self.dimensions = Dict{Symbol, Dimension}()
         self.number_type = number_type
@@ -267,44 +274,62 @@ end
 # Supertype for variables and parameters in component instances
 abstract type ComponentInstanceData end
 
+struct ComponentInstanceParameters{NT <: NamedTuple} <: ComponentInstanceData
+    nt::NT
+    
+    function ComponentInstanceParameters{NT}(nt::NT) where {NT <: NamedTuple}
+        return new{NT}(nt)
+    end
+end
+
+function ComponentInstanceParameters(names, types, values)
+    NT = NamedTuple{names, types}
+    ComponentInstanceParameters{NT}(NT(values))
+end
+
+function ComponentInstanceParameters{NT}(values::T) where {NT <: NamedTuple, T <: AbstractArray}
+    ComponentInstanceParameters{NT}(NT(values))
+end
+
+struct ComponentInstanceVariables{NT <: NamedTuple} <: ComponentInstanceData
+    nt::NT
+
+    function ComponentInstanceVariables{NT}(nt::NT) where {NT <: NamedTuple}
+        return new{NT}(nt)
+    end
+end
+
+function ComponentInstanceVariables{NT}(values::T) where {NT <: NamedTuple, T <: AbstractArray}
+    ComponentInstanceVariables{NT}(NT(values))
+end
+
+function ComponentInstanceVariables(names, types, values)
+    NT = NamedTuple{names, types}
+    ComponentInstanceVariables{NT}(NT(values))
+end
+
+# A container class that wraps the dimension dictionary when passed to run_timestep()
+# and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
+struct DimDict
+    dict::Dict{Symbol, Vector{Int}}
+end
+
+# Special case support for Dicts so we can use dot notation on dimension.
+# The run_timestep() and init() funcs pass a DimDict of dimensions by name 
+# as the "d" parameter.
+@inline function Base.getproperty(dimdict::DimDict, property::Symbol)
+    return getfield(dimdict, :dict)[property]
+end
+
+# TBD: try with out where clause, i.e., just obj::ComponentInstanceData
+nt(obj::T)  where {T <: ComponentInstanceData} = getfield(obj, :nt)
+Base.names(obj::T)  where {T <: ComponentInstanceData} = keys(nt(obj))
+Base.values(obj::T) where {T <: ComponentInstanceData} = values(nt(obj))
+types(obj::T) where {T <: ComponentInstanceData} = typeof(nt(obj)).parameters[2].parameters
+
 # An instance of this type is passed to the run_timestep function of a
 # component, typically as the `p` argument. The main role of this type
 # is to provide the convenient `p.nameofparameter` syntax.
-# NAMES should be a Tuple of Symbols, namely the names of the parameters
-struct ComponentInstanceParameters{NAMES,TYPES} <: ComponentInstanceData
-    # This field has one element for each parameter. The order must match
-    # the order of NAMES
-    # The elements can either be of type Ref (for scalar values) or of
-    # some array type
-    values::TYPES
-    names::NTuple{N, Symbol} where N
-    types::DataType
-
-    function ComponentInstanceParameters{NAMES,TYPES}(values) where {NAMES,TYPES}
-        # println("comp inst params:\n  values=$values\n\n  names=$NAMES\n\n  types=$TYPES\n\n")
-        return new(Tuple(values), NAMES, TYPES)
-    end
-end
-
-# An instance of this type is passed to the run_timestep function of a
-# component, typically as the `v` argument. The main role of this type
-# is to provide the convenient `v.nameofparameter` syntax.
-# NAMES should be a Tuple of Symbols, namely the names of the variables
-struct ComponentInstanceVariables{NAMES,TYPES} <: ComponentInstanceData
-    # This field has one element for each variable. The order must match
-    # the order of NAMES
-    # The elements can either be of type Ref (for scalar values) or of
-    # some array type
-    values::TYPES
-    names::NTuple{N, Symbol} where N
-    types::DataType
-
-    function ComponentInstanceVariables{NAMES,TYPES}(values) where {NAMES,TYPES}
-        # println("comp inst vars:\n  values=$values\n\n  names=$NAMES\n\n  types=$TYPES\n\n")
-        return new(Tuple(values), NAMES, TYPES)
-    end
-end
-
 mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
     comp_name::Symbol
     comp_id::ComponentId
@@ -315,7 +340,8 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
     first::Int
     last::Int
 
-    run_timestep::Union{Void, Function}
+    init::Union{Nothing, Function}
+    run_timestep::Union{Nothing, Function}
     
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, 
                                vars::TV, pars::TP,
@@ -323,18 +349,34 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
                                name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, 
                                                                    TP <: ComponentInstanceParameters}
         self = new{TV, TP}()
+        
         self.comp_id = comp_id = comp_def.comp_id
         self.comp_name = name
-        self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
+        self.dim_dict = Dict{Symbol, Vector{Int}}()    # set in "build" stage
+        
         self.variables = vars
         self.parameters = pars
         self.first = first
-        self.last = last        
+        self.last = last
 
-        comp_module = eval(Main, comp_id.module_name)
+        comp_name   = comp_id.comp_name
+        module_name = comp_id.module_name
+        comp_module = Base.eval(Main, module_name)
 
-        # the try/catch allows components with no run_timestep function (as in some of our test cases)
-        self.run_timestep = func = try eval(comp_module, Symbol("run_timestep_$(comp_id.module_name)_$(comp_id.comp_name)")) end
+        # TBD: use FunctionWrapper here?
+        function get_func(name)
+            func_name = Symbol("$(name)_$(comp_name)")
+            try
+                Base.eval(comp_module, func_name)
+            catch err
+                # No need to warn about this...
+                # @warn "Failed to evaluate function name $func_name in module $comp_module"
+                nothing
+            end        
+        end
+
+        self.init = get_func("init")
+        self.run_timestep = get_func("run_timestep")
            
         return self
     end
@@ -372,12 +414,9 @@ This `Model` can be created with the optional keyword argument `number_type` ind
 the default type of number used for the `ModelDef`.  If not specified the `Model` assumes
 a `number_type` of `Float64`.
 """
-#
-# Provides user-facing API to ModelInstance and ModelDef
-#
 mutable struct Model
     md::ModelDef
-    mi::Union{Void, ModelInstance}
+    mi::Union{Nothing, ModelInstance}
 
     function Model(number_type::DataType=Float64)
         return new(ModelDef(number_type), nothing)
@@ -395,9 +434,6 @@ end
 A Mimi `Model` whose results are obtained by subtracting results of one `base` Model 
 from those of another `marginal` Model` that has a difference of `delta`.
 """
-#
-# A "model" whose results are obtained by subtracting results of one model from those of another.
-#
 struct MarginalModel
     base::Model
     marginal::Model
