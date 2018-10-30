@@ -242,7 +242,7 @@ macro defcomp(comp_name, ex)
 
                 elseif @capture(arg, index = [dims__])
                     debug("    dims: $dims")
-                    if !isempty(filter(x -> !(x isa String), dims))
+                    if !isempty(filter(x -> !(x isa Symbol), dims))
                         error("dimensions must be defined by a Symbol placeholder")
                     end
                     append!(dimensions, dims)
