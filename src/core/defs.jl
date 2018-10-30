@@ -53,8 +53,7 @@ end
 """
     name(def::NamedDef) = def.name 
 
-Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `ComponentDef`, 
-and `DimensionDef`.
+Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, and `ComponentDef`.
 """
 name(def::NamedDef) = def.name
 
@@ -118,14 +117,24 @@ end
 #
 # Dimensions
 #
+"""
+    add_dimension!(comp::ComponentDef, name)
+
+Add a dimension name to a `ComponentDef`, with an optional Dimension definition.
+The definition is included only for the case of anonymous dimensions, which are 
+indicated in `@defcomp` with an Int rather than a symbol name. In this case, the
+Int (e.g., 4) is converted to a dimension of the same length, e.g., `Dimension(4)`,
+and assigned a new name `Symbol(4)``
+"""
 function add_dimension!(comp::ComponentDef, name)
-    comp.dimensions[name] = dim_def = DimensionDef(name)
-    return dim_def
+    # create the Dimension and store it in the ComponentDef until build time
+    dim = (name isa Int) ? Dimension(name) : nothing
+    comp.dimensions[Symbol(name)] = dim
 end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
-dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
+dimensions(comp_def::ComponentDef) = keys(comp_def.dimensions)
 
 dimensions(def::DatumDef) = def.dimensions
 

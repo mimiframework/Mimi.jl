@@ -72,7 +72,7 @@ add_comp!(my_model, testcomp3)
 
 comps = compdefs(my_model)
 
-#Test compdefs, compdef, compkeys, etc.
+# Test compdefs, compdef, compkeys, etc.
 @test comps == compdefs(my_model.md)
 @test length(comps) == 3
 @test compdef(:testcomp3) == [comps...][3]
@@ -87,15 +87,7 @@ comps = compdefs(my_model)
 add_comp!(my_model, testcomp3, :testcomp3_v2)
 @test numcomponents(my_model) == 4
 
-#Test some component dimensions fcns, other dimensions testing in test_dimensions
-def = compdef(:testcomp3)
-def_dims = dimensions(def)
-@test eltype(def_dims) == Mimi.DimensionDef && length(def_dims) == 1
-@test [def_dims...][1].name == :time
-
-# dump_components() #view all components and their info
-
-#Test reset_compdefs methods
+#T est reset_compdefs methods
 reset_compdefs()
 @test length(_compdefs) == 3 #adder, ConnectorCompVector, ConnectorCompMatrix
 reset_compdefs(false)
