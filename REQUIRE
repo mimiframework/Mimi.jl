@@ -13,6 +13,7 @@ FileIO
 GraphPlot 0.3.0
 JSON
 LightGraphs
+Logging
 MacroTools
 MetaGraphs
 NamedArrays

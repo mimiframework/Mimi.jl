@@ -247,22 +247,24 @@ end
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) = set_dimension!(md, name, Dimension(keys))
+
+function set_dimension!(md::ModelDef, name::Symbol, dim::Dimension)
     redefined = haskey(md, name)
     if redefined
         @warn "Redefining dimension :$name"
     end
 
     if name == :time
-        md.is_uniform = isuniform(keys)
+        k = [keys(dim)...]
+        md.is_uniform = isuniform(k)
         if redefined 
-            reset_run_periods!(md, keys[1], keys[end])
+            reset_run_periods!(md, k[1], k[end])
         end
     end
     
-    dim = Dimension(keys)
     md.dimensions[name] = dim
-    return dim
+    return dim    
 end
 
 # helper functions used to determine if the provided time values are 
@@ -497,6 +499,13 @@ end
 const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
+function _add_anonymous_dims!(md::ModelDef, comp_def::ComponentDef)
+    for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dimensions)
+        @info "Setting dimension $name to $dim"
+        set_dimension!(md, name, dim)
+    end
+end
+
 """
     add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
@@ -540,6 +549,8 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     end        
 
     set_run_period!(comp_def, first, last)
+
+    _add_anonymous_dims!(md, comp_def)
 
     if before === nothing && after === nothing
         md.comp_defs[comp_name] = comp_def   # just add it to the end
