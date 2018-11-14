@@ -11,7 +11,7 @@ makedocs(
 		"Tutorial" => "tutorial.md",
 		"FAQ" => "faq.md",
 		"Reference" => "reference.md",
-		"Integration Guide" => "integrationguide.md"]
+		"Integration Guide: Port to v0.5.0" => "integrationguide.md"]
 )
 
 deploydocs(
