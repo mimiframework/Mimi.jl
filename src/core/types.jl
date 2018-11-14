@@ -276,7 +276,8 @@ end
 global const BindingTypes = Union{Int, Float64, DatumReference}
 
 mutable struct CompositeComponentDef <: AbstractComponentDef
-    comp_id::Union{Nothing, ComponentId}        # allow anonynous top-level CompositeComponentDefs (must be referenced by a ModelDef)
+    leaf::LeafComponentDef                  # a leaf component that simulates a single component for this composite
+    comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level CompositeComponentDefs (must be referenced by a ModelDef)
     name::Union{Nothing, Symbol}
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Pair{DatumReference, BindingTypes}}
@@ -305,9 +306,16 @@ mutable struct CompositeComponentDef <: AbstractComponentDef
 
         comps_dict = OrderedDict{Symbol, AbstractComponentDef}([name(cd) => cd for cd in comps])
 
-        return new(comp_id, comp_name, comps_dict, bindings, exports, 
+        self = new(comp_id, comp_name, comps_dict, bindings, exports, 
                    internal_param_conns, external_param_conns,
                    backups, external_params, sorted_comps)
+
+        # for (dr, exp_name) in exports
+        #     #comp_def.variables[name] = var_def
+        #     addvariable(comp_def, variable(comp_def, name(variable)), exp_name)
+        # end
+            
+        return self
     end   
 
     function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}, 
@@ -410,8 +418,8 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
     variables::TV
     parameters::TP
     dim_dict::Dict{Symbol, Vector{Int}}
-    first::Int
-    last::Int
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
     init::Union{Nothing, Function}
     run_timestep::Union{Nothing, Function}
 
@@ -434,7 +442,7 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
         # All CompositeComponentInstances use a standard method that just loops over inner components.
         # TBD: use FunctionWrapper here?
         function get_func(name)
-            func_name = Symbol("$(name)_$(comp_name)")
+            func_name = Symbol("$(name)_$(self.comp_name)")
             try
                 Base.eval(comp_module, func_name)
             catch err

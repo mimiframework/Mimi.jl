@@ -85,12 +85,39 @@ function save_dim_dict_reference(mi::ModelInstance)
     return nothing
 end
 
+# Return a built CompositeComponentInstance by recursively building
+# all sub-components.
+function build(ccd::CompositeComponentDef)
+    comps = Vector{T <: AbstractComponentInstance}
+
+    for cd in compdefs(ccd)
+        ci = build(cd)
+        push!(comps, ci)
+    end
+
+    # TBD: using ccd.exports, create the vars and params lists for the composite
+    vars = []
+    pars = []
+
+    cci = CompositeComponentInstance{typeof(vars), typeof(pars)}(ccd, vars, pars, name(ccd))
+    return cci 
+end
+
+# Return a built LeafComponentInstance
+function build(lcd::LeafComponentDef)
+    vars = []
+    pars = []
+    lci = LeafComponentInstance{typeof(vars), typeof(pars)}(lcd, vars, pars, name(comp_def); is_composite=false)
+    return lci
+end
+
 function build(m::Model)
     # Reference a copy in the ModelInstance to avoid changes underfoot
     m.mi = build(deepcopy(m.md))
     return nothing
 end
 
+# TBD: this functionality needs to move to the build(ccd) and build(lcd) functions above
 function build(md::ModelDef)
     add_connector_comps(md)
     
@@ -142,6 +169,10 @@ function build(md::ModelDef)
 
     mi = ModelInstance(md)
 
+    # Create a vector of ci instances in this following loop, then generate a 
+    # CompositeComponentInstance from the vector.
+    comps = Vector{T <: AbstractComponentInstance}
+
     # instantiate parameters
     for comp_def in comp_defs
         comp_name = name(comp_def)
@@ -154,11 +185,17 @@ function build(md::ModelDef)
         ptypes = Tuple{map(typeof, pvals)...}
         pars = ComponentInstanceParameters(pnames, ptypes, pvals)
 
-        first = first_period(md, comp_def)
-        last = last_period(md, comp_def)
+        # first = first_period(md, comp_def)
+        # last = last_period(md, comp_def)
 
-        ci = LeafComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
-        add_comp!(mi, ci)
+        # ci = LeafComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
+        ci = LeafComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
+
+        push!(comps, ci)
+        # add_comp!(mi, ci)
+    end
+
+    for ci{TV, TP} in comps
     end
 
     save_dim_dict_reference(mi)

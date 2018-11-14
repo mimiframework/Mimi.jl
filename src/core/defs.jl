@@ -349,13 +349,14 @@ function parameters(ccd::CompositeComponentDef)
     return params
 end
 
-
 """
     parameters(comp_id::ComponentId)
 
 Return a list of the parameter definitions for `comp_id`.
 """
 parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
+
+parameters(dr::DatumReference) = parameters(dr.comp_id)
 
 """
     parameter_names(md::ModelDef, comp_name::Symbol)
@@ -367,6 +368,8 @@ parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, c
 parameter_names(comp_def::AbstractComponentDef) = [name(param) for param in parameters(comp_def)]
 
 parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
+
+parameter(dr::DatumReference, name::Symbol) = parameter(compdef(dr.comp_id), name)
 
 function parameter(comp_def::LeafComponentDef, name::Symbol) 
     try
@@ -477,6 +480,8 @@ end
 
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
+variables(dr::DatumReference) = variables(dr.comp_id)
+
 function variable(comp_def::LeafComponentDef, var_name::Symbol)
     try
         return comp_def.variables[var_name]
@@ -488,6 +493,8 @@ end
 variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), var_name)
 
 variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(md, comp_name), var_name)
+
+variable(dr::DatumReference, name::Symbol) = variable(compdef(dr.comp_id), name)
 
 """
     variable_names(md::ModelDef, comp_name::Symbol)
@@ -511,9 +518,29 @@ end
 
 # Add a variable to a LeafComponentDef
 function addvariable(comp_def::LeafComponentDef, name, datatype, dimensions, description, unit)
-    v = DatumDef(name, datatype, dimensions, description, unit, :variable)
-    comp_def.variables[name] = v
-    return v
+    var_def = DatumDef(name, datatype, dimensions, description, unit, :variable)
+    comp_def.variables[name] = var_def
+    return var_def
+end
+
+# CompositeComponents have no vars of their own, only references to vars in 
+# components contained within.
+function addvariable(comp_def::CompositeComponentDef, var_def::DatumDef, name::Symbol)
+    comp_def.variables[name] = var_def
+    return var_def
+end
+
+"""
+    addvariables(comp_def::CompositeComponentDef, exports::Vector{Pair{DatumReference, Symbol}})
+
+Add all exported variables to a CompositeComponentDef.
+"""
+function addvariables(comp_def::CompositeComponentDef, exports::Vector{Pair{DatumReference, Symbol}})
+    for (dr, exp_name) in exports
+        #comp_def.variables[name] = var_def
+
+        addvariable(comp_def, variable(comp_def, name(variable)), exp_name)
+    end
 end
 
 # Add a variable to a LeafComponentDef referenced by ComponentId
