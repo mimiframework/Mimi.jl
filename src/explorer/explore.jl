@@ -27,9 +27,8 @@ function explore(m::Model; title = "Electron")
 
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
-    slashes = Sys.iswindows() ? "///" : "//"
-    w = Window(app, URI("file:$(slashes)$(mainpath)"), options = windowopts)
-
+    w = Window(app, URI(joinpath(@__PATH__, "assets", "main.html")), options = windowopts)
+    
     #set async block to process messages
     @async for msg in msgchannel(w)
 
