@@ -266,15 +266,15 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#",
-    "page": "Integration Guide",
-    "title": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
+    "title": "Integration Guide: Port to v0.5.0",
     "category": "page",
     "text": ""
 },
 
 {
     "location": "integrationguide.html#Integration-Guide:-Porting-Mimi-Models-from-v0.4.0-to-v0.5.0-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Integration Guide:  Porting Mimi Models from v0.4.0 to v0.5.0",
     "category": "section",
     "text": ""
@@ -282,7 +282,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Overview-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Overview",
     "category": "section",
     "text": "The release of Mimi v0.5.0 is a breaking release, necessitating the adaptation of existing models\' syntax and structure in order for those models to run on this new version.  This guide provides an overview of the steps required to get most models using the v0.4.0 API working with v0.5.0.  It is not a comprehensive review of all changes and new functionalities, but a guide to the minimum steps required to port old models between versions.  For complete information on the new version and its functionalities, see the full documentation.This guide is organized into six main sections, each descripting an independent set of changes that can be undertaken in any order desired.  For clarity, these sections echo the organization of the userguide.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting\nAdvanced topicsA Note on Function Naming: There has been a general overhaul on function names, especially those in the explicity user-facing API, to be consistent with Julia conventions and the conventions of this Package.  These can be briefly summarized as follows:use _ for readability\nappend all functions with side-effects, i.e., non-pure functions that return a value but leave all else unchanged with a !\nthe commonly used terms component, variable, and parameter are shortened to comp, var, and param\nfunctions that act upon a component, variable, or parameter are often written in the form [action]_[comp/var/param]"
@@ -290,7 +290,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Defining-Components-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Defining Components",
     "category": "section",
     "text": "The run_timestep function is now contained by the @defcomp macro, and takes the parameters p, v, d, t, referring to Parameters, Variables, and Dimensions of the component you defined.  The fourth argument is an AbstractTimestep, i.e., either a FixedTimestep or a VariableTimestep.  Similarly, the optional init function is also contained by @defcomp, and takes the parameters p, v, d.  Thus, as described in the user guide, defining a single component is now done as follows:In this version, the fourth argument (t below) can no longer always be used simply as an Int. Indexing with t is still permitted, but special care must be taken when comparing t with conditionals or using it in arithmatic expressions.  The full API as described later in this document in Advanced Topics:  Timesteps and available functions.  Since differential equations are commonly used as the basis for these models\' equations, the most commonly needed change will be changing if t == 1 to if is_first(t)@defcomp component1 begin\n\n    # First define the state this component will hold\n    savingsrate = Parameter()\n\n    # Second, define the (optional) init function for the component\n    function init(p, v, d)\n    end\n\n    # Third, define the run_timestep function for the component\n    function run_timestep(p, v, d, t)\n    end\n\nend"
@@ -298,7 +298,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Constructing-a-Model-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Constructing a Model",
     "category": "section",
     "text": "In an effort to standardize the function naming protocol within Mimi, and to streamline it with the Julia convention, several function names have been changed.  The table below lists a subset of these changes, focused on the exported API functions most commonly used in model construction.  Old Syntax New Syntax\naddcomponent! add_comp!\nconnectparameter connect_param!\nsetleftoverparameters set_leftover_params!\nsetparameter set_param!\nadddimension add_dimension!\nsetindex set_dimension!Changes to various optional keyword arguments:add_comp!:  Previously the optional keyword arguments start and stop could be used to specify times for components that do not run for the full length of the model. These arguments are now first and last respectively.add_comp!(mymodel, ComponentC; first=2010, last=2100)"
@@ -306,7 +306,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Running-a-Model-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Running a Model",
     "category": "section",
     "text": ""
@@ -314,7 +314,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Accessing-Results-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Accessing Results",
     "category": "section",
     "text": ""
@@ -322,7 +322,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Plotting-and-the-Explorer-UI-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Plotting and the Explorer UI",
     "category": "section",
     "text": "This release of Mimi does not include the plotting functionality previously offered by Mimi.  While the previous files are still included, the functions are not exported as efforts are made to simplify and improve the plotting associated with Mimi.  The new version does, however, include a new UI tool that can be used to visualize model results.  This explore function is described in the User Guide under Advanced Topics."
@@ -330,7 +330,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Advanced-Topics-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Advanced Topics",
     "category": "section",
     "text": ""
@@ -338,7 +338,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Timesteps-and-available-functions-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Timesteps and available functions",
     "category": "section",
     "text": "As previously mentioned, some relevant function names have changed.  These changes were made to eliminate ambiguity.  For example, the new naming clarifies that is_last returns whether the timestep is on the last valid period to be run, not whether it has run through that period already.  This check can still be achieved with is_finished, which retains its name and function.  Below is a subset of such changes related to timesteps and available functions.Old Syntax New Syntax\nisstart is_first\nisstop is_lastAs mentioned in earlier in this document, the fourth argument in run_timestep is an AbstractTimestep i.e. a FixedTimestep or a VariableTimestep and is a type defined within Mimi in \"src/time.jl\".  In this version, the fourth argument (t below) can no longer always be used simply as an Int. Defining the AbstractTimestep object as t, indexing with t is still permitted, but special care must be taken when comparing t with conditionals or using it in arithmatic expressions.  Since differential equations are commonly used as the basis for these models\' equations, the most commonly needed change will be changing if t == 1 to if is_first(t).  There are also new useful functions including is_time(t, y) and is_timestep(t, s).The full API:you may index into a variable or parameter with [t] or [t +/- x] as usual\nto access the time value of t (currently a year) as a Number, use gettime(t)\nuseful functions for commonly used conditionals are is_first(t),is_last(t), is_time(t, y), and is_timestep(t, s)as listed above\nto access the index value of t as a Number representing the position in the time array, use t.t.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called.  "
@@ -346,7 +346,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Parameter-connections-between-different-length-components-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Parameter connections between different length components",
     "category": "section",
     "text": ""
@@ -354,7 +354,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#More-on-parameter-indices-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "More on parameter indices",
     "category": "section",
     "text": ""
@@ -362,7 +362,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Updating-an-external-parameter-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Updating an external parameter",
     "category": "section",
     "text": "To update an external parameter, use the functions update_param! and udpate_params! (previously known as update_external_parameter and update_external_parameters, respectively.)  Their calling signatures are:update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)\nupdate_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)For external parameters with a :time dimension, passing update_timesteps=true indicates that the time keys (i.e., year labels) should also be updated in addition to updating the parameter values."
@@ -370,7 +370,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Setting-parameters-with-a-dictionary-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Setting parameters with a dictionary",
     "category": "section",
     "text": "The function set_leftover_params! replaces the function setleftoverparameters."
@@ -378,7 +378,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#Using-NamedArrays-for-setting-parameters-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "Using NamedArrays for setting parameters",
     "category": "section",
     "text": ""
@@ -386,7 +386,7 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "integrationguide.html#The-internal-\'build\'-function-and-model-instances-1",
-    "page": "Integration Guide",
+    "page": "Integration Guide: Port to v0.5.0",
     "title": "The internal \'build\' function and model instances",
     "category": "section",
     "text": ""
