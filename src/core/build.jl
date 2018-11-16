@@ -57,12 +57,12 @@ function _instantiate_datum(md::ModelDef, def::DatumDef)
 end
 
 """
-    _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
+    _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
-Instantiate a component `comp_def` in the model `md` and its variables (but not its parameters). 
-Return the resulting ComponentInstanceVariables.
+Instantiate a component `comp_def` in the model `md` and its variables (but not its 
+parameters). Return the resulting ComponentInstanceVariables.
 """
-function _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
+function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     comp_name = name(comp_def)
     var_defs = variables(comp_def)    
 
@@ -71,6 +71,47 @@ function _instantiate_component_vars(md::ModelDef, comp_def::LeafComponentDef)
     values = [_instantiate_datum(md, def) for def in var_defs]
 
     return ComponentInstanceVariables(names, types, values)
+end
+
+function _combine_exported_vars(md::ModelDef, comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any})
+    # exports is Vector{Pair{DatumReference, Symbol}}
+    names = []
+    values = []
+
+    for (dr, name) in comp_def.subcomps.exports
+        if has_variable(comp_def, name)
+            civ = var_dict[dr.comp_id.comp_name]  # TBD: should var_dict hash on ComponentId instead?
+            value = getproperty(civ, dr.datum_name)
+            push!(names, name)
+            push!(values, value)
+        end
+    end
+
+    types = map(typeof, values)
+    @info "names: $names"
+    @info "types: $types"
+    @info "values: $values"
+
+    return ComponentInstanceVariables(Tuple(names), Tuple{types...}, Tuple(values))
+end
+
+# 
+
+# Recursively instantiate all variables and store refs in the given dict.
+function _instantiate_vars(md::ModelDef, comp_def::ComponentDef, var_dict::Dict{Symbol, Any})
+    comp_name = name(comp_def)
+
+    if is_composite(comp_def)
+        for cd in compdefs(comp_def)
+            _instantiate_vars(md, cd, var_dict)
+        end
+
+        # Create aggregate comp-inst-vars without allocating new storage
+        # var_dict[comp_name] = 
+
+    else
+        var_dict[comp_name] = _instantiate_component_vars(md, comp_def)
+    end
 end
 
 # Save a reference to the model's dimension dictionary to make it 
@@ -85,30 +126,60 @@ function save_dim_dict_reference(mi::ModelInstance)
     return nothing
 end
 
-# Return a built CompositeComponentInstance by recursively building
-# all sub-components.
-function build(ccd::CompositeComponentDef)
-    comps = Vector{T <: AbstractComponentInstance}
+# Return a built leaf or composite ComponentInstance
+function build(md::ModelDef, comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+    @info "build $(comp_def.comp_id)"
+    comp_name = name(comp_def)
 
-    for cd in compdefs(ccd)
-        ci = build(cd)
-        push!(comps, ci)
+    par_dict[comp_name] = par_values = Dict()  # param value keyed by param name
+
+    subcomps = nothing
+
+    # recursive build...
+    if is_composite(comp_def)
+        comps = [build(md, cd, var_dict, par_dict) for cd in compdefs(comp_def.subcomps)]
+        subcomps = SubcompsInstance(comps)
+
+        # Iterate over connections to create parameters, referencing storage in vars   
+        for ipc in internal_param_conns(comp_def)
+            src_comp_name = ipc.src_comp_name      
+
+            vars = var_dict[src_comp_name]
+            var_value_obj = get_property_obj(vars, ipc.src_var_name)
+            
+            _par_values = par_dict[ipc.dst_comp_name]
+            _par_values[ipc.dst_par_name] = var_value_obj
+        end
+
+        for ext in external_param_conns(comp_def)
+            param = external_param(comp_def, ext.external_param)
+            _par_values = par_dict[ext.comp_name]
+            _par_values[ext.param_name] = param isa ScalarModelParameter ? param : value(param)
+        end
+    
+        # Make the external parameter connections for the hidden ConnectorComps.
+        # Connect each :input2 to its associated backup value.
+        for (i, backup) in enumerate(backups(md))
+            conn_comp_name = connector_comp_name(i)
+            param = external_param(comp_def, backup)
+    
+            _par_values = par_dict[conn_comp_name]
+            _par_values[:input2] = param isa ScalarModelParameter ? param : value(param)
+        end
     end
 
-    # TBD: using ccd.exports, create the vars and params lists for the composite
-    vars = []
-    pars = []
+    # Do the rest for both leaf and composite components
+    pnames = Tuple(parameter_names(comp_def))
+    pvals  = [par_values[pname] for pname in pnames]
+    ptypes = Tuple{map(typeof, pvals)...}
+    pars = ComponentInstanceParameters(pnames, ptypes, pvals)
 
-    cci = CompositeComponentInstance{typeof(vars), typeof(pars)}(ccd, vars, pars, name(ccd))
-    return cci 
-end
-
-# Return a built LeafComponentInstance
-function build(lcd::LeafComponentDef)
-    vars = []
-    pars = []
-    lci = LeafComponentInstance{typeof(vars), typeof(pars)}(lcd, vars, pars, name(comp_def); is_composite=false)
-    return lci
+    # first = first_period(md, comp_def)
+    # last = last_period(md, comp_def)
+    # ci = ComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
+    ci = ComponentInstance{typeof(subcomps), typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name, 
+                                                                         subcomps=subcomps)
+    return ci
 end
 
 function build(m::Model)
@@ -117,7 +188,6 @@ function build(m::Model)
     return nothing
 end
 
-# TBD: this functionality needs to move to the build(ccd) and build(lcd) functions above
 function build(md::ModelDef)
     add_connector_comps(md)
     
@@ -132,72 +202,10 @@ function build(md::ModelDef)
     var_dict = Dict{Symbol, Any}()                 # collect all var defs and
     par_dict = Dict{Symbol, Dict{Symbol, Any}}()   # store par values as we go
 
-    comp_defs = compdefs(md)
-    for comp_def in comp_defs
-        comp_name = name(comp_def)
-        var_dict[comp_name] = _instantiate_component_vars(md, comp_def)
-        par_dict[comp_name] = Dict()  # param value keyed by param name
-    end
+    _instantiate_vars(md, md.ccd, var_dict)
 
-    # Iterate over connections to create parameters, referencing storage in vars   
-    for ipc in internal_param_conns(md)
-        comp_name = ipc.src_comp_name      
-
-        vars = var_dict[comp_name]
-        var_value_obj = get_property_obj(vars, ipc.src_var_name)
-        
-        par_values = par_dict[ipc.dst_comp_name]
-        par_values[ipc.dst_par_name] = var_value_obj
-    end
-    
-    for ext in external_param_conns(md)
-        comp_name = ext.comp_name
-        param = external_param(md, ext.external_param)
-        par_values = par_dict[comp_name]
-        par_values[ext.param_name] = param isa ScalarModelParameter ? param : value(param)
-    end
-
-    # Make the external parameter connections for the hidden ConnectorComps.
-    # Connect each :input2 to its associated backup value.
-    for (i, backup) in enumerate(backups(md))
-        comp_name = connector_comp_name(i)
-        param = external_param(md, backup)
-
-        par_values = par_dict[comp_name]
-        par_values[:input2] = param isa ScalarModelParameter ? param : value(param)
-    end
-
-    mi = ModelInstance(md)
-
-    # Create a vector of ci instances in this following loop, then generate a 
-    # CompositeComponentInstance from the vector.
-    comps = Vector{T <: AbstractComponentInstance}
-
-    # instantiate parameters
-    for comp_def in comp_defs
-        comp_name = name(comp_def)
-
-        vars = var_dict[comp_name]
-        
-        par_values = par_dict[comp_name]
-        pnames = Tuple(parameter_names(comp_def))
-        pvals  = [par_values[pname] for pname in pnames]
-        ptypes = Tuple{map(typeof, pvals)...}
-        pars = ComponentInstanceParameters(pnames, ptypes, pvals)
-
-        # first = first_period(md, comp_def)
-        # last = last_period(md, comp_def)
-
-        # ci = LeafComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, first, last, comp_name)
-        ci = LeafComponentInstance{typeof(vars), typeof(pars)}(comp_def, vars, pars, comp_name)
-
-        push!(comps, ci)
-        # add_comp!(mi, ci)
-    end
-
-    for ci{TV, TP} in comps
-    end
-
+    ci = build(md, md.ccd, var_dict, par_dict)
+    mi = ModelInstance(md, ci)
     save_dim_dict_reference(mi)
     return mi
 end

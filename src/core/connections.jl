@@ -19,7 +19,7 @@ function verify_units(one::AbstractString, two::AbstractString)
     return one == two
 end
 
-function _check_labels(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
+function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(ext_param.values)
@@ -255,16 +255,18 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
-@delegate external_param_conns(md::ModelDef) => ccd
-external_param_conns(ccd::CompositeComponentDef) = ccd.external_param_conns
-
+internal_param_conns(subcomps::SubcompsDef) = subcomps.internal_param_conns
+@delegate internal_param_conns(ccd::CompositeComponentDef) => subcomps
 @delegate internal_param_conns(md::ModelDef) => ccd
-internal_param_conns(ccd::CompositeComponentDef) = ccd.internal_param_conns
 
 # Find internal param conns to a given destination component
 function internal_param_conns(md::ModelDef, dst_comp_name::Symbol)
     return filter(x->x.dst_comp_name == dst_comp_name, internal_param_conns(md))
 end
+
+external_param_conns(subcomps::SubcompsDef) = subcomps.external_param_conns
+@delegate external_param_conns(ccd::CompositeComponentDef) => subcomps
+@delegate external_param_conns(md::ModelDef) => ccd
 
 # Find external param conns for a given comp
 function external_param_conns(md::ModelDef, comp_name::Symbol)
@@ -275,7 +277,7 @@ end
 
 function external_param(ccd::CompositeComponentDef, name::Symbol)
     try
-        return ccd.external_params[name]
+        return ccd.subcomps.external_params[name]
     catch err
         if err isa KeyError
             error("$name not found in external parameter list")
@@ -288,19 +290,19 @@ end
 @delegate add_internal_param_conn!(md::ModelDef, conn::InternalParameterConnection) => ccd
 
 function add_internal_param_conn!(ccd::CompositeComponentDef, conn::InternalParameterConnection)
-    push!(ccd.internal_param_conns, conn)
+    push!(ccd.subcomps.internal_param_conns, conn)
 end
 
 @delegate add_external_param_conn!(md::ModelDef, conn::ExternalParameterConnection) => ccd
 
 function add_external_param_conn!(ccd::CompositeComponentDef, conn::ExternalParameterConnection)
-    push!(ccd.external_param_conns, conn)
+    push!(ccd.subcomps.external_param_conns, conn)
 end
 
 @delegate set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter) => ccd
 
 function set_external_param!(ccd::CompositeComponentDef, name::Symbol, value::ModelParameter)
-    ccd.external_params[name] = value
+    ccd.subcomps.external_params[name] = value
 end
 
 function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
@@ -475,7 +477,6 @@ function update_params!(md::ModelDef, parameters::Dict; update_timesteps = false
     end
     nothing
 end
-
 
 function add_connector_comps(md::ModelDef)
     conns = internal_param_conns(md)

@@ -16,24 +16,16 @@ compdef(lci::LeafComponentInstance) = compdef(lci.comp_id)
 @delegate compdef(cci::CompositeComponentInstance) => leaf
 
 """
-    name(ci::AbstractComponentInstance)
+    name(ci::ComponentInstance)
 
 Return the name of the component `ci`.
 """
-name(lci::LeafComponentInstance) = lci.comp_name
-@delegate name(ci::CompositeComponentInstance) => leaf
+name(ci::ComponentInstance) = ci.comp_name
 
-compid(ci::LeafComponentInstance) = ci.comp_id
-@delegate compid(ci::CompositeComponentInstance) => leaf
-
-dims(ci::LeafComponentInstance) = ci.dim_dict
-@delegate dims(ci::CompositeComponentInstance) => leaf
-
-first_period(ci::LeafComponentInstance) = ci.first
-@delegate first_period(ci::CompositeComponentInstance) => leaf
-
-last_period(ci::LeafComponentInstance)  = ci.last
-@delegate last_period(ci::CompositeComponentInstance)  => leaf
+compid(ci::ComponentInstance) = ci.comp_id
+dims(ci::ComponentInstance) = ci.dim_dict
+first_period(ci::ComponentInstance) = ci.first
+last_period(ci::ComponentInstance)  = ci.last
 
 """
     components(mi::ModelInstance)
@@ -42,27 +34,30 @@ Return an iterator over components in model instance `mi`.
 """
 @delegate components(mi::ModelInstance) => cci
 
+@delegate components(ci::CompositeComponentInstance) => subcomps
+components(subcomps::SubcompsInstance) = values(subcomps.comp_dict)
+
 @delegate firsts(m::Model) => cci
-@delegate lasts(m::Model) => cci
+@delegate lasts(m::Model)  => cci
 @delegate clocks(m::Model) => cci
 
-components(cci::CompositeComponentInstance) = values(cci.comp_dict)
-
-function add_comp!(cci::CompositeComponentInstance, ci::AbstractComponentInstance) 
-    cci.comp_dict[name(ci)] = ci
-
-    push!(cci.firsts, first_period(ci))
-    push!(cci.lasts,  last_period(ci))
-end
-
 """
-    add_comp!(mi::ModelInstance, ci::AbstractComponentInstance)
+    add_comp!(mi::ModelInstance, ci::ComponentInstance)
 
 Add the (leaf or composite) component `ci` to the `ModelInstance` `mi`'s list of 
 components, and add the `first` and `last` of `mi` to the ends of the `firsts` and 
 `lasts` lists of `mi`, respectively.
 """
-@delegate add_comp!(mi::ModelInstance, ci::AbstractComponentInstance) => cci
+@delegate add_comp!(mi::ModelInstance, ci::ComponentInstance) => cci
+
+@delegate add_comp!(cci::CompositeComponentInstance, ci::ComponentInstance) => subcomps
+
+function add_comp!(subcomps::SubcompsInstance, ci::ComponentInstance) 
+    subcomps.comp_dict[name(ci)] = ci
+
+    push!(subcomps.firsts, first_period(ci))
+    push!(subcomps.lasts,  last_period(ci))
+end
 
 #
 # Setting/getting parameter and variable values
@@ -114,11 +109,11 @@ end
 end
 
 """
-    get_param_value(ci::AbstractComponentInstance, name::Symbol)
+    get_param_value(ci::ComponentInstance, name::Symbol)
 
 Return the value of parameter `name` in (leaf or composite) component `ci`.
 """
-function get_param_value(ci::LeafComponentInstance, name::Symbol)
+function get_param_value(ci::ComponentInstance, name::Symbol)
     try 
         return getproperty(ci.parameters, name)
     catch err
@@ -130,14 +125,12 @@ function get_param_value(ci::LeafComponentInstance, name::Symbol)
     end
 end
 
-@delegate get_param_value(ci::CompositeComponentInstance, name::Symbol) => leaf
-
 """
-    get_var_value(ci::AbstractComponentInstance, name::Symbol)
+    get_var_value(ci::ComponentInstance, name::Symbol)
 
 Return the value of variable `name` in component `ci`.
 """
-function get_var_value(ci::LeafComponentInstance, name::Symbol)
+function get_var_value(ci::ComponentInstance, name::Symbol)
     try
         # println("Getting $name from $(ci.variables)")
         return getproperty(ci.variables, name)
@@ -150,15 +143,9 @@ function get_var_value(ci::LeafComponentInstance, name::Symbol)
     end
 end
 
-@delegate get_var_value(ci::CompositeComponentInstance, name::Symbol) => leaf
+set_param_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
 
-set_param_value(ci::LeafComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
-
-@delegate set_param_value(ci::CompositeComponentInstance, name::Symbol, value) => leaf
-
-set_var_value(ci::LeafComponentInstance, name::Symbol, value)  = setproperty!(ci.variables, name, value)
-
-@delegate set_var_value(ci::CompositeComponentInstance, name::Symbol, value) => leaf
+set_var_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.variables, name, value)
 
 # Allow values to be obtained from either parameter type using one method name.
 value(param::ScalarModelParameter) = param.value
@@ -176,10 +163,16 @@ Return the `ComponentInstanceVariables` for `comp_name` in ModelInstance 'mi'.
 """
 variables(mi::ModelInstance, comp_name::Symbol) = variables(compinstance(mi, comp_name))
 
-variables(ci::LeafComponentInstance) = ci.variables
+variables(ci::ComponentInstance) = ci.variables
 
-@delegate variables(m::Model) => cci
-@delegate variables(ci::CompositeComponentInstance) => leaf
+@delegate variables(mi::ModelInstance) => ci
+
+function variables(m::Model)
+    if m.mi === nothing
+        error("Must build model to access variables. Use variables(m.md) to get variable definitions.")
+    end
+    return variables(m.mi)
+end
 
 """
     parameters(mi::ModelInstance, comp_name::Symbol)
@@ -189,14 +182,13 @@ Return the `ComponentInstanceParameters` for `comp_name` in ModelInstance 'mi'.
 parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, comp_name))
 
 """
-    parameters(ci::AbstractComponentInstance)
+    parameters(ci::ComponentInstance)
 
 Return an iterator over the parameters in `ci`.
 """
-parameters(ci::LeafComponentInstance) = ci.parameters
+parameters(ci::ComponentInstance) = ci.parameters
 
 @delegate parameters(m::Model) => cci
-@delegate parameters(ci::CompositeComponentInstance) => leaf
 
 
 function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
@@ -271,6 +263,8 @@ function reset_variables(cci::CompositeComponentInstance)
     end
     return nothing
 end
+
+@delegate reset_variables(mi::ModelInstance) => cci
 
 function init(ci::LeafComponentInstance)
     reset_variables(ci)

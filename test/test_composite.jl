@@ -4,7 +4,8 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, compdef, ComponentId, DatumReference, CompositeComponentDef, AbstractComponentDef, BindingTypes, ModelDef
+    reset_compdefs, compdef, ComponentId, DatumReference, ComponentDef, BindingTypes, ModelDef, SubcompsDef,
+    build, time_labels
 
 reset_compdefs()
 
@@ -58,15 +59,23 @@ let calling_module = @__MODULE__
         DatumReference(Comp3, :var1) => :c3v1
     ]
 
-    ccd = CompositeComponentDef(ccid, ccname, 
-                                Vector{AbstractComponentDef}(comps), 
-                                Vector{Pair{DatumReference, BindingTypes}}(bindings),
-                                exports)
-
-    MyComposite.md = ModelDef(ccd)
+    subcomps = SubcompsDef(Vector{ComponentDef}(comps), Vector{Pair{DatumReference, BindingTypes}}(bindings), exports)
+    MyComposite.md = ModelDef(ComponentDef(ccid, ccname, subcomps))
+                                
     set_dimension!(MyComposite, :time, 2005:2020)
     nothing
 end
+
+m = MyComposite
+md = m.md
+ccd = md.ccd
+
+set_param!(m, :Comp1, :par1, zeros(length(time_labels(md))))
+connect_param!(md, :Comp2, :par1, :Comp1, :var1)
+connect_param!(md, :Comp2, :par2, :Comp1, :var1)
+connect_param!(md, :Comp3, :par1, :Comp2, :var1)
+
+build(MyComposite)
 
 end # module
 

@@ -6,7 +6,7 @@ using Test
 import Mimi:
     reset_compdefs, variable_names, compinstance, get_var_value, get_param_value, 
     set_param_value, set_var_value, dim_count, dim_key_dict, dim_value_dict, compdef,
-    AbstractComponentInstance, AbstractComponentDef, TimestepArray, ComponentInstanceParameters, 
+    ComponentInstance, ComponentDef, TimestepArray, ComponentInstanceParameters, 
     ComponentInstanceVariables
 
 reset_compdefs()
@@ -42,10 +42,10 @@ cdef = compdef(ci)
 citer = components(mi)
 
 @test typeof(md) == Mimi.ModelDef && md == mi.md
-@test typeof(ci) <: AbstractComponentInstance && ci == compinstance(mi, :testcomp1)
-@test typeof(cdef) <: AbstractComponentDef && cdef == compdef(ci.comp_id)
+@test typeof(ci) <: ComponentInstance && ci == compinstance(mi, :testcomp1)
+@test typeof(cdef) <: ComponentDef && cdef == compdef(ci.comp_id)
 @test name(ci) == :testcomp1
-@test typeof(citer) <: Base.ValueIterator && length(citer) == 1 && eltype(citer) <: AbstractComponentInstance
+@test typeof(citer) <: Base.ValueIterator && length(citer) == 1 && eltype(citer) <: ComponentInstance
 
 #test convenience functions that can be called with name symbol
 

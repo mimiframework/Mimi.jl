@@ -47,11 +47,11 @@ function _filter_connections(conns::Vector{InternalParameterConnection}, comp_na
     return collect(Iterators.filter(f, conns))
 end
 
-function get_connections(m::Model, ci::LeafComponentInstance, which::Symbol)
-    return get_connections(m, name(ci.comp), which)
-end
+function get_connections(m::Model, ci::ComponentInstance, which::Symbol)
+    if is_leaf(ci)
+        return get_connections(m, name(ci.comp), which)
+    end
 
-function get_connections(m::Model, cci::CompositeComponentInstance, which::Symbol)
     conns = []
     for ci in components(cci)
         append!(conns, get_connections(m, ci, which))

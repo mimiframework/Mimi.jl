@@ -241,99 +241,107 @@ struct DatumReference
     datum_name::Symbol
 end
 
-# Supertype of LeafComponentDef and LeafComponentInstance
-abstract type AbstractComponentDef <: NamedDef end
+# *Def implementation doesn't need to be performance-optimized since these
+# are used only to create *Instance objects that are used at run-time. With
+# this in mind, we don't create dictionaries of vars, params, or dims in the
+# ComponentDef since this would complicate matters if a user decides to
+# add/modify/remove a component. Instead of maintaining a secondary dict, 
+# we just iterate over sub-components at run-time as needed. 
 
-mutable struct LeafComponentDef <: AbstractComponentDef
-    comp_id::ComponentId
-    name::Symbol
+global const BindingTypes = Union{Int, Float64, DatumReference}
+
+# Abstract type serves as a sort of forward declaration that permits definition 
+# of interdependent types ComponentDef and SubcompsDef.
+abstract type SubcompsDefSuper end
+global const SubcompsDefTypes = Union{Nothing, SubcompsDefSuper}
+
+mutable struct ComponentDef{T <: SubcompsDefTypes} <: NamedDef
+    comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
+    name::Symbol                            # Union{Nothing, Symbol} ?
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
     dimensions::OrderedDict{Symbol, DimensionDef}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
 
-    # LeafComponentDefs are created "empty". Elements are subsequently added.
-    function LeafComponentDef(comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name)
-        self = new()
+    # info about sub-components, or nothing
+    subcomps::T
+
+    # ComponentDefs are created "empty". Elements are subsequently added.
+    function ComponentDef{T}(comp_id::Union{Nothing, ComponentId}, 
+                             comp_name::Symbol=comp_id.comp_name, 
+                             subcomps::T=nothing) where {T <: SubcompsDefTypes}
+        self = new{T}()
+
+        if (subcomps === nothing && comp_id === nothing)
+            error("Leaf ComponentDef instances must have a Symbol name (not nothing)")
+        end
+
         self.comp_id = comp_id
         self.name = comp_name
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
         self.first = self.last = nothing
+        self.subcomps = subcomps
         return self
     end
+
+    # Syntactic sugar so caller doesn't have to specify {SubcompsDef}
+    function ComponentDef(comp_id::Union{Nothing, ComponentId}, name::Symbol, subcomps::T) where {T <: SubcompsDefSuper}
+        ComponentDef{T}(comp_id, name, subcomps)
+    end
+
+    ComponentDef() = ComponentDef(nothing, gensym("anonymous"), SubcompsDef())
 end
 
-# *Def implementation doesn't need to be performance-optimized since these
-# are used only to create *Instance objects that are used at run-time. With
-# this in mind, we don't create dictionaries of vars, params, or dims in the
-# CompositeComponentDef since this would complicate matters if a user decides 
-# to add/modify/remove a component. Instead of maintaining a secondary dict, 
-# we just iterate over sub-components at run-time as needed. 
-
-global const BindingTypes = Union{Int, Float64, DatumReference}
-
-mutable struct CompositeComponentDef <: AbstractComponentDef
-    leaf::LeafComponentDef                  # a leaf component that simulates a single component for this composite
-    comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level CompositeComponentDefs (must be referenced by a ModelDef)
-    name::Union{Nothing, Symbol}
-    comps_dict::OrderedDict{Symbol, AbstractComponentDef}
+mutable struct SubcompsDef <: SubcompsDefSuper
+    comps_dict::OrderedDict{Symbol, ComponentDef}
     bindings::Vector{Pair{DatumReference, BindingTypes}}
     exports::Vector{Pair{DatumReference, Symbol}}
-
+    
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
+    external_params::Dict{Symbol, ModelParameter}
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
 
-    external_params::Dict{Symbol, ModelParameter}
-
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
-    function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}, 
-                                   comp_name::Union{Nothing, Symbol}, 
-                                   comps::Vector{<:AbstractComponentDef},
-                                   bindings::Vector{Pair{DatumReference, BindingTypes}},
-                                   exports::Vector{Pair{DatumReference, Symbol}})
-        internal_param_conns = Vector{InternalParameterConnection}() 
-        external_param_conns = Vector{ExternalParameterConnection}()
-        external_params = Dict{Symbol, ModelParameter}()
-        backups = Vector{Symbol}()
-        sorted_comps = nothing
+    function SubcompsDef(comps::Vector{ComponentDef},
+                         bindings::Vector{Pair{DatumReference, BindingTypes}},
+                         exports::Vector{Pair{DatumReference, Symbol}})
+        self = new()
+        self.comps_dict = OrderedDict{Symbol, ComponentDef}([name(cd) => cd for cd in comps])
+        self.bindings = bindings
+        self.exports = exports
+        self.internal_param_conns = Vector{InternalParameterConnection}() 
+        self.external_param_conns = Vector{ExternalParameterConnection}()
+        self.external_params = Dict{Symbol, ModelParameter}()
+        self.backups = Vector{Symbol}()
+        self.sorted_comps = nothing
 
-        comps_dict = OrderedDict{Symbol, AbstractComponentDef}([name(cd) => cd for cd in comps])
-
-        self = new(comp_id, comp_name, comps_dict, bindings, exports, 
-                   internal_param_conns, external_param_conns,
-                   backups, external_params, sorted_comps)
-
-        # for (dr, exp_name) in exports
-        #     #comp_def.variables[name] = var_def
-        #     addvariable(comp_def, variable(comp_def, name(variable)), exp_name)
-        # end
-            
         return self
-    end   
-
-    function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}, 
-                                   comp_name::Union{Nothing, Symbol}=comp_id.comp_name)
-        comps    = Vector{AbstractComponentDef}()
-        bindings = Vector{Pair{DatumReference, BindingTypes}}()
-        exports  = Vector{Pair{DatumReference, Symbol}}()
-        return CompositeComponentDef(comp_id, comp_name, comps, bindings, exports)
     end
 
-    function CompositeComponentDef()
-        # Create an anonymous CompositeComponentDef that must be referenced by a ModelDef
-        return CompositeComponentDef(nothing, nothing)
+    function SubcompsDef()
+        comps    = Vector{ComponentDef}()
+        bindings = Vector{Pair{DatumReference, BindingTypes}}()
+        exports  = Vector{Pair{DatumReference, Symbol}}()
+        return SubcompsDef(comps, bindings, exports)
     end
 end
 
+global const LeafComponentDef = ComponentDef{Nothing}
+global const CompositeComponentDef = ComponentDef{SubcompsDef}
+
+is_leaf(comp::LeafComponentDef) = true
+is_leaf(comp::CompositeComponentDef) = false
+is_composite(comp::ComponentDef) = !is_leaf(comp)
+
 mutable struct ModelDef
-    ccd::CompositeComponentDef
+    ccd::ComponentDef
     dimensions::Dict{Symbol, Dimension}
     number_type::DataType
     is_uniform::Bool
@@ -345,8 +353,8 @@ mutable struct ModelDef
     end
 
     function ModelDef(number_type::DataType=Float64)
-        ccd = CompositeComponentDef()   # anonymous top-level CompositeComponentDef
-        return ModelDef(ccd, number_type)
+        # passes an anonymous top-level (composite) ComponentDef
+        return ModelDef(ComponentDef(), number_type)
     end
 end
 
@@ -404,15 +412,15 @@ end
     return getfield(dimdict, :dict)[property]
 end
 
-# TBD: try with out where clause, i.e., just obj::ComponentInstanceData
 nt(obj::T)  where {T <: ComponentInstanceData} = getfield(obj, :nt)
 Base.names(obj::T)  where {T <: ComponentInstanceData} = keys(nt(obj))
 Base.values(obj::T) where {T <: ComponentInstanceData} = values(nt(obj))
 types(obj::T) where {T <: ComponentInstanceData} = typeof(nt(obj)).parameters[2].parameters
 
-abstract type AbstractComponentInstance end
+abstract type SubcompsInstanceSuper end
+const SubcompsInstanceTypes = Union{Nothing, SubcompsInstanceSuper}
 
-mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: AbstractComponentInstance
+mutable struct ComponentInstance{T <: SubcompsInstanceTypes, TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
     comp_name::Symbol
     comp_id::ComponentId
     variables::TV
@@ -423,11 +431,14 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
     init::Union{Nothing, Function}
     run_timestep::Union{Nothing, Function}
 
-    function LeafComponentInstance{TV, TP}(comp_def::LeafComponentDef, vars::TV, pars::TP, 
-                                           name::Symbol=name(comp_def);
-                                           is_composite::Bool=false) where {TV <: ComponentInstanceVariables,
-                                                                            TP <: ComponentInstanceParameters}
-        self = new{TV, TP}()
+    # info about sub-components, or nothing
+    subcomps::T
+
+    function ComponentInstance{T, TV, TP}(comp_def::ComponentDef, vars::TV, pars::TP,
+                                          name::Symbol=name(comp_def); subcomps::T) where
+                {T <: SubcompsInstanceTypes, TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+
+        self = new{T, TV, TP}()
         self.comp_id = comp_id = comp_def.comp_id
         self.comp_name = name
         self.dim_dict = Dict{Symbol, Vector{Int}}()     # set in "build" stage
@@ -435,11 +446,12 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
         self.parameters = pars
         self.first = comp_def.first
         self.last = comp_def.last
+        self.subcomps = subcomps
 
         comp_module = Base.eval(Main, comp_id.module_name)
 
         # The try/catch allows components with no run_timestep function (as in some of our test cases)
-        # All CompositeComponentInstances use a standard method that just loops over inner components.
+        # All ComponentInstances use a standard method that just loops over inner components.
         # TBD: use FunctionWrapper here?
         function get_func(name)
             func_name = Symbol("$(name)_$(self.comp_name)")
@@ -450,46 +462,49 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables, TP <: Com
             end        
         end
 
-        # `is_composite` indicates a LeafComponentInstance used to store summary
-        # data for CompositeComponentInstance and is not itself runnable.
-        self.run_timestep = is_composite ? nothing : get_func("run_timestep")
-        self.init         = is_composite ? nothing : get_func("init")
+        # `is_composite` indicates a ComponentInstance used to store summary
+        # data for ComponentInstance and is not itself runnable.
+        self.run_timestep = is_composite(self) ? nothing : get_func("run_timestep")
+        self.init         = is_composite(self) ? nothing : get_func("init")
 
         return self
     end
 end
 
-mutable struct CompositeComponentInstance{TV <: ComponentInstanceVariables, 
-                                          TP <: ComponentInstanceParameters} <: AbstractComponentInstance
-
-    # TV, TP, and dim_dict are computed by aggregating all the vars and params from the CompositeComponent's
-    # sub-components. We use a LeafComponentInstance to holds all the "summary" values and references.
-    leaf::LeafComponentInstance{TV, TP}
-    comp_dict::OrderedDict{Symbol, <: AbstractComponentInstance}
+mutable struct SubcompsInstance <: SubcompsInstanceSuper
+    comp_dict::OrderedDict{Symbol, ComponentInstance}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
     clocks::Vector{Clock}
 
-    function CompositeComponentInstance{TV, TP}(
-        comp_def::CompositeComponentDef, vars::TV, pars::TP,
-        name::Symbol=name(comp_def)) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-
-        leaf = LeafComponentInstance{TV, TP}(comp_def, vars, pars, name, true)
-        comps_dict = OrderedDict{Symbol, <: AbstractComponentInstance}()
+    function SubcompsInstance(comps::Vector{ComponentInstance})
+        self = new()
+        comps_dict = OrderedDict{Symbol, ComponentInstance}([ci.comp_name => ci for ci in comps])
         firsts = Vector{Int}()
         lasts  = Vector{Int}()
         clocks = Vector{Clock}()
-        return new{TV, TP}(leaf, comp_dict, firsts, lasts, clocks)
+        return new(comp_dict, firsts, lasts, clocks)
     end
 end
+
+const LeafComponentInstance{TV, TP} = ComponentInstance{Nothing, TV, TP} where 
+    {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+
+const CompositeComponentInstance{TV, TP} = ComponentInstance{SubcompsInstance, TV, TP} where
+    {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+
+is_leaf(ci::LeafComponentInstance{TV, TP}) where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} = true
+is_leaf(ci::ComponentInstance) = false
+is_composite(ci::ComponentInstance) = !is_leaf(ci)
+
 
 # ModelInstance holds the built model that is ready to be run
 mutable struct ModelInstance
     md::ModelDef
-    cci::Union{Nothing, CompositeComponentInstance}
+    ci::Union{Nothing, CompositeComponentInstance}
 
-    function ModelInstance(md::ModelDef)
-        return new(md, nothing)
+    function ModelInstance(md::ModelDef, ci::Union{Nothing, CompositeComponentInstance}=nothing)
+        return new(md, ci)
     end
 end
 

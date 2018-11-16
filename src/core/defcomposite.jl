@@ -71,7 +71,7 @@ is expressed as the component id (which may be prefixed by a module, e.g., `Mimi
 followed by a `.` and the variable name in that component. So the form is either
 `modname.compname.varname` or `compname.varname`, which must be known in the current module.
 
-Unlike LeafComponents, CompositeComponents do not have user-defined `init` or `run_timestep`
+Unlike leaf components, composite components do not have user-defined `init` or `run_timestep`
 functions; these are defined internally to iterate over constituent components and call
 the associated method on each.
 """
@@ -145,7 +145,10 @@ macro defcomposite(cc_name, ex)
             # name = (alias === nothing ? comp_name : alias)
             # expr = :(add_comp!($cc_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
 
-            expr = :(CompositeComponentDef($comp_id, $comp_name, $comps, bindings=$bindings, exports=$exports))
+            expr = :(info = SubcompsDef($comps, bindings=$bindings, exports=$exports))
+            addexpr(expr)
+
+            expr = :(ComponentDef($comp_id, $comp_name; component_info=info))
             addexpr(expr)
         end
     end

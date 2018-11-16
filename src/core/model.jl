@@ -188,11 +188,11 @@ Return an iterator on the components in model `m`.
 @delegate getspan(m::Model, comp_name::Symbol) => md
 
 """
-    datumdef(comp_def::LeafComponentDef, item::Symbol)
+    datumdef(comp_def::ComponentDef, item::Symbol)
 
 Return a DatumDef for `item` in the given component `comp_def`.
 """
-function datumdef(comp_def::LeafComponentDef, item::Symbol)
+function datumdef(comp_def::ComponentDef, item::Symbol)
     if haskey(comp_def.variables, item)
         return comp_def.variables[item]
 
@@ -202,9 +202,6 @@ function datumdef(comp_def::LeafComponentDef, item::Symbol)
         error("Cannot access data item; :$item is not a variable or a parameter in component $(comp_def.comp_id).")
     end
 end
-
-# TBD: what to do here? Do we expose non-exported data? Have an internal LeafComponentDef that stores this stuff?
-@delegate datumdef(comp_def::CompositeComponentDef, item::Symbol) => leaf
 
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
@@ -240,7 +237,7 @@ end
 
 @delegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-parameter(m::Model, comp_def::AbstractComponentDef, param_name::Symbol) = parameter(comp_def, param_name)
+parameter(m::Model, comp_def::ComponentDef, param_name::Symbol) = parameter(comp_def, param_name)
 
 parameter(m::Model, comp_name::Symbol, param_name::Symbol) = parameter(m, compdef(m, comp_name), param_name)
 

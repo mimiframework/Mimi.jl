@@ -120,7 +120,7 @@ types of expressions are supported:
 5. `run_timestep(p, v, d, t)`   # defines a run_timestep function for the component
 
 Parses a @defcomp definition, converting it into a series of function calls that
-create the corresponding LeafComponentDef instance. At model build time, the ModelDef
+create the corresponding ComponentDef instance. At model build time, the ModelDef
 (including its ComponentDefs) will be converted to a runnable model.
 """
 macro defcomp(comp_name, ex)
