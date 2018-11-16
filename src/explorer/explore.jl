@@ -1,5 +1,6 @@
 ## Mimi UI
 using VegaLite
+using FilePaths
 
 global app = nothing
 
