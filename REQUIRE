@@ -22,3 +22,4 @@ TableTraits
 ProgressMeter
 Query
 VegaLite
+FilePaths
