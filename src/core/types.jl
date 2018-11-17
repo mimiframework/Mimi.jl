@@ -435,7 +435,7 @@ mutable struct ComponentInstance{T <: SubcompsInstanceTypes, TV <: ComponentInst
     subcomps::T
 
     function ComponentInstance{T, TV, TP}(comp_def::ComponentDef, vars::TV, pars::TP,
-                                          name::Symbol=name(comp_def); subcomps::T) where
+                                          name::Symbol=name(comp_def); subcomps::T=nothing) where
                 {T <: SubcompsInstanceTypes, TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
 
         self = new{T, TV, TP}()
@@ -471,19 +471,25 @@ mutable struct ComponentInstance{T <: SubcompsInstanceTypes, TV <: ComponentInst
     end
 end
 
+function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
+                           name::Symbol=name(comp_def); subcomps::T=nothing) where
+            {T <: SubcompsInstanceTypes, TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+    ComponentInstance{T, TV, TP}(comp_def, vars, pars, name, subcomps=subcomps)
+end
+
 mutable struct SubcompsInstance <: SubcompsInstanceSuper
-    comp_dict::OrderedDict{Symbol, ComponentInstance}
+    comps_dict::OrderedDict{Symbol, ComponentInstance}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
     clocks::Vector{Clock}
 
-    function SubcompsInstance(comps::Vector{ComponentInstance})
+    function SubcompsInstance(comps::Vector{T}) where {T <: ComponentInstance}
         self = new()
-        comps_dict = OrderedDict{Symbol, ComponentInstance}([ci.comp_name => ci for ci in comps])
-        firsts = Vector{Int}()
-        lasts  = Vector{Int}()
-        clocks = Vector{Clock}()
-        return new(comp_dict, firsts, lasts, clocks)
+        self.comps_dict = OrderedDict{Symbol, ComponentInstance}([ci.comp_name => ci for ci in comps])
+        self.firsts = Vector{Int}()
+        self.lasts  = Vector{Int}()
+        self.clocks = Vector{Clock}()
+        return self
     end
 end
 
@@ -501,10 +507,10 @@ is_composite(ci::ComponentInstance) = !is_leaf(ci)
 # ModelInstance holds the built model that is ready to be run
 mutable struct ModelInstance
     md::ModelDef
-    ci::Union{Nothing, CompositeComponentInstance}
+    cci::Union{Nothing, CompositeComponentInstance}
 
-    function ModelInstance(md::ModelDef, ci::Union{Nothing, CompositeComponentInstance}=nothing)
-        return new(md, ci)
+    function ModelInstance(md::ModelDef, cci::Union{Nothing, CompositeComponentInstance}=nothing)
+        return new(md, cci)
     end
 end
 

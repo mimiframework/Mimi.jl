@@ -86,6 +86,13 @@ compmodule(comp_id::ComponentId) = comp_id.module_name
 
 compname(comp_id::ComponentId) = comp_id.comp_name
 
+name(dr::DatumReference) = dr.datum_name
+@delegate compname(dr::DatumReference)   => comp_id
+@delegate compmodule(dr::DatumReference) => comp_id
+
+is_variable(dr::DatumReference) = has_variable(compdef(dr.comp_id), name(dr))
+is_parameter(dr::DatumReference) = has_parameter(compdef(dr.comp_id), name(dr))
+
 function Base.show(io::IO, comp_id::ComponentId)
     print(io, "<ComponentId $(comp_id.module_name).$(comp_id.comp_name)>")
 end
@@ -394,7 +401,8 @@ Return a list of all parameter names for a given component `comp_name` in a mode
 """
 parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
-parameter_names(comp_def::ComponentDef) = [name(param) for param in parameters(comp_def)]
+#parameter_names(comp_def::ComponentDef) = [name(param) for param in parameters(comp_def)]
+parameter_names(comp_def::ComponentDef) = collect(keys(comp_def.parameters))
 
 parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
 

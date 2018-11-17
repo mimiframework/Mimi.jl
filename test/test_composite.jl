@@ -4,8 +4,8 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, compdef, ComponentId, DatumReference, ComponentDef, BindingTypes, ModelDef, SubcompsDef,
-    build, time_labels
+    reset_compdefs, compdef, ComponentId, DatumReference, ComponentDef, BindingTypes, ModelDef, 
+    SubcompsDef, SubcompsDefTypes, build, time_labels
 
 reset_compdefs()
 
@@ -45,9 +45,10 @@ let calling_module = @__MODULE__
 
     ccname = :testcomp
     ccid  = ComponentId(calling_module, ccname)
-    comps = [compdef(Comp1), compdef(Comp2), compdef(Comp3)]
+    comps::Vector{ComponentDef{<: SubcompsDefTypes}} = [compdef(Comp1), compdef(Comp2), compdef(Comp3)]
     
-    bindings = [
+    # TBD: need to implement this to create connections and default value
+    bindings::Vector{Pair{DatumReference, BindingTypes}} = [
         DatumReference(Comp2, :par1) => 5,                              # bind Comp1.par1 to constant value of 5
         DatumReference(Comp2, :par1) => DatumReference(Comp1, :var1),   # connect target Comp2.par1 to source Comp1.var1
         DatumReference(Comp3, :par1) => DatumReference(Comp2, :var1)
@@ -59,7 +60,7 @@ let calling_module = @__MODULE__
         DatumReference(Comp3, :var1) => :c3v1
     ]
 
-    subcomps = SubcompsDef(Vector{ComponentDef}(comps), Vector{Pair{DatumReference, BindingTypes}}(bindings), exports)
+    subcomps = SubcompsDef(comps, bindings, exports)
     MyComposite.md = ModelDef(ComponentDef(ccid, ccname, subcomps))
                                 
     set_dimension!(MyComposite, :time, 2005:2020)

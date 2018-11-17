@@ -9,11 +9,16 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 """
 modeldef(mi::ModelInstance) = mi.md
 
-compinstance(cci::CompositeComponentInstance, name::Symbol) = cci.comp_dict[name]
+compinstance(SubcompsInstance, name::Symbol) = subcomps.comps_dict[name]
+@delegate compinstance(cci::CompositeComponentInstance, name::Symbol) => subcomps
 @delegate compinstance(mi::ModelInstance, name::Symbol) => cci
 
-compdef(lci::LeafComponentInstance) = compdef(lci.comp_id)
-@delegate compdef(cci::CompositeComponentInstance) => leaf
+has_component(subcomps::SubcompsInstance, name::Symbol) = haskey(subcomps.comps_dict, name)
+@delegate has_component(ci::CompositeComponentInstance, name::Symbol) => subcomps
+@delegate has_component(mi::ModelInstance, name::Symbol) => cci
+
+
+compdef(ci::ComponentInstance) = compdef(ci.comp_id)
 
 """
     name(ci::ComponentInstance)
@@ -35,11 +40,22 @@ Return an iterator over components in model instance `mi`.
 @delegate components(mi::ModelInstance) => cci
 
 @delegate components(ci::CompositeComponentInstance) => subcomps
-components(subcomps::SubcompsInstance) = values(subcomps.comp_dict)
+components(subcomps::SubcompsInstance) = values(subcomps.comps_dict)
 
-@delegate firsts(m::Model) => cci
-@delegate lasts(m::Model)  => cci
-@delegate clocks(m::Model) => cci
+firsts(subcomps::SubcompsInstance) = subcomps.firsts
+@delegate firsts(cci::CompositeComponentInstance) => subcomps
+@delegate firsts(mi::ModelInstance) => cci
+@delegate firsts(m::Model) => mi
+
+lasts(subcomps::SubcompsInstance) = subcomps.lasts
+@delegate lasts(cci::CompositeComponentInstance) => subcomps
+@delegate lasts(mi::ModelInstance) => cci
+@delegate lasts(m::Model)  => mi
+
+clocks(subcomps::SubcompsInstance) = subcomps.clocks
+@delegate clocks(cci::CompositeComponentInstance) => subcomps
+@delegate clocks(mi::ModelInstance) => cci
+@delegate clocks(m::Model) => mi
 
 """
     add_comp!(mi::ModelInstance, ci::ComponentInstance)
@@ -53,7 +69,7 @@ components, and add the `first` and `last` of `mi` to the ends of the `firsts` a
 @delegate add_comp!(cci::CompositeComponentInstance, ci::ComponentInstance) => subcomps
 
 function add_comp!(subcomps::SubcompsInstance, ci::ComponentInstance) 
-    subcomps.comp_dict[name(ci)] = ci
+    subcomps.comps_dict[name(ci)] = ci
 
     push!(subcomps.firsts, first_period(ci))
     push!(subcomps.lasts,  last_period(ci))
@@ -192,7 +208,7 @@ parameters(ci::ComponentInstance) = ci.parameters
 
 
 function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
-    if !(comp_name in keys(mi.components))
+    if ! has_component(mi, comp_name)
         error("Component :$comp_name does not exist in current model")
     end
     
@@ -321,23 +337,23 @@ end
 
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
-    if length(mi.components) == 0
+    if length(components(mi)) == 0
         error("Cannot run the model: no components have been created.")
     end
 
     t::Vector{Int} = dimkeys === nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
     
-    firsts = mi.firsts
-    lasts = mi.lasts
+    firsts_vec = firsts(mi)
+    lasts_vec = lasts(mi)
 
     if isuniform(t)
         _, stepsize = first_and_step(t)
-        comp_clocks = [Clock{FixedTimestep}(first, stepsize, last) for (first, last) in zip(firsts, lasts)]
+        comp_clocks = [Clock{FixedTimestep}(first, stepsize, last) for (first, last) in zip(firsts_vec, lasts_vec)]
     else
-        comp_clocks = Array{Clock{VariableTimestep}}(undef, length(firsts))
+        comp_clocks = Array{Clock{VariableTimestep}}(undef, length(firsts_vec))
         for i = 1:length(firsts)
-            first_index = findfirst(isequal(firsts[i]), t)
-            last_index  = findfirst(isequal(lasts[i]), t)
+            first_index = findfirst(isequal(firsts_vec[i]), t)
+            last_index  = findfirst(isequal(lasts_vec[i]), t)
             times = (t[first_index:last_index]...,)
             comp_clocks[i] = Clock{VariableTimestep}(times)
         end
@@ -347,6 +363,6 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     init(mi)    # call module's (or fallback) init function
 
-    _run_components(mi, clock, firsts, lasts, comp_clocks)
+    _run_components(mi, clock, firsts_vec, lasts_vec, comp_clocks)
     nothing
 end

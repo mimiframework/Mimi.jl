@@ -63,7 +63,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
 end
 
 @delegate backups(md::ModelDef) => ccd
-backups(ccd::CompositeComponentDef) = ccd.backups
+backups(ccd::CompositeComponentDef) = ccd.subcomps.backups
 
 @delegate add_backup!(md::ModelDef, obj) => ccd
 add_backup!(ccd::CompositeComponentDef, obj) = push!(ccd.backups, obj)
