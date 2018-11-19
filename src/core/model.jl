@@ -73,30 +73,19 @@ function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, S
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
-function disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
-    disconnect_param!(m.md, comp_name, param_name)
-    decache(m)
-end
+@delegate(disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md, decache(m))
 
-function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
-    set_external_param!(m.md, name, value)
-    decache(m)
-end
+@delegate(set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md, decache(m))
 
-function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    set_external_param!(m.md, name, value; param_dims = param_dims)
-    decache(m)
-end
+@delegate(set_external_param!(m::Model, name::Symbol, value::Number; 
+                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md, decache(m))
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    set_external_param!(m.md, name, value; param_dims = param_dims)
-end
+@delegate(set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
+                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md, decache(m))
 
-function add_internal_param_conn!(m::Model, conn::InternalParameterConnection)
-    add_internal_param_conn!(m.md, conn)
-    decache(m)
-end
+@delegate(add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md, decache(m))
 
+# @delegate doesn't handle the 'where T' currently. This is the only instance of it for now...
 function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     set_leftover_params!(m.md, parameters)
     decache(m)
@@ -110,10 +99,7 @@ Update the `value` of an external model parameter in model `m`, referenced by
 indicates whether to update the time keys associated with the parameter values 
 to match the model's time index.
 """
-function update_param!(m::Model, name::Symbol, value; update_timesteps = false)
-    update_param!(m.md, name, value, update_timesteps = update_timesteps)
-    decache(m)
-end
+@delegate(update_param!(m::Model, name::Symbol, value; update_timesteps = false) => md, decache(m))
 
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
@@ -124,10 +110,7 @@ Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 
 model definition.
 """
-function update_params!(m::Model, parameters::Dict; update_timesteps = false)
-    update_params!(m.md, parameters; update_timesteps = update_timesteps)
-    decache(m)
-end
+@delegate(update_params!(m::Model, parameters::Dict; update_timesteps = false) => md, decache(m))
 
 """
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
@@ -224,10 +207,7 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 Set the values of `m` dimension `name` to integers 1 through `count`, if `keys`` is
 an integer; or to the values in the vector or range if `keys`` is either of those types.
 """
-function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
-    set_dimension!(m.md, name, keys)
-    decache(m)
-end
+@delegate(set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) => md, decache(m))
 
 @delegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
 
@@ -278,30 +258,21 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 Add a one or two dimensional (optionally, time-indexed) array parameter `name` 
 with value `value` to the model `m`.
 """
-function set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
-    set_external_array_param!(m.md, name, value, dims)
-    decache(m)
-end
+@delegate(set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md, decache(m))
 
 """
     set_external_scalar_param!(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter `name` with value `value` to the model `m`.
 """
-function set_external_scalar_param!(m::Model, name::Symbol, value::Any)
-    set_external_scalar_param!(m.md, name, value)
-    decache(m)
-end
+@delegate(set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md, decache(m))
 
 """
     delete!(m::ModelDef, component::Symbol
 
 Delete a `component`` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
 """
-function Base.delete!(m::Model, comp_name::Symbol)
-    delete!(m.md, comp_name)
-    decache(m)
-end
+@delegate(Base.delete!(m::Model, comp_name::Symbol) => md, decache(m))
 
 """
     set_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)
@@ -311,10 +282,7 @@ The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims'
 is a list of the dimension names of the provided data, and will be used to check 
 that they match the model's index labels.
 """
-function set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    set_param!(m.md, comp_name, param_name, value, dims)    
-    decache(m)
-end
+@delegate(set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md, decache(m))
 
 """
     run(m::Model)

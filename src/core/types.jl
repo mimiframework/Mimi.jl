@@ -3,8 +3,24 @@
 #
 using MacroTools
 
-# Convert a list of args with optional type specs to just the arg symbols
-_arg_names(args::Vector) = [a isa Symbol ? a : a.args[1] for a in args]
+function delegated_args(args::Vector)
+    newargs = []
+    @info "delegated_args: $args"
+    for a in args
+        if a isa Symbol
+            push!(newargs, a)
+
+        elseif (@capture(a, var_::T_ = val_) || @capture(a, var_ = val_))
+            push!(newargs, :($var = $var))
+
+        elseif @capture(a, var_::T_)
+            push!(newargs, var)      
+        else
+            error("Unrecognized argument format: $a")
+        end
+    end
+    return newargs
+end
 
 """
 Macro to define a method that simply delegate to a method with the same signature
@@ -16,16 +32,40 @@ in the delegated call. That is,
 expands to:
 
     `compid(ci::MetaComponentInstance, i::Int, f::Float64) = compid(ci.leaf, i, f)`
-"""
-macro delegate(ex)
-    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
-        argnames = _arg_names(args)
-        result = esc(:($fname($varname::$T, $(args...)) = $fname($varname.$rhs, $(argnames...))))
-        return result
-    end
-    error("Calls to @delegate must be of the form 'func(obj, args...) => X', where X is a field of obj to delegate to'. Expression was: $ex")
-end
 
+If a second expression is given, it is spliced in (basically to support "decache(m)")
+"""
+macro delegate(ex, other=nothing)
+    result = nothing
+
+    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
+        # @info "args: $args"
+        new_args = delegated_args(args)
+        result = quote
+            function $fname($varname::$T, $(args...))
+                retval = $fname($varname.$rhs, $(new_args...))
+                $other
+                return retval
+            end
+        end    
+    elseif @capture(ex, fname_(varname_::T_, args__; kwargs__) => rhs_)
+        # @info "args: $args, kwargs: $kwargs"
+        new_args   = delegated_args(args)
+        new_kwargs = delegated_args(kwargs)
+        result = quote
+            function $fname($varname::$T, $(args...); $(kwargs...))
+                retval = $fname($varname.$rhs, $(new_args...); $(new_kwargs...))
+                $other
+                return retval
+            end
+        end  
+    end
+
+    if result === nothing
+        error("Calls to @delegate must be of the form 'func(obj, args...) => X', where X is a field of obj to delegate to'. Expression was: $ex")
+    end
+    return esc(result)
+end
 
 #
 # 1. Types supporting parameterized Timestep and Clock objects
