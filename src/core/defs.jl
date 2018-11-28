@@ -34,6 +34,21 @@ compdef(subcomps::SubcompsDef, comp_name::Symbol) = subcomps.comps_dict[comp_nam
 @delegate hascomp(md::ModelDef, comp_name::Symbol) => ccd
 @delegate compdef(md::ModelDef, comp_name::Symbol) => ccd
 
+#=
+Using new macro 
+@delegates(compdefs(subcomps::SubcompsDef) = values(subcomps.comps_dict),
+           ccd::CompositeComponentDef, md::ModelDef)
+
+@delegates(compkeys(subcomps::SubcompsDef) = keys(subcomps.comps_dict),
+           ccd::CompositeComponentDef, md::ModelDef)
+
+@delegates(hascomp(subcomps::SubcompsDef, comp_name::Symbol) = haskey(subcomps.comps_dict, comp_name),
+           ccd::CompositeComponentDef, md::ModelDef)
+
+@delegates(compdef(subcomps::SubcompsDef, comp_name::Symbol) = subcomps.comps_dict[comp_name],
+           ccd::CompositeComponentDef, md::ModelDef)
+=#
+
 
 function reset_compdefs(reload_builtins=true)
     empty!(_compdefs)
@@ -187,7 +202,7 @@ function dimensions(ccd::CompositeComponentDef)
     end
 
     # use Set to eliminate duplicates
-    # TBD: what about ordering?
+    # TBD: If order is unimportant, store as a set instead?
     return collect(Set(dims))
 end
 
@@ -220,7 +235,7 @@ end
 
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
-        if haskey(md, dim)
+        if has_dim(md, dim)
             if isa(value, NamedArray)
                 labels = names(value, findnext(isequal(dim), dims, 1))
                 dim_vals = dim_keys(md, dim)
@@ -249,10 +264,20 @@ function datum_size(md::ModelDef, comp_def::LeafComponentDef, datum_name::Symbol
     return datum_size
 end
 
+has_dim(ccd::CompositeComponentDef, name::Symbol) = haskey(ccd.dimensions, name)
+@delegate has_dim(md::ModelDef, name::Symbol) => ccd
 
-dimensions(md::ModelDef) = md.dimensions
+isuniform(ccd::CompositeComponentDef) = ccd.is_uniform
+@delegate isuniform(md::ModelDef) => ccd
+
+set_uniform!(ccd::CompositeComponentDef, value::Bool) = (ccd.is_uniform = value)
+@delegate set_uniform!(md::ModelDef, value::Bool) => ccd
+
 dimensions(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
-dimension(md::ModelDef, name::Symbol) = md.dimensions[name]
+@delegate dimensions(md::ModelDef) => ccd
+
+dimension(ccd::CompositeComponentDef, name::Symbol) = ccd.dimensions[name]
+@delegate dimension(md::ModelDef, name::Symbol) => ccd
 
 dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dimensions(md)])
 dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dimensions(md, dims)]
@@ -263,10 +288,6 @@ dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 
 dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
 dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dimensions(md)])
-
-Base.haskey(md::ModelDef, name::Symbol) = haskey(md.dimensions, name)
-
-isuniform(md::ModelDef) = md.is_uniform
 
 
 # Helper function invoked when the user resets the time dimension with set_dimension!
@@ -304,22 +325,26 @@ end
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
-    redefined = haskey(md, name)
+@delegate set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) => ccd
+
+function set_dimension!(cmd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+    redefined = has_dim(ccd, name)
     if redefined
         @warn "Redefining dimension :$name"
     end
 
     if name == :time
-        md.is_uniform = isuniform(keys)
+        set_uniform!(md, isuniform(keys))
         if redefined 
             reset_run_periods!(md, keys[1], keys[end])
         end
     end
     
-    dim = Dimension(keys)
-    md.dimensions[name] = dim
-    return dim
+    return set_dimension!(md.ccd, name, Dimension(keys))
+end
+
+function set_dimension!(ccd::CompositeComponentDef, name::Symbol, dim::Dimension)
+    ccd.dimensions[name] = dim
 end
 
 # helper functions used to determine if the provided time values are 
@@ -643,7 +668,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
     # check that a time dimension has been set
-    if ! haskey(dimensions(md), :time)
+    if ! has_dim(md, :time)
         error("Cannot add component to model without first setting time dimension.")
     end
     

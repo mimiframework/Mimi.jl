@@ -181,7 +181,7 @@ variables(mi::ModelInstance, comp_name::Symbol) = variables(compinstance(mi, com
 
 variables(ci::ComponentInstance) = ci.variables
 
-@delegate variables(mi::ModelInstance) => ci
+@delegate variables(mi::ModelInstance) => cci
 
 function variables(m::Model)
     if m.mi === nothing
@@ -204,7 +204,9 @@ Return an iterator over the parameters in `ci`.
 """
 parameters(ci::ComponentInstance) = ci.parameters
 
-@delegate parameters(m::Model) => cci
+@delegate parameters(m::Model) => mi
+
+@delegate parameters(mi::ModelInstance) => cci
 
 
 function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
@@ -321,6 +323,7 @@ end
 function _run_components(mi::ModelInstance, clock::Clock,
                          firsts::Vector{Int}, lasts::Vector{Int}, 
                          comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
+    @info "_run_components: firsts: $firsts, lasts: $lasts"
     comp_instances = components(mi)
     tups = collect(zip(comp_instances, firsts, lasts, comp_clocks))
     

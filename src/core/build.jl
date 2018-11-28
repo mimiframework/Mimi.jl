@@ -97,8 +97,8 @@ function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{
 
     for (dr, name) in comp_def.subcomps.exports
         if is_parameter(dr)
-            obj = par_dict[dr.comp_id.comp_name]  # TBD: should par_dict hash on ComponentId instead?
-            value = getproperty(obj, dr.datum_name)
+            d = par_dict[dr.comp_id.comp_name]  # TBD: should par_dict hash on ComponentId instead?
+            value = d[dr.datum_name]
             push!(names, name)
             push!(values, value)
         end
@@ -139,40 +139,35 @@ function _collect_params(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, pa
 
         # Iterate over connections to create parameters, referencing storage in vars   
         for ipc in internal_param_conns(comp_def)
-            src_comp_name = ipc.src_comp_name
-            @info "internal conn: $src_comp_name"  
-
-            src_vars = var_dict[src_comp_name]
+            src_vars = var_dict[ipc.src_comp_name]
             var_value_obj = get_property_obj(src_vars, ipc.src_var_name)
-            
             comp_pars = par_dict[ipc.dst_comp_name]
             comp_pars[ipc.dst_par_name] = var_value_obj
+            @info "internal conn: $(ipc.src_comp_name).$(ipc.src_var_name) => $(ipc.dst_comp_name).$(ipc.dst_par_name)"
         end
 
         for ext in external_param_conns(comp_def)
             param = external_param(comp_def, ext.external_param)
-            @info "external conn: $(ext.comp_name)"  
             comp_pars = par_dict[ext.comp_name]
             comp_pars[ext.param_name] = param isa ScalarModelParameter ? param : value(param)
+            @info "external conn: $(ext.comp_name).$(ext.param_name) => $(param)"
         end
 
         # Make the external parameter connections for the hidden ConnectorComps.
         # Connect each :input2 to its associated backup value.
         for (i, backup) in enumerate(backups(comp_def))
             conn_comp_name = connector_comp_name(i)
-            @info "backup: $conn_comp_name"  
-
             param = external_param(comp_def, backup)
-
             comp_pars = par_dict[conn_comp_name]
             comp_pars[:input2] = param isa ScalarModelParameter ? param : value(param)
+            @info "backup: $conn_comp_name $param"
         end
     end
 end
 
 # Save a reference to the model's dimension dictionary to make it 
 # available in calls to run_timestep.
-function save_dim_dict_reference(mi::ModelInstance)
+function _save_dim_dict_reference(mi::ModelInstance)
     dim_dict = dim_value_dict(mi.md)
 
     for ci in components(mi)
@@ -185,26 +180,30 @@ end
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     @info "Instantiating params for $(comp_def.comp_id)"
 
-    comp_name = name(comp_def)
-    d = par_dict[comp_name]
+    if is_composite(comp_def)
+        return _combine_exported_pars(comp_def, par_dict)
 
-    pnames = Tuple(parameter_names(comp_def))
-    pvals = [d[pname] for pname in pnames]
-    ptypes = Tuple{map(typeof, pvals)...}
-
-    return ComponentInstanceParameters(pnames, ptypes, pvals)
+    else
+        comp_name = name(comp_def)
+        d = par_dict[comp_name]
+    
+        pnames = Tuple(parameter_names(comp_def))
+        pvals = [d[pname] for pname in pnames]
+        ptypes = Tuple{map(typeof, pvals)...}
+        return ComponentInstanceParameters(pnames, ptypes, pvals)
+    end
 end
 
 # Return a built leaf or composite ComponentInstance
-function build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
-    @info "build $(comp_def.comp_id)"
-    @info "var_dict $(keys(var_dict))"
-    @info "par_dict $(keys(par_dict))"
+function _build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+    @info "_build $(comp_def.comp_id)"
+    @info "  var_dict $(var_dict)"
+    @info "  par_dict $(par_dict)"
     comp_name = name(comp_def)
 
     # recursive build...
     if is_composite(comp_def)
-        comps = [build(cd, var_dict, par_dict) for cd in compdefs(comp_def.subcomps)]
+        comps = [_build(cd, var_dict, par_dict) for cd in compdefs(comp_def.subcomps)]
         subcomps = SubcompsInstance(comps)
     else
         subcomps = nothing
@@ -215,13 +214,7 @@ function build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Di
     return ComponentInstance(comp_def, vars, pars, comp_name, subcomps=subcomps)
 end
 
-function build(m::Model)
-    # Reference a copy in the ModelInstance to avoid changes underfoot
-    m.mi = build(deepcopy(m.md))
-    return nothing
-end
-
-function build(md::ModelDef)
+function _build(md::ModelDef)
     add_connector_comps(md)
     
     # check if all parameters are set
@@ -242,10 +235,16 @@ function build(md::ModelDef)
     @info "var_dict: $var_dict"
     @info "par_dict: $par_dict"
 
-    ci = build(comp_def, var_dict, par_dict)
+    ci = _build(comp_def, var_dict, par_dict)
     mi = ModelInstance(md, ci)
-    save_dim_dict_reference(mi)
+    _save_dim_dict_reference(mi)
     return mi
+end
+
+function build(m::Model)
+    # Reference a copy in the ModelInstance to avoid changes underfoot
+    m.mi = _build(deepcopy(m.md))
+    return nothing
 end
 
 """

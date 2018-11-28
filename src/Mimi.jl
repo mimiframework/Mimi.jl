@@ -42,8 +42,9 @@ export
     variables 
 
 include("core/types.jl")
+include("core/delegate.jl")
 
-# After loading types and delegation macro, the rest can just be alphabetical
+# After loading types and delegation macro, the rest is alphabetical
 include("core/build.jl")
 include("core/connections.jl")
 include("core/defs.jl")
@@ -56,11 +57,11 @@ include("core/time.jl")
 include("core/model.jl")
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
-include("utils/graph.jl")
-include("utils/plotting.jl")
 include("utils/getdataframe.jl")
+include("utils/graph.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
+include("utils/plotting.jl")
 
 """
     load_comps(dirname::String="./components")

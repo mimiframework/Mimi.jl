@@ -1,73 +1,4 @@
 #
-# 0. Macro used in several places, so centralized here even though not type-related
-#
-using MacroTools
-
-function delegated_args(args::Vector)
-    newargs = []
-    @info "delegated_args: $args"
-    for a in args
-        if a isa Symbol
-            push!(newargs, a)
-
-        elseif (@capture(a, var_::T_ = val_) || @capture(a, var_ = val_))
-            push!(newargs, :($var = $var))
-
-        elseif @capture(a, var_::T_)
-            push!(newargs, var)      
-        else
-            error("Unrecognized argument format: $a")
-        end
-    end
-    return newargs
-end
-
-"""
-Macro to define a method that simply delegate to a method with the same signature
-but using the specified field name of the original first argument as the first arg
-in the delegated call. That is,
-
-    `@delegate compid(ci::MetaComponentInstance, i::Int, f::Float64) => leaf`
-
-expands to:
-
-    `compid(ci::MetaComponentInstance, i::Int, f::Float64) = compid(ci.leaf, i, f)`
-
-If a second expression is given, it is spliced in (basically to support "decache(m)")
-"""
-macro delegate(ex, other=nothing)
-    result = nothing
-
-    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
-        # @info "args: $args"
-        new_args = delegated_args(args)
-        result = quote
-            function $fname($varname::$T, $(args...))
-                retval = $fname($varname.$rhs, $(new_args...))
-                $other
-                return retval
-            end
-        end    
-    elseif @capture(ex, fname_(varname_::T_, args__; kwargs__) => rhs_)
-        # @info "args: $args, kwargs: $kwargs"
-        new_args   = delegated_args(args)
-        new_kwargs = delegated_args(kwargs)
-        result = quote
-            function $fname($varname::$T, $(args...); $(kwargs...))
-                retval = $fname($varname.$rhs, $(new_args...); $(new_kwargs...))
-                $other
-                return retval
-            end
-        end  
-    end
-
-    if result === nothing
-        error("Calls to @delegate must be of the form 'func(obj, args...) => X', where X is a field of obj to delegate to'. Expression was: $ex")
-    end
-    return esc(result)
-end
-
-#
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
@@ -303,6 +234,7 @@ mutable struct ComponentDef{T <: SubcompsDefTypes} <: NamedDef
     dimensions::OrderedDict{Symbol, DimensionDef}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
+    is_uniform::Bool
 
     # info about sub-components, or nothing
     subcomps::T
@@ -323,6 +255,7 @@ mutable struct ComponentDef{T <: SubcompsDefTypes} <: NamedDef
         self.parameters = OrderedDict{Symbol, DatumDef}() 
         self.dimensions = OrderedDict{Symbol, DimensionDef}()
         self.first = self.last = nothing
+        self.is_uniform = true
         self.subcomps = subcomps
         return self
     end
@@ -382,14 +315,12 @@ is_composite(comp::ComponentDef) = !is_leaf(comp)
 
 mutable struct ModelDef
     ccd::ComponentDef
-    dimensions::Dict{Symbol, Dimension}
+    dimensions::Dict{Symbol, Dimension}             # TBD: use the one in ccd instead
     number_type::DataType
-    is_uniform::Bool
     
     function ModelDef(ccd::CompositeComponentDef, number_type::DataType=Float64)
         dimensions = Dict{Symbol, Dimension}()
-        is_uniform = true
-        return new(ccd, dimensions, number_type, is_uniform)
+        return new(ccd, dimensions, number_type)
     end
 
     function ModelDef(number_type::DataType=Float64)
