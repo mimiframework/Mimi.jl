@@ -1,6 +1,6 @@
 # Reference
 
-```@docs
+```@doc
 @defcomp
 MarginalModel
 Model
