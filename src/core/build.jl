@@ -1,7 +1,7 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::DatumDef)    
+function _instance_datatype(md::ModelDef, def::DatumDef)                    # TBD: supertype(DatumDef) or _DatumDef_
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dimensions(def)
     num_dims = dim_count(def)
@@ -27,7 +27,7 @@ function _instance_datatype(md::ModelDef, def::DatumDef)
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-function _instantiate_datum(md::ModelDef, def::DatumDef)
+function _instantiate_datum(md::ModelDef, def::DatumDef)                    # TBD: supertype(DatumDef) or _DatumDef_
     dtype = _instance_datatype(md, def)
     dims = dimensions(def)
     num_dims = length(dims)
@@ -109,6 +109,8 @@ function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{
 end
 
 
+# TBD: define two methods, one on comp_def::ComponentDef and other on comp_def::CompositeComponentDef
+
 # Recursively instantiate all variables and store refs in the given dict.
 function _instantiate_vars(md::ModelDef, comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     comp_name = name(comp_def)
@@ -127,6 +129,7 @@ function _instantiate_vars(md::ModelDef, comp_def::ComponentDef, var_dict::Dict{
     end
 end
 
+# TBD: Define only for CompositeComponentDef?
 # Recursively collect all parameters with connections to allocated storage for variablesa
 function _collect_params(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     if is_composite(comp_def)
@@ -177,9 +180,13 @@ function _save_dim_dict_reference(mi::ModelInstance)
     return nothing
 end
 
+# TBD:
+# _instantiate_params(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}}) = _combine_exported_pars(comp_def, par_dict)
+
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     @info "Instantiating params for $(comp_def.comp_id)"
 
+    # TBD: drop if, use only else branch
     if is_composite(comp_def)
         return _combine_exported_pars(comp_def, par_dict)
 

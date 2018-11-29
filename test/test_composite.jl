@@ -4,8 +4,8 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, compdef, ComponentId, DatumReference, ComponentDef, BindingTypes, ModelDef, 
-    SubcompsDef, SubcompsDefTypes, build, time_labels
+    ComponentId, DatumReference, ComponentDef, BindingTypes, ModelDef, 
+    SubcompsDef, SubcompsDefTypes, build, time_labels, reset_compdefs, compdef
 
 reset_compdefs()
 

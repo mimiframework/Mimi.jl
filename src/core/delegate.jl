@@ -36,28 +36,26 @@ If a second expression is given, it is spliced in (basically to support "decache
 """
 macro delegate(ex, other=nothing)
     result = nothing
+    other = (other === nothing ? [] : [other])  # make vector so $(other...) disappears if empty
 
-    if @capture(ex, fname_(varname_::T_, args__) => rhs_)
+    if (@capture(ex, fname_(varname_::T_, args__; kwargs__) => rhs_) || 
+        @capture(ex, fname_(varname_::T_, args__) => rhs_))
         # @info "args: $args"
         new_args = delegated_args(args)
-        result = quote
-            function $fname($varname::$T, $(args...))
-                retval = $fname($varname.$rhs, $(new_args...))
-                $other
-                return retval
-            end
-        end    
-    elseif @capture(ex, fname_(varname_::T_, args__; kwargs__) => rhs_)
-        # @info "args: $args, kwargs: $kwargs"
-        new_args   = delegated_args(args)
-        new_kwargs = delegated_args(kwargs)
+
+        if kwargs === nothing
+            kwargs = new_kwargs = []
+        else
+            new_kwargs = delegated_args(kwargs)
+        end
+
         result = quote
             function $fname($varname::$T, $(args...); $(kwargs...))
                 retval = $fname($varname.$rhs, $(new_args...); $(new_kwargs...))
-                $other
+                $(other...)
                 return retval
             end
-        end  
+        end
     end
 
     if result === nothing
@@ -65,7 +63,6 @@ macro delegate(ex, other=nothing)
     end
     return esc(result)
 end
-
 
 # _arg_default(t::Nothing) = nothing
 # _arg_default(value::Symbol) = QuoteNode(value)

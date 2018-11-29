@@ -86,11 +86,13 @@ function last_period(comp_def::CompositeComponentDef)
     nothing     # use model's last period
 end
 
+# TBD: @method with comp_def first, or use comp_def::supertype(ComponentDef)
 function first_period(md::ModelDef, comp_def::ComponentDef)
     period = first_period(comp_def)
     return period === nothing ? time_labels(md)[1] : period
 end
 
+# TBD: @method with comp_def first, or use comp_def::supertype(ComponentDef)
 function last_period(md::ModelDef,  comp_def::ComponentDef)
     period = last_period(comp_def)
     return period === nothing ? time_labels(md)[end] : period
@@ -101,11 +103,13 @@ compmodule(comp_id::ComponentId) = comp_id.module_name
 
 compname(comp_id::ComponentId) = comp_id.comp_name
 
+# TBD: @method name(obj::DatumReference) = obj.datum_name
 name(dr::DatumReference) = dr.datum_name
+
 @delegate compname(dr::DatumReference)   => comp_id
 @delegate compmodule(dr::DatumReference) => comp_id
 
-is_variable(dr::DatumReference) = has_variable(compdef(dr.comp_id), name(dr))
+is_variable(dr::DatumReference)  = has_variable(compdef(dr.comp_id), name(dr))
 is_parameter(dr::DatumReference) = has_parameter(compdef(dr.comp_id), name(dr))
 
 function Base.show(io::IO, comp_id::ComponentId)
@@ -125,7 +129,9 @@ number_type(md::ModelDef) = md.number_type
 @delegate numcomponents(md::ModelDef) => ccd
 
 numcomponents(comp_def::LeafComponentDef) = 0   # no subcomponents
-numcomponents(comp_def::CompositeComponentDef) = numcomponents(comp_def.subcomps)
+numcomponents(comp_def::CompositeComponentDef) = numcomponents(comp_def.subcomps)   # TBD: redefine
+
+# TBD: delete
 numcomponents(info::SubcompsDef) = length(info.comps_dict)
 
 function dump_components()
@@ -206,6 +212,7 @@ function dimensions(ccd::CompositeComponentDef)
     return collect(Set(dims))
 end
 
+# TBD: @method
 dimensions(def::DatumDef) = def.dimensions
 
 # TBD: handle CompositeComponentDef

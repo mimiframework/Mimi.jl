@@ -1,5 +1,6 @@
 module Mimi
 
+using Classes
 using DataFrames
 using DataStructures
 using Distributions
@@ -41,7 +42,9 @@ export
     update_params!,
     variables 
 
-include("core/types.jl")
+# TBD: testing new @classes in classes.jl
+include("core/types2.jl")
+
 include("core/delegate.jl")
 
 # After loading types and delegation macro, the rest is alphabetical
