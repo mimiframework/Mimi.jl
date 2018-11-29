@@ -7,7 +7,7 @@
 [![Join the chat at https://gitter.im/anthofflab/Mimi.jl](https://badges.gitter.im/anthofflab/Mimi.jl.svg)](https://gitter.im/anthofflab/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [![Stable documentation](https://img.shields.io/badge/docs-stable-blue.svg)](http://anthofflab.berkeley.edu/Mimi.jl/stable)
-[![Latest documentation](https://img.shields.io/badge/docs-latest-blue.svg)](http://anthofflab.berkeley.edu/Mimi.jl/latest/)
+[![Latest documentation](https://img.shields.io/badge/docs-dev-blue.svg)](http://anthofflab.berkeley.edu/Mimi.jl/dev/)
 
 # Mimi - Integrated Assessment Modeling Framework
 
