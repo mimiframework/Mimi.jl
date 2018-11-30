@@ -2,7 +2,6 @@ using Documenter, Mimi
 
 makedocs(
     modules = [Mimi],
-	format = :html,
 	sitename = "Mimi.jl",
 	pages = [
 		"Home" => "index.md",
@@ -11,13 +10,9 @@ makedocs(
 		"Tutorial" => "tutorial.md",
 		"FAQ" => "faq.md",
 		"Reference" => "reference.md",
-		"Integration Guide" => "integrationguide.md"]
+		"Integration Guide: Port to v0.5.0" => "integrationguide.md"]
 )
 
 deploydocs(
-    deps = nothing,
-    make = nothing,
-	target = "build",
     repo = "github.com/anthofflab/Mimi.jl.git",
-    julia = "1.0"
 )

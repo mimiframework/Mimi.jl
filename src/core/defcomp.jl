@@ -3,7 +3,7 @@
 #
 using MacroTools
 
-global defcomp_verbosity = true
+global defcomp_verbosity = false
 
 function set_defcomp_verbosity(value::Bool)
     global defcomp_verbosity = value
