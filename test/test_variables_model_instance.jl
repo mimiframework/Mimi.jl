@@ -44,7 +44,7 @@ citer = components(mi)
 @test typeof(md) == Mimi.ModelDef && md == mi.md
 @test typeof(ci) <: ComponentInstance && ci == compinstance(mi, :testcomp1)
 @test typeof(cdef) <: ComponentDef && cdef == compdef(ci.comp_id)
-@test name(ci) == :testcomp1
+@test nameof(ci) == :testcomp1
 @test typeof(citer) <: Base.ValueIterator && length(citer) == 1 && eltype(citer) <: ComponentInstance
 
 #test convenience functions that can be called with name symbol

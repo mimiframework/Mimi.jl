@@ -286,7 +286,7 @@ mutable struct SubcompsDef <: SubcompsDefSuper
                          bindings::Vector{Pair{DatumReference, BindingTypes}},
                          exports::Vector{Pair{DatumReference, Symbol}})
         self = new()
-        self.comps_dict = OrderedDict{Symbol, ComponentDef}([name(cd) => cd for cd in comps])
+        self.comps_dict = OrderedDict{Symbol, ComponentDef}([nameof(cd) => cd for cd in comps])
         self.bindings = bindings
         self.exports = exports
         self.internal_param_conns = Vector{InternalParameterConnection}() 
@@ -406,7 +406,7 @@ mutable struct ComponentInstance{T <: SubcompsInstanceTypes, TV <: ComponentInst
     subcomps::T
 
     function ComponentInstance{T, TV, TP}(comp_def::ComponentDef, vars::TV, pars::TP,
-                                          name::Symbol=name(comp_def); subcomps::T=nothing) where
+                                          name::Symbol=nameof(comp_def); subcomps::T=nothing) where
                 {T <: SubcompsInstanceTypes, TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
 
         self = new{T, TV, TP}()
@@ -443,7 +443,7 @@ mutable struct ComponentInstance{T <: SubcompsInstanceTypes, TV <: ComponentInst
 end
 
 function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
-                           name::Symbol=name(comp_def); subcomps::T=nothing) where
+                           name::Symbol=nameof(comp_def); subcomps::T=nothing) where
             {T <: SubcompsInstanceTypes, TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
     ComponentInstance{T, TV, TP}(comp_def, vars, pars, name, subcomps=subcomps)
 end

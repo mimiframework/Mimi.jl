@@ -6,7 +6,7 @@ compdefs() = collect(values(_compdefs))
 compdef(comp_id::ComponentId) = _compdefs[comp_id]
 
 function compdef(comp_name::Symbol)
-    matches = collect(Iterators.filter(obj -> name(obj) == comp_name, values(_compdefs)))
+    matches = collect(Iterators.filter(obj -> nameof(obj) == comp_name, values(_compdefs)))
     count = length(matches)
 
     if count == 1
@@ -18,37 +18,25 @@ function compdef(comp_name::Symbol)
     end
 end
 
-# TBD: Might need an option like `deep=True` to recursively descend through composites
-compdefs(subcomps::SubcompsDef) = values(subcomps.comps_dict)
-compkeys(subcomps::SubcompsDef) = keys(subcomps.comps_dict)
-hascomp(subcomps::SubcompsDef, comp_name::Symbol) = haskey(subcomps.comps_dict, comp_name)
-compdef(subcomps::SubcompsDef, comp_name::Symbol) = subcomps.comps_dict[comp_name]
+# TBD: @method supports ModelDef as subclass of CompositeComponentDef, otherwise not needed
+@method compdefs(c::CompositeComponentDef) = values(c.comps_dict)
+@method compkeys(c::CompositeComponentDef) = keys(c.comps_dict)
+@method hascomp(c::CompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
+@method compdef(c::CompositeComponentDef, comp_name::Symbol) = c.comps_dict[comp_name]
 
-@delegate compdefs(c::CompositeComponentDef) => subcomps
-@delegate compkeys(c::CompositeComponentDef) => subcomps
-@delegate hascomp(c::CompositeComponentDef, comp_name::Symbol) => subcomps
-@delegate compdef(c::CompositeComponentDef, comp_name::Symbol) => subcomps
-
+# TBD: delegation not needed if ModelDef is a subclass of CompositeComponentDef
 @delegate compdefs(md::ModelDef) => ccd
 @delegate compkeys(md::ModelDef) => ccd
 @delegate hascomp(md::ModelDef, comp_name::Symbol) => ccd
 @delegate compdef(md::ModelDef, comp_name::Symbol) => ccd
 
-#=
-Using new macro 
-@delegates(compdefs(subcomps::SubcompsDef) = values(subcomps.comps_dict),
-           ccd::CompositeComponentDef, md::ModelDef)
+# Return the module object for the component was defined in
+compmodule(comp_id::ComponentId) = comp_id.module_name
+compname(comp_id::ComponentId)   = comp_id.comp_name
 
-@delegates(compkeys(subcomps::SubcompsDef) = keys(subcomps.comps_dict),
-           ccd::CompositeComponentDef, md::ModelDef)
-
-@delegates(hascomp(subcomps::SubcompsDef, comp_name::Symbol) = haskey(subcomps.comps_dict, comp_name),
-           ccd::CompositeComponentDef, md::ModelDef)
-
-@delegates(compdef(subcomps::SubcompsDef, comp_name::Symbol) = subcomps.comps_dict[comp_name],
-           ccd::CompositeComponentDef, md::ModelDef)
-=#
-
+# TBD: needed for composites?
+@delegate compname(obj::ComponentDef)   => comp_id
+@delegate compmodule(obj::ComponentDef) => comp_id
 
 function reset_compdefs(reload_builtins=true)
     empty!(_compdefs)
@@ -59,8 +47,8 @@ function reset_compdefs(reload_builtins=true)
     end
 end
 
-first_period(comp_def::LeafComponentDef) = comp_def.first
-last_period(comp_def::LeafComponentDef)  = comp_def.last
+first_period(comp_def::ComponentDef) = comp_def.first
+last_period(comp_def::ComponentDef)  = comp_def.last
 
 function first_period(comp_def::CompositeComponentDef)
     subcomps = compdefs(comp_def)
@@ -86,61 +74,40 @@ function last_period(comp_def::CompositeComponentDef)
     nothing     # use model's last period
 end
 
-# TBD: @method with comp_def first, or use comp_def::supertype(ComponentDef)
-function first_period(md::ModelDef, comp_def::ComponentDef)
+function first_period(md::ModelDef, comp_def::absclass(ComponentDef))
     period = first_period(comp_def)
     return period === nothing ? time_labels(md)[1] : period
 end
 
-# TBD: @method with comp_def first, or use comp_def::supertype(ComponentDef)
-function last_period(md::ModelDef,  comp_def::ComponentDef)
+function last_period(md::ModelDef, comp_def::absclass(ComponentDef))
     period = last_period(comp_def)
     return period === nothing ? time_labels(md)[end] : period
 end
 
-# Return the module object for the component was defined in
-compmodule(comp_id::ComponentId) = comp_id.module_name
-
-compname(comp_id::ComponentId) = comp_id.comp_name
-
-# TBD: @method name(obj::DatumReference) = obj.datum_name
-name(dr::DatumReference) = dr.datum_name
-
 @delegate compname(dr::DatumReference)   => comp_id
 @delegate compmodule(dr::DatumReference) => comp_id
 
-is_variable(dr::DatumReference)  = has_variable(compdef(dr.comp_id), name(dr))
-is_parameter(dr::DatumReference) = has_parameter(compdef(dr.comp_id), name(dr))
+is_variable(dr::DatumReference)  = has_variable(compdef(dr.comp_id), nameof(dr))
+is_parameter(dr::DatumReference) = has_parameter(compdef(dr.comp_id), nameof(dr))
 
 function Base.show(io::IO, comp_id::ComponentId)
     print(io, "<ComponentId $(comp_id.module_name).$(comp_id.comp_name)>")
 end
 
-"""
-    name(def::NamedDef) = def.name 
-
-Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `LeavComponentDef`, 
-`CompositeComponentDef`, and `DimensionDef`.
-"""
-name(def::NamedDef) = def.name
-
 number_type(md::ModelDef) = md.number_type
 
 @delegate numcomponents(md::ModelDef) => ccd
 
-numcomponents(comp_def::LeafComponentDef) = 0   # no subcomponents
-numcomponents(comp_def::CompositeComponentDef) = numcomponents(comp_def.subcomps)   # TBD: redefine
-
-# TBD: delete
-numcomponents(info::SubcompsDef) = length(info.comps_dict)
+numcomponents(obj::ComponentDef) = 0   # no subcomponents
+numcomponents(obj::CompositeComponentDef) = length(obj.comps_dict)
 
 function dump_components()
     for comp in compdefs()
-        println("\n$(name(comp))")
+        println("\n$(nameof(comp))")
         for (tag, objs) in ((:Variables, variables(comp)), (:Parameters, parameters(comp)), (:Dimensions, dimensions(comp)))
             println("  $tag")
             for obj in objs
-                println("    $(obj.name) = $obj")
+                println("    $(nameof(obj)) = $obj")
             end
         end
     end
@@ -306,14 +273,14 @@ function reset_run_periods!(md, first, last)
         last_per  = last_period(comp_def)
 
         if first_per !== nothing && first_per < first 
-            @warn "Resetting $(comp_def.name) component's first timestep to $first"
+            @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
             changed = true
         else
             first = first_per
         end 
 
         if last_per !== nothing && last_per > last 
-            @warn "Resetting $(comp_def.name) component's last timestep to $last"
+            @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
             changed = true
         else 
             last = last_per
@@ -378,12 +345,13 @@ end
 # Parameters
 #
 
-@delegate external_params(md::ModelDef) => ccd
-@delegate external_params(ccd::CompositeComponentDef) => subcomps
-external_params(subcomps::SubcompsDef) = subcomps.external_params
+@method external_params(obj::CompositeComponentDef) = obj.external_params
 
-function addparameter(comp_def::LeafComponentDef, name, datatype, dimensions, description, unit, default)
-    p = DatumDef(name, datatype, dimensions, description, unit, :parameter, default)
+# TBD: Delete if ModelDef subclasses CompositeComponentDef
+@delegate external_params(md::ModelDef) => ccd
+
+function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
+    p = ParameterDef(name, datatype, dimensions, description, unit, :parameter, default)
     comp_def.parameters[name] = p
     return p
 end
@@ -393,21 +361,21 @@ function addparameter(comp_id::ComponentId, name, datatype, dimensions, descript
 end
 
 """
-    parameters(comp_def::LeafComponentDef)
+    parameters(comp_def::ComponentDef)
 
 Return a list of the parameter definitions for `comp_def`.
 """
-parameters(comp_def::LeafComponentDef) = values(comp_def.parameters)
+parameters(obj::ComponentDef) = values(obj.parameters)
 
 function parameters(ccd::CompositeComponentDef)
     pars = ccd.parameters
 
     # return cached parameters, if any
     if length(pars) == 0
-        for (dr, name) in ccd.subcomps.exports
+        for (dr, name) in ccd.exports
             cd = compdef(dr.comp_id)
-            if has_parameter(cd, dr.datum_name)
-                pars[name] = parameter(cd, dr.datum_name)
+            if has_parameter(cd, nameof(dr))
+                pars[name] = parameter(cd, nameof(dr))
             end
         end
     end
@@ -433,14 +401,14 @@ Return a list of all parameter names for a given component `comp_name` in a mode
 """
 parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
-#parameter_names(comp_def::ComponentDef) = [name(param) for param in parameters(comp_def)]
+#parameter_names(comp_def::ComponentDef) = [nameof(param) for param in parameters(comp_def)]
 parameter_names(comp_def::ComponentDef) = collect(keys(comp_def.parameters))
 
 parameter(md::ModelDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(md, comp_name), param_name)
 
 @delegate parameter(md::ModelDef, param_name::Symbol) => ccd
 
-parameter(dr::DatumReference) = parameter(compdef(dr.comp_id), dr.datum_name)
+parameter(dr::DatumReference) = parameter(compdef(dr.comp_id), nameof(dr))
 
 function parameter(cd::ComponentDef, name::Symbol)
     if is_composite(cd)
@@ -450,7 +418,7 @@ function parameter(cd::ComponentDef, name::Symbol)
     try
         return cd.parameters[name]
     catch
-        error("Parameter $name was not found in component $(cd.name)")
+        error("Parameter $name was not found in component $(nameof(cd))")
     end
 end
 
@@ -543,7 +511,7 @@ function variables(ccd::CompositeComponentDef)
 
     # return cached variables, if any
     if length(vars) == 0
-        for (dr, name) in ccd.subcomps.exports
+        for (dr, name) in ccd.exports
             cd = compdef(dr.comp_id)
             if has_variable(cd, dr.datum_name)
                 vars[name] = variable(cd, dr.datum_name)
@@ -587,7 +555,7 @@ Return a list of all variable names for a given component `comp_name` in a model
 """
 variable_names(md::ModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
 
-variable_names(comp_def::ComponentDef) = [name(var) for var in variables(comp_def)]
+variable_names(comp_def::ComponentDef) = [nameof(var) for var in variables(comp_def)]
 
 
 function variable_unit(md::ModelDef, comp_name::Symbol, var_name::Symbol)
@@ -616,7 +584,7 @@ Add all exported variables to a CompositeComponentDef.
 function addvariables(comp_def::CompositeComponentDef, exports::Vector{Pair{DatumReference, Symbol}})
     # TBD: this needs attention
     for (dr, exp_name) in exports
-        addvariable(comp_def, variable(comp_def, name(variable)), exp_name)
+        addvariable(comp_def, variable(comp_def, nameof(variable)), exp_name)
     end
 end
 
@@ -656,12 +624,11 @@ end
 const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
-@delegate _append_comp!(md::ModelDef, comp_name::Symbol, comp_def::ComponentDef) => ccd
-@delegate _append_comp!(ccd::CompositeComponentDef, comp_name::Symbol, comp_def::ComponentDef) => subcomps
-
-function _append_comp!(subcomps::SubcompsDef, comp_name::Symbol, comp_def::ComponentDef)
-    subcomps.comps_dict[comp_name] = comp_def
+function _append_comp!(ccd::CompositeComponentDef, comp_name::Symbol, comp_def::ComponentDef)
+   ccd.comps_dict[comp_name] = comp_def
 end
+
+@delegate _append_comp!(md::ModelDef, comp_name::Symbol, comp_def::ComponentDef) => ccd
 
 """
     add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
@@ -744,7 +711,7 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
         if param.default !== nothing
-            set_param!(md, comp_name, name(param), param.default)
+            set_param!(md, comp_name, nameof(param), param.default)
         end
     end
     
@@ -865,10 +832,6 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
     # Re-add
     add_comp!(md, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
-
-#
-# TBD: we can probably remove most of this copying code and just rely on deepcopy().
-#
 
 """
     copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)

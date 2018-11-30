@@ -27,7 +27,7 @@ function show(io::IO, m::Model)
 
     for (i, comp_name) in enumerate(compkeys(m.md))
         comp_def = compdef(m.md, comp_name)
-        println(io, "$i. $(comp_def.comp_id) as :$(comp_def.name)")
+        println(io, "$i. $(comp_def.comp_id) as :$(nameof(comp_def))")
         _show_conns(io, m, comp_name, :incoming)
         _show_conns(io, m, comp_name, :outgoing)
     end
@@ -49,7 +49,7 @@ end
 
 function get_connections(m::Model, ci::ComponentInstance, which::Symbol)
     if is_leaf(ci)
-        return get_connections(m, name(ci.comp), which)
+        return get_connections(m, nameof(ci.comp), which)
     end
 
     conns = []

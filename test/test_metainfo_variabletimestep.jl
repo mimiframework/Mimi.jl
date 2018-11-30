@@ -43,9 +43,9 @@ c2 = compdef(test_model, :ch4forcing2)
 @test c1 == compdef(:ch4forcing1)
 @test_throws ErrorException compdef(:missingcomp)
 
-@test c2.comp_id.module_name == :TestMetaInfo_VariableTimestep
-@test c2.comp_id.comp_name == :ch4forcing1
-@test c2.name == :ch4forcing2
+@test compmodule(c2) == :TestMetaInfo_VariableTimestep
+@test compname(c2) == :ch4forcing1
+@test nameof(c2) == :ch4forcing2
 
 vars = Mimi.variable_names(c2)
 @test length(vars) == 3

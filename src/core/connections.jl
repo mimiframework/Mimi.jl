@@ -38,7 +38,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
     end
 
     # Don't check sizes for ConnectorComps since they won't match.
-    if name(comp_def) in (:ConnectorCompVector, :ConnectorCompMatrix)
+    if nameof(comp_def) in (:ConnectorCompVector, :ConnectorCompMatrix)
         return nothing
     end
 
@@ -220,7 +220,7 @@ function unconnected_params(md::ModelDef)
     unconnected = Vector{Tuple{Symbol,Symbol}}()
     
     for comp_def in compdefs(md)
-        comp_name = name(comp_def)
+        comp_name = nameof(comp_def)
         params = parameter_names(comp_def)
         connected = connected_params(md, comp_name)
         append!(unconnected, map(x->(comp_name, x), setdiff(params, connected)))
@@ -482,7 +482,7 @@ function add_connector_comps(md::ModelDef)
     conns = internal_param_conns(md)
 
     for comp_def in compdefs(md)
-        comp_name = name(comp_def)
+        comp_name = nameof(comp_def)
 
         # first need to see if we need to add any connector components for this component
         internal_conns  = filter(x -> x.dst_comp_name == comp_name, conns)

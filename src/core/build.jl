@@ -63,10 +63,10 @@ Instantiate a component `comp_def` in the model `md` and its variables (but not 
 parameters). Return the resulting ComponentInstanceVariables.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
-    comp_name = name(comp_def)
+    comp_name = nameof(comp_def)
     var_defs = variables(comp_def)    
 
-    names  = ([name(vdef) for vdef in var_defs]...,)
+    names  = ([nameof(vdef) for vdef in var_defs]...,)
     types  = Tuple{[_instance_datatype(md, vdef) for vdef in var_defs]...}
     values = [_instantiate_datum(md, def) for def in var_defs]
 
@@ -113,7 +113,7 @@ end
 
 # Recursively instantiate all variables and store refs in the given dict.
 function _instantiate_vars(md::ModelDef, comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
-    comp_name = name(comp_def)
+    comp_name = nameof(comp_def)
     par_dict[comp_name] = Dict()
 
     if is_composite(comp_def)
@@ -191,7 +191,7 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict
         return _combine_exported_pars(comp_def, par_dict)
 
     else
-        comp_name = name(comp_def)
+        comp_name = nameof(comp_def)
         d = par_dict[comp_name]
     
         pnames = Tuple(parameter_names(comp_def))
@@ -206,7 +206,7 @@ function _build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::D
     @info "_build $(comp_def.comp_id)"
     @info "  var_dict $(var_dict)"
     @info "  par_dict $(par_dict)"
-    comp_name = name(comp_def)
+    comp_name = nameof(comp_def)
 
     # recursive build...
     if is_composite(comp_def)

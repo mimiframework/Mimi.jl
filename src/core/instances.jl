@@ -21,11 +21,11 @@ has_component(subcomps::SubcompsInstance, name::Symbol) = haskey(subcomps.comps_
 compdef(ci::ComponentInstance) = compdef(ci.comp_id)
 
 """
-    name(ci::ComponentInstance)
+    nameof(ci::ComponentInstance)
 
 Return the name of the component `ci`.
 """
-name(ci::ComponentInstance) = ci.comp_name
+nameof(ci::ComponentInstance) = ci.comp_name
 
 compid(ci::ComponentInstance) = ci.comp_id
 dims(ci::ComponentInstance) = ci.dim_dict
@@ -69,7 +69,7 @@ components, and add the `first` and `last` of `mi` to the ends of the `firsts` a
 @delegate add_comp!(cci::CompositeComponentInstance, ci::ComponentInstance) => subcomps
 
 function add_comp!(subcomps::SubcompsInstance, ci::ComponentInstance) 
-    subcomps.comps_dict[name(ci)] = ci
+    subcomps.comps_dict[nameof(ci)] = ci
 
     push!(subcomps.firsts, first_period(ci))
     push!(subcomps.lasts,  last_period(ci))

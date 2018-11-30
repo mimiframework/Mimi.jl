@@ -183,16 +183,17 @@ ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
     name::Symbol
 end
 
-@method name(obj::NamedObj) = obj.name
+"""
+    nameof(obj::NamedDef) = obj.name 
 
-# TBD
-# @class DatumReference <: NamedObj
-#     comp_id::ComponentId
-# end
+Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, 
+`CompositeComponentDef`, `DatumReference` and `DimensionDef`.
+"""
+@method Base.nameof(obj::NamedObj) = obj.name
+
 # Stores references to the name of a component variable or parameter
-struct DatumReference
+@class DatumReference <: NamedObj
     comp_id::ComponentId
-    datum_name::Symbol
 end
 
 # *Def implementation doesn't need to be performance-optimized since these
@@ -275,7 +276,7 @@ end
         # superclass initialization
         # ComponentDef(self, comp_id, comp_name)
 
-        self.comps_dict = OrderedDict{Symbol, T}([name(cd) => cd for cd in comps])
+        self.comps_dict = OrderedDict{Symbol, T}([nameof(cd) => cd for cd in comps])
         self.bindings = bindings
         self.exports = exports
         self.internal_param_conns = Vector{InternalParameterConnection}() 
@@ -369,7 +370,7 @@ end
     run_timestep::Union{Nothing, Function}
 
     function ComponentInstance{TV, TP}(comp_def::ComponentDef, vars::TV, pars::TP,
-                                       name::Symbol=name(comp_def)) where
+                                       name::Symbol=nameof(comp_def)) where
                 {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
 
         self = new{TV, TP}()
@@ -405,7 +406,7 @@ end
 end
 
 function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP, 
-                           name::Symbol=name(comp_def)) where
+                           name::Symbol=nameof(comp_def)) where
                             {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
     ComponentInstance{TV, TP}(comp_def, vars, pars, name, subcomps=subcomps)
 end
