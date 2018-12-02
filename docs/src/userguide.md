@@ -152,7 +152,7 @@ Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.
  ```julia
  run1 = run(my_model)
  explore(run1, title = "run1 results")
- ```
+```
 
  ![Explorer Model Example](figs/explorer_model_example.png)
 
