@@ -152,7 +152,6 @@ Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.
  ```julia
  run1 = run(my_model)
  explore(run1, title = "run1 results")
- 
  ```
 
  ![Explorer Model Example](figs/explorer_model_example.png)
@@ -222,7 +221,6 @@ When `set_param!` is called, it creates an external parameter by the name provid
 
 ```julia
 update_param!(mymodel, :parametername, newvalues) # update values only 
-
 update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
 ```
 
@@ -256,7 +254,6 @@ run(instance2)
 
 result1 = instance1[:Comp, :Var]
 result2 = instance2[:Comp, :Var]
-
 ```
 
 Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.
