@@ -1,6 +1,6 @@
 # Introduction
 
-The following set of tutorials aim to fulfill the needs of [Mimi](https://github.com/anthofflab/Mimi.jl) users of various experience levels, starting with first-time users.  Before engaging with these tutorials, it is recommended that first-time users read the [documentation](http://anthofflab.berkeley.edu/Mimi.jl/latest/), including the [user guide](http://anthofflab.berkeley.edu/Mimi.jl/latest/userguide.html), and refer back to this documentation as reference.
+The following set of tutorials aim to fulfill the needs of [Mimi](https://github.com/anthofflab/Mimi.jl) users of various experience levels, starting with first-time users.  Before engaging with these tutorials, it is recommended that first-time users read the [documentation](http://anthofflab.berkeley.edu/Mimi.jl/latest/), including the [user guide](http://anthofflab.berkeley.edu/Mimi.jl/latest/userguide.html), and refer back to this documentation as reference.  It will also be helpful to be somewhat comfortable with the basics of the [Julia](https://julialang.org/) langauge, though expertise is not required.
 
 # Terminology
 
