@@ -15,3 +15,26 @@ The following terminology is used throughout the documentation. The documentatio
 2. Tutorial 2 Modify an Existing Model: Tutorial 2 immediately follows Tutorial 1 above, and shows users how to modify an existing model such as [FUND](http://www.fund-model.org).
 
 3.  Tutorial 3 Create a Model: Tutorial 3 takes users a step further from using registered models, and instructs them on creating their own models from scratch.
+
+# Requirements and Initial Setup
+
+Employing these tutorials will require the use of [Julia v1.0.0](https://julialang.org/downloads/) or higher as well as the latest version of [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl) or higher. You will also need to use [Github](https://github.com) and thus download [Git](https://git-scm.com/downloads).
+
+To use the following tutorials, follow the steps below.
+
+1. Download Git [here](https://git-scm.com/downloads).
+
+2. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.0.0 or later.
+
+3. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.6.0 or later.
+
+```
+]add Mimi
+```
+
+We also recommend that you frequently update your packages and requirements using `]up`
+```
+]up
+```
+
+Once you have followed these steps, you are ready to begin the tutorials!
