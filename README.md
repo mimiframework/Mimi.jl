@@ -23,7 +23,7 @@ Also see the [OptiMimi](http://github.com/jrising/OptiMimi.jl) package for optim
 
 Porting to [Mimi 0.5.0](https://github.com/anthofflab/Mimi.jl/releases/tag/v0.5.1):  If you are adapting models to the[Mimi 0.5.0](https://github.com/anthofflab/Mimi.jl/releases/tag/v0.5.1) breaking release or later, please use the [Integration Guide](http://anthofflab.berkeley.edu/Mimi.jl/dev/integrationguide.html) as guide to help port your models as easily as possible.
 
-[Julia 1.0](https://julialang.org/blog/2018/08/one-point-zero): Mimi has now been ported to Julia 1.0.
+[Julia 1.0](https://julialang.org/blog/2018/08/one-point-zero): Mimi has not yet been ported to Julia 1.0, and thus is not compatible with Julia 1.0 (or [Julia v0.7](https://docs.julialang.org/en/v0.7.0/NEWS/) which provides deprecation warnings for Julia 1.0).  The next release of Mimi will provide this compatibility.
 
 ## Installation
 

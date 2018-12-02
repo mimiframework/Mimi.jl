@@ -1,5 +1,6 @@
-using Pkg
-Pkg.add("InfoZIP")
+if Pkg.installed("InfoZIP") === nothing
+    Pkg.add("InfoZIP")
+end
 
 using Mimi
 using InfoZIP
@@ -10,15 +11,15 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-    "https://github.com/lrennels/fund/archive/1768edf12aaaac3a41bbea081d5b51299121f993.zip",
-    "https://github.com/lrennels/mimi-rice-2010.jl/archive/2b5996b0a0c8be92290991f045c43af425c5a9c8.zip"
+    "https://github.com/lrennels/fund/archive/70d6dd041d836fb85990363c28845e42ec18da02.zip",
+    "https://github.com/lrennels/mimi-rice-2010.jl/archive/39d41c358d917711fafc4583e3252ce435dd1068.zip"
 ]
 
 function run_dependency_tests(dependencies=dependencies)
     #list of failed tests to build as you go
     errors = []
     #make a temporary directory to run the tests in
-    tmp_path = joinpath(@__DIR__,"tmp_testing/")
+    tmp_path = joinpath(dirname(@__FILE__),"tmp_testing/")
     mkdir(tmp_path)
 
     #loop through each dependent package
