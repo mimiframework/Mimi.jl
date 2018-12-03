@@ -11,7 +11,7 @@
 
 # Mimi - Integrated Assessment Modeling Framework
 
-A [Julia](http://julialang.org) package for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling). For more information, see the **[Documentation](http://anthofflab.berkeley.edu/Mimi.jl/dev/)**.
+A [Julia](http://julialang.org) package for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling). For more information, see the **[Documentation](http://anthofflab.berkeley.edu/Mimi.jl/stable/)**.
 
 Please get in touch with [David Anthoff](http://www.david-anthoff.com) if you are interested in using this framework or want to be involved in any way with this effort.
 
@@ -21,7 +21,7 @@ Mimi is a package that provides a component model for integrated assessment mode
 
 Also see the [OptiMimi](http://github.com/jrising/OptiMimi.jl) package for optimizing parameters within Mimi models.
 
-Porting to [Mimi 0.5.0](https://github.com/anthofflab/Mimi.jl/releases/tag/v0.5.1):  If you are adapting models to the[Mimi 0.5.0](https://github.com/anthofflab/Mimi.jl/releases/tag/v0.5.1) breaking release or later, please use the [Integration Guide](http://anthofflab.berkeley.edu/Mimi.jl/dev/integrationguide.html) as guide to help port your models as easily as possible.
+Porting to [Mimi 0.5.0](https://github.com/anthofflab/Mimi.jl/releases/tag/v0.5.1):  If you are adapting models to the [Mimi 0.5.0](https://github.com/anthofflab/Mimi.jl/releases/tag/v0.5.1) breaking release or later, please use the [Integration Guide](http://anthofflab.berkeley.edu/Mimi.jl/stable/integrationguide/) as guide to help port your models as easily as possible.
 
 [Julia 1.0](https://julialang.org/blog/2018/08/one-point-zero): Mimi has not yet been ported to Julia 1.0, and thus is not compatible with Julia 1.0 (or [Julia v0.7](https://docs.julialang.org/en/v0.7.0/NEWS/) which provides deprecation warnings for Julia 1.0).  The next release of Mimi will provide this compatibility.
 
