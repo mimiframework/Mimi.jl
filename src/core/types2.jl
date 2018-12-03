@@ -192,7 +192,7 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
 @method Base.nameof(obj::NamedObj) = obj.name
 
 # Stores references to the name of a component variable or parameter
-@class DatumReference <: NamedObj
+@class DatumReference <: NamedObj begin
     comp_id::ComponentId
 end
 
@@ -411,15 +411,16 @@ function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
     ComponentInstance{TV, TP}(comp_def, vars, pars, name, subcomps=subcomps)
 end
 
-@class mutable CompositeInstance <: ComponentInstance begin
+@class mutable CompositeInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: ComponentInstance begin
     comps_dict::OrderedDict{Symbol, _ComponentInstance_}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
     clocks::Vector{Clock}
 
-    function CompositeInstance(comps::Vector{T}) where {T <: _ComponentInstance_}
+    function CompositeInstance{TV, TP}(comps::Vector{T}) where 
+        {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters, T <: _ComponentInstance_}
         self = new()
-        self.comps_dict = OrderedDict{Symbol, _ComponentInstance_}([ci.comp_name => ci for ci in comps])
+        self.comps_dict = OrderedDict{Symbol, T}([ci.comp_name => ci for ci in comps])
         self.firsts = Vector{Int}()
         self.lasts  = Vector{Int}()
         self.clocks = Vector{Clock}()
@@ -453,9 +454,9 @@ types(obj::T)       where {T <: ComponentInstanceData} = typeof(nt(obj)).paramet
 # ModelInstance holds the built model that is ready to be run
 mutable struct ModelInstance
     md::ModelDef
-    cci::Union{Nothing, CompositeComponentInstance}
+    cci::Union{Nothing, CompositeInstance}
 
-    function ModelInstance(md::ModelDef, cci::Union{Nothing, CompositeComponentInstance}=nothing)
+    function ModelInstance(md::ModelDef, cci::Union{Nothing, CompositeInstance}=nothing)
         return new(md, cci)
     end
 end
