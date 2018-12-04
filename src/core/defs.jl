@@ -53,8 +53,7 @@ end
 """
     name(def::NamedDef) = def.name 
 
-Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, `ComponentDef`, 
-and `DimensionDef`.
+Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, and `ComponentDef`.
 """
 name(def::NamedDef) = def.name
 
@@ -118,14 +117,24 @@ end
 #
 # Dimensions
 #
+"""
+    add_dimension!(comp::ComponentDef, name)
+
+Add a dimension name to a `ComponentDef`, with an optional Dimension definition.
+The definition is included only for the case of anonymous dimensions, which are 
+indicated in `@defcomp` with an Int rather than a symbol name. In this case, the
+Int (e.g., 4) is converted to a dimension of the same length, e.g., `Dimension(4)`,
+and assigned a new name `Symbol(4)``
+"""
 function add_dimension!(comp::ComponentDef, name)
-    comp.dimensions[name] = dim_def = DimensionDef(name)
-    return dim_def
+    # create the Dimension and store it in the ComponentDef until build time
+    dim = (name isa Int) ? Dimension(name) : nothing
+    comp.dimensions[Symbol(name)] = dim
 end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
-dimensions(comp_def::ComponentDef) = values(comp_def.dimensions)
+dimensions(comp_def::ComponentDef) = keys(comp_def.dimensions)
 
 dimensions(def::DatumDef) = def.dimensions
 
@@ -238,22 +247,24 @@ end
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
-function set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) = set_dimension!(md, name, Dimension(keys))
+
+function set_dimension!(md::ModelDef, name::Symbol, dim::Dimension)
     redefined = haskey(md, name)
     if redefined
         @warn "Redefining dimension :$name"
     end
 
     if name == :time
-        md.is_uniform = isuniform(keys)
+        k = [keys(dim)...]
+        md.is_uniform = isuniform(k)
         if redefined 
-            reset_run_periods!(md, keys[1], keys[end])
+            reset_run_periods!(md, k[1], k[end])
         end
     end
     
-    dim = Dimension(keys)
     md.dimensions[name] = dim
-    return dim
+    return dim    
 end
 
 # helper functions used to determine if the provided time values are 
@@ -488,6 +499,13 @@ end
 const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
+function _add_anonymous_dims!(md::ModelDef, comp_def::ComponentDef)
+    for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dimensions)
+        @info "Setting dimension $name to $dim"
+        set_dimension!(md, name, dim)
+    end
+end
+
 """
     add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
@@ -531,6 +549,8 @@ function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
     end        
 
     set_run_period!(comp_def, first, last)
+
+    _add_anonymous_dims!(md, comp_def)
 
     if before === nothing && after === nothing
         md.comp_defs[comp_name] = comp_def   # just add it to the end

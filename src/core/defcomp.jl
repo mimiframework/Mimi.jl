@@ -101,11 +101,13 @@ function _generate_dims_expr(name, args, vartype)
         error("Index $name: Type specification ($vartype) is not supported")
     end
 
-    expr = :(Mimi.add_dimension!(comp, $(QuoteNode(name))))
+    name_expr = (name isa Symbol) ? :($(QuoteNode(name))) : name
+    expr = :(Mimi.add_dimension!(comp, $name_expr))
+    @debug "  dims expr: $expr"
     return expr
 end
 
-_generate_dims_expr(name::Symbol) = _generate_dims_expr(name, [], nothing)
+_generate_dims_expr(name) = _generate_dims_expr(name, [], nothing)
 
 """
     defcomp(comp_name::Symbol, ex::Expr)
@@ -124,7 +126,7 @@ create the corresponding ComponentDef instance. At model build time, the ModelDe
 (including its ComponentDefs) will be converted to a runnable model.
 """
 macro defcomp(comp_name, ex)
-    known_dims = Set{Symbol}()
+    known_dims = Set{Union{Int, Symbol}}()
 
     @capture(ex, elements__)
     @debug "Component $comp_name"
@@ -208,7 +210,12 @@ macro defcomp(comp_name, ex)
 
                 elseif @capture(arg, index = [dims__])
                     @debug "    dims: $dims"
-                    append!(dimensions, dims)
+
+                    if !isempty(filter(x -> !(x isa Union{Int,Symbol}), dims))
+                        error("Dimensions ($dims) must be defined by a Symbol placeholder or an Int")
+                    end
+
+                    append!(dimensions, map(Symbol, dims))  # converts, e.g., 4 into Symbol("4")
 
                     # Add undeclared dimensions on-the-fly
                     for dim in dims

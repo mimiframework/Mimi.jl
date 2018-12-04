@@ -1,3 +1,14 @@
+using Logging
+
+# Enable @debug logging
+function set_log_level(level)
+    global_logger(ConsoleLogger(stderr, level))
+end
+
+log_debug() = set_log_level(Logging.Debug)
+log_info()  = set_log_level(Logging.Info)
+
+
 """
     interpolate(values, ts=10)
 
