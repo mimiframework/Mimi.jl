@@ -78,7 +78,7 @@ function _combine_exported_vars(comp_def::CompositeComponentDef, var_dict::Dict{
     names = []
     values = []
 
-    for (dr, name) in comp_def.subcomps.exports
+    for (dr, name) in comp_def.exports
         if is_variable(dr)
             obj = var_dict[dr.comp_id.comp_name]  # TBD: should var_dict hash on ComponentId instead?
             value = getproperty(obj, dr.datum_name)
@@ -95,7 +95,7 @@ function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{
     names = []
     values = []
 
-    for (dr, name) in comp_def.subcomps.exports
+    for (dr, name) in comp_def.exports
         if is_parameter(dr)
             d = par_dict[dr.comp_id.comp_name]  # TBD: should par_dict hash on ComponentId instead?
             value = d[dr.datum_name]
@@ -208,18 +208,24 @@ function _build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::D
     @info "  par_dict $(par_dict)"
     comp_name = nameof(comp_def)
 
-    # recursive build...
-    if is_composite(comp_def)
-        comps = [_build(cd, var_dict, par_dict) for cd in compdefs(comp_def.subcomps)]
-        subcomps = SubcompsInstance(comps)
-    else
-        subcomps = nothing
-    end
+    pars = _instantiate_params(comp_def, par_dict)
+    vars = var_dict[comp_name]
+    return ComponentInstance(comp_def, vars, pars, comp_name)
+end
+
+function _build(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+    @info "_build composite $(comp_def.comp_id)"
+    @info "  var_dict $(var_dict)"
+    @info "  par_dict $(par_dict)"
+    comp_name = nameof(comp_def)
+
+    built_comps = [_build(cd, var_dict, par_dict) for cd in compdefs(comp_def)]
 
     pars = _instantiate_params(comp_def, par_dict)
     vars = var_dict[comp_name]
-    return ComponentInstance(comp_def, vars, pars, comp_name, subcomps=subcomps)
+    return CompositeInstance(comp_def, vars, pars, comp_name)
 end
+
 
 function _build(md::ModelDef)
     add_connector_comps(md)
@@ -231,6 +237,7 @@ function _build(md::ModelDef)
         msg = "Cannot build model; the following parameters are not set: $params"
         error(msg)
     end
+    
 
     var_dict = Dict{Symbol, Any}()                 # collect all var defs and
     par_dict = Dict{Symbol, Dict{Symbol, Any}}()   # store par values as we go

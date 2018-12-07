@@ -51,10 +51,8 @@ first_period(comp_def::ComponentDef) = comp_def.first
 last_period(comp_def::ComponentDef)  = comp_def.last
 
 function first_period(comp_def::CompositeComponentDef)
-    subcomps = compdefs(comp_def)
-
-    if numcomponents(subcomps) > 0
-        firsts = [first_period(c) for c in subcomps]
+    if numcomponents(comp_def) > 0
+        firsts = [first_period(c) for c in comp_def]
         if findfirst(isequal(nothing), firsts) == nothing   # i.e., there are no `nothing`s
             return min(Vector{Int}(firsts)...)
         end
@@ -63,10 +61,8 @@ function first_period(comp_def::CompositeComponentDef)
 end
 
 function last_period(comp_def::CompositeComponentDef)
-    subcomps = compdefs(comp_def)
-
-    if numcomponents(subcomps) > 0
-        lasts = [last_period(cd) for cd in subcomps]
+    if numcomponents(comp_def) > 0
+        lasts = [last_period(c) for c in comp_def]
         if findfirst(isequal(nothing), lasts) == nothing   # i.e., there are no `nothing`s
             return max(Vector{Int}(lasts)...)
         end
@@ -98,7 +94,7 @@ number_type(md::ModelDef) = md.number_type
 
 @delegate numcomponents(md::ModelDef) => ccd
 
-numcomponents(obj::ComponentDef) = 0   # no subcomponents
+numcomponents(obj::ComponentDef) = 0   # no sub-components
 numcomponents(obj::CompositeComponentDef) = length(obj.comps_dict)
 
 function dump_components()

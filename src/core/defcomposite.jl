@@ -145,10 +145,7 @@ macro defcomposite(cc_name, ex)
             # name = (alias === nothing ? comp_name : alias)
             # expr = :(add_comp!($cc_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
 
-            expr = :(info = SubcompsDef($comps, bindings=$bindings, exports=$exports))
-            addexpr(expr)
-
-            expr = :(ComponentDef($comp_id, $comp_name; component_info=info))
+            expr = :(CompositeComponentDef($comp_id, $comp_name, $comps; bindings=$bindings, exports=$exports))
             addexpr(expr)
         end
     end

@@ -42,9 +42,7 @@ export
     update_params!,
     variables 
 
-# TBD: testing new @classes in classes.jl
-include("core/types2.jl")
-
+include("core/types.jl")
 include("core/delegate.jl")
 
 # After loading types and delegation macro, the rest is alphabetical

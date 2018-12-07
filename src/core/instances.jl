@@ -9,12 +9,10 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 """
 modeldef(mi::ModelInstance) = mi.md
 
-compinstance(SubcompsInstance, name::Symbol) = subcomps.comps_dict[name]
-@delegate compinstance(cci::CompositeComponentInstance, name::Symbol) => subcomps
+compinstance(cci::CompositeComponentInstance, name::Symbol) = cci.comps_dict[name]
 @delegate compinstance(mi::ModelInstance, name::Symbol) => cci
 
-has_component(subcomps::SubcompsInstance, name::Symbol) = haskey(subcomps.comps_dict, name)
-@delegate has_component(ci::CompositeComponentInstance, name::Symbol) => subcomps
+has_component(cci::CompositeComponentInstance, name::Symbol) = haskey(cci.comps_dict, name)
 @delegate has_component(mi::ModelInstance, name::Symbol) => cci
 
 
@@ -38,22 +36,17 @@ last_period(ci::ComponentInstance)  = ci.last
 Return an iterator over components in model instance `mi`.
 """
 @delegate components(mi::ModelInstance) => cci
+components(cci::CompositeComponentInstance) = values(cci.comps_dict)
 
-@delegate components(ci::CompositeComponentInstance) => subcomps
-components(subcomps::SubcompsInstance) = values(subcomps.comps_dict)
-
-firsts(subcomps::SubcompsInstance) = subcomps.firsts
-@delegate firsts(cci::CompositeComponentInstance) => subcomps
+firsts(cci::CompositeComponentInstance) = cci.firsts
 @delegate firsts(mi::ModelInstance) => cci
 @delegate firsts(m::Model) => mi
 
-lasts(subcomps::SubcompsInstance) = subcomps.lasts
-@delegate lasts(cci::CompositeComponentInstance) => subcomps
+lasts(cci::CompositeComponentInstance) = cci.lasts
 @delegate lasts(mi::ModelInstance) => cci
 @delegate lasts(m::Model)  => mi
 
-clocks(subcomps::SubcompsInstance) = subcomps.clocks
-@delegate clocks(cci::CompositeComponentInstance) => subcomps
+clocks(cci::CompositeComponentInstance) = cci.clocks
 @delegate clocks(mi::ModelInstance) => cci
 @delegate clocks(m::Model) => mi
 
@@ -66,13 +59,11 @@ components, and add the `first` and `last` of `mi` to the ends of the `firsts` a
 """
 @delegate add_comp!(mi::ModelInstance, ci::ComponentInstance) => cci
 
-@delegate add_comp!(cci::CompositeComponentInstance, ci::ComponentInstance) => subcomps
+function add_comp!(cci::CompositeComponentInstance, ci::ComponentInstance) 
+    cci.comps_dict[nameof(ci)] = ci
 
-function add_comp!(subcomps::SubcompsInstance, ci::ComponentInstance) 
-    subcomps.comps_dict[nameof(ci)] = ci
-
-    push!(subcomps.firsts, first_period(ci))
-    push!(subcomps.lasts,  last_period(ci))
+    push!(cci.firsts, first_period(ci))
+    push!(cci.lasts,  last_period(ci))
 end
 
 #

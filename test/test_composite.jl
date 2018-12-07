@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi:
     ComponentId, DatumReference, ComponentDef, BindingTypes, ModelDef, 
-    SubcompsDef, SubcompsDefTypes, build, time_labels, reset_compdefs, compdef
+    build, time_labels, reset_compdefs, compdef
 
 reset_compdefs()
 
@@ -48,7 +48,7 @@ let calling_module = @__MODULE__
 
     ccname = :testcomp
     ccid  = ComponentId(calling_module, ccname)
-    comps::Vector{ComponentDef{<: SubcompsDefTypes}} = [compdef(Comp1), compdef(Comp2), compdef(Comp3)]
+    comps::Vector{<: _ComponentDef_} = [compdef(Comp1), compdef(Comp2), compdef(Comp3)]
     
     # TBD: need to implement this to create connections and default value
     bindings::Vector{Pair{DatumReference, BindingTypes}} = [
@@ -63,8 +63,7 @@ let calling_module = @__MODULE__
         DatumReference(Comp3, :var_3_1) => :c3v1
     ]
 
-    subcomps = SubcompsDef(comps, bindings, exports)
-    MyComposite.md = ModelDef(ComponentDef(ccid, ccname, subcomps))
+    MyComposite.md = ModelDef(ComponentDef(ccid, ccname, comps, bindings, exports))
                                 
     set_dimension!(MyComposite, :time, 2005:2020)
     nothing
