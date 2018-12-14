@@ -10,9 +10,9 @@ using Mimi
 
     function run_timestep(p, v, d, ts)
         if gettime(ts) >= p.first && gettime(ts) <= p.last
-            v.output[ts] = p.input1[ts]
+            v.output[ts.t] = p.input1[ts.t]
         else
-            v.output[ts] = p.input2[ts]
+            v.output[ts.t] = p.input2[ts.t]
         end 
     end
 end
@@ -29,9 +29,9 @@ end
 
     function run_timestep(p, v, d, ts)
         if gettime(ts) >= p.first && gettime(ts) <= p.last 
-            v.output[ts, :] = p.input1[ts, :]
+            v.output[ts.t, :] = p.input1[ts.t, :]
         else
-            v.output[ts, :] = p.input2[ts, :]
+            v.output[ts.t, :] = p.input2[ts.t, :]
         end
     end
 end
