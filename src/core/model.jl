@@ -12,21 +12,26 @@ Return the `ModelDef` contained by Model `m`.
 modeldef(m::Model) = m.md
 
 modelinstance(m::Model) = m.mi
+modelinstance_def(m::Model) = modeldef(modelinstance(m))
+
+is_built(m::Model) = (modelinstance(m) !== nothing)
 
 @delegate compinstance(m::Model, name::Symbol) => mi
+@delegate has_comp(m::Model, name::Symbol) => mi
+
+@delegate firsts(m::Model) => mi
+@delegate lasts(m::Model)  => mi
+@delegate clocks(m::Model) => mi
 
 @delegate number_type(m::Model) => md
 
+@delegate internal_param_conns(m::Model) => md
 @delegate external_param_conns(m::Model) => md
 
-@delegate internal_param_conns(m::Model) => md
-
 @delegate external_params(m::Model) => md
-
 @delegate external_param(m::Model, name::Symbol) => md
 
 @delegate connected_params(m::Model, comp_name::Symbol) => md
-
 @delegate unconnected_params(m::Model) => md
 
 @delegate add_connector_comps(m::Model) => md
@@ -153,7 +158,7 @@ end
 """
     components(m::Model)
 
-Return an iterator on the components in model `m`.
+Return an iterator on the components in a model's model instance.
 """
 @delegate components(m::Model) => mi
 
@@ -229,18 +234,18 @@ Return a list of the parameter definitions for `comp_name` in model `m`.
 parameters(m::Model, comp_name::Symbol) = parameters(compdef(m, comp_name))
 
 function variable(m::Model, comp_name::Symbol, var_name::Symbol)
-    comp_def = compdef(m, comp_name)
-    return comp_def.variables[var_name]
+    vars = variables(m, comp_name)
+    return vars[var_name]
 end
 
 function variable_unit(m::Model, comp_name::Symbol, var_name::Symbol)
     var = variable(m, comp_id, var_name)
-    return var.unit
+    return unit(var)
 end
 
 function variable_dimensions(m::Model, comp_name::Symbol, var_name::Symbol)
     var = variable(m, comp_id, var_name)
-    return var.dimensions
+    return dimensions(var)
 end
 
 """
@@ -295,12 +300,13 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
         error("Cannot run a model with no components.")
     end
 
-    if m.mi === nothing
+    if ! is_built(m)
         build(m)
     end
 
     # println("Running model...")
-    run(m.mi, ntimesteps, dim_keys)
+    mi = modelinstance(m)
+    run(mi, ntimesteps, dim_keys)
     nothing
 end
  

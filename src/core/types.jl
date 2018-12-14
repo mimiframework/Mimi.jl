@@ -134,6 +134,13 @@ Base.convert(::Type{T}, s::ScalarModelParameter{T}) where {T} = T(s.value)
 
 ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(value)}(value, dims)
 
+# Allow values to be obtained from either parameter type using one method name.
+value(param::ArrayModelParameter)  = param.values
+value(param::ScalarModelParameter) = param.value
+
+dimensions(obj::ArrayModelParameter) = obj.dimensions
+dimensions(obj::ScalarModelParameter) = []
+
 
 abstract type AbstractConnection end
 
@@ -196,6 +203,8 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
     comp_id::ComponentId
 end
 
+comp_name(dr::DatumReference) = dr.comp_id.comp_name
+
 # *Def implementation doesn't need to be performance-optimized since these
 # are used only to create *Instance objects that are used at run-time. With
 # this in mind, we don't create dictionaries of vars, params, or dims in the
@@ -208,7 +217,7 @@ global const BindingTypes = Union{Int, Float64, DatumReference}
 @class DimensionDef <: NamedObj
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
-@class mutable DatumDef <: NamedObj begin
+@class mutable DatumDef(getter_prefix="", setters=false) <: NamedObj begin
     datatype::DataType
     dimensions::Vector{Symbol}
     description::String
@@ -222,7 +231,10 @@ end
     default::Any
 end
 
-@class mutable ComponentDef <: NamedObj begin
+# to allow getters to be created
+import Base: first, last
+
+@class mutable ComponentDef(getter_prefix="") <: NamedObj begin
     comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
@@ -312,6 +324,11 @@ end
     end
 end
 
+@method external_param(obj::CompositeComponentDef, name::Symbol) = obj.external_params[name]
+
+@method add_backup!(obj::CompositeComponentDef, backup) = push!(obj.backups, backup)
+
+
 @class mutable ModelDef <: CompositeComponentDef begin
     dimensions2::Dict{Symbol, Dimension}
     number_type::DataType
@@ -334,7 +351,7 @@ end
 #
 
 # Supertype for variables and parameters in component instances
-@class ComponentInstanceData{NT <: NamedTuple} begin
+@class ComponentInstanceData(getters=false, setters=false){NT <: NamedTuple} begin
     nt::NT
 end
 
@@ -356,7 +373,7 @@ end
 ComponentInstanceParameters(names, types, values) = _make_data_obj(ComponentInstanceParameters, names, types, values)
 ComponentInstanceVariables(names, types, values)  = _make_data_obj(ComponentInstanceVariables, names, types, values)
 
-@class mutable ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} begin
+@class mutable ComponentInstance(getters=false, setters=false){TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} begin
     comp_name::Symbol
     comp_id::ComponentId
     variables::TV
@@ -380,7 +397,7 @@ ComponentInstanceVariables(names, types, values)  = _make_data_obj(ComponentInst
         self.first = comp_def.first
         self.last = comp_def.last
 
-        comp_module = Base.eval(Main, comp_id.module_name)
+        comp_module = Main.eval(comp_id.module_name)
 
         # The try/catch allows components with no run_timestep function (as in some of our test cases)
         # CompositeComponentInstances use a standard method that just loops over inner components.
@@ -406,27 +423,28 @@ ComponentInstanceVariables(names, types, values)  = _make_data_obj(ComponentInst
         return self
     end
 
-    function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
-                               name::Symbol=nameof(comp_def)) where
-                {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-
-        self = new{TV, TP}()
-        return ComponentInstance(self, comp_def, vars, pars, name)
+    # Create an empty instance with the given type parameters
+    function ComponentInstance{TV, TP}() where {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+        return new{TV, TP}
     end
 end
 
+function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
+                           name::Symbol=nameof(comp_def)) where
+        {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+
+    self = ComponentInstance{TV, TP}()
+    return ComponentInstance(self, comp_def, vars, pars, name)
+end
+
 # These can be called on CompositeComponentInstances and ModelInstances
-@method comp_name(obj::ComponentInstance) = obj.comp_name
-@method comp_id(obj::ComponentInstance) = obj.comp_id
-@method variables(obj::ComponentInstance) = obj.variables
-@method parameters(obj::ComponentInstance) = obj.parameters
-@method dim_dict(obj::ComponentInstance) = obj.dim_dict
+@method compdef(obj::ComponentInstance) = compdef(comp_id(obj))
+@method dims(obj::ComponentInstance) = obj.dim_dict
 @method has_dim(obj::ComponentInstance, name::Symbol) = haskey(obj.dim_dict, name)
 @method dimension(obj::ComponentInstance, name::Symbol) = obj.dim_dict[name]
-@method Base.first(obj::ComponentInstance) = obj.first
-@method Base.last(obj::ComponentInstance) = obj.last
-@method init_func(obj::ComponentInstance) = obj.init
-@method run_timestep_func(obj::ComponentInstance) = obj.run_timestep
+@method first_period(obj::ComponentInstance) = obj.first
+@method last_period(obj::ComponentInstance) = obj.last
+@method first_and_last(obj::ComponentInstance) = (obj.first, obj.last)
 
 @class mutable CompositeComponentInstance{TV <: ComponentInstanceVariables, 
                                           TP <: ComponentInstanceParameters} <: ComponentInstance begin
@@ -467,12 +485,9 @@ end
 end
 
 # These methods can be called on ModelInstances as well
-@method comp_dict(obj::CompositeComponentInstance) = obj.comp_dict
+@method components(obj::CompositeComponentInstance) = values(comps_dict)
 @method has_comp(obj::CompositeComponentInstance, name::Symbol) = haskey(obj.comps_dict, name)
-@method comp_instance(obj::CompositeComponentInstance, name::Symbol) = obj.comps_dict[name]
-@method firsts(obj::CompositeComponentInstance) = obj.firsts
-@method lasts(obj::CompositeComponentInstance)  = obj.lasts
-@method clocks(obj::CompositeComponentInstance) = obj.clocks
+@method compinstance(obj::CompositeComponentInstance, name::Symbol) = obj.comps_dict[name]
 
 @method is_leaf(ci::ComponentInstance) = true
 @method is_leaf(ci::CompositeComponentInstance) = false

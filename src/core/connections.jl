@@ -14,10 +14,7 @@ function disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
 end
 
 # Default string, string unit check function
-function verify_units(one::AbstractString, two::AbstractString)
-    # True if and only if they match
-    return one == two
-end
+verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
 function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
@@ -61,12 +58,6 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
         end
     end
 end
-
-@delegate backups(md::ModelDef) => ccd
-backups(obj::CompositeComponentDef) = obj.backups
-
-@delegate add_backup!(md::ModelDef, obj) => ccd
-add_backup!(ccd::CompositeComponentDef, obj) = push!(ccd.backups, obj)
 
 """
     connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
@@ -143,7 +134,7 @@ function connect_param!(md::ModelDef,
             
             if isuniform(md)
                 # use the first from the comp_def not the ModelDef
-                _, stepsize = first_and_step(md)
+                stepsize = step_size(md)
                 values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
             else
                 times = time_labels(md)
@@ -159,11 +150,13 @@ function connect_param!(md::ModelDef,
 
     else 
         # If backup not provided, make sure the source component covers the span of the destination component
-        src_first, src_last = first_period(md, src_comp_def), last_period(md, src_comp_def)
-        dst_first, dst_last = first_period(md, dst_comp_def), last_period(md, dst_comp_def)
+        src_first, src_last = first_and_last(md, src_comp_def)
+        dst_first, dst_last = first_and_last(md, dst_comp_def)
         if dst_first < src_first || dst_last > src_last
-            error("Cannot connect parameter; $src_comp_name only runs from $src_first to $src_last, whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years. Try calling: 
-    `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`")
+            error("""Cannot connect parameter: $src_comp_name runs only from $src_first to $src_last, 
+whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years.
+Try calling: 
+    `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`""")
         end 
 
         backup_param_name = nothing 
@@ -255,26 +248,19 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
-@delegate internal_param_conns(md::ModelDef) => ccd
-
 # Find internal param conns to a given destination component
-function internal_param_conns(md::ModelDef, dst_comp_name::Symbol)
-    return filter(x->x.dst_comp_name == dst_comp_name, internal_param_conns(md))
+@method function internal_param_conns(obj::CompositeComponentDef, dst_comp_name::Symbol)
+    return filter(x->x.dst_comp_name == dst_comp_name, internal_param_conns(obj))
 end
-
-external_param_conns(ccd::CompositeComponentDef) = ccd.external_param_conns
-@delegate external_param_conns(md::ModelDef) => ccd
 
 # Find external param conns for a given comp
-function external_param_conns(md::ModelDef, comp_name::Symbol)
-    return filter(x -> x.comp_name == comp_name, external_param_conns(md))
+@method function external_param_conns(obj::CompositeComponentDef, comp_name::Symbol)
+    return filter(x -> x.comp_name == comp_name, external_param_conns(obj))
 end
 
-@delegate external_param(md::ModelDef, name::Symbol) => ccd
-
-function external_param(ccd::CompositeComponentDef, name::Symbol)
+function external_param(obj::CompositeComponentDef, name::Symbol)
     try
-        return ccd.external_params[name]
+        return obj.external_params[name]
     catch err
         if err isa KeyError
             error("$name not found in external parameter list")
@@ -284,22 +270,16 @@ function external_param(ccd::CompositeComponentDef, name::Symbol)
     end
 end
 
-@delegate add_internal_param_conn!(md::ModelDef, conn::InternalParameterConnection) => ccd
-
-function add_internal_param_conn!(ccd::CompositeComponentDef, conn::InternalParameterConnection)
-    push!(ccd.internal_param_conns, conn)
+@method function add_internal_param_conn!(obj::CompositeComponentDef, conn::InternalParameterConnection)
+    push!(obj.internal_param_conns, conn)
 end
 
-@delegate add_external_param_conn!(md::ModelDef, conn::ExternalParameterConnection) => ccd
-
-function add_external_param_conn!(ccd::CompositeComponentDef, conn::ExternalParameterConnection)
-    push!(ccd.external_param_conns, conn)
+@method function add_external_param_conn!(obj::CompositeComponentDef, conn::ExternalParameterConnection)
+    push!(obj.external_param_conns, conn)
 end
 
-@delegate set_external_param!(md::ModelDef, name::Symbol, value::ModelParameter) => ccd
-
-function set_external_param!(ccd::CompositeComponentDef, name::Symbol, value::ModelParameter)
-    ccd.external_params[name] = value
+@method function set_external_param!(obj::CompositeComponentDef, name::Symbol, value::ModelParameter)
+    obj.external_params[name] = value
 end
 
 function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)

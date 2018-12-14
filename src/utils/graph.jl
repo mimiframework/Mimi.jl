@@ -60,9 +60,11 @@ function get_connections(m::Model, ci::ComponentInstance, which::Symbol)
 end
 
 function get_connections(m::Model, comp_name::Symbol, which::Symbol)
-    return _filter_connections(internal_param_conns(m.md), comp_name, which)
+    md = modeldef(m)
+    return _filter_connections(internal_param_conns(md), comp_name, which)
 end
 
 function get_connections(mi::ModelInstance, comp_name::Symbol, which::Symbol)
-    return _filter_connections(internal_param_conns(mi.md), comp_name, which)
+    md = modeldef(mi)
+    return _filter_connections(internal_param_conns(md), comp_name, which)
 end

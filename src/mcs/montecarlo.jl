@@ -188,7 +188,7 @@ function _copy_mcs_params(mcs::MonteCarloSimulation)
     param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(mcs.models))
 
     for (i, m) in enumerate(mcs.models)
-        md = m.mi.md
+        md = modelinstance_def(m)
         param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in mcs.translist)
     end
 
@@ -197,7 +197,8 @@ end
 
 function _restore_mcs_params!(mcs::MonteCarloSimulation, param_vec::Vector{Dict{Symbol, ModelParameter}})
     for (m, params) in zip(mcs.models, param_vec)
-        md = m.mi.md
+        md = modelinstance_def(m)
+
         for trans in mcs.translist
             name = trans.paramname
             param = params[name]
@@ -285,7 +286,8 @@ function _perturb_params!(mcs::MonteCarloSimulation, trialnum::Int)
     trialdata = get_trial(mcs, trialnum)
 
     for m in mcs.models
-        md = m.mi.md
+        md = modelinstance_def(m)
+
         for trans in mcs.translist        
             param = external_param(md, trans.paramname)
             rvalue = getfield(trialdata, trans.rvname)
@@ -372,7 +374,7 @@ function run_mcs(mcs::MonteCarloSimulation,
     end
 
     for m in mcs.models
-        if m.mi === nothing
+        if ! is_built(m)
             build(m)
         end
     end

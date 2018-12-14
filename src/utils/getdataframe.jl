@@ -7,8 +7,8 @@ Load a DataFrame from the variable or parameter `item_name` in component `comp_n
 nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 """
 function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Nothing,DataFrame}=nothing)
-    mi = m.mi
-    md = mi.md
+    mi = modelinstance(m)
+    md = modelinstance_def(m)
 
     dims = dimensions(m, comp_name, item_name)
 
@@ -56,7 +56,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
 end
 
 function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector{Symbol}, data::AbstractArray)
-    md = m.md
+    md = modeldef(m)
     num_dims = length(dims)
 
     dim1name = dims[1]
@@ -76,7 +76,8 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         df[dim2name] = repeat(keys2, outer = [len_dim1])
 
         if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
-            ci = compinstance(m.mi, comp_name)
+            mi = modelinstance(m)
+            ci = compinstance(mi, comp_name)
             t = dimension(m, :time)
             first = t[ci.first]
             last  = t[ci.last]
@@ -91,7 +92,8 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
 
         # shift the data to be padded with missings if this data is shorter than the model
         if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
-            ci = compinstance(m.mi, comp_name)
+            mi = modelinstance(m)
+            ci = compinstance(mi, comp_name)
             t = dimension(m, :time)
             first = t[ci.first]
             last  = t[ci.last]
@@ -174,7 +176,7 @@ Return the values for variable or parameter `item_name` in `comp_name` of
 model `m` as a DataFrame.
 """
 function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
-    if m.mi === nothing
+    if ! is_built(m)
         error("Cannot get DataFrame: model has not been built yet.")
     end
 

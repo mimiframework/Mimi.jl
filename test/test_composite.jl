@@ -82,10 +82,10 @@ build(MyComposite)
 
 end # module
 
+# TBD: remove once debugged
 m = TestComposite.m
 md = m.md
 ccd = md.ccd
 mi = m.mi
-cci = mi.cci
 
 nothing

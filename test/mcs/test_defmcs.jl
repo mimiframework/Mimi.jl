@@ -45,7 +45,8 @@ m = model
 
 # Optionally, user functions can be called just before or after a trial is run
 function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
+    mi = Mimi.modelinstance(m)
+    ci = Mimi.compinstance(mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
 end
