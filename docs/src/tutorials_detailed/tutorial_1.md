@@ -42,7 +42,7 @@ run(m)
 
 Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `getfund` has the declaration
+In this case, the function `getfund` has the signature
 ``` 
 getfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
@@ -54,15 +54,73 @@ m = getfund(nsteps = 100)
 run(m)
 ```
 ## Step 3. Access Results: Values
-<!-- TODO -->
+After the model has been run, you can access the results (the calculated variable values in each component) in a few different ways.
+
+You can use the `getindex` syntax as follows:
+
+```julia
+my_model[:ComponentName, :VariableName] # returns the whole array of values
+my_model[:ComponentName, :VariableName][100] # returns just the 100th value
+
+```
+For example, try taking a look at the `income` variable of the `socioeconomic` component using the code below:
+```
+m[:socioeconomic, :income] 
+m[:socioeconomic, :income][100] 
+```
+
+Indexing into a model with the name of the component and variable will return an array with values from each timestep.
+You can index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned.
+
+You can also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this is:
+
+```julia
+getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
+getdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
+getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
+
+```
+
+Try doing this for the `income` variable of the `socioeconomic` component using:
+```
+getdataframe(m, :socioeconomic=>:income) # request one variable from one component
+```
 
 ## Step 4. Access Results: Plots and Graphs
 
-Now that you have run the FUND model, you may explore the results.  If you wish to explore the results graphically, use the explorer UI, described [here](http://anthofflab.berkeley.edu/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in section 5 of the Mimi User Guide.
+Now that you have run the FUND model, you may explore the results.  
+
+Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function.
+
+### Explore
+
+If you wish to explore the results graphically, use the explorer UI, described [here](http://anthofflab.berkeley.edu/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in section 5 of the Mimi User Guide.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the `explore` function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
 ```
 explore(m, "My Window")
 ```
-<!-- TODO: plot and save single graphs
-TODO: plot_comp_graph -->
+Alternatively, in order to view just one parameter or variable, call the function `explore` as below to return a plot object and automatically display the plot in a viewer, assuming `explore` is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You can save a plot by calling the `save` function.
+
+```julia
+run1 = run(my_model)
+p = explore(run1, component1, parameter1)
+save("MyFilePath.svg", p)
+```
+More specifically for our tutorial use of FUND, try:
+
+```julia
+p = explore(m, :socioeconomic, :income)
+save("MyFilePath.svg", p)
+```
+
+### Component Graph
+
+In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
+
+```julia
+plot_comp_graph(m; filename = "MyFilePath.png")
+```
+## Step 4. Tutorial 2
+
+Now that you have worked through Tutorial 1, feel free to move on to the second tutorial, which will go into depth on how to modify ann existing model such as FUND.

@@ -2,6 +2,8 @@
 
 The following set of tutorials aim to fulfill the needs of [Mimi](https://github.com/anthofflab/Mimi.jl) users of various experience levels, starting with first-time users.  Before engaging with these tutorials, it is recommended that first-time users read the [documentation](http://anthofflab.berkeley.edu/Mimi.jl/latest/), including the [user guide](http://anthofflab.berkeley.edu/Mimi.jl/latest/userguide.html), and refer back to this documentation as reference.  It will also be helpful to be somewhat comfortable with the basics of the [Julia](https://julialang.org/) langauge, though expertise is not required.
 
+If at any point during these tutorials you find a bug, or have a clarifying question, do not hesitate to reach out via Github Issues on or our designated [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room
+
 # Terminology
 
 The following terminology is used throughout the documentation. The documentation of docstrings in the [reference](http://anthofflab.berkeley.edu/Mimi.jl/latest/reference.html) should also be useful for looking up portions of the Mimi API.
