@@ -15,15 +15,8 @@ using Mimi
             input = p.input2
         end 
 
-        try 
-            v.output[ts] = input[ts]
-        catch e
-            if e isa MissingException
-                v.output[ts] = missing
-            else
-                rethrow([e])
-            end
-        end
+        v.output[ts] = @allow_missing(input[ts])
+        
     end
 end
 
@@ -46,15 +39,7 @@ end
         end 
 
         for r in d.regions
-            try 
-                v.output[ts, r] = input[ts, r]
-            catch e
-                if e isa MissingException
-                    v.output[ts, r] = missing
-                else
-                    rethrow([e])
-                end
-            end
+            v.output[ts, r] = @allow_missing(input[ts, r])
         end
     end
 end
