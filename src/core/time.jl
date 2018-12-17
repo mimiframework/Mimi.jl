@@ -180,10 +180,6 @@ const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 # TBD: can it be reduced to this?
 # const AnyIndex = Union{Int, AbstractRange}
 
-#
-# 3b. TimestepVector
-#
-
 # Helper function for getindex; throws a MissingException if data is missing, otherwise returns data
 function _missing_data_check(data)
 	if data === missing
@@ -192,6 +188,28 @@ function _missing_data_check(data)
 		return data
 	end
 end 
+
+# Helper macro used by connector 
+macro allow_missing(expr)
+	let e = gensym("e")
+		retexpr = :(
+			try
+				return $expr
+			catch $e
+				if $e isa MissingException
+					return missing 
+				else
+					rethrow($e)
+				end
+			end
+		)
+		return esc(retexpr)
+	end
+end
+
+#
+# 3b. TimestepVector
+#
 
 function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, FIRST, STEP, LAST} 
 	data = v.data[ts.t]
