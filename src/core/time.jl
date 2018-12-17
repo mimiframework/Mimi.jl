@@ -192,17 +192,17 @@ end
 # Helper macro used by connector 
 macro allow_missing(expr)
 	let e = gensym("e")
-		retexpr = :(
+		retexpr = quote
 			try
-				return $expr
+				$expr
 			catch $e
 				if $e isa MissingException
-					return missing 
+					missing 
 				else
 					rethrow($e)
 				end
 			end
-		)
+		end
 		return esc(retexpr)
 	end
 end
