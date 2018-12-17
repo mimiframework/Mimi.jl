@@ -10,10 +10,20 @@ using Mimi
 
     function run_timestep(p, v, d, ts)
         if gettime(ts) >= p.first && gettime(ts) <= p.last
-            v.output[ts.t] = p.input1[ts.t]
+            input = p.input1
         else
-            v.output[ts.t] = p.input2[ts.t]
+            input = p.input2
         end 
+
+        try 
+            v.output[ts] = input[ts]
+        catch e
+            if e isa MissingException
+                v.output[ts] = missing
+            else
+                rethrow([e])
+            end
+        end
     end
 end
 
@@ -28,10 +38,23 @@ end
     last = Parameter()  # last year to use the shorter data
 
     function run_timestep(p, v, d, ts)
-        if gettime(ts) >= p.first && gettime(ts) <= p.last 
-            v.output[ts.t, :] = p.input1[ts.t, :]
+
+        if gettime(ts) >= p.first && gettime(ts) <= p.last
+            input = p.input1
         else
-            v.output[ts.t, :] = p.input2[ts.t, :]
+            input = p.input2
+        end 
+
+        for r in d.regions
+            try 
+                v.output[ts, r] = input[ts, r]
+            catch e
+                if e isa MissingException
+                    v.output[ts, r] = missing
+                else
+                    rethrow([e])
+                end
+            end
         end
     end
 end
