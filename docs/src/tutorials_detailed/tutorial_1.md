@@ -1,4 +1,4 @@
-# Tutorial 1: Explore an Existing Model
+# Tutorial 1: Run an Existing Model
 
 This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models public on Github, and for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
 
@@ -10,7 +10,7 @@ Working through the following tutorial will require:
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
-## Step 1. Download FUND
+### Step 1. Download FUND
 
 The first step in this process is downloading the FUND model.  Open a Julia REPL (here done with the alias command `Julia`) and navigate to the folder where you would like to download FUND.
 
@@ -27,7 +27,7 @@ cd("fund")
 
 You have now successfully downloaded FUND to your local machine.
 
-## Step 2. Run FUND
+### Step 2. Run FUND
 
 The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  
 
@@ -53,7 +53,7 @@ using .Fund
 m = getfund(nsteps = 100)
 run(m)
 ```
-## Step 3. Access Results: Values
+### Step 3. Access Results: Values
 After the model has been run, you can access the results (the calculated variable values in each component) in a few different ways.
 
 You can use the `getindex` syntax as follows:
@@ -86,13 +86,13 @@ Try doing this for the `income` variable of the `socioeconomic` component using:
 getdataframe(m, :socioeconomic=>:income) # request one variable from one component
 ```
 
-## Step 4. Access Results: Plots and Graphs
+### Step 4. Access Results: Plots and Graphs
 
 Now that you have run the FUND model, you may explore the results.  
 
 Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function.
 
-### Explore
+#### Explore
 
 If you wish to explore the results graphically, use the explorer UI, described [here](http://anthofflab.berkeley.edu/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in section 5 of the Mimi User Guide.
 
@@ -114,13 +114,13 @@ p = explore(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 ```
 
-### Component Graph
+#### Component Graph
 
 In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
 
 ```julia
 plot_comp_graph(m; filename = "MyFilePath.png")
 ```
-## Step 4. Tutorial 2
+### Step 4. Tutorial 2
 
 Now that you have worked through Tutorial 1, feel free to move on to the second tutorial, which will go into depth on how to modify ann existing model such as FUND.

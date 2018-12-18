@@ -1,4 +1,14 @@
-# Tutorial
+# Tutorial 3: Create a Model
+
+This tutorial walks through the steps to modify an existing model.  There are several existing models public on Github, and for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
+
+Working through the following tutorial will require:
+
+- [Julia v1.0.0](https://julialang.org/downloads/) or higher
+- [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl) 
+- [Git](https://git-scm.com/downloads) and [Github](https://github.com)
+
+If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
 ## Constructing A One-Region Model
 

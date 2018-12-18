@@ -2,7 +2,7 @@
 
 ## Overview
 
-See the Tutorial for in depth examples of one-region and multi-region models.
+See the Tutorials for in-depth examples of Mimi's functionality.
 
 This guide is organized into six main sections for understanding how to use Mimi.
 
