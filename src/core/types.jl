@@ -238,7 +238,7 @@ import Base: first, last
     comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
-    dimensions::OrderedDict{Symbol, DimensionDef}
+    dimensions::OrderedDict{Symbol, Union{Nothing, DimensionDef}}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
     is_uniform::Bool
@@ -258,7 +258,7 @@ import Base: first, last
         self.comp_id = comp_id
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}() 
-        self.dimensions = OrderedDict{Symbol, DimensionDef}()
+        self.dimensions = OrderedDict{Symbol, Union{Nothing, DimensionDef}}()
         self.first = self.last = nothing
         self.is_uniform = true
         return self

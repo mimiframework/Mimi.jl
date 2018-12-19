@@ -147,8 +147,9 @@ end
 #
 
 @method function add_dimension!(comp::ComponentDef, name)
-    comp.dimensions[name] = dim_def = DimensionDef(name)
-    return dim_def
+    dim = (name isa Int) ? Dimension(name) : nothing
+    comp.dimensions[Symbol(name)] = dim
+    comp.dimensions[name] = DimensionDef(name)
 end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
@@ -279,20 +280,20 @@ end
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
-@method function set_dimension!(cmd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+@method function set_dimension!(ccd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
     redefined = has_dim(ccd, name)
     if redefined
         @warn "Redefining dimension :$name"
     end
 
     if name == :time
-        set_uniform!(md, isuniform(keys))
+        set_uniform!(ccd, isuniform(keys))
         if redefined 
-            reset_run_periods!(md, keys[1], keys[end])
+            reset_run_periods!(ccd, k[1], k[end])
         end
     end
     
-    return set_dimension!(md.ccd, name, Dimension(keys))
+    return set_dimension!(ccd, name, Dimension(keys))
 end
 
 @method function set_dimension!(obj::CompositeComponentDef, name::Symbol, dim::Dimension)
@@ -593,6 +594,13 @@ const NothingSymbol = Union{Nothing, Symbol}
    obj.comps_dict[comp_name] = comp_def
 end
 
+function _add_anonymous_dims!(md::ModelDef, comp_def::ComponentDef)
+    for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dimensions)
+        @info "Setting dimension $name to $dim"
+        set_dimension!(md, name, dim)
+    end
+end
+
 """
     add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
 
@@ -636,6 +644,8 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
     end        
 
     set_run_period!(comp_def, first, last)
+
+    _add_anonymous_dims!(md, comp_def)
 
     if before === nothing && after === nothing
         _append_comp!(obj, comp_name, comp_def)   # just add it to the end
