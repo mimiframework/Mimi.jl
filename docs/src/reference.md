@@ -11,7 +11,6 @@ create_marginal_model
 disconnect_param!
 explore
 getdataframe
-getproperty
 gettime
 get_param_value
 get_var_value
@@ -29,7 +28,6 @@ plot_comp_graph
 replace_comp! 
 set_dimension! 
 set_leftover_params! 
-setproperty!
 set_param! 
 variables  
 update_param!

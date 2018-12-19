@@ -18,7 +18,7 @@ This guide is organized into six main sections, each descripting an independent 
 - use `_` for readability
 - append all functions with side-effects, i.e., non-pure functions that return a value but leave all else unchanged with a `!`
 - the commonly used terms `component`, `variable`, and `parameter` are shortened to `comp`, `var`, and `param`
-- functions that act upon a component, variable, or parameter are often written in the form `[action]_[comp/var/param]`
+- functions that act upon a `component`, `variable`, or `parameter` are often written in the form `[action]_[comp/var/param]`
 
 ## Defining Components
 

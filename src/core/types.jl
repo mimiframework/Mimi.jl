@@ -200,16 +200,12 @@ mutable struct DatumDef <: NamedDef
 
 end
 
-mutable struct DimensionDef <: NamedDef
-    name::Symbol
-end
-
 mutable struct ComponentDef  <: NamedDef
     name::Symbol
     comp_id::ComponentId
     variables::OrderedDict{Symbol, DatumDef}
     parameters::OrderedDict{Symbol, DatumDef}
-    dimensions::OrderedDict{Symbol, DimensionDef}
+    dimensions::OrderedDict{Symbol, Union{Nothing, Dimension}}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
 
@@ -221,7 +217,7 @@ mutable struct ComponentDef  <: NamedDef
         self.comp_id = comp_id
         self.variables  = OrderedDict{Symbol, DatumDef}()
         self.parameters = OrderedDict{Symbol, DatumDef}() 
-        self.dimensions = OrderedDict{Symbol, DimensionDef}()
+        self.dimensions = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.first = self.last = nothing
         return self
     end

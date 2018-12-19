@@ -4,7 +4,6 @@ CSVFiles
 DataFrames
 DataStructures
 Distributions
-Documenter
 Electron
 ExcelFiles
 IterTools
@@ -13,6 +12,7 @@ FileIO
 GraphPlot 0.3.0
 JSON
 LightGraphs
+Logging
 MacroTools
 MetaGraphs
 NamedArrays

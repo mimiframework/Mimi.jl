@@ -56,18 +56,6 @@ function _instantiate_datum(md::ModelDef, def::DatumDef)
     return value
 end
 
-# Deprecated?
-# function _vars_NT_type(md::ModelDef, comp_def::ComponentDef)
-#     var_defs = variables(comp_def)    
-#     vnames = Tuple([name(vdef) for vdef in var_defs])
-    
-#     first = comp_def.first
-#     vtypes = Tuple{[_instance_datatype(md, vdef, first) for vdef in var_defs]...}
-
-#     NT = NamedTuple{vnames, vtypes}
-#     return NT
-# end
-
 """
     _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 

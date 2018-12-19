@@ -17,7 +17,7 @@ In this example, we will construct a stylized model of the global economy and it
 There are two main steps to creating a component, both within the  `@defcomp` macro which defines a component:
 
 * List the parameters and variables.
-* Use the run_timestep function `run_timestep(p, v, d, t)` to set the equations of that component.
+* Use the `run_timestep` function `run_timestep(p, v, d, t)` to set the equations of that component.
 
 Starting with the economy component, each variable and parameter is listed. If either variables or parameters have a time-dimension, that must be set with `(index=[time])`.
 
@@ -36,7 +36,7 @@ using Mimi
 
 ```
 
-Next, the run_timestep function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
+Next, the `run_timestep` function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
 
 It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
 
@@ -137,7 +137,7 @@ explore(m)
 We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:
 
 * When using `@defcomp`, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include `(index=[regions])`. This can be combined with the time index as well, `(index=[time, regions])`.
-* In the run_timestep function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
+* In the `run_timestep` function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
 * `set_dimension!` must be used to specify your regions in the same way that it is used to specify your timestep.
 * When using `set_param!` for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into `set_param!` rather than an entire equation.
 * When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, `using Mimi` must be speficied for each component. This approach will be used here.

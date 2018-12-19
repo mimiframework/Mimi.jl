@@ -86,7 +86,11 @@ end
 
 # Test resetting the time dimension
 
-@defcomp foo2 begin x = Parameter(index=[time]) end 
+@defcomp foo2 begin 
+    x = Parameter(index=[time]) 
+    y = Variable(index=[4])
+end 
+
 m = Model()
 set_dimension!(m, :time, 2000:2100)
 @test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model

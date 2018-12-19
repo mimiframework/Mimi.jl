@@ -93,7 +93,7 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
     for (i, results) in enumerate(mcs.results)
         if multiple_results
             sub_dir = joinpath(output_dir, "model_$i")
-            mkpath(sub_dir, 0o750)
+            mkpath(sub_dir, mode=0o750)
         else
             sub_dir = output_dir 
         end

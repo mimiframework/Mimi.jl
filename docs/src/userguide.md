@@ -17,9 +17,9 @@ This guide is organized into six main sections for understanding how to use Mimi
 
 Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components.
 
-A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the run_timestep function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
+A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the `run_timestep` function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
 
-The user must define a run_timestep function for each component. 
+The user must define a `run_timestep` function for each component. 
 
 We define a component in the following way:
 
@@ -48,7 +48,7 @@ end
 
 ```
 
-The run_timestep function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`, which represents which timestep the model is at.
+The `run_timestep` function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`, which represents which timestep the model is at.
 
 The API for using the fourth argument, represented as `t` in this explanation, is described in this document under **Advanced Topics:  Timesteps and available functions**. 
 
@@ -76,7 +76,7 @@ add_comp!(mymodel, ComponentC; first=2010, last=2100)
 
 ```
 
-The first argument to add_comp! is the model, the second is the name of the ComponentId defined by @defcomp. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom first and last times with the optional keyword arguments as shown above. If no first or last time is provided, the component will assume the first or last time of the model's time index values that were specified in set_dimension!.
+The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom first and last times with the optional keyword arguments as shown above. If no first or last time is provided, the component will assume the first or last time of the model's time index values that were specified in `set_dimension!`.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
@@ -122,7 +122,7 @@ mymodel[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
 Indexing into a model with the name of the component and variable will return an array with values from each timestep.
-You can index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is tow-dimensional, then a 2-D array will be returned.
+You can index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned.
 
 You can also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this is:
 
@@ -147,15 +147,14 @@ plot_comp_graph(m; filename = "MyFilePath.png")
 
 Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.  The `explore` function allows the user to view and explore the variables and parameters of a model run.  The explorer can be used in two primary ways.
 
- In order to invoke the explorer UI and explore all of the variables and parameters in a model, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
+In order to invoke the explorer UI and explore all of the variables and parameters in a model, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
  
- ```julia
+```julia
  run1 = run(my_model)
  explore(run1, title = "run1 results")
- 
- ```
+```
 
- ![Explorer Model Example](figs/explorer_model_example.png)
+![Explorer Model Example](figs/explorer_model_example.png)
 
 Alternatively, in order to view just one parameter or variable, call the function `explore` as below to return a plot object and automatically display the plot in a viewer, assuming `explore` is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You can save a plot by calling the `save` function.
 
@@ -173,7 +172,7 @@ save("figure.svg", p)
 
 An `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` is a type defined within Mimi in "src/time.jl". It is used to represent and keep track of time indices when running a model.
 
-In the run_timestep functions which the user defines, it may be useful to use any of the following functions, where `t` is an AbstractTimestep object:
+In the `run_timestep` functions which the user defines, it may be useful to use any of the following functions, where `t` is an `AbstractTimestep` object:
 
 ```julia
 is_first(t) # returns true or false, true if t is the first timestep to be run
@@ -222,7 +221,6 @@ When `set_param!` is called, it creates an external parameter by the name provid
 
 ```julia
 update_param!(mymodel, :parametername, newvalues) # update values only 
-
 update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
 ```
 
@@ -256,7 +254,6 @@ run(instance2)
 
 result1 = instance1[:Comp, :Var]
 result2 = instance2[:Comp, :Var]
-
 ```
 
 Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.

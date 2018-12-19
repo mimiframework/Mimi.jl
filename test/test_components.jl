@@ -5,8 +5,8 @@ using Test
 
 import Mimi:
     reset_compdefs, compdefs, compdef, compkeys, hascomp, _compdefs, first_period, 
-    last_period, compmodule, compname, numcomponents, dump_components, 
-    dimensions
+    last_period, compmodule, compname, numcomponents, dump_components,  
+    dim_keys, dim_values, dimensions
 
 reset_compdefs()
 
@@ -41,6 +41,7 @@ end
 @defcomp testcomp3 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
+    cbox = Variable(index=[time, 5])    # anonymous dimension
     
     function run_timestep(p, v, d, t)
         v.var1[t] = p.par1[t]
@@ -66,16 +67,21 @@ add_comp!(my_model, testcomp1)
 # N.B. Throws ArgumentError in v1.0, but ErrorException in 0.7!
 @test_throws ArgumentError add_comp!(my_model, testcomp2, after=:testcomp3)
 
-#Add more components to model
+# Add more components to model
 add_comp!(my_model, testcomp2)
 add_comp!(my_model, testcomp3)
 
-comps = compdefs(my_model)
+# Check addition of anonymous dimension
+dvals = dim_values(my_model.md, Symbol(5))
+dkeys = dim_keys(my_model.md, Symbol(5))
+@test dvals == dkeys
 
-#Test compdefs, compdef, compkeys, etc.
-@test comps == compdefs(my_model.md)
+comps = collect(compdefs(my_model))
+
+# Test compdefs, compdef, compkeys, etc.
+@test comps == collect(compdefs(my_model.md))
 @test length(comps) == 3
-@test compdef(:testcomp3) == [comps...][3]
+@test compdef(:testcomp3) == comps[3]
 @test_throws ErrorException compdef(:testcomp4) #this component does not exist
 @test [compkeys(my_model.md)...] == [:testcomp1, :testcomp2, :testcomp3]
 @test hascomp(my_model.md, :testcomp1) == true && hascomp(my_model.md, :testcomp4) == false
@@ -87,17 +93,9 @@ comps = compdefs(my_model)
 add_comp!(my_model, testcomp3, :testcomp3_v2)
 @test numcomponents(my_model) == 4
 
-#Test some component dimensions fcns, other dimensions testing in test_dimensions
-def = compdef(:testcomp3)
-def_dims = dimensions(def)
-@test eltype(def_dims) == Mimi.DimensionDef && length(def_dims) == 1
-@test [def_dims...][1].name == :time
-
-# dump_components() #view all components and their info
-
-#Test reset_compdefs methods
+# Test reset_compdefs methods
 reset_compdefs()
-@test length(_compdefs) == 3 #adder, ConnectorCompVector, ConnectorCompMatrix
+@test length(_compdefs) == 3 # adder, ConnectorCompVector, ConnectorCompMatrix
 reset_compdefs(false)
 @test length(_compdefs) == 0 
 
