@@ -193,7 +193,7 @@ function getmultiline(cols, dffields)
 
         append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
             * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
-            * dffields[3] * "\":" * string(cols[3][i]) * "}")
+            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
         
         if i != numrows
             append!(datasb, ",")
@@ -207,7 +207,7 @@ function getline(cols, dffields)
     numrows = length(cols[1])
     for i = 1:numrows
         append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) 
-            * "\",\"" * dffields[2] * "\":" * string(cols[2][i]) * "}") 
+            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\"}") 
 
         if i != numrows
             append!(datasb, ",")
@@ -223,7 +223,7 @@ function getbar(cols, dffields)
     for i = 1:numrows
 
         append!(datasb, "{\"" * dffields[1] * "\":\"" * string(cols[1][i]) *
-            "\",\"" * dffields[2] * "\":" * string(cols[2][i]) * "}") #end of dictionary
+            "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\"}") #end of dictionary
 
         if i != numrows
             append!(datasb, ",")
