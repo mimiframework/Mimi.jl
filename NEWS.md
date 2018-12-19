@@ -1,3 +1,6 @@
+# Mimi.jl v0.6.2 Release Notes
+* Fix interaction of explorer with missing data
+
 # Mimi.jl v0.6.1 Release Notes
 * Add anonymous dimensions back in
 * Allow for backup data with missing values
