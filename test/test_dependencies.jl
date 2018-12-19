@@ -10,7 +10,7 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-    "https://github.com/fund-model/fund/archive/1768edf12aaaac3a41bbea081d5b51299121f993",
+    "https://github.com/fund-model/fund/archive/1768edf12aaaac3a41bbea081d5b51299121f993.zip",
     "https://github.com/anthofflab/mimi-rice-2010.jl/archive/2b5996b0a0c8be92290991f045c43af425c5a9c8.zip"
 ]
 
