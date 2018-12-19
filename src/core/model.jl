@@ -83,6 +83,12 @@ function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, S
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
+"""
+    disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
+
+Remove any parameter connections for a given parameter `param_name` in a given component
+`comp_name` of model `m`.
+"""
 function disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
     disconnect_param!(m.md, comp_name, param_name)
     decache(m)
@@ -128,7 +134,7 @@ end
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, update_param! 
+For each (k, v) in the provided `parameters` dictionary, `update_param!`` 
 is called to update the external parameter by name k to value v, with optional 
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 

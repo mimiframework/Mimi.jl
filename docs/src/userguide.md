@@ -226,7 +226,7 @@ update_param!(mymodel, :parametername, newvalues) # update values only
 update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
 ```
 
-Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
+Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
 ### Setting parameters with a dictionary
 
