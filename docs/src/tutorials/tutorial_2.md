@@ -12,7 +12,7 @@ If you have not yet prepared these, go back to the main tutorial page and follow
 
 Futhermore, and especially relevant for the application portion of this tutorial, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1, and then return to continue with this tutorial.
 
-## Modification API
+## The API
 
 There are various ways to modify an existing model, and this section aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of user modifications, the API aims to allow for modification **without user alteration of the original code for the model being modified**.  Instead, users will download and run the new model, and then use API calls to modify it. This means that in practice, users should not need to alter the source code of the model they are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
 
