@@ -18,7 +18,7 @@ The following terminology is used throughout the documentation. The documentatio
 
 3.  Tutorial 3 Create a Model: Tutorial 3 takes users a step further from using registered models, and instructs them on creating their own models from scratch.
 
-4.  Tutorial 4 Monte Carlo Simulation Functionality: Tutorial 4 takes users through exploring Mimi's Monte Carlo functionality, using [FUND](http://www.fund-model.org) as working example. (in progress)
+4.  Tutorial 4 Monte Carlo Simulation Support: Tutorial 4 takes users through exploring Mimi's Monte Carlo Simulation support, using both the internal 2 region model and [FUND](http://www.fund-model.org) working examples. (in progress)
 
 # Requirements and Initial Setup
 
