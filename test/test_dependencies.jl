@@ -1,5 +1,11 @@
 using Pkg
 Pkg.add("InfoZIP")
+Pkg.add("ExcelReaders")
+Pkg.add("DataFrames")
+Pkg.add("CSVFiles")
+Pkg.add("CSV")
+Pkg.add("StatsBase")
+Pkg.add("Distributions")
 
 using Mimi
 using InfoZIP
