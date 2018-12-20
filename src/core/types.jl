@@ -248,7 +248,7 @@ import Base: first, last
     end
 
     # ComponentDefs are created "empty". Elements are subsequently added.
-    function ComponentDef(self::_ComponentDef_, comp_id::Union{Nothing, ComponentId}=nothing; 
+    function ComponentDef(self::AbstractComponentDef, comp_id::Union{Nothing, ComponentId}=nothing; 
                           name::Union{Nothing, Symbol}=nothing)
         if name === nothing
             name = (comp_id === nothing ? gensym("anonymous") : comp_id.comp_name)
@@ -274,7 +274,7 @@ import Base: first, last
 end
 
 @class mutable CompositeComponentDef <: ComponentDef begin
-    comps_dict::OrderedDict{Symbol, _ComponentDef_}
+    comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Pair{DatumReference, BindingTypes}}
     exports::Vector{Pair{DatumReference, Symbol}}
     
@@ -287,10 +287,10 @@ end
 
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
-    function CompositeComponentDef(self::_CompositeComponentDef_, 
+    function CompositeComponentDef(self::AbstractCompositeComponentDef, 
                                    comp_id::ComponentId, comps::Vector{T},
                                    bindings::Vector{Pair{DatumReference, BindingTypes}},
-                                   exports::Vector{Pair{DatumReference, Symbol}}) where {T <: _ComponentDef_}
+                                   exports::Vector{Pair{DatumReference, Symbol}}) where {T <: AbstractComponentDef}
     
         comps_dict = OrderedDict{Symbol, T}([nameof(cd) => cd for cd in comps])
         in_conns = Vector{InternalParameterConnection}() 
@@ -307,17 +307,17 @@ end
 
     function CompositeComponentDef(comp_id::ComponentId, comps::Vector{T},
                                    bindings::Vector{Pair{DatumReference, BindingTypes}},
-                                   exports::Vector{Pair{DatumReference, Symbol}}) where {T <: absclass(ComponentDef)}
+                                   exports::Vector{Pair{DatumReference, Symbol}}) where {T <: AbstractComponentDef}
 
         self = new()
         return CompositeComponentDef(self, comp_id, comps, bindings, exports)
     end
 
-    function CompositeComponentDef(self::Union{Nothing, absclass(CompositeComponentDef)}=nothing)
+    function CompositeComponentDef(self::Union{Nothing, AbstractCompositeComponentDef}=nothing)
         self = (self === nothing ? new() : self)
 
         comp_id  = ComponentId(:anonymous, :anonymous)      # TBD: pass these in?
-        comps    = Vector{absclass(ComponentDef)}()
+        comps    = Vector{AbstractComponentDef}()
         bindings = Vector{Pair{DatumReference, BindingTypes}}()
         exports  = Vector{Pair{DatumReference, Symbol}}()
         return CompositeComponentDef(self, comp_id, comps, bindings, exports)
@@ -333,7 +333,7 @@ end
     dimensions2::Dict{Symbol, Dimension}
     number_type::DataType
     
-    function ModelDef(self::_ModelDef_, number_type::DataType=Float64)
+    function ModelDef(self::AbstractModelDef, number_type::DataType=Float64)
         CompositeComponentDef(self)  # call super's initializer
 
         dimensions = Dict{Symbol, Dimension}()
@@ -384,7 +384,7 @@ ComponentInstanceVariables(names, types, values)  = _make_data_obj(ComponentInst
     init::Union{Nothing, Function}
     run_timestep::Union{Nothing, Function}
 
-    function ComponentInstance(self::absclass(ComponentInstance),
+    function ComponentInstance(self::AbstractComponentInstance,
                                comp_def::ComponentDef, vars::TV, pars::TP,
                                name::Symbol=nameof(comp_def)) where
                 {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
@@ -448,15 +448,15 @@ end
 
 @class mutable CompositeComponentInstance{TV <: ComponentInstanceVariables, 
                                           TP <: ComponentInstanceParameters} <: ComponentInstance begin
-    comps_dict::OrderedDict{Symbol, absclass(ComponentInstance)}
+    comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
     clocks::Vector{Clock}
     
-    function CompositeComponentInstance(self::absclass(CompositeComponentInstance),
-                                        comps::Vector{absclass(ComponentInstance)},
+    function CompositeComponentInstance(self::AbstractCompositeComponentInstance,
+                                        comps::Vector{AbstractComponentInstance},
                                         comp_def::ComponentDef, name::Symbol=nameof(comp_def))
-        comps_dict = OrderedDict{Symbol, absclass(ComponentInstance)}()
+        comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
         firsts = Vector{Int}()
         lasts  = Vector{Int}()
         clocks = Vector{Clock}()
@@ -475,7 +475,7 @@ end
     end
 
     # Constructs types of vars and params from sub-components
-    function CompositeComponentInstance(comps::Vector{absclass(ComponentInstance)},
+    function CompositeComponentInstance(comps::Vector{AbstractComponentInstance},
                                         comp_def::ComponentDef,
                                         name::Symbol=nameof(comp_def))
         (TV, TP) = _comp_instance_types(comps)
@@ -494,11 +494,11 @@ end
 @method is_composite(ci::ComponentInstance) = !is_leaf(ci)
 
 # TBD: write these
-function _comp_instance_types(comps::Vector{absclass(ComponentInstance)})
+function _comp_instance_types(comps::Vector{AbstractComponentInstance})
     error("Need to define comp_instance_types")
 end
 
-function _collect_vars_pars(comps::Vector{absclass(ComponentInstance)})
+function _collect_vars_pars(comps::Vector{AbstractComponentInstance})
     error("Need to define comp_instance_types")
 end
 
