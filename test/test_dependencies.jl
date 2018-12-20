@@ -53,7 +53,7 @@ function run_dependency_tests(dependencies=dependencies)
         #test the package
         try
             println("trying to run $package_name tests")
-            run(`$JULIA_HOME/julia $process`)
+            run(`$(Sys.BINDIR)/julia $process`)
             println("ran $package_name tests")
         catch e
             println("running $package_name errored immediately, appending error")
