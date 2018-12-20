@@ -52,11 +52,8 @@ function run_dependency_tests(dependencies=dependencies)
 
         #test the package
         try
-            println("trying to run $package_name tests")
             run(`$(Sys.BINDIR)/julia $process`)
-            println("ran $package_name tests")
         catch e
-            println("running $package_name errored immediately, appending error")
             append!(errors, [(package_name, e)])
         end
         #delete current package before testing next one (if it was a downloaded package)
