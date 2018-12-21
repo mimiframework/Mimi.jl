@@ -125,7 +125,7 @@ function connect_param!(md::ModelDef,
         dst_param = parameter(dst_comp_def, dst_par_name)
         dst_dims  = dimensions(dst_param)
 
-        backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
+        backup = convert(Array{Union{Missing, number_type(md)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
         first = first_period(md, dst_comp_def)
         T = eltype(backup)        
         
