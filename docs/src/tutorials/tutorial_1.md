@@ -19,10 +19,11 @@ Julia
 cd("directory")
 ```
 
-Next, clone the existing FUND repository from Github and enter the new repository.
+Next, clone the FUND repository from Github, enter the repository, and checkout the `next` branch which holds the Julia version of FUND.
 ```
 git clone https://github.com/fund-model/fund.git
 cd("fund")
+git checkout next
 ```
 
 You have now successfully downloaded FUND to your local machine.
@@ -40,7 +41,7 @@ m = getfund
 run(m)
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` which returns a version of the model, and can allow for model customization within the call.
+Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` or `construct_ModelX` which returns a version of the model, and can allow for model customization within the call.
 
 In this case, the function `getfund` has the signature
 ``` 

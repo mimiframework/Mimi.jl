@@ -10,7 +10,7 @@ Working through the following tutorial will require:
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
-Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1, and then return to continue with this tutorial. 
+Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1, and then return to continue with this tutorial. Note that FUND is only requred for the second example in this tutorial. 
 
 ## The API
 
@@ -119,4 +119,6 @@ and then again using our user-defined post-trial function as the `post_trial_fun
 # Same thing but with a post-trial function
 run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
-## FUND Example (TODO)
+## FUND Example
+
+This example is in progress and will be built out soon.
