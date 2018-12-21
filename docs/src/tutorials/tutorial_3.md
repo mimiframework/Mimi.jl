@@ -1,6 +1,6 @@
 # Tutorial 3: Create a Model
 
-This tutorial walks through the steps to modify an existing model.  There are several existing models public on Github, and for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
+This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model.
 
 Working through the following tutorial will require:
 
