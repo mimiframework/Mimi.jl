@@ -12,30 +12,38 @@ If you have not yet prepared these, go back to the main tutorial page and follow
 
 ### Step 1. Download FUND
 
-The first step in this process is downloading the FUND model.  Open a Julia REPL (here done with the alias command `Julia`) and navigate to the folder where you would like to download FUND.
+The first step in this process is downloading the FUND model.  First, open your command line interface and navigate to the folder where you would like to download FUND.
 
 ```
-Julia 
-cd("directory")
+cd("path") # "path" is a placeholder for the string describing your desired file path
 ```
 
 Next, clone the FUND repository from Github, enter the repository, and checkout the `next` branch which holds the Julia version of FUND.
+
 ```
 git clone https://github.com/fund-model/fund.git
 cd("fund")
 git checkout next
 ```
-
 You have now successfully downloaded FUND to your local machine.
 
 ### Step 2. Run FUND
 
 The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  
 
-In order to run FUND, you will need to navigate to the source code folder, labeled `src`, and run the main fund file `fund.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
+In order to run FUND, you will need to open a Julia REPL (here done witht the alias `julia`) and navigate to the source code folder, labeled `src`.
 
 ```
-include("src\fund.jl")
+Julia 
+cd("fundpath") # fundpath is a placeholder for the string describing your the file path of the downloaded `fund` folder from Step 1.
+```
+
+Next, you will need to and run the main fund file `fund.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
+
+Open a Julia REPL (here done with the alias command `Julia`) and navigate to the folder where you would like to download FUND.
+
+```
+include("src/fund.jl")
 using .Fund
 m = getfund
 run(m)
@@ -49,7 +57,7 @@ getfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_p
 ```
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use
 ```
-include("src\fund.jl")
+include("src/fund.jl")
 using .Fund
 m = getfund(nsteps = 100)
 run(m)

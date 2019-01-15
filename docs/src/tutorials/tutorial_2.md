@@ -57,7 +57,7 @@ The next step is to run DICE.  If you wish to first get more aquainted with the 
 In order to run DICE, you will need to navigate to the source code folder, labeled `src`, and run the main fund file `dice2010.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Dice2010`, which exports the function `construct_dice`, a function that returns a version of dice allowing for user specification of parameters.  Note that in order to allow access to the module, we must call `using .Dice2010`, where `.Dice2010` is a shortcut for `Main.Dice2010`, since the `Dice2010` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
 
 ```
-include("src\dice2010.jl")
+include("src/dice2010.jl")
 using .Dice2010
 m = construct_dice()
 run(m)
@@ -73,7 +73,7 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 ### Step 3. Altering Parameters
 
-In the case that you wish to alter an exogenous parameter, you may use the `update_param!` function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling (Wm-2), and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
+In the case that you wish to alter an exogenous parameter, you may use the `update_param!` function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
 
 ```julia
 update_param!(m, :fco22x, 3.000)
@@ -114,7 +114,7 @@ Note that here we use the `update_timesteps` flag and set it to `true`, because 
 
 Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **`replace_comp!`, `add_comp!`** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/). 
 
-Users who wish to modify the component structure would also do well to look into the **built-in helper components`adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src\components` folder, as these can prove quite useful.  
+Users who wish to modify the component structure would also do well to look into the **built-in helper components`adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 
 * `adder.jl` -- Defines `Mimi.adder`, which simply adds two parameters, `input` and `add` and stores the result in `output`.
 
