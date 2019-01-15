@@ -38,23 +38,33 @@ If a user wishes to alter the connections within an existing model, `disconnect_
 
 ### Step 1. Download DICE
 
-The first step in this process is downloading the DICE model.  Open a Julia REPL (here done with the alias command `Julia`) and navigate to the folder where you would like to download DICE.
+The first step in this process is downloading the DICE model.  First, open your command line interface and navigate to the folder where you would like to download DICE.
+
 ```
-Julia 
-cd("directory")
+cd("path") # "path" is a placeholder for the string describing your desired file path
 ```
-Next, clone the existing FUND repository from Github and enter the new repository.
+
+Next, clone the DICE repository from Github, and enter the repository.
+
 ```
 git clone https://github.com/anthofflab/mimi-dice-2010.jl.git
 cd("mimi-dice-2010.jl")
+
 ```
-You have now successfully downloaded FUND to your local machine.
+You have now successfully downloaded DICE to your local machine.
 
 ### Step 2. Run DICE
 
 The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  
 
-In order to run DICE, you will need to navigate to the source code folder, labeled `src`, and run the main fund file `dice2010.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Dice2010`, which exports the function `construct_dice`, a function that returns a version of dice allowing for user specification of parameters.  Note that in order to allow access to the module, we must call `using .Dice2010`, where `.Dice2010` is a shortcut for `Main.Dice2010`, since the `Dice2010` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
+In order to run DICE, you will need to open a Julia REPL (here done witht the alias `julia`) and navigate to the source code folder, labeled `src`.
+
+```
+Julia 
+cd("dicepath") # dicepath is a placeholder for the string describing your the file path of the downloaded `dice-2010` folder from Step 1.
+```
+
+Next, run the main fund file `dice2010.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Dice2010`, which exports the function `construct_dice`, a function that returns a version of dice allowing for user specification of parameters.  Note that in order to allow access to the module, we must call `using .Dice2010`, where `.Dice2010` is a shortcut for `Main.Dice2010`, since the `Dice2010` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
 
 ```
 include("src/dice2010.jl")
