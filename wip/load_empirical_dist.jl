@@ -2,7 +2,7 @@ using ExcelReaders
 using Mimi: EmpiricalDistribution
 
 function load_vector(path, range, header=false)
-    tups = collect(load(path, range, header=header))
+    tups = collect(ExcelFiles.load(path, range, header=header))
     name = keys(tups[1])[1]   # name of first item in NamedTuple
     map(obj -> getfield(obj, name), tups)
 end
