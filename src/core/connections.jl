@@ -25,8 +25,8 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
         error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
 
-    comp_dims  = dimensions(param_def)
-    param_dims = dimensions(ext_param)
+    comp_dims  = dim_names(param_def)
+    param_dims = dim_names(ext_param)
 
     if ! isempty(param_dims) && size(param_dims) != size(comp_dims)
         d1 = size(comp_dims)
@@ -45,7 +45,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
         if isa(dim, Symbol) 
             param_length = size(ext_param.values)[i]
             if dim == :time 
-                t = dimensions(md)[:time]
+                t = dimension(md, :time)
                 first = first_period(md, comp_def)
                 last = last_period(md, comp_def)
                 comp_length = t[last] - t[first] + 1
@@ -94,9 +94,9 @@ and the source ie. the value would be `1` if the destination component parameter
 should only be calculated for the second timestep and beyond.
 """
 function connect_param!(md::ModelDef, 
-                           dst_comp_name::Symbol, dst_par_name::Symbol, 
-                           src_comp_name::Symbol, src_var_name::Symbol,
-                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                        dst_comp_name::Symbol, dst_par_name::Symbol, 
+                        src_comp_name::Symbol, src_var_name::Symbol,
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
     disconnect_param!(md, dst_comp_name, dst_par_name)
@@ -120,7 +120,7 @@ function connect_param!(md::ModelDef,
 
         # some other check for second dimension??
         dst_param = parameter(dst_comp_def, dst_par_name)
-        dst_dims  = dimensions(dst_param)
+        dst_dims  = dim_names(dst_param)
 
         backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
         first = first_period(md, dst_comp_def)
@@ -408,7 +408,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
 
     # Check size of provided parameter
     if update_timesteps && param.values isa TimestepArray
-        expected_size = ([length(dim_keys(md, d)) for d in param.dimensions]...,)
+        expected_size = ([length(dim_keys(md, d)) for d in dim_names(param)]...,)
     else 
         expected_size = size(param.values)
     end
@@ -421,7 +421,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
             T = eltype(value)
             N = length(size(value))
             new_timestep_array = get_timestep_array(md, T, N, value)
-            set_external_param!(md, name, ArrayModelParameter(new_timestep_array, param.dimensions))
+            set_external_param!(md, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
 
         elseif raise_error
             error("Cannot update timesteps; parameter $name is not a TimestepArray.")

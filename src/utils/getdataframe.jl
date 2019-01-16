@@ -10,7 +10,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     mi = modelinstance(m)
     md = modelinstance_def(m)
 
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
 
     # Create a new df if one was not passed in
     df = df === nothing ? DataFrame() : df
@@ -140,11 +140,11 @@ dimensions, which are used to join the respective item values.
 """
 function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)  
     (comp_name1, item_name1) = pairs[1]
-    dims = dimensions(m, comp_name1, item_name1)
+    dims = dim_names(m, comp_name1, item_name1)
     df = getdataframe(m, comp_name1, item_name1)
 
     for (comp_name, item_name) in pairs[2:end]
-        next_dims = dimensions(m, comp_name, item_name)
+        next_dims = dim_names(m, comp_name, item_name)
         if dims != next_dims
             error("Can't create DataFrame from items with different dimensions ($comp_name1.$item_name1: $dims vs $comp_name.$item_name: $next_dims)")
         end

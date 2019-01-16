@@ -40,7 +40,7 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
-    dims = dimensions(m, comp_name, datum_name)
+    dims = dim_names(m, comp_name, datum_name)
             
     if length(dims) == 0        # scalar value
         value = m[comp_name, datum_name]
@@ -221,7 +221,7 @@ function _restore_param!(param::ArrayModelParameter{T}, name::Symbol, md::ModelD
 end
 
 function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::TransformSpec) where T
-    pdims = dimensions(param)   # returns [] for scalar parameters
+    pdims = dim_names(param)   # returns [] for scalar parameters
     num_pdims = length(pdims)
 
     tdims  = trans.dims

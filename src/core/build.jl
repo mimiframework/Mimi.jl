@@ -3,7 +3,7 @@ connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 # Return the datatype to use for instance variables/parameters
 function _instance_datatype(md::ModelDef, def::absclass(DatumDef))
     dtype = def.datatype == Number ? number_type(md) : datatype(def)
-    dims = dimensions(def)
+    dims = dim_names(def)
     num_dims = dim_count(def)
 
     if num_dims == 0
@@ -29,7 +29,7 @@ end
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
 function _instantiate_datum(md::ModelDef, def::absclass(DatumDef))
     dtype = _instance_datatype(md, def)
-    dims = dimensions(def)
+    dims = dim_names(def)
     num_dims = length(dims)
     
     # Scalar datum

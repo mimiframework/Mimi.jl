@@ -119,7 +119,7 @@ end
 
 mutable struct ArrayModelParameter{T} <: ModelParameter
     values::T
-    dimensions::Vector{Symbol} # if empty, we don't have the dimensions' name information
+    dim_names::Vector{Symbol} # if empty, we don't have the dimensions' name information
 
     function ArrayModelParameter{T}(values::T, dims::Vector{Symbol}) where T
         new(values, dims)
@@ -138,8 +138,8 @@ ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(va
 value(param::ArrayModelParameter)  = param.values
 value(param::ScalarModelParameter) = param.value
 
-dimensions(obj::ArrayModelParameter) = obj.dimensions
-dimensions(obj::ScalarModelParameter) = []
+dim_names(obj::ArrayModelParameter) = obj.dim_names
+dim_names(obj::ScalarModelParameter) = []
 
 
 abstract type AbstractConnection end
@@ -217,9 +217,9 @@ global const BindingTypes = Union{Int, Float64, DatumReference}
 @class DimensionDef <: NamedObj
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
-@class mutable DatumDef(getter_prefix="", setters=false) <: NamedObj begin
+@class mutable DatumDef <: NamedObj begin
     datatype::DataType
-    dimensions::Vector{Symbol}
+    dim_names::Vector{Symbol}
     description::String
     unit::String
 end
@@ -231,14 +231,11 @@ end
     default::Any
 end
 
-# to allow getters to be created
-import Base: first, last
-
-@class mutable ComponentDef(getter_prefix="") <: NamedObj begin
+@class mutable ComponentDef <: NamedObj begin
     comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
-    dimensions::OrderedDict{Symbol, Union{Nothing, DimensionDef}}
+    dim_dict::OrderedDict{Symbol, Union{Nothing, DimensionDef}}     # should value be Dimension rather than DimensionDef?
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
     is_uniform::Bool
@@ -258,7 +255,7 @@ import Base: first, last
         self.comp_id = comp_id
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}() 
-        self.dimensions = OrderedDict{Symbol, Union{Nothing, DimensionDef}}()
+        self.dim_dict   = OrderedDict{Symbol, Union{Nothing, DimensionDef}}()
         self.first = self.last = nothing
         self.is_uniform = true
         return self
@@ -272,6 +269,12 @@ import Base: first, last
         return ComponentDef(self, comp_id, name=name)
     end    
 end
+
+@method comp_id(obj::ComponentDef) = obj.comp_id
+@method dim_dict(obj::ComponentDef) = obj.dim_dict
+@method first_period(obj::ComponentDef) = obj.first
+@method last_period(obj::ComponentDef) = obj.last
+@method isuniform(obj::ComponentDef) = obj.is_uniform
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
@@ -330,18 +333,11 @@ end
 
 
 @class mutable ModelDef <: CompositeComponentDef begin
-    dimensions2::Dict{Symbol, Dimension}
     number_type::DataType
-    
-    function ModelDef(self::AbstractModelDef, number_type::DataType=Float64)
-        CompositeComponentDef(self)  # call super's initializer
-
-        dimensions = Dict{Symbol, Dimension}()
-        return ModelDef(self, dimensions, number_type)
-    end
 
     function ModelDef(number_type::DataType=Float64)
         self = new()
+        CompositeComponentDef(self)  # call super's initializer
         return ModelDef(self, number_type)
     end
 end
@@ -351,7 +347,7 @@ end
 #
 
 # Supertype for variables and parameters in component instances
-@class ComponentInstanceData(getters=false, setters=false){NT <: NamedTuple} begin
+@class ComponentInstanceData{NT <: NamedTuple} begin
     nt::NT
 end
 
@@ -367,13 +363,13 @@ function _make_data_obj(subclass::DataType, names, types, values)
     _make_data_obj(subclass, NT(values))
 end
 
-@class ComponentInstanceParameters{NT <: NamedTuple} <: ComponentInstanceData
-@class ComponentInstanceVariables{NT <: NamedTuple}  <: ComponentInstanceData
+@class ComponentInstanceParameters <: ComponentInstanceData
+@class ComponentInstanceVariables  <: ComponentInstanceData
 
 ComponentInstanceParameters(names, types, values) = _make_data_obj(ComponentInstanceParameters, names, types, values)
 ComponentInstanceVariables(names, types, values)  = _make_data_obj(ComponentInstanceVariables, names, types, values)
 
-@class mutable ComponentInstance(getters=false, setters=false){TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} begin
+@class mutable ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} begin
     comp_name::Symbol
     comp_id::ComponentId
     variables::TV
@@ -443,11 +439,10 @@ end
 @method has_dim(obj::ComponentInstance, name::Symbol) = haskey(obj.dim_dict, name)
 @method dimension(obj::ComponentInstance, name::Symbol) = obj.dim_dict[name]
 @method first_period(obj::ComponentInstance) = obj.first
-@method last_period(obj::ComponentInstance) = obj.last
+@method mutable(obj::ComponentInstance) = obj.last
 @method first_and_last(obj::ComponentInstance) = (obj.first, obj.last)
 
-@class mutable CompositeComponentInstance{TV <: ComponentInstanceVariables, 
-                                          TP <: ComponentInstanceParameters} <: ComponentInstance begin
+@class mutable CompositeComponentInstance <: ComponentInstance begin
     comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
     firsts::Vector{Int}        # in order corresponding with components
     lasts::Vector{Int}
@@ -485,7 +480,7 @@ end
 end
 
 # These methods can be called on ModelInstances as well
-@method components(obj::CompositeComponentInstance) = values(comps_dict)
+@method components(obj::CompositeComponentInstance) = values(obj.comps_dict)
 @method has_comp(obj::CompositeComponentInstance, name::Symbol) = haskey(obj.comps_dict, name)
 @method compinstance(obj::CompositeComponentInstance, name::Symbol) = obj.comps_dict[name]
 
@@ -515,18 +510,18 @@ Base.getproperty(dimdict::DimDict, property::Symbol) = getfield(dimdict, :dict)[
 
 
 # ModelInstance holds the built model that is ready to be run
-@class ModelInstance{TV <: ComponentInstanceVariables, 
-                     TP <: ComponentInstanceParameters} <: CompositeComponentInstance begin
+@class ModelInstance <: CompositeComponentInstance begin
     md::ModelDef
 
     # similar to generated constructor, but taking TV and TP from superclass instance
-    function ModelInstance(md::ModelDef, s::CompositeComponentInstance{TV, TP}) where 
-                {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
+    # function ModelInstance(md::ModelDef, s::CompositeComponentInstance{TV, TP}) where 
+    #             {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
 
-        new{TV, TP}(s.comp_name, s.comp_id, s.variables, s.parameters, s.dim_dict, s.first, s.last, 
-                    s.init, s.run_timestep, s.comps_dict, s.firsts, s.lasts, s.clocks, md)
-    end
+    #     new{TV, TP}(s.comp_name, s.comp_id, s.variables, s.parameters, s.dim_dict, s.first, s.last, 
+    #                 s.init, s.run_timestep, s.comps_dict, s.firsts, s.lasts, s.clocks, md)
+    # end
 end
+
 #
 # 6. User-facing Model types providing a simplified API to model definitions and instances.
 #

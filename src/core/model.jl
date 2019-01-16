@@ -194,12 +194,12 @@ end
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
 """
-    dimensions(m::Model, comp_name::Symbol, datum_name::Symbol)
+    dim_names(m::Model, comp_name::Symbol, datum_name::Symbol)
 
 Return the dimension names for the variable or parameter `datum_name`
 in the given component `comp_name` in model `m`.
 """
-dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(m, comp_name), datum_name)
+dim_names(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(compdef(m, comp_name), datum_name)
 
 @delegate dimension(m::Model, dim_name::Symbol) => md
 
@@ -245,7 +245,7 @@ end
 
 function variable_dimensions(m::Model, comp_name::Symbol, var_name::Symbol)
     var = variable(m, comp_id, var_name)
-    return dimensions(var)
+    return dim_names(var)
 end
 
 """

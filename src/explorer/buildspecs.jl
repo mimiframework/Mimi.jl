@@ -2,13 +2,13 @@
 using Dates
 
 function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
     return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
 end
 
 # Generate the VegaLite spec for a variable or parameter
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
 
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
@@ -48,7 +48,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
 end
 
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
 
     if length(dims) == 0
         value = m[comp_name, item_name]

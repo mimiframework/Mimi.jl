@@ -109,8 +109,8 @@ time = dimension(m, :time)
 a = collect(keys(time))
 @test all([a[i] == years[i] for i in 1:28])
 
-@test dimensions(m, :A, :varA)[1] == :time
-@test length(dimensions(m, :A, :parA)) == 0
+@test dim_names(m, :A, :varA)[1] == :time
+@test length(dim_names(m, :A, :parA)) == 0
 
 ################################
 #  tests for delete! function  #

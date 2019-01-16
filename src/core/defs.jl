@@ -85,13 +85,14 @@ end
 
 number_type(md::ModelDef) = md.number_type
 
-numcomponents(obj::ComponentDef) = 0   # no sub-components
+# TBD: should be numcomps()
+@method numcomponents(obj::ComponentDef) = 0   # no sub-components
 @method numcomponents(obj::CompositeComponentDef) = length(obj.comps_dict)
 
-function dump_components()
+function dumpcomps()
     for comp in compdefs()
         println("\n$(nameof(comp))")
-        for (tag, objs) in ((:Variables, variables(comp)), (:Parameters, parameters(comp)), (:Dimensions, dimensions(comp)))
+        for (tag, objs) in ((:Variables, variables(comp)), (:Parameters, parameters(comp)), (:Dimensions, dim_dict(comp)))
             println("  $tag")
             for obj in objs
                 println("    $(nameof(obj)) = $obj")
@@ -148,16 +149,19 @@ end
 
 @method function add_dimension!(comp::ComponentDef, name)
     dim = (name isa Int) ? Dimension(name) : nothing
-    comp.dimensions[Symbol(name)] = dim
-    comp.dimensions[name] = DimensionDef(name)
+    comp.dim_dict[Symbol(name)] = dim                         # TBD: this makes no sense (test case of integer instead of symbol)
+    comp.dim_dict[name] = DimensionDef(name)
 end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
-@method function dimensions(ccd::CompositeComponentDef)
+# Allow our usual abbreviation
+add_dim! = add_dimension!
+
+@method function dim_names(ccd::CompositeComponentDef)
     dims = Vector{DimensionDef}()
     for cd in compdefs(ccd)
-        append!(dims, dimensions(cd))
+        append!(dims, keys(dim_dict(cd)))                     # TBD: this doesn't look right
     end
 
     # use Set to eliminate duplicates
@@ -165,14 +169,17 @@ add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), na
     return collect(Set(dims))
 end
 
-@method dimensions(comp_def::ComponentDef, datum_name::Symbol) = dimensions(datumdef(comp_def, datum_name))
+@method dim_names(comp_def::ComponentDef, datum_name::Symbol) = dim_names(datumdef(comp_def, datum_name))
 
-@method dim_count(def::DatumDef) = length(dimensions(def))
+@method dim_count(def::DatumDef) = length(dim_names(def))
 
 function step_size(values::Vector{Int})
     return length(values) > 1 ? values[2] - values[1] : 1
 end
 
+#
+# TBD: should these be defined as @method of CompositeComponentDef
+#
 function step_size(md::ModelDef)
     keys::Vector{Int} = time_labels(md)
     return step_size(keys)
@@ -212,7 +219,7 @@ end
 
 # TBD: is this needed for composites?
 function datum_size(md::ModelDef, comp_def::ComponentDef, datum_name::Symbol)
-    dims = dimensions(comp_def, datum_name)
+    dims = dim_names(comp_def, datum_name)
     if dims[1] == :time
         time_length = getspan(md, comp_def)[1]
         rest_dims = filter(x->x!=:time, dims)
@@ -223,32 +230,32 @@ function datum_size(md::ModelDef, comp_def::ComponentDef, datum_name::Symbol)
     return datum_size
 end
 
-@method has_dim(obj::CompositeComponentDef, name::Symbol) = haskey(obj.dimensions, name)
+@method has_dim(obj::CompositeComponentDef, name::Symbol) = haskey(obj.dim_dict, name)
 
 @method isuniform(obj::CompositeComponentDef) = obj.is_uniform
 
 @method set_uniform!(obj::CompositeComponentDef, value::Bool) = (obj.is_uniform = value)
 
-@method dimension(obj::CompositeComponentDef, name::Symbol) = obj.dimensions[name]
+@method dimension(obj::CompositeComponentDef, name::Symbol) = obj.dim_dict[name]
 
-dimensions(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
+dim_names(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
 
 
-dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dimensions(md)])
-dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dimensions(md, dims)]
+dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dim_dict(md)])
+dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(md, dims)]
 dim_count(md::ModelDef, name::Symbol) = length(dimension(md, name))
 
-dim_key_dict(md::ModelDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(md)])
+dim_key_dict(md::ModelDef) = Dict([name => collect(keys(dim)) for (name, dim) in dim_dict(md)])
 dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 
 dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
-dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dimensions(md)])
+dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dim_dict(md)])
 
 
 # Helper function invoked when the user resets the time dimension with set_dimension!
 # This function calls set_run_period! on each component definition to reset the first and last values.
-function reset_run_periods!(md, first, last)
-    for comp_def in compdefs(md)
+@method function _reset_run_periods!(ccd::CompositeComponentDef, first, last)
+    for comp_def in compdefs(ccd)
         changed = false
         first_per = first_period(comp_def)
         last_per  = last_period(comp_def)
@@ -289,7 +296,7 @@ an integer; or to the values in the vector or range if `keys` is either of those
     if name == :time
         set_uniform!(ccd, isuniform(keys))
         if redefined 
-            reset_run_periods!(ccd, k[1], k[end])
+            _reset_run_periods!(ccd, keys[1], keys[end])
         end
     end
     
@@ -297,7 +304,7 @@ an integer; or to the values in the vector or range if `keys` is either of those
 end
 
 @method function set_dimension!(obj::CompositeComponentDef, name::Symbol, dim::Dimension)
-    obj.dimensions[name] = dim
+    obj.dim_dict[name] = dim
 end
 
 # helper functions used to determine if the provided time values are 
@@ -325,7 +332,7 @@ end
 #
 
 @method function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
-    p = ParameterDef(name, datatype, dimensions, description, unit, :parameter, default)
+    p = ParameterDef(name, datatype, dimensions, description, unit, default)
     comp_def.parameters[name] = p
     return p
 end
@@ -339,7 +346,7 @@ end
 
 Return a list of the parameter definitions for `comp_def`.
 """
-parameters(obj::ComponentDef) = values(obj.parameters)
+@method parameters(obj::ComponentDef) = values(obj.parameters)
 
 @method function parameters(ccd::CompositeComponentDef)
     pars = ccd.parameters
@@ -374,7 +381,7 @@ Return a list of all parameter names for a given component `comp_name` in a mode
 parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
 #parameter_names(comp_def::ComponentDef) = [nameof(param) for param in parameters(comp_def)]
-parameter_names(comp_def::ComponentDef) = collect(keys(comp_def.parameters))
+@method parameter_names(comp_def::ComponentDef) = collect(keys(comp_def.parameters))
 
 @method parameter(obj::CompositeComponentDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
 
@@ -395,9 +402,9 @@ end
     return param.unit
 end
 
-function parameter_dimensions(obj::ComponentDef, comp_name::Symbol, param_name::Symbol)
+@method function parameter_dimensions(obj::ComponentDef, comp_name::Symbol, param_name::Symbol)
     param = parameter(obj, comp_name, param_name)
-    return param.dimensions
+    return dim_names(param)
 end
 
 """
@@ -470,9 +477,9 @@ end
 #
 # Variables
 #
-variables(comp_def::ComponentDef) = values(comp_def.variables)
+@method variables(comp_def::ComponentDef) = values(comp_def.variables)
 
-function variables(ccd::CompositeComponentDef)
+@method function variables(ccd::CompositeComponentDef)
     vars = ccd.variables
 
     # return cached variables, if any
@@ -488,13 +495,11 @@ function variables(ccd::CompositeComponentDef)
     return values(vars)
 end
 
-@delegate variables(md::ModelDef) => ccd
-
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
 variables(dr::DatumReference) = variables(dr.comp_id)
 
-function variable(comp_def::ComponentDef, var_name::Symbol)
+@method function variable(comp_def::ComponentDef, var_name::Symbol)
     if is_composite(comp_def)
         variables(comp_def)  # make sure values have been gathered
     end
@@ -512,7 +517,7 @@ variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(m
 
 variable(dr::DatumReference) = variable(compdef(dr.comp_id), nameof(dr))
 
-has_variable(comp_def::ComponentDef, name::Symbol) = haskey(comp_def.variables, name)
+@method has_variable(comp_def::ComponentDef, name::Symbol) = haskey(comp_def.variables, name)
 
 """
     variable_names(md::ModelDef, comp_name::Symbol)
@@ -531,13 +536,13 @@ end
 
 function variable_dimensions(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     var = variable(md, comp_name, var_name)
-    return var.dimensions
+    return dim_names(var)
 end
 
 # Add a variable to a ComponentDef. CompositeComponents have no vars of their own, 
 # only references to vars in components contained within.
 function addvariable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
-    var_def = DatumDef(name, datatype, dimensions, description, unit, :variable)
+    var_def = VariableDef(name, datatype, dimensions, description, unit)
     comp_def.variables[name] = var_def
     return var_def
 end
@@ -590,12 +595,12 @@ end
 const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 
-@method function _append_comp!(obj::CompositeComponentDef, comp_name::Symbol, comp_def::ComponentDef)
+@method function _append_comp!(obj::CompositeComponentDef, comp_name::Symbol, comp_def::AbstractComponentDef)
    obj.comps_dict[comp_name] = comp_def
 end
 
-function _add_anonymous_dims!(md::ModelDef, comp_def::ComponentDef)
-    for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dimensions)
+function _add_anonymous_dims!(md::ModelDef, comp_def::AbstractComponentDef)
+    for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dim_dict)
         @info "Setting dimension $name to $dim"
         set_dimension!(md, name, dim)
     end
@@ -608,7 +613,7 @@ Add the component indicated by `comp_def` to the composite components indicated 
 is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
 `comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-@method function add_comp!(obj::CompositeComponentDef, comp_def::ComponentDef, comp_name::Symbol;
+@method function add_comp!(obj::CompositeComponentDef, comp_def::AbstractComponentDef, comp_name::Symbol;
                            first::NothingInt=nothing, last::NothingInt=nothing, 
                            before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
@@ -645,7 +650,7 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
 
     set_run_period!(comp_def, first, last)
 
-    _add_anonymous_dims!(md, comp_def)
+    _add_anonymous_dims!(obj, comp_def)
 
     if before === nothing && after === nothing
         _append_comp!(obj, comp_name, comp_def)   # just add it to the end
@@ -753,8 +758,8 @@ parameter connections should be maintained in the new component.
         new_comp = compdef(comp_id)
 
         function _compare_datum(dict1, dict2)
-            set1 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict1])
-            set2 = Set([(k, v.datatype, v.dimensions) for (k, v) in dict2])
+            set1 = Set([(k, v.datatype, v.dim_names) for (k, v) in dict1])
+            set2 = Set([(k, v.datatype, v.dim_names) for (k, v) in dict2])
             return set1 >= set2
         end
 
@@ -784,7 +789,7 @@ parameter connections should be maintained in the new component.
             else
                 old_p = old_comp.parameters[param_name]
                 new_p = new_params[param_name]
-                if new_p.dimensions != old_p.dimensions
+                if new_p.dim_names != old_p.dim_names
                     error("Cannot replace and reconnect; parameter $param_name in new component has different dimensions.")
                 end
                 if new_p.datatype != old_p.datatype

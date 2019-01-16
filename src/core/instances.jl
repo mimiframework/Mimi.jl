@@ -115,7 +115,7 @@ end
 @method set_var_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.variables, name, value)
 
 """
-    variables(obj::_CompositeComponentInstance_, comp_name::Symbol)
+    variables(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
 
 Return the `ComponentInstanceVariables` for `comp_name` in CompositeComponentInstance `obj`.
 """
@@ -129,7 +129,7 @@ function variables(m::Model)
 end
 
 """
-    parameters(obj::_CompositeComponentInstance_, comp_name::Symbol)
+    parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
 
 Return the `ComponentInstanceParameters` for `comp_name` in CompositeComponentInstance `obj`.
 """

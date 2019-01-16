@@ -108,8 +108,8 @@ time = dimension(m, :time)
 a = collect(keys(time))
 @test all([a[i] == 2010 + 5*i for i in 1:18])
 
-@test dimensions(m, :A, :varA)[1] == :time
-@test length(dimensions(m, :A, :parA)) == 0
+@test dim_names(m, :A, :varA)[1] == :time
+@test length(dim_names(m, :A, :parA)) == 0
 
 ################################
 #  tests for delete! function  #
