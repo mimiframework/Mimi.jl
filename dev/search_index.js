@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Installation Guide",
     "title": "Getting started",
     "category": "section",
-    "text": "The best way to get started with Mimi is to work through the Tutorial. The examples/tutorial folder in the Mimi github repository has julia code files that completely implement the example described in the tutorial.The Mimi github repository also has links to various models that are based on Mimi, and looking through their code can be instructive.Finally, when in doubt, ask your question in the Mimi gitter chatroom or send an email to David Anthoff (<anthoff@berkeley.edu>) and ask for help. Don\'t be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!"
+    "text": "The best way to get started with Mimi is to work through the Tutorials Intro. The examples/tutorial folder in the Mimi github repository has julia code files that completely implement the example described in the tutorial.The Mimi github repository also has links to various models that are based on Mimi, and looking through their code can be instructive.Finally, when in doubt, ask your question in the Mimi gitter chatroom or send an email to David Anthoff (<anthoff@berkeley.edu>) and ask for help. Don\'t be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!"
 },
 
 {
@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "User Guide",
     "title": "Overview",
     "category": "section",
-    "text": "See the Tutorial for in depth examples of one-region and multi-region models.This guide is organized into six main sections for understanding how to use Mimi.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting and the Explorer UI\nAdvanced topics"
+    "text": "See the Tutorials for in-depth examples of Mimi\'s functionality.This guide is organized into six main sections for understanding how to use Mimi.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting and the Explorer UI\nAdvanced topics"
 },
 
 {
@@ -233,35 +233,203 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "tutorial/#",
-    "page": "Tutorial",
-    "title": "Tutorial",
+    "location": "tutorials/tutorial_main/#",
+    "page": "Tutorials Intro",
+    "title": "Tutorials Intro",
     "category": "page",
     "text": ""
 },
 
 {
-    "location": "tutorial/#Tutorial-1",
-    "page": "Tutorial",
-    "title": "Tutorial",
+    "location": "tutorials/tutorial_main/#Introduction-1",
+    "page": "Tutorials Intro",
+    "title": "Introduction",
     "category": "section",
+    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Terminology-1",
+    "page": "Tutorials Intro",
+    "title": "Terminology",
+    "category": "section",
+    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "page": "Tutorials Intro",
+    "title": "Available Tutorials",
+    "category": "section",
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "page": "Tutorials Intro",
+    "title": "Requirements and Initial Setup",
+    "category": "section",
+    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+},
+
+{
+    "location": "tutorials/tutorial_main/#",
+    "page": "1 Run an Existing Model",
+    "title": "1 Run an Existing Model",
+    "category": "page",
     "text": ""
 },
 
 {
-    "location": "tutorial/#Constructing-A-One-Region-Model-1",
-    "page": "Tutorial",
-    "title": "Constructing A One-Region Model",
+    "location": "tutorials/tutorial_main/#Introduction-1",
+    "page": "1 Run an Existing Model",
+    "title": "Introduction",
     "category": "section",
-    "text": "In this example, we will construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy will involve creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.There are two main steps to creating a component, both within the  @defcomp macro which defines a component:List the parameters and variables.\nUse the run_timestep function run_timestep(p, v, d, t) to set the equations of that component.Starting with the economy component, each variable and parameter is listed. If either variables or parameters have a time-dimension, that must be set with (index=[time]).using Mimi\n\n@defcomp grosseconomy begin\n	YGROSS	= Variable(index=[time])	#Gross output\n	K	= Variable(index=[time])	#Capital\n	l	= Parameter(index=[time])	#Labor\n	tfp	= Parameter(index=[time])	#Total factor productivity\n	s	= Parameter(index=[time])	#Savings rate\n	depk	= Parameter()			#Depreciation rate on capital - Note that it has no time index\n	k0	= Parameter()			#Initial level of capital\n	share	= Parameter()			#Capital share\nNext, the run_timestep function must be defined along with the various equations of the grosseconomy component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, v will refer to variables while p refers to parameters.It is important to note that t below is an AbstractTimestep, and the specific API for using this argument are described in detail in the userguide in Advanced Topics:  Timesteps and available functions. 	function run_timestep(p, v, d, t)\n		#Define an equation for K\n		if is_first(t)\n			#Note the use of v. and p. to distinguish between variables and parameters\n			v.K[t] 	= p.k0	\n		else\n			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5\n		end\n\n		#Define an equation for YGROSS\n		v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)\n	end\nendNext, the the component for greenhouse gas emissions must be created.  Although the steps are the same as for the grosseconomy component, there is one minor difference. While YGROSS was a variable in the grosseconomy component, it now enters the emissions component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.@defcomp emissions begin\n	E 	= Variable(index=[time])	#Total greenhouse gas emissions\n	sigma	= Parameter(index=[time])	#Emissions output ratio\n	YGROSS	= Parameter(index=[time])	#Gross output - Note that YGROSS is now a parameter\n\n	function run_timestep(p, v, d, t)\n\n		#Define an equation for E\n		v.E[t] = p.YGROSS[t] * p.sigma[t]	#Note the p. in front of YGROSS\n	end\nendWe can now use Mimi to construct a model that binds the grosseconomy and emissions components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.Once the model is defined, set_dimension! is used to set the length and interval of the time step.\nWe then use add_comp! to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.\nNext, set_param! is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If population was a parameter for two different components, it must be assigned to each one using set_param! two different times. The syntax is set_param!(model_name, :component_name, :parameter_name, value)\nIf any variables of one component are parameters for another, connect_param! is used to couple the two components together. In this example, YGROSS is a variable in the grosseconomy component and a parameter in the emissions component. The syntax is connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name), where :component_name_variable refers to the component where your parameter was initially calculated as a variable.\nFinally, the model can be run using the command run(model_name).\nTo access model results, use model_name[:component, :variable_name].\nTo observe model results in a graphical form ,use explore(model_name) to open the UI window, or use explore(model_name, :component_name, :variable_name) or explore(model_name, :component_name, :parameter_name) to plot a specific parameter or variable.module my_model\n\nusing Mimi\n\nexport m\n\nm = Model()\n\nset_dimension!(m, :time, collect(2015:5:2110))\n\n#Order matters here. If the emissions component were defined first, the model would not run.\nadd_comp!(my_model, grosseconomy)  \nadd_comp!(my_model, emissions)\n\n#Set parameters for the grosseconomy component\nset_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])\nset_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])\nset_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)\nset_param!(my_model, :grosseconomy, :depk, 0.1)\nset_param!(my_model, :grosseconomy, :k0, 130.)\nset_param!(my_model, :grosseconomy, :share, 0.3)\n\n#Set parameters for the emissions component\nset_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])\nconnect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  \n#Note that connect_param! was used here.\n\nend #end module\nNow we can run the model and examine the results:#Run model\nusing my_model\nrun(m)\n\n#Check model results\nm[:emissions, :E]\n\n#Plot model results\nexplore(m, :emissions, :E)\n\n#Observe all model result graphs in UI\nexplore(m)\n\n"
+    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
 },
 
 {
-    "location": "tutorial/#Constructing-A-Multi-Region-Model-1",
-    "page": "Tutorial",
-    "title": "Constructing A Multi-Region Model",
+    "location": "tutorials/tutorial_main/#Terminology-1",
+    "page": "1 Run an Existing Model",
+    "title": "Terminology",
     "category": "section",
-    "text": "We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:When using @defcomp, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include (index=[regions]). This can be combined with the time index as well, (index=[time, regions]).\nIn the run_timestep function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.\nset_dimension! must be used to specify your regions in the same way that it is used to specify your timestep.\nWhen using set_param! for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into set_param! rather than an entire equation.\nWhen constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, using Mimi must be speficied for each component. This approach will be used here.To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.using Mimi\n\n@defcomp grosseconomy begin\n	regions = Index()	#Note that a regional index is defined here\n\n	YGROSS	= Variable(index=[time, regions])	#Gross output\n	K 	= Variable(index=[time, regions])	#Capital\n	l 	= Parameter(index=[time, regions])	#Labor\n	tfp	= Parameter(index=[time, regions])	#Total factor productivity\n	s 	= Parameter(index=[time, regions])	#Savings rate\n	depk	= Parameter(index=[regions])	#Depreciation rate on capital - Note that it only has a region index\n	k0	= Parameter(index=[regions])	#Initial level of capital\n	share	= Parameter()	#Capital share\n\n	function run_timestep(p, v, d, t)\n		\n		#Note that the regional dimension is used below and parameters and \n		variables are indexed by \'r\'\n\n		#Define an equation for K\n		for r in d.regions\n			if is_first(t)\n				v.K[t,r] = p.k0[r]\n			else\n				v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5\n			end\n		end\n\n		#Define an equation for YGROSS\n		for r in d.regions\n			v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)\n		end\n	end\nendSave this component as **grosseconomy.jl**_using Mimi	#Make sure to call Mimi again\n\n@defcomp emissions begin\n	regions	=	Index()	#The regions index must be specified for each component\n\n	E		= Variable(index=[time, regions])	#Total greenhouse gas emissions\n	E_Global		= Variable(index=[time])		#Global emissions (sum of regional emissions)\n	sigma		= Parameter(index=[time, regions])	#Emissions output ratio\n	YGROSS		= Parameter(index=[time, regions])	#Gross output - Note that YGROSS is now a parameter\n\n	function run_timestep(p, v, d, t)\n\n		#Define an eqation for E\n		for r in d.regions\n			v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]\n		end\n\n		#Define an equation for E_Global\n		for r in d.regions\n			v.E_Global[t] = sum(v.E[t,:])\n		end\n	end\nendSave this component as emissions.jlLet\'s create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.l = Array(Float64,20,3)\nfor t in 1:20\n	l[t,1] = (1. + 0.015)^t *2000\n	l[t,2] = (1. + 0.02)^t * 1250\n	l[t,3] = (1. + 0.03)^t * 1700\nend\n\ntfp = Array(Float64,20,3)\nfor t in 1:20\n	tfp[t,1] = (1 + 0.06)^t * 3.2\n	tfp[t,2] = (1 + 0.03)^t * 1.8\n	tfp[t,3] = (1 + 0.05)^t * 2.5\nend\n\ns = Array(Float64,20,3)\nfor t in 1:20\n	s[t,1] = 0.21\n	s[t,2] = 0.15\n	s[t,3] = 0.28\nend\n\ndepk = [0.11, 0.135 ,0.15]\nk0 	 = [50.5, 22., 33.5]\n\nsigma = Array(Float64,20,3)\nfor t in 1:20\n	sigma[t,1] = (1. - 0.05)^t * 0.58\n	sigma[t,2] = (1. - 0.04)^t * 0.5\n	sigma[t,3] = (1. - 0.045)^t * 0.6\nendSave this file as **regionparameters.jl**_The final step is to create a module.module my_model\n\nusing Mimi\n\nexport m \n\ninclude(\"region_parameters.jl\")\ninclude(\"gross_economy.jl\")\ninclude(\"emissions.jl\")\n\nm = Model()\n\nset_dimension!(m, :time, collect(2015:5:2110))\nset_dimension!(m, :regions, [\"Region1\", \"Region2\", \"Region3\"])	 #Note that the regions of your model must be specified here\n\nadd_comp!(m, grosseconomy)\nadd_comp!(m, emissions)\n\nset_param!(m, :grosseconomy, :l, l)\nset_param!(m, :grosseconomy, :tfp, tfp)\nset_param!(m, :grosseconomy, :s, s)\nset_param!(m, :grosseconomy, :depk,depk)\nset_param!(m, :grosseconomy, :k0, k0)\nset_param!(m, :grosseconomy, :share, 0.3)\n\n#set parameters for emissions component\nset_param!(my_model, :emissions, :sigma, sigma)\nconnect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)\n\nend #end module\nSave this file as **mymodel.jl**_We can now run the model and evaluate the results.using Mimi\n\ninclude(\"my_model.jl\")\nusing my_model\n\nrun(m)\n\n#Check results\nm[:emissions, :E_Global]\n\n#Observe model result graphs\nexplore(m)\n"
+    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "page": "1 Run an Existing Model",
+    "title": "Available Tutorials",
+    "category": "section",
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "page": "1 Run an Existing Model",
+    "title": "Requirements and Initial Setup",
+    "category": "section",
+    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+},
+
+{
+    "location": "tutorials/tutorial_main/#",
+    "page": "2 Modfiy an Existing Model",
+    "title": "2 Modfiy an Existing Model",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "tutorials/tutorial_main/#Introduction-1",
+    "page": "2 Modfiy an Existing Model",
+    "title": "Introduction",
+    "category": "section",
+    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Terminology-1",
+    "page": "2 Modfiy an Existing Model",
+    "title": "Terminology",
+    "category": "section",
+    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "page": "2 Modfiy an Existing Model",
+    "title": "Available Tutorials",
+    "category": "section",
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "page": "2 Modfiy an Existing Model",
+    "title": "Requirements and Initial Setup",
+    "category": "section",
+    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+},
+
+{
+    "location": "tutorials/tutorial_main/#",
+    "page": "3 Create a Model",
+    "title": "3 Create a Model",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "tutorials/tutorial_main/#Introduction-1",
+    "page": "3 Create a Model",
+    "title": "Introduction",
+    "category": "section",
+    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Terminology-1",
+    "page": "3 Create a Model",
+    "title": "Terminology",
+    "category": "section",
+    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "page": "3 Create a Model",
+    "title": "Available Tutorials",
+    "category": "section",
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "page": "3 Create a Model",
+    "title": "Requirements and Initial Setup",
+    "category": "section",
+    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+},
+
+{
+    "location": "tutorials/tutorial_main/#",
+    "page": "4 MCS Functionality",
+    "title": "4 MCS Functionality",
+    "category": "page",
+    "text": ""
+},
+
+{
+    "location": "tutorials/tutorial_main/#Introduction-1",
+    "page": "4 MCS Functionality",
+    "title": "Introduction",
+    "category": "section",
+    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Terminology-1",
+    "page": "4 MCS Functionality",
+    "title": "Terminology",
+    "category": "section",
+    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "page": "4 MCS Functionality",
+    "title": "Available Tutorials",
+    "category": "section",
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+},
+
+{
+    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "page": "4 MCS Functionality",
+    "title": "Requirements and Initial Setup",
+    "category": "section",
+    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
 },
 
 {
@@ -329,259 +497,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "reference/#Mimi.@defcomp",
-    "page": "Reference",
-    "title": "Mimi.@defcomp",
-    "category": "macro",
-    "text": "defcomp(comp_name::Symbol, ex::Expr)\n\nDefine a Mimi component comp_name with the expressions in ex.  The following  types of expressions are supported:\n\ndimension_name = Index()   # defines a dimension\nparameter = Parameter(index = [dimension_name], units = \"unit_name\", default = default_value)    # defines a parameter with optional arguments\nvariable = Variable(index = [dimension_name], units = \"unit_name\")    # defines a variable with optional arguments\ninit(p, v, d)              # defines an init function for the component\nrun_timestep(p, v, d, t)   # defines a run_timestep function for the component\n\nParses a @defcomp definition, converting it into a series of function calls that create the corresponding ComponentDef instance. At model build time, the ModelDef (including its ComponentDefs) will be converted to a runnable model.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.MarginalModel",
-    "page": "Reference",
-    "title": "Mimi.MarginalModel",
-    "category": "type",
-    "text": "MarginalModel\n\nA Mimi Model whose results are obtained by subtracting results of one base Model  from those of another marginal Modelthat has a difference ofdelta`.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.Model",
-    "page": "Reference",
-    "title": "Mimi.Model",
-    "category": "type",
-    "text": "Model\n\nA user-facing API containing a ModelInstance (mi) and a ModelDef (md).   This Model can be created with the optional keyword argument number_type indicating the default type of number used for the ModelDef.  If not specified the Model assumes a number_type of Float64.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.add_comp!",
-    "page": "Reference",
-    "title": "Mimi.add_comp!",
-    "category": "function",
-    "text": "add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)\n\nAdd the component indicated by comp_def to the model indcated by md. The component is added at the  end of the list unless one of the keywords, first, last, before, after. If the comp_name differs from that in the comp_def, a copy of comp_def is made and assigned the new name.\n\n\n\n\n\nadd_comp!(md::ModelDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name, \n    first=nothing, last=nothing, before=nothing, after=nothing)\n\nAdd the component indicated by comp_id to the model indicated by md. The component is added at the end of  the list unless one of the keywords, first, last, before, after. If the comp_name differs from that in the comp_def, a copy of comp_def is made and assigned the new name.\n\n\n\n\n\nadd_comp!(mi::ModelInstance, ci::ComponentInstance)\n\nAdd the component ci to the ModelInstance mi\'s list of components, and add the first and last of mi to the ends of the firsts and lasts lists of  mi, respectively.\n\n\n\n\n\nadd_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;\n    first=nothing, last=nothing, before=nothing, after=nothing)\n\nAdd the component indicated by comp_id to the model indicated by m. The component is added at the end of  the list unless one of the keywords, first, last, before, after. If the comp_name differs from that in the comp_id, a copy of comp_id is made and assigned the new name.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.components",
-    "page": "Reference",
-    "title": "Mimi.components",
-    "category": "function",
-    "text": "components(mi::ModelInstance)\n\nReturn an iterator on the components in model instance mi.\n\n\n\n\n\ncomponents(m::Model)\n\nReturn an iterator on the components in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.connect_param!",
-    "page": "Reference",
-    "title": "Mimi.connect_param!",
-    "category": "function",
-    "text": "connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)\n\nConnect a parameter param_name in the component comp_name of model md to the external parameter ext_param_name. \n\n\n\n\n\nconnect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, \n    src_comp_name::Symbol, src_var_name::Symbol backup::Union{Nothing, Array}=nothing; \n    ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst_par_name of one component dst_comp_name of model md to a variable src_var_name in another component src_comp_name of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination  and the source ie. the value would be 1 if the destination component parameter  should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, \n    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst[2] of one component dst[1] of model md to a variable src[2] in another component src[1] of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination  component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)\n\nConnect two components as connect_param!(dst, dst_name, src, src_name).\n\n\n\n\n\nconnect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)\n\nConnect two components with the same name as connect_param!(dst, src, name).\n\n\n\n\n\nconnect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, \n    src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst_par_name of one component dst_comp_name of model md to a variable src_var_name in another component src_comp_name of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination  component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)\n\nBind the parameter dst[2] of one component dst[1] of model md to a variable src[2] in another component src[1] of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination  component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.create_marginal_model",
-    "page": "Reference",
-    "title": "Mimi.create_marginal_model",
-    "category": "function",
-    "text": "create_marginal_model(base::Model, delta::Float64=1.0)\n\nCreate a MarginalModel where base is the baseline model and delta is the  difference used to create the marginal model.  Return the resulting MarginaModel which shares the internal ModelDef between the base and marginal.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.disconnect_param!",
-    "page": "Reference",
-    "title": "Mimi.disconnect_param!",
-    "category": "function",
-    "text": "disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)\n\nRemove any parameter connections for a given parameter param_name in a given component comp_name of model md.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.explore",
-    "page": "Reference",
-    "title": "Mimi.explore",
-    "category": "function",
-    "text": "explore(m::Model; title = \"Electron\")\n\nProduce a UI to explore the parameters and variables of Model m in a Window with title title.\n\n\n\n\n\nexplore(m::Model, comp_name::Symbol, datum_name::Symbol)\n\nPlot a specific datum_name (a variable or parameter) of Model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.getdataframe",
-    "page": "Reference",
-    "title": "Mimi.getdataframe",
-    "category": "function",
-    "text": "getdataframe(m::Model, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)\n\nReturn a DataFrame with values for the given variables or parameters of model m indicated by pairs, where each pair is of the form comp_name => item_name. If more than one pair is provided, all must refer to items with the same dimensions, which are used to join the respective item values.\n\n\n\n\n\ngetdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}})\n\nReturn a DataFrame with values for the given variables or parameters  indicated by pairs, where each pair is of the form comp_name => item_name. If more than one pair is provided, all must refer to items with the same dimensions, which are used to join the respective item values.\n\n\n\n\n\ngetdataframe(m::Model, comp_name::Symbol, item_name::Symbol)\n\nReturn the values for variable or parameter item_name in comp_name of  model m as a DataFrame.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.gettime",
-    "page": "Reference",
-    "title": "Mimi.gettime",
-    "category": "function",
-    "text": "gettime(ts::FixedTimestep)\n\nReturn the time (year) represented by Timestep ts \n\n\n\n\n\ngettime(ts::VariableTimestep)\n\nReturn the time (year) represented by Timestep ts \n\n\n\n\n\ngettime(c::Clock)\n\nReturn the current time of the timestep held by the c clock.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.get_param_value",
-    "page": "Reference",
-    "title": "Mimi.get_param_value",
-    "category": "function",
-    "text": "get_param_value(ci::ComponentInstance, name::Symbol)\n\nReturn the value of parameter name in component ci.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.get_var_value",
-    "page": "Reference",
-    "title": "Mimi.get_var_value",
-    "category": "function",
-    "text": "get_var_value(ci::ComponentInstance, name::Symbol)\n\nReturn the value of variable name in component ci.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.hasvalue",
-    "page": "Reference",
-    "title": "Mimi.hasvalue",
-    "category": "function",
-    "text": "hasvalue(arr::TimestepArray, ts::FixedTimestep)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::VariableTimestep)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::FixedTimestep, idxs::Int...)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts within indices idxs. Used when Array and Timestep have different FIRST, validating all dimensions.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::VariableTimestep, idxs::Int...)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts within indices idxs. Used when Array and Timestep different TIMES, validating all dimensions.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_first",
-    "page": "Reference",
-    "title": "Mimi.is_first",
-    "category": "function",
-    "text": "is_first(ts::AbstractTimestep)\n\nReturn true or false, true if ts is the first timestep to be run.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_last",
-    "page": "Reference",
-    "title": "Mimi.is_last",
-    "category": "function",
-    "text": "is_last(ts::FixedTimestep)\n\nReturn true or false, true if ts is the last timestep to be run.\n\n\n\n\n\nis_last(ts::VariableTimestep)\n\nReturn true or false, true if ts is the last timestep to be run.  Note that you may run next_timestep on ts, as ths final timestep has not been run through yet.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_time",
-    "page": "Reference",
-    "title": "Mimi.is_time",
-    "category": "function",
-    "text": "is_time(ts::AbstractTimestep, t::Int)\n\nReturn true or false, true if the current time (year) for ts is t\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_timestep",
-    "page": "Reference",
-    "title": "Mimi.is_timestep",
-    "category": "function",
-    "text": "is_timestep(ts::AbstractTimestep, t::Int)\n\nReturn true or false, true if ts timestep is step t.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.load_comps",
-    "page": "Reference",
-    "title": "Mimi.load_comps",
-    "category": "function",
-    "text": "load_comps(dirname::String=\"./components\")\n\nCall include() on all the files in the indicated directory dirname. This avoids having modelers create a long list of include() statements. Just put all the components in a directory.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.modeldef",
-    "page": "Reference",
-    "title": "Mimi.modeldef",
-    "category": "function",
-    "text": "modeldef(mi)\n\nReturn the ModelDef contained by ModelInstance mi.\n\n\n\n\n\nmodeldef(m)\n\nReturn the ModelDef contained by Model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.name",
-    "page": "Reference",
-    "title": "Mimi.name",
-    "category": "function",
-    "text": "name(def::NamedDef) = def.name\n\nReturn the name of def.  Possible NamedDefs include DatumDef, and ComponentDef.\n\n\n\n\n\nname(ci::ComponentInstance)\n\nReturn the name of the component ci.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.new_comp",
-    "page": "Reference",
-    "title": "Mimi.new_comp",
-    "category": "function",
-    "text": "new_comp(comp_id::ComponentId, verbose::Bool=true)\n\nAdd an empty ComponentDef to the global component registry with the given comp_id. The empty ComponentDef must be populated with calls to addvariable, addparameter, etc.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.parameters",
-    "page": "Reference",
-    "title": "Mimi.parameters",
-    "category": "function",
-    "text": "parameters(comp_def::ComponentDef)\n\nReturn a list of the parameter definitions for comp_def.\n\n\n\n\n\nparameters(comp_id::ComponentDef)\n\nReturn a list of the parameter definitions for comp_id.\n\n\n\n\n\nparameters(mi::ModelInstance, comp_name::Symbol)\n\nReturn the ComponentInstanceParameters for comp_name in ModelInstance \'mi\'.\n\n\n\n\n\nparameters(ci::ComponentInstance)\n\nReturn an iterable over the parameters in ci.\n\n\n\n\n\nparameters(m::Model, comp_name::Symbol)\n\nReturn a list of the parameter definitions for comp_name in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.plot_comp_graph",
-    "page": "Reference",
-    "title": "Mimi.plot_comp_graph",
-    "category": "function",
-    "text": "plot_comp_graph(m::Model, filename::Union{Nothing, Symbol} = nothing)\n\nPlot the DAG of component connections within model m and save to filename. If no filename is given, plot will simply display.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.replace_comp!",
-    "page": "Reference",
-    "title": "Mimi.replace_comp!",
-    "category": "function",
-    "text": "replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;\n    first::NothingInt=nothing, last::NothingInt=nothing,\n    before::NothingSymbol=nothing, after::NothingSymbol=nothing,\n    reconnect::Bool=true)\n\nReplace the component with name comp_name in model definition md with the  component comp_id using the same name. The component is added in the same  position as the old component, unless one of the keywords before or after  is specified. The component is added with the same first and last values,  unless the keywords first or last are specified. Optional boolean argument  reconnect with default value true indicates whether the existing parameter  connections should be maintained in the new component.\n\n\n\n\n\nreplace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;\n    first::NothingSymbol=nothing, last::NothingSymbol=nothing,\n    before::NothingSymbol=nothing, after::NothingSymbol=nothing,\n    reconnect::Bool=true)\n\nReplace the component with name comp_name in model m with the component comp_id using the same name.  The component is added in the same position as  the old component, unless one of the keywords before or after is specified. The component is added with the same first and last values, unless the keywords  first or last are specified. Optional boolean argument reconnect with  default value true indicates whether the existing parameter connections  should be maintained in the new component.  \n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_dimension!",
-    "page": "Reference",
-    "title": "Mimi.set_dimension!",
-    "category": "function",
-    "text": "set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})\n\nSet the values of md dimension name to integers 1 through count, if keys is an integer; or to the values in the vector or range if keys is either of those types.\n\n\n\n\n\nset_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})\n\nSet the values of m dimension name to integers 1 through count, if keysis an integer; or to the values in the vector or range ifkeys`` is either of those types.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_leftover_params!",
-    "page": "Reference",
-    "title": "Mimi.set_leftover_params!",
-    "category": "function",
-    "text": "set_leftover_params!(m::Model, parameters::Dict)\n\nSet all of the parameters in model m that don\'t have a value and are not connected to some other component to a value from a dictionary parameters. This method assumes the dictionary keys are strings that match the names of unset parameters in the model.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_param!",
-    "page": "Reference",
-    "title": "Mimi.set_param!",
-    "category": "function",
-    "text": "set_param!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)\n\nSet the parameter name of a component comp_name in a model m to a given value. The value can by a scalar, an array, or a NamedAray. Optional argument \'dims\' is a  list of the dimension names ofthe provided data, and will be used to check that  they match the model\'s index labels.\n\n\n\n\n\nset_param!(ref::ComponentReference, name::Symbol, value)\n\nSet a component parameter as set_param!(reference, name, value).\n\n\n\n\n\nset_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)\n\nSet the parameter of a component comp_name in a model m to a given value.  The value can by a scalar, an array, or a NamedAray. Optional argument \'dims\'  is a list of the dimension names of the provided data, and will be used to check  that they match the model\'s index labels.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.variables",
-    "page": "Reference",
-    "title": "Mimi.variables",
-    "category": "function",
-    "text": "variables(mi::ModelInstance, comp_name::Symbol)\n\nReturn the ComponentInstanceVariables for comp_name in ModelInstance \'mi\'.\n\n\n\n\n\nvariables(m::Model, comp_name::Symbol)\n\nReturn a list of the variable definitions for comp_name in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.update_param!",
-    "page": "Reference",
-    "title": "Mimi.update_param!",
-    "category": "function",
-    "text": "update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)\n\nUpdate the value of an external model parameter in ModelDef md, referenced  by name. Optional boolean argument update_timesteps with default value  false indicates whether to update the time keys associated with the parameter  values to match the model\'s time index.\n\n\n\n\n\nupdate_param!(m::Model, name::Symbol, value; update_timesteps = false)\n\nUpdate the value of an external model parameter in model m, referenced by  name. Optional boolean argument update_timesteps with default value false  indicates whether to update the time keys associated with the parameter values  to match the model\'s time index.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.update_params!",
-    "page": "Reference",
-    "title": "Mimi.update_params!",
-    "category": "function",
-    "text": "update_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T\n\nFor each (k, v) in the provided parameters dictionary, updateparam!  is called to update the external parameter by name k to value v, with optional  Boolean argument updatetimesteps. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the  model definition.\n\n\n\n\n\nupdate_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T\n\nFor each (k, v) in the provided parameters dictionary, updateparam!  is called to update the external parameter by name k to value v, with optional  Boolean argument updatetimesteps. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the  model definition.\n\n\n\n\n\n"
-},
-
-{
     "location": "reference/#Reference-1",
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "@defcomp\nMarginalModel\nModel\nadd_comp!  \ncomponents \nconnect_param!\ncreate_marginal_model\ndisconnect_param!\nexplore\ngetdataframe\ngettime\nget_param_value\nget_var_value\nhasvalue\nis_first\nis_last\nis_time\nis_timestep\nload_comps\nmodeldef\nname\nnew_comp\nparameters\nplot_comp_graph\nreplace_comp! \nset_dimension! \nset_leftover_params! \nset_param! \nvariables  \nupdate_param!\nupdate_params!"
+    "text": "@defcomp\n@defmcs\nMarginalModel\nModel\nadd_comp!  \ncomponents \nconnect_param!\ncreate_marginal_model\ndisconnect_param!\nexplore\ngenerate_trials!\ngetdataframe\ngettime\nget_param_value\nget_var_value\nhasvalue\nis_first\nis_last\nis_time\nis_timestep\nload_comps\nmodeldef\nname\nnew_comp\nparameters\nplot_comp_graph\nreplace_comp! \nrun_mcs\nset_dimension! \nset_leftover_params! \nset_param! \nvariables  \nupdate_param!\nupdate_params!"
 },
 
 {
