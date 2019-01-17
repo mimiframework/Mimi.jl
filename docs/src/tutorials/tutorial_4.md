@@ -32,7 +32,7 @@ m = model # defined by 2-region model
 ```
 
 ### Step 2. Define Random Variables
-The `@defmcs` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.
+The [`@defmcs`](@ref) macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.
 
 ```julia
 mcs = @defmcs begin
@@ -68,7 +68,7 @@ end
 ```
 
 ### Step 2. Optional User-Defined Functions
-Next, create the user-defined `print_result` function, which can be called as a post-trial function by `run_mcs`.
+Next, create the user-defined `print_result` function, which can be called as a post-trial function by [`run_mcs`](@ref).
 
  ```julia
 # Optional user functions can be called just before or after a trial is run
@@ -81,7 +81,7 @@ end
 
 ### Step 3. Generate Trials
 
-The optional `generate_trials!` function can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.  If this function is not called prior to calling `run_mcs`, random sampling is used for all distributions and trial data are not saved. Employ this function as follows:
+The optional [`generate_trials!`](@ref) function can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.  If this function is not called prior to calling [`run_mcs`](@ref), random sampling is used for all distributions and trial data are not saved. Employ this function as follows:
 
 ```julia
 # Generate trial data for all RVs and (optionally) save to a file
@@ -90,7 +90,7 @@ generate_trials!(mcs, 1000, filename="/tmp/trialdata.csv")
 
 ### Step 4. Run MCS
 
-Finally, use the `run_mcs` function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the `run_mcs` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
+Finally, use the [`run_mcs`](@ref) function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_mcs`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
 
 ```
 function run_mcs(mcs::MonteCarloSimulation, 
@@ -105,7 +105,7 @@ function run_mcs(mcs::MonteCarloSimulation,
                  scenario_args=nothing)
 ```
 
-Here, we first employ `run_mcs` in its simplest form to obtain results:
+Here, we first employ [`run_mcs`](@ref) in its simplest form to obtain results:
 
 ```julia
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
