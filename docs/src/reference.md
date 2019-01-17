@@ -2,6 +2,7 @@
 
 ```@docs
 @defcomp
+@defmcs
 MarginalModel
 Model
 add_comp!  
@@ -10,6 +11,7 @@ connect_param!
 create_marginal_model
 disconnect_param!
 explore
+generate_trials!
 getdataframe
 gettime
 get_param_value
@@ -26,6 +28,7 @@ new_comp
 parameters
 plot_comp_graph
 replace_comp! 
+run_mcs
 set_dimension! 
 set_leftover_params! 
 set_param! 

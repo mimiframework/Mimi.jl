@@ -2,7 +2,7 @@
 
 ## Overview
 
-See the Tutorial for in depth examples of one-region and multi-region models.
+See the Tutorials for in-depth examples of Mimi's functionality.
 
 This guide is organized into six main sections for understanding how to use Mimi.
 
@@ -224,7 +224,7 @@ update_param!(mymodel, :parametername, newvalues) # update values only
 update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
 ```
 
-Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
+Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
 ### Setting parameters with a dictionary
 
