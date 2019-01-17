@@ -1,6 +1,6 @@
 # Introduction
 
-The following tutorials target [Mimi](https://github.com/anthofflab/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the [documentation](http://anthofflab.berkeley.edu/Mimi.jl/latest/), including the [User Guide](http://anthofflab.berkeley.edu/Mimi.jl/latest/userguide.html), and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
+The following tutorials target [Mimi](https://github.com/anthofflab/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the [Welcome to Mimi](@ref) documentation, including the [User Guide](@ref), and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
 
 If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room.  We welcome your feedback.
 
@@ -8,25 +8,25 @@ If you find a bug in these tutorials, or have a clarifying question or suggestio
 
 The following terminology is used throughout the documentation.
 
-**Application Programming Interface (API):**  The public classes, methods, and functions provided by `Mimi` to facilitate construction of custom scripts and work with existing models. Function documentation provided in "docstrings" in the [reference](http://anthofflab.berkeley.edu/Mimi.jl/latest/reference.html) define the Mimi API in more detail. A list of named exported by Mimi can be found [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/).
+**Application Programming Interface (API):**  The public classes, methods, and functions provided by `Mimi` to facilitate construction of custom scripts and work with existing models. Function documentation provided in "docstrings" in the [Reference](@ref) define the Mimi API in more detail.
 
 # Available Tutorials
 
 1. **Run an Existing Model**
 
-   [Tutorial 1](http://anthofflab.berkeley.edu/Mimi.jl/latest/tutorials/tutorial_1.html) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
+   [Tutorial 1: Run an Existing Model](@ref) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
 
 2. **Modify an Existing Model**
 
-   [Tutorial 2](http://anthofflab.berkeley.edu/Mimi.jl/latest/tutorials/tutorial_2.html) builds on Tutorial 1, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
+   [Tutorial 2: Modify an Existing Model](@ref) builds on Tutorial 1, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
 
 3. **Create a Model**
 
-   [Tutorial 3](http://anthofflab.berkeley.edu/Mimi.jl/latest/tutorials/tutorial_3.html) takes a step beyond using registered models, explaining how to create a model from scratch.
+   [Tutorial 3: Constructing A One-Region Model](@ref) takes a step beyond using registered models, explaining how to create a model from scratch.
 
 4. **Monte Carlo Simulation**
 
-   [Tutorial 4](http://anthofflab.berkeley.edu/Mimi.jl/latest/tutorials/tutorial_4.html) explores Mimi's Monte Carlo Simulation support, using both the simple 2-Region tutorial model and [FUND](http://www.fund-model.org) examples.
+   [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref) explores Mimi's Monte Carlo Simulation support, using both the simple 2-Region tutorial model and [FUND](http://www.fund-model.org) examples.
 
 
 # Requirements and Initial Setup

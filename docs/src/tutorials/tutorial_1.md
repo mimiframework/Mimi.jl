@@ -76,7 +76,7 @@ m[:socioeconomic, :income]
 m[:socioeconomic, :income][100] 
 ```
 
-You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this is:
+You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
 
 ```julia
 getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
@@ -94,17 +94,17 @@ getdataframe(m, :socioeconomic=>:income) # request one variable from one compone
 
 After running the FUND model, you may also explore the results using plots and graphs. 
 
-Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function.
+Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the [`plot_comp_graph`](@ref) function.
 
 #### Explore
 
 If you wish to explore the results graphically, use the explorer UI, described [here](http://anthofflab.berkeley.edu/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
 
-To explore all variables and parameters of FUND in a dynamic UI app window, use the `explore` function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
+To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
 ```
 explore(m, "My Window")
 ```
-Alternatively, in order to view just one parameter or variable, call the function `explore` as below to return a plot object and automatically display the plot in a viewer, assuming `explore` is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. you may save a plot by calling the `save` function.
+Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. you may save a plot by calling the `save` function.
 
 ```julia
 run1 = run(my_model)
@@ -120,7 +120,7 @@ save("MyFilePath.svg", p)
 
 #### Component Graph
 
-In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
+In order to view a DAG representing the component ordering and relationships, use the [`plot_comp_graph`](@ref) function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
 
 ```julia
 plot_comp_graph(m; filename = "MyFilePath.png")

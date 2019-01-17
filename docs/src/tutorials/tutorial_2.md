@@ -20,9 +20,9 @@ Possible modifications range in complexity, from simply altering parameter value
 
 ## Parametric Modifications: The API
 
-Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **`update_param(s)!`, `disconnect_param!`, and `connect_param!`**.  For detail on these functions see the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/).
+Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param(s)!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/).
 
-When the original model calls `set_param!`, Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions `update_param!` and `update_params` allow you to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
+When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params`](@ref) allow you to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
 
 ```julia
 update_param!(mymodel, :parametername, newvalues) # update values only 
@@ -32,7 +32,7 @@ update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also 
 
 Also note that in the code above,`newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
-If you wish to alter connections within an existing model, `disconnect_param!` and `connect_param` can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
+If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
 
 ## Parametric Modifications: DICE Example
 
@@ -83,7 +83,7 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 ### Step 3. Altering Parameters
 
-In the case that you wish to alter an exogenous parameter, you may use the `update_param!` function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
+In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
 
 ```julia
 update_param!(m, :fco22x, 3.000)
@@ -122,7 +122,7 @@ Note that here we use the `update_timesteps` flag and set it to `true`, because 
 
 ## Component and Structural Modifications: The API
 
-Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **`replace_comp!`, `add_comp!`** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/). 
+Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace_comp!`(@ref), [`add_comp!`](@ref)** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/). 
 
 If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 
