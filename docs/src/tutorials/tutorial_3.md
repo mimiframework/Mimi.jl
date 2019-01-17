@@ -12,7 +12,7 @@ If you have not yet prepared these, go back to the main tutorial page and follow
 
 ## Constructing A One-Region Model
 
-In this example, we will construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy will involve creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
+In this example, we construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy involves creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
 
 There are two main steps to creating a component, both within the  `@defcomp` macro which defines a component:
 
@@ -25,14 +25,14 @@ Starting with the economy component, each variable and parameter is listed. If e
 using Mimi
 
 @defcomp grosseconomy begin
-	YGROSS	= Variable(index=[time])	#Gross output
-	K	= Variable(index=[time])	#Capital
-	l	= Parameter(index=[time])	#Labor
-	tfp	= Parameter(index=[time])	#Total factor productivity
-	s	= Parameter(index=[time])	#Savings rate
-	depk	= Parameter()			#Depreciation rate on capital - Note that it has no time index
-	k0	= Parameter()			#Initial level of capital
-	share	= Parameter()			#Capital share
+	YGROSS	= Variable(index=[time])	# Gross output
+	K	= Variable(index=[time])	# Capital
+	l	= Parameter(index=[time])	# Labor
+	tfp	= Parameter(index=[time])	# Total factor productivity
+	s	= Parameter(index=[time])	# Savings rate
+	depk	= Parameter()			# Depreciation rate on capital - Note that it has no time index
+	k0	= Parameter()			# Initial level of capital
+	share	= Parameter()			# Capital share
 
 ```
 
@@ -42,32 +42,32 @@ It is important to note that `t` below is an `AbstractTimestep`, and the specifi
 
 ```julia
 	function run_timestep(p, v, d, t)
-		#Define an equation for K
+		# Define an equation for K
 		if is_first(t)
-			#Note the use of v. and p. to distinguish between variables and parameters
+			# Note the use of v. and p. to distinguish between variables and parameters
 			v.K[t] 	= p.k0	
 		else
 			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
 		end
 
-		#Define an equation for YGROSS
+		# Define an equation for YGROSS
 		v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)
 	end
 end
 ```
 
-Next, the the component for greenhouse gas emissions must be created.  Although the steps are the same as for the `grosseconomy` component, there is one minor difference. While `YGROSS` was a variable in the `grosseconomy` component, it now enters the `emissions` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
+Next, the component for greenhouse gas emissions must be created.  Although the steps are the same as for the `grosseconomy` component, there is one minor difference. While `YGROSS` was a variable in the `grosseconomy` component, it now enters the `emissions` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
 
 ```julia
 @defcomp emissions begin
-	E 	= Variable(index=[time])	#Total greenhouse gas emissions
-	sigma	= Parameter(index=[time])	#Emissions output ratio
-	YGROSS	= Parameter(index=[time])	#Gross output - Note that YGROSS is now a parameter
+	E 	= Variable(index=[time])	# Total greenhouse gas emissions
+	sigma	= Parameter(index=[time])	# Emissions output ratio
+	YGROSS	= Parameter(index=[time])	# Gross output - Note that YGROSS is now a parameter
 
 	function run_timestep(p, v, d, t)
 
-		#Define an equation for E
-		v.E[t] = p.YGROSS[t] * p.sigma[t]	#Note the p. in front of YGROSS
+		# Define an equation for E
+		v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
 	end
 end
 ```
@@ -93,11 +93,11 @@ m = Model()
 
 set_dimension!(m, :time, collect(2015:5:2110))
 
-#Order matters here. If the emissions component were defined first, the model would not run.
+# Order matters here. If the emissions component were defined first, the model would not run.
 add_comp!(my_model, grosseconomy)  
 add_comp!(my_model, emissions)
 
-#Set parameters for the grosseconomy component
+# Set parameters for the grosseconomy component
 set_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
 set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
 set_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)
@@ -105,28 +105,28 @@ set_param!(my_model, :grosseconomy, :depk, 0.1)
 set_param!(my_model, :grosseconomy, :k0, 130.)
 set_param!(my_model, :grosseconomy, :share, 0.3)
 
-#Set parameters for the emissions component
+# Set parameters for the emissions component
 set_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-#Note that connect_param! was used here.
+# Note that connect_param! was used here.
 
-end #end module
+end # end module
 
 ```
 Now we can run the model and examine the results:
 
 ```julia
-#Run model
+# Run model
 using my_model
 run(m)
 
-#Check model results
+# Check model results
 m[:emissions, :E]
 
-#Plot model results
+# Plot model results
 explore(m, :emissions, :E)
 
-#Observe all model result graphs in UI
+# Observe all model result graphs in UI
 explore(m)
 
 
@@ -150,21 +150,21 @@ using Mimi
 @defcomp grosseconomy begin
 	regions = Index()	#Note that a regional index is defined here
 
-	YGROSS	= Variable(index=[time, regions])	#Gross output
-	K 	= Variable(index=[time, regions])	#Capital
-	l 	= Parameter(index=[time, regions])	#Labor
-	tfp	= Parameter(index=[time, regions])	#Total factor productivity
-	s 	= Parameter(index=[time, regions])	#Savings rate
-	depk	= Parameter(index=[regions])	#Depreciation rate on capital - Note that it only has a region index
-	k0	= Parameter(index=[regions])	#Initial level of capital
-	share	= Parameter()	#Capital share
+	YGROSS	= Variable(index=[time, regions])	# Gross output
+	K 	= Variable(index=[time, regions])	# Capital
+	l 	= Parameter(index=[time, regions])	# Labor
+	tfp	= Parameter(index=[time, regions])	# Total factor productivity
+	s 	= Parameter(index=[time, regions])	# Savings rate
+	depk	= Parameter(index=[regions])	# Depreciation rate on capital - Note that it only has a region index
+	k0	= Parameter(index=[regions])	# Initial level of capital
+	share	= Parameter()	# Capital share
 
 	function run_timestep(p, v, d, t)
 		
-		#Note that the regional dimension is used below and parameters and 
+		# Note that the regional dimension is used below and parameters and 
 		variables are indexed by 'r'
 
-		#Define an equation for K
+		# Define an equation for K
 		for r in d.regions
 			if is_first(t)
 				v.K[t,r] = p.k0[r]
@@ -173,7 +173,7 @@ using Mimi
 			end
 		end
 
-		#Define an equation for YGROSS
+		# Define an equation for YGROSS
 		for r in d.regions
 			v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
 		end
@@ -187,21 +187,21 @@ Save this component as _**gross_economy.jl**_
 using Mimi	#Make sure to call Mimi again
 
 @defcomp emissions begin
-	regions	=	Index()	#The regions index must be specified for each component
+	regions	=	Index()	# The regions index must be specified for each component
 
-	E		= Variable(index=[time, regions])	#Total greenhouse gas emissions
-	E_Global		= Variable(index=[time])		#Global emissions (sum of regional emissions)
-	sigma		= Parameter(index=[time, regions])	#Emissions output ratio
-	YGROSS		= Parameter(index=[time, regions])	#Gross output - Note that YGROSS is now a parameter
+	E		= Variable(index=[time, regions])	# Total greenhouse gas emissions
+	E_Global		= Variable(index=[time])		# Global emissions (sum of regional emissions)
+	sigma		= Parameter(index=[time, regions])	# Emissions output ratio
+	YGROSS		= Parameter(index=[time, regions])	# Gross output - Note that YGROSS is now a parameter
 
 	function run_timestep(p, v, d, t)
 
-		#Define an eqation for E
+		# Define an eqation for E
 		for r in d.regions
 			v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
 		end
 
-		#Define an equation for E_Global
+		# Define an equation for E_Global
 		for r in d.regions
 			v.E_Global[t] = sum(v.E[t,:])
 		end
@@ -263,7 +263,7 @@ include("emissions.jl")
 m = Model()
 
 set_dimension!(m, :time, collect(2015:5:2110))
-set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 #Note that the regions of your model must be specified here
+set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 # Note that the regions of your model must be specified here
 
 add_comp!(m, grosseconomy)
 add_comp!(m, emissions)
@@ -275,7 +275,7 @@ set_param!(m, :grosseconomy, :depk,depk)
 set_param!(m, :grosseconomy, :k0, k0)
 set_param!(m, :grosseconomy, :share, 0.3)
 
-#set parameters for emissions component
+# set parameters for emissions component
 set_param!(my_model, :emissions, :sigma, sigma)
 connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
@@ -294,10 +294,10 @@ using my_model
 
 run(m)
 
-#Check results
+# Check results
 m[:emissions, :E_Global]
 
-#Observe model result graphs
+# Observe model result graphs
 explore(m)
 
 ```

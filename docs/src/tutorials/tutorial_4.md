@@ -21,11 +21,10 @@ The best current documentation on the MCS API is the internals documentation [he
 This section will walk through the simple example provided in `"Mimi.jl/test/mcs/test_defmcs.jl"`.
 
 ### Step 1. Setup
-First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using  `]add Distributions`.
+First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
 
 ```juila
-cd(<Mimi-directory-path>")
-using Mimi
+cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory
 using Distributions
 
 include("examples/tutorial/02-two-region-model/main.jl")
@@ -91,7 +90,7 @@ generate_trials!(mcs, 1000, filename="/tmp/trialdata.csv")
 
 ### Step 4. Run MCS
 
-Finnally, we use the `run_mcs` function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In it's simplest use, the `run_mcs` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
+Finally, use the `run_mcs` function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the `run_mcs` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
 
 ```
 function run_mcs(mcs::MonteCarloSimulation, 

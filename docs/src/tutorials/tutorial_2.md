@@ -1,6 +1,6 @@
 # Tutorial 2: Modify an Existing Model
 
-This tutorial walks through the steps to modify an existing model.  There are several existing models public on Github, and for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
+This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use DICE-2010, available on Github [here](https://github.com/anthofflab/mimi-dice-2010.jl).
 
 Working through the following tutorial will require:
 
@@ -10,19 +10,19 @@ Working through the following tutorial will require:
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
-Futhermore, this tutorial uses the [DICE](https://github.com/anthofflab/mimi-dice-2010.jl) model as an example.  Downloading `DICE` uses similar steps to those described for `FUND` in Tutorial 1 Steps 1 and 2, but are repeated in here  for clarity.
+Futhermore, this tutorial uses the [DICE](https://github.com/anthofflab/mimi-dice-2010.jl) model as an example.  Downloading `DICE` uses similar steps to those described for `FUND` in Tutorial 1 Steps 1 and 2, but are repeated in in Step 1 for clarity.
 
 ## Introduction
 
-There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of user modifications, the API aims to allow for modification **without user alteration of the original code for the model being modified**.  Instead, users will download and run the new model, and then use API calls to modify it. This means that in practice, users should not need to alter the source code of the model they are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
+There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the new model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model they are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
 
-Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These will take advantage of the public API listed [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/), as well as other functions listed in the Mimi Documentation.
+Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These take advantage of the public API listed [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/), as well as other functions listed in the Mimi Documentation.
 
 ## Parametric Modifications: The API
 
 Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **`update_param(s)!`, `disconnect_param!`, and `connect_param!`**.  For detail on these functions see the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/).
 
-When `set_param!` is called in the original model, it creates an external parameter by the name provided, and stores the provided scalar or array value. The functions `update_param!` and `update_params` allow the user to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
+When the original model calls `set_param!`, Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions `update_param!` and `update_params` allow you to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
 
 ```julia
 update_param!(mymodel, :parametername, newvalues) # update values only 
@@ -32,7 +32,7 @@ update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also 
 
 Also note that in the code above,`newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
-If a user wishes to alter the connections within an existing model, `disconnect_param!` and `connect_param` can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
+If you wish to alter connections within an existing model, `disconnect_param!` and `connect_param` can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
 
 ## Parametric Modifications: DICE Example
 
@@ -41,7 +41,7 @@ If a user wishes to alter the connections within an existing model, `disconnect_
 The first step in this process is downloading the DICE model.  First, open your command line interface and navigate to the folder where you would like to download DICE.
 
 ```
-cd("path") # "path" is a placeholder for the string describing your desired file path
+cd(<directory-path>) # directory-path is a placeholder for the string describing your desired file path
 ```
 
 Next, clone the DICE repository from Github, and enter the repository.
@@ -61,7 +61,7 @@ In order to run DICE, you will need to open a Julia REPL (here done witht the al
 
 ```
 Julia 
-cd("dicepath") # dicepath is a placeholder for the string describing your the file path of the downloaded `dice-2010` folder from Step 1.
+cd(<dice-directory-path>) # <dice-directory-path> is a placeholder for the string describing your the file path of the downloaded `dice-2010` folder from Step 1.
 ```
 
 Next, run the main fund file `dice2010.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Dice2010`, which exports the function `construct_dice`, a function that returns a version of dice allowing for user specification of parameters.  Note that in order to allow access to the module, we must call `using .Dice2010`, where `.Dice2010` is a shortcut for `Main.Dice2010`, since the `Dice2010` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
@@ -124,7 +124,7 @@ Note that here we use the `update_timesteps` flag and set it to `true`, because 
 
 Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **`replace_comp!`, `add_comp!`** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/). 
 
-Users who wish to modify the component structure would also do well to look into the **built-in helper components`adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
+If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 
 * `adder.jl` -- Defines `Mimi.adder`, which simply adds two parameters, `input` and `add` and stores the result in `output`.
 
