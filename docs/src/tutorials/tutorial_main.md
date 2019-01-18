@@ -4,13 +4,13 @@ The following tutorials target [Mimi](https://github.com/anthofflab/Mimi.jl) use
 
 If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room.  We welcome your feedback.
 
-# Terminology
+## Terminology
 
 The following terminology is used throughout the documentation.
 
 **Application Programming Interface (API):**  The public classes, methods, and functions provided by `Mimi` to facilitate construction of custom scripts and work with existing models. Function documentation provided in "docstrings" in the [Reference](@ref) define the Mimi API in more detail.
 
-# Available Tutorials
+## Available Tutorials
 
 1. **Run an Existing Model**
 
@@ -29,7 +29,7 @@ The following terminology is used throughout the documentation.
    [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref) explores Mimi's Monte Carlo Simulation support, using both the simple 2-Region tutorial model and [FUND](http://www.fund-model.org) examples.
 
 
-# Requirements and Initial Setup
+## Requirements and Initial Setup
 
 These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl), or later. You will also need to use [Github](https://github.com) and thus download [Git](https://git-scm.com/downloads).
 

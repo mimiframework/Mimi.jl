@@ -10,7 +10,7 @@ using StringBuilders
 
 export
     @defcomp,
-    @defmcs,
+    @defmcs. 
     MarginalModel,
     Model,
     add_comp!,  
