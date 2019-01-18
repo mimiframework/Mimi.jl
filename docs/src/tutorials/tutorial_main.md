@@ -22,7 +22,7 @@ The following terminology is used throughout the documentation.
 
 3. **Create a Model**
 
-   [Tutorial 3: Constructing A One-Region Model](@ref) takes a step beyond using registered models, explaining how to create a model from scratch.
+   [Tutorial 3: Create a Model](@ref) takes a step beyond using registered models, explaining how to create a model from scratch.
 
 4. **Monte Carlo Simulation**
 
