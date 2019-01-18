@@ -273,7 +273,7 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "tutorials/tutorial_main/#",
+    "location": "tutorials/tutorial_1/#",
     "page": "1 Run an Existing Model",
     "title": "1 Run an Existing Model",
     "category": "page",
@@ -281,79 +281,151 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "tutorials/tutorial_main/#Introduction-1",
+    "location": "tutorials/tutorial_1/#Tutorial-1:-Run-an-Existing-Model-1",
     "page": "1 Run an Existing Model",
-    "title": "Introduction",
+    "title": "Tutorial 1: Run an Existing Model",
     "category": "section",
-    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+    "text": "This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github for the purposes of this tutorial we will use The Climate Framework for Uncertainty, Negotiation and Distribution (FUND), available on Github here.Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  "
 },
 
 {
-    "location": "tutorials/tutorial_main/#Terminology-1",
+    "location": "tutorials/tutorial_1/#Step-1.-Download-FUND-1",
     "page": "1 Run an Existing Model",
-    "title": "Terminology",
+    "title": "Step 1. Download FUND",
     "category": "section",
-    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+    "text": "The first step in this process is downloading the FUND model.  First, open your command line interface and navigate to the folder where you would like to download FUND.cd(<directory-path>) # directory-path is a placeholder for the string describing your desired file pathNext, clone the FUND repository from Github, enter the repository, and checkout the next branch, which holds the Julia version of FUND.git clone https://github.com/fund-model/fund.git\ncd(\"fund\")\ngit checkout nextYou have now successfully downloaded FUND to your local machine."
 },
 
 {
-    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "location": "tutorials/tutorial_1/#Step-2.-Run-FUND-1",
     "page": "1 Run an Existing Model",
-    "title": "Available Tutorials",
+    "title": "Step 2. Run FUND",
     "category": "section",
-    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+    "text": "The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  In order to run FUND, you will need to open a Julia REPL (here done with the alias julia) and navigate to the source code folder, labeled src.Julia \ncd(<fund-directory-path>) # fund-directory-path is a placeholder for the string describing your the file path of the downloaded `fund` folder from Step 1.Next, run the main fund file fund.jl.  This file defines a new module called Fund, which exports the function getfund, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call using .Fund, where .Fund is a shortcut for Main.Fund, since the Fund module is nested inside the Main module. After creating the model m, simply run the model using the run function.include(\"src/fund.jl\")\nusing .Fund\nm = getfund\nrun(m)Note that these steps should be relatively consistent across models, where a repository for ModelX should contain a primary file ModelX.jl which exports, at minimum, a function named something like getModelX or construct_ModelX which returns a version of the model, and can allow for model customization within the call.In this case, the function getfund has the signaturegetfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)Thus there are no required arguments, although the user can input nsteps to define the number of timesteps (years in this case) the model runs for, datadir to define the location of the input data, and params, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:include(\"src/fund.jl\")\nusing .Fund\nm = getfund(nsteps = 100)\nrun(m)"
 },
 
 {
-    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "location": "tutorials/tutorial_1/#Step-3.-Access-Results:-Values-1",
     "page": "1 Run an Existing Model",
-    "title": "Requirements and Initial Setup",
+    "title": "Step 3. Access Results: Values",
     "category": "section",
-    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+    "text": "After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.First of all, you may use the getindex syntax as follows:my_model[:ComponentName, :VariableName] # returns the whole array of values\nmy_model[:ComponentName, :VariableName][100] # returns just the 100th value\nIndexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the income variable of the socioeconomic component using the code below:m[:socioeconomic, :income] \nm[:socioeconomic, :income][100] You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses getdataframe as follows:getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component\ngetdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component\ngetdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components\nTry doing this for the income variable of the socioeconomic component using:getdataframe(m, :socioeconomic=>:income) # request one variable from one component"
 },
 
 {
-    "location": "tutorials/tutorial_main/#",
-    "page": "2 Modfiy an Existing Model",
-    "title": "2 Modfiy an Existing Model",
+    "location": "tutorials/tutorial_1/#Step-4.-Access-Results:-Plots-and-Graphs-1",
+    "page": "1 Run an Existing Model",
+    "title": "Step 4. Access Results: Plots and Graphs",
+    "category": "section",
+    "text": "After running the FUND model, you may also explore the results using plots and graphs. Mimi provides support for plotting using VegaLite and VegaLite.jl within the Mimi Explorer UI, and the LightGraphs and MetaGraphs for the plot_comp_graph function."
+},
+
+{
+    "location": "tutorials/tutorial_1/#Explore-1",
+    "page": "1 Run an Existing Model",
+    "title": "Explore",
+    "category": "section",
+    "text": "If you wish to explore the results graphically, use the explorer UI, described here in Section 5 of the Mimi User Guide.To explore all variables and parameters of FUND in a dynamic UI app window, use the explore function called with the model as the required first argument, and the optional argument of the title  The menu on the left hand side will list each element in a label formatted as component: variable/parameter.explore(m, \"My Window\")Alternatively, in order to view just one parameter or variable, call the function explore as below to return a plot object and automatically display the plot in a viewer, assuming explore is the last command executed.  This call will return the type VegaLite.VLSpec, which you may interact with using the API described in the VegaLite.jl documentation.  For example, VegaLite.jl plots can be saved as PNG, SVG, PDF and EPS files. you may save a plot by calling the save function.run1 = run(my_model)\np = explore(run1, component1, parameter1)\nsave(\"MyFilePath.svg\", p)More specifically for our tutorial use of FUND, try:p = explore(m, :socioeconomic, :income)\nsave(\"MyFilePath.svg\", p)"
+},
+
+{
+    "location": "tutorials/tutorial_1/#Component-Graph-1",
+    "page": "1 Run an Existing Model",
+    "title": "Component Graph",
+    "category": "section",
+    "text": "In order to view a DAG representing the component ordering and relationships, use the plot_comp_graph function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.plot_comp_graph(m; filename = \"MyFilePath.png\")"
+},
+
+{
+    "location": "tutorials/tutorial_1/#Step-4.-Tutorial-2-1",
+    "page": "1 Run an Existing Model",
+    "title": "Step 4. Tutorial 2",
+    "category": "section",
+    "text": "Next, feel free to move on to the second tutorial, which will go into depth on how to modify an existing model such as FUND!"
+},
+
+{
+    "location": "tutorials/tutorial_2/#",
+    "page": "2 Modify an Existing Model",
+    "title": "2 Modify an Existing Model",
     "category": "page",
     "text": ""
 },
 
 {
-    "location": "tutorials/tutorial_main/#Introduction-1",
-    "page": "2 Modfiy an Existing Model",
+    "location": "tutorials/tutorial_2/#Tutorial-2:-Modify-an-Existing-Model-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Tutorial 2: Modify an Existing Model",
+    "category": "section",
+    "text": "This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use DICE-2010, available on Github here.Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. Futhermore, this tutorial uses the DICE model as an example.  Downloading DICE uses similar steps to those described for FUND in Tutorial 1 Steps 1 and 2, but are repeated in in Step 1 for clarity."
+},
+
+{
+    "location": "tutorials/tutorial_2/#Introduction-1",
+    "page": "2 Modify an Existing Model",
     "title": "Introduction",
     "category": "section",
-    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+    "text": "There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification without alteration of the original code for the model being modified.  Instead, you will download and run the new model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model they are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These take advantage of the public API listed here, as well as other functions listed in the Mimi Documentation."
 },
 
 {
-    "location": "tutorials/tutorial_main/#Terminology-1",
-    "page": "2 Modfiy an Existing Model",
-    "title": "Terminology",
+    "location": "tutorials/tutorial_2/#Parametric-Modifications:-The-API-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Parametric Modifications: The API",
     "category": "section",
-    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+    "text": "Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely update_param(s)!, disconnect_param!, and connect_param!.  For detail on these functions see the API reference here.When the original model calls set_param!, Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions update_param! and update_params allow you to change the value associated with this external parameter.  Note that if the external parameter has a :time dimension, use the optional argument update_timesteps=true to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.update_param!(mymodel, :parametername, newvalues) # update values only \n\nupdate_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keysAlso note that in the code above,newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.If you wish to alter connections within an existing model, disconnect_param! and connect_param can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection."
 },
 
 {
-    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
-    "page": "2 Modfiy an Existing Model",
-    "title": "Available Tutorials",
+    "location": "tutorials/tutorial_2/#Parametric-Modifications:-DICE-Example-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Parametric Modifications: DICE Example",
     "category": "section",
-    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+    "text": ""
 },
 
 {
-    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
-    "page": "2 Modfiy an Existing Model",
-    "title": "Requirements and Initial Setup",
+    "location": "tutorials/tutorial_2/#Step-1.-Download-DICE-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Step 1. Download DICE",
     "category": "section",
-    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+    "text": "The first step in this process is downloading the DICE model.  First, open your command line interface and navigate to the folder where you would like to download DICE.cd(<directory-path>) # directory-path is a placeholder for the string describing your desired file pathNext, clone the DICE repository from Github, and enter the repository.git clone https://github.com/anthofflab/mimi-dice-2010.jl.git\ncd(\"mimi-dice-2010.jl\")\nYou have now successfully downloaded DICE to your local machine."
 },
 
 {
-    "location": "tutorials/tutorial_main/#",
+    "location": "tutorials/tutorial_2/#Step-2.-Run-DICE-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Step 2. Run DICE",
+    "category": "section",
+    "text": "The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  In order to run DICE, you will need to open a Julia REPL (here done witht the alias julia) and navigate to the source code folder, labeled src.Julia \ncd(<dice-directory-path>) # <dice-directory-path> is a placeholder for the string describing your the file path of the downloaded `dice-2010` folder from Step 1.Next, run the main fund file dice2010.jl.  This file defines a new module called Dice2010, which exports the function construct_dice, a function that returns a version of dice allowing for user specification of parameters.  Note that in order to allow access to the module, we must call using .Dice2010, where .Dice2010 is a shortcut for Main.Dice2010, since the Dice2010 module is nested inside the Main module. After creating the model m, simply run the model using the run function.include(\"src/dice2010.jl\")\nusing .Dice2010\nm = construct_dice()\nrun(m)Note that these steps should be relatively consistent across models, where a repository for ModelX should contain a primary file ModelX.jl which exports, at minimum, a function named something like getModelX or construct_ModelX which returns a version of the model, and can allow for model customization within the call.In this case, the function construct_dice has the signatureconstruct_dice(params=nothing)Thus there are no required arguments, although the user can input params, a dictionary definining the parameters of the model. "
+},
+
+{
+    "location": "tutorials/tutorial_2/#Step-3.-Altering-Parameters-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Step 3. Altering Parameters",
+    "category": "section",
+    "text": "In the case that you wish to alter an exogenous parameter, you may use the update_param! function.  For example, in DICE the parameter fco22x is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components climatedynamics and radiativeforcing.  If you wanted to change this value from its default value of 3.200 to 3.000 in both components,you would use the following code:update_param!(m, :fco22x, 3.000)\nrun(m)A more complex example may a situation where you want to update several parameters, including some with a :time dimension, in conjunction with altering the time index of the model itself.  DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:First you upate the time dimension of the model as follows:const ts = 10\nconst years = collect(2000:ts:2500)\nnyears = length(years)\nset_dimension!(m, :time, years)Next, create a dictionary params with one entry (k, v) per external parameter by name k to value v. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:params = Dict{Any, Any}()\nparams[:a1]         = 0.00008162\nparams[:a2]         = 0.00204626\n...\nparams[:S]          = repeat([0.23], nyears)\n...Now you simply update the parameters listen in params and re-run the model withupdate_params!(m, params, update_timesteps=true)\nrun(m)Note that here we use the update_timesteps flag and set it to true, because since we have changed the time index we want the time labels on the parameters to change, not simply their values."
+},
+
+{
+    "location": "tutorials/tutorial_2/#Component-and-Structural-Modifications:-The-API-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Component and Structural Modifications: The API",
+    "category": "section",
+    "text": "Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely [replace_comp!(@ref), add_comp! along with Mimi.delete! and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference here. If you wish to modify the component structure we recommend you also look into the built-in helper components adder, ConnectorCompVector, and ConnectorCompMatrix in the src/components folder, as these can prove quite useful.  adder.jl – Defines Mimi.adder, which simply adds two parameters, input and add and stores the result in output.\nconnector.jl – Defines a pair of components, Mimi.ConnectorCompVector and Mimi.ConnectorCompMatrix. These copy the value of parameter input1, if available, to the variable output, otherwise the value of parameter input2 is used. It is an error if neither has a value."
+},
+
+{
+    "location": "tutorials/tutorial_2/#Component-and-Structural-Modifications:-DICE-Example-1",
+    "page": "2 Modify an Existing Model",
+    "title": "Component and Structural Modifications: DICE Example",
+    "category": "section",
+    "text": "This example is in progress and will be built out soon."
+},
+
+{
+    "location": "tutorials/tutorial_3/#",
     "page": "3 Create a Model",
     "title": "3 Create a Model",
     "category": "page",
@@ -361,39 +433,31 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "tutorials/tutorial_main/#Introduction-1",
+    "location": "tutorials/tutorial_3/#Tutorial-3:-Create-a-Model-1",
     "page": "3 Create a Model",
-    "title": "Introduction",
+    "title": "Tutorial 3: Create a Model",
     "category": "section",
-    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+    "text": "This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model.Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. "
 },
 
 {
-    "location": "tutorials/tutorial_main/#Terminology-1",
+    "location": "tutorials/tutorial_3/#Constructing-A-One-Region-Model-1",
     "page": "3 Create a Model",
-    "title": "Terminology",
+    "title": "Constructing A One-Region Model",
     "category": "section",
-    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+    "text": "In this example, we construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy involves creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.There are two main steps to creating a component, both within the  @defcomp macro which defines a component:List the parameters and variables.\nUse the run_timestep function run_timestep(p, v, d, t) to set the equations of that component.Starting with the economy component, each variable and parameter is listed. If either variables or parameters have a time-dimension, that must be set with (index=[time]).using Mimi\n\n@defcomp grosseconomy begin\n	YGROSS	= Variable(index=[time])	# Gross output\n	K	= Variable(index=[time])	# Capital\n	l	= Parameter(index=[time])	# Labor\n	tfp	= Parameter(index=[time])	# Total factor productivity\n	s	= Parameter(index=[time])	# Savings rate\n	depk	= Parameter()			# Depreciation rate on capital - Note that it has no time index\n	k0	= Parameter()			# Initial level of capital\n	share	= Parameter()			# Capital share\nNext, the run_timestep function must be defined along with the various equations of the grosseconomy component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, v will refer to variables while p refers to parameters.It is important to note that t below is an AbstractTimestep, and the specific API for using this argument are described in detail in the userguide in Advanced Topics:  Timesteps and available functions. 	function run_timestep(p, v, d, t)\n		# Define an equation for K\n		if is_first(t)\n			# Note the use of v. and p. to distinguish between variables and parameters\n			v.K[t] 	= p.k0	\n		else\n			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5\n		end\n\n		# Define an equation for YGROSS\n		v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)\n	end\nendNext, the component for greenhouse gas emissions must be created.  Although the steps are the same as for the grosseconomy component, there is one minor difference. While YGROSS was a variable in the grosseconomy component, it now enters the emissions component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.@defcomp emissions begin\n	E 	= Variable(index=[time])	# Total greenhouse gas emissions\n	sigma	= Parameter(index=[time])	# Emissions output ratio\n	YGROSS	= Parameter(index=[time])	# Gross output - Note that YGROSS is now a parameter\n\n	function run_timestep(p, v, d, t)\n\n		# Define an equation for E\n		v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS\n	end\nendWe can now use Mimi to construct a model that binds the grosseconomy and emissions components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.Once the model is defined, set_dimension! is used to set the length and interval of the time step.\nWe then use add_comp! to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.\nNext, set_param! is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If population was a parameter for two different components, it must be assigned to each one using set_param! two different times. The syntax is set_param!(model_name, :component_name, :parameter_name, value)\nIf any variables of one component are parameters for another, connect_param! is used to couple the two components together. In this example, YGROSS is a variable in the grosseconomy component and a parameter in the emissions component. The syntax is connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name), where :component_name_variable refers to the component where your parameter was initially calculated as a variable.\nFinally, the model can be run using the command run(model_name).\nTo access model results, use model_name[:component, :variable_name].\nTo observe model results in a graphical form , explore as either explore(model_name) to open the UI window, or use explore(model_name, :component_name, :variable_name) or explore(model_name, :component_name, :parameter_name) to plot a specific parameter or variable.module my_model\n\nusing Mimi\n\nexport m\n\nm = Model()\n\nset_dimension!(m, :time, collect(2015:5:2110))\n\n# Order matters here. If the emissions component were defined first, the model would not run.\nadd_comp!(my_model, grosseconomy)  \nadd_comp!(my_model, emissions)\n\n# Set parameters for the grosseconomy component\nset_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])\nset_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])\nset_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)\nset_param!(my_model, :grosseconomy, :depk, 0.1)\nset_param!(my_model, :grosseconomy, :k0, 130.)\nset_param!(my_model, :grosseconomy, :share, 0.3)\n\n# Set parameters for the emissions component\nset_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])\nconnect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  \n# Note that connect_param! was used here.\n\nend # end module\nNow we can run the model and examine the results:# Run model\nusing my_model\nrun(m)\n\n# Check model results\nm[:emissions, :E]\n\n# Plot model results\nexplore(m, :emissions, :E)\n\n# Observe all model result graphs in UI\nexplore(m)\n\n"
 },
 
 {
-    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "location": "tutorials/tutorial_3/#Constructing-A-Multi-Region-Model-1",
     "page": "3 Create a Model",
-    "title": "Available Tutorials",
+    "title": "Constructing A Multi-Region Model",
     "category": "section",
-    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+    "text": "We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:When using @defcomp, a regions index must be specified. In addition, for variables that have a regional index it is necessary to include (index=[regions]). This can be combined with the time index as well, (index=[time, regions]).\nIn the run_timestep function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.\nset_dimension! must be used to specify your regions in the same way that it is used to specify your timestep.\nWhen using set_param! for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into set_param! rather than an entire equation.\nWhen constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, using Mimi must be speficied for each component. This approach will be used here.To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.using Mimi\n\n@defcomp grosseconomy begin\n	regions = Index()	#Note that a regional index is defined here\n\n	YGROSS	= Variable(index=[time, regions])	# Gross output\n	K 	= Variable(index=[time, regions])	# Capital\n	l 	= Parameter(index=[time, regions])	# Labor\n	tfp	= Parameter(index=[time, regions])	# Total factor productivity\n	s 	= Parameter(index=[time, regions])	# Savings rate\n	depk	= Parameter(index=[regions])	# Depreciation rate on capital - Note that it only has a region index\n	k0	= Parameter(index=[regions])	# Initial level of capital\n	share	= Parameter()	# Capital share\n\n	function run_timestep(p, v, d, t)\n		\n		# Note that the regional dimension is used below and parameters and \n		variables are indexed by \'r\'\n\n		# Define an equation for K\n		for r in d.regions\n			if is_first(t)\n				v.K[t,r] = p.k0[r]\n			else\n				v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5\n			end\n		end\n\n		# Define an equation for YGROSS\n		for r in d.regions\n			v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)\n		end\n	end\nendSave this component as **grosseconomy.jl**_using Mimi	#Make sure to call Mimi again\n\n@defcomp emissions begin\n	regions	=	Index()	# The regions index must be specified for each component\n\n	E		= Variable(index=[time, regions])	# Total greenhouse gas emissions\n	E_Global		= Variable(index=[time])		# Global emissions (sum of regional emissions)\n	sigma		= Parameter(index=[time, regions])	# Emissions output ratio\n	YGROSS		= Parameter(index=[time, regions])	# Gross output - Note that YGROSS is now a parameter\n\n	function run_timestep(p, v, d, t)\n\n		# Define an eqation for E\n		for r in d.regions\n			v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]\n		end\n\n		# Define an equation for E_Global\n		for r in d.regions\n			v.E_Global[t] = sum(v.E[t,:])\n		end\n	end\nendSave this component as emissions.jlLet\'s create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.l = Array(Float64,20,3)\nfor t in 1:20\n	l[t,1] = (1. + 0.015)^t *2000\n	l[t,2] = (1. + 0.02)^t * 1250\n	l[t,3] = (1. + 0.03)^t * 1700\nend\n\ntfp = Array(Float64,20,3)\nfor t in 1:20\n	tfp[t,1] = (1 + 0.06)^t * 3.2\n	tfp[t,2] = (1 + 0.03)^t * 1.8\n	tfp[t,3] = (1 + 0.05)^t * 2.5\nend\n\ns = Array(Float64,20,3)\nfor t in 1:20\n	s[t,1] = 0.21\n	s[t,2] = 0.15\n	s[t,3] = 0.28\nend\n\ndepk = [0.11, 0.135 ,0.15]\nk0 	 = [50.5, 22., 33.5]\n\nsigma = Array(Float64,20,3)\nfor t in 1:20\n	sigma[t,1] = (1. - 0.05)^t * 0.58\n	sigma[t,2] = (1. - 0.04)^t * 0.5\n	sigma[t,3] = (1. - 0.045)^t * 0.6\nendSave this file as **regionparameters.jl**_The final step is to create a module.module my_model\n\nusing Mimi\n\nexport m \n\ninclude(\"region_parameters.jl\")\ninclude(\"gross_economy.jl\")\ninclude(\"emissions.jl\")\n\nm = Model()\n\nset_dimension!(m, :time, collect(2015:5:2110))\nset_dimension!(m, :regions, [\"Region1\", \"Region2\", \"Region3\"])	 # Note that the regions of your model must be specified here\n\nadd_comp!(m, grosseconomy)\nadd_comp!(m, emissions)\n\nset_param!(m, :grosseconomy, :l, l)\nset_param!(m, :grosseconomy, :tfp, tfp)\nset_param!(m, :grosseconomy, :s, s)\nset_param!(m, :grosseconomy, :depk,depk)\nset_param!(m, :grosseconomy, :k0, k0)\nset_param!(m, :grosseconomy, :share, 0.3)\n\n# set parameters for emissions component\nset_param!(my_model, :emissions, :sigma, sigma)\nconnect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)\n\nend #end module\nSave this file as **mymodel.jl**_We can now run the model and evaluate the results.using Mimi\n\ninclude(\"my_model.jl\")\nusing my_model\n\nrun(m)\n\n# Check results\nm[:emissions, :E_Global]\n\n# Observe model result graphs\nexplore(m)\n"
 },
 
 {
-    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
-    "page": "3 Create a Model",
-    "title": "Requirements and Initial Setup",
-    "category": "section",
-    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
-},
-
-{
-    "location": "tutorials/tutorial_main/#",
+    "location": "tutorials/tutorial_4/#",
     "page": "4 MCS Functionality",
     "title": "4 MCS Functionality",
     "category": "page",
@@ -401,35 +465,75 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "tutorials/tutorial_main/#Introduction-1",
+    "location": "tutorials/tutorial_4/#Tutorial-4:-Monte-Carlo-Simulation-(MCS)-Support-1",
     "page": "4 MCS Functionality",
-    "title": "Introduction",
+    "title": "Tutorial 4: Monte Carlo Simulation (MCS) Support",
     "category": "section",
-    "text": "The following tutorials target Mimi users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the Welcome to Mimi documentation, including the User Guide, and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the Julia language, though expertise is not required.If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our Mimi.jl/dev gitter chat room.  We welcome your feedback."
+    "text": "This tutorial walks through the MCS functionality of Mimi, including core routines and examples.  We will start with looking at using the MCS routines with the Mimi two-region model provided in the Mimi repository at examples/tutorial/02-two-region-model, and then build out to examine its use on The Climate Framework for Uncertainty, Negotiation and Distribution (FUND), available on Github here, Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out Steps 1 and 2 from Tutorial 1, and then return to continue with this tutorial. Note that FUND is only requred for the second example in this tutorial. "
 },
 
 {
-    "location": "tutorials/tutorial_main/#Terminology-1",
+    "location": "tutorials/tutorial_4/#The-API-1",
     "page": "4 MCS Functionality",
-    "title": "Terminology",
+    "title": "The API",
     "category": "section",
-    "text": "The following terminology is used throughout the documentation.Application Programming Interface (API):  The public classes, methods, and functions provided by Mimi to facilitate construction of custom scripts and work with existing models. Function documentation provided in \"docstrings\" in the Reference define the Mimi API in more detail."
+    "text": "The best current documentation on the MCS API is the internals documentation here, which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, as it includes more advanced options such as non-stochastic scenarios and running multiple models."
 },
 
 {
-    "location": "tutorials/tutorial_main/#Available-Tutorials-1",
+    "location": "tutorials/tutorial_4/#Two-Region-Model-Example-1",
     "page": "4 MCS Functionality",
-    "title": "Available Tutorials",
+    "title": "Two-Region Model Example",
     "category": "section",
-    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Constructing A One-Region Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+    "text": "This section will walk through the simple example provided in \"Mimi.jl/test/mcs/test_defmcs.jl\"."
 },
 
 {
-    "location": "tutorials/tutorial_main/#Requirements-and-Initial-Setup-1",
+    "location": "tutorials/tutorial_4/#Step-1.-Setup-1",
     "page": "4 MCS Functionality",
-    "title": "Requirements and Initial Setup",
+    "title": "Step 1. Setup",
     "category": "section",
-    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+    "text": "First, set up for the tutorial as follows with the necessary packages and main.jl script for the two-region example.  You should have Mimi installed by now, and if you do not have Distributions, take a moment to add that package using by entering ] to enter the Pkg REPL mode and then typing add Distributions.cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory\nusing Distributions\n\ninclude(\"examples/tutorial/02-two-region-model/main.jl\")\nm = model # defined by 2-region model"
+},
+
+{
+    "location": "tutorials/tutorial_4/#Step-2.-Define-Random-Variables-1",
+    "page": "4 MCS Functionality",
+    "title": "Step 2. Define Random Variables",
+    "category": "section",
+    "text": "The @defmcs macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.mcs = @defmcs begin\n    # Define random variables. The rv() is required to disambiguate an\n    # RV definition name = Dist(args...) from application of a distribution\n    # to an external parameter. This makes the (less common) naming of an\n    # RV slightly more burdensome, but it\'s only required when defining\n    # correlations or sharing an RV across parameters.\n    rv(name1) = Normal(1, 0.2)\n    rv(name2) = Uniform(0.75, 1.25)\n    rv(name3) = LogNormal(20, 4)\n\n    # define correlations\n    name1:name2 = 0.7\n    name1:name3 = 0.5\n\n    # assign RVs to model Parameters\n    share = Uniform(0.2, 0.8)\n    sigma[:, Region1] *= name2\n    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)\n\n    # Assign an array of distributions, keyed by region, to parameter depk\n    depk = [Region1 => Uniform(0.7, 1.3),\n            Region2 => Uniform(0.8, 1.2),\n            Region3 => Normal()]\n\n    # indicate which parameters to save for each model run. Specify\n    # a parameter name or [later] some slice of its data, similar to the\n    # assignment of RVs, above.\n    save(grosseconomy.K, grosseconomy.YGROSS, \n         emissions.E, emissions.E_Global)\nend"
+},
+
+{
+    "location": "tutorials/tutorial_4/#Step-2.-Optional-User-Defined-Functions-1",
+    "page": "4 MCS Functionality",
+    "title": "Step 2. Optional User-Defined Functions",
+    "category": "section",
+    "text": "Next, create the user-defined print_result function, which can be called as a post-trial function by run_mcs.# Optional user functions can be called just before or after a trial is run\nfunction print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)\n    ci = Mimi.compinstance(m.mi, :emissions)\n    value = Mimi.get_variable_value(ci, :E_Global)\n    println(\"$(ci.comp_id).E_Global: $value\")\nend"
+},
+
+{
+    "location": "tutorials/tutorial_4/#Step-3.-Generate-Trials-1",
+    "page": "4 MCS Functionality",
+    "title": "Step 3. Generate Trials",
+    "category": "section",
+    "text": "The optional generate_trials! function can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.  If this function is not called prior to calling run_mcs, random sampling is used for all distributions and trial data are not saved. Employ this function as follows:# Generate trial data for all RVs and (optionally) save to a file\ngenerate_trials!(mcs, 1000, filename=\"/tmp/trialdata.csv\")"
+},
+
+{
+    "location": "tutorials/tutorial_4/#Step-4.-Run-MCS-1",
+    "page": "4 MCS Functionality",
+    "title": "Step 4. Run MCS",
+    "category": "section",
+    "text": "Finally, use the run_mcs function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the run_mcs function iterates over a given number of trials, perturbing a chosen set of Mimi\'s \"external parameters\", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:function run_mcs(mcs::MonteCarloSimulation, \n                 trials::Union{Int, Vector{Int}, AbstractRange{Int}},\n                 models_to_run::Int=length(mcs.models);\n                 ntimesteps::Int=typemax(Int), \n                 output_dir::Union{Nothing, AbstractString}=nothing, \n                 pre_trial_func::Union{Nothing, Function}=nothing, \n                 post_trial_func::Union{Nothing, Function}=nothing,\n                 scenario_func::Union{Nothing, Function}=nothing,\n                 scenario_placement::ScenarioLoopPlacement=OUTER,\n                 scenario_args=nothing)Here, we first employ run_mcs in its simplest form to obtain results:# Run trials 1:4, and save results to the indicated directory, one CSV file per RV\nrun_mcs(m, mcs, 4, output_dir=\"/tmp/Mimi\")and then again using our user-defined post-trial function as the post_trial_func parameter:# Same thing but with a post-trial function\nrun_mcs(m, mcs, 4, post_trial_func=print_result, output_dir=\"/tmp/Mimi\")"
+},
+
+{
+    "location": "tutorials/tutorial_4/#FUND-Example-1",
+    "page": "4 MCS Functionality",
+    "title": "FUND Example",
+    "category": "section",
+    "text": "This example is in progress and will be built out soon."
 },
 
 {
