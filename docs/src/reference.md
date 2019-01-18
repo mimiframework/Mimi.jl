@@ -2,7 +2,6 @@
 
 ```@docs
 @defcomp
-@defmcs
 MarginalModel
 Model
 add_comp!  

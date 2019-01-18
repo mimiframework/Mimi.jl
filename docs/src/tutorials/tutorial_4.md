@@ -32,7 +32,7 @@ m = model # defined by 2-region model
 ```
 
 ### Step 2. Define Random Variables
-The [`@defmcs`](@ref) macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.
+The `@defmcs` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.
 
 ```julia
 mcs = @defmcs begin
