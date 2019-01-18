@@ -9,10 +9,10 @@ makedocs(
 		"User Guide" => "userguide.md",
 		"Tutorials" => Any[
 			"Tutorials Intro" => "tutorials/tutorial_main.md",
-			"1 Run an Existing Model" => "tutorials/tutorial_main.md",
-			"2 Modfiy an Existing Model" => "tutorials/tutorial_main.md",
-			"3 Create a Model" => "tutorials/tutorial_main.md",
-			"4 MCS Functionality" => "tutorials/tutorial_main.md"
+			"1 Run an Existing Model" => "tutorials/tutorial_1.md",
+			"2 Modify an Existing Model" => "tutorials/tutorial_2.md",
+			"3 Create a Model" => "tutorials/tutorial_3.md",
+			"4 MCS Functionality" => "tutorials/tutorial_4.md"
 		],
 		"FAQ" => "faq.md",
 		"Reference" => "reference.md",
