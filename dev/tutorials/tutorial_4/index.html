@@ -3,7 +3,7 @@
 using Distributions
 
 include(&quot;examples/tutorial/02-two-region-model/main.jl&quot;)
-m = model # defined by 2-region model</code></pre><h3><a class="nav-anchor" id="Step-2.-Define-Random-Variables-1" href="#Step-2.-Define-Random-Variables-1">Step 2. Define Random Variables</a></h3><p>The <a href="tutorials/@ref"><code>@defmcs</code></a> macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.</p><pre><code class="language-julia">mcs = @defmcs begin
+m = model # defined by 2-region model</code></pre><h3><a class="nav-anchor" id="Step-2.-Define-Random-Variables-1" href="#Step-2.-Define-Random-Variables-1">Step 2. Define Random Variables</a></h3><p>The <code>@defmcs</code> macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.</p><pre><code class="language-julia">mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
