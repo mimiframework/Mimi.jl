@@ -110,7 +110,7 @@ function save_trial_results(sim::Simulation{T}, output_dir::AbstractString) wher
     end
 end
 
-function save_trial_inputs(sim::Simulation{T}, filename::String) where T <: AbstractSimulationData
+function save_trial_inputs(sim::Simulation, filename::String)
     mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
     save(filename, sim)
     return nothing
@@ -126,7 +126,7 @@ function to be called successively with the same `trialnum` to retrieve
 the same NamedTuple. If `trialnum` does not match the current trial number,
 the argument is ignored.
 """
-function get_trial(sim::Simulation{T}, trialnum::Int) where T <: AbstractSimulationData
+function get_trial(sim::Simulation, trialnum::Int)
     if sim.current_trial == trialnum
         return sim.current_data
     end
@@ -531,21 +531,24 @@ end
 TableTraits.isiterable(sim::Simulation{T}) where T <: AbstractSimulationData = true
 TableTraits.isiterabletable(sim::Simulation{T}) where T <: AbstractSimulationData = true
 
-IterableTables.getiterator(sim::Simulation{T}) where T <: AbstractSimulationData = MCSIterator{sim.nt_type, T}(sim)
+IterableTables.getiterator(sim::Simulation) = SimIterator{sim.nt_type}(sim)
 
 column_names(sim::Simulation{T}) where T <: AbstractSimulationData = fieldnames(sim.nt_type)
 column_types(sim::Simulation{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim.rvdict)]
 
-column_names(iter::MCSIterator) = column_names(iter.sim)
-column_types(iter::MCSIterator) = IterableTables.column_types(iter.sim)
+#
+# Iteration support (which in turn supports the "save" method)
+#
+column_names(iter::SimIterator) = column_names(iter.sim)
+column_types(iter::SimIterator) = IterableTables.column_types(iter.sim)
 
-function Base.iterate(iter::MCSIterator)
+function Base.iterate(iter::SimIterator)
     _reset_rvs!(iter.sim)
     idx = 1
     return get_trial(iter.sim, idx), idx + 1
 end
 
-function Base.iterate(iter::MCSIterator, idx)
+function Base.iterate(iter::SimIterator, idx)
     if idx > iter.sim.trials
         return nothing
     else
@@ -553,6 +556,6 @@ function Base.iterate(iter::MCSIterator, idx)
     end
 end
 
-Base.length(iter::MCSIterator) = iter.sim.trials
+Base.length(iter::SimIterator) = iter.sim.trials
 
-Base.eltype(::Type{MCSIterator{T}}) where T = T
+Base.eltype(::Type{SimIterator{NT, T}}) where {NT, T} = NT

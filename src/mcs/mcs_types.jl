@@ -146,10 +146,10 @@ struct MCSData <: AbstractSimulationData end
 
 const MonteCarloSimulation = Simulation{MCSData}
 
-struct MCSIterator{NT, T}
-    mcs::Simulation{T}
+struct SimIterator{NT, T}
+    sim::Simulation{T}
 
-    function MCSIterator{NT, T}(mcs::Simulation{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
-        return new{NT, T}(mcs)
+    function SimIterator{NT}(sim::Simulation{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
+        return new{NT, T}(sim)
     end
 end

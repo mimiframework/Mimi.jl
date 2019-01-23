@@ -41,7 +41,7 @@ function _make_dims(args)
         elseif isa(arg, Expr) && arg.head == :tuple  # tuple of Strings/Symbols (@capture didn't work...)
             argtype = typeof(arg.args[1])            # ensure all are same type as first element
             if ! isempty(filter(s -> typeof(s) != argtype, arg.args))
-                error("A parameter dimension tuple must all String or all Symbol (got $arg)")
+                error("A parameter dimension tuple must be all Strings or all Symbols (got $arg)")
             end
             dim = :(convert(Vector{$argtype}, $(arg.args)))
 
@@ -54,24 +54,19 @@ function _make_dims(args)
     return dims
 end
 
-macro defsim(name_expr, expr)
+macro defsim(expr)
     let # to make vars local to each macro invocation
         local _rvs        = []
-        local _corrs      = []
         local _transforms = []
         local _saves      = []
         local _sim_args  = Dict{Symbol, Any}()
+
+        simdatatype = nothing
 
         # distilled into a function since it's called from two branches below
         function saverv(rvname, distname, distargs)
             expr = :(RandomVariable($(QuoteNode(rvname)), $distname($(distargs...))))
             push!(_rvs, esc(expr))
-        end
-
-        if ! @capture(name_expr, simname_::Simulation{simdatatype_})
-            simname = name_expr
-            simdatatype = :MCSData
-            @warn("Using default simulation data type, MCSData")
         end
 
         @capture(expr, elements__)
@@ -108,14 +103,6 @@ macro defsim(name_expr, expr)
                         push!(_transforms, esc(expr))
                     end
                 end
-
-            # e.g., name1:name2 = 0.7
-            elseif @capture(elt, name1_:name2_ = value_)
-                if simdatatype != :LHSData
-                    error("Correlations can be defined only for Latin Hypercube Simulations (data type is $simdatatype)")
-                end
-                expr = :(CorrelationSpec($(QuoteNode(name1)), $(QuoteNode(name2)), $value))
-                push!(_corrs, esc(expr))
 
             # e.g., ext_var5[2010:2050, :] *= name2
             # A bug in Macrotools prevents this shorter expression from working:
@@ -163,32 +150,30 @@ macro defsim(name_expr, expr)
                 end
                 push!(_transforms, esc(expr))
 
-            elseif @capture(elt, simargs(simargs__))
+            elseif @capture(elt, sampling(simdatatype_, simargs__))
                 # General method for setting an SA method's required parameters
                 for arg in simargs
                     if !@capture(arg, name_=value_)
                         error("simargs must be given as keyword arguments (got $simargs)")
                     end
-                    _sim_args[name] = value
+                    _sim_args[name] = __module__.eval(value)
                 end
             else
                 error("Unrecognized expression '$elt' in @defsim")
             end
         end
 
-        if simdatatype == :LHSData
-            data = :(LHSData(CorrelationSpec[$(_corrs...)]))
-
-        else
-            data = :($simdatatype(; $_sim_args...))
-        end
+        # set default
+        simdatatype = (simdatatype == nothing) ? nameof(MCSData) : simdatatype
+    
+        # call constructor on given args
+        data = :($simdatatype(; $(_sim_args)...))
 
         # TBD: need to generalize this to support other methods
-        result = :($(esc(simname)) = Simulation{$simdatatype}(
+        return :(Simulation{$simdatatype}(
                     [$(_rvs...)],
                     [$(_transforms...)],  
                     Tuple{Symbol, Symbol}[$(_saves...)],
                     $data))
-        return result
     end
 end

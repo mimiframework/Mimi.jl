@@ -15,19 +15,15 @@ import StatsBase
 using Statistics
 using LinearAlgebra
 
-"""
-    CorrelationSpec
-
-Defines a target rank correlation to establish between the two named random vars.
-"""
-struct CorrelationSpec
-    name1::Symbol
-    name2::Symbol
-    value::Float64
-end
+# Defines a target rank correlation to establish between the two named random vars.
+const CorrelationSpec = Tuple{Symbol, Symbol, Float64}
 
 mutable struct LHSData <: AbstractSimulationData
     corrlist::Vector{CorrelationSpec}
+
+    function LHSData(;corrlist::Vector{CorrelationSpec}=CorrelationSpec[])
+        new(corrlist)
+    end
 end
 
 const LatinHypercubeSimulation = Simulation{LHSData}
@@ -236,8 +232,8 @@ function correlation_matrix(sim::LatinHypercubeSimulation)
     corrmatrix = Matrix(1.0I, count, count)
 
     for corr in sim.data.corrlist
-        n1 = corr.name1
-        n2 = corr.name2
+        n1 = corr[1]
+        n2 = corr[2]
 
         # We don't support correlation between stored samples
         # if rvdict[n1].dist isa SampleStore || rvdict[n2].dist isa SampleStore
@@ -247,7 +243,7 @@ function correlation_matrix(sim::LatinHypercubeSimulation)
         i = names[n1]
         j = names[n2]
 
-        corrmatrix[i, j] = corrmatrix[j, i] = corr.value
+        corrmatrix[i, j] = corrmatrix[j, i] = corr[3]
     end
 
     return corrmatrix
