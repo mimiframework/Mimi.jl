@@ -9,7 +9,7 @@ using Test
 
 N = 100
 
-@defsim sim::Simulation{LHSData} begin
+sim = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -18,10 +18,6 @@ N = 100
     rv(name1) = Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
-
-    # define correlations
-    name1:name2 = 0.7
-    name1:name3 = 0.5
 
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
@@ -32,6 +28,8 @@ N = 100
             Region2 => Uniform(0.10, 1.50),
             Region3 => Uniform(0.10, 0.20)]
 
+    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
+    
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
@@ -188,8 +186,8 @@ trial2 = copy(sim.rvdict[:name1].dist.values)
 @test trial1 != trial2
 
 
-# Same as sim above, but MCSData, so correlation definitions are excluded
-@defsim sim2::Simulation{MCSData} begin
+# Same as sim above, but MCSData (default sampling), so we exclude correlation definitions
+sim2 = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an

@@ -50,7 +50,8 @@ results = zeros(num_scenarios, num_trials)
 _values = collect(1:10)
 _probs = 0.1 * ones(10)
 
-@defsim mcs_test::Simulation{LHSData} begin
+mcs_test = @defsim begin
+    sampling(LHSData)
     p = EmpiricalDistribution(_values, _probs)
 end 
 
