@@ -14,7 +14,7 @@ Futhermore, if you are not yet comfortable with downloading (only needs to be do
 
 ## The API
 
-The best current documentation on the MCS API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/tutorials/docs/src/internals/montecarlo.md), which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, as it includes more advanced options such as non-stochastic scenarios and running multiple models.
+The best current documentation on the MCS API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Two-Region Model Example
 
