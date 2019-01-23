@@ -10,7 +10,7 @@ using StringBuilders
 
 export
     @defcomp,
-    @defmcs,
+    @defsim,
     MarginalModel,
     Model,
     add_comp!,  
@@ -36,7 +36,7 @@ export
     parameters, 
     plot_comp_graph,
     replace_comp!, 
-    run_mcs,
+    run_sim,
     set_dimension!, 
     set_leftover_params!, 
     set_param!, 
