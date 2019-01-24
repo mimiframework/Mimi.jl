@@ -12,7 +12,7 @@ saveresults(m::Model, pathname::String)
 
 saveresults(m::Model, pathname::String, append=true)
 
-saveresults(mcs:MonteCarloSimulation, pathname::String)
+saveresults(sim:Simulation, pathname::String)
 ```
 
 ## JSON file format

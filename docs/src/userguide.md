@@ -169,7 +169,7 @@ save("figure.svg", p)
 
 ## Monte Carlo Simulation (MCS) Support
 
-Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) on Mimi models. The best current documentation on the MCS API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) and (coming soon) other sensitivity analysis methods on Mimi models. The best current documentation on the MCS API is the internals documentation [here](internals/montecarlo.md), which provides a working, although informal, description of the MCS support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Advanced Topics
 

@@ -9,7 +9,7 @@ The macro ```@defcomp``` defines model components. Some changes are in store:
 
 1. In the current implementation, a custom type is generated for each component to facilitate dispatch to that component's ```run_timestep()``` method. This will be replaced with dispatch via ```Val{compname}```, avoiding the custom class, and allowing all components to be instances of an explicit ```Component``` type.
 
-1. We will support the specification of default distributions for model parameters that can be overridden using ```@defmcs```. (Syntax TBD.)
+1. We will support the specification of default distributions for model parameters that can be overridden using ```@defsim```. (Syntax TBD.)
 
 ## Connecting components
 1. Connections among components are currently performed in the order defined. 
