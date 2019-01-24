@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "User Guide",
     "title": "Overview",
     "category": "section",
-    "text": "See the Tutorials for in-depth examples of Mimi\'s functionality.This guide is organized into six main sections for understanding how to use Mimi.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting and the Explorer UI\nAdvanced topics"
+    "text": "See the Tutorials for in-depth examples of Mimi\'s functionality.This guide is organized into six main sections for understanding how to use Mimi.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting and the Explorer UI\nMCS Functionality\nAdvanced topics"
 },
 
 {
@@ -158,6 +158,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Plotting and the Explorer UI",
     "category": "section",
     "text": "Mimi provides support for plotting using VegaLite and VegaLite.jl within the Mimi Explorer UI, and the LightGraphs and MetaGraphs for the plot_comp_graph function described below.In order to view a DAG representing the component ordering and relationships, use the plot_comp_graph function to view a plot and optionally save it to a file.run(m)\nplot_comp_graph(m; filename = \"MyFilePath.png\")(Image: Plot Component Graph Example)Other plotting support is provided by the Explorer UI, rooted in VegaLite.  The explore function allows the user to view and explore the variables and parameters of a model run.  The explorer can be used in two primary ways.In order to invoke the explorer UI and explore all of the variables and parameters in a model, simply call the function explore with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list. run1 = run(my_model)\n explore(run1, title = \"run1 results\")(Image: Explorer Model Example)Alternatively, in order to view just one parameter or variable, call the function explore as below to return a plot object and automatically display the plot in a viewer, assuming explore is the last command executed.  This call will return the type VegaLite.VLSpec, which you may interact with using the API described in the VegaLite.jl documentation.  For example, VegaLite.jl plots can be saved as PNG, SVG, PDF and EPS files. You can save a plot by calling the save function.run1 = run(my_model)\np = explore(run1, component1, parameter1)\nsave(\"figure.svg\", p)(Image: Explorer Single Plot Example)"
+},
+
+{
+    "location": "userguide/#Monte-Carlo-Simulation-(MCS)-Support-1",
+    "page": "User Guide",
+    "title": "Monte Carlo Simulation (MCS) Support",
+    "category": "section",
+    "text": "Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) on Mimi models. The best current documentation on the MCS API is the internals documentation here, which provides a working, although informal, description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples in Tutorial 4: Monte Carlo Simulation (MCS) Support, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial."
 },
 
 {
@@ -477,7 +485,7 @@ var documenterSearchIndex = {"docs": [
     "page": "4 MCS Functionality",
     "title": "The API",
     "category": "section",
-    "text": "The best current documentation on the MCS API is the internals documentation here, which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, as it includes more advanced options such as non-stochastic scenarios and running multiple models."
+    "text": "The best current documentation on the MCS API is the internals documentation here, which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial."
 },
 
 {
