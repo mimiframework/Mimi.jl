@@ -20,18 +20,18 @@ sim = @defsim begin
     # to an external parameter. This makes the (less common) naming of an
     # RV slightly more burdensome, but it's only required when defining
     # correlations or sharing an RV across parameters.
-    rv(name1) = Uniform(0, 0.2)
+    rv(name1) = Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
-    rv(name3) = Uniform(4, 20)
+    rv(name3) = LogNormal(20, 4)
 
     # assign RVs to model Parameters
-    share = name1
+    share = Uniform(0.2, 0.8)
     sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] = name3
+    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    depk = [Region1 => name1,
-            Region2 => name3,
-            Region3 => name2]
+    depk = [Region1 => Uniform(0.08, 0.14),
+            Region2 => Uniform(0.10, 1.50),
+            Region3 => Uniform(0.10, 0.20)]
 
     sampling(SobolData, N = N)
     
@@ -46,12 +46,137 @@ include("../../examples/tutorial/02-two-region-model/main.jl")
 
 m = model
 
+# Optionally, user functions can be called just before or after a trial is run
+function print_result(m::Model, sim::Simulation, trialnum::Int)
+    ci = Mimi.compinstance(m.mi, :emissions)
+    value = Mimi.get_variable_value(ci, :E_Global)
+    println("$(ci.comp_id).E_Global: $value")
+end
+
 output_dir = "/Users/lisarennels/.julia/dev/Mimi/test/mcs/sim"
 generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv")) 
 
-run_sim(sim, m, sim.trials, output_dir=output_dir)
+# Test that the proper number of trials were saved
+d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
+@test size(d)[1] == sim.trials+1 # extra row for column names
 
+# Run trials 1:sim.trials, and save results to the indicated directory
+Mimi.set_model!(sim, m)
+run_sim(sim, sim.trials, output_dir=output_dir)
+
+# do some analysis
 model_output = load("/Users/lisarennels/.julia/dev/Mimi/test/mcs/sim/E.csv") |> DataFrame
 model_output = model_output[1:60:end, 3]
-
 results = analyze(sim, model_output)
+
+function show_E_Global(year::Int; bins=40)
+    df = @from i in E_Global begin
+             @where i.time == year
+             @select i
+             @collect DataFrame
+        end
+    histogram(df[:E_Global], bins=bins, 
+              title="Distribution of global emissions in $year",
+              xlabel="Emissions")
+end
+
+
+#
+# Test scenario loop capability
+#
+global loop_counter = 0
+
+function outer_loop_func(sim::Simulation, tup)
+    global loop_counter
+    loop_counter += 1
+
+    # unpack tuple (better to use NT here?)
+    (scen, rate) = tup
+    @debug "outer loop: scen:$scen, rate:$rate"
+end
+
+function inner_loop_func(sim::Simulation, tup)
+    global loop_counter
+    loop_counter += 1
+
+    # unpack tuple (better to use NT here?)
+    (scen, rate) = tup
+    @debug "inner loop: scen:$scen, rate:$rate"
+end
+
+
+loop_counter = 0
+
+run_sim(sim, N;
+        output_dir=output_dir,
+        scenario_args=[:scen => [:low, :high],
+                       :rate => [0.015, 0.03, 0.05]],
+        scenario_func=outer_loop_func, 
+        scenario_placement=Mimi.OUTER)
+ 
+@test loop_counter == 6
+
+
+loop_counter = 0
+
+run_sim(sim, N;
+        output_dir=output_dir,
+        scenario_args=[:scen => [:low, :high],
+                       :rate => [0.015, 0.03, 0.05]],
+        scenario_func=inner_loop_func, 
+        scenario_placement=Mimi.INNER)
+
+@test loop_counter == sim.trials * 6
+
+
+function other_loop_func(sim::Simulation, tup)
+    global loop_counter
+    loop_counter += 10
+end
+
+function pre_trial(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    global loop_counter
+    loop_counter += 1
+end
+
+loop_counter = 0
+
+run_sim(sim, N;
+        output_dir=output_dir,
+        pre_trial_func=pre_trial,
+        scenario_func=other_loop_func,
+        scenario_args=[:scen => [:low, :high],
+                       :rate => [0.015, 0.03, 0.05]])
+
+@test loop_counter == 6 * sim.trials + 60
+
+
+function post_trial(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
+    global loop_counter    
+    loop_counter += 1
+
+    m = sim.models[1]
+    # println("grosseconomy.share: $(m[:grosseconomy, :share])")
+end
+
+loop_counter = 0
+
+N = 10
+run_sim(sim, N;
+        output_dir=output_dir,
+        post_trial_func=post_trial)
+
+@test loop_counter == sim.trials
+
+N = 1000
+
+# Test new values generated for LHS sampling
+
+generate_trials!(sim, N)
+trial1 = copy(sim.rvdict[:name1].dist.values)
+
+generate_trials!(sim, N)
+trial2 = copy(sim.rvdict[:name1].dist.values)
+
+@test length(trial1) == length(trial2)
+@test trial1 != trial2
