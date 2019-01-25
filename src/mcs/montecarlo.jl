@@ -147,7 +147,16 @@ scenarios. Also saves inputs if a filename is given.
 """
 function generate_trials!(sim::Simulation{T}, trials::Int;
                           filename::String="") where T <: AbstractSimulationData
-    sim.trials = trials
+    if typeof(sim) <: SobolSimulation
+        num_rvs = length(sim.rvdict)
+        if sim.data.calc_second_order
+            sim.trials = sim.data.N * (2 * num_rvs + 2)
+        else
+            sim.trials = sim.data.N * (num_rvs + 2)
+        end
+    else
+        sim.trials = trials
+    end
 
     sample!(sim)
 

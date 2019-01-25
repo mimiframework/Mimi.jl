@@ -8,13 +8,13 @@ using CSVFiles
 
 using Test
 
-include("../wip/get_SALib.jl")
-get_SALib("/Users/lisarennels/.julia/dev/Mimi/src", "/Users/lisarennels/JuliaProjects/SAJulia/src")
+include("../../wip/get_SALib.jl")
+get_SALib("/Users/lisarennels/.julia/dev/Mimi/test/mcs", "/Users/lisarennels/JuliaProjects/SAJulia/src")
 using Main.SALib
 
 N = 100
 
-sim3 = @defsim begin
+sim = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -40,3 +40,18 @@ sim3 = @defsim begin
     # assignment of RVs, above.
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
+
+Mimi.reset_compdefs()
+include("../../examples/tutorial/02-two-region-model/main.jl")
+
+m = model
+
+output_dir = "/Users/lisarennels/.julia/dev/Mimi/test/mcs/sim"
+generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv")) 
+
+run_sim(sim, m, sim.trials, output_dir=output_dir)
+
+model_output = load("/Users/lisarennels/.julia/dev/Mimi/test/mcs/sim/E.csv") |> DataFrame
+model_output = model_output[1:60:end, 3]
+
+results = analyze(sim, model_output)
