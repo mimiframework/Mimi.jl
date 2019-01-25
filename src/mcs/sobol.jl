@@ -23,7 +23,7 @@ function sample!(sim::SobolSimulation)
     
     # get the samples
     payload = create_SALib_payload(sim)
-    samples = Main.SALib.sample(payload)
+    samples = SALib.sample(payload)
 
     for (i, rv) in enumerate(rvlist)
         dist = rv.dist
@@ -33,9 +33,9 @@ function sample!(sim::SobolSimulation)
     end
 end
 
-function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N}) where N
+function analyze_results(sim::SobolSimulation, model_output::AbstractArray{<:Number, N}) where N
     payload = create_SALib_payload(sim)
-    return Main.SALib.analyze(payload, model_output)
+    return SALib.analyze(payload, model_output)
 end
 
 function create_SALib_payload(sim::SobolSimulation)
@@ -44,8 +44,9 @@ function create_SALib_payload(sim::SobolSimulation)
 
     # add all distinct rvs to the rv_info dictionary to be passed to SALib's 
     # SobolData payload
-    rv_info = OrderedDict(rvlist[1].name => rvlist[1].dist)
+    rv_info = OrderedDict{Symbol, Any}(rvlist[1].name => rvlist[1].dist)
     for rv in rvlist[2:end] 
+        println(rv.name)
         rv_info[rv.name] = rv.dist
     end
 

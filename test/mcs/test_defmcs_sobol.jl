@@ -53,7 +53,7 @@ function print_result(m::Model, sim::Simulation, trialnum::Int)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-output_dir = "/Users/lisarennels/.julia/dev/Mimi/test/mcs/sim"
+output_dir = joinpath(tempdir(), "sim")
 generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv")) 
 
 # Test that the proper number of trials were saved
@@ -65,9 +65,9 @@ Mimi.set_model!(sim, m)
 run_sim(sim, sim.trials, output_dir=output_dir)
 
 # do some analysis
-model_output = load("/Users/lisarennels/.julia/dev/Mimi/test/mcs/sim/E.csv") |> DataFrame
+model_output = load(joinpath(output_dir, "E.csv")) |> DataFrame
 model_output = model_output[1:60:end, 3]
-results = analyze(sim, model_output)
+results = analyze_results(sim, model_output)
 
 function show_E_Global(year::Int; bins=40)
     df = @from i in E_Global begin
@@ -79,7 +79,6 @@ function show_E_Global(year::Int; bins=40)
               title="Distribution of global emissions in $year",
               xlabel="Emissions")
 end
-
 
 #
 # Test scenario loop capability
@@ -104,7 +103,6 @@ function inner_loop_func(sim::Simulation, tup)
     @debug "inner loop: scen:$scen, rate:$rate"
 end
 
-
 loop_counter = 0
 
 run_sim(sim, N;
@@ -116,7 +114,6 @@ run_sim(sim, N;
  
 @test loop_counter == 6
 
-
 loop_counter = 0
 
 run_sim(sim, N;
@@ -127,7 +124,6 @@ run_sim(sim, N;
         scenario_placement=Mimi.INNER)
 
 @test loop_counter == sim.trials * 6
-
 
 function other_loop_func(sim::Simulation, tup)
     global loop_counter
@@ -170,7 +166,7 @@ run_sim(sim, N;
 
 N = 1000
 
-# Test new values generated for LHS sampling
+# Test new values generated for Sobol sampling
 
 generate_trials!(sim, N)
 trial1 = copy(sim.rvdict[:name1].dist.values)
@@ -179,4 +175,4 @@ generate_trials!(sim, N)
 trial2 = copy(sim.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
-@test trial1 != trial2
+@test trial1 != trial2 # Fails but it should becauuse deterministic
