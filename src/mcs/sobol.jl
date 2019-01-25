@@ -1,4 +1,5 @@
 using DataStructures
+import SALib
 
 mutable struct SobolData <: AbstractSimulationData
     calc_second_order::Bool
@@ -33,7 +34,7 @@ function sample!(sim::SobolSimulation)
     end
 end
 
-function analyze_results(sim::SobolSimulation, model_output::AbstractArray{<:Number, N}) where N
+function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N}) where N
     payload = create_SALib_payload(sim)
     return SALib.analyze(payload, model_output)
 end
@@ -46,11 +47,10 @@ function create_SALib_payload(sim::SobolSimulation)
     # SobolData payload
     rv_info = OrderedDict{Symbol, Any}(rvlist[1].name => rvlist[1].dist)
     for rv in rvlist[2:end] 
-        println(rv.name)
         rv_info[rv.name] = rv.dist
     end
 
     #create payload
-    return Main.SALib.SobolPayload(params = rv_info, calc_second_order = sim.data.calc_second_order, N = sim.data.N)
+    return SALib.SobolData(params = rv_info, calc_second_order = sim.data.calc_second_order, N = sim.data.N)
     
 end

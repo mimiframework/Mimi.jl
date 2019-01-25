@@ -5,12 +5,9 @@ using DataFrames
 using IterTools
 using DelimitedFiles
 using CSVFiles
+using VegaLite
 
 using Test
-
-include("../../wip/get_SALib.jl")
-get_SALib("/Users/lisarennels/.julia/dev/Mimi/test/mcs", "/Users/lisarennels/JuliaProjects/SAJulia/src")
-using Main.SALib
 
 N = 100
 
@@ -65,19 +62,18 @@ Mimi.set_model!(sim, m)
 run_sim(sim, sim.trials, output_dir=output_dir)
 
 # do some analysis
-model_output = load(joinpath(output_dir, "E.csv")) |> DataFrame
-model_output = model_output[1:60:end, 3]
-results = analyze_results(sim, model_output)
+E = load(joinpath(output_dir, "E.csv")) |> DataFrame
+results = analyze(sim, E[1:60:end, 3])
 
-function show_E_Global(year::Int; bins=40)
-    df = @from i in E_Global begin
+function show_E_Region(year::Int; region = "Region1", bins=40)
+    df = @from i in E begin
              @where i.time == year
+             @where i.regions == region
              @select i
              @collect DataFrame
         end
-    histogram(df[:E_Global], bins=bins, 
-              title="Distribution of global emissions in $year",
-              xlabel="Emissions")
+
+    df |> @vlplot(:bar, x={:E, bin=true}, y="count()")
 end
 
 #
@@ -175,4 +171,4 @@ generate_trials!(sim, N)
 trial2 = copy(sim.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
-@test trial1 != trial2 # Fails but it should becauuse deterministic
+@test trial1 == trial2 # deterministic
