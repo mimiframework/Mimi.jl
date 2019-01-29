@@ -2,7 +2,7 @@ connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
 function _instance_datatype(md::ModelDef, def::absclass(DatumDef))
-    dtype = def.datatype == Number ? number_type(md) : datatype(def)
+    dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dim_names(def)
     num_dims = dim_count(def)
 
@@ -74,7 +74,7 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 end
 
 # Create ComponentInstanceVariables for a composite component from the list of exported vars
-function _combine_exported_vars(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any})
+@method function _combine_exported_vars(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any})
     names = []
     values = []
 
@@ -91,7 +91,7 @@ function _combine_exported_vars(comp_def::CompositeComponentDef, var_dict::Dict{
     return ComponentInstanceVariables(Tuple(names), Tuple{types...}, Tuple(values))
 end
 
-function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+@method function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     names = []
     values = []
 
@@ -129,7 +129,7 @@ end
 
     @info "_instantiate_vars composite $comp_name"
     for cd in compdefs(comp_def)
-        _instantiate_vars(md, cd, var_dict, par_dict)
+        _instantiate_vars(cd, md, var_dict, par_dict)
     end
     var_dict[comp_name] = v = _combine_exported_vars(comp_def, var_dict)            
     @info "composite vars for $comp_name: $v "
@@ -165,7 +165,7 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
 
     # Make the external parameter connections for the hidden ConnectorComps.
     # Connect each :input2 to its associated backup value.
-    for (i, backup) in enumerate(backups(comp_def))
+    for (i, backup) in enumerate(comp_def.backups)
         conn_comp_name = connector_comp_name(i)
         param = external_param(comp_def, backup)
         comp_pars = par_dict[conn_comp_name]
@@ -247,7 +247,7 @@ function _build(md::ModelDef)
     @info "par_dict: $par_dict"
 
     ci = _build(md, var_dict, par_dict)
-    mi = ModelInstance(md, ci)
+    mi = ModelInstance(ci, md)
     _save_dim_dict_reference(mi)
     return mi
 end

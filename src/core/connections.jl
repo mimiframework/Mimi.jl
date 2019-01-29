@@ -20,7 +20,7 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(ext_param.values)
-    t2 = eltype(datatype(param_def))
+    t2 = eltype(param_def.datatype)
     if !(t1 <: t2)
         error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
@@ -150,9 +150,10 @@ function connect_param!(md::ModelDef,
 
     else 
         # If backup not provided, make sure the source component covers the span of the destination component
-        src_first, src_last = first_and_last(md, src_comp_def)
-        dst_first, dst_last = first_and_last(md, dst_comp_def)
-        if dst_first < src_first || dst_last > src_last
+        src_first, src_last = first_and_last(src_comp_def)
+        dst_first, dst_last = first_and_last(dst_comp_def)
+        if (dst_first !== nothing && src_first !== nothing && dst_first < src_first) || 
+           (dst_last  !== nothing && src_last  !== nothing && dst_last  > src_last)
             error("""Cannot connect parameter: $src_comp_name runs only from $src_first to $src_last, 
 whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years.
 Try calling: 

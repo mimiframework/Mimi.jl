@@ -80,8 +80,8 @@ macro defcomposite(cc_name, ex)
 
     result = :(
         # @__MODULE__ is evaluated in calling module when macro is interpreted
-        let calling_module = @__MODULE__ #, comp_mod_name = nothing
-            global $cc_name = CompositeComponentDef()
+        let calling_module = @__MODULE__ # Use __module__?
+            global $cc_name = CompositeComponentDef(calling_module)
         end
     )
 

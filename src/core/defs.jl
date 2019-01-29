@@ -148,9 +148,10 @@ end
 #
 
 @method function add_dimension!(comp::ComponentDef, name)
+    # generally, we add dimension name with nothing instead of a Dimension instance,
+    # but in the case of an Int name, we create the "anonymous" dimension on the fly.
     dim = (name isa Int) ? Dimension(name) : nothing
-    comp.dim_dict[Symbol(name)] = dim                         # TBD: this makes no sense (test case of integer instead of symbol)
-    comp.dim_dict[name] = DimensionDef(name)
+    comp.dim_dict[Symbol(name)] = dim                         # TBD: test this
 end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
@@ -159,14 +160,12 @@ add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), na
 add_dim! = add_dimension!
 
 @method function dim_names(ccd::CompositeComponentDef)
-    dims = Vector{DimensionDef}()
+    dims = OrderedSet{Symbol}()             # use a set to eliminate duplicates
     for cd in compdefs(ccd)
-        append!(dims, keys(dim_dict(cd)))                     # TBD: this doesn't look right
+        union!(dims, keys(dim_dict(cd)))    # TBD: test this
     end
 
-    # use Set to eliminate duplicates
-    # TBD: If order is unimportant, store as a set instead?
-    return collect(Set(dims))
+    return collect(dims)
 end
 
 @method dim_names(comp_def::ComponentDef, datum_name::Symbol) = dim_names(datumdef(comp_def, datum_name))
@@ -193,6 +192,8 @@ end
 function first_and_step(values::Vector{Int})
      return values[1], step_size(values)
 end
+
+@method first_and_last(obj::ComponentDef) = (obj.first, obj.last)
 
 function time_labels(md::ModelDef)
     keys::Vector{Int} = dim_keys(md, :time)
@@ -230,7 +231,8 @@ function datum_size(md::ModelDef, comp_def::ComponentDef, datum_name::Symbol)
     return datum_size
 end
 
-@method has_dim(obj::CompositeComponentDef, name::Symbol) = haskey(obj.dim_dict, name)
+# Symbols are added to the dim_dict in @defcomp (with value of nothing), but are set later using set_dimension!
+@method has_dim(obj::CompositeComponentDef, name::Symbol) = (haskey(obj.dim_dict, name) && obj.dim_dict[name] !== nothing)
 
 @method isuniform(obj::CompositeComponentDef) = obj.is_uniform
 
@@ -327,9 +329,12 @@ function isuniform(values::Int)
     return true
 end
 
-#
+#             
 # Parameters
 #
+
+# Callable on both ParameterDef and VariableDef
+@method dim_names(obj::DatumDef) = obj.dim_names
 
 @method function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
     p = ParameterDef(name, datatype, dimensions, description, unit, default)
@@ -417,7 +422,7 @@ they match the model's index labels.
 """
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     # perform possible dimension and labels checks
-    if isa(value, NamedArray)
+    if value isa NamedArray
         dims = dimnames(value)
     end
 
@@ -429,7 +434,8 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
     num_dims = length(comp_param_dims)
     
     comp_def = compdef(md, comp_name)
-    data_type = datatype(parameter(comp_def, param_name))
+    param  = parameter(comp_def, param_name)
+    data_type = param.datatype
     dtype = data_type == Number ? number_type(md) : data_type
 
     if length(comp_param_dims) > 0
@@ -584,8 +590,8 @@ end
 end
 
 @method function set_run_period!(comp_def::ComponentDef, first, last)
-    first!(comp_def, first)
-    last!(comp_def, last)
+    comp_def.first = first
+    comp_def.last = last
     return nothing
 end
 
