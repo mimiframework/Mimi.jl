@@ -1,31 +1,36 @@
+module MyModel
+
 using Mimi
 
 include("region_parameters.jl")
 include("gross_economy.jl")
 include("emissions.jl")
 
-@Mimi.defmodel model begin
+export construct_MyModel
 
-    index[time] = 2015:5:2110
+function construct_MyModel()
+
+	m = Model()
+
+	set_dimension!(m, :time, collect(2015:5:2110))
+	set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 # Note that the regions of your model must be specified here
+
+	add_comp!(m, grosseconomy)
+	add_comp!(m, emissions)
+
+	set_param!(m, :grosseconomy, :l, l)
+	set_param!(m, :grosseconomy, :tfp, tfp)
+	set_param!(m, :grosseconomy, :s, s)
+	set_param!(m, :grosseconomy, :depk,depk)
+	set_param!(m, :grosseconomy, :k0, k0)
+	set_param!(m, :grosseconomy, :share, 0.3)
+
+	# set parameters for emissions component
+	set_param!(m, :emissions, :sigma, sigma)
+	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+
+    return m
     
-    # Note that the regions of your model must be specified here
-    index[regions] = [:Region1, :Region2, :Region3]  
-
-    # Order matters here. If the emissions component were defined first, the model would not run.
-    component(grosseconomy)
-    component(emissions)
-
-    # Set parameters for the grosseconomy component
-    grosseconomy.l     = l
-    grosseconomy.tfp   = tfp
-    grosseconomy.s     = s
-    grosseconomy.depk  = depk
-    grosseconomy.k0    = k0
-    grosseconomy.share = 0.3
-
-    # Set parameters for the emissions component
-    emissions.sigma = sigma
-
-    # Connect parameters
-    grosseconomy.YGROSS => emissions.YGROSS
 end
+
+end #module
