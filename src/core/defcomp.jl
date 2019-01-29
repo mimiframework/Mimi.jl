@@ -215,7 +215,7 @@ macro defcomp(comp_name, ex)
                         error("Dimensions ($dims) must be defined by a Symbol placeholder or an Int")
                     end
 
-                    if (:time in dims and dims[1] != :time)
+                    if (:time in dims && dims[1] != :time)
                         error("$elt_type $name: time must be the first dimension ($dims)")
                     end
                     
