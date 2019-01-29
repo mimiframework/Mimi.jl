@@ -45,10 +45,10 @@ The `@defsim` macro returns a `Simulation` instance, which contains all the defi
 
 ## The generate_trials! function
 
-The `generate_trials!` function can be used to pre-generate data for the given number of `trials`, save all random variable values in the file `filename`. Its calling signature is:
+The `generate_trials!` function can be used to pre-generate data using the given `samplesize`, save all random variable values in the file `filename`. Its calling signature is:
 
 ```
-generate_trials!(sim::Simulation, trials::Int; filename::String="")
+generate_trials!(sim::Simulation, samplesize::Int; filename::String="")
 ```
 
 If the `sim` parameter has multiple scenarios and the `scenario_loop` placement is set to `OUTER`, this function must be called if the user wants to ensure the same trial data be used in each scenario. If this function is not called, new trial data will be generated for each scenario. 
@@ -129,7 +129,7 @@ of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
 ## The run_sim function
 
-In it's simplest use, the `run_sim` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the `run_sim` function iterates over a given number of trials (in this simple case equivalent to sample size), perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 

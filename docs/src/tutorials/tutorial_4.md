@@ -97,7 +97,7 @@ generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
 
 ### Step 4. Run MCS
 
-Finally, use the [`run_sim`](@ref) function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
+Finally, use the [`run_sim`](@ref) function which runs a simulation, with parameters describing sample size and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials (equivilant to sample size in this simple case), perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
 
 ```
 function run_sim(sim::Simulation, 
