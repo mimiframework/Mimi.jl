@@ -32,7 +32,8 @@ function Base.show(data::LHSData)
     Mimi.print_nonempty("corrlist", data.corrlist)
 end
 
-function sample!(sim::LatinHypercubeSimulation)
+function sample!(sim::LatinHypercubeSimulation, samplesize::Int)
+    sim.trials = samplesize
     corrmatrix = correlation_matrix(sim)
     lhs!(sim, corrmatrix=corrmatrix)
 end

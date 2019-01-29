@@ -3,26 +3,31 @@ import SALib
 
 mutable struct SobolData <: AbstractSimulationData
     calc_second_order::Bool
-    N::Int 
 
-    function SobolData(;calc_second_order = false, N = 1000)
-        return new(calc_second_order, N)
+    function SobolData(;calc_second_order = false)
+        return new(calc_second_order)
     end
 end
 
 function Base.show(data::SobolData)
-    println("N: $(data.N)")
     println("Calc 2nd order: $(data.calc_second_order)")
 end
 
 const SobolSimulation = Simulation{SobolData}
 
-function sample!(sim::SobolSimulation)
+function sample!(sim::SobolSimulation, samplesize::Int)
 
     rvdict = sim.rvdict
     rvlist = sim.dist_rvs
-    
-    # get the samples
+    num_rvs = length(rvdict)
+
+    if sim.data.calc_second_order
+        sim.trials = samplesize * (2 * num_rvs + 2)
+    else
+        sim.trials = samplesize * (num_rvs + 2)
+    end
+
+    # get the samples to plug in to trials
     payload = create_SALib_payload(sim)
     samples = SALib.sample(payload)
 
@@ -50,7 +55,15 @@ function create_SALib_payload(sim::SobolSimulation)
         rv_info[rv.name] = rv.dist
     end
 
-    #create payload
-    return SALib.SobolData(params = rv_info, calc_second_order = sim.data.calc_second_order, N = sim.data.N)
+    # back out N
+    num_rvs = length(sim.rvdict)
+    if sim.data.calc_second_order
+        samples = sim.trials / (2 * num_rvs + 2)
+    else
+        samples = sim.trials / (num_rvs + 2)
+    end
+
+    # create payload
+    return SALib.SobolData(params = rv_info, calc_second_order = sim.data.calc_second_order, N = samples)
     
 end

@@ -139,26 +139,16 @@ function get_trial(sim::Simulation, trialnum::Int)
 end
 
 """
-    generate_trials!(sim::Simulation{T}, trials::Int; filename::String="")
+    generate_trials!(sim::Simulation{T}, samples::Int; filename::String="")
 
-Generate the given number of trials for the given Simulation instance. 
-Call this before running the sim to pre-generate data to be used by all 
-scenarios. Also saves inputs if a filename is given.
+Generate trials for the given Simulation instance using the defined `samplesize.
+Call this before running the sim to pre-generate data to be used by all scenarios. 
+Also saves inputs if a filename is given.
 """
-function generate_trials!(sim::Simulation{T}, trials::Int;
+function generate_trials!(sim::Simulation{T}, samplesize::Int;
                           filename::String="") where T <: AbstractSimulationData
-    if typeof(sim) <: SobolSimulation
-        num_rvs = length(sim.rvdict)
-        if sim.data.calc_second_order
-            sim.trials = sim.data.N * (2 * num_rvs + 2)
-        else
-            sim.trials = sim.data.N * (num_rvs + 2)
-        end
-    else
-        sim.trials = trials
-    end
 
-    sample!(sim)
+    sample!(sim, samplesize)
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
     # open a file that can be written to for each trialnum/scenario set?
@@ -167,7 +157,8 @@ function generate_trials!(sim::Simulation{T}, trials::Int;
     end
 end
 
-function sample!(sim::MonteCarloSimulation)
+function sample!(sim::MonteCarloSimulation, samplesize::Int)
+    sim.trials = samplesize
     rand!(sim)
 end
 

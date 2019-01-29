@@ -30,7 +30,7 @@ sim = @defsim begin
             Region2 => Uniform(0.10, 1.50),
             Region3 => Uniform(0.10, 0.20)]
 
-    sampling(SobolData, N = N)
+    sampling(SobolData, calc_second_order = false)
     
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
