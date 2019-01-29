@@ -89,28 +89,33 @@ module my_model
 
 using Mimi
 
-export m
+export construct_model
 
-m = Model()
+function construct_model()
+	m = Model()
 
-set_dimension!(m, :time, collect(2015:5:2110))
+	set_dimension!(m, :time, collect(2015:5:2110))
 
-# Order matters here. If the emissions component were defined first, the model would not run.
-add_comp!(my_model, grosseconomy)  
-add_comp!(my_model, emissions)
+	# Order matters here. If the emissions component were defined first, the model would not run.
+	add_comp!(my_model, grosseconomy)  
+	add_comp!(my_model, emissions)
 
-# Set parameters for the grosseconomy component
-set_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)
-set_param!(my_model, :grosseconomy, :depk, 0.1)
-set_param!(my_model, :grosseconomy, :k0, 130.)
-set_param!(my_model, :grosseconomy, :share, 0.3)
+	# Set parameters for the grosseconomy component
+	set_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+	set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+	set_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)
+	set_param!(my_model, :grosseconomy, :depk, 0.1)
+	set_param!(my_model, :grosseconomy, :k0, 130.)
+	set_param!(my_model, :grosseconomy, :share, 0.3)
 
-# Set parameters for the emissions component
-set_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-# Note that connect_param! was used here.
+	# Set parameters for the emissions component
+	set_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
+	# Note that connect_param! was used here.
+
+	return m
+
+end #end function
 
 end # end module
 
@@ -120,6 +125,7 @@ Now we can run the model and examine the results:
 ```julia
 # Run model
 using my_model
+m = construct_model()
 run(m)
 
 # Check model results
@@ -183,7 +189,7 @@ using Mimi
 end
 ```
 
-Save this component as _**gross_economy.jl**_
+Save this component as **`gross_economy.jl`**
 
 ```julia
 using Mimi	#Make sure to call Mimi again
@@ -211,7 +217,7 @@ using Mimi	#Make sure to call Mimi again
 end
 ```
 
-Save this component as _**emissions.jl**_
+Save this component as **`emissions.jl`**
 
 Let's create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.
 
@@ -247,7 +253,7 @@ for t in 1:20
 	sigma[t,3] = (1. - 0.045)^t * 0.6
 end
 ```
-Save this file as _**region_parameters.jl**_
+Save this file as **`region_parameters.jl`**
 
 The final step is to create a module.
 
@@ -256,35 +262,40 @@ module my_model
 
 using Mimi
 
-export m 
+export construct_model
 
-include("region_parameters.jl")
-include("gross_economy.jl")
-include("emissions.jl")
+function construct_model()
+	include("region_parameters.jl")
+	include("gross_economy.jl")
+	include("emissions.jl")
 
-m = Model()
+	m = Model()
 
-set_dimension!(m, :time, collect(2015:5:2110))
-set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 # Note that the regions of your model must be specified here
+	set_dimension!(m, :time, collect(2015:5:2110))
+	set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 # Note that the regions of your model must be specified here
 
-add_comp!(m, grosseconomy)
-add_comp!(m, emissions)
+	add_comp!(m, grosseconomy)
+	add_comp!(m, emissions)
 
-set_param!(m, :grosseconomy, :l, l)
-set_param!(m, :grosseconomy, :tfp, tfp)
-set_param!(m, :grosseconomy, :s, s)
-set_param!(m, :grosseconomy, :depk,depk)
-set_param!(m, :grosseconomy, :k0, k0)
-set_param!(m, :grosseconomy, :share, 0.3)
+	set_param!(m, :grosseconomy, :l, l)
+	set_param!(m, :grosseconomy, :tfp, tfp)
+	set_param!(m, :grosseconomy, :s, s)
+	set_param!(m, :grosseconomy, :depk,depk)
+	set_param!(m, :grosseconomy, :k0, k0)
+	set_param!(m, :grosseconomy, :share, 0.3)
 
-# set parameters for emissions component
-set_param!(my_model, :emissions, :sigma, sigma)
-connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+	# set parameters for emissions component
+	set_param!(my_model, :emissions, :sigma, sigma)
+	connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+
+	return m
+
+end #function
 
 end #end module
 
 ```
-Save this file as _**my_model.jl**_
+Save this file as **`my_model.jl`**
 
 We can now run the model and evaluate the results.
 
@@ -293,7 +304,7 @@ using Mimi
 
 include("my_model.jl")
 using my_model
-
+m = construct_model()
 run(m)
 
 # Check results
