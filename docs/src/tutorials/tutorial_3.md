@@ -85,41 +85,44 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 * To observe model results in a graphical form , [`explore`](@ref) as either `explore(model_name)` to open the UI window, or use `explore(model_name, :component_name, :variable_name)` or `explore(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
 
 ```julia
-module my_model
 
 using Mimi
 
-export m
+function construct_model()
+	m = Model()
 
-m = Model()
+	set_dimension!(m, :time, collect(2015:5:2110))
 
-set_dimension!(m, :time, collect(2015:5:2110))
+	# Order matters here. If the emissions component were defined first, the model would not run.
+	add_comp!(m, grosseconomy)  
+	add_comp!(m, emissions)
 
-# Order matters here. If the emissions component were defined first, the model would not run.
-add_comp!(my_model, grosseconomy)  
-add_comp!(my_model, emissions)
+	# Set parameters for the grosseconomy component
+	set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+	set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+	set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+	set_param!(m, :grosseconomy, :depk, 0.1)
+	set_param!(m, :grosseconomy, :k0, 130.)
+	set_param!(m, :grosseconomy, :share, 0.3)
 
-# Set parameters for the grosseconomy component
-set_param!(my_model, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_param!(my_model, :grosseconomy, :s, ones(20).* 0.22)
-set_param!(my_model, :grosseconomy, :depk, 0.1)
-set_param!(my_model, :grosseconomy, :k0, 130.)
-set_param!(my_model, :grosseconomy, :share, 0.3)
+	# Set parameters for the emissions component
+	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
+	# Note that connect_param! was used here.
 
-# Set parameters for the emissions component
-set_param!(my_model, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-# Note that connect_param! was used here.
+	return m
 
-end # end module
+end #end function
 
 ```
+
+Note that as an alternative to using many of the `set_param!` calls above, one may use the `default` keyword argument in `@defcomp` when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
+
 Now we can run the model and examine the results:
 
 ```julia
 # Run model
-using my_model
+m = construct_model()
 run(m)
 
 # Check model results
@@ -145,6 +148,8 @@ We can now modify our two-component model of the globe to include multiple regio
 * When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, `using Mimi` must be speficied for each component. This approach will be used here.
 
 To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.
+
+As this model is also more complex and spread across several files, we will also take this as a chance to introduce the custom of using [Modules](https://docs.julialang.org/en/v1/manual/modules/index.html) to package Mimi models, as shown below.
 
 ```julia
 using Mimi
@@ -183,7 +188,7 @@ using Mimi
 end
 ```
 
-Save this component as _**gross_economy.jl**_
+Save this component as **`gross_economy.jl`**
 
 ```julia
 using Mimi	#Make sure to call Mimi again
@@ -211,7 +216,7 @@ using Mimi	#Make sure to call Mimi again
 end
 ```
 
-Save this component as _**emissions.jl**_
+Save this component as **`emissions.jl`**
 
 Let's create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.
 
@@ -247,53 +252,59 @@ for t in 1:20
 	sigma[t,3] = (1. - 0.045)^t * 0.6
 end
 ```
-Save this file as _**region_parameters.jl**_
+Save this file as **`region_parameters.jl`**
 
 The final step is to create a module.
 
 ```julia
-module my_model
+module MyModel
 
 using Mimi
-
-export m 
 
 include("region_parameters.jl")
 include("gross_economy.jl")
 include("emissions.jl")
 
-m = Model()
+export construct_MyModel
 
-set_dimension!(m, :time, collect(2015:5:2110))
-set_dimension!(m, :regions, ["Region1", "Region2", "Region3"])	 # Note that the regions of your model must be specified here
+function construct_MyModel()
 
-add_comp!(m, grosseconomy)
-add_comp!(m, emissions)
+	m = Model()
 
-set_param!(m, :grosseconomy, :l, l)
-set_param!(m, :grosseconomy, :tfp, tfp)
-set_param!(m, :grosseconomy, :s, s)
-set_param!(m, :grosseconomy, :depk,depk)
-set_param!(m, :grosseconomy, :k0, k0)
-set_param!(m, :grosseconomy, :share, 0.3)
+	set_dimension!(m, :time, collect(2015:5:2110))
+	set_dimension!(m, :regions, [:Region1, :Region2, :Region3])	 # Note that the regions of your model must be specified here
 
-# set parameters for emissions component
-set_param!(my_model, :emissions, :sigma, sigma)
-connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+	add_comp!(m, grosseconomy)
+	add_comp!(m, emissions)
+
+	set_param!(m, :grosseconomy, :l, l)
+	set_param!(m, :grosseconomy, :tfp, tfp)
+	set_param!(m, :grosseconomy, :s, s)
+	set_param!(m, :grosseconomy, :depk,depk)
+	set_param!(m, :grosseconomy, :k0, k0)
+	set_param!(m, :grosseconomy, :share, 0.3)
+
+	# set parameters for emissions component
+	set_param!(m, :emissions, :sigma, sigma)
+	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+
+	return m
+
+end #function
 
 end #end module
 
 ```
-Save this file as _**my_model.jl**_
+Save this file as **`MyModel.jl`**
 
 We can now run the model and evaluate the results.
 
 ```julia
 using Mimi
 
-include("my_model.jl")
-using my_model
-
+include("MyModel.jl")
+using MyModel
+m = construct_MyModel()
 run(m)
 
 # Check results
