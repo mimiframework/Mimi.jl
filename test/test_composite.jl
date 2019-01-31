@@ -44,7 +44,7 @@ end
 # Test the calls the macro will produce
 let calling_module = @__MODULE__
     # calling_module = TestComposite
-    global MyComposite = Model()
+    global m = Model()
 
     ccname = :testcomp
     ccid  = ComponentId(calling_module, ccname)
@@ -63,14 +63,13 @@ let calling_module = @__MODULE__
         DatumReference(:var_3_1, Comp3) => :c3v1
     ]
 
-    MyComposite.md = md = ModelDef()
+    m.md = md = ModelDef()
     CompositeComponentDef(md, ccid, comps, bindings, exports)
                                 
-    set_dimension!(MyComposite, :time, 2005:2020)
+    set_dimension!(m, :time, 2005:2020)
     nothing
 end
 
-m = MyComposite
 md = m.md
 
 set_param!(m, :Comp1, :par_1_1, zeros(length(time_labels(md))))
@@ -78,7 +77,7 @@ connect_param!(md, :Comp2, :par_2_1, :Comp1, :var_1_1)
 connect_param!(md, :Comp2, :par_2_2, :Comp1, :var_1_1)
 connect_param!(md, :Comp3, :par_3_1, :Comp2, :var_2_1)
 
-build(MyComposite)
+build(m)
 
 end # module
 

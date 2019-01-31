@@ -5,7 +5,7 @@ using Test
 
 import Mimi:
     reset_compdefs, variable_names, compinstance, get_var_value, get_param_value, 
-    set_param_value, set_var_value, dim_count, dim_key_dict, dim_value_dict, compdef,
+    set_param_value, set_var_value, dim_count, compdef,
     ComponentInstance, ComponentDef, TimestepArray, ComponentInstanceParameters, 
     ComponentInstanceVariables
 
@@ -68,9 +68,5 @@ vars2 = variables(ci)
 @test vars == vars2
 
 @test dim_count(mi, :time) == 20
-key_dict = dim_key_dict(mi)
-value_dict = dim_value_dict(mi)
-@test [key_dict[:time]...] == [2015:5:2110...] && length(key_dict) == 1
-@test value_dict[:time] == [1:1:20...] && length(value_dict) == 1
 
 end #module

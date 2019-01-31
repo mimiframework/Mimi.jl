@@ -374,12 +374,28 @@ function ComponentInstanceVariables(names, types, values)
     return ComponentInstanceVariables{NT}(NT(values))
 end
 
+# A container class that wraps the dimension dictionary when passed to run_timestep()
+# and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
+struct DimValueDict
+    dict::Dict{Symbol, Vector{Int}}
+
+    function DimValueDict(dim_dict::Dict{Symbol, Vector{<: AbstractDimension}})
+        d = Dict([name => collect(values(dim)) for (name, dim) in dim_dict])
+        new(d)
+    end
+end
+
+# Special case support for Dicts so we can use dot notation on dimension.
+# The run_timestep() and init() funcs pass a DimValueDict of dimensions by name 
+# as the "d" parameter.
+Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[property]
+
 @class mutable ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} begin
     comp_name::Symbol
     comp_id::ComponentId
     variables::TV
     parameters::TP
-    dim_dict::Dict{Symbol, Vector{Int}}
+    dim_value_dict::DimValueDict
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
     init::Union{Nothing, Function}
@@ -387,17 +403,22 @@ end
 
     function ComponentInstance(self::AbstractComponentInstance,
                                comp_def::AbstractComponentDef, 
-                               vars::TV, pars::TP,
+                               vars::TV, pars::TP, dims::DimValueDict,
+                               time::AbstractDimension,
                                name::Symbol=nameof(comp_def)) where
                 {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
         
         self.comp_id = comp_id = comp_def.comp_id
         self.comp_name = name
-        self.dim_dict = Dict{Symbol, Vector{Int}}()     # values set in "build" stage
+        self.dim_value_dict = dims
         self.variables = vars
         self.parameters = pars
-        self.first = comp_def.first
-        self.last = comp_def.last
+
+        # If first or last is `nothing`, substitute first or last time period
+        t = dims.time
+        choose(a, b) = (a !== nothing ? a : b)
+        self.first = choose(comp_def.first, t[1])
+        self.last  = choose(comp_def.last,  t[end])
 
         @info "ComponentInstance evaluating $(comp_id.module_name)"        
         comp_module = Main.eval(comp_id.module_name)
@@ -432,19 +453,19 @@ end
     end
 end
 
-@method function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
+@method function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP, dims::DimValueDict,
                                    name::Symbol=nameof(comp_def)) where
         {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
 
     self = ComponentInstance{TV, TP}()
-    return ComponentInstance(self, comp_def, vars, pars, name)
+    return ComponentInstance(self, comp_def, vars, pars, dims, name)
 end
 
 # These can be called on CompositeComponentInstances and ModelInstances
 @method compdef(obj::ComponentInstance) = compdef(comp_id(obj))
-@method dims(obj::ComponentInstance) = obj.dim_dict
-@method has_dim(obj::ComponentInstance, name::Symbol) = haskey(obj.dim_dict, name)
-@method dimension(obj::ComponentInstance, name::Symbol) = obj.dim_dict[name]
+@method dim_value_dict(obj::ComponentInstance) = obj.dim_value_dict
+@method has_dim(obj::ComponentInstance, name::Symbol) = haskey(obj.dim_value_dict, name)
+@method dimension(obj::ComponentInstance, name::Symbol) = obj.dim_value_dict[name]
 @method first_period(obj::ComponentInstance) = obj.first
 @method mutable(obj::ComponentInstance) = obj.last
 
@@ -457,21 +478,24 @@ end
     function CompositeComponentInstance(self::AbstractCompositeComponentInstance,
                                         comps::Vector{<: AbstractComponentInstance},
                                         comp_def::AbstractComponentDef, 
+                                        dims::DimValueDict,
                                         name::Symbol=nameof(comp_def))
         comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
-        firsts = Vector{Union{Nothing, Int}}()
-        lasts  = Vector{Union{Nothing, Int}}()
-        clocks = Vector{Clock}()
 
-        for ci in comps
+        # pre-allocate these since we know the length
+        count  = length(comps)
+        firsts = Vector{Union{Nothing, Int}}(undef, count)
+        lasts  = Vector{Union{Nothing, Int}}(undef, count)
+        clocks = Vector{Clock}(undef, count)
+
+        for (i, ci) in enumerate(comps)
             comps_dict[ci.comp_name] = ci
-            push!(firsts, ci.first)
-            push!(lasts, ci.last)
-            # push!(clocks, ?)
+            firsts[i] = ci.first
+            lasts[i]  = ci.last
         end
         
         (vars, pars) = _comp_instance_vars_pars(comps)
-        ComponentInstance(self, comp_def, vars, pars, name)
+        ComponentInstance(self, comp_def, vars, pars, dims, name)
         CompositeComponentInstance(self, comps_dict, firsts, lasts, clocks)
         return self
     end
@@ -479,10 +503,11 @@ end
     # Constructs types of vars and params from sub-components
     function CompositeComponentInstance(comps::Vector{<: AbstractComponentInstance},
                                         comp_def::AbstractComponentDef,
+                                        dims::DimValueDict,
                                         name::Symbol=nameof(comp_def))
         (vars, pars) = _comp_instance_vars_pars(comps)
         self = new{typeof(vars), typeof(pars)}()
-        CompositeComponentInstance(self, comps, comp_def, name)
+        CompositeComponentInstance(self, comps, comp_def, dims, name)
     end
 end
 
@@ -530,18 +555,6 @@ function _comp_instance_vars_pars(comps::Vector{<: AbstractComponentInstance})
 
     return vars, pars
 end
-
-# A container class that wraps the dimension dictionary when passed to run_timestep()
-# and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
-struct DimDict
-    dict::Dict{Symbol, Vector{Int}}
-end
-
-# Special case support for Dicts so we can use dot notation on dimension.
-# The run_timestep() and init() funcs pass a DimDict of dimensions by name 
-# as the "d" parameter.
-Base.getproperty(dimdict::DimDict, property::Symbol) = getfield(dimdict, :dict)[property]
-
 
 # ModelInstance holds the built model that is ready to be run
 @class ModelInstance <: CompositeComponentInstance begin

@@ -10,15 +10,15 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 modeldef(mi::ModelInstance) = mi.md
 
 """
-    @method add_comp!(obj::CompositeComponentInstance, ci::absclass(ComponentInstance))
+    @method add_comp!(obj::CompositeComponentInstance, ci::AbstractComponentInstance)
 
 Add the (leaf or composite) component `ci` to a composite's list of components, and add 
 the `first` and `last` of `mi` to the ends of the composite's `firsts` and `lasts` lists.
 """
-@method function add_comp!(obj::CompositeComponentInstance, ci::absclass(ComponentInstance))
+@method function add_comp!(obj::CompositeComponentInstance, ci::AbstractComponentInstance)
     obj.comps_dict[nameof(ci)] = ci
 
-    push!(obj.firsts, first_period(ci))
+    push!(obj.firsts, first_period(ci))         # TBD: perhaps this should be set when time is set?
     push!(obj.lasts,  last_period(ci))
     nothing
 end
@@ -164,10 +164,6 @@ Return the size of index `dim_name`` in model instance `mi`.
 """
 @delegate dim_count(mi::ModelInstance, dim_name::Symbol) => md
 
-@delegate dim_key_dict(mi::ModelInstance) => md
-
-@delegate dim_value_dict(mi::ModelInstance) => md
-
 # TBD: make this a @method?
 function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
     last  = time_keys[min(length(time_keys), ntimesteps)]
@@ -209,11 +205,11 @@ end
     return nothing
 end
 
-function init(ci::ComponentInstance)
+@method function init(ci::ComponentInstance)
     reset_variables(ci)
 
     if ci.init != nothing
-        ci.init(parameters(ci), variables(ci), dims(ci))
+        ci.init(parameters(ci), variables(ci), dim_value_dict(ci))
     end
     return nothing
 end
@@ -225,9 +221,9 @@ end
     return nothing
 end
 
-function run_timestep(ci::ComponentInstance, clock::Clock)
+@method function run_timestep(ci::ComponentInstance, clock::Clock)
     if ci.run_timestep != nothing
-        ci.run_timestep(parameters(ci), variables(ci), dims(ci), clock.ts)
+        ci.run_timestep(parameters(ci), variables(ci), dim_value_dict(ci), clock.ts)
     end
 
     # TBD: move this outside this func if components share a clock
@@ -263,16 +259,22 @@ function _run_components(mi::ModelInstance, clock::Clock,
     nothing
 end
 
+# TBD: some of this (e.g., firsts/lasts) should be computed at each recursive level.
+# TBD: We have firsts/lasts in each (Composite)ComponentInstance. Compute this at build time.
+
+# TBD: Write (or find) a reset(clock::Clock) method
+
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
     if length(components(mi)) == 0
         error("Cannot run the model: no components have been created.")
     end
 
-    t::Vector{Int} = dimkeys === nothing ? dim_keys(mi, :time) : dimkeys[:time]
+    md = mi.md
+    t::Vector{Int} = dimkeys === nothing ? dim_keys(md, :time) : dimkeys[:time]
     
-    firsts_vec = firsts(mi)
-    lasts_vec = lasts(mi)
+    firsts_vec = Vector{Int}(mi.firsts)     # build step replaces `nothing` values with Ints
+    lasts_vec  = Vector{Int}(mi.lasts)
 
     if isuniform(t)
         stepsize = step_size(t)
@@ -291,6 +293,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     init(mi)    # call module's (or fallback) init function
 
+    @info "run: firsts: $firsts_vec, lasts: $lasts_vec"
     _run_components(mi, clock, firsts_vec, lasts_vec, comp_clocks)
     nothing
 end

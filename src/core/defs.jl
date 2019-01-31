@@ -18,7 +18,9 @@ function compdef(comp_name::Symbol)
     end
 end
 
-# TBD: @method supports ModelDef as subclass of CompositeComponentDef, otherwise not needed
+# Allows method to be called on leaf component defs, which sometimes simplifies code.
+compdefs(c::ComponentDef) = []
+
 @method compdefs(c::CompositeComponentDef) = values(c.comps_dict)
 @method compkeys(c::CompositeComponentDef) = keys(c.comps_dict)
 @method hascomp(c::CompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
@@ -44,31 +46,21 @@ first_period(comp_def::ComponentDef) = comp_def.first
 last_period(comp_def::ComponentDef)  = comp_def.last
 
 function first_period(comp_def::CompositeComponentDef)
-    if numcomponents(comp_def) > 0
-        firsts = [first_period(c) for c in comp_def]
-        if findfirst(isequal(nothing), firsts) == nothing   # i.e., there are no `nothing`s
-            return min(Vector{Int}(firsts)...)
-        end
-    end
-    nothing     # use model's first period
+    values = filter(!isnothing, [first_period(c) for c in comp_def])
+    return length(values) > 0 ? min(values...) : nothing
 end
 
 function last_period(comp_def::CompositeComponentDef)
-    if numcomponents(comp_def) > 0
-        lasts = [last_period(c) for c in comp_def]
-        if findfirst(isequal(nothing), lasts) == nothing   # i.e., there are no `nothing`s
-            return max(Vector{Int}(lasts)...)
-        end
-    end
-    nothing     # use model's last period
+    values = filter(!isnothing, [last_period(c) for c in comp_def])
+    return length(values) > 0 ? max(values...) : nothing
 end
 
-function first_period(md::ModelDef, comp_def::absclass(ComponentDef))
+function first_period(md::ModelDef, comp_def::AbstractComponentDef)
     period = first_period(comp_def)
     return period === nothing ? time_labels(md)[1] : period
 end
 
-function last_period(md::ModelDef, comp_def::absclass(ComponentDef))
+function last_period(md::ModelDef, comp_def::AbstractComponentDef)
     period = last_period(comp_def)
     return period === nothing ? time_labels(md)[end] : period
 end
@@ -156,9 +148,6 @@ end
 
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
-# Allow our usual abbreviation
-add_dim! = add_dimension!
-
 @method function dim_names(ccd::CompositeComponentDef)
     dims = OrderedSet{Symbol}()             # use a set to eliminate duplicates
     for cd in compdefs(ccd)
@@ -242,49 +231,53 @@ end
 
 dim_names(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
 
-
 dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dim_dict(md)])
 dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(md, dims)]
 dim_count(md::ModelDef, name::Symbol) = length(dimension(md, name))
 
-dim_key_dict(md::ModelDef) = Dict([name => collect(keys(dim)) for (name, dim) in dim_dict(md)])
-dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
-
+dim_keys(md::ModelDef, name::Symbol)   = collect(keys(dimension(md, name)))
 dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
-dim_value_dict(md::ModelDef) = Dict([name => collect(values(dim)) for (name, dim) in dim_dict(md)])
 
+# For debugging only
+@method function _show_run_period(obj::ComponentDef, first, last)
+    first = (first === nothing ? :nothing : first)
+    last  = (last  === nothing ? :nothing : last)
+    which = (is_leaf(obj) ? :leaf : :composite)
+    @info "Setting run period for $which $(nameof(obj)) to ($first, $last)"
+end
 
-# Helper function invoked when the user resets the time dimension with set_dimension!
-# This function calls set_run_period! on each component definition to reset the first and last values.
-@method function _reset_run_periods!(ccd::CompositeComponentDef, first, last)
-    for comp_def in compdefs(ccd)
-        changed = false
-        first_per = first_period(comp_def)
-        last_per  = last_period(comp_def)
+"""     
+    set_run_period!(obj::ComponentDef, first, last)
 
-        if first_per !== nothing && first_per < first 
-            @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
-            changed = true
-        else
-            first = first_per
-        end 
+Allows user to narrow the bounds on the time dimension.
 
-        if last_per !== nothing && last_per > last 
-            @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
-            changed = true
-        else 
-            last = last_per
-        end
+If the component has an earlier start than `first` or a later finish than `last`,
+the values are reset to the tighter bounds. Values of `nothing` are left unchanged.
+Composites recurse on sub-components.
+"""
+@method function set_run_period!(obj::ComponentDef, first, last)
+    #_show_run_period(obj, first, last)
 
-        if changed
-            set_run_period!(comp_def, first, last)
-        end
+    if first_per !== nothing && first_per < first 
+        @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
+        obj.first = first
+    end 
+
+    if last_per !== nothing && last_per > last 
+        @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
+        obj.last = last
     end
+
+    # N.B. compdefs() returns an empty list for leaf ComponentDefs
+    for subcomp in compdefs(obj)
+        set_run_period!(subcomp, first, last)
+    end
+    
     nothing
 end
  
 """
-    set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range}) 
+    set_dimension!(md::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) 
 
 Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
@@ -297,8 +290,8 @@ an integer; or to the values in the vector or range if `keys` is either of those
 
     if name == :time
         set_uniform!(ccd, isuniform(keys))
-        if redefined 
-            _reset_run_periods!(ccd, keys[1], keys[end])
+        if redefined
+            set_run_period!(ccd, keys[1], keys[end])
         end
     end
     
@@ -587,12 +580,6 @@ end
     first_index = findfirst(isequal(first), times)
     last_index  = findfirst(isequal(last), times)
     return size(times[first_index:last_index])
-end
-
-@method function set_run_period!(comp_def::ComponentDef, first, last)
-    comp_def.first = first
-    comp_def.last = last
-    return nothing
 end
 
 #

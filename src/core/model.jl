@@ -19,10 +19,6 @@ is_built(m::Model) = (modelinstance(m) !== nothing)
 @delegate compinstance(m::Model, name::Symbol) => mi
 @delegate has_comp(m::Model, name::Symbol) => mi
 
-@delegate firsts(m::Model) => mi
-@delegate lasts(m::Model)  => mi
-@delegate clocks(m::Model) => mi
-
 @delegate number_type(m::Model) => md
 
 @delegate internal_param_conns(m::Model) => md
@@ -213,6 +209,8 @@ Set the values of `m` dimension `name` to integers 1 through `count`, if `keys``
 an integer; or to the values in the vector or range if `keys`` is either of those types.
 """
 @delegate(set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) => md, decache(m))
+
+@delegate(set_run_period!(m::Model, first, last) => md, decache(m))
 
 @delegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
 

@@ -44,8 +44,9 @@ Base.iterate(dim::RangeDimension, state...)  = iterate(dim.range, state...)
 Base.keys(dim::RangeDimension)   = collect(dim.range)
 Base.values(dim::RangeDimension) = collect(1:length(dim.range))
 
-# Get last value from OrderedDict of keys
-Base.lastindex(dim::AbstractDimension) = dim.dict.keys[length(dim)]
+# Get first/last value from OrderedDict of keys
+Base.firstindex(dim::AbstractDimension) = dim.dict.keys[1]
+Base.lastindex(dim::AbstractDimension)  = dim.dict.keys[length(dim)]
 
 #
 # Compute the index of a "key" (e.g., a year) in the range. 

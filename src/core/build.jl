@@ -1,7 +1,7 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
 # Return the datatype to use for instance variables/parameters
-function _instance_datatype(md::ModelDef, def::absclass(DatumDef))
+function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dim_names(def)
     num_dims = dim_count(def)
@@ -27,7 +27,7 @@ function _instance_datatype(md::ModelDef, def::absclass(DatumDef))
 end
 
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
-function _instantiate_datum(md::ModelDef, def::absclass(DatumDef))
+function _instantiate_datum(md::ModelDef, def::AbstractDatumDef)
     dtype = _instance_datatype(md, def)
     dims = dim_names(def)
     num_dims = length(dims)
@@ -174,18 +174,6 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
     end
 end
 
-# Save a reference to the model's dimension dictionary to make it 
-# available in calls to run_timestep.
-function _save_dim_dict_reference(mi::ModelInstance)
-    dim_dict = dim_value_dict(mi)
-
-    for ci in components(mi)
-        ci.dim_dict = dim_dict
-    end
-
-    return nothing
-end
-
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     @info "Instantiating params for $(comp_def.comp_id)"
 
@@ -199,11 +187,15 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict
     return ComponentInstanceParameters(pnames, ptypes, pvals)
 end
 
-@method _instantiate_params(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}}) = _combine_exported_pars(comp_def, par_dict)
-
+@method function _instantiate_params(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+    _combine_exported_pars(comp_def, par_dict)
+end
 
 # Return a built leaf or composite ComponentInstance
-function _build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+function _build(comp_def::ComponentDef, 
+                var_dict::Dict{Symbol, Any},
+                par_dict::Dict{Symbol, Dict{Symbol, Any}},
+                dims::DimValueDict) # FIX pass just (first, last) tuple?
     @info "_build leaf $(comp_def.comp_id)"
     @info "  var_dict $(var_dict)"
     @info "  par_dict $(par_dict)"
@@ -212,18 +204,21 @@ function _build(comp_def::ComponentDef, var_dict::Dict{Symbol, Any}, par_dict::D
     pars = _instantiate_params(comp_def, par_dict)
     vars = var_dict[comp_name]
 
-    return ComponentInstance(comp_def, vars, pars, comp_name)
+    return ComponentInstance(comp_def, vars, pars, dims, comp_name)
 end
 
-@method function _build(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+@method function _build(comp_def::CompositeComponentDef, 
+                        var_dict::Dict{Symbol, Any}, 
+                        par_dict::Dict{Symbol, Dict{Symbol, Any}},
+                        dims::DimValueDict) # FIX pass just (first, last) tuple?
     @info "_build composite $(comp_def.comp_id)"
     @info "  var_dict $(var_dict)"
     @info "  par_dict $(par_dict)"
     
-    comp_name = nameof(comp_def)   
-    comps = [_build(cd, var_dict, par_dict) for cd in compdefs(comp_def)]
+    comps = [_build(cd, var_dict, par_dict, dims) for cd in compdefs(comp_def)]
+    comp_name = nameof(comp_def)å
     
-    return CompositeComponentInstance(comps, comp_def, comp_name)
+    return CompositeComponentInstance(comps, comp_def, dims, comp_name)
 end
 
 function _build(md::ModelDef)
@@ -246,9 +241,11 @@ function _build(md::ModelDef)
     @info "var_dict: $var_dict"
     @info "par_dict: $par_dict"
 
-    ci = _build(md, var_dict, par_dict)
+    dim_val_dict = DimValueDict(dim_dict(md))
+
+    ci = _build(md, var_dict, par_dict, dim_val_dict)
     mi = ModelInstance(ci, md)
-    _save_dim_dict_reference(mi)
+
     return mi
 end
 
