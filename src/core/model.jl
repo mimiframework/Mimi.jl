@@ -105,7 +105,7 @@ to match the model's time index.
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, update_param! 
+For each (k, v) in the provided `parameters` dictionary, `update_param!`` 
 is called to update the external parameter by name k to value v, with optional 
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 

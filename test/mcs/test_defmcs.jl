@@ -63,7 +63,6 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 
 Mimi.set_model!(mcs, m)
 
-
 run_mcs(mcs, N, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018

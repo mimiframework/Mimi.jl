@@ -122,7 +122,7 @@ function connect_param!(md::ModelDef,
         dst_param = parameter(dst_comp_def, dst_par_name)
         dst_dims  = dim_names(dst_param)
 
-        backup = convert(Array{number_type(md)}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
+        backup = convert(Array{Union{Missing, number_type(md)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
         first = first_period(md, dst_comp_def)
         T = eltype(backup)        
         
@@ -442,7 +442,7 @@ end
 """
     update_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, update_param! 
+For each (k, v) in the provided `parameters` dictionary, `update_param!`
 is called to update the external parameter by name k to value v, with optional 
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 

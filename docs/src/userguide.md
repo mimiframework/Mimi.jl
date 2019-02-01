@@ -2,7 +2,7 @@
 
 ## Overview
 
-See the Tutorial for in depth examples of one-region and multi-region models.
+See the Tutorials for in-depth examples of Mimi's functionality.
 
 This guide is organized into six main sections for understanding how to use Mimi.
 
@@ -11,13 +11,16 @@ This guide is organized into six main sections for understanding how to use Mimi
 3) Running the model
 4) Accessing results
 5) Plotting and the Explorer UI
-6) Advanced topics
+6) MCS Functionality
+7) Advanced topics
 
 ## Defining Components
 
 Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components.
 
 A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the `run_timestep` function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
+
+Also note that if a  `Variable` or `Parameter` has `time` as an index, it must be listed as the first index in the definition, eg. `B = Variable(index = [time, regions])` is allowed, but `B = Variable(index = [regions, time])` is not.
 
 The user must define a `run_timestep` function for each component. 
 
@@ -166,6 +169,10 @@ save("figure.svg", p)
 
 ![Explorer Single Plot Example](figs/explorer_single_plot_example.png)
 
+## Monte Carlo Simulation (MCS) Support
+
+Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) on Mimi models. The best current documentation on the MCS API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+
 ## Advanced Topics
 
 ### Timesteps and available functions
@@ -224,7 +231,7 @@ update_param!(mymodel, :parametername, newvalues) # update values only
 update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
 ```
 
-Note: newvalues must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
+Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
 ### Setting parameters with a dictionary
 

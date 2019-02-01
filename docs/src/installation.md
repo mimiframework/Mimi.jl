@@ -38,7 +38,7 @@ There are various editors around that have julia support:
 
 ## Getting started
 
-The best way to get started with Mimi is to work through the [Tutorial](@ref). The `examples/tutorial` folder in the [Mimi](https://github.com/anthofflab/Mimi.jl) github repository has julia code files that completely implement the example described in the tutorial.
+The best way to get started with Mimi is to work through the **Tutorials**. 
 
 The [Mimi](https://github.com/anthofflab/Mimi.jl) github repository also has links to various models that are based on Mimi, and looking through their code can be instructive.
 

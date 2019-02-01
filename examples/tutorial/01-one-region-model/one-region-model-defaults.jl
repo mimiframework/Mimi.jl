@@ -18,6 +18,8 @@ using Mimi
             v.K[t]  = (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
         end
 
+        # Default values are now provided in @defcomp
+
         # Define an equation for YGROSS
         v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)
     end
@@ -34,48 +36,7 @@ end
     end
 end
 
-@Mimi.defmodel model begin
-
-    index[time] = 2015:5:2110
-
-    # Order matters here. If the emissions component were defined first, the model would not run.
-    component(grosseconomy)
-    component(emissions)
-
-    #
-    # Default values are now provided in @defcomp
-    #
-    # Set parameters for the grosseconomy component
-    # grosseconomy.l = [(1. + 0.015)^t * 6404 for t in 1:20]
-    # grosseconomy.tfp = [(1 + 0.065)^t * 3.57 for t in 1:20]
-    #
-    # grosseconomy.s = ones(20) * 0.22
-    # grosseconomy.depk = 0.1
-    # grosseconomy.k0 = 130.
-    # grosseconomy.share = 0.3
-    #
-    # Set parameters for the emissions component
-    # emissions.sigma = [(1. - 0.05)^t * 0.58 for t in 1:20]
-
-    # Connect parameters
-    grosseconomy.YGROSS => emissions.YGROSS
-end
-
-# Above macro yields this:
-# quote
-#     tutorial = (Mimi.Model)()
-#     (Mimi.set_dimension!)(tutorial, :time, 2015:5:2110)
-#     (Mimi.add_comp!)(tutorial, Main.grosseconomy, :grosseconomy)
-#     (Mimi.add_comp!)(tutorial, Main.emissions, :emissions)
-#     (Mimi.set_param!)(tutorial, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
-#     (Mimi.set_param!)(tutorial, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
-#     (Mimi.set_param!)(tutorial, :grosseconomy, :s, ones(20) * 0.22)
-#     (Mimi.set_param!)(tutorial, :grosseconomy, :depk, 0.1)
-#     (Mimi.set_param!)(tutorial, :grosseconomy, :k0, 130.0)
-#     (Mimi.set_param!)(tutorial, :grosseconomy, :share, 0.3)
-#     (Mimi.set_param!)(tutorial, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
-#     (Mimi.connect_param!)(tutorial, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-# end
+model = construct_model()
 
 run(model)
 

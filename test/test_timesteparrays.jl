@@ -243,7 +243,7 @@ add_comp!(m, foo, :second)
 connect_param!(m, :second=>:par, :first=>:var)
 set_param!(m, :first, :par, 1:length(years))
 
-@test_throws ErrorException run(m)
+@test_throws MissingException run(m)
 
 
 end #module

@@ -1,5 +1,11 @@
 using Pkg
 Pkg.add("InfoZIP")
+Pkg.add("ExcelReaders")
+Pkg.add("DataFrames")
+Pkg.add("CSVFiles")
+Pkg.add("CSV")
+Pkg.add("StatsBase")
+Pkg.add("Distributions")
 
 using Mimi
 using InfoZIP
@@ -10,8 +16,8 @@ end
 
 #list of URLs of branches of packages to test
 dependencies = [
-    "https://github.com/lrennels/fund/archive/1768edf12aaaac3a41bbea081d5b51299121f993.zip",
-    "https://github.com/lrennels/mimi-rice-2010.jl/archive/2b5996b0a0c8be92290991f045c43af425c5a9c8.zip"
+    "https://github.com/fund-model/fund/archive/1768edf12aaaac3a41bbea081d5b51299121f993.zip",
+    "https://github.com/anthofflab/mimi-rice-2010.jl/archive/2b5996b0a0c8be92290991f045c43af425c5a9c8.zip"
 ]
 
 function run_dependency_tests(dependencies=dependencies)
@@ -46,7 +52,7 @@ function run_dependency_tests(dependencies=dependencies)
 
         #test the package
         try
-            run(`$JULIA_HOME/julia $process`)
+            run(`$(Sys.BINDIR)/julia $process`)
         catch e
             append!(errors, [(package_name, e)])
         end

@@ -11,6 +11,7 @@ using StringBuilders
 
 export
     @defcomp,
+    @defmcs,
     MarginalModel,
     Model,
     add_comp!,  
@@ -20,6 +21,7 @@ export
     disconnect_param!,
     explore,
     getdataframe, 
+    generate_trials!,
     gettime,
     get_param_value,
     get_var_value,
@@ -35,6 +37,7 @@ export
     parameters, 
     plot_comp_graph,
     replace_comp!, 
+    run_mcs,
     set_dimension!, 
     set_leftover_params!, 
     set_param!, 
