@@ -329,8 +329,8 @@ end
 Add an array type parameter `name` with value `value` and `dims` dimensions to the model 'm'.
 """
 function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractArray, dims)   
+    numtype = number_type(md)
     if !(typeof(value) <: Array{numtype})
-        numtype = number_type(md)
         # Need to force a conversion (simple convert may alias in v0.6)
         value = Array{numtype}(undef, value)
     end

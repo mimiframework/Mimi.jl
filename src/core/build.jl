@@ -153,14 +153,14 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
         var_value_obj = get_property_obj(src_vars, ipc.src_var_name)
         comp_pars = par_dict[ipc.dst_comp_name]
         comp_pars[ipc.dst_par_name] = var_value_obj
-        @info "internal conn: $(ipc.src_comp_name).$(ipc.src_var_name) => $(ipc.dst_comp_name).$(ipc.dst_par_name)"
+        # @info "internal conn: $(ipc.src_comp_name).$(ipc.src_var_name) => $(ipc.dst_comp_name).$(ipc.dst_par_name)"
     end
 
     for ext in external_param_conns(comp_def)
         param = external_param(comp_def, ext.external_param)
         comp_pars = par_dict[ext.comp_name]
         comp_pars[ext.param_name] = param isa ScalarModelParameter ? param : value(param)
-        @info "external conn: $(ext.comp_name).$(ext.param_name) => $(param)"
+        # @info "external conn: $(ext.comp_name).$(ext.param_name) => $(param)"
     end
 
     # Make the external parameter connections for the hidden ConnectorComps.
@@ -170,7 +170,7 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
         param = external_param(comp_def, backup)
         comp_pars = par_dict[conn_comp_name]
         comp_pars[:input2] = param isa ScalarModelParameter ? param : value(param)
-        @info "backup: $conn_comp_name $param"
+        # @info "backup: $conn_comp_name $param"
     end
 end
 

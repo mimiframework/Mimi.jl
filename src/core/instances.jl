@@ -165,7 +165,7 @@ Return the size of index `dim_name`` in model instance `mi`.
 @delegate dim_count(mi::ModelInstance, dim_name::Symbol) => md
 
 @method function reset_variables(ci::ComponentInstance)
-    # println("reset_variables($(ci.comp_id))")
+    # @info "reset_variables($(ci.comp_id))"
     vars = ci.variables
 
     for (name, T) in zip(names(vars), types(vars))
@@ -190,7 +190,8 @@ end
     return nothing
 end
 
-@method function init(ci::ComponentInstance)
+@method function init(ci::ComponentInstance, dims::DimValueDict)
+    # @info "init($(ci.comp_id))"
     reset_variables(ci)
 
     if ci.init != nothing
@@ -206,29 +207,8 @@ end
     return nothing
 end
 
-# @method function run_timestep(ci::ComponentInstance, clock::Clock)
-#     if ci.run_timestep !== nothing
-#         ci.run_timestep(parameters(ci), variables(ci), dim_value_dict(ci), clock.ts)
-#     end
-
-#     # TBD: move this outside this func if components share a clock
-#     advance(clock)
-
-#     return nothing
-# end
-
-# @method function run_timestep(obj::CompositeComponentInstance, clock::Clock)
-#     for ci in components(obj)
-#         run_timestep(ci, clock)
-#     end
-#     return nothing
-# end
-
 @method _runnable(ci::ComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
 
-#
-# New versions
-#
 @method function run_timestep(ci::ComponentInstance, clock::Clock, dims::DimValueDict)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
         ci.run_timestep(ci.parameters, ci.variables, dims, clock.ts)
@@ -245,41 +225,6 @@ end
     end
     return nothing
 end
-
-#
-# TBD: might be obsolete
-#
-"""
-    function _make_clocks(ci::AbstractComponentInstance, time_keys::Vector{Int})
-
-Store a vector of of Clocks into a composite instance's `clocks` member,
-and repeat recursively through any subcomps. For non-composites, do nothing.
-"""
-# _make_clocks(ci::ComponentInstance, time_keys::Vector{Int}) = nothing
-
-# @method function _make_clocks(ci::CompositeComponentInstance, time_keys::Vector{Int})
-#     clocks = ci.clocks  # preallocated in constructor
-
-#     if isuniform(time_keys)
-#         stepsize = step_size(time_keys)
-#         for (i, (first, last)) in enumerate(zip(ci.firsts, ci.lasts))
-#             clocks[i] = Clock{FixedTimestep}(first, stepsize, last)
-#         end
-#     else
-#         for (i, (first, last)) in enumerate(zip(ci.firsts, ci.lasts))
-#             first_index = findfirst(isequal(first), time_keys)
-#             last_index  = findfirst(isequal(last), time_keys)
-#             times = Tuple(time_keys[first_index:last_index])
-#             clocks[i] = Clock{VariableTimestep}(times)
-#         end
-#     end
-
-#     for subcomp in components(ci)
-#         _make_clocks(subcomp, time_keys)
-#     end
-# end
-
-# TBD: Write a reset(clock::Clock) method?
 
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
@@ -301,7 +246,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     dim_val_dict = DimValueDict(dim_dict(mi.md))
 
     # recursively initializes all components
-    init(mi)    
+    init(mi, dim_val_dict)
     
     clock = Clock(time_keys)
     while ! finished(clock)

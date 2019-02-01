@@ -7,9 +7,8 @@ using Mimi
 
 import Mimi: 
     connect_param!, unconnected_params, set_dimension!, 
-    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
-    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, 
-    dimensions, compdefs
+    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count,  dim_names,
+    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
 
 reset_compdefs()
 
@@ -170,7 +169,6 @@ run(m)
 # This results in 2 warnings, so we test for both.
 @test_logs(
     (:warn, "Redefining dimension :time"),
-    # (:warn, "Resetting E component's last timestep to 2015"),
     set_dimension!(m, :time, [2015])
 )
 

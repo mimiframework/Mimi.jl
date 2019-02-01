@@ -15,7 +15,7 @@ reset_compdefs()
     var_1_1 = Variable(index=[time])       # computed
     
     function run_timestep(p, v, d, t)
-        @info "Comp1 run_timestep"
+        # @info "Comp1 run_timestep"
         v.var_1_1[t] = p.par_1_1[t]
     end
 end
@@ -26,7 +26,7 @@ end
     var_2_1 = Variable(index=[time])       # computed
     
     function run_timestep(p, v, d, t)
-        @info "Comp2 run_timestep"
+        # @info "Comp2 run_timestep"
         v.var_2_1[t] = p.par_2_1[t] + p.par_2_2[t]
     end
 end
@@ -36,7 +36,7 @@ end
     var_3_1 = Variable(index=[time])       # external output
     
     function run_timestep(p, v, d, t)
-        @info "Comp3 run_timestep"
+        # @info "Comp3 run_timestep"
         v.var_3_1[t] = p.par_3_1[t] * 2
     end
 end

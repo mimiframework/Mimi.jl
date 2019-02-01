@@ -93,8 +93,8 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 
 @test nameof(compdef(m.md, :X)) == :bad3              # The replacement was still successful
 #external_param_conns(md, comp_name)
-@test length(external_param_conns(m.md)) == 0       # The external paramter connection was removed
-@test length(external_params(m.md)) == 1            # The external parameter still exists
+@test length(m.md.external_param_conns) == 0       # The external parameter connection was removed
+@test length(m.md.external_params) == 1            # The external parameter still exists
 
 
 # 5. Test bad external parameter dimensions

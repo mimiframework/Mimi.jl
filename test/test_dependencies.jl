@@ -70,6 +70,6 @@ function run_dependency_tests(dependencies=dependencies)
     if num_errors > 0
         error(error_message)
     else
-        println("All dependency tests passed.")
+        @info "All dependency tests passed."
     end
 end

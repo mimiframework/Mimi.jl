@@ -119,9 +119,7 @@ end
 
 Delete a `component` by name from a model definition `m`.
 """
-@delegate Base.delete!(md::ModelDef, comp_name::Symbol) => ccd
-
-function Base.delete!(ccd::CompositeComponentDef, comp_name::Symbol)
+@method function Base.delete!(ccd::CompositeComponentDef, comp_name::Symbol)
     if ! hascomp(ccd, comp_name)
         error("Cannot delete '$comp_name': component does not exist.")
     end
@@ -292,9 +290,7 @@ an integer; or to the values in the vector or range if `keys` is either of those
 
     if name == :time
         set_uniform!(ccd, isuniform(keys))
-        if redefined
-            set_run_period!(ccd, keys[1], keys[end])
-        end
+        set_run_period!(ccd, keys[1], keys[end])
     end
     
     return set_dimension!(ccd, name, Dimension(keys))
@@ -596,9 +592,13 @@ end
 
 function _add_anonymous_dims!(md::ModelDef, comp_def::AbstractComponentDef)
     for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dim_dict)
-        @info "Setting dimension $name to $dim"
+        # @info "Setting dimension $name to $dim"
         set_dimension!(md, name, dim)
     end
+end
+
+@method function comps_dict!(obj::CompositeComponentDef, comps::OrderedDict{Symbol, AbstractComponentDef})
+    obj.comps_dict = comps
 end
 
 """
@@ -650,7 +650,7 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
     if before === nothing && after === nothing
         _append_comp!(obj, comp_name, comp_def)   # just add it to the end
     else
-        new_comps = OrderedDict{Symbol, ComponentDef}()
+        new_comps = OrderedDict{Symbol, AbstractComponentDef}()
 
         if before !== nothing
             if ! hascomp(obj, before)
@@ -795,7 +795,7 @@ parameter connections should be maintained in the new component.
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
         # Delete the old component from comps_dict, leaving the existing parameter connections 
-        delete!(obj.ccd.comps_dict, comp_name)      
+        delete!(obj.comps_dict, comp_name)      
     else
         # Delete the old component and all its internal and external parameter connections
         delete!(obj, comp_name)  

@@ -314,7 +314,7 @@ macro defmodel(model_name, ex)
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.
-            println("Passing through: $elt")
+            @info "Passing through: $elt"
             expr = elt
         end
 

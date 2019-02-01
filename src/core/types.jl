@@ -163,7 +163,7 @@ end
 struct ExternalParameterConnection  <: AbstractConnection
     comp_name::Symbol
     param_name::Symbol      # name of the parameter in the component
-    external_param::Symbol  # name of the parameter stored in md.ccd.external_params
+    external_param::Symbol  # name of the parameter stored in external_params
 end
 
 #
@@ -319,8 +319,7 @@ end
     function CompositeComponentDef(self::Union{Nothing, AbstractCompositeComponentDef}=nothing)
         self = (self === nothing ? new() : self)
 
-        anon     = gensym(:anonymous)
-        comp_id  = ComponentId(anon, anon)
+        comp_id  = ComponentId(@__MODULE__, gensym(:anonymous))
         comps    = Vector{T where T <: AbstractComponentDef}()
         bindings = Vector{Pair{DatumReference, BindingTypes}}()
         exports  = Vector{Pair{DatumReference, Symbol}}()
@@ -470,9 +469,6 @@ end
 
 @class mutable CompositeComponentInstance <: ComponentInstance begin
     comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
-    # firsts::Vector{Int}        # in order corresponding with components
-    # lasts::Vector{Int}
-    # clocks::Vector{Clock}
     
     function CompositeComponentInstance(self::AbstractCompositeComponentInstance,
                                         comps::Vector{<: AbstractComponentInstance},
@@ -481,21 +477,13 @@ end
                                         name::Symbol=nameof(comp_def))
         comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
 
-        # pre-allocate these since we know the length
-        # count  = length(comps)
-        # firsts = Vector{Int}(undef, count)
-        # lasts  = Vector{Int}(undef, count)
-        # clocks = Vector{Clock}(undef, count)
-
-        for (i, ci) in enumerate(comps)
+        for ci in comps
             comps_dict[ci.comp_name] = ci
-            # firsts[i] = ci.first
-            # lasts[i]  = ci.last
         end
         
         (vars, pars) = _comp_instance_vars_pars(comps)
         ComponentInstance(self, comp_def, vars, pars, time_bounds, name)
-        CompositeComponentInstance(self, comps_dict) #, time_bounds, clocks)
+        CompositeComponentInstance(self, comps_dict)
         return self
     end
 
