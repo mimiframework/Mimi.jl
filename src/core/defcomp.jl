@@ -283,11 +283,12 @@ macro defmodel(model_name, ex)
     for elt in elements
         offset = 0
 
-        if @capture(elt, component(comp_mod_name_name_.comp_name_)    | component(comp_name_) |
+        if @capture(elt, component(comp_mod_name_.comp_name_)         | component(comp_name_) |
                          component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
 
             # set local copy of comp_mod_name to the stated or default component module
-            expr = (comp_mod_name === nothing ? :(comp_mod_name = nameof(calling_module)) : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
+            expr = (comp_mod_name === nothing ? :(comp_mod_name = nameof(calling_module)) 
+                                              : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
             addexpr(expr)
 
             name = (alias === nothing ? comp_name : alias)

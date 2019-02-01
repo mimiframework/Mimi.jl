@@ -257,6 +257,8 @@ Composites recurse on sub-components.
 """
 @method function set_run_period!(obj::ComponentDef, first, last)
     #_show_run_period(obj, first, last)
+    first_per = first_period(obj)
+    last_per  = last_period(obj)
 
     if first_per !== nothing && first_per < first 
         @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"

@@ -113,7 +113,7 @@ function _instantiate_vars(comp_def::ComponentDef, md::ModelDef, var_dict::Dict{
     par_dict[comp_name] = Dict()
 
     var_dict[comp_name] = v = _instantiate_component_vars(md, comp_def)
-    @info "_instantiate_vars leaf $comp_name: $v"
+    # @info "_instantiate_vars leaf $comp_name: $v"
 end
 
 # Creates the top-level vars for the model
@@ -127,12 +127,12 @@ end
     comp_name = nameof(comp_def)
     par_dict[comp_name] = Dict()
 
-    @info "_instantiate_vars composite $comp_name"
+    # @info "_instantiate_vars composite $comp_name"
     for cd in compdefs(comp_def)
         _instantiate_vars(cd, md, var_dict, par_dict)
     end
     var_dict[comp_name] = v = _combine_exported_vars(comp_def, var_dict)            
-    @info "composite vars for $comp_name: $v "
+    # @info "composite vars for $comp_name: $v "
 end
 
 # Do nothing if called on a leaf component
@@ -145,7 +145,7 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
         _collect_params(cd, var_dict, par_dict)
     end        
 
-    @info "Collecting params for $(comp_def.comp_id)"
+    # @info "Collecting params for $(comp_def.comp_id)"
 
     # Iterate over connections to create parameters, referencing storage in vars   
     for ipc in internal_param_conns(comp_def)
@@ -175,7 +175,7 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
 end
 
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
-    @info "Instantiating params for $(comp_def.comp_id)"
+    # @info "Instantiating params for $(comp_def.comp_id)"
 
     comp_name = nameof(comp_def)
     d = par_dict[comp_name]
@@ -195,30 +195,28 @@ end
 function _build(comp_def::ComponentDef, 
                 var_dict::Dict{Symbol, Any},
                 par_dict::Dict{Symbol, Dict{Symbol, Any}},
-                dims::DimValueDict) # FIX pass just (first, last) tuple?
-    @info "_build leaf $(comp_def.comp_id)"
-    @info "  var_dict $(var_dict)"
-    @info "  par_dict $(par_dict)"
+                time_bounds::Tuple{Int, Int})
+    # @info "_build leaf $(comp_def.comp_id)"
+    # @info "  var_dict $(var_dict)"
+    # @info "  par_dict $(par_dict)"
 
     comp_name = nameof(comp_def)
     pars = _instantiate_params(comp_def, par_dict)
     vars = var_dict[comp_name]
 
-    return ComponentInstance(comp_def, vars, pars, dims, comp_name)
+    return ComponentInstance(comp_def, vars, pars, time_bounds)
 end
 
 @method function _build(comp_def::CompositeComponentDef, 
                         var_dict::Dict{Symbol, Any}, 
                         par_dict::Dict{Symbol, Dict{Symbol, Any}},
-                        dims::DimValueDict) # FIX pass just (first, last) tuple?
-    @info "_build composite $(comp_def.comp_id)"
-    @info "  var_dict $(var_dict)"
-    @info "  par_dict $(par_dict)"
+                        time_bounds::Tuple{Int, Int})
+    # @info "_build composite $(comp_def.comp_id)"
+    # @info "  var_dict $(var_dict)"
+    # @info "  par_dict $(par_dict)"
     
-    comps = [_build(cd, var_dict, par_dict, dims) for cd in compdefs(comp_def)]
-    comp_name = nameof(comp_def)å
-    
-    return CompositeComponentInstance(comps, comp_def, dims, comp_name)
+    comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]   
+    return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
 
 function _build(md::ModelDef)
@@ -238,12 +236,13 @@ function _build(md::ModelDef)
     _instantiate_vars(md, var_dict, par_dict)
     _collect_params(md, var_dict, par_dict)
 
-    @info "var_dict: $var_dict"
-    @info "par_dict: $par_dict"
+    # @info "var_dict: $var_dict"
+    # @info "par_dict: $par_dict"
 
-    dim_val_dict = DimValueDict(dim_dict(md))
+    t = dimension(md, :time)
+    time_bounds = (firstindex(t), lastindex(t))
 
-    ci = _build(md, var_dict, par_dict, dim_val_dict)
+    ci = _build(md, var_dict, par_dict, time_bounds)
     mi = ModelInstance(ci, md)
 
     return mi

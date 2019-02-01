@@ -78,6 +78,7 @@ connect_param!(md, :Comp2, :par_2_2, :Comp1, :var_1_1)
 connect_param!(md, :Comp3, :par_3_1, :Comp2, :var_2_1)
 
 build(m)
+run(m)
 
 end # module
 

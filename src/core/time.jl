@@ -76,7 +76,7 @@ end
 
 function next_timestep(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	if finished(ts)
-			error("Cannot get next timestep, this is last timestep.")
+		error("Cannot get next timestep, this is last timestep.")
 	end
 	return FixedTimestep{FIRST, STEP, LAST}(ts.t + 1)
 end
@@ -89,7 +89,7 @@ function next_timestep(ts::VariableTimestep{TIMES}) where {TIMES}
 end
 
 function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
-	if is_first(ts)
+	if val != 0 && is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
 	elseif ts.t - val <= 0
 		error("Cannot get requested timestep, precedes first timestep.")		
@@ -98,7 +98,7 @@ function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, S
 end
 
 function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
-	if is_first(ts)
+	if val != 0 && is_first(ts)
 		error("Cannot get previous timestep, this is first timestep.")
 	elseif ts.t - val <= 0
 		error("Cannot get requested timestep, precedes first timestep.")		
@@ -129,6 +129,19 @@ end
 #  2. CLOCK
 #
 
+function Clock(time_keys::Vector{Int})
+    last = time_keys[end]
+
+    if isuniform(time_keys)
+        first, stepsize = first_and_step(time_keys)
+        return Clock{FixedTimestep}(first, stepsize, last)
+    else
+        last_index = findfirst(isequal(last), time_keys)
+        times = (time_keys[1:last_index]...,)
+        return Clock{VariableTimestep}(times)
+    end
+end
+
 function timestep(c::Clock)
 	return c.ts
 end
@@ -153,6 +166,11 @@ end
 
 function finished(c::Clock)
 	return finished(c.ts)
+end
+
+function reset(c::Clock)
+	c.ts = c.ts - (c.ts.t - 1)
+	nothing
 end
 
 #
