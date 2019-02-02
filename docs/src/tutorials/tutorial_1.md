@@ -66,8 +66,8 @@ After the model has been run, you may access the results (the calculated variabl
 First of all, you may use the `getindex` syntax as follows:
 
 ```julia
-my_model[:ComponentName, :VariableName] # returns the whole array of values
-my_model[:ComponentName, :VariableName][100] # returns just the 100th value
+m[:ComponentName, :VariableName] # returns the whole array of values
+m[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
 Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component using the code below:
@@ -79,9 +79,9 @@ m[:socioeconomic, :income][100]
 You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
 
 ```julia
-getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
-getdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
-getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
+getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
+getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
+getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
 
 ```
 
@@ -107,8 +107,8 @@ explore(m, "My Window")
 Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. you may save a plot by calling the `save` function.
 
 ```julia
-run1 = run(my_model)
-p = explore(run1, component1, parameter1)
+run(m)
+p = explore(m, component1, parameter1)
 save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
