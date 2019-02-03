@@ -147,6 +147,8 @@ function generate_trials!(mcs::MonteCarloSimulation, trials::Int;
                           filename::String="",
                           sampling::SamplingOptions=RANDOM)
 
+    mcs.trials = trials
+	
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
         lhs!(mcs, corrmatrix=corrmatrix)
