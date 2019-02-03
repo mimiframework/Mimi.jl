@@ -492,7 +492,7 @@ function run_mcs(mcs::MonteCarloSimulation, m::Model, trials::Union{Vector{Int},
     return run_mcs(mcs, trials, models_to_run; kwargs...)
 end
 
-function run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials, 
+function run_mcs(mcs::MonteCarloSimulation, m::Model, trials::Int=mcs.trials, 
                  models_to_run::Int=length(mcs.models) + 1; kwargs...)
     set_model!(mcs, m)
     return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
@@ -505,7 +505,7 @@ function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=Union{
     return run_mcs(mcs, trials, models_to_run; kwargs...)
 end
 
-function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials, 
+function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials::Int=mcs.trials, 
                 models_to_run::Int=length(mcs.models) + length(models); kwargs...)
     set_models!(mcs, models)
     return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
