@@ -621,11 +621,11 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
     time_index = dim_keys(obj, :time)
 
     if first !== nothing && first < time_index[1]
-        error("Cannot add component $name with first time before first of model's time index range.")
+        error("Cannot add component $comp_name with first time before first of model's time index range.")
     end
 
     if last !== nothing && last > time_index[end]
-        error("Cannot add component $name with last time after end of model's time index range.")
+        error("Cannot add component $comp_name with last time after end of model's time index range.")
     end
 
     if before !== nothing && after !== nothing

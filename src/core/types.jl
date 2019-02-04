@@ -330,6 +330,7 @@ end
 @method internal_param_conns(obj::CompositeComponentDef) = obj.internal_param_conns
 @method external_param_conns(obj::CompositeComponentDef) = obj.external_param_conns
 
+@method external_params(obj::CompositeComponentDef) = obj.external_params
 @method external_param(obj::CompositeComponentDef, name::Symbol) = obj.external_params[name]
 
 @method add_backup!(obj::CompositeComponentDef, backup) = push!(obj.backups, backup)

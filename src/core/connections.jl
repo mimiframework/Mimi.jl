@@ -233,11 +233,11 @@ the dictionary keys are strings that match the names of unset parameters in the 
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(k => v for (k, v) in parameters)
     leftovers = unconnected_params(md)
-    external_params = external_params(md)
+    ext_params = external_params(md)
 
     for (comp_name, param_name) in leftovers
         # check whether we need to set the external parameter
-        if ! haskey(external_params, param_name)
+        if ! haskey(ext_params, param_name)
             value = parameters[string(param_name)]
             param_dims = parameter_dimensions(md, comp_name, param_name)
 
@@ -372,14 +372,14 @@ function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; rai
         if update_timesteps && raise_error
             error("Cannot update timesteps; parameter $name is a scalar parameter.")
         end
-        _update_scalar_param!(param, value)
+        _update_scalar_param!(param, name, value)
     else
         _update_array_param!(md, name, value, update_timesteps, raise_error)
     end
 
 end
 
-function _update_scalar_param!(param::ScalarModelParameter, value)
+function _update_scalar_param!(param::ScalarModelParameter, name, value)
     if ! (value isa typeof(param.value))
         try
             value = convert(typeof(param.value), value)

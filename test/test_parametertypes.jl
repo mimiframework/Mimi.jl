@@ -4,8 +4,8 @@ using Mimi
 using Test
 
 import Mimi: 
-    external_params, TimestepMatrix, TimestepVector, ArrayModelParameter, 
-    ScalarModelParameter, FixedTimestep, reset_compdefs
+    external_params, external_param, TimestepMatrix, TimestepVector, 
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, reset_compdefs
 
 reset_compdefs()
 
@@ -128,7 +128,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_logs(
     (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting MyComp2 component's first timestep to 2001"),
+    # (:warn, "Resetting MyComp2 component's first timestep to 2001"),
     set_dimension!(m, :time, 2001:2003)
 )
 
@@ -158,7 +158,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_logs(
     (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting MyComp2 component's first timestep to 2005"),
+    # (:warn, "Resetting MyComp2 component's first timestep to 2005"),
     set_dimension!(m, :time, [2005, 2020, 2050])
 )
 

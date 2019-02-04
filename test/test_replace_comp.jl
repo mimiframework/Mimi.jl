@@ -3,7 +3,7 @@ module TestReplaceComp
 using Test
 using Mimi
 import Mimi:
-    reset_compdefs, compdefs
+    reset_compdefs, compdefs, compdef
 
 reset_compdefs()
 
@@ -91,10 +91,10 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs (:warn, r".*parameter x no longer exists in component.*") replace_comp!(m, bad3, :X)
 
-@test nameof(compdef(m.md, :X)) == :bad3              # The replacement was still successful
+@test nameof(compdef(m.md, :X)) == :bad3           # The replacement was still successful
 #external_param_conns(md, comp_name)
-@test length(m.md.external_param_conns) == 0       # The external parameter connection was removed
-@test length(m.md.external_params) == 1            # The external parameter still exists
+@test length(external_param_conns(m)) == 0         # The external parameter connection was removed
+@test length(external_params(m)) == 1              # The external parameter still exists
 
 
 # 5. Test bad external parameter dimensions
