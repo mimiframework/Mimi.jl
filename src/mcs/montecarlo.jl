@@ -481,25 +481,42 @@ function run_sim(sim::Simulation{T},
     end
 end
 
+
+
+
 # Same as above, but takes a number of trials and converts this to `1:trials`.
 function run_sim(sim::Simulation{T}, trials::Int=sim.trials, 
                  models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
     return run_sim(sim, 1:trials, models_to_run; kwargs...)
 end
 
-# Same as above, but takes a single model to run
-function run_sim(sim::Simulation{T}, m::Model, trials=sim.trials, 
-                 models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
+# Two methods mirroring the two above, but take a single model to run
+function run_sim(sim::Simulation{T}, m::Model, trials::Int=sim.trials, 
+                 models_to_run::Int=length(sim.models) + 1; kwargs...) where T <: AbstractSimulationData
     set_model!(sim, m)
-    return run_sim(sim, trials, models_to_run; kwargs...)
+    return run_sim(sim, 1:trials, models_to_run; kwargs...)
 end
 
-# Same as above, but takes a multiple models to run
-function run_sim(sim::Simulation{T}, models::Vector{Model}, trials=sim.trials, 
-                 models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
+function run_sim(sim::Simulation{T}, m::Model, trials::Union{Vector{Int}, AbstractRange{Int}}, 
+    models_to_run::Int=length(sim.models) + 1; kwargs...) where T <: AbstractSimulationData
+set_model!(sim, m)
+return run_sim(sim, trials, models_to_run; kwargs...)
+end
+
+# Two methods mirroring the two above, but take multiple models to run
+function run_sim(sim::Simulation{T}, models::Vector{Model}, trials::Int=sim.trials, 
+                models_to_run::Int=length(sim.models) + length(models); kwargs...) where T <: AbstractSimulationData
     set_models!(sim, models)
     return run_sim(sim, 1:trials, models_to_run; kwargs...)
 end
+
+function run_sim(sim::Simulation{T}, models::Vector{Model}, trials::Union{Vector{Int}, AbstractRange{Int}}, 
+                models_to_run::Int=length(sim.models) + length(models); kwargs...) where T <: AbstractSimulationData
+    set_models!(sim, models)
+    return run_sim(sim, trials, models_to_run; kwargs...)
+end
+
+# Set models
 
 function set_models!(sim::Simulation{T}, models::Vector{Model}) where T <: AbstractSimulationData
     sim.models = models
