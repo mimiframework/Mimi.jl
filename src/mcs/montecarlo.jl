@@ -146,8 +146,9 @@ than RANDOM. (Currently, only LHS and RANDOM are possible.)
 function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
                           filename::String="",
                           sampling::SamplingOptions=RANDOM)
-    mcs.trials = trials
 
+    mcs.trials = trials
+	
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
         lhs!(mcs, corrmatrix=corrmatrix)
@@ -486,20 +487,33 @@ function run_mcs(mcs::MonteCarloSimulation, trials::Int=mcs.trials,
     return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
 end
 
-# Same as above, but takes a single model to run
-function run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials, 
-                 models_to_run::Int=length(mcs.models); kwargs...)
+# Two methods mirroring the two above, but take a single model to run
+function run_mcs(mcs::MonteCarloSimulation, m::Model, trials::Union{Vector{Int}, AbstractRange{Int}}, 
+                models_to_run::Int=length(mcs.models) + 1; kwargs...)
     set_model!(mcs, m)
     return run_mcs(mcs, trials, models_to_run; kwargs...)
 end
 
-# Same as above, but takes a multiple models to run
-function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials, 
-                 models_to_run::Int=length(mcs.models); kwargs...)
+function run_mcs(mcs::MonteCarloSimulation, m::Model, trials::Int=mcs.trials, 
+                 models_to_run::Int=length(mcs.models) + 1; kwargs...)
+    set_model!(mcs, m)
+    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
+end
+
+# Two methods mirroring the two above, but take multiple models to run
+function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=Union{Vector{Int}, AbstractRange{Int}}, 
+                 models_to_run::Int=length(mcs.models) + length(models); kwargs...)
+    set_models!(mcs, models)
+    return run_mcs(mcs, trials, models_to_run; kwargs...)
+end
+
+function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials::Int=mcs.trials, 
+                models_to_run::Int=length(mcs.models) + length(models); kwargs...)
     set_models!(mcs, models)
     return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
 end
 
+# Set models
 function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
     mcs.models = models
     _reset_results!(mcs)    # sets results vector to same length
