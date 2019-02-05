@@ -1,11 +1,17 @@
 using Classes
 using DataStructures
 
+# Having all our structs/classes subtype these simplifies "show" methods
+abstract type MimiStruct end
+@class MimiClass <: Class
+
+const AbstractMimiType = Union{MimiStruct, AbstractMimiClass}
+
 #
 # 1. Types supporting parameterized Timestep and Clock objects
 #
 
-abstract type AbstractTimestep end
+abstract type AbstractTimestep <: MimiStruct end
 
 struct FixedTimestep{FIRST, STEP, LAST} <: AbstractTimestep
     t::Int
@@ -25,7 +31,7 @@ struct VariableTimestep{TIMES} <: AbstractTimestep
     end
 end
 
-mutable struct Clock{T <: AbstractTimestep}
+mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
 	ts::T
 
 	function Clock{T}(FIRST::Int, STEP::Int, LAST::Int) where T
@@ -37,7 +43,7 @@ mutable struct Clock{T <: AbstractTimestep}
     end
 end
 
-mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N}
+mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N} <: MimiStruct 
 	data::Array{T, N}
 
     function TimestepArray{T_TS, T, N}(d::Array{T, N}) where {T_TS, T, N}
@@ -59,7 +65,7 @@ const TimestepVector{T_TS, T} = TimestepArray{T_TS, T, 1}
 # 2. Dimensions
 #
 
-abstract type AbstractDimension end
+abstract type AbstractDimension <: MimiStruct end
 
 const DimensionKeyTypes   = Union{AbstractString, Symbol, Int, Float64}
 const DimensionRangeTypes = Union{UnitRange{Int}, StepRange{Int, Int}}
@@ -97,7 +103,7 @@ mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
 #
 # 3. Types supporting Parameters and their connections
 #
-abstract type ModelParameter end
+abstract type ModelParameter <: MimiStruct end
 
 # TBD: rename ScalarParameter, ArrayParameter, and AbstractParameter?
 
@@ -142,7 +148,7 @@ dim_names(obj::ArrayModelParameter) = obj.dim_names
 dim_names(obj::ScalarModelParameter) = []
 
 
-abstract type AbstractConnection end
+abstract type AbstractConnection <: MimiStruct end
 
 struct InternalParameterConnection <: AbstractConnection
     src_comp_name::Symbol
@@ -173,7 +179,7 @@ end
 # To identify components, we create a variable with the name of the component
 # whose value is an instance of this type, e.g.
 # const global adder = ComponentId(module_name, comp_name) 
-struct ComponentId
+struct ComponentId <: MimiStruct
     module_name::Symbol
     comp_name::Symbol
 end
@@ -186,7 +192,7 @@ ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
 #
 
 # Objects with a `name` attribute
-@class NamedObj begin
+@class NamedObj <: MimiClass begin
     name::Symbol
 end
 
@@ -354,7 +360,7 @@ end
 #
 
 # Supertype for variables and parameters in component instances
-@class ComponentInstanceData{NT <: NamedTuple} begin
+@class ComponentInstanceData{NT <: NamedTuple} <: MimiClass begin
     nt::NT
 end
 
@@ -378,7 +384,7 @@ end
 
 # A container class that wraps the dimension dictionary when passed to run_timestep()
 # and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
-struct DimValueDict
+struct DimValueDict <: MimiStruct
     dict::Dict{Symbol, Vector{Int}}
 
     function DimValueDict(dim_dict::AbstractDict)
@@ -392,7 +398,7 @@ end
 # as the "d" parameter.
 Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[property]
 
-@class mutable ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} begin
+@class mutable ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: MimiClass begin
     comp_name::Symbol
     comp_id::ComponentId
     variables::TV
@@ -566,7 +572,7 @@ This `Model` can be created with the optional keyword argument `number_type` ind
 the default type of number used for the `ModelDef`.  If not specified the `Model` assumes
 a `number_type` of `Float64`.
 """
-mutable struct Model
+mutable struct Model <: MimiStruct
     md::ModelDef
     mi::Union{Nothing, ModelInstance}
         
@@ -586,7 +592,7 @@ end
 A Mimi `Model` whose results are obtained by subtracting results of one `base` Model 
 from those of another `marginal` Model` that has a difference of `delta`.
 """
-struct MarginalModel
+struct MarginalModel <: MimiStruct
     base::Model
     marginal::Model
     delta::Float64
@@ -609,7 +615,7 @@ end
 
 A container for a component, for interacting with it within a model.
 """
-struct ComponentReference
+struct ComponentReference <: MimiStruct
     model::Model
     comp_name::Symbol
 end
@@ -620,7 +626,7 @@ end
 A container for a variable within a component, to improve connect_param! aesthetics,
 by supporting subscripting notation via getindex & setindex .
 """
-struct VariableReference
+struct VariableReference <: MimiStruct
     model::Model
     comp_name::Symbol
     var_name::Symbol

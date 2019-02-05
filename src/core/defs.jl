@@ -71,10 +71,6 @@ end
 is_variable(dr::DatumReference)  = has_variable(compdef(dr.comp_id), nameof(dr))
 is_parameter(dr::DatumReference) = has_parameter(compdef(dr.comp_id), nameof(dr))
 
-function Base.show(io::IO, comp_id::ComponentId)
-    print(io, "<ComponentId $(comp_id.module_name).$(comp_id.comp_name)>")
-end
-
 number_type(md::ModelDef) = md.number_type
 
 # TBD: should be numcomps()
@@ -637,8 +633,8 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
         error("Cannot add two components of the same name ($comp_name)")
     end
 
-    # Create a shallow copy of the original but with the new name
-    # TBD: Why do we need to make a copy here? Sort this out.
+    # Create a deepcopy of the original but with the new name so
+    # it has separate variables and parameters, etc.
     if compname(comp_def.comp_id) != comp_name
         comp_def = copy_comp_def(comp_def, comp_name)
     end        

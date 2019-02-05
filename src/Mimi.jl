@@ -66,6 +66,7 @@ include("utils/graph.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
 include("utils/plotting.jl")
+include("utils/show.jl")
 
 """
     load_comps(dirname::String="./components")

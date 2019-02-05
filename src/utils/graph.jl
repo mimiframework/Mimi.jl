@@ -2,7 +2,6 @@
 # Graph Functionality
 #
 
-
 function _show_conns(io, m, comp_name, which::Symbol)
     datumtype = which == :incoming ? "parameters" : "variables"
     println(io, "   $which $datumtype:")
@@ -22,7 +21,9 @@ function _show_conns(io, m, comp_name, which::Symbol)
     end
 end
 
-function show(io::IO, m::Model)
+show_conns(m::Model) = show_conns(stdout, m)
+
+function show_conns(io::IO, m::Model)
     println(io, "Model component connections:")
 
     for (i, comp_name) in enumerate(compkeys(m.md))
