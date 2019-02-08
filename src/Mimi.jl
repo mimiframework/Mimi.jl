@@ -14,7 +14,7 @@ export
     @defmcs,
     MarginalModel,
     Model,
-    add_comp!,  
+    add_comp!,
     components,
     connect_param!,
     create_marginal_model,
@@ -45,8 +45,8 @@ export
     update_params!,
     variables 
 
-include("core/types.jl")
 include("core/delegate.jl")
+include("core/types.jl")
 
 # After loading types and delegation macro, the rest is alphabetical
 include("core/build.jl")
@@ -59,14 +59,16 @@ include("core/instances.jl")
 include("core/references.jl")
 include("core/time.jl")
 include("core/model.jl")
-include("explorer/explore.jl")
-include("mcs/mcs.jl")
-include("utils/getdataframe.jl")
-include("utils/graph.jl")
-include("utils/lint_helper.jl")
-include("utils/misc.jl")
-include("utils/plotting.jl")
-include("utils/show.jl")
+include("core/show.jl")
+
+# For debugging composites we don't need these
+#include("explorer/explore.jl")
+#include("mcs/mcs.jl")
+#include("utils/getdataframe.jl")
+#include("utils/graph.jl")
+#include("utils/lint_helper.jl")
+#include("utils/misc.jl")
+#include("utils/plotting.jl")
 
 """
     load_comps(dirname::String="./components")

@@ -63,49 +63,51 @@ Instantiate a component `comp_def` in the model `md` and its variables (but not 
 parameters). Return the resulting ComponentInstanceVariables.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
-    comp_name = nameof(comp_def)
-    var_defs = variables(comp_def)    
+    var_defs = variables(comp_def)
 
-    names  = ([nameof(vdef) for vdef in var_defs]...,)
-    types  = Tuple{[_instance_datatype(md, vdef) for vdef in var_defs]...}
-    values = [_instantiate_datum(md, def) for def in var_defs]
+    names  = Symbol[nameof(def) for def in var_defs]
+    values = Any[_instantiate_datum(md, def) for def in var_defs]
+    types  = DataType[_instance_datatype(md, def) for def in var_defs]
+    paths  = repeat(Any[comp_def.comp_path], length(names))
 
-    return ComponentInstanceVariables(names, types, values)
+    return ComponentInstanceVariables(names, types, values, paths)
 end
 
 # Create ComponentInstanceVariables for a composite component from the list of exported vars
 @method function _combine_exported_vars(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any})
-    names = []
-    values = []
+    names  = Symbol[]
+    values = Any[]
 
-    for (dr, name) in comp_def.exports
+    for (name, dr) in comp_def.exports
         if is_variable(dr)
-            obj = var_dict[dr.comp_id.comp_name]  # TBD: should var_dict hash on ComponentId instead?
+            obj = var_dict[compname(dr)]
             value = getproperty(obj, nameof(dr))
             push!(names, name)
             push!(values, value)
         end
     end
 
-    types = map(typeof, values)
-    return ComponentInstanceVariables(Tuple(names), Tuple{types...}, Tuple(values))
+    types = DataType[typeof(val) for val in values]
+    paths = repeat(Any[comp_def.comp_path], length(names))
+    return ComponentInstanceVariables(names, types, values, paths)
 end
 
 @method function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
-    names = []
-    values = []
+    names  = Symbol[]
+    values = Any[]
 
-    for (dr, name) in comp_def.exports
+    for (name, dr) in comp_def.exports
         if is_parameter(dr)
-            d = par_dict[dr.comp_id.comp_name]  # TBD: should par_dict hash on ComponentId instead?
+            d = par_dict[compname(dr)]
             value = d[nameof(dr)]
             push!(names, name)
             push!(values, value)
         end
     end
 
-    types = map(typeof, values)
-    return ComponentInstanceParameters(Tuple(names), Tuple{types...}, Tuple(values))
+    paths = repeat(Any[comp_def.comp_path], length(names))
+    types = DataType[typeof(val) for val in values]
+    return ComponentInstanceParameters(names, types, values, paths)
 end
 
 function _instantiate_vars(comp_def::ComponentDef, md::ModelDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
@@ -176,15 +178,15 @@ end
 
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     # @info "Instantiating params for $(comp_def.comp_id)"
-
     comp_name = nameof(comp_def)
     d = par_dict[comp_name]
 
-    pnames = Tuple(parameter_names(comp_def))
-    pvals = [d[pname] for pname in pnames]
-    ptypes = Tuple{map(typeof, pvals)...}
+    names = parameter_names(comp_def)
+    vals  = Any[d[name] for name in names]
+    types = DataType[typeof(val) for val in vals]
+    paths = repeat([comp_def.comp_path], length(names))
 
-    return ComponentInstanceParameters(pnames, ptypes, pvals)
+    return ComponentInstanceParameters(names, types, vals, paths)
 end
 
 @method function _instantiate_params(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
@@ -230,6 +232,7 @@ function _build(md::ModelDef)
         error(msg)
     end
     
+    # TBD: key by ComponentPath since these span levels
     var_dict = Dict{Symbol, Any}()                 # collect all var defs and
     par_dict = Dict{Symbol, Dict{Symbol, Any}}()   # store par values as we go
 
@@ -251,6 +254,7 @@ end
 function build(m::Model)
     # Reference a copy in the ModelInstance to avoid changes underfoot
     m.mi = _build(deepcopy(m.md))
+    m.md.dirty = false
     return nothing
 end
 

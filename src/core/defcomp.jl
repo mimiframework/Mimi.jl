@@ -16,7 +16,7 @@ const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatr
 
 is_builtin(comp_name) = comp_name in built_in_comps
 
-function _generate_run_func(comp_name, args, body)
+function _generate_run_func(comp_name, module_name, args, body)
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
     end
@@ -25,7 +25,7 @@ function _generate_run_func(comp_name, args, body)
 
     # Generate unique function name for each component so we can store a function pointer.
     # (Methods requiring dispatch cannot be invoked directly. Could use FunctionWrapper here...)
-    func_name = Symbol("run_timestep_$comp_name")
+    func_name = Symbol("run_timestep_$(module_name)_$(comp_name)")
 
     # Needs "global" so function is defined outside the "let" statement
     func = :(
@@ -40,7 +40,7 @@ function _generate_run_func(comp_name, args, body)
     return func
 end
 
-function _generate_init_func(comp_name, args, body)
+function _generate_init_func(comp_name, module_name, args, body)
 
     if length(args) != 3
         error("Can't generate init function; requires 3 arguments but got $args")
@@ -49,7 +49,7 @@ function _generate_init_func(comp_name, args, body)
     # add types to the parameters  
     (p, v, d) = args
 
-    func_name = Symbol("init_$comp_name")
+    func_name = Symbol("init_$(module_name)_$(comp_name)")
 
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
@@ -159,10 +159,10 @@ macro defcomp(comp_name, ex)
        
         if @capture(elt, function fname_(args__) body__ end)
             if fname == :run_timestep
-                expr = _generate_run_func(comp_name, args, body)
+                expr = _generate_run_func(comp_name, nameof(__module__), args, body)
 
             elseif fname == :init
-                expr = _generate_init_func(comp_name, args, body)
+                expr = _generate_init_func(comp_name, nameof(__module__), args, body)
             else
                 error("@defcomp can contain only these functions: init(p, v, d) and run_timestep(p, v, d, t)")
             end
@@ -272,6 +272,7 @@ macro defmodel(model_name, ex)
     @capture(ex, elements__)
 
     # @__MODULE__ is evaluated in calling module when macro is interpreted
+    # TBD: simplify using __module__ ?
     result = :(
         let calling_module = @__MODULE__, comp_mod_name = nothing
             global $model_name = Model()

@@ -18,28 +18,61 @@ function compdef(comp_name::Symbol)
     end
 end
 
+@delegate compdef(dr::DatumReference) => comp_id
+
 # Allows method to be called on leaf component defs, which sometimes simplifies code.
 compdefs(c::ComponentDef) = []
 
 @method compdefs(c::CompositeComponentDef) = values(c.comps_dict)
 @method compkeys(c::CompositeComponentDef) = keys(c.comps_dict)
-@method hascomp(c::CompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
+@method has_comp(c::CompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
 @method compdef(c::CompositeComponentDef, comp_name::Symbol) = c.comps_dict[comp_name]
 
-# Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
 compname(comp_id::ComponentId)   = comp_id.comp_name
 
 @method compmodule(obj::ComponentDef) = compmodule(obj.comp_id)
 @method compname(obj::ComponentDef)   = compname(obj.comp_id)
 
+compnames() = map(compname, compdefs())
+
 function reset_compdefs(reload_builtins=true)
     empty!(_compdefs)
 
     if reload_builtins
-        compdir = joinpath(@__DIR__, "..", "components")
+        compdir = joinpath(@__DIR__, "..", "components") 
         load_comps(compdir)
     end
+end
+
+_append_path(path::Union{Nothing, ComponentPath}, name::Symbol) = (path === nothing ? (name,) : (path..., name))
+
+@method function comp_path!(parent::CompositeComponentDef, child::AbstractComponentDef)
+    child.comp_path = _append_path(parent.comp_path, child.name)
+    # @info "Setting comp path to $(child.comp_path)"
+end
+
+dirty(md::ModelDef) = md.dirty
+
+@method function dirty!(obj::ComponentDef)
+    path = obj.comp_path
+    if (path === nothing || isempty(path))
+        return
+    end
+
+    root = compdef(path[1])
+    
+    # test is necessary to avoid looping when length(path) == 1
+    if root isa ModelDef        
+        dirty!(root)
+    end
+end
+
+dirty!(md::ModelDef) = (md.dirty = true)
+
+@method function Base.parent(obj::ComponentDef)
+    parent_path = parent(obj.comp_path)
+    return compdef(parent_path)
 end
 
 first_period(comp_def::ComponentDef) = comp_def.first
@@ -77,18 +110,6 @@ number_type(md::ModelDef) = md.number_type
 @method numcomponents(obj::ComponentDef) = 0   # no sub-components
 @method numcomponents(obj::CompositeComponentDef) = length(obj.comps_dict)
 
-function dumpcomps()
-    for comp in compdefs()
-        println("\n$(nameof(comp))")
-        for (tag, objs) in ((:Variables, variables(comp)), (:Parameters, parameters(comp)), (:Dimensions, dim_dict(comp)))
-            println("  $tag")
-            for obj in objs
-                println("    $(nameof(obj)) = $obj")
-            end
-        end
-    end
-end
-
 """
     new_comp(comp_id::ComponentId, verbose::Bool=true)
 
@@ -111,12 +132,12 @@ function new_comp(comp_id::ComponentId, verbose::Bool=true)
 end
 
 """
-    delete!(m::ModelDef, component::Symbol)
+    delete!(obj::CompositeComponentDef, component::Symbol)
 
 Delete a `component` by name from a model definition `m`.
 """
 @method function Base.delete!(ccd::CompositeComponentDef, comp_name::Symbol)
-    if ! hascomp(ccd, comp_name)
+    if ! has_comp(ccd, comp_name)
         error("Cannot delete '$comp_name': component does not exist.")
     end
 
@@ -140,6 +161,7 @@ end
     comp.dim_dict[Symbol(name)] = dim                         # TBD: test this
 end
 
+# Note that this operates on the registered comp, not one added to a composite
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
 @method function dim_names(ccd::CompositeComponentDef)
@@ -253,15 +275,22 @@ Composites recurse on sub-components.
     #_show_run_period(obj, first, last)
     first_per = first_period(obj)
     last_per  = last_period(obj)
+    changed = false
 
     if first_per !== nothing && first_per < first 
         @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
         obj.first = first
+        changed = true
     end 
 
     if last_per !== nothing && last_per > last 
         @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
         obj.last = last
+        changed = true
+    end
+
+    if changed
+        dirty!(obj)
     end
 
     # N.B. compdefs() returns an empty list for leaf ComponentDefs
@@ -293,6 +322,7 @@ an integer; or to the values in the vector or range if `keys` is either of those
 end
 
 @method function set_dimension!(obj::CompositeComponentDef, name::Symbol, dim::Dimension)
+    dirty!(obj)
     obj.dim_dict[name] = dim
 end
 
@@ -326,6 +356,7 @@ end
 @method function addparameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
     p = ParameterDef(name, datatype, dimensions, description, unit, default)
     comp_def.parameters[name] = p
+    dirty!(comp_def)
     return p
 end
 
@@ -345,7 +376,7 @@ Return a list of the parameter definitions for `comp_def`.
 
     # return cached parameters, if any
     if length(pars) == 0
-        for (dr, name) in ccd.exports
+        for (name, dr) in ccd.exports
             cd = compdef(dr.comp_id)
             if has_parameter(cd, nameof(dr))
                 pars[name] = parameter(cd, nameof(dr))
@@ -379,13 +410,25 @@ parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, c
 
 @method parameter(dr::DatumReference) = parameter(compdef(dr.comp_id), nameof(dr))
 
-@method function parameter(obj::ComponentDef, name::Symbol)
+@method function _parameter(obj::ComponentDef, name::Symbol)
     try
         return obj.parameters[name]
     catch
         error("Parameter $name was not found in component $(nameof(obj))")
     end
 end
+
+function parameter(obj::ComponentDef, name::Symbol)
+    _parameter(obj, name)
+end
+
+@method function parameter(obj::CompositeComponentDef, name::Symbol)
+    if ! is_exported(obj, name)
+        error("Parameter $name is not exported by composite component $(obj.comp_path)")
+    end
+    _parameter(obj, name)
+end
+
 
 @method has_parameter(comp_def::ComponentDef, name::Symbol) = haskey(comp_def.parameters, name)
 
@@ -463,6 +506,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
         set_external_scalar_param!(md, param_name, value)
     end
 
+    # connect_param! calls dirty! so we don't have to
     connect_param!(md, comp_name, param_name, param_name)
     nothing
 end
@@ -472,6 +516,7 @@ end
 #
 @method variables(comp_def::ComponentDef) = values(comp_def.variables)
 
+# TBD: if we maintain vars/pars dynamically, this can be dropped
 @method function variables(ccd::CompositeComponentDef)
     vars = ccd.variables
 
@@ -492,14 +537,17 @@ variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
 variables(dr::DatumReference) = variables(dr.comp_id)
 
+# TBD: Perhaps define _variable to behave as below, and have the public version
+# check it's exported before returning it. (Could error("exists but not exported?"))
 @method function variable(comp_def::ComponentDef, var_name::Symbol)
+    # TBD test this can be dropped if we maintain vars/pars dynamically
     if is_composite(comp_def)
         variables(comp_def)  # make sure values have been gathered
     end
 
     try
         return comp_def.variables[var_name]
-    catch
+    catch KeyError
         error("Variable $var_name was not found in component $(comp_def.comp_id)")
     end
 end
@@ -517,6 +565,7 @@ variable(dr::DatumReference) = variable(compdef(dr.comp_id), nameof(dr))
 
 Return a list of all variable names for a given component `comp_name` in a model def `md`.
 """
+# TBD: why isn't this a @method of ComponentDef?
 variable_names(md::ModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
 
 variable_names(comp_def::ComponentDef) = [nameof(var) for var in variables(comp_def)]
@@ -595,6 +644,7 @@ end
 
 @method function comps_dict!(obj::CompositeComponentDef, comps::OrderedDict{Symbol, AbstractComponentDef})
     obj.comps_dict = comps
+    dirty!(obj)
 end
 
 """
@@ -629,15 +679,13 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
     end
 
     # Check if component being added already exists
-    if hascomp(obj, comp_name)
+    if has_comp(obj, comp_name)
         error("Cannot add two components of the same name ($comp_name)")
     end
 
-    # Create a deepcopy of the original but with the new name so
-    # it has separate variables and parameters, etc.
-    if compname(comp_def.comp_id) != comp_name
-        comp_def = copy_comp_def(comp_def, comp_name)
-    end        
+    # Copy the original so we don't step on other uses of this comp
+    comp_def = deepcopy(comp_def)
+    comp_def.name = comp_name
 
     set_run_period!(comp_def, first, last)
 
@@ -649,7 +697,7 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
         new_comps = OrderedDict{Symbol, AbstractComponentDef}()
 
         if before !== nothing
-            if ! hascomp(obj, before)
+            if ! has_comp(obj, before)
                 error("Component to add before ($before) does not exist")
             end
 
@@ -661,7 +709,7 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
             end
 
         else    # after !== nothing, since we've handled all other possibilities above
-            if ! hascomp(obj, after)
+            if ! has_comp(obj, after)
                 error("Component to add before ($before) does not exist")
             end
 
@@ -684,7 +732,12 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
         end
     end
     
-    return nothing
+    comp_path!(obj, comp_def)
+    
+    dirty!(obj)
+    
+    # Return the comp since it's a copy of what was passed in
+    return comp_def
 end
 
 """
@@ -695,7 +748,8 @@ Add the component indicated by `comp_id` to the composite component indicated by
 is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
 `comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-@method function add_comp!(obj::CompositeComponentDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+@method function add_comp!(obj::CompositeComponentDef, comp_id::ComponentId, 
+                           comp_name::Symbol=comp_id.comp_name;
                            first::NothingInt=nothing, last::NothingInt=nothing, 
                            before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
@@ -715,12 +769,13 @@ added with the same first and last values, unless the keywords `first` or `last`
 Optional boolean argument `reconnect` with default value `true` indicates whether the existing 
 parameter connections should be maintained in the new component.
 """
-@method function replace_comp!(obj::CompositeComponentDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+@method function replace_comp!(obj::CompositeComponentDef, comp_id::ComponentId, 
+                               comp_name::Symbol=comp_id.comp_name;
                                first::NothingInt=nothing, last::NothingInt=nothing,
                                before::NothingSymbol=nothing, after::NothingSymbol=nothing,
                                reconnect::Bool=true)
 
-    if ! hascomp(obj, comp_name)
+    if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
     end
 
@@ -741,7 +796,7 @@ parameter connections should be maintained in the new component.
     # Get original first and last if new run period not specified
     old_comp = compdef(obj, comp_name)
     first = first === nothing ? old_comp.first : first
-    last = last === nothing ? old_comp.last : last
+    last  = last  === nothing ? old_comp.last  : last
 
     if reconnect
         # Assert that new component definition has same parameters and variables needed for the connections
@@ -801,13 +856,16 @@ parameter connections should be maintained in the new component.
     add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
-"""
-    copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
+function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
+    if isempty(path)
+        return obj
+    end
 
-Copy the given `comp_def`, naming the copy `comp_name`.
-"""
-function copy_comp_def(comp_def::ComponentDef, comp_name::Symbol)
-    obj  = deepcopy(comp_def)
-    obj.name = comp_name
-    return obj
+    name = path[1]
+    if has_comp(obj, name)
+        return find_comp(compdef(obj, name), path[2:end])
+    end
+    return nothing
 end
+
+find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)

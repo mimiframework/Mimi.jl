@@ -176,13 +176,21 @@ end
 # 4. Types supporting structural definition of models and their components
 #
 
-# To identify components, we create a variable with the name of the component
-# whose value is an instance of this type, e.g.
-# const global adder = ComponentId(module_name, comp_name) 
+# To identify components, @defcomp creates a variable with the name of 
+# the component whose value is an instance of this type.
 struct ComponentId <: MimiStruct
     module_name::Symbol
     comp_name::Symbol
 end
+
+# Identifies the path through multiple composites to a leaf component
+# TBD: Could be just a tuple of Symbols since they are unique at each level.
+const ComponentPath = NTuple{N, Symbol} where N
+
+ComponentPath(names::Vector{Symbol}) = Tuple(names)
+
+# The equivalent of ".." in the file system.
+Base.parent(path::ComponentPath) = path[1:end-1]
 
 ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
 
@@ -205,20 +213,11 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
 @method Base.nameof(obj::NamedObj) = obj.name
 
 # Stores references to the name of a component variable or parameter
+# and the ComponentId of the component in which it is defined
 @class DatumReference <: NamedObj begin
-    comp_id::ComponentId
+    # TBD: should be a ComponentPath
+    comp_id::ComponentId                # TBD: should this be a ComponentPath?
 end
-
-comp_name(dr::DatumReference) = dr.comp_id.comp_name
-
-# *Def implementation doesn't need to be performance-optimized since these
-# are used only to create *Instance objects that are used at run-time. With
-# this in mind, we don't create dictionaries of vars, params, or dims in the
-# ComponentDef since this would complicate matters if a user decides to
-# add/modify/remove a component. Instead of maintaining a secondary dict, 
-# we just iterate over sub-components at run-time as needed. 
-
-global const BindingTypes = Union{Int, Float64, DatumReference}
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
@@ -237,6 +236,7 @@ end
 
 @class mutable ComponentDef <: NamedObj begin
     comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
+    comp_path::Union{Nothing, ComponentPath}
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
     dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
@@ -252,19 +252,18 @@ end
     function ComponentDef(self::AbstractComponentDef, comp_id::Union{Nothing, ComponentId}=nothing; 
                           name::Union{Nothing, Symbol}=nothing)
         if name === nothing
-            name = (comp_id === nothing ? gensym(:anonymous) : comp_id.comp_name)
+            name = (comp_id === nothing ? gensym(nameof(typeof(self))) : comp_id.comp_name)
         end
 
         NamedObj(self, name)
         self.comp_id = comp_id
+        self.comp_path = nothing    # this is set in add_comp!()
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}() 
         self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.first = self.last = nothing
         self.is_uniform = true
         return self
-
-        return ComponentDef(comp_id, name=name)
     end
 
     function ComponentDef(comp_id::Union{Nothing, ComponentId}; 
@@ -280,10 +279,15 @@ end
 @method last_period(obj::ComponentDef) = obj.last
 @method isuniform(obj::ComponentDef) = obj.is_uniform
 
+# Define type aliases to avoid repeating these in several places
+global const BindingsDef = Vector{Pair{T where T <: AbstractDatumReference, Union{Int, Float64, DatumReference}}}
+global const ExportsDef  = Dict{Symbol, AbstractDatumReference}
+
 @class mutable CompositeComponentDef <: ComponentDef begin
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
-    bindings::Vector{Pair{DatumReference, BindingTypes}}
-    exports::Vector{Pair{DatumReference, Symbol}}
+    bindings::BindingsDef
+
+    exports::ExportsDef
     
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
@@ -297,9 +301,10 @@ end
     function CompositeComponentDef(self::AbstractCompositeComponentDef, 
                                    comp_id::ComponentId, 
                                    comps::Vector{<: AbstractComponentDef},
-                                   bindings::Vector{Pair{DatumReference, BindingTypes}},
-                                   exports::Vector{Pair{DatumReference, Symbol}})
+                                   bindings::BindingsDef,
+                                   exports::ExportsDef)
     
+        # TBD: OrderedDict{ComponentId, AbstractComponentDef}
         comps_dict = OrderedDict{Symbol, AbstractComponentDef}([nameof(cd) => cd for cd in comps])
         in_conns = Vector{InternalParameterConnection}() 
         ex_conns = Vector{ExternalParameterConnection}()
@@ -314,8 +319,8 @@ end
     end
 
     function CompositeComponentDef(comp_id::ComponentId, comps::Vector{<: AbstractComponentDef},
-                                   bindings::Vector{Pair{DatumReference, BindingTypes}},
-                                   exports::Vector{Pair{DatumReference, Symbol}})
+                                   bindings::BindingsDef,
+                                   exports::ExportsDef)
 
         self = new()
         return CompositeComponentDef(self, comp_id, comps, bindings, exports)
@@ -325,19 +330,23 @@ end
     function CompositeComponentDef(self::Union{Nothing, AbstractCompositeComponentDef}=nothing)
         self = (self === nothing ? new() : self)
 
-        comp_id  = ComponentId(@__MODULE__, gensym(:anonymous))
+        comp_id  = ComponentId(@__MODULE__, gensym(nameof(typeof(self))))
         comps    = Vector{T where T <: AbstractComponentDef}()
-        bindings = Vector{Pair{DatumReference, BindingTypes}}()
-        exports  = Vector{Pair{DatumReference, Symbol}}()
+        bindings = BindingsDef()
+        exports  = ExportsDef()
         return CompositeComponentDef(self, comp_id, comps, bindings, exports)
     end
 end
 
+# TBD: these should dynamically and recursively compute the lists
 @method internal_param_conns(obj::CompositeComponentDef) = obj.internal_param_conns
 @method external_param_conns(obj::CompositeComponentDef) = obj.external_param_conns
 
 @method external_params(obj::CompositeComponentDef) = obj.external_params
 @method external_param(obj::CompositeComponentDef, name::Symbol) = obj.external_params[name]
+
+@method exported_names(obj::CompositeComponentDef) = keys(obj.exports)
+@method is_exported(obj::CompositeComponentDef, name::Symbol) = haskey(obj.exports, name)
 
 @method add_backup!(obj::CompositeComponentDef, backup) = push!(obj.backups, backup)
 
@@ -347,11 +356,13 @@ end
 
 @class mutable ModelDef <: CompositeComponentDef begin
     number_type::DataType
+    dirty::Bool
 
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        return ModelDef(self, number_type)
+        self.comp_path = (self.name,)
+        return ModelDef(self, number_type, false)
     end
 end
 
@@ -362,6 +373,7 @@ end
 # Supertype for variables and parameters in component instances
 @class ComponentInstanceData{NT <: NamedTuple} <: MimiClass begin
     nt::NT
+    comp_paths::Vector{ComponentPath}   # records the origin of each datum
 end
 
 @method nt(obj::ComponentInstanceData) = getfield(obj, :nt)
@@ -369,17 +381,37 @@ end
 @method Base.names(obj::ComponentInstanceData)  = keys(nt(obj))
 @method Base.values(obj::ComponentInstanceData) = values(nt(obj))
 
-@class ComponentInstanceParameters <: ComponentInstanceData
-@class ComponentInstanceVariables  <: ComponentInstanceData
-
-function ComponentInstanceParameters(names, types, values)
-    NT = NamedTuple{names, types}
-    return ComponentInstanceParameters{NT}(NT(values))
+# Centralizes the shared functionality from the two component data subtypes.
+function _datum_instance(subtype::Type{<: AbstractComponentInstanceData}, 
+                         names, types, values, paths)
+    NT = NamedTuple{Tuple(names), Tuple{types...}}
+    return subtype(NT(values), Vector{ComponentPath}(paths))
 end
 
-function ComponentInstanceVariables(names, types, values)
-    NT = NamedTuple{names, types}
-    return ComponentInstanceVariables{NT}(NT(values))
+@class ComponentInstanceParameters <: ComponentInstanceData begin
+    function ComponentInstanceParameters(nt::NT, paths::Vector{ComponentPath}) where {NT <: NamedTuple}
+        return new{NT}(nt, paths)
+    end
+    
+    function ComponentInstanceParameters(names::Vector{Symbol}, 
+                                         types::Vector{DataType}, 
+                                         values::Vector{Any},
+                                         paths)
+        return _datum_instance(ComponentInstanceParameters, names, types, values, paths)
+    end
+end
+    
+@class ComponentInstanceVariables <: ComponentInstanceData begin
+    function ComponentInstanceVariables(nt::NT, paths::Vector{ComponentPath}) where {NT <: NamedTuple}
+        return new{NT}(nt, paths)
+    end
+    
+    function ComponentInstanceVariables(names::Vector{Symbol}, 
+                                        types::Vector{DataType}, 
+                                        values::Vector{Any}, 
+                                        paths)
+        return _datum_instance(ComponentInstanceVariables, names, types, values, paths)
+    end
 end
 
 # A container class that wraps the dimension dictionary when passed to run_timestep()
@@ -401,6 +433,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
 @class mutable ComponentInstance{TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters} <: MimiClass begin
     comp_name::Symbol
     comp_id::ComponentId
+    comp_path::ComponentPath
     variables::TV
     parameters::TP
     first::Union{Nothing, Int}
@@ -416,6 +449,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
                 {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
         
         self.comp_id = comp_id = comp_def.comp_id
+        self.comp_path = comp_def.comp_path
         self.comp_name = name
         self.variables = vars
         self.parameters = pars
@@ -435,7 +469,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
                 return nothing
             end
 
-            func_name = Symbol("$(name)_$(self.comp_name)")
+            func_name = Symbol("$(name)_$(self.comp_id.comp_name)")
             try
                 Base.eval(comp_module, func_name)
             catch err
@@ -523,12 +557,15 @@ Create a single ComponentInstanceParameters type reflecting those of a composite
 component's parameters, and similarly for its variables.
 """
 function _comp_instance_vars_pars(comps::Vector{<: AbstractComponentInstance})
-    vtypes  = []
-    vnames  = []
+    vtypes  = DataType[]
+    vnames  = Symbol[]
     vvalues = []
-    ptypes  = []
-    pnames  = []
+    vpaths  = []
+    
+    ptypes  = DataType[]
+    pnames  = Symbol[]
     pvalues = []
+    ppaths  = []
 
     for comp in comps
         v = comp.variables
@@ -542,10 +579,13 @@ function _comp_instance_vars_pars(comps::Vector{<: AbstractComponentInstance})
 
         append!(vvalues, values(v))
         append!(pvalues, values(p))
+
+        append!(vpaths, comp_paths(v))
+        append!(ppaths, comp_paths(p))
     end
 
-    vars = ComponentInstanceVariables(Tuple(vnames), Tuple{vtypes...}, vvalues)
-    pars = ComponentInstanceParameters(Tuple(pnames), Tuple{ptypes...}, pvalues)
+    vars = ComponentInstanceVariables(vnames, vtypes, vvalues, vpaths)
+    pars = ComponentInstanceParameters(pnames, ptypes, pvalues, ppaths)
 
     return vars, pars
 end

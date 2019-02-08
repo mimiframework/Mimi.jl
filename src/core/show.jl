@@ -13,22 +13,11 @@ function _indent_level!(io::IO, delta::Int)
     return IOContext(io, :indent_level => max(level + delta, 0))
 end
 
-indent(io::IO)  = _indent_level!(io, 1)
-outdent(io::IO) = _indent_level!(io, -1)
+indent(io::IO) = _indent_level!(io, 1)
 
 function print_indented(io::IO, args...)
     level = get(io, :indent_level, 0)
     print(io, repeat(spaces, level), args...)
-    nothing
-end
-
-function show(io::IO, obj::ComponentId)
-    print(io, "<ComponentId $(obj.module_name).$(obj.comp_name)>")
-    nothing
-end
-
-function show(io::IO, obj::AbstractDimension)
-    print(io, keys(obj))
     nothing
 end
 
@@ -60,19 +49,20 @@ end
 
 function _show_field(io::IO, name::Symbol, vec::Vector{T}; show_empty=true) where T
     count = length(vec)
-    ellipsis = false
+    elide = false
     max_shown = 5
     if count > max_shown
         last = vec[end]
         vec = vec[1:max_shown-1]
-        ellipsis = true
+        elide = true
     end
-    io = indent(io)
+
     for (i, value) in enumerate(vec)
         print(io, "\n")
         print_indented(io, "$i: ", value)
     end
-    if ellipsis
+
+    if elide
         print(io, "\n")
         print_indented(io, "...\n")
         print_indented(io, "$count: ")
@@ -98,6 +88,15 @@ function _show_datum_def(io::IO, obj::AbstractDatumDef)
     for field in (:description, :unit)
         _show_field(io, field, getfield(obj, field), show_empty=false)
     end
+end
+
+function show(io::IO, obj::ComponentId)
+    print(io, "<ComponentId $(obj.module_name).$(obj.comp_name)>")
+    nothing
+end
+
+function show(io::IO, obj::AbstractDimension)
+    print(io, keys(obj))
     nothing
 end
 
@@ -120,5 +119,16 @@ function show(io::IO, obj::AbstractMimiType)
         fields = deleteat!([fields...], pos)
     end
     _show_fields(indent(io), obj, fields)
-    nothing
+end
+
+function show(io::IO, obj::ModelInstance)
+    # Don't print full type signature since it's shown in .variables and .parameters
+    print(io, "ModelInstance")
+
+    # Don't print the mi's ModelDef since it's redundant
+    fields = fieldnames(typeof(obj))
+    pos = findfirst(x -> x == :md, fields)
+    fields = deleteat!([fields...], pos)
+
+    _show_fields(indent(io), obj, fields)
 end

@@ -43,8 +43,6 @@ end
     y = Variable()                          # different variable dimensions
 end
 
-
-
 # 1. Test scenario where the replacement works
 
 m = Model()

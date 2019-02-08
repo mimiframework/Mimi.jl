@@ -75,6 +75,8 @@ end
     end
 end
 
+@method comp_paths(obj::ComponentInstanceData) = getfield(obj, :comp_paths)
+
 """
     get_param_value(ci::ComponentInstance, name::Symbol)
 

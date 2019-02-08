@@ -26,13 +26,14 @@ Macro to define a method that simply delegate to a method with the same signatur
 but using the specified field name of the original first argument as the first arg
 in the delegated call. That is,
 
-    `@delegate compid(ci::MetaComponentInstance, i::Int, f::Float64) => leaf`
+    `@delegate compid(ci::CompositeComponentInstance, i::Int, f::Float64) => leaf`
 
 expands to:
 
-    `compid(ci::MetaComponentInstance, i::Int, f::Float64) = compid(ci.leaf, i, f)`
+    `compid(ci::CompositeComponentInstance, i::Int, f::Float64) = compid(ci.leaf, i, f)`
 
-If a second expression is given, it is spliced in (basically to support "decache(m)")
+If a second expression is given, it is spliced in, mainly to support the deprecated 
+decache(m)". We might delete this feature, but why bother?
 """
 macro delegate(ex, other=nothing)
     result = nothing

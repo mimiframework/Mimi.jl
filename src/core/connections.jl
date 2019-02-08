@@ -11,6 +11,7 @@ function disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     # println("disconnect_param!($comp_name, $param_name)")
     filter!(x -> !(x.dst_comp_name == comp_name && x.dst_par_name == param_name), internal_param_conns(md))
     filter!(x -> !(x.comp_name == comp_name && x.param_name == param_name), external_param_conns(md))
+    dirty!(md)
 end
 
 # Default string, string unit check function
@@ -73,7 +74,7 @@ function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext
         _check_labels(md, comp_def, param_name, ext_param)
     end
 
-    disconnect_param!(md, comp_name, param_name)
+    disconnect_param!(md, comp_name, param_name)    # calls dirty!()
 
     conn = ExternalParameterConnection(comp_name, param_name, ext_param_name)
     add_external_param_conn!(md, conn)
@@ -99,7 +100,7 @@ function connect_param!(md::ModelDef,
                         backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
-    disconnect_param!(md, dst_comp_name, dst_par_name)
+    disconnect_param!(md, dst_comp_name, dst_par_name)  # calls dirty!()
 
     dst_comp_def = compdef(md, dst_comp_name)
     src_comp_def = compdef(md, src_comp_name)
@@ -273,14 +274,17 @@ end
 
 @method function add_internal_param_conn!(obj::CompositeComponentDef, conn::InternalParameterConnection)
     push!(obj.internal_param_conns, conn)
+    dirty!(obj)
 end
 
 @method function add_external_param_conn!(obj::CompositeComponentDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
+    dirty!(obj)
 end
 
 @method function set_external_param!(obj::CompositeComponentDef, name::Symbol, value::ModelParameter)
     obj.external_params[name] = value
+    dirty!(obj)
 end
 
 function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
@@ -377,6 +381,7 @@ function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; rai
         _update_array_param!(md, name, value, update_timesteps, raise_error)
     end
 
+    dirty!(md)
 end
 
 function _update_scalar_param!(param::ScalarModelParameter, name, value)
@@ -436,6 +441,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
             param.values = value
         end
     end
+    dirty!(md)
     nothing
 end
 
@@ -480,7 +486,7 @@ function add_connector_comps(md::ModelDef)
             # Fetch the definition of the appropriate connector commponent
             conn_name = num_dims == 1 ? :ConnectorCompVector : :ConnectorCompMatrix
             conn_comp_def = compdef(conn_name)
-            conn_comp_name = connector_comp_name(i)
+            conn_comp_name = connector_comp_name(i) # generate a new name
 
             # Add the connector component before the user-defined component that required it
             # println("add_connector_comps: add_comp!(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
