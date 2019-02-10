@@ -2,7 +2,7 @@
 
 The following tutorials target [Mimi](https://github.com/anthofflab/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the [Welcome to Mimi](@ref) documentation, including the [User Guide](@ref), and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
 
-If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room.  We welcome your feedback.
+If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi.jl](https://gitter.im/anthofflab/Mimi.jl) gitter chat room.  We welcome your feedback.
 
 ## Terminology
 
