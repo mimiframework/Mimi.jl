@@ -235,6 +235,40 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 @modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
+    dim_count(m::Model, name::Symbol)
+    
+Return the length of dimension `name` in Model `m`. Other variants include `dim_counts` and 
+`dim_count_dict`.
+"""
+@modelegate dim_count(m::Model, name::Symbol) => md
+@modelegate dim_counts(m::Model, dims::Vector{Symbol}) => md
+@modelegate dim_count_dict(m::Model) => md
+
+"""
+    dim_keys(m::Model, name::Symbol)
+    
+Return keys for dimension `name` in Model `m`.
+"""
+@modelegate dim_keys(m::Model, name::Symbol) => md
+"""
+    dim_keydict(m::Model)
+    
+Return a dictionary of the keys of all dimensions in Model `m`.
+"""
+@modelegate dim_key_dict(m::Model) => md
+"""
+    dim_values(m::Model, name::Symbol)
+    
+Return values for dimension `name` in Model `m`.
+"""
+@modelegate dim_values(m::Model, name::Symbol) => md
+"""
+    dim_value_dict(m::Model)
+    
+Return a dictionary of the values of all dimensions in Model `m`.
+"""
+@modelegate dim_value_dict(m::Model) => md
+"""
     set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})
 
 Set the values of `m` dimension `name` to integers 1 through `count`, if `keys`` is
