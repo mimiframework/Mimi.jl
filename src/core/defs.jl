@@ -199,9 +199,25 @@ dimension(md::ModelDef, name::Symbol) = md.dimensions[name]
 
 dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dimensions(md)])
 dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dimensions(md, dims)]
+
+"""
+    dim_count(md::ModelDef, name::Symbol)
+
+Return the size of index `name` in model definition `md`.
+"""
 dim_count(md::ModelDef, name::Symbol) = length(dimension(md, name))
 
+"""
+    dim_key_dict(md::ModelDef)
+
+Return a dict of dimension keys for all dimensions in model definition `md`.
+"""
 dim_key_dict(md::ModelDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(md)])
+"""
+    dim_keys(md::ModelDef, name::Symbol)
+    
+Return keys for dimension `name` in model definition `md`.
+"""
 dim_keys(md::ModelDef, name::Symbol) = collect(keys(dimension(md, name)))
 
 dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
