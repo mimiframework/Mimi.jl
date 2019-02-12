@@ -8,6 +8,9 @@ add_comp!
 components 
 connect_param!
 create_marginal_model
+dim_count
+dim_keys
+dim_key_dict
 disconnect_param!
 explore
 generate_trials!

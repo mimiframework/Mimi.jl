@@ -185,11 +185,23 @@ end
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
 
-Return the size of index `dim_name`` in model instance `mi`.
+Return the size of index `dim_name` in model instance `mi`.
 """
 dim_count(mi::ModelInstance, dim_name::Symbol) = dim_count(mi.md, dim_name)
 
+"""
+    dim_key_dict(mi::ModelInstance)
+
+Return a dict of dimension keys for all dimensions in model instance `mi`.
+"""
 dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
+
+"""
+    dim_keys(mi::ModelInstance, dim_name::Symbol)
+    
+Return keys for dimension `dim_name` in model instance `mi`.
+"""
+dim_keys(mi::ModelInstance, dim_name::Symbol) = dim_keys(mi.md, dim_name)
 
 dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
 

@@ -235,25 +235,24 @@ dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef
 @modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
-    dim_count(m::Model, name::Symbol)
+    dim_count(m::Model, dim_name::Symbol)
     
-Return the length of dimension `name` in Model `m`. Other variants include `dim_counts` and 
-`dim_count_dict`.
+Return the size of index `dim_name` in model `m`.
 """
-@modelegate dim_count(m::Model, name::Symbol) => md
+@modelegate dim_count(m::Model, dim_name::Symbol) => md
 @modelegate dim_counts(m::Model, dims::Vector{Symbol}) => md
 @modelegate dim_count_dict(m::Model) => md
 
 """
-    dim_keys(m::Model, name::Symbol)
+    dim_keys(m::Model, dim_name::Symbol)
     
-Return keys for dimension `name` in Model `m`.
+Return keys for dimension `dim-name` in model `m`.
 """
-@modelegate dim_keys(m::Model, name::Symbol) => md
+@modelegate dim_keys(m::Model, dim_name::Symbol) => md
 """
-    dim_keydict(m::Model)
+    dim_key_dict(m::Model)
     
-Return a dictionary of the keys of all dimensions in Model `m`.
+Return a dict of dimension keys for all dimensions in model `m`.
 """
 @modelegate dim_key_dict(m::Model) => md
 """
