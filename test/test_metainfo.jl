@@ -4,7 +4,8 @@ using Test
 using Mimi
 
 import Mimi: 
-    compdef, compname, reset_compdefs, compmodule, first_period, last_period
+    compdef, compname, reset_compdefs, compmodule, first_period, last_period,
+    variable_names
 
 reset_compdefs()
 
@@ -37,10 +38,17 @@ end
     component(ch4forcing1, ch4forcing2) # add another one with a different name
 end
 
+# this returns the "registered" version defined by @defcomp
+c0 = compdef(ch4forcing1)
+@test compmodule(c0) == :TestMetaInfo
+@test compname(c0) == :ch4forcing1
+@test nameof(c0) == :ch4forcing1
+
+# These are deepcopies of c0 that are added to test_model
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
-@test c1 == compdef(:ch4forcing1)
+@test variable_names(c1) == variable_names(c0)
 @test_throws ErrorException compdef(:missingcomp)
 
 @test compmodule(c2) == :TestMetaInfo

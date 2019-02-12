@@ -70,7 +70,7 @@ function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext
     comp_def = compdef(md, comp_name)
     ext_param = external_param(md, ext_param_name)
 
-    if isa(ext_param, ArrayModelParameter)
+    if ext_param isa ArrayModelParameter
         _check_labels(md, comp_def, param_name, ext_param)
     end
 
@@ -233,12 +233,10 @@ the dictionary keys are strings that match the names of unset parameters in the 
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(k => v for (k, v) in parameters)
-    leftovers = unconnected_params(md)
-    ext_params = external_params(md)
 
-    for (comp_name, param_name) in leftovers
+    for (comp_name, param_name) in unconnected_params(md)
         # check whether we need to set the external parameter
-        if ! haskey(ext_params, param_name)
+        if external_param(md, param_name, missing_ok=true) !== nothing
             value = parameters[string(param_name)]
             param_dims = parameter_dimensions(md, comp_name, param_name)
 
@@ -251,20 +249,22 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 end
 
 # Find internal param conns to a given destination component
-@method function internal_param_conns(obj::CompositeComponentDef, dst_comp_name::Symbol)
+function internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_name::Symbol)
     return filter(x->x.dst_comp_name == dst_comp_name, internal_param_conns(obj))
 end
 
 # Find external param conns for a given comp
-@method function external_param_conns(obj::CompositeComponentDef, comp_name::Symbol)
+function external_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
     return filter(x -> x.comp_name == comp_name, external_param_conns(obj))
 end
 
-function external_param(obj::CompositeComponentDef, name::Symbol)
+function external_param(obj::AbstractCompositeComponentDef, name::Symbol; missing_ok=false)
     try
         return obj.external_params[name]
     catch err
         if err isa KeyError
+            missing_ok && return nothing
+
             error("$name not found in external parameter list")
         else
             rethrow(err)
@@ -272,17 +272,17 @@ function external_param(obj::CompositeComponentDef, name::Symbol)
     end
 end
 
-@method function add_internal_param_conn!(obj::CompositeComponentDef, conn::InternalParameterConnection)
+function add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
     push!(obj.internal_param_conns, conn)
     dirty!(obj)
 end
 
-@method function add_external_param_conn!(obj::CompositeComponentDef, conn::ExternalParameterConnection)
+function add_external_param_conn!(obj::AbstractCompositeComponentDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
     dirty!(obj)
 end
 
-@method function set_external_param!(obj::CompositeComponentDef, name::Symbol, value::ModelParameter)
+function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::ModelParameter)
     obj.external_params[name] = value
     dirty!(obj)
 end
@@ -365,12 +365,10 @@ function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = fal
 end
 
 function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
-    ext_params = external_params(md)
-    if ! haskey(ext_params, name)
+    param = external_param(ext_params, name, missing_ok=true)
+    if param === nothing
         error("Cannot update parameter; $name not found in model's external parameters.")
     end
-
-    param = ext_params[name]
 
     if param isa ScalarModelParameter
         if update_timesteps && raise_error

@@ -49,7 +49,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
 set_param!(m, :X, :x, zeros(6))
-replace_comp!(m, X_repl, :X)            # Successfully replaced by X_repl
+replace_comp!(m, X_repl, :X)            # Replace X with X_repl
 run(m)
 @test length(components(m)) == 1        # Only one component exists in the model
 @test m[:X, :y] == 2 * ones(6)          # Successfully ran the run_timestep function from X_repl

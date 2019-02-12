@@ -74,7 +74,7 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 end
 
 # Create ComponentInstanceVariables for a composite component from the list of exported vars
-@method function _combine_exported_vars(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any})
+function _combine_exported_vars(comp_def::AbstractCompositeComponentDef, var_dict::Dict{Symbol, Any})
     names  = Symbol[]
     values = Any[]
 
@@ -92,7 +92,7 @@ end
     return ComponentInstanceVariables(names, types, values, paths)
 end
 
-@method function _combine_exported_pars(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+function _combine_exported_pars(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     names  = Symbol[]
     values = Any[]
 
@@ -125,7 +125,7 @@ end
 
 
 # Recursively instantiate all variables and store refs in the given dict.
-@method function _instantiate_vars(comp_def::CompositeComponentDef, md::ModelDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+function _instantiate_vars(comp_def::AbstractCompositeComponentDef, md::ModelDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     comp_name = nameof(comp_def)
     par_dict[comp_name] = Dict()
 
@@ -141,7 +141,7 @@ end
 _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
 
 # Recursively collect all parameters with connections to allocated storage for variables
-@method function _collect_params(comp_def::CompositeComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+function _collect_params(comp_def::AbstractCompositeComponentDef, var_dict::Dict{Symbol, Any}, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     # depth-first search of composites
     for cd in compdefs(comp_def)
         _collect_params(cd, var_dict, par_dict)
@@ -189,7 +189,7 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Symbol, Dict
     return ComponentInstanceParameters(names, types, vals, paths)
 end
 
-@method function _instantiate_params(comp_def::CompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
+function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Symbol, Dict{Symbol, Any}})
     _combine_exported_pars(comp_def, par_dict)
 end
 
@@ -209,7 +209,7 @@ function _build(comp_def::ComponentDef,
     return ComponentInstance(comp_def, vars, pars, time_bounds)
 end
 
-@method function _build(comp_def::CompositeComponentDef, 
+function _build(comp_def::AbstractCompositeComponentDef, 
                         var_dict::Dict{Symbol, Any}, 
                         par_dict::Dict{Symbol, Dict{Symbol, Any}},
                         time_bounds::Tuple{Int, Int})

@@ -40,9 +40,6 @@ end
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
-@test c1 == compdef(:ch4forcing1)
-@test_throws ErrorException compdef(:missingcomp)
-
 @test compmodule(c2) == :TestMetaInfo_VariableTimestep
 @test compname(c2) == :ch4forcing1
 @test nameof(c2) == :ch4forcing2

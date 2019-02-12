@@ -25,7 +25,7 @@ is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 @delegate external_param_conns(m::Model) => md
 
 @delegate external_params(m::Model) => md
-@delegate external_param(m::Model, name::Symbol) => md
+@delegate external_param(m::Model, name::Symbol; missing_ok=false) => md
 
 @delegate connected_params(m::Model, comp_name::Symbol) => md
 @delegate unconnected_params(m::Model) => md
@@ -108,15 +108,15 @@ model definition.
 
 """
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
-        first=nothing, last=nothing, before=nothing, after=nothing)
+              exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_id` to the model indicated by `m`. The component is added at the end of 
 the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the new name.
 """
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      first=nothing, last=nothing, before=nothing, after=nothing)
-    add_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
+                   exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(m.md, comp_id, comp_name; exports=exports, first=first, last=last, before=before, after=after)
     return ComponentReference(m, comp_name)
 end
 
@@ -168,11 +168,11 @@ Return an iterator on the components in a model's model instance.
 Return a DatumDef for `item` in the given component `comp_def`.
 """
 function datumdef(comp_def::ComponentDef, item::Symbol)
-    if haskey(comp_def.variables, item)
-        return comp_def.variables[item]
+    if has_variable(comp_def, item)
+        return variable(comp_def, item)
 
-    elseif haskey(comp_def.parameters, item)
-        return comp_def.parameters[item]
+    elseif has_parameter(comp_def, item)
+        return parameter(comp_def, item)
     else
         error("Cannot access data item; :$item is not a variable or a parameter in component $(comp_def.comp_id).")
     end

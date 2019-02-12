@@ -71,6 +71,20 @@ function _show_field(io::IO, name::Symbol, vec::Vector{T}; show_empty=true) wher
     nothing
 end
 
+function _show_field(io::IO, name::Symbol, vec::Vector{<: AbstractMimiType}; show_empty=true)
+    if !show_empty && isempty(vec)
+        return
+    end
+
+    print(io, "\n")
+    print_indented(io, name, ": ")
+    io = indent(io)
+    for (i, value) in enumerate(vec)
+        print(io, "\n")
+        print_indented(io, "$i: ", value)
+    end
+end
+
 function _show_fields(io::IO, obj, names; show_empty=true)
     for name in names
         value = getfield(obj, name)
@@ -91,9 +105,15 @@ function _show_datum_def(io::IO, obj::AbstractDatumDef)
 end
 
 function show(io::IO, obj::ComponentId)
-    print(io, "<ComponentId $(obj.module_name).$(obj.comp_name)>")
+    print(io, "ComponentId($(obj.module_name).$(obj.comp_name))")
     nothing
 end
+
+function show(io::IO, obj::ComponentPath)
+    print(io, "ComponentPath$(obj.names)")
+    nothing
+end
+
 
 function show(io::IO, obj::AbstractDimension)
     print(io, keys(obj))
@@ -130,5 +150,8 @@ function show(io::IO, obj::ModelInstance)
     pos = findfirst(x -> x == :md, fields)
     fields = deleteat!([fields...], pos)
 
-    _show_fields(indent(io), obj, fields)
+    io = indent(io)
+    _show_fields(io, obj, fields)
+    print(io, "\n")
+    print_indented(io, "md: (not shown)")
 end

@@ -10,12 +10,12 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 modeldef(mi::ModelInstance) = mi.md
 
 """
-    @method add_comp!(obj::CompositeComponentInstance, ci::AbstractComponentInstance)
+    add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
 
 Add the (leaf or composite) component `ci` to a composite's list of components, and add 
 the `first` and `last` of `mi` to the ends of the composite's `firsts` and `lasts` lists.
 """
-@method function add_comp!(obj::CompositeComponentInstance, ci::AbstractComponentInstance)
+function add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
     obj.comps_dict[nameof(ci)] = ci
 
     # push!(obj.firsts, first_period(ci))         # TBD: perhaps this should be set when time is set?
@@ -75,14 +75,14 @@ end
     end
 end
 
-@method comp_paths(obj::ComponentInstanceData) = getfield(obj, :comp_paths)
+comp_paths(obj::AbstractComponentInstanceData) = getfield(obj, :comp_paths)
 
 """
     get_param_value(ci::ComponentInstance, name::Symbol)
 
 Return the value of parameter `name` in (leaf or composite) component `ci`.
 """
-@method function get_param_value(ci::ComponentInstance, name::Symbol)
+function get_param_value(ci::AbstractComponentInstance, name::Symbol)
     try 
         return getproperty(ci.parameters, name)
     catch err
@@ -99,7 +99,7 @@ end
 
 Return the value of variable `name` in component `ci`.
 """
-@method function get_var_value(ci::ComponentInstance, name::Symbol)
+function get_var_value(ci::AbstractComponentInstance, name::Symbol)
     try
         # println("Getting $name from $(ci.variables)")
         return getproperty(ci.variables, name)
@@ -112,16 +112,16 @@ Return the value of variable `name` in component `ci`.
     end
 end
 
-@method set_param_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
+set_param_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
 
-@method set_var_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.variables, name, value)
+set_var_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.variables, name, value)
 
 """
     variables(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
 
 Return the `ComponentInstanceVariables` for `comp_name` in CompositeComponentInstance `obj`.
 """
-@method variables(obj::CompositeComponentInstance, comp_name::Symbol) = variables(compinstance(obj, comp_name))
+variables(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = variables(compinstance(obj, comp_name))
 
 function variables(m::Model)
     if ! is_built(m)
@@ -135,7 +135,7 @@ end
 
 Return the `ComponentInstanceParameters` for `comp_name` in CompositeComponentInstance `obj`.
 """
-@method parameters(obj::CompositeComponentInstance, comp_name::Symbol) = parameters(compinstance(obj, comp_name))
+parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = parameters(compinstance(obj, comp_name))
 
 function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     if ! has_comp(mi, comp_name)
@@ -166,7 +166,7 @@ Return the size of index `dim_name`` in model instance `mi`.
 """
 @delegate dim_count(mi::ModelInstance, dim_name::Symbol) => md
 
-@method function reset_variables(ci::ComponentInstance)
+function reset_variables(ci::AbstractComponentInstance)
     # @info "reset_variables($(ci.comp_id))"
     vars = ci.variables
 
@@ -185,14 +185,14 @@ Return the size of index `dim_name`` in model instance `mi`.
     end
 end
 
-@method function reset_variables(obj::CompositeComponentInstance)
+function reset_variables(obj::AbstractCompositeComponentInstance)
     for ci in components(obj)
         reset_variables(ci)
     end
     return nothing
 end
 
-@method function init(ci::ComponentInstance, dims::DimValueDict)
+function init(ci::AbstractComponentInstance, dims::DimValueDict)
     # @info "init($(ci.comp_id))"
     reset_variables(ci)
 
@@ -202,16 +202,16 @@ end
     return nothing
 end
 
-@method function init(obj::CompositeComponentInstance, dims::DimValueDict)
+function init(obj::AbstractCompositeComponentInstance, dims::DimValueDict)
     for ci in components(obj)
         init(ci, dims)
     end
     return nothing
 end
 
-@method _runnable(ci::ComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
+_runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
 
-@method function run_timestep(ci::ComponentInstance, clock::Clock, dims::DimValueDict)
+function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueDict)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
         ci.run_timestep(ci.parameters, ci.variables, dims, clock.ts)
     end
@@ -219,7 +219,7 @@ end
     return nothing
 end
 
-@method function run_timestep(cci::CompositeComponentInstance, clock::Clock, dims::DimValueDict)
+function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::DimValueDict)
     if _runnable(cci, clock)
         for ci in components(cci)
             run_timestep(ci, clock, dims)

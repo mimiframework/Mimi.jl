@@ -185,19 +185,26 @@ end
 
 # Identifies the path through multiple composites to a leaf component
 # TBD: Could be just a tuple of Symbols since they are unique at each level.
-const ComponentPath = NTuple{N, Symbol} where N
+struct ComponentPath <: MimiStruct
+    names::NTuple{N, Symbol} where N
+end
 
-ComponentPath(names::Vector{Symbol}) = Tuple(names)
+ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
+
+ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath((path.names..., name))
+
+ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath((path1.names..., path1.names...))
+
+ComponentPath(name::Symbol) = ComponentPath((name,))
+
+ComponentPath(::Nothing, name::Symbol) = ComponentPath(name)
+
+Base.isempty(obj::ComponentPath) = isempty(obj.names)
 
 # The equivalent of ".." in the file system.
-Base.parent(path::ComponentPath) = path[1:end-1]
+Base.parent(path::ComponentPath) = ComponentPath(path.names[1:end-1])
 
 ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
-
-#
-# TBD: consider a naming protocol that adds Cls to class struct names 
-# so it's obvious in the code.
-#
 
 # Objects with a `name` attribute
 @class NamedObj <: MimiClass begin
@@ -208,16 +215,18 @@ end
     nameof(obj::NamedDef) = obj.name 
 
 Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, 
-`CompositeComponentDef`, and `DatumReference`.
+`CompositeComponentDef`, and `VariableDefReference` and `ParameterDefReference`.
 """
-@method Base.nameof(obj::NamedObj) = obj.name
+Base.nameof(obj::AbstractNamedObj) = obj.name
 
 # Stores references to the name of a component variable or parameter
 # and the ComponentId of the component in which it is defined
 @class DatumReference <: NamedObj begin
-    # TBD: should be a ComponentPath
-    comp_id::ComponentId                # TBD: should this be a ComponentPath?
+    comp_path::ComponentPath
 end
+
+@class ParameterDefReference <: DatumReference
+@class VariableDefReference  <: DatumReference
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
@@ -273,20 +282,19 @@ end
     end    
 end
 
-@method comp_id(obj::ComponentDef) = obj.comp_id
-@method dim_dict(obj::ComponentDef) = obj.dim_dict
-@method first_period(obj::ComponentDef) = obj.first
-@method last_period(obj::ComponentDef) = obj.last
-@method isuniform(obj::ComponentDef) = obj.is_uniform
+comp_id(obj::AbstractComponentDef) = obj.comp_id
+dim_dict(obj::AbstractComponentDef) = obj.dim_dict
+first_period(obj::AbstractComponentDef) = obj.first
+last_period(obj::AbstractComponentDef) = obj.last
+isuniform(obj::AbstractComponentDef) = obj.is_uniform
 
 # Define type aliases to avoid repeating these in several places
-global const BindingsDef = Vector{Pair{T where T <: AbstractDatumReference, Union{Int, Float64, DatumReference}}}
+global const BindingsDef = Vector{Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}}
 global const ExportsDef  = Dict{Symbol, AbstractDatumReference}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::BindingsDef
-
     exports::ExportsDef
     
     internal_param_conns::Vector{InternalParameterConnection}
@@ -339,20 +347,28 @@ global const ExportsDef  = Dict{Symbol, AbstractDatumReference}
 end
 
 # TBD: these should dynamically and recursively compute the lists
-@method internal_param_conns(obj::CompositeComponentDef) = obj.internal_param_conns
-@method external_param_conns(obj::CompositeComponentDef) = obj.external_param_conns
+internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
+external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
 
-@method external_params(obj::CompositeComponentDef) = obj.external_params
-@method external_param(obj::CompositeComponentDef, name::Symbol) = obj.external_params[name]
+# TBD: should only ModelDefs have external params?
+external_params(obj::AbstractCompositeComponentDef) = obj.external_params
 
-@method exported_names(obj::CompositeComponentDef) = keys(obj.exports)
-@method is_exported(obj::CompositeComponentDef, name::Symbol) = haskey(obj.exports, name)
+exported_names(obj::AbstractCompositeComponentDef) = keys(obj.exports)
+is_exported(obj::AbstractCompositeComponentDef, name::Symbol) = haskey(obj.exports, name)
 
-@method add_backup!(obj::CompositeComponentDef, backup) = push!(obj.backups, backup)
+add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
-@method is_leaf(c::ComponentDef) = true
-@method is_leaf(c::CompositeComponentDef) = false
-@method is_composite(c::ComponentDef) = !is_leaf(c)
+is_leaf(c::AbstractComponentDef) = true
+is_leaf(c::AbstractCompositeComponentDef) = false
+is_composite(c::AbstractComponentDef) = !is_leaf(c)
+
+# Registry for ModelDef instances so we can find components by ComponentPath
+_model_def_registry = WeakKeyDict()
+
+# Finalizer for ModelDefs
+_del_model_def(md) = delete!(_model_def_registry, nameof(md))
+
+find_model_def(name::Symbol) = get(_model_def_registry, name, nothing)
 
 @class mutable ModelDef <: CompositeComponentDef begin
     number_type::DataType
@@ -361,7 +377,13 @@ end
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        self.comp_path = (self.name,)
+        self.comp_path = ComponentPath(self.name)
+        
+        # Register the model and set up finalizer to delete it from
+        # the registry when there are no more references to it.
+        _model_def_registry[self.name] = self
+        finalizer(_del_model_def, self)
+
         return ModelDef(self, number_type, false)
     end
 end
@@ -376,10 +398,10 @@ end
     comp_paths::Vector{ComponentPath}   # records the origin of each datum
 end
 
-@method nt(obj::ComponentInstanceData) = getfield(obj, :nt)
-@method types(obj::ComponentInstanceData) = typeof(nt(obj)).parameters[2].parameters
-@method Base.names(obj::ComponentInstanceData)  = keys(nt(obj))
-@method Base.values(obj::ComponentInstanceData) = values(nt(obj))
+nt(obj::AbstractComponentInstanceData) = getfield(obj, :nt)
+types(obj::AbstractComponentInstanceData) = typeof(nt(obj)).parameters[2].parameters
+Base.names(obj::AbstractComponentInstanceData)  = keys(nt(obj))
+Base.values(obj::AbstractComponentInstanceData) = values(nt(obj))
 
 # Centralizes the shared functionality from the two component data subtypes.
 function _datum_instance(subtype::Type{<: AbstractComponentInstanceData}, 
@@ -491,7 +513,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
     end
 end
 
-@method function ComponentInstance(comp_def::ComponentDef, vars::TV, pars::TP,
+function ComponentInstance(comp_def::AbstractComponentDef, vars::TV, pars::TP,
                                    time_bounds::Tuple{Int,Int},
                                    name::Symbol=nameof(comp_def)) where
         {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
@@ -501,12 +523,11 @@ end
 end
 
 # These can be called on CompositeComponentInstances and ModelInstances
-@method compdef(obj::ComponentInstance) = compdef(comp_id(obj))
-# @method dim_value_dict(obj::ComponentInstance) = obj.dim_value_dict
-@method has_dim(obj::ComponentInstance, name::Symbol) = haskey(obj.dim_value_dict, name)
-@method dimension(obj::ComponentInstance, name::Symbol) = obj.dim_value_dict[name]
-@method first_period(obj::ComponentInstance) = obj.first
-@method last_period(obj::ComponentInstance)  = obj.last
+compdef(obj::AbstractComponentInstance) = compdef(comp_id(obj))
+has_dim(obj::AbstractComponentInstance, name::Symbol) = haskey(obj.dim_value_dict, name)
+dimension(obj::AbstractComponentInstance, name::Symbol) = obj.dim_value_dict[name]
+first_period(obj::AbstractComponentInstance) = obj.first
+last_period(obj::AbstractComponentInstance)  = obj.last
 
 @class mutable CompositeComponentInstance <: ComponentInstance begin
     comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
@@ -540,13 +561,13 @@ end
 end
 
 # These methods can be called on ModelInstances as well
-@method components(obj::CompositeComponentInstance) = values(obj.comps_dict)
-@method has_comp(obj::CompositeComponentInstance, name::Symbol) = haskey(obj.comps_dict, name)
-@method compinstance(obj::CompositeComponentInstance, name::Symbol) = obj.comps_dict[name]
+components(obj::AbstractCompositeComponentInstance) = values(obj.comps_dict)
+has_comp(obj::AbstractCompositeComponentInstance, name::Symbol) = haskey(obj.comps_dict, name)
+compinstance(obj::AbstractCompositeComponentInstance, name::Symbol) = obj.comps_dict[name]
 
-@method is_leaf(ci::ComponentInstance) = true
-@method is_leaf(ci::CompositeComponentInstance) = false
-@method is_composite(ci::ComponentInstance) = !is_leaf(ci)
+is_leaf(ci::AbstractComponentInstance) = true
+is_leaf(ci::AbstractCompositeComponentInstance) = false
+is_composite(ci::AbstractComponentInstance) = !is_leaf(ci)
 
 #
 # TBD: Should include only exported vars and pars, right?
