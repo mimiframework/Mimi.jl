@@ -18,6 +18,8 @@ The following terminology is used throughout the documentation.
 
 2. **Modify an Existing Model**
 
+    _While the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon._
+
    [Tutorial 2: Modify an Existing Model](@ref) builds on Tutorial 1, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
 
 3. **Create a Model**
