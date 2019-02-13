@@ -303,7 +303,7 @@ We can now run the model and evaluate the results.
 using Mimi
 
 include("MyModel.jl")
-using MyModel
+using .MyModel
 m = construct_MyModel()
 run(m)
 

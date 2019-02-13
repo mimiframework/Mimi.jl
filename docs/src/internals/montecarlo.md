@@ -266,6 +266,8 @@ include("examples/tutorial/02-two-region-model/main.jl")
 
 m = model # defined by 2-region model
 
+N = 100
+
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
@@ -285,33 +287,23 @@ mcs = @defmcs begin
     sigma[:, Region1] *= name2
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    # Assign an array of distributions, keyed by region, to parameter depk
-    depk = [Region1 => Uniform(0.7, 1.3),
-            Region2 => Uniform(0.8, 1.2),
-            Region3 => Normal()]
+    depk = [Region1 => Uniform(0.08, 0.14),
+            Region2 => Uniform(0.10, 1.50),
+            Region3 => Uniform(0.10, 0.20)]
 
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, 
-         emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-# Optional user functions can be called just before or after a trial is run
-function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
-    println("$(ci.comp_id).E_Global: $value")
-end
+output_dir = joinpath(tempdir(), "mcs")
 
 # Generate trial data for all RVs and (optionally) save to a file
-generate_trials!(mcs, 1000, filename="/tmp/trialdata.csv")
+generate_trials!(mcs, 1000, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
-
-# Same thing but with a post-trial function
-run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
+run_mcs(mcs, m, 4, output_dir=output_dir)
 ```
 
 
