@@ -63,6 +63,11 @@ run(m)
 ### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
+Start off by importing the Mimi package to your space with 
+```
+using Mimi
+```
+
 First of all, you may use the `getindex` syntax as follows:
 
 ```julia
@@ -104,9 +109,10 @@ To explore all variables and parameters of FUND in a dynamic UI app window, use 
 ```
 explore(m, title = "My Window")
 ```
-Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. you may save a plot by calling the `save` function.
+Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot by calling the `save` function, but note you will need to add the `VegaLite.jl` pacakge and type `using VegaLite` to access this function.
 
 ```julia
+using VegaLite
 run(m)
 p = explore(m, component1, parameter1)
 save("MyFilePath.svg", p)
@@ -114,6 +120,7 @@ save("MyFilePath.svg", p)
 More specifically for our tutorial use of FUND, try:
 
 ```julia
+using VegaLite
 p = explore(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 ```
