@@ -491,26 +491,26 @@ end
 function run_mcs(mcs::MonteCarloSimulation, m::Model, trials::Union{Vector{Int}, AbstractRange{Int}}, 
                 models_to_run::Int=length(mcs.models) + 1; kwargs...)
     set_model!(mcs, m)
-    return run_mcs(mcs, trials, models_to_run; kwargs...)
+    return run_mcs(mcs, trials, length(mcs.models); kwargs...)
 end
 
 function run_mcs(mcs::MonteCarloSimulation, m::Model, trials::Int=mcs.trials, 
-                 models_to_run::Int=length(mcs.models) + 1; kwargs...)
+                 models_to_run::Int=length(mcs.models); kwargs...)
     set_model!(mcs, m)
-    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
+    return run_mcs(mcs, 1:trials, length(mcs.models); kwargs...)
 end
 
 # Two methods mirroring the two above, but take multiple models to run
 function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=Union{Vector{Int}, AbstractRange{Int}}, 
-                 models_to_run::Int=length(mcs.models) + length(models); kwargs...)
+                 models_to_run::Int=length(mcs.models); kwargs...)
     set_models!(mcs, models)
-    return run_mcs(mcs, trials, models_to_run; kwargs...)
+    return run_mcs(mcs, trials, length(mcs.models); kwargs...)
 end
 
 function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials::Int=mcs.trials, 
-                models_to_run::Int=length(mcs.models) + length(models); kwargs...)
+                models_to_run::Int=length(mcs.models); kwargs...)
     set_models!(mcs, models)
-    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
+    return run_mcs(mcs, 1:trials, length(mcs.models); kwargs...)
 end
 
 # Set models

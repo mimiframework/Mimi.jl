@@ -68,24 +68,26 @@ end
 ```
 
 ### Step 2. Optional User-Defined Functions
-Next, create the user-defined `print_result` function, which can be called as a post-trial function by [`run_mcs`](@ref).
+Next, a user may create a user-defined function, which can be called as a pre or post-trial function by [`run_mcs`](@ref).
 
- ```julia
-# Optional user functions can be called just before or after a trial is run
-function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
-    println("$(ci.comp_id).E_Global: $value")
-end
-```
+If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
+just before or after (respectively) running a trial. The functions must have the signature:
 
-### Step 3. Generate Trials
+    fn(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+
+where `tup` is a tuple of scenario arguments representing one element in the cross-product
+of all scenario value vectors. In situations in which you want the MCS loop to run only
+some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
+`post_trial_func`.
+
+### Step 2. Generate Trials
 
 The optional [`generate_trials!`](@ref) function can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.  If this function is not called prior to calling [`run_mcs`](@ref), random sampling is used for all distributions and trial data are not saved. Employ this function as follows:
 
 ```julia
 # Generate trial data for all RVs and (optionally) save to a file
-generate_trials!(mcs, 1000, filename="/tmp/trialdata.csv")
+output_dir = joinpath(tempdir(), "mcs")
+generate_trials!(mcs, 1000, filename=joinpath(output_dir, "trialdata.csv"))
 ```
 
 ### Step 4. Run MCS
@@ -109,15 +111,9 @@ Here, we first employ [`run_mcs`](@ref) in its simplest form to obtain results:
 
 ```julia
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
+run_mcs(mcs, m, 4, output_dir=output_dir)
 ```
 
-and then again using our user-defined post-trial function as the `post_trial_func` parameter:
-
-```julia
-# Same thing but with a post-trial function
-run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
-```
 ## FUND Example
 
 This example is in progress and will be built out soon.
