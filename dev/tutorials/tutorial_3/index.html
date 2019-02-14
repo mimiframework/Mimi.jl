@@ -196,7 +196,7 @@ end #end module
 </code></pre><p>Save this file as <strong><code>MyModel.jl</code></strong></p><p>We can now run the model and evaluate the results.</p><pre><code class="language-julia">using Mimi
 
 include(&quot;MyModel.jl&quot;)
-using MyModel
+using .MyModel
 m = construct_MyModel()
 run(m)
 
