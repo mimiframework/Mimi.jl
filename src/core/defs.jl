@@ -18,9 +18,9 @@ function compdef(comp_name::Symbol)
     end
 end
 
-@delegate compdef(dr::AbstractDatumReference) => comp_path
+compdef(dr::AbstractDatumReference) = compdef(dr.root, dr.comp_path)
 
-compdef(path::ComponentPath) = find_comp(path)
+compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
 
 # Allows method to be called on leaf component defs, which sometimes simplifies code.
 compdefs(c::ComponentDef) = []
@@ -38,6 +38,10 @@ compname(obj::AbstractComponentDef)   = compname(obj.comp_id)
 
 compnames() = map(compname, compdefs())
 
+
+# Access a subcomponent as comp[:name]
+Base.getindex(obj::AbstractCompositeComponentDef, name::Symbol) = obj.comps_dict[name]
+
 function reset_compdefs(reload_builtins=true)
     empty!(_compdefs)
 
@@ -54,14 +58,11 @@ end
 dirty(md::ModelDef) = md.dirty
 
 function dirty!(obj::AbstractComponentDef)
-    path = obj.comp_path
-    if (path === nothing || isempty(path))
+    root = get_root(obj)
+    if root === nothing
         return
     end
 
-    root = compdef(path[1])
-    
-    # test is necessary to avoid looping when length(path) == 1
     if root isa ModelDef        
         dirty!(root)
     end
@@ -394,7 +395,7 @@ function parameters(ccd::AbstractCompositeComponentDef)
     # return cached parameters, if any
     if length(pars) == 0
         for (name, dr) in ccd.exports
-            cd = compdef(dr.comp_id)
+            cd = compdef(dr)
             if has_parameter(cd, nameof(dr))
                 pars[name] = parameter(cd, nameof(dr))
             end
@@ -666,24 +667,79 @@ end
 
 function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, name::Symbol)
     path = ComponentPath(parent.comp_path, comp_def.name)
+    root = get_root(parent)
 
     if has_variable(comp_def, name)
-        return VariableDefReference(name, path)
+        return VariableDefReference(name, root, path)
     end
 
     if has_parameter(comp_def, name)
-        return ParameterDefReference(name, path)
+        return ParameterDefReference(name, root, path)
     end
 
     error("$(comp_def.comp_path) does not have a data item named $name")
 end
 
+# Save a back-pointer to the container object
+function parent!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
+    child.parent = parent
+    nothing
+end
+
+# Recursively ascend the component tree structure to find the root node
+get_root(node::AbstractComponentDef) = (node.parent === nothing ? node : get_root(node.parent))
+
 const NothingInt    = Union{Nothing, Int}
 const NothingSymbol = Union{Nothing, Symbol}
 const ExportList    = Vector{Union{Symbol, Pair{Symbol, Symbol}}}
 
+function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef;
+                       before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+
+    comp_name = nameof(comp_def)
+
+    if before === nothing && after === nothing
+        _append_comp!(obj, comp_name, comp_def)   # add it to the end
+    else
+        new_comps = OrderedDict{Symbol, AbstractComponentDef}()
+
+        if before !== nothing
+            if ! has_comp(obj, before)
+                error("Component to add before ($before) does not exist")
+            end
+
+            for (k, v) in obj.comps_dict
+                if k == before
+                    new_comps[comp_name] = comp_def
+                end
+                new_comps[k] = v
+            end
+
+        else    # after !== nothing, since we've handled all other possibilities above
+            if ! has_comp(obj, after)
+                error("Component to add before ($before) does not exist")
+            end
+
+            for (k, v) in obj.comps_dict
+                new_comps[k] = v
+                if k == after
+                    new_comps[comp_name] = comp_def
+                end
+            end
+        end
+
+        comps_dict!(obj, new_comps)
+    end
+
+    comp_path!(obj, comp_def)
+    dirty!(obj)
+
+    nothing
+end
+
+
 """
-    add_comp!(md::ModelDef, comp_def::ComponentDef; 
+    add_comp!(obj::AbstractCompositeComponentDef, comp_def::ComponentDef; 
               exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component 
@@ -695,9 +751,9 @@ the second element allows this var/par to have a new name in the composite. A sy
 the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, comp_name::Symbol;
-                           exports=nothing,
-                           first::NothingInt=nothing, last::NothingInt=nothing, 
-                           before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+                   exports=nothing,
+                   first::NothingInt=nothing, last::NothingInt=nothing, 
+                   before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     
     # if not specified, export all var/pars. Caller can pass empty list to export nothing.
     if exports === nothing
@@ -744,44 +800,11 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     # Copy the original so we don't step on other uses of this comp
     comp_def = deepcopy(comp_def)
     comp_def.name = comp_name
+    parent!(comp_def, obj)
 
     set_run_period!(comp_def, first, last)
-
     _add_anonymous_dims!(obj, comp_def)
-
-    if before === nothing && after === nothing
-        _append_comp!(obj, comp_name, comp_def)   # just add it to the end
-    else
-        new_comps = OrderedDict{Symbol, AbstractComponentDef}()
-
-        if before !== nothing
-            if ! has_comp(obj, before)
-                error("Component to add before ($before) does not exist")
-            end
-
-            for k in compkeys(obj)
-                if k == before
-                    new_comps[comp_name] = comp_def
-                end
-                new_comps[k] = compdef(obj, k)
-            end
-
-        else    # after !== nothing, since we've handled all other possibilities above
-            if ! has_comp(obj, after)
-                error("Component to add before ($before) does not exist")
-            end
-
-            for k in compkeys(obj)
-                new_comps[k] = compdef(obj, k)
-                if k == after
-                    new_comps[comp_name] = comp_def
-                end
-            end
-        end
-
-        comps_dict!(obj, new_comps)
-        # println("obj.comp_defs: $(comp_defs(obj))")
-    end
+    _insert_comp!(obj, comp_def, before=before, after=after)
 
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
@@ -789,11 +812,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             set_param!(obj, comp_name, nameof(param), param.default)
         end
     end
-    
-    comp_path!(obj, comp_def)
-    
-    dirty!(obj)
-    
+        
     # Return the comp since it's a copy of what was passed in
     return comp_def
 end
@@ -931,16 +950,3 @@ end
 find_comp(obj::AbstractComponentDef, name::Symbol) = find_comp(obj, ComponentPath(name))
 
 find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)
-
-function find_comp(path::ComponentPath)
-    names = path.names
-    if isempty(names)
-        error("Can't find component: ComponentPath is empty")
-    end
-
-    if (md = find_model_def(names[1])) === nothing
-        error("Can't find a ModelDef named $(names[1])")
-    end
-
-    find_comp(md, ComponentPath(names[2:end]))
-end

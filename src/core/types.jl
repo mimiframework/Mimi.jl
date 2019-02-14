@@ -219,14 +219,9 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
-# Stores references to the name of a component variable or parameter
-# and the ComponentId of the component in which it is defined
-@class DatumReference <: NamedObj begin
-    comp_path::ComponentPath
-end
-
-@class ParameterDefReference <: DatumReference
-@class VariableDefReference  <: DatumReference
+# TBD: if DatumReference refers to the "registered" components, then ComponentId
+# is adequate for locating it. As David suggested, having separate types for the
+# registered components and the user's ModelDef structure would be clarifying.
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
@@ -253,6 +248,10 @@ end
     last::Union{Nothing, Int}
     is_uniform::Bool
 
+    # Store a reference to the AbstractCompositeComponent that contains this comp def.
+    # That type isn't defined yet, so we declare Any here.
+    parent::Union{Nothing, Any}
+
     function ComponentDef(self::ComponentDef, comp_id::Nothing)
         error("Leaf ComponentDef objects must have a valid ComponentId name (not nothing)")
     end
@@ -272,6 +271,7 @@ end
         self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.first = self.last = nothing
         self.is_uniform = true
+        self.parent = nothing
         return self
     end
 
@@ -288,14 +288,25 @@ first_period(obj::AbstractComponentDef) = obj.first
 last_period(obj::AbstractComponentDef) = obj.last
 isuniform(obj::AbstractComponentDef) = obj.is_uniform
 
+# Stores references to the name of a component variable or parameter
+# and the ComponentPath of the component in which it is defined
+@class DatumReference <: NamedObj begin
+    root::AbstractComponentDef
+    comp_path::ComponentPath
+end
+
+@class ParameterDefReference <: DatumReference
+@class VariableDefReference  <: DatumReference
+
+
 # Define type aliases to avoid repeating these in several places
-global const BindingsDef = Vector{Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}}
-global const ExportsDef  = Dict{Symbol, AbstractDatumReference}
+global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
+global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
-    bindings::BindingsDef
-    exports::ExportsDef
+    bindings::Vector{Binding}
+    exports::ExportsDict
     
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
@@ -306,45 +317,37 @@ global const ExportsDef  = Dict{Symbol, AbstractDatumReference}
 
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
-    function CompositeComponentDef(self::AbstractCompositeComponentDef, 
-                                   comp_id::ComponentId, 
-                                   comps::Vector{<: AbstractComponentDef},
-                                   bindings::BindingsDef,
-                                   exports::ExportsDef)
-    
-        # TBD: OrderedDict{ComponentId, AbstractComponentDef}
-        comps_dict = OrderedDict{Symbol, AbstractComponentDef}([nameof(cd) => cd for cd in comps])
-        in_conns = Vector{InternalParameterConnection}() 
-        ex_conns = Vector{ExternalParameterConnection}()
-        ex_params = Dict{Symbol, ModelParameter}()
-        backups = Vector{Symbol}()
-        sorted_comps = nothing
-        
-        ComponentDef(self, comp_id)         # superclass init [TBD: allow for alternate comp_name?]
-        CompositeComponentDef(self, comps_dict, bindings, exports, in_conns, ex_conns, 
-                              ex_params, backups, sorted_comps)
+    function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}=nothing)
+        self = new()
+        CompositeComponentDef(self, comp_id)
         return self
     end
 
-    function CompositeComponentDef(comp_id::ComponentId, comps::Vector{<: AbstractComponentDef},
-                                   bindings::BindingsDef,
-                                   exports::ExportsDef)
+    function CompositeComponentDef(self::AbstractCompositeComponentDef, comp_id::Union{Nothing, ComponentId}=nothing)
+        ComponentDef(self, comp_id) # call superclass' initializer
 
-        self = new()
-        return CompositeComponentDef(self, comp_id, comps, bindings, exports)
-    end
-
-    # Creates an empty composite compdef with all containers allocated but empty
-    function CompositeComponentDef(self::Union{Nothing, AbstractCompositeComponentDef}=nothing)
-        self = (self === nothing ? new() : self)
-
-        comp_id  = ComponentId(@__MODULE__, gensym(nameof(typeof(self))))
-        comps    = Vector{T where T <: AbstractComponentDef}()
-        bindings = BindingsDef()
-        exports  = ExportsDef()
-        return CompositeComponentDef(self, comp_id, comps, bindings, exports)
+        self.comps_dict = OrderedDict{Symbol, AbstractComponentDef}()
+        self.bindings = Vector{Binding}()
+        self.exports  = ExportsDict()
+        self.internal_param_conns = Vector{InternalParameterConnection}() 
+        self.external_param_conns = Vector{ExternalParameterConnection}()
+        self.external_params = Dict{Symbol, ModelParameter}()
+        self.backups = Vector{Symbol}()
+        self.sorted_comps = nothing
     end
 end
+
+# Deprecated?
+# # Create an empty composite compdef with all containers allocated but empty
+# function CompositeComponentDef(self::Union{Nothing, AbstractCompositeComponentDef}=nothing)
+#     self = (self === nothing ? new() : self)
+
+#     comp_id  = ComponentId(@__MODULE__, gensym(nameof(typeof(self))))
+#     comps    = Vector{T where T <: AbstractComponentDef}()
+#     bindings = Vector{Binding}()
+#     exports  = ExportsDict()
+#     return CompositeComponentDef(self, comp_id, comps, bindings, exports)
+# end
 
 # TBD: these should dynamically and recursively compute the lists
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
@@ -362,14 +365,6 @@ is_leaf(c::AbstractComponentDef) = true
 is_leaf(c::AbstractCompositeComponentDef) = false
 is_composite(c::AbstractComponentDef) = !is_leaf(c)
 
-# Registry for ModelDef instances so we can find components by ComponentPath
-_model_def_registry = WeakKeyDict()
-
-# Finalizer for ModelDefs
-_del_model_def(md) = delete!(_model_def_registry, nameof(md))
-
-find_model_def(name::Symbol) = get(_model_def_registry, name, nothing)
-
 @class mutable ModelDef <: CompositeComponentDef begin
     number_type::DataType
     dirty::Bool
@@ -377,13 +372,7 @@ find_model_def(name::Symbol) = get(_model_def_registry, name, nothing)
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        self.comp_path = ComponentPath(self.name)
-        
-        # Register the model and set up finalizer to delete it from
-        # the registry when there are no more references to it.
-        _model_def_registry[self.name] = self
-        finalizer(_del_model_def, self)
-
+        self.comp_path = ComponentPath(self.name)        
         return ModelDef(self, number_type, false)
     end
 end
@@ -671,24 +660,18 @@ end
 # 7. Reference types provide more convenient syntax for interrogating Components
 #
 
-"""
-    ComponentReference
-
-A container for a component, for interacting with it within a model.
-"""
-struct ComponentReference <: MimiStruct
-    model::Model
-    comp_name::Symbol
+# A container for a component, for interacting with it within a model.
+@class ComponentReference <: MimiClass begin
+    parent::AbstractComponentDef
+    comp_path::ComponentPath
 end
 
-"""
-    VariableReference
-    
-A container for a variable within a component, to improve connect_param! aesthetics,
-by supporting subscripting notation via getindex & setindex .
-"""
-struct VariableReference <: MimiStruct
-    model::Model
-    comp_name::Symbol
+# A container for a variable within a component, to improve connect_param! aesthetics,
+# by supporting subscripting notation via getindex & setindex .
+@class VariableReference <: ComponentReference begin
     var_name::Symbol
+end
+
+function same_composite(ref1::AbstractComponentReference, ref2::AbstractComponentReference)
+    return ref1.comp_path[1] == ref2.comp_path[1]
 end

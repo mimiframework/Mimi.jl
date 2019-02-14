@@ -137,12 +137,15 @@ Return the `ComponentInstanceParameters` for `comp_name` in CompositeComponentIn
 """
 parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = parameters(compinstance(obj, comp_name))
 
-function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
-    if ! has_comp(mi, comp_name)
-        error("Component :$comp_name does not exist in current model")
+function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
+    if ! has_comp(obj, comp_name)
+        error("Component :$comp_name does not exist in the given composite")
     end
-    
-    comp_inst = compinstance(mi, comp_name)
+    return compinstance(obj, comp_name)
+end
+
+function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum_name::Symbol)    
+    comp_inst = obj[comp_name]
     vars = comp_inst.variables
     pars = comp_inst.parameters
 

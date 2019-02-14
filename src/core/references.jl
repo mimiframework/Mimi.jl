@@ -41,7 +41,7 @@ end
 Get a variable reference as `comp_ref[var_name]`.
 """
 function Base.getindex(comp_ref::ComponentReference, var_name::Symbol)
-    VariableReference(comp_ref.model, comp_ref.comp_name, var_name)
+    VariableReference(comp_ref, var_name)
 end
 
 """
@@ -50,7 +50,7 @@ end
 Connect two components as `comp_ref[var_name] = var_ref`.
 """
 function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
-    comp_ref.model == var_ref.model || error("Can't connect variables defined in different models")
+    same_composite(comp_ref, var_ref)|| error("Can't connect variables defined in different composite trees")
 
-    connect_param!(comp_ref.model, comp_ref.comp_name, var_name, var_ref.comp_name, var_ref.var_name)
+    connect_param!(comp_ref.parent, comp_ref.comp_name, var_name, var_ref.comp_name, var_ref.var_name)
 end

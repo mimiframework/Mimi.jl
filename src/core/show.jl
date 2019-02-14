@@ -138,7 +138,29 @@ function show(io::IO, obj::AbstractMimiType)
         print(io, "($(obj.name))")
         fields = deleteat!([fields...], pos)
     end
+    
     _show_fields(indent(io), obj, fields)
+end
+
+function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
+    # Don't print parent or root since these create circular references
+    print(io, nameof(typeof(obj)))
+
+    fields = fieldnames(typeof(obj))
+
+    for field in (:parent, :root)
+        pos = findfirst(x -> x == field, fields)
+        if pos !== nothing
+            value = getfield(obj, field)
+            name = (value === nothing ? "nothing" : nameof(value))
+            fields = deleteat!([fields...], pos)
+            print(io, "\n")
+            print_indented(indent(io), "$field: $name")
+        end
+    end
+
+    io = indent(io)
+    _show_fields(io, obj, fields)
 end
 
 function show(io::IO, obj::ModelInstance)

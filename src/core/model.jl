@@ -17,7 +17,7 @@ modelinstance_def(m::Model) = modeldef(modelinstance(m))
 is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 
 @delegate compinstance(m::Model, name::Symbol) => mi
-@delegate has_comp(m::Model, name::Symbol) => mi
+@delegate has_comp(m::Model, name::Symbol) => md
 
 @delegate number_type(m::Model) => md
 
@@ -116,8 +116,8 @@ differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the
 """
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
                    exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
-    add_comp!(m.md, comp_id, comp_name; exports=exports, first=first, last=last, before=before, after=after)
-    return ComponentReference(m, comp_name)
+    comp_def = add_comp!(m.md, comp_id, comp_name; exports=exports, first=first, last=last, before=before, after=after)
+    return ComponentReference(m.md, comp_def.comp_path)
 end
 
 """
@@ -295,4 +295,3 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
     run(mi, ntimesteps, dim_keys)
     nothing
 end
- 
