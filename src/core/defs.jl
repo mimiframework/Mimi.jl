@@ -386,16 +386,22 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
 
     comp_param_dims = parameter_dimensions(md, comp_name, param_name)
     num_dims = length(comp_param_dims)
-    
+
     comp_def = compdef(md, comp_name)
     data_type = datatype(parameter(comp_def, param_name))
     dtype = data_type == Number ? number_type(md) : data_type
 
     if length(comp_param_dims) > 0
+
         # convert the number type and, if NamedArray, convert to Array
         if dtype <: AbstractArray
             value = convert(dtype, value)
         else
+            #check that number of dimensions matches
+            value_dims = length(size(value))
+            if num_dims != value_dims
+                error("Mismatched data size for a set parameter call: dimension :$param_name in $(comp_name) has $num_dims dimensions; indicated value has $value_dims dimensions.")
+            end            
             value = convert(Array{dtype, num_dims}, value)
         end
 
