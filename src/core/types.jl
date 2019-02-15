@@ -7,6 +7,36 @@ abstract type MimiStruct end
 
 const AbstractMimiType = Union{MimiStruct, AbstractMimiClass}
 
+# To identify components, @defcomp creates a variable with the name of 
+# the component whose value is an instance of this type.
+struct ComponentId <: MimiStruct
+    module_name::Symbol
+    comp_name::Symbol
+end
+
+# Identifies the path through multiple composites to a leaf component
+# TBD: Could be just a tuple of Symbols since they are unique at each level.
+struct ComponentPath <: MimiStruct
+    names::NTuple{N, Symbol} where N
+end
+
+ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
+
+ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath((path.names..., name))
+
+ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath((path1.names..., path1.names...))
+
+ComponentPath(name::Symbol) = ComponentPath((name,))
+
+ComponentPath(::Nothing, name::Symbol) = ComponentPath(name)
+
+Base.isempty(obj::ComponentPath) = isempty(obj.names)
+
+# The equivalent of ".." in the file system.
+Base.parent(path::ComponentPath) = ComponentPath(path.names[1:end-1])
+
+ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
+
 #
 # 1. Types supporting parameterized Timestep and Clock objects
 #
@@ -151,23 +181,24 @@ dim_names(obj::ScalarModelParameter) = []
 abstract type AbstractConnection <: MimiStruct end
 
 struct InternalParameterConnection <: AbstractConnection
-    src_comp_name::Symbol
+    src_comp_path::ComponentPath
     src_var_name::Symbol
-    dst_comp_name::Symbol
+    dst_comp_path::ComponentPath
     dst_par_name::Symbol
     ignoreunits::Bool
     backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
     offset::Int
 
-    function InternalParameterConnection(src_comp::Symbol, src_var::Symbol, dst_comp::Symbol, dst_par::Symbol,
+    function InternalParameterConnection(src_path::ComponentPath, src_var::Symbol, 
+                                         dst_path::ComponentPath, dst_par::Symbol,
                                          ignoreunits::Bool, backup::Union{Symbol, Nothing}=nothing; offset::Int=0)
-        self = new(src_comp, src_var, dst_comp, dst_par, ignoreunits, backup, offset)
+        self = new(src_path, src_var, dst_path, dst_par, ignoreunits, backup, offset)
         return self
     end
 end
 
 struct ExternalParameterConnection  <: AbstractConnection
-    comp_name::Symbol
+    comp_path::ComponentPath
     param_name::Symbol      # name of the parameter in the component
     external_param::Symbol  # name of the parameter stored in external_params
 end
@@ -175,36 +206,6 @@ end
 #
 # 4. Types supporting structural definition of models and their components
 #
-
-# To identify components, @defcomp creates a variable with the name of 
-# the component whose value is an instance of this type.
-struct ComponentId <: MimiStruct
-    module_name::Symbol
-    comp_name::Symbol
-end
-
-# Identifies the path through multiple composites to a leaf component
-# TBD: Could be just a tuple of Symbols since they are unique at each level.
-struct ComponentPath <: MimiStruct
-    names::NTuple{N, Symbol} where N
-end
-
-ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
-
-ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath((path.names..., name))
-
-ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath((path1.names..., path1.names...))
-
-ComponentPath(name::Symbol) = ComponentPath((name,))
-
-ComponentPath(::Nothing, name::Symbol) = ComponentPath(name)
-
-Base.isempty(obj::ComponentPath) = isempty(obj.names)
-
-# The equivalent of ".." in the file system.
-Base.parent(path::ComponentPath) = ComponentPath(path.names[1:end-1])
-
-ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
 
 # Objects with a `name` attribute
 @class NamedObj <: MimiClass begin
@@ -265,7 +266,7 @@ end
 
         NamedObj(self, name)
         self.comp_id = comp_id
-        self.comp_path = nothing    # this is set in add_comp!()
+        self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}() 
         self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
@@ -283,6 +284,7 @@ end
 end
 
 comp_id(obj::AbstractComponentDef) = obj.comp_id
+pathof(obj::AbstractComponentDef) = obj.comp_path
 dim_dict(obj::AbstractComponentDef) = obj.dim_dict
 first_period(obj::AbstractComponentDef) = obj.first
 last_period(obj::AbstractComponentDef) = obj.last
@@ -337,18 +339,6 @@ global const ExportsDict = Dict{Symbol, AbstractDatumReference}
     end
 end
 
-# Deprecated?
-# # Create an empty composite compdef with all containers allocated but empty
-# function CompositeComponentDef(self::Union{Nothing, AbstractCompositeComponentDef}=nothing)
-#     self = (self === nothing ? new() : self)
-
-#     comp_id  = ComponentId(@__MODULE__, gensym(nameof(typeof(self))))
-#     comps    = Vector{T where T <: AbstractComponentDef}()
-#     bindings = Vector{Binding}()
-#     exports  = ExportsDict()
-#     return CompositeComponentDef(self, comp_id, comps, bindings, exports)
-# end
-
 # TBD: these should dynamically and recursively compute the lists
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
 external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
@@ -364,6 +354,8 @@ add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, bac
 is_leaf(c::AbstractComponentDef) = true
 is_leaf(c::AbstractCompositeComponentDef) = false
 is_composite(c::AbstractComponentDef) = !is_leaf(c)
+
+ComponentPath(obj::AbstractCompositeComponentDef, name::Symbol) = ComponentPath(obj.comp_path, name)
 
 @class mutable ModelDef <: CompositeComponentDef begin
     number_type::DataType
@@ -513,6 +505,7 @@ end
 
 # These can be called on CompositeComponentInstances and ModelInstances
 compdef(obj::AbstractComponentInstance) = compdef(comp_id(obj))
+pathof(obj::AbstractComponentInstance) = obj.comp_path
 has_dim(obj::AbstractComponentInstance, name::Symbol) = haskey(obj.dim_value_dict, name)
 dimension(obj::AbstractComponentInstance, name::Symbol) = obj.dim_value_dict[name]
 first_period(obj::AbstractComponentInstance) = obj.first

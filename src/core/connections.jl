@@ -2,22 +2,50 @@ using LightGraphs
 using MetaGraphs
 
 """
-    disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+    disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, param_name::Symbol)
 
 Remove any parameter connections for a given parameter `param_name` in a given component
-`comp_name` of model `md`.
+`comp_def` which must be a direct subcomponent of composite `obj`.
 """
-function disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)
-    # println("disconnect_param!($comp_name, $param_name)")
-    filter!(x -> !(x.dst_comp_name == comp_name && x.dst_par_name == param_name), internal_param_conns(md))
-    filter!(x -> !(x.comp_name == comp_name && x.param_name == param_name), external_param_conns(md))
-    dirty!(md)
+function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, param_name::Symbol)
+    if is_descendant(obj, comp_def) === nothing
+        error("Cannot disconnect a component ($comp_def.comp_path) that is not within the given composite ($(obj.comp_path))")
+    end
+
+    path = comp_def.comp_path    
+    filter!(x -> !(x.dst_comp_path == path && x.dst_par_name == param_name), internal_param_conns(obj))
+    filter!(x -> !(x.comp_path == path && x.param_name == param_name), external_param_conns(obj))
+    dirty!(obj)
+end
+
+"""
+    disconnect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol)
+
+Remove any parameter connections for a given parameter `param_name` in a given component
+`comp_def` which must be a direct subcomponent of composite `obj`.
+"""
+function disconnect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol)
+    disconnect_param!(obj, compdef(obj, comp_name), param_name)
+end
+
+"""
+    disconnect_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol)
+
+Remove any parameter connections for a given parameter `param_name` in the component identified by
+`comp_path` which must be under the composite `obj`.
+"""
+function disconnect_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol)
+    if (comp_def = find_comp(obj, comp_path, relative=false)) === nothing
+        return
+    end
+    disconnect_param!(obj, comp_def, param_name)
 end
 
 # Default string, string unit check function
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
-function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
+function _check_labels(obj::AbstractCompositeComponentDef, 
+                       comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(ext_param.values)
@@ -40,18 +68,18 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
         return nothing
     end
 
-    # index_values = indexvalues(md)
+    # index_values = indexvalues(obj)
 
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol) 
             param_length = size(ext_param.values)[i]
             if dim == :time 
-                t = dimension(md, :time)
-                first = first_period(md, comp_def)
-                last = last_period(md, comp_def)
+                t = dimension(obj, :time)
+                first = first_period(obj, comp_def)
+                last = last_period(obj, comp_def)
                 comp_length = t[last] - t[first] + 1
             else
-                comp_length = dim_count(md, dim)
+                comp_length = dim_count(obj, dim)
             end
             if param_length != comp_length
                 error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
@@ -61,70 +89,73 @@ function _check_labels(md::ModelDef, comp_def::ComponentDef, param_name::Symbol,
 end
 
 """
-    connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+    connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
 
-Connect a parameter `param_name` in the component `comp_name` of model `md` to
+Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
 the external parameter `ext_param_name`. 
 """
-function connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
-    comp_def = compdef(md, comp_name)
-    ext_param = external_param(md, ext_param_name)
+function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+    comp_def = compdef(obj, comp_name)
+    comp_path = comp_def.comp_path
+    ext_param = external_param(obj, ext_param_name)
 
     if ext_param isa ArrayModelParameter
-        _check_labels(md, comp_def, param_name, ext_param)
+        _check_labels(obj, comp_def, param_name, ext_param)
     end
 
-    disconnect_param!(md, comp_name, param_name)    # calls dirty!()
+    disconnect_param!(obj, comp_name, param_name)    # calls dirty!()
 
-    conn = ExternalParameterConnection(comp_name, param_name, ext_param_name)
-    add_external_param_conn!(md, conn)
+    conn = ExternalParameterConnection(comp_path, param_name, ext_param_name)
+    add_external_param_conn!(obj, conn)
 
     return nothing
 end
 
 """
-    connect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, 
-        src_comp_name::Symbol, src_var_name::Symbol backup::Union{Nothing, Array}=nothing; 
+    connect_param!(obj::AbstractCompositeComponentDef, 
+        dst_comp_path::ComponentPath, dst_par_name::Symbol, 
+        src_comp_path::ComponentPath, src_var_name::Symbol,
+        backup::Union{Nothing, Array}=nothing; 
         ignoreunits::Bool=false, offset::Int=0)
 
-Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md` to a
-variable `src_var_name` in another component `src_comp_name` of the same model using 
+Bind the parameter `dst_par_name` of one component `dst_comp_path` of composite `obj` to a
+variable `src_var_name` in another component `src_comp_path` of the same model using 
 `backup` to provide default values and the `ignoreunits` flag to indicate the need to
 check match units between the two.  The `offset` argument indicates the offset between 
 the destination and the source ie. the value would be `1` if the destination component 
 parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(md::ModelDef, 
-                        dst_comp_name::Symbol, dst_par_name::Symbol, 
-                        src_comp_name::Symbol, src_var_name::Symbol,
+function connect_param!(obj::AbstractCompositeComponentDef, 
+                        dst_comp_path::ComponentPath, dst_par_name::Symbol, 
+                        src_comp_path::ComponentPath, src_var_name::Symbol,
                         backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
-    disconnect_param!(md, dst_comp_name, dst_par_name)  # calls dirty!()
+    disconnect_param!(obj, dst_comp_path, dst_par_name)  # calls dirty!()
 
-    dst_comp_def = compdef(md, dst_comp_name)
-    src_comp_def = compdef(md, src_comp_name)
+    dst_comp_def = compdef(obj, dst_comp_path)
+    src_comp_def = compdef(obj, src_comp_path)
 
     if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
             dims = dimnames(backup)
-            check_parameter_dimensions(md, backup, dims, dst_par_name)
+            check_parameter_dimensions(obj, backup, dims, dst_par_name)
         else
             dims = nothing
         end
 
         # Check that the backup data is the right size
-        if size(backup) != datum_size(md, dst_comp_def, dst_par_name)
-            error("Cannot connect parameter; the provided backup data is the wrong size. Expected size $(datum_size(md, dst_comp_def, dst_par_name)) but got $(size(backup)).")
+        if size(backup) != datum_size(obj, dst_comp_def, dst_par_name)
+            error("Cannot connect parameter; the provided backup data is the wrong size. Expected size $(datum_size(obj, dst_comp_def, dst_par_name)) but got $(size(backup)).")
         end
 
         # some other check for second dimension??
         dst_param = parameter(dst_comp_def, dst_par_name)
         dst_dims  = dim_names(dst_param)
 
-        backup = convert(Array{Union{Missing, number_type(md)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        first = first_period(md, dst_comp_def)
+        backup = convert(Array{Union{Missing, number_type(obj)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
+        first = first_period(obj, dst_comp_def)
         T = eltype(backup)        
         
         dim_count = length(dst_dims)
@@ -133,12 +164,12 @@ function connect_param!(md::ModelDef,
             values = backup
         else
             
-            if isuniform(md)
+            if isuniform(obj)
                 # use the first from the comp_def not the ModelDef
-                stepsize = step_size(md)
+                stepsize = step_size(obj)
                 values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
             else
-                times = time_labels(md)
+                times = time_labels(obj)
                 # use the first from the comp_def 
                 first_index = findfirst(isequal(first), times) 
                 values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
@@ -146,7 +177,7 @@ function connect_param!(md::ModelDef,
             
         end
 
-        set_external_array_param!(md, dst_par_name, values, dst_dims)
+        set_external_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
 
     else 
@@ -155,8 +186,8 @@ function connect_param!(md::ModelDef,
         dst_first, dst_last = first_and_last(dst_comp_def)
         if (dst_first !== nothing && src_first !== nothing && dst_first < src_first) || 
            (dst_last  !== nothing && src_last  !== nothing && dst_last  > src_last)
-            error("""Cannot connect parameter: $src_comp_name runs only from $src_first to $src_last, 
-whereas $dst_comp_name runs from $dst_first to $dst_last. Backup data must be provided for missing years.
+            error("""Cannot connect parameter: $src_comp_path runs only from $src_first to $src_last, 
+whereas $dst_comp_path runs from $dst_first to $dst_last. Backup data must be provided for missing years.
 Try calling: 
     `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`""")
         end 
@@ -165,60 +196,72 @@ Try calling:
     end
 
     # Check the units, if provided
-    if ! ignoreunits && ! verify_units(variable_unit(md, src_comp_name, src_var_name), 
-                                       parameter_unit(md, dst_comp_name, dst_par_name))
-        error("Units of $src_comp_name.$src_var_name do not match $dst_comp_name.$dst_par_name.")
+    if ! ignoreunits && ! verify_units(variable_unit(src_comp_def, src_var_name), 
+                                       parameter_unit(dst_comp_def, dst_par_name))
+        error("Units of $src_comp_path:$src_var_name do not match $dst_comp_path:$dst_par_name.")
     end
 
-    # println("connect($src_comp_name.$src_var_name => $dst_comp_name.$dst_par_name)")
-    conn = InternalParameterConnection(src_comp_name, src_var_name, dst_comp_name, dst_par_name, ignoreunits, backup_param_name, offset=offset)
-    add_internal_param_conn!(md, conn)
+    # @info "connect($src_comp_path:$src_var_name => $dst_comp_path:$dst_par_name)"
+    conn = InternalParameterConnection(src_comp_path, src_var_name, dst_comp_path, dst_par_name, ignoreunits, backup_param_name, offset=offset)
+    add_internal_param_conn!(obj, conn)
 
     return nothing
 end
 
-"""
-    connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+function connect_param!(obj::AbstractCompositeComponentDef, 
+                        dst_comp_name::Symbol, dst_par_name::Symbol, 
+                        src_comp_name::Symbol, src_var_name::Symbol,
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name, 
+                        ComponentPath(obj, src_comp_name), src_var_name,
+                        backup; ignoreunits=ignoreunits, offset=offset)
+end
 
-Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
-to a variable `src[2]` in another component `src[1]` of the same model
+"""
+    connect_param!(obj::AbstractCompositeComponentDef, 
+        dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+        backup::Union{Nothing, Array}=nothing; 
+        ignoreunits::Bool=false, offset::Int=0)
+
+Bind the parameter `dst[2]` of one component `dst[1]` of composite `obj`
+to a variable `src[2]` in another component `src[1]` of the same composite
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
 between the destination and the source ie. the value would be `1` if the destination 
 component parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
+function connect_param!(obj::AbstractCompositeComponentDef, 
+                        dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 """
-    connected_params(md::ModelDef, comp_name::Symbol)
+    connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
 
-Return list of parameters that have been set for component `comp_name` in model `md`.
+Return list of parameters that have been set for component `comp_name` in composite `obj`.
 """
-function connected_params(md::ModelDef, comp_name::Symbol)
-    ext_set_params = map(x->x.param_name,   external_param_conns(md, comp_name))
-    int_set_params = map(x->x.dst_par_name, internal_param_conns(md, comp_name))
+function connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
+    ext_set_params = map(x->x.param_name,   external_param_conns(obj, comp_name))
+    int_set_params = map(x->x.dst_par_name, internal_param_conns(obj, comp_name))
 
     return union(ext_set_params, int_set_params)
 end
 
 """
-    unconnected_params(md::ModelDef)
+    unconnected_params(obj::AbstractCompositeComponentDef)
 
-Return a list of tuples (componentname, parametername) of parameters
-that have not been connected to a value in the model `md`.
+Return a list of tuples (comp_path, parame_name) of parameters
+that have not been connected to a value in the composite `obj`.
 """
-function unconnected_params(md::ModelDef)
-    unconnected = Vector{Tuple{Symbol,Symbol}}()
+function unconnected_params(obj::AbstractCompositeComponentDef)
+    unconnected = Vector{Tuple{ComponentPath,Symbol}}()
     
-    for comp_def in compdefs(md)
-        comp_name = nameof(comp_def)
+    for comp_def in compdefs(obj)
+        comp_path = comp_def.comp_path
         params = parameter_names(comp_def)
-        connected = connected_params(md, comp_name)
-        append!(unconnected, map(x->(comp_name, x), setdiff(params, connected)))
+        connected = connected_params(obj, nameof(comp_def))
+        append!(unconnected, map(x->(comp_path, x), setdiff(params, connected)))
     end
 
     return unconnected
@@ -234,7 +277,10 @@ the dictionary keys are strings that match the names of unset parameters in the 
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     parameters = Dict(k => v for (k, v) in parameters)
 
-    for (comp_name, param_name) in unconnected_params(md)
+    for (comp_path, param_name) in unconnected_params(md)
+        comp_def = compdef(md, comp_path)
+        comp_name = nameof(comp_def)
+
         # check whether we need to set the external parameter
         if external_param(md, param_name, missing_ok=true) !== nothing
             value = parameters[string(param_name)]
@@ -249,13 +295,21 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 end
 
 # Find internal param conns to a given destination component
-function internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_name::Symbol)
-    return filter(x->x.dst_comp_name == dst_comp_name, internal_param_conns(obj))
+function internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
+    return filter(x->x.dst_comp_path == dst_comp_path, internal_param_conns(obj))
+end
+
+function internal_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
+    return internal_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
 # Find external param conns for a given comp
+function external_param_conns(obj::AbstractCompositeComponentDef, comp_path::ComponentPath)
+    return filter(x -> x.comp_path == comp_path, external_param_conns(obj))
+end
+
 function external_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
-    return filter(x -> x.comp_name == comp_name, external_param_conns(obj))
+    return external_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
 function external_param(obj::AbstractCompositeComponentDef, name::Symbol; missing_ok=false)
@@ -287,87 +341,96 @@ function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, v
     dirty!(obj)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    set_external_scalar_param!(md, name, value)
+function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Number; 
+                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
+    set_external_scalar_param!(obj, name, value)
 end
 
-function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
+function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, 
+                             value::Union{AbstractArray, AbstractRange, Tuple}; 
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
     if param_dims[1] == :time   
-        value = convert(Array{number_type(md)}, value)
+        value = convert(Array{number_type(obj)}, value)
         num_dims = length(param_dims)
-        values = get_timestep_array(md, eltype(value), num_dims, value)      
+        values = get_timestep_array(obj, eltype(value), num_dims, value)      
     else
         values = value
     end
 
-    set_external_array_param!(md, name, values, param_dims)
+    set_external_array_param!(obj, name, values, param_dims)
 end
 
 """
-    set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
+    set_external_array_param!(obj::AbstractCompositeComponentDef, 
+                              name::Symbol, value::TimestepVector, dims)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
-`value` to the model `md`.  In this case `dims` must be `[:time]`.
+`value` to the composite `obj`.  In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepVector, dims)
+function set_external_array_param!(obj::AbstractCompositeComponentDef, 
+                                   name::Symbol, value::TimestepVector, dims)
     # println("set_external_array_param!: dims=$dims, setting dims to [:time]")
     param = ArrayModelParameter(value, [:time])  # must be :time
-    set_external_param!(md, name, param)
+    set_external_param!(obj, name, param)
 end
 
 """
-    set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepMatrix, dims)
+    set_external_array_param!(obj::AbstractCompositeComponentDef, 
+                              name::Symbol, value::TimestepMatrix, dims)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
-`value` to the model `md`.  In this case `dims` must be `[:time]`.
+`value` to the composite `obj`.  In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(md::ModelDef, name::Symbol, value::TimestepArray, dims)
+function set_external_array_param!(obj::AbstractCompositeComponentDef, 
+                                   name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
-    set_external_param!(md, name, param)
+    set_external_param!(obj, name, param)
 end
 
 """
-    set_external_array_param!(m::Model, name::Symbol, value::AbstractArray, dims)
+    set_external_array_param!(obj::AbstractCompositeComponentDef, 
+                              name::Symbol, value::AbstractArray, dims)
 
-Add an array type parameter `name` with value `value` and `dims` dimensions to the model 'm'.
+Add an array type parameter `name` with value `value` and `dims` dimensions to the composite `obj`.
 """
-function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractArray, dims)   
-    numtype = number_type(md)
+function set_external_array_param!(obj::AbstractCompositeComponentDef, 
+                                   name::Symbol, value::AbstractArray, dims)
+    numtype = number_type(obj)
     if !(typeof(value) <: Array{numtype})
         # Need to force a conversion (simple convert may alias in v0.6)
         value = Array{numtype}(undef, value)
     end
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
-    set_external_param!(md, name, param)
+    set_external_param!(obj, name, param)
 end
 
 """
-    set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
+    set_external_scalar_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Any)
 
-Add a scalar type parameter `name` with the value `value` to the model `md`.
+Add a scalar type parameter `name` with the value `value` to the composite `obj`.
 """
-function set_external_scalar_param!(md::ModelDef, name::Symbol, value::Any)
+function set_external_scalar_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Any)
     p = ScalarModelParameter(value)
-    set_external_param!(md, name, p)
+    set_external_param!(obj, name, p)
 end
 
 """
-    update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
+    update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
 
-Update the `value` of an external model parameter in ModelDef `md`, referenced 
+Update the `value` of an external model parameter in composite `obj`, referenced 
 by `name`. Optional boolean argument `update_timesteps` with default value 
 `false` indicates whether to update the time keys associated with the parameter 
 values to match the model's time index.
 """
-function update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)
-    _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
+function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
+    _update_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps; raise_error = true)
 end
 
-function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; raise_error = true)
+function _update_param!(obj::AbstractCompositeComponentDef, 
+                        name::Symbol, value, update_timesteps; raise_error = true)
     param = external_param(ext_params, name, missing_ok=true)
     if param === nothing
-        error("Cannot update parameter; $name not found in model's external parameters.")
+        error("Cannot update parameter; $name not found in composite's external parameters.")
     end
 
     if param isa ScalarModelParameter
@@ -376,7 +439,7 @@ function _update_param!(md::ModelDef, name::Symbol, value, update_timesteps; rai
         end
         _update_scalar_param!(param, name, value)
     else
-        _update_array_param!(md, name, value, update_timesteps, raise_error)
+        _update_array_param!(obj, name, value, update_timesteps, raise_error)
     end
 
     dirty!(md)
@@ -394,9 +457,9 @@ function _update_scalar_param!(param::ScalarModelParameter, name, value)
     nothing
 end
 
-function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise_error)
+function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps, raise_error)
     # Get original parameter
-    param = external_param(md, name)
+    param = external_param(obj, name)
     
     # Check type of provided parameter
     if !(typeof(value) <: AbstractArray)
@@ -412,7 +475,7 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
 
     # Check size of provided parameter
     if update_timesteps && param.values isa TimestepArray
-        expected_size = ([length(dim_keys(md, d)) for d in dim_names(param)]...,)
+        expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,)
     else 
         expected_size = size(param.values)
     end
@@ -424,8 +487,8 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
         if param.values isa TimestepArray 
             T = eltype(value)
             N = length(size(value))
-            new_timestep_array = get_timestep_array(md, T, N, value)
-            set_external_param!(md, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
+            new_timestep_array = get_timestep_array(obj, T, N, value)
+            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
 
         elseif raise_error
             error("Cannot update timesteps; parameter $name is not a TimestepArray.")
@@ -439,43 +502,45 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
             param.values = value
         end
     end
-    dirty!(md)
+    dirty!(obj)
     nothing
 end
 
 """
-    update_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}; 
+                   update_timesteps = false) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
 is called to update the external parameter by name k to value v, with optional 
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the 
-model definition.
+component definition.
 """
-function update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)
+function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = false)
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
-        _update_param!(md, param_name, value, update_timesteps; raise_error = false)
+        _update_param!(obj, param_name, value, update_timesteps; raise_error = false)
     end
     nothing
 end
 
-function add_connector_comps(md::ModelDef)
-    conns = internal_param_conns(md)
+function add_connector_comps(obj::AbstractCompositeComponentDef)
+    conns = internal_param_conns(obj)
 
-    for comp_def in compdefs(md)
+    for comp_def in compdefs(obj)
         comp_name = nameof(comp_def)
+        comp_path = comp_def.comp_path
 
         # first need to see if we need to add any connector components for this component
-        internal_conns  = filter(x -> x.dst_comp_name == comp_name, conns)
+        internal_conns  = filter(x -> x.dst_comp_path == comp_path, conns)
         need_conn_comps = filter(x -> x.backup !== nothing, internal_conns)
 
         # println("Need connectors comps: $need_conn_comps")
 
         for (i, conn) in enumerate(need_conn_comps)
-            add_backup!(md, conn.backup)
+            add_backup!(obj, conn.backup)
 
-            num_dims = length(size(external_param(md, conn.backup).values))
+            num_dims = length(size(external_param(obj, conn.backup).values))
 
             if ! (num_dims in (1, 2))
                 error("Connector components for parameters with > 2 dimensions are not implemented.")
@@ -487,23 +552,23 @@ function add_connector_comps(md::ModelDef)
             conn_comp_name = connector_comp_name(i) # generate a new name
 
             # Add the connector component before the user-defined component that required it
-            # println("add_connector_comps: add_comp!(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
-            add_comp!(md, conn_comp_def, conn_comp_name, before=comp_name)
+            # @info "add_connector_comps: add_comp!(obj, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)"
+            add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
            
             # add a connection between src_component and the ConnectorComp
-            add_internal_param_conn!(md, InternalParameterConnection(conn.src_comp_name, conn.src_var_name,
-                                                                     conn_comp_name, :input1,
-                                                                     conn.ignoreunits))
+            add_internal_param_conn!(obj, InternalParameterConnection(conn.src_comp_path, conn.src_var_name,
+                                                                      conn_comp_name, :input1,
+                                                                      conn.ignoreunits))
 
             # add a connection between ConnectorComp and dst_component
             add_internal_param_conn!(md, InternalParameterConnection(conn_comp_name, :output, 
-                                                                     conn.dst_comp_name, conn.dst_par_name, 
+                                                                     conn.dst_comp_path, conn.dst_par_name, 
                                                                      conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
             add_external_param_conn!(md, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
 
-            src_comp_def = compdef(md, conn.src_comp_name)
+            src_comp_def = compdef(md, conn.src_comp_path)
             set_param!(md, conn_comp_name, :first, first_period(md, src_comp_def))
             set_param!(md, conn_comp_name, :last, last_period(md, src_comp_def))
 
@@ -522,15 +587,15 @@ end
 #
 
 """
-    dependencies(md::ModelDef, comp_name::Symbol)
+    dependencies(md::ModelDef, comp_path::ComponentPath)
 
-Return the set of component names that `comp_name` in `md` depends one, i.e.,
+Return the set of component names that `comp_path` in `md` depends one, i.e.,
 sources for which `comp_name` is the destination of an internal connection.
 """
-function dependencies(md::ModelDef, comp_name::Symbol)
+function dependencies(md::ModelDef, comp_path::ComponentPath)
     conns = internal_param_conns(md)
     # For the purposes of the DAG, we don't treat dependencies on [t-1] as an ordering constraint
-    deps = Set(c.src_comp_name for c in conns if (c.dst_comp_name == comp_name && c.offset == 0))
+    deps = Set(c.src_comp_path for c in conns if (c.dst_comp_path == comp_path && c.offset == 0))
     return deps
 end
 
@@ -541,19 +606,19 @@ Return a MetaGraph containing a directed (LightGraph) graph of the components of
 ModelDef `md`. Each vertex has a :name property with its component name.
 """
 function comp_graph(md::ModelDef)
-    comp_names = collect(compkeys(md))
+    comp_paths = [c.comp_path for c in compdefs(md)]
     graph = MetaDiGraph()
 
-    for comp_name in comp_names
-        add_vertex!(graph, :name, comp_name)
+    for comp_path in comp_paths
+        add_vertex!(graph, :path, comp_path)
     end
 
-    set_indexing_prop!(graph, :name)
+    set_indexing_prop!(graph, :path)
    
-    for comp_name in comp_names
-        for dep_name in dependencies(md, comp_name)
-            src = graph[dep_name,  :name]
-            dst = graph[comp_name, :name]
+    for comp_path in comp_paths
+        for dep_path in dependencies(md, comp_path)
+            src = graph[dep_path,  :path]
+            dst = graph[comp_path, :path]
             add_edge!(graph, src, dst)
         end
     end
@@ -572,12 +637,12 @@ end
 Build a directed acyclic graph referencing the positions of the components in 
 the OrderedDict of model `md`, tracing dependencies to create the DAG.
 Perform a topological sort on the graph for the given model and return a vector 
-of component names in the order that will ensure dependencies are processed 
+of component paths in the order that will ensure dependencies are processed 
 prior to dependent components.
 """
 function _topological_sort(md::ModelDef)
     graph = comp_graph(md)
     ordered = topological_sort_by_dfs(graph)
-    names = map(i -> graph[i, :name], ordered)
-    return names
+    paths = map(i -> graph[i, :path], ordered)
+    return paths
 end

@@ -20,7 +20,7 @@ end
 
 compdef(dr::AbstractDatumReference) = compdef(dr.root, dr.comp_path)
 
-compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
+compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path, relative=false)
 
 # Allows method to be called on leaf component defs, which sometimes simplifies code.
 compdefs(c::ComponentDef) = []
@@ -159,12 +159,10 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
 
     # TBD: find and delete external_params associated with deleted component? Currently no record of this.
 
-
-    # TBD: these probably need to use comp_path rather than symbols
-    ipc_filter = x -> x.src_comp_name != comp_name && x.dst_comp_name != comp_name
+    ipc_filter = x -> x.src_comp_path != comp_path && x.dst_comp_path != comp_path
     filter!(ipc_filter, ccd.internal_param_conns)
 
-    epc_filter = x -> x.comp_name != comp_name
+    epc_filter = x -> x.comp_path != comp_path
     filter!(epc_filter, ccd.external_param_conns)  
 end
 
@@ -448,17 +446,24 @@ function parameter(obj::AbstractCompositeComponentDef, name::Symbol)
     _parameter(obj, name)
 end
 
-
 has_parameter(comp_def::AbstractComponentDef, name::Symbol) = haskey(comp_def.parameters, name)
 
-function parameter_unit(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
-    param = parameter(obj, comp_name, param_name)
+function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
+    param = _parameter(obj, param_name)
     return param.unit
 end
 
-function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
-    param = parameter(obj, comp_name, param_name)
+function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
+    param = _parameter(obj, param_name)
     return dim_names(param)
+end
+
+function parameter_unit(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
+    return parameter_unit(compdef(obj, comp_name), param_name)
+end
+
+function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
+    return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
 """
@@ -574,7 +579,12 @@ end
 
 variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), var_name)
 
-variable(md::ModelDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(md, comp_name), var_name)
+variable(obj::AbstractCompositeComponentDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(obj, comp_name), var_name)
+
+function variable(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
+    comp_def = find_comp(obj, comp_path, relative=false)
+    return variable(comp_def, var_name)
+end
 
 variable(obj::VariableDefReference) = variable(compdef(obj), nameof(dr))
 
@@ -591,15 +601,26 @@ variable_names(md::AbstractModelDef, comp_name::Symbol) = variable_names(compdef
 variable_names(comp_def::ComponentDef) = [nameof(var) for var in variables(comp_def)]
 
 
-function variable_unit(md::ModelDef, comp_name::Symbol, var_name::Symbol)
-    var = variable(md, comp_name, var_name)
+function variable_unit(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
+    var = variable(obj, comp_path, var_name)
     return var.unit
 end
 
-function variable_dimensions(md::ModelDef, comp_name::Symbol, var_name::Symbol)
-    var = variable(md, comp_name, var_name)
+function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
+    var = variable(obj, comp_path, var_name)
     return dim_names(var)
 end
+
+function variable_unit(obj::AbstractComponentDef, name::Symbol)
+    var = variable(obj, name)
+    return var.unit
+end
+
+function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
+    var = variable(obj, name)
+    return dim_names(var)
+end
+
 
 # Add a variable to a ComponentDef. CompositeComponents have no vars of their own, 
 # only references to vars in components contained within.
@@ -849,16 +870,16 @@ Optional boolean argument `reconnect` with default value `true` indicates whethe
 parameter connections should be maintained in the new component.
 """
 function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId, 
-                               comp_name::Symbol=comp_id.comp_name;
-                               first::NothingInt=nothing, last::NothingInt=nothing,
-                               before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                               reconnect::Bool=true)
+                       comp_name::Symbol=comp_id.comp_name;
+                       first::NothingInt=nothing, last::NothingInt=nothing,
+                       before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+                       reconnect::Bool=true)
 
     if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
     end
 
-    # Get original position if new before or after not specified
+    # Get original position if neither before nor after are specified
     if before === nothing && after === nothing
         comps = collect(compkeys(obj))
         n = length(comps)
@@ -897,7 +918,7 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         end
         
         # Check outgoing variables
-        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_name == comp_name, internal_param_conns(obj)))
+        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_path == comp_name, internal_param_conns(obj)))
         old_vars = filter(pair -> pair.first in outgoing_vars, old_comp.variables)
         new_vars = new_comp.variables
         if !_compare_datum(new_vars, old_vars)
@@ -935,18 +956,54 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
-function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
-    if isempty(path)
-        return obj
-    end
+function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)   
+    if relative
+        if isempty(path)
+            return obj
+        end
 
-    name = path.names[1]
-    if has_comp(obj, name)
-        return find_comp(compdef(obj, name), ComponentPath(path.names[2:end]))
+        names = path.names
+        if has_comp(obj, names[1])
+            return find_comp(compdef(obj, names[1]), ComponentPath(names[2:end]))
+        end
+    else   
+        return find_comp(obj, rel_path(obj.comp_path, path))  # perform a relative search
     end
     return nothing
 end
 
-find_comp(obj::AbstractComponentDef, name::Symbol) = find_comp(obj, ComponentPath(name))
+find_comp(obj::AbstractComponentDef, name::Symbol; relative=true) = find_comp(obj, ComponentPath(name), relative=relative)
 
-find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)
+find_comp(obj::ComponentDef, path::ComponentPath; relative=true) = (isempty(path) ? obj : nothing)
+
+"""
+Return the relative path of `descendant` if is within the path of composite `ancestor` or 
+or nothing otherwise.
+"""
+function rel_path(ancestor_path::ComponentPath, descendant_path::ComponentPath)
+    a_names = ancestor_path.names
+    d_names = descendant_path.names
+
+    if ((a_len = length(a_names)) >= (d_len = length(d_names)) || d_names[1:a_len] != a_names)
+        return nothing
+    end
+
+    return ComponentPath(d_names[a_len+1:end])
+end
+
+"""
+Return whether component `descendant` is within the composite structure of `ancestor` or 
+any of its descendants. If the comp_paths check out, the node is located within the 
+structure to ensure that the component is really where it says it is. (Trust but verify!)
+"""
+function is_descendant(ancestor::AbstractCompositeComponentDef, descendant::AbstractComponentDef)
+    a_path = ancestor.comp_path
+    d_path = descendant.comp_path
+    if (relpath = rel_path(a_path, d_path)) === nothing
+        return false
+    end
+
+    return find_comp(ancestor, relpath)
+end
+
+

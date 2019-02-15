@@ -41,13 +41,12 @@ end
     end
 end
 
+
 # Test the calls the macro will produce
 let calling_module = @__MODULE__
     # calling_module = TestComposite
     global m = Model()
 
-    ccname = :testcomp
-    ccid  = ComponentId(calling_module, ccname)
     comps = [compdef(Comp1), compdef(Comp2), compdef(Comp3)]
     
     # TBD: need to implement this to create connections and default value
@@ -63,7 +62,7 @@ let calling_module = @__MODULE__
         # DatumReference(:var_3_1, Comp3) => :c3v1
     # ]
 
-    CompositeComponentDef(m.md, ccid) # , comps, bindings, exports)
+    # CompositeComponentDef(m.md, ccid) # , comps, bindings, exports)
 
     set_dimension!(m, :time, 2005:2020)
 
@@ -85,8 +84,8 @@ connect_param!(md, :Comp2, :par_2_1, :Comp1, :var_1_1)
 connect_param!(md, :Comp2, :par_2_2, :Comp1, :var_1_1)
 connect_param!(md, :Comp3, :par_3_1, :Comp2, :var_2_1)
 
-build(m)
-run(m)
+# build(m)
+# run(m)
 
 end # module
 

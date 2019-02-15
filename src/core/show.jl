@@ -155,7 +155,7 @@ function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
             name = (value === nothing ? "nothing" : nameof(value))
             fields = deleteat!([fields...], pos)
             print(io, "\n")
-            print_indented(indent(io), "$field: $name")
+            print_indented(indent(io), "$field: $(typeof(value))($name)")
         end
     end
 

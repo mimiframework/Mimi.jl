@@ -12,8 +12,9 @@ function construct_MyModel()
 
 	m = Model()
 
-	set_dimension!(m, :time, collect(2015:5:2110))
-	set_dimension!(m, :regions, [:Region1, :Region2, :Region3])	 # Note that the regions of your model must be specified here
+	set_dimension!(m, :time, 2015:5:2110)
+	# Note that the regions of your model must be specified here
+	set_dimension!(m, :regions, [:Region1, :Region2, :Region3])
 
 	add_comp!(m, grosseconomy)
 	add_comp!(m, emissions)
@@ -21,7 +22,7 @@ function construct_MyModel()
 	set_param!(m, :grosseconomy, :l, l)
 	set_param!(m, :grosseconomy, :tfp, tfp)
 	set_param!(m, :grosseconomy, :s, s)
-	set_param!(m, :grosseconomy, :depk,depk)
+	set_param!(m, :grosseconomy, :depk, depk)
 	set_param!(m, :grosseconomy, :k0, k0)
 	set_param!(m, :grosseconomy, :share, 0.3)
 

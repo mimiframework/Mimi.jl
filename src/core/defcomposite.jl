@@ -57,7 +57,7 @@ are all variations on `component(...)`, which adds a component to the composite.
 calling signature for `component()` processed herein is:
 
     `component(comp_id::ComponentId, name::Symbol=comp_id.comp_name;
-               exports::Union{Nothing,ExportsDef}, bindings::Union{Nothing,BindingsDef})`
+               exports::Union{Nothing,ExportsDict}, bindings::Union{Nothing,Vector{Binding}})`
 
 In this macro, the vector of symbols to export is expressed without the `:`, e.g.,
 `exports=[var_1, var_2, param_1])`. The names must be variable or parameter names in
