@@ -1,6 +1,6 @@
 using Mimi
 
-include("two-region-model.jl")
+include("/Users/lisarennels/.julia/dev/Mimi/examples/tutorial/02-two-region-model/two-region-model.jl")
 using .MyModel
 model = construct_MyModel()
 
