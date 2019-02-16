@@ -42,6 +42,7 @@ export
     run_mcs,
     set_dimension!, 
     set_leftover_params!, 
+    set_models!,
     set_param!, 
     update_param!,
     update_params!,

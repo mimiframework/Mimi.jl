@@ -33,6 +33,7 @@ replace_comp!
 run_mcs
 set_dimension! 
 set_leftover_params! 
+set_models!
 set_param! 
 variables  
 update_param!
