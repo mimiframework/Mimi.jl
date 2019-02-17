@@ -59,9 +59,7 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 
 # Run trials 1:N, and save results to the indicated directory
 
-Mimi.set_model!(sim, m)
-
-
+Mimi.set_models!(sim, m)
 run_sim(sim, N, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018

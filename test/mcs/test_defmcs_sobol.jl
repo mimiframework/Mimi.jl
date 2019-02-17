@@ -58,7 +58,7 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == sim.trials+1 # extra row for column names
 
 # Run trials 1:sim.trials, and save results to the indicated directory
-Mimi.set_model!(sim, m)
+set_models!(sim, m)
 run_sim(sim, sim.trials, output_dir=output_dir)
 
 # do some analysis

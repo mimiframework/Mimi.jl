@@ -332,9 +332,10 @@ end
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing)
 
-Run the indicated trial numbers, where the first `models_to_run` associated models are run 
+Run the indicated the first `trials`, which indicates the number of trials to run
+starting from the first one. The first `models_to_run` associated models are run 
 for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial
-data are applied to all the associated models even when running only a portion of them.
+data are applied to all the associated models even when running only a portion of them.   
     
 If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
 just before or after (respectively) running a trial. The functions must have the signature:
@@ -481,52 +482,38 @@ function run_sim(sim::Simulation{T},
     end
 end
 
-
-
-
 # Same as above, but takes a number of trials and converts this to `1:trials`.
 function run_sim(sim::Simulation{T}, trials::Int=sim.trials, 
                  models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
     return run_sim(sim, 1:trials, models_to_run; kwargs...)
 end
 
-# Two methods mirroring the two above, but take a single model to run
-function run_sim(sim::Simulation{T}, m::Model, trials::Int=sim.trials, 
-                 models_to_run::Int=length(sim.models) + 1; kwargs...) where T <: AbstractSimulationData
-    set_model!(sim, m)
-    return run_sim(sim, 1:trials, models_to_run; kwargs...)
-end
-
-function run_sim(sim::Simulation{T}, m::Model, trials::Union{Vector{Int}, AbstractRange{Int}}, 
-    models_to_run::Int=length(sim.models) + 1; kwargs...) where T <: AbstractSimulationData
-set_model!(sim, m)
-return run_sim(sim, trials, models_to_run; kwargs...)
-end
-
-# Two methods mirroring the two above, but take multiple models to run
-function run_sim(sim::Simulation{T}, models::Vector{Model}, trials::Int=sim.trials, 
-                models_to_run::Int=length(sim.models) + length(models); kwargs...) where T <: AbstractSimulationData
-    set_models!(sim, models)
-    return run_sim(sim, 1:trials, models_to_run; kwargs...)
-end
-
-function run_sim(sim::Simulation{T}, models::Vector{Model}, trials::Union{Vector{Int}, AbstractRange{Int}}, 
-                models_to_run::Int=length(sim.models) + length(models); kwargs...) where T <: AbstractSimulationData
-    set_models!(sim, models)
-    return run_sim(sim, trials, models_to_run; kwargs...)
-end
-
 # Set models
-
+""" 
+	    set_models!(sim::Simulation{T}, models::Vector{Model})
+	
+	Set the `models` to be used by the `sim` Simulation. 
+"""
 function set_models!(sim::Simulation{T}, models::Vector{Model}) where T <: AbstractSimulationData
     sim.models = models
     _reset_results!(sim)    # sets results vector to same length
 end
 
 # Convenience methods for single model and MarginalModel
-set_model!(sim::Simulation{T}, m::Model)  where T <: AbstractSimulationData = set_models!(sim, [m])
+""" 
+set_models!(sim::Simulation{T}, m::Model)
+	
+    Set the model `m` to be used by the `sim` Simulation.
+"""
+set_models!(sim::Simulation{T}, m::Model)  where T <: AbstractSimulationData = set_models!(sim, [m])
 
-set_model!(sim::Simulation{T}, mm::MarginalModel) where T <: AbstractSimulationData = set_models!(sim, [mm.base, mm.marginal])
+""" 
+set_models!(sim::Simulation{T}, mm::MarginalModel)
+
+    Set the models to be used by the `sim` Simulation to be `mm.base` and `mm.marginal`
+	which make up the MarginalModel `mm`. 
+"""
+set_models!(sim::Simulation{T}, mm::MarginalModel) where T <: AbstractSimulationData = set_models!(sim, [mm.base, mm.marginal])
 
 #
 # Iterator functions for Simulation directly, and for use as an IterableTable.
