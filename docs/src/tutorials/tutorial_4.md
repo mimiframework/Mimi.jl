@@ -97,7 +97,7 @@ generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
 
 ### Step 4. Run MCS
 
-Finally, use the [`run_sim`](@ref) function which runs a simulation, with parameters describing sample size and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials (equivilant to sample size in this simple case), perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
+Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `mcs` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
 function run_sim(sim::Simulation, 
@@ -115,8 +115,11 @@ function run_sim(sim::Simulation,
 Here, we first employ [`run_sim`](@ref) in its simplest form to obtain results:
 
 ```julia
+# Set models
+set_models!(sim, m)
+
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_sim(m, sim, 4, output_dir="/tmp/Mimi")
+run_sim(sim, 4, output_dir="/tmp/Mimi")
 ```
 
 and then again using our user-defined post-trial function as the `post_trial_func` parameter:

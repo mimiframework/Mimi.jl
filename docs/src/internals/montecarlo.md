@@ -2,13 +2,15 @@
 
 ## Overview
 
-Monte Carlo Simulation support consists of three primary user-facing elements:
+Monte Carlo Simulation support consists of four primary user-facing elements:
 
 1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and
 
 2. The optional `generate_trials!` function, which can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.
 
-3. The `run_sim` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
+3. The `set_models!` function, which sets the model(s) on which a simulation can be run.
+
+4. The `run_sim` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
 
 These are described further below.
 
@@ -127,6 +129,17 @@ on the left-hand side of each `=>` operator, e.g.,
 Currently, the more condensed syntax (using the pair operator `=>`) supports only direct assignment 
 of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
+## The set_models! function
+	
+	
+The "core" `run_mcs` function assumes the `MonteCarloSimulation` instance has references to the model or models to run. The `set_models!` function has several methods for associating the model(s) to run with the `MonteCarloSimulation` instance:
+	
+```
+set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
+set_models!(mcs::MonteCarloSimulation, m::Model)
+set_models!(mcs::MonteCarloSimulation, mm::MarginalModel)
+```
+	
 ## The run_sim function
 
 In it's simplest use, the `run_sim` function iterates over a given number of trials (in this simple case equivalent to sample size), perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
@@ -172,28 +185,6 @@ By default, the scenario loop encloses the Monte Carlo loop, but the scenario lo
 placed inside the Monte Carlo loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
-
-### Associating models with a Simulation
-
-The "core" `run_sim` function assumes the `Simulation` instance has references to the model or models to run. There are several methods for associating the model(s) to run with the `Simulation` instance. The first involves calling one of the following functions:
-
-```
-set_models!(sim::Simulation, models::Vector{Model})
-
-set_model!(sim::Simulation, m::Model)
-
-set_model!(sim::Simulation, mm::MarginalModel)
-```
-
-The other approach is to call a variant of `run_sim` that takes a model or vector of models as an argument:
-
-```
-run_sim(sim::Simulation, m::Model, trials=sim.trials; kwargs...)
-
-run_sim(sim::Simulation, models::Vector{Model}, trials=sim.trials; kwargs...)
-```
-
-These are simply convenience functions that call `set_model!()` or `set_models!()` prior to calling the core `run_sim` function.
 
 ### Non-stochastic Scenarios
 
@@ -306,11 +297,14 @@ end
 # Generate trial data for all RVs and (optionally) save to a file
 generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
 
+# Set models(s)
+set_models!(sim, m)
+
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_sim(m, sim, 4, output_dir="/tmp/Mimi")
+run_sim(sim, 4, output_dir="/tmp/Mimi")
 
 # Same thing but with a post-trial function
-run_sim(m, sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
+run_sim(sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
 
 
