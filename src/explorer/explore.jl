@@ -67,12 +67,3 @@ function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
 
     return VegaLite.VLSpec{:plot}(spec)
 end
-
-"""
-    function vega_plot(filepath::String, p::VegaLite.VLSpec{:plot})
-
-Save a the plot `p` as `filepath`.  Simple wrapper function for VegaLite's `save` function.
-"""
-function save_vega_plot(filepath::String, p::VegaLite.VLSpec{:plot})
-    VegaLite.save(filepath, p);
-end
