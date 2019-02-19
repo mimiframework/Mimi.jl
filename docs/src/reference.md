@@ -31,7 +31,6 @@ parameters
 plot_comp_graph
 replace_comp! 
 run_mcs
-save_vega_plot
 set_dimension! 
 set_leftover_params! 
 set_param! 
