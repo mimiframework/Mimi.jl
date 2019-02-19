@@ -108,16 +108,19 @@ function createspec_lineplot(name, df, dffields)
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "year", 
-                            "scale" => Dict("domain" => Dict("selection" => "brush")),
+                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "x")),
                             "axis" => Dict("title"=> "")
                         ),             
-                        "y" => Dict("field" => dffields[2], "type" => "quantitative" )
+                        "y" => Dict(
+                            "field" => dffields[2], 
+                            "type" => "quantitative",
+                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "y")))
                     )
                 ), Dict(
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "mark" => "line",
-                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x", "y"])),
                     "encoding" => Dict(
                         "x" => Dict(
                             "field" => dffields[1], 
@@ -154,10 +157,14 @@ function createspec_multilineplot(name, df, dffields)
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "year", 
-                            "scale" => Dict("domain" => Dict("selection" => "brush")),
+                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "x")),
                             "axis" => Dict("title"=> "")
                             ),                
-                        "y"     => Dict("field" => dffields[3], "type" => "quantitative" ),
+                        "y"     => Dict(
+                            "field" => dffields[3], 
+                            "type" => "quantitative",
+                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "y"))
+                            ),
                         "color" => Dict("field" => dffields[2], "type" => "nominal", 
                             "scale" => Dict("scheme" => "category20"))
                     ),
@@ -167,7 +174,7 @@ function createspec_multilineplot(name, df, dffields)
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "mark" => "line",
-                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x", "y"])),
                     "encoding" => Dict(
                         "x" => Dict(
                             "field" => dffields[1], 
