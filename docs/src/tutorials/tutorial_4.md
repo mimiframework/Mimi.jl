@@ -112,7 +112,7 @@ Here, we first employ [`run_mcs`](@ref) in its simplest form to obtain results:
 ```julia
 set_models!(mcs, m)
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(mcs, m, 1:4, output_dir=output_dir)
+run_mcs(mcs,1:4, output_dir=output_dir)
 ```
 
 ## FUND Example
