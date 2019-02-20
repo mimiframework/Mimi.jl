@@ -108,7 +108,7 @@ function createspec_lineplot(name, df, dffields)
                         "x" => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
-                            "timeUnit" => "year", 
+                            "timeUnit" => "utcyear", 
                             "axis" => Dict("title"=> "")
                         ),             
                         "y" => Dict(
@@ -125,7 +125,7 @@ function createspec_lineplot(name, df, dffields)
                         "x" => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
-                            "timeUnit" => "year"
+                            "timeUnit" => "utcyear"
                         ),
                         "y" => Dict(
                             "field" => dffields[2], 
@@ -158,7 +158,7 @@ function createspec_multilineplot(name, df, dffields)
                         "x"     => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
-                            "timeUnit" => "year", 
+                            "timeUnit" => "utcyear", 
                             "axis" => Dict("title"=> "")
                             ),                
                         "y"     => Dict(
@@ -179,7 +179,7 @@ function createspec_multilineplot(name, df, dffields)
                         "x" => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
-                            "timeUnit" => "year"
+                            "timeUnit" => "utcyear"
                         ),
                         "y" => Dict(
                             "field" => dffields[3], 
