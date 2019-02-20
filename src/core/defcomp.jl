@@ -159,9 +159,11 @@ macro defcomp(comp_name, ex)
        
         if @capture(elt, function fname_(args__) body__ end)
             if fname == :run_timestep
+                body = elt.args[2].args  # replace captured body with this, which includes line numbers
                 expr = _generate_run_func(comp_name, nameof(__module__), args, body)
 
             elseif fname == :init
+                body = elt.args[2].args  # as above
                 expr = _generate_init_func(comp_name, nameof(__module__), args, body)
             else
                 error("@defcomp can contain only these functions: init(p, v, d) and run_timestep(p, v, d, t)")
