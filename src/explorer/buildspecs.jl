@@ -100,27 +100,27 @@ function createspec_lineplot(name, df, dffields)
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "width" => _plot_width,
                     "height" => _plot_height,
-                    "mark" => "line",
+                    "mark" => Dict("type" => "line", "point" => true),
                     "encoding" => Dict(
                         "x" => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "year", 
-                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "x")),
                             "axis" => Dict("title"=> "")
                         ),             
                         "y" => Dict(
                             "field" => dffields[2], 
                             "type" => "quantitative",
-                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "y")))
+                        )
                     )
                 ), Dict(
                     "width" => _plot_width,
                     "height" => _slider_height,
-                    "mark" => "line",
-                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x", "y"])),
+                    "mark" => Dict("type" => "line", "point" => true),
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
                     "encoding" => Dict(
                         "x" => Dict(
                             "field" => dffields[1], 
@@ -130,7 +130,8 @@ function createspec_lineplot(name, df, dffields)
                         "y" => Dict(
                             "field" => dffields[2], 
                             "type" => "quantitative",
-                            "axis" => Dict("tickCount" => 3, "grid" => false)
+                            "axis" => Dict("tickCount" => 3, "grid" => false
+                            )
                         )
                     )
                 )
@@ -151,30 +152,29 @@ function createspec_multilineplot(name, df, dffields)
             "data"  => Dict("values" => datapart),
             "vconcat" => [
                 Dict(
-                    "mark"  => "line",
+                    "transform" => [Dict("filter" => Dict("selection" => "brush"))],
+                    "mark" => Dict("type" => "line", "point" => true),
                     "encoding" => Dict(
                         "x"     => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "year", 
-                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "x")),
                             "axis" => Dict("title"=> "")
                             ),                
                         "y"     => Dict(
                             "field" => dffields[3], 
                             "type" => "quantitative",
-                            "scale" => Dict("domain" => Dict("selection" => "brush", "encoding" => "y"))
                             ),
                         "color" => Dict("field" => dffields[2], "type" => "nominal", 
-                            "scale" => Dict("scheme" => "category20"))
+                            "scale" => Dict("scheme" => "category20")),
                     ),
                     "width"  => _plot_width,
                     "height" => _plot_height
                 ), Dict(
                     "width" => _plot_width,
                     "height" => _slider_height,
-                    "mark" => "line",
-                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x", "y"])),
+                    "mark" => Dict("type" => "line", "point" => true),
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
                     "encoding" => Dict(
                         "x" => Dict(
                             "field" => dffields[1], 
