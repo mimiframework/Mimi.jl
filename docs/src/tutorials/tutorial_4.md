@@ -92,7 +92,7 @@ generate_trials!(mcs, 1000, filename=joinpath(output_dir, "trialdata.csv"))
 
 ### Step 4. Run MCS
 
-Finally, use the [`run_mcs`](@ref) function which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_mcs`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical details on the full signature of this function:
+Finally, use the [`set_models!`](@ref) and [`run_mcs`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `mcs` simulation.  Next, use [`run_mcs`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_mcs`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
 function run_mcs(mcs::MonteCarloSimulation, 
@@ -110,8 +110,9 @@ function run_mcs(mcs::MonteCarloSimulation,
 Here, we first employ [`run_mcs`](@ref) in its simplest form to obtain results:
 
 ```julia
+set_models!(mcs, m)
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(mcs, m, 4, output_dir=output_dir)
+run_mcs(mcs,1:4, output_dir=output_dir)
 ```
 
 ## FUND Example
