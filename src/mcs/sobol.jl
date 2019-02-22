@@ -1,5 +1,5 @@
 using DataStructures
-import SALib
+import GlobalSensitivityAnalysis
 
 mutable struct SobolData <: AbstractSimulationData
     calc_second_order::Bool
@@ -28,8 +28,8 @@ function sample!(sim::SobolSimulation, samplesize::Int)
     end
 
     # get the samples to plug in to trials
-    payload = create_SALib_payload(sim)
-    samples = SALib.sample(payload)
+    payload = create_GSA_payload(sim)
+    samples = GlobalSensitivityAnalysis.sample(payload)
 
     for (i, rv) in enumerate(rvlist)
         dist = rv.dist
@@ -40,15 +40,15 @@ function sample!(sim::SobolSimulation, samplesize::Int)
 end
 
 function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N}) where N
-    payload = create_SALib_payload(sim)
-    return SALib.analyze(payload, model_output)
+    payload = create_GSA_payload(sim)
+    return GlobalSensitivityAnalysis.analyze(payload, model_output)
 end
 
-function create_SALib_payload(sim::SobolSimulation)
+function create_GSA_payload(sim::SobolSimulation)
 
     rvlist = sim.dist_rvs
 
-    # add all distinct rvs to the rv_info dictionary to be passed to SALib's 
+    # add all distinct rvs to the rv_info dictionary to be passed to GSA's 
     # SobolData payload
     rv_info = OrderedDict{Symbol, Any}(rvlist[1].name => rvlist[1].dist)
     for rv in rvlist[2:end] 
@@ -64,6 +64,6 @@ function create_SALib_payload(sim::SobolSimulation)
     end
 
     # create payload
-    return SALib.SobolData(params = rv_info, calc_second_order = sim.data.calc_second_order, N = samples)
+    return GlobalSensitivityAnalysis.SobolData(params = rv_info, calc_second_order = sim.data.calc_second_order, N = samples)
     
 end
