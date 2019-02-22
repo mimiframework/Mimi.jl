@@ -38,7 +38,7 @@ Julia
 cd(<fund-directory-path>) # fund-directory-path is a placeholder for the string describing your the file path of the downloaded `fund` folder from Step 1.
 ```
 
-Next, run the main fund file `fund.jl` (make sure to have the packages `Distributions` and `StatsBase` installed -using `Pkg.add("StatsBase")`-.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
+Next, run the main fund file `fund.jl` (make sure to have the packages `Distributions` and `StatsBase` installed, and if not do so by entering [Pkg mode](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) by typing `]`, and then `add StatsBase` and `add Distributions`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
 
 ```
 include("src/fund.jl")
