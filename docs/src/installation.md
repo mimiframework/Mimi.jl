@@ -42,4 +42,4 @@ The best way to get started with Mimi is to work through the **Tutorials**.
 
 The [Mimi](https://github.com/anthofflab/Mimi.jl) github repository also has links to various models that are based on Mimi, and looking through their code can be instructive.
 
-Finally, when in doubt, ask your question in the [Mimi gitter chatroom](https://gitter.im/anthofflab/Mimi.jl) or send an email to [David Anthoff](http://www.david-anthoff.com/) (<anthoff@berkeley.edu>) and ask for help. Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
+Finally, when in doubt, ask your question in the [Mimi Framework forum](https://forum.mimiframework.org) or send an email to [David Anthoff](http://www.david-anthoff.com/) (<anthoff@berkeley.edu>) and ask for help. Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
