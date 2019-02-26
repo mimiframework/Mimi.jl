@@ -72,7 +72,8 @@ macro defmodel(model_name, ex)
             addexpr(expr)
 
             name = (alias === nothing ? comp_name : alias)
-            expr = :(add_comp!($model_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
+            expr = :(add_comp!($model_name, 
+                               Mimi.ComponentId(comp_mod_name, $(QuoteNode(comp_name))), $(QuoteNode(name))))
 
         # TBD: extend comp.var syntax to allow module name, e.g., FUND.economy.ygross
         elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||

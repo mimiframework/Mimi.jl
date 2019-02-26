@@ -65,6 +65,11 @@ function get_connections(m::Model, comp_path::ComponentPath, which::Symbol)
     return _filter_connections(internal_param_conns(md), comp_path, which)
 end
 
+function get_connections(m::Model, comp_name::Symbol, which::Symbol)
+    comp = compdef(m, comp_name)
+    get_connections(m, comp.comp_path, which)
+end
+
 function get_connections(mi::ModelInstance, comp_path::ComponentPath, which::Symbol)
     md = modeldef(mi)
     return _filter_connections(internal_param_conns(md), comp_path, which)

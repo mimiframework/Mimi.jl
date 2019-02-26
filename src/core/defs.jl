@@ -38,7 +38,6 @@ compname(obj::AbstractComponentDef)   = compname(obj.comp_id)
 
 compnames() = map(compname, compdefs())
 
-
 # Access a subcomponent as comp[:name]
 Base.getindex(obj::AbstractCompositeComponentDef, name::Symbol) = obj.comps_dict[name]
 
@@ -53,6 +52,24 @@ end
 
 function comp_path!(parent::AbstractCompositeComponentDef, child::AbstractComponentDef)
     child.comp_path = ComponentPath(parent.comp_path, child.name)
+end
+
+"""
+    comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+
+Convert a string describing a path from a node to a ComponentPath.
+"""
+function comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+    # empty path means just select the node's path
+    isempty(path) && return node.comp_path
+
+    elts = split(path, "/")
+
+    if elts[1] == ""
+        root = get_root(node)
+        elts[1] = String(nameof(root))
+    end
+    return ComponentPath([Symbol(elt) for elt in elts])
 end
 
 dirty(md::ModelDef) = md.dirty
@@ -78,24 +95,24 @@ end
 first_period(comp_def::ComponentDef) = comp_def.first
 last_period(comp_def::ComponentDef)  = comp_def.last
 
-function first_period(comp_def::CompositeComponentDef)
-    values = filter(!isnothing, [first_period(c) for c in comp_def])
+function first_period(comp::AbstractCompositeComponentDef)
+    values = filter(!isnothing, [first_period(c) for c in compdefs(comp)])
     return length(values) > 0 ? min(values...) : nothing
 end
 
-function last_period(comp_def::CompositeComponentDef)
-    values = filter(!isnothing, [last_period(c) for c in comp_def])
+function last_period(comp::AbstractCompositeComponentDef)
+    values = filter(!isnothing, [last_period(c) for c in compdefs(comp)])
     return length(values) > 0 ? max(values...) : nothing
 end
 
-function first_period(md::ModelDef, comp_def::AbstractComponentDef)
+function first_period(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     period = first_period(comp_def)
-    return period === nothing ? time_labels(md)[1] : period
+    return period === nothing ? time_labels(obj)[1] : period
 end
 
-function last_period(md::ModelDef, comp_def::AbstractComponentDef)
+function last_period(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     period = last_period(comp_def)
-    return period === nothing ? time_labels(md)[end] : period
+    return period === nothing ? time_labels(obj)[end] : period
 end
 
 compname(dr::AbstractDatumReference) = dr.comp_path.names[end]
@@ -108,6 +125,7 @@ is_variable(dr::VariableDefReference)   = has_variable(compdef(dr), nameof(dr))
 is_parameter(dr::ParameterDefReference) = has_parameter(compdef(dr), nameof(dr))
 
 number_type(md::ModelDef) = md.number_type
+number_type(obj::AbstractCompositeComponentDef) = number_type(get_root(obj))
 
 # TBD: should be numcomps()
 numcomponents(obj::AbstractComponentDef) = 0   # no sub-components
@@ -200,13 +218,13 @@ end
 #
 # TBD: should these be defined as methods of CompositeComponentDef?
 #
-function step_size(md::ModelDef)
-    keys::Vector{Int} = time_labels(md)
+function step_size(obj::AbstractCompositeComponentDef)
+    keys::Vector{Int} = time_labels(obj)
     return step_size(keys)
 end
 
-function first_and_step(md::ModelDef)
-    keys::Vector{Int} = time_labels(md) # labels are the first times of the model runs
+function first_and_step(obj::AbstractCompositeComponentDef)
+    keys::Vector{Int} = time_labels(obj) # labels are the first times of the model runs
     return first_and_step(keys)
 end
 
@@ -216,8 +234,8 @@ end
 
 first_and_last(obj::AbstractComponentDef) = (obj.first, obj.last)
 
-function time_labels(md::ModelDef)
-    keys::Vector{Int} = dim_keys(md, :time)
+function time_labels(obj::AbstractCompositeComponentDef)
+    keys::Vector{Int} = dim_keys(obj, :time)
     return keys
 end
 
@@ -240,14 +258,14 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
 end
 
 # TBD: is this needed for composites?
-function datum_size(md::ModelDef, comp_def::ComponentDef, datum_name::Symbol)
+function datum_size(obj::AbstractCompositeComponentDef, comp_def::ComponentDef, datum_name::Symbol)
     dims = dim_names(comp_def, datum_name)
     if dims[1] == :time
-        time_length = getspan(md, comp_def)[1]
+        time_length = getspan(obj, comp_def)[1]
         rest_dims = filter(x->x!=:time, dims)
-        datum_size = (time_length, dim_counts(md, rest_dims)...,)
+        datum_size = (time_length, dim_counts(obj, rest_dims)...,)
     else
-        datum_size = (dim_counts(md, dims)...,)
+        datum_size = (dim_counts(obj, dims)...,)
     end
     return datum_size
 end
@@ -261,14 +279,14 @@ set_uniform!(obj::AbstractCompositeComponentDef, value::Bool) = (obj.is_uniform 
 
 dimension(obj::AbstractCompositeComponentDef, name::Symbol) = obj.dim_dict[name]
 
-dim_names(md::ModelDef, dims::Vector{Symbol}) = [dimension(md, dim) for dim in dims]
+dim_names(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [dimension(obj, dim) for dim in dims]
 
-dim_count_dict(md::ModelDef) = Dict([name => length(value) for (name, value) in dim_dict(md)])
-dim_counts(md::ModelDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(md, dims)]
-dim_count(md::ModelDef, name::Symbol) = length(dimension(md, name))
+dim_count_dict(obj::AbstractCompositeComponentDef) = Dict([name => length(value) for (name, value) in dim_dict(obj)])
+dim_counts(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(obj, dims)]
+dim_count(obj::AbstractCompositeComponentDef, name::Symbol) = length(dimension(obj, name))
 
-dim_keys(md::ModelDef, name::Symbol)   = collect(keys(dimension(md, name)))
-dim_values(md::ModelDef, name::Symbol) = collect(values(dimension(md, name)))
+dim_keys(obj::AbstractCompositeComponentDef, name::Symbol)   = collect(keys(dimension(obj, name)))
+dim_values(obj::AbstractCompositeComponentDef, name::Symbol) = collect(values(dimension(obj, name)))
 
 # For debugging only
 function _show_run_period(obj::AbstractComponentDef, first, last)
@@ -318,9 +336,9 @@ function set_run_period!(obj::AbstractComponentDef, first, last)
 end
  
 """
-    set_dimension!(md::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) 
+    set_dimension!(ccd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) 
 
-Set the values of `md` dimension `name` to integers 1 through `count`, if `keys` is
+Set the values of `ccd` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
 function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
@@ -337,7 +355,7 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
     return set_dimension!(ccd, name, Dimension(keys))
 end
 
-function set_dimension!(obj::AbstractCompositeComponentDef, name::Symbol, dim::Dimension)
+function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
     dirty!(obj)
     obj.dim_dict[name] = dim
 end
@@ -467,30 +485,43 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
 end
 
 """
-    set_param!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+    set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
-Set the parameter `name` of a component `comp_name` in a model `m` to a given `value`. The
+Set a parameter for a component with the given relative path (as a string), in which "/x" means the
+component with name `:x` beneath the root of the hierarchy in which `obj` is found. If the path does
+not begin with "/", it is treated as relative to `obj`.
+"""
+function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
+    cp = comp_path(obj, path)
+    comp = find_comp(obj, cp, relative=false)
+    set_param!(comp.parent, nameof(comp), param_name, value, dims)
+end
+
+"""
+    set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+
+Set the parameter `name` of a component `comp_name` in a composite `obj` to a given `value`. The
 `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a 
 list of the dimension names of the provided data, and will be used to check that 
 they match the model's index labels.
 """
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     # perform possible dimension and labels checks
     if value isa NamedArray
         dims = dimnames(value)
     end
 
     if dims !== nothing
-        check_parameter_dimensions(md, value, dims, param_name)
+        check_parameter_dimensions(obj, value, dims, param_name)
     end
 
-    comp_param_dims = parameter_dimensions(md, comp_name, param_name)
+    comp_param_dims = parameter_dimensions(obj, comp_name, param_name)
     num_dims = length(comp_param_dims)
     
-    comp_def = compdef(md, comp_name)
+    comp_def = compdef(obj, comp_name)
     param  = parameter(comp_def, param_name)
     data_type = param.datatype
-    dtype = data_type == Number ? number_type(md) : data_type
+    dtype = data_type == Number ? number_type(obj) : data_type
 
     if length(comp_param_dims) > 0
         # convert the number type and, if NamedArray, convert to Array
@@ -507,13 +538,13 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
                 values = value
             else
                 # Want to use the first from the comp_def if it has it, if not use ModelDef
-                first = first_period(md, comp_def)
+                first = first_period(obj, comp_def)
 
-                if isuniform(md)
-                    stepsize = step_size(md)
+                if isuniform(obj)
+                    stepsize = step_size(obj)
                     values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims}(value)
                 else
-                    times = time_labels(md)  
+                    times = time_labels(obj)  
                     #use the first from the comp_def 
                     first_index = findfirst(isequal(first), times)                
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
@@ -523,15 +554,15 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
             values = value
         end
 
-        set_external_array_param!(md, param_name, values, comp_param_dims)
+        set_external_array_param!(obj, param_name, values, comp_param_dims)
 
     else # scalar parameter case
         value = convert(dtype, value)
-        set_external_scalar_param!(md, param_name, value)
+        set_external_scalar_param!(obj, param_name, value)
     end
 
     # connect_param! calls dirty! so we don't have to
-    connect_param!(md, comp_name, param_name, param_name)
+    connect_param!(obj, comp_name, param_name, param_name)
     nothing
 end
 
@@ -591,14 +622,13 @@ variable(obj::VariableDefReference) = variable(compdef(obj), nameof(dr))
 has_variable(comp_def::AbstractComponentDef, name::Symbol) = haskey(comp_def.variables, name)
 
 """
-    variable_names(md::ModelDef, comp_name::Symbol)
+    variable_names(md::AbstractCompositeComponentDef, comp_name::Symbol)
 
 Return a list of all variable names for a given component `comp_name` in a model def `md`.
 """
-# TBD: why isn't this a of ComponentDef?
-variable_names(md::AbstractModelDef, comp_name::Symbol) = variable_names(compdef(md, comp_name))
+variable_names(obj::AbstractCompositeComponentDef, comp_name::Symbol) = variable_names(compdef(obj, comp_name))
 
-variable_names(comp_def::ComponentDef) = [nameof(var) for var in variables(comp_def)]
+variable_names(comp_def::AbstractComponentDef) = [nameof(var) for var in variables(comp_def)]
 
 
 function variable_unit(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
@@ -674,10 +704,10 @@ function _append_comp!(obj::AbstractCompositeComponentDef, comp_name::Symbol, co
    obj.comps_dict[comp_name] = comp_def
 end
 
-function _add_anonymous_dims!(md::ModelDef, comp_def::AbstractComponentDef)
+function _add_anonymous_dims!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dim_dict)
         # @info "Setting dimension $name to $dim"
-        set_dimension!(md, name, dim)
+        set_dimension!(obj, name, dim)
     end
 end
 
@@ -758,6 +788,28 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     nothing
 end
 
+"""
+Return True if time Dimension `outer` contains `inner`.
+"""
+function time_contains(outer::Dimension, inner::Dimension)
+    outer_idx = keys(outer)
+    inner_idx = keys(inner)
+
+    return outer_idx[1] <= inner_idx[1] && outer_idx[end] >= inner_idx[end]
+end
+
+"""
+Propagate a time dimension down through the comp def tree.
+"""
+function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
+    set_dimension!(obj, :time, t)
+
+    if is_composite(obj)
+        for c in compdefs(obj)
+            _propagate_time(c, t)
+        end
+    end
+end
 
 """
     add_comp!(obj::AbstractCompositeComponentDef, comp_def::ComponentDef; 
@@ -795,7 +847,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
 
     # check that a time dimension has been set
     if ! has_dim(obj, :time)
-        error("Cannot add component to model without first setting time dimension.")
+        error("Cannot add component to composite without first setting time dimension.")
     end
     
     # check that first and last are within the model's time index range
@@ -818,6 +870,10 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         error("Cannot add two components of the same name ($comp_name)")
     end
 
+    if has_dim(obj, :time)
+        _propagate_time(comp_def, dimension(obj, :time))
+    end
+
     # Copy the original so we don't step on other uses of this comp
     comp_def = deepcopy(comp_def)
     comp_def.name = comp_name
@@ -833,7 +889,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             set_param!(obj, comp_name, nameof(param), param.default)
         end
     end
-        
+    
     # Return the comp since it's a copy of what was passed in
     return comp_def
 end
@@ -975,6 +1031,8 @@ end
 find_comp(obj::AbstractComponentDef, name::Symbol; relative=true) = find_comp(obj, ComponentPath(name), relative=relative)
 
 find_comp(obj::ComponentDef, path::ComponentPath; relative=true) = (isempty(path) ? obj : nothing)
+
+find_comp(obj::AbstractCompositeComponentDef, path::AbstractString; relative=true) = find_comp(obj, comp_path(obj, path), relative=relative)
 
 """
 Return the relative path of `descendant` if is within the path of composite `ancestor` or 

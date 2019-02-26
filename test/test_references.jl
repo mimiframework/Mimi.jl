@@ -28,7 +28,7 @@ end
 
 
 @defmodel m begin
-    index[time] = [1]
+    index[time] = [1, 2]
     component(Foo)
     component(Bar)
 

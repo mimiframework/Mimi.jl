@@ -8,7 +8,7 @@ using Mimi
 import Mimi: 
     connect_param!, unconnected_params, set_dimension!, 
     reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count,  dim_names,
-    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
+    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs, comp_path
 
 reset_compdefs()
 
@@ -58,7 +58,9 @@ connect_param!(m, :A, :parA, :C, :varC)
 
 unconn = unconnected_params(m)
 @test length(unconn) == 1
-@test unconn[1] == (:C, :parC)
+
+c = compdef(m, :C)
+@test unconn[1] == (c.comp_path, :parC)
 
 connect_param!(m, :C => :parC, :B => :varB)
 
@@ -67,10 +69,11 @@ connect_param!(m, :C => :parC, :B => :varB)
 @test numcomponents(m.md) == 3
 
 @test length(internal_param_conns(m)) == 2
-@test get_connections(m, :A, :incoming)[1].src_comp_name == :C
+c = compdef(m, :C)
+@test get_connections(m, :A, :incoming)[1].src_comp_path == c.comp_path
 
 @test length(get_connections(m, :B, :incoming)) == 0
-@test get_connections(m, :B, :outgoing)[1].dst_comp_name == :C
+@test get_connections(m, :B, :outgoing)[1].dst_comp_path == c.comp_path
 
 @test length(get_connections(m, :A, :all)) == 1
 

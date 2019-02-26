@@ -128,7 +128,8 @@ parameter should only be calculated for the second timestep and beyond.
 function connect_param!(obj::AbstractCompositeComponentDef, 
                         dst_comp_path::ComponentPath, dst_par_name::Symbol, 
                         src_comp_path::ComponentPath, src_var_name::Symbol,
-                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                        backup::Union{Nothing, Array}=nothing; 
+                        ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
     disconnect_param!(obj, dst_comp_path, dst_par_name)  # calls dirty!()
@@ -561,22 +562,22 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and dst_component
-            add_internal_param_conn!(md, InternalParameterConnection(conn_comp_name, :output, 
-                                                                     conn.dst_comp_path, conn.dst_par_name, 
-                                                                     conn.ignoreunits))
+            add_internal_param_conn!(obj, InternalParameterConnection(conn_comp_name, :output, 
+                                                                      conn.dst_comp_path, conn.dst_par_name, 
+                                                                      conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
-            add_external_param_conn!(md, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
+            add_external_param_conn!(obj, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
 
-            src_comp_def = compdef(md, conn.src_comp_path)
-            set_param!(md, conn_comp_name, :first, first_period(md, src_comp_def))
-            set_param!(md, conn_comp_name, :last, last_period(md, src_comp_def))
+            src_comp_def = compdef(obj, conn.src_comp_path)
+            set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def))
+            set_param!(obj, conn_comp_name, :last, last_period(obj, src_comp_def))
 
         end
     end
 
     # Save the sorted component order for processing
-    # md.sorted_comps = _topological_sort(md)
+    # obj.sorted_comps = _topological_sort(obj)
 
     return nothing
 end

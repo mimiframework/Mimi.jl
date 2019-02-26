@@ -201,9 +201,9 @@ function _build(comp_def::ComponentDef,
 end
 
 function _build(comp_def::AbstractCompositeComponentDef, 
-                        var_dict::Dict{ComponentPath, Any}, 
-                        par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
-                        time_bounds::Tuple{Int, Int})
+                var_dict::Dict{ComponentPath, Any}, 
+                par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
+                time_bounds::Tuple{Int, Int})
     # @info "_build composite $(comp_def.comp_id)"
     # @info "  var_dict $(var_dict)"
     # @info "  par_dict $(par_dict)"

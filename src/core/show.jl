@@ -144,7 +144,7 @@ end
 
 function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
     # Don't print parent or root since these create circular references
-    print(io, nameof(typeof(obj)))
+    print(io, nameof(typeof(obj)), " id:", objectid(obj))
 
     fields = fieldnames(typeof(obj))
 

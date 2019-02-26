@@ -43,13 +43,17 @@ to check match units between the two.  The `offset` argument indicates the offse
 between the destination and the source ie. the value would be `1` if the destination 
 component parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, 
-                           src_comp_path::ComponentPath, src_var_name::Symbol, 
-                           backup::Union{Nothing, Array}=nothing; 
-                           ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(m.md, dst_comp_path, dst_par_name, src_comp_path, src_var_name, backup; 
-                      ignoreunits=ignoreunits, offset=offset)
-end
+@delegate connect_param!(m::Model, 
+                         dst_comp_path::ComponentPath, dst_par_name::Symbol, 
+                         src_comp_path::ComponentPath, src_var_name::Symbol, 
+                         backup::Union{Nothing, Array}=nothing; 
+                         ignoreunits::Bool=false, offset::Int=0) => md
+
+@delegate connect_param!(m::Model, 
+                         dst_comp_name::Symbol, dst_par_name::Symbol, 
+                         src_comp_name::Symbol, src_var_name::Symbol,
+                         backup::Union{Nothing, Array}=nothing; 
+                         ignoreunits::Bool=false, offset::Int=0) => md
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -142,6 +146,8 @@ function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id
     replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
     return ComponentReference(m, comp_name)
 end
+
+@delegate ComponentReference(m::Model, name::Symbol) => md
 
 """
     components(m::Model)
@@ -268,7 +274,16 @@ The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims'
 is a list of the dimension names of the provided data, and will be used to check 
 that they match the model's index labels.
 """
-@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
+@delegate set_param!(m::Model, comp_name::Symbol,    param_name::Symbol, value, dims=nothing) => md
+
+"""
+    set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
+
+Set a parameter for a component with the given relative path (as a string), in which "/x" means the
+component with name `:x` beneath `m.md`. If the path does not begin with "/", it is treated as 
+relative to `m.md`, which at the top of the hierarchy, produces the same result as starting with "/".
+"""
+@delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
 
 """
     run(m::Model)

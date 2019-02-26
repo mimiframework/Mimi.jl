@@ -250,7 +250,7 @@ end
     is_uniform::Bool
 
     # Store a reference to the AbstractCompositeComponent that contains this comp def.
-    # That type isn't defined yet, so we declare Any here.
+    # That type is defined later, so we declare Any here.
     parent::Union{Nothing, Any}
 
     function ComponentDef(self::ComponentDef, comp_id::Nothing)
@@ -260,11 +260,14 @@ end
     # ComponentDefs are created "empty". Elements are subsequently added.
     function ComponentDef(self::AbstractComponentDef, comp_id::Union{Nothing, ComponentId}=nothing; 
                           name::Union{Nothing, Symbol}=nothing)
-        if name === nothing
-            name = (comp_id === nothing ? gensym(nameof(typeof(self))) : comp_id.comp_name)
+        if comp_id === nothing
+            # ModelDefs are anonymous, but since they're gensym'd, they can claim the Mimi package
+            comp_id = ComponentId(Mimi, name === nothing ? gensym(nameof(typeof(self))) : name)
         end
 
+        name = (name === nothing ? comp_id.comp_name : name)
         NamedObj(self, name)
+
         self.comp_id = comp_id
         self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
         self.variables  = OrderedDict{Symbol, VariableDef}()
@@ -365,7 +368,7 @@ ComponentPath(obj::AbstractCompositeComponentDef, name::Symbol) = ComponentPath(
         self = new()
         CompositeComponentDef(self)  # call super's initializer
         self.comp_path = ComponentPath(self.name)        
-        return ModelDef(self, number_type, false)
+        return ModelDef(self, number_type, false)       # call @class-generated method
     end
 end
 
@@ -450,7 +453,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
                                time_bounds::Tuple{Int,Int},
                                name::Symbol=nameof(comp_def)) where
                 {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-        
+
         self.comp_id = comp_id = comp_def.comp_id
         self.comp_path = comp_def.comp_path
         self.comp_name = name
@@ -472,10 +475,11 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
                 return nothing
             end
 
-            func_name = Symbol("$(name)_$(self.comp_id.comp_name)")
+            func_name = Symbol("$(name)_$(nameof(comp_module))_$(self.comp_id.comp_name)")
             try
                 Base.eval(comp_module, func_name)
             catch err
+                # @info "Eval of $func_name in module $comp_module failed"
                 nothing
             end        
         end
@@ -659,12 +663,12 @@ end
     comp_path::ComponentPath
 end
 
+function ComponentReference(parent::AbstractComponentDef, name::Symbol)
+    return ComponentReference(parent, ComponentPath(parent.comp_path, name))
+end
+
 # A container for a variable within a component, to improve connect_param! aesthetics,
 # by supporting subscripting notation via getindex & setindex .
 @class VariableReference <: ComponentReference begin
     var_name::Symbol
-end
-
-function same_composite(ref1::AbstractComponentReference, ref2::AbstractComponentReference)
-    return ref1.comp_path[1] == ref2.comp_path[1]
 end
