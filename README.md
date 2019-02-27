@@ -4,8 +4,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/anthofflab/Mimi.jl/badge.svg?branch=master)](https://coveralls.io/github/anthofflab/Mimi.jl?branch=master)
 [![codecov](https://codecov.io/gh/anthofflab/Mimi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/anthofflab/Mimi.jl)
 
-[![Join the chat at https://gitter.im/anthofflab/Mimi.jl](https://badges.gitter.im/anthofflab/Mimi.jl.svg)](https://gitter.im/anthofflab/Mimi.jl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 [![Stable documentation](https://img.shields.io/badge/docs-stable-blue.svg)](http://anthofflab.berkeley.edu/Mimi.jl/stable)
 [![Latest documentation](https://img.shields.io/badge/docs-latest-blue.svg)](http://anthofflab.berkeley.edu/Mimi.jl/dev/)
 
@@ -49,7 +47,7 @@ Pkg.add("Mimi")
 
 ## Contributing
 
-Contributions to Mimi are most welcome! You can interact with the Mimi development team via issues and pull requests here on github, and in the [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room.
+Contributions to Mimi are most welcome! You can interact with the Mimi development team via issues and pull requests here on github, and in the [Mimi Framework forum](https://forum.mimiframework.org).
 
 ## Acknowledgements
 
