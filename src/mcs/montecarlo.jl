@@ -146,8 +146,9 @@ than RANDOM. (Currently, only LHS and RANDOM are possible.)
 function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
                           filename::String="",
                           sampling::SamplingOptions=RANDOM)
-    mcs.trials = trials
 
+    mcs.trials = trials
+	
     if sampling == LHS
         corrmatrix = correlation_matrix(mcs)
         lhs!(mcs, corrmatrix=corrmatrix)
@@ -331,7 +332,8 @@ end
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing)
 
-Run the indicated trial numbers, where the first `models_to_run` associated models are run 
+Run the indicated the first `trials`, which indicates the number of trials to run
+starting from the first one. The first `models_to_run` associated models are run 
 for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial
 data are applied to all the associated models even when running only a portion of them.
     
@@ -486,29 +488,32 @@ function run_mcs(mcs::MonteCarloSimulation, trials::Int=mcs.trials,
     return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
 end
 
-# Same as above, but takes a single model to run
-function run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials, 
-                 models_to_run::Int=length(mcs.models); kwargs...)
-    set_model!(mcs, m)
-    return run_mcs(mcs, trials, models_to_run; kwargs...)
-end
+""" 
+    set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
 
-# Same as above, but takes a multiple models to run
-function run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials, 
-                 models_to_run::Int=length(mcs.models); kwargs...)
-    set_models!(mcs, models)
-    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
-end
-
+Set the `models` to be used by the `mcs` MonteCarloSimulation. 
+"""
+# Set models
 function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
     mcs.models = models
     _reset_results!(mcs)    # sets results vector to same length
 end
 
 # Convenience methods for single model and MarginalModel
-set_model!(mcs::MonteCarloSimulation, m::Model) = set_models!(mcs, [m])
+""" 
+    set_models!(mcs::MonteCarloSimulation, m:Model)
 
-set_model!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.base, mm.marginal])
+Set the model `m` to be used by the `mcs` MonteCarloSimulation. 
+"""
+set_models!(mcs::MonteCarloSimulation, m::Model) = set_models!(mcs, [m])
+
+""" 
+    set_models!(mcs::MonteCarloSimulation, mm::MarginalModel) 
+
+Set the models to be used by the `mcs` MonteCarloSimulation to be `mm.base` and `mm.marginal`
+which make up the MarginalModel `mm`. 
+"""
+set_models!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.base, mm.marginal])
 
 #
 # Iterator functions for MonteCarloSimulation directly, and for use as an IterableTable.

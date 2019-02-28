@@ -2,7 +2,7 @@
 
 The following tutorials target [Mimi](https://github.com/anthofflab/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the [Welcome to Mimi](@ref) documentation, including the [User Guide](@ref), and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
 
-If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi.jl/dev](https://gitter.im/anthofflab/Mimi.jl/dev) gitter chat room.  We welcome your feedback.
+If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi Framework forum](https://forum.mimiframework.org).  We welcome your feedback.
 
 ## Terminology
 
@@ -17,6 +17,8 @@ The following terminology is used throughout the documentation.
    [Tutorial 1: Run an Existing Model](@ref) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
 
 2. **Modify an Existing Model**
+
+    _While the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon._
 
    [Tutorial 2: Modify an Existing Model](@ref) builds on Tutorial 1, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
 

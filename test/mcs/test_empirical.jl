@@ -76,7 +76,7 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2001)
 add_comp!(m, test)
-set_model!(mcs_test, m)
+set_models!(mcs_test, m)
 
 generate_trials!(mcs_test, num_trials; sampling = RANDOM)
 

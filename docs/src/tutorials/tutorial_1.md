@@ -38,12 +38,12 @@ Julia
 cd(<fund-directory-path>) # fund-directory-path is a placeholder for the string describing your the file path of the downloaded `fund` folder from Step 1.
 ```
 
-Next, run the main fund file `fund.jl`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
+Next, run the main fund file `fund.jl` (make sure to have the packages `Distributions` and `StatsBase` installed, and if not do so by entering [Pkg mode](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) by typing `]`, and then `add StatsBase` and `add Distributions`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
 
 ```
 include("src/fund.jl")
 using .Fund
-m = getfund
+m = getfund()
 run(m)
 ```
 
@@ -63,11 +63,16 @@ run(m)
 ### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
+Start off by importing the Mimi package to your space with 
+```
+using Mimi
+```
+
 First of all, you may use the `getindex` syntax as follows:
 
 ```julia
-my_model[:ComponentName, :VariableName] # returns the whole array of values
-my_model[:ComponentName, :VariableName][100] # returns just the 100th value
+m[:ComponentName, :VariableName] # returns the whole array of values
+m[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
 Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component using the code below:
@@ -79,9 +84,9 @@ m[:socioeconomic, :income][100]
 You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
 
 ```julia
-getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
-getdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
-getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
+getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
+getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
+getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
 
 ```
 
@@ -102,18 +107,20 @@ If you wish to explore the results graphically, use the explorer UI, described [
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
 ```
-explore(m, "My Window")
+explore(m, title = "My Window")
 ```
-Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. you may save a plot by calling the `save` function.
+Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
 
 ```julia
-run1 = run(my_model)
-p = explore(run1, component1, parameter1)
+using VegaLite
+run(m)
+p = explore(m, component1, parameter1)
 save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
 ```julia
+using VegaLite
 p = explore(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 ```
@@ -123,7 +130,7 @@ save("MyFilePath.svg", p)
 In order to view a DAG representing the component ordering and relationships, use the [`plot_comp_graph`](@ref) function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
 
 ```julia
-plot_comp_graph(m; filename = "MyFilePath.png")
+plot_comp_graph(m, "MyFilePath.png")
 ```
 ### Step 4. Tutorial 2
 

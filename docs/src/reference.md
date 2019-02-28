@@ -8,6 +8,9 @@ add_comp!
 components 
 connect_param!
 create_marginal_model
+dim_count
+dim_keys
+dim_key_dict
 disconnect_param!
 explore
 generate_trials!
@@ -30,6 +33,7 @@ replace_comp!
 run_sim
 set_dimension! 
 set_leftover_params! 
+set_models!
 set_param! 
 variables  
 update_param!

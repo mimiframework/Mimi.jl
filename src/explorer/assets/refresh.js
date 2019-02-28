@@ -31,5 +31,4 @@ function refresh(menu_item_list) {
 
 function display(spec) {
     vegaEmbed("#vis", spec["VLspec"], {actions: false});
-    
 }

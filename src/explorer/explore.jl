@@ -1,6 +1,8 @@
 ## Mimi UI
 using VegaLite
 using FilePaths
+import FileIO:save
+export save
 
 global app = nothing
 

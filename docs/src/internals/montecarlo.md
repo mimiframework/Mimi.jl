@@ -130,14 +130,13 @@ Currently, the more condensed syntax (using the pair operator `=>`) supports onl
 of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
 ## The set_models! function
-	
-	
-The "core" `run_mcs` function assumes the `MonteCarloSimulation` instance has references to the model or models to run. The `set_models!` function has several methods for associating the model(s) to run with the `MonteCarloSimulation` instance:
+
+The "core" `run_sim` function assumes the `Simulation` instance has references to the model or models to run. The `set_models!` function has several methods for associating the model(s) to run with the `Simulation` instance:
 	
 ```
-set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
-set_models!(mcs::MonteCarloSimulation, m::Model)
-set_models!(mcs::MonteCarloSimulation, mm::MarginalModel)
+set_models!(sim::Simulation, models::Vector{Model})
+set_models!(sim::Simulation, m::Model)
+set_models!(sim::Simulation, mm::MarginalModel)
 ```
 	
 ## The run_sim function
@@ -252,9 +251,7 @@ The following example is available in `"Mimi.jl/test/sim/test_defsim.jl"`.
 using Mimi
 using Distributions
 
-include("examples/tutorial/02-two-region-model/main.jl")
-
-m = model # defined by 2-region model
+N = 100
 
 sim = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
@@ -266,45 +263,43 @@ sim = @defsim begin
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
 
-    # define correlations
-    name1:name2 = 0.7
-    name1:name3 = 0.5
-
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
     sigma[:, Region1] *= name2
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    # Assign an array of distributions, keyed by region, to parameter depk
-    depk = [Region1 => Uniform(0.7, 1.3),
-            Region2 => Uniform(0.8, 1.2),
-            Region3 => Normal()]
+    depk = [Region1 => Uniform(0.08, 0.14),
+            Region2 => Uniform(0.10, 1.50),
+            Region3 => Uniform(0.10, 0.20)]
 
+    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
+    
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, 
-         emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-# Optional user functions can be called just before or after a trial is run
+Mimi.reset_compdefs()
+include("../../examples/tutorial/02-two-region-model/main.jl")
+
+m = model
+
+# Optionally, user functions can be called just before or after a trial is run
 function print_result(m::Model, sim::Simulation, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
 end
 
-# Generate trial data for all RVs and (optionally) save to a file
-generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
+output_dir = joinpath(tempdir(), "sim")
 
-# Set models(s)
-set_models!(sim, m)
+generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv"))
 
-# Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_sim(sim, 4, output_dir="/tmp/Mimi")
+# Run trials 1:N, and save results to the indicated directory
+Mimi.set_models!(sim, m)
+run_sim(sim, N, output_dir=output_dir)
 
-# Same thing but with a post-trial function
-run_sim(sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
 
 

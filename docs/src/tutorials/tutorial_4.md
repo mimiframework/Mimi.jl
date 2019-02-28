@@ -86,7 +86,12 @@ function print_result(m::Model, sim::Simulation, trialnum::Int)
 end
 ```
 
-### Step 3. Generate Trials
+where `tup` is a tuple of scenario arguments representing one element in the cross-product
+of all scenario value vectors. In situations in which you want the MCS loop to run only
+some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
+`post_trial_func`.
+
+### Step 2. Generate Trials
 
 The optional [`generate_trials!`](@ref) function can be used to pre-generate all trial data, and save all random variable values in a file.  If this function is not called prior to calling [`run_sim`](@ref), trial data are not saved. Employ this function as follows:
 

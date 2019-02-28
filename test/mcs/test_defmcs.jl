@@ -44,7 +44,7 @@ include("../../examples/tutorial/02-two-region-model/main.jl")
 m = model
 
 # Optionally, user functions can be called just before or after a trial is run
-function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
+function print_result(mcs::MonteCarloSimulation, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
@@ -60,8 +60,7 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 
 # Run trials 1:N, and save results to the indicated directory
 
-Mimi.set_model!(mcs, m)
-
+set_models!(mcs, m)
 
 run_mcs(mcs, N, output_dir=output_dir)
 
