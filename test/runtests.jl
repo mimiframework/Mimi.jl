@@ -90,5 +90,5 @@ Mimi.set_defcomp_verbosity(false)
     @info("test_plotting.jl")
     include("test_plotting.jl")
 
-    include("sa/runtests.jl")
+    include("mcs/runtests.jl")
 end

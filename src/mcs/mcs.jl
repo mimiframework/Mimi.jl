@@ -6,12 +6,12 @@ using MacroTools
 using StatsBase
 using IterTools
 
-include("sa_types.jl")
+include("mcs_types.jl")
 include("EmpiricalDistribution.jl")
-include("sensitivityanalysis.jl")
+include("montecarlo.jl")
 include("lhs.jl")
 include("sobol.jl")
-include("defsim.jl")
+include("defmcs.jl")
 
 export 
     @defsim, generate_trials!, run_sim, save_trial_inputs, save_trial_results, set_models!,
