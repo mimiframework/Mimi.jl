@@ -2,7 +2,7 @@
 
 To facilitate post-processing, model results will be saved to files in either JSON formats, as detailed below. To save results, the following methods can be used.
 
-For individual model runs, results can be saved to a single file, or added to an existing file. For sensitivity analysis simulations, a single JSON file will hold the subset 
+For individual model runs, results can be saved to a single file, or added to an existing file. For SA simulations, a single JSON file will hold the subset 
 of results specified by the user, for each trial. This may become
 unwieldy, but we support gzipped JSON, which helps a bit: if a filename ends in 
 `.gz`, it will automatically be zipped on writing and gzipped on reading.
@@ -22,7 +22,7 @@ The JSON file format is basically a set of nested dictionaries, with a few lists
 We specify `dicttype=DataStructures.OrderedDict` when reading and writing JSON files to ensure that insertion order is maintained.
 
 ### Scenario dict
-The top level of the JSON file is a dictionary keyed by scenario name (for non-simulation results) or trial number (basically a numeric scenario name) for simulation results.
+The top level of the JSON file is a dictionary keyed by scenario name (for non-SA results) or trial number (basically a numeric scenario name) for SA results.
 
 ### Index-Variable-Parameter (IVP) dict
 The value of the top-level dictionary is a dictionary whose keys are types of model inputs and results, which is currently one of `"Index"`, `"Variable"`, or `"Parameter"` of these dictionaries vary by the type of object stored, as shown below.

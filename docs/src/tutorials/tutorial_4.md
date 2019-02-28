@@ -87,7 +87,7 @@ end
 ```
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the simulation loop to run only
+of all scenario value vectors. In situations in which you want the SA loop to run only
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 

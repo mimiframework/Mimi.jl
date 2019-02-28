@@ -170,7 +170,7 @@ just before or after (respectively) running a trial. The functions must have the
     fn(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the simulation loop to run only
+of all scenario value vectors. In situations in which you want the SA loop to run only
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
@@ -180,8 +180,8 @@ the signature:
 
     scenario_func(sim::Simulation, tup::Tuple)
 
-By default, the scenario loop encloses the simulation loop, but the scenario loop can be
-placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER` 
+By default, the scenario loop encloses the SA loop, but the scenario loop can be
+placed inside the SA loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 
@@ -191,7 +191,7 @@ In many cases, scenarios (which we define as a choice of values from a discrete 
 
 `scenario_args=Dict([:name => ["a", "b"], :rate => [0.025, 0.05, 0.07]])`
 
-Of course, the simulation subsystem does not know what you want to do with these values, so the user must also provide a callback function in the `scenario_func` argument. This function must be defined with the signature:
+Of course, the SA subsystem does not know what you want to do with these values, so the user must also provide a callback function in the `scenario_func` argument. This function must be defined with the signature:
 
 `function any_name_you_like(sim::Simulation, tup)`
 
@@ -208,7 +208,7 @@ In approximate pseudo-julia, these options produce the following behavior:
 for tup in scenario_tuples
   scenario_func(tup)
 
-  # for each scenario, run all simulation trials
+  # for each scenario, run all SA trials
   for trial in trials
     trial_data = get_trial_data(trial)
     apply_trial_data()
@@ -226,7 +226,7 @@ for trial in trials
   trial_data = get_trial_data(trial)
   apply_trial_data()
 
-  # for each simulation trial, run all scenarios
+  # for each SA trial, run all scenarios
   for tup in scenario_tuples
     scenario_func(tup)
 
