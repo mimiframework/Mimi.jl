@@ -62,7 +62,7 @@ set_models!(sim, m)
 run_sim(sim, sim.trials, output_dir=output_dir)
 
 # do some analysis
-E = load(joinpath(output_dir, "E.csv")) |> DataFrame
+E = CSVFiles.load(joinpath(output_dir, "E.csv")) |> DataFrame
 results = analyze(sim, E[1:60:end, 3])
 
 function show_E_Region(year::Int; region = "Region1", bins=40)

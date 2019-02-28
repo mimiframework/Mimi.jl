@@ -89,7 +89,7 @@ end
 """
     save_trial_results(sim::Simulation, output_dir::String)
 
-Save the stored MCS results to files in the directory `output_dir`
+Save the stored simulation results to files in the directory `output_dir`
 """
 function save_trial_results(sim::Simulation{T}, output_dir::AbstractString) where T <: AbstractSimulationData
     multiple_results = (length(sim.results) > 1)
@@ -229,7 +229,7 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
 
     if num_pdims != num_dims
         pname = trans.paramname
-        error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions ($pdims); MCS has $num_dims")
+        error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions ($pdims); Sim has $num_dims")
     end
 
     indices = Vector()
@@ -307,7 +307,7 @@ end
 """
     _reset_results!(sim::Simulation{T})
 
-Reset all MCS results storage to a vector of empty dicts
+Reset all simulation results storage to a vector of empty dicts
 """
 function _reset_results!(sim::Simulation{T}) where T <: AbstractSimulationData
     sim.results = [Dict{Tuple, DataFrame}() for m in sim.models]
@@ -343,7 +343,7 @@ just before or after (respectively) running a trial. The functions must have the
     fn(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the MCS loop to run only
+of all scenario value vectors. In situations in which you want the simulation loop to run only
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
@@ -353,8 +353,8 @@ the signature:
 
     scenario_func(sim::Simulation, tup::Tuple)
 
-By default, the scenario loop encloses the Monte Carlo loop, but the scenario loop can be
-placed inside the Monte Carlo loop by specifying `scenario_placement=INNER`. When `INNER` 
+By default, the scenario loop encloses the simulation loop, but the scenario loop can be
+placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 """

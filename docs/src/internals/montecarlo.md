@@ -249,7 +249,7 @@ By default, all defined models are run. In some cases, you may want to run some 
 
 **Example**
 
-The following example is available in `"Mimi.jl/test/mcs/test_defmcs.jl"`.
+The following example is available in `"Mimi.jl/test/mcs/test_defsim.jl"`.
 
 ```julia
 using Mimi

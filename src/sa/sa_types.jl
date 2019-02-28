@@ -99,7 +99,7 @@ abstract type AbstractSimulationData end
 """
     Simulation
     
-Holds all the data that defines a Monte Carlo simulation.
+Holds all the data that defines a simulation.
 """
 mutable struct Simulation{T}
     trials::Int

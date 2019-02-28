@@ -6,9 +6,9 @@ using MacroTools
 using StatsBase
 using IterTools
 
-include("mcs_types.jl")
+include("sa_types.jl")
 include("EmpiricalDistribution.jl")
-include("montecarlo.jl")
+include("sensitivityanalysis.jl")
 include("lhs.jl")
 include("sobol.jl")
 include("defsim.jl")
