@@ -11,13 +11,16 @@ This guide is organized into six main sections for understanding how to use Mimi
 3) Running the model
 4) Accessing results
 5) Plotting and the Explorer UI
-6) Advanced topics
+6) MCS Functionality
+7) Advanced topics
 
 ## Defining Components
 
 Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components.
 
 A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the `run_timestep` function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
+
+Also note that if a  `Variable` or `Parameter` has `time` as an index, it must be listed as the first index in the definition, eg. `B = Variable(index = [time, regions])` is allowed, but `B = Variable(index = [regions, time])` is not.
 
 The user must define a `run_timestep` function for each component. 
 
@@ -150,21 +153,26 @@ Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.
 In order to invoke the explorer UI and explore all of the variables and parameters in a model, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
  
 ```julia
- run1 = run(my_model)
- explore(run1, title = "run1 results")
+run(mymodel)
+ explore(mymodel, title = "run1 results")
 ```
 
 ![Explorer Model Example](figs/explorer_model_example.png)
 
-Alternatively, in order to view just one parameter or variable, call the function `explore` as below to return a plot object and automatically display the plot in a viewer, assuming `explore` is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You can save a plot by calling the `save` function.
+Alternatively, in order to view just one parameter or variable, call the function `explore` as below to return a plot object and automatically display the plot in a viewer, assuming `explore` is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
 
 ```julia
-run1 = run(my_model)
-p = explore(run1, component1, parameter1)
+using VegaLite
+run(mymodel)
+p = explore(mymodel, component1, parameter1)
 save("figure.svg", p)
 ```
 
 ![Explorer Single Plot Example](figs/explorer_single_plot_example.png)
+
+## Monte Carlo Simulation (MCS) Support
+
+Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) on Mimi models. The best current documentation on the MCS API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Advanced Topics
 

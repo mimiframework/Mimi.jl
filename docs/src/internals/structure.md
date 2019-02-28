@@ -83,7 +83,7 @@ In the new version, all component definitions are represented by one type, `Comp
 The `@defmodel` macro provides simplified syntax for model creation, eliminating many redundant parameters. For example, you can write:
 
 ```
-@defmodel my_model begin
+@defmodel mymodel begin
 
     index[time] = 2015:5:2110
 
@@ -110,18 +110,18 @@ which produces these function calls:
 
 ```
 quote
-    my_model = Model()
-    set_dimension!(my_model, :time, 2015:5:2110)
-    add_comp!(my_model, Main.grosseconomy, :grosseconomy)
-    add_comp!(my_model, Main.emissions, :emissions)
-    set_param!(my_model, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
-    set_param!(my_model, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
-    set_param!(my_model, :grosseconomy, :s, ones(20) * 0.22)
-    set_param!(my_model, :grosseconomy, :depk, 0.1)
-    set_param!(my_model, :grosseconomy, :k0, 130.0)
-    set_param!(my_model, :grosseconomy, :share, 0.3)
-    set_param!(my_model, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
-    connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+    mymodel = Model()
+    set_dimension!(mymodel, :time, 2015:5:2110)
+    add_comp!(mymodel, Main.grosseconomy, :grosseconomy)
+    add_comp!(mymodel, Main.emissions, :emissions)
+    set_param!(mymodel, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
+    set_param!(mymodel, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
+    set_param!(mymodel, :grosseconomy, :s, ones(20) * 0.22)
+    set_param!(mymodel, :grosseconomy, :depk, 0.1)
+    set_param!(mymodel, :grosseconomy, :k0, 130.0)
+    set_param!(mymodel, :grosseconomy, :share, 0.3)
+    set_param!(mymodel, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
+    connect_param!(mymodel, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 end
 ```
 

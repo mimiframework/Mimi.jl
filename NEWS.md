@@ -1,3 +1,6 @@
+# Mimi.jl v0.6.3 Release Notes
+* Add tutorials to documentation
+
 # Mimi.jl v0.6.2 Release Notes
 * Fix interaction of explorer with missing data
 
