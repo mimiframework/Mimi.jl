@@ -9,4 +9,6 @@ using Test
     @info("test_defmcs.jl")
     include("test_defmcs.jl")
 
+    @info("test_reshaping.jl")
+    include("test_reshaping.jl")    
 end
