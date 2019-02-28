@@ -4,15 +4,15 @@ using Test
 using Mimi
 
 import Mimi:
-    getproperty, reset_compdefs
+    getproperty, reset_compdefs, pretty_string
 
 reset_compdefs()
 
-#utils: prettify
-@test Mimi.prettify("camelCaseBasic") == Mimi.prettify(:camelCaseBasic) == "Camel Case Basic"
-@test Mimi.prettify("camelWithAOneLetterWord") == Mimi.prettify(:camelWithAOneLetterWord) == "Camel With A One Letter Word"
-@test Mimi.prettify("snake_case_basic") == Mimi.prettify(:snake_case_basic) == "Snake Case Basic"
-@test Mimi.prettify("_snake__case__weird_") == Mimi.prettify(:_snake__case__weird_) == "Snake Case Weird"
+#utils: pretty_string
+@test pretty_string("camelCaseBasic") == pretty_string(:camelCaseBasic) == "Camel Case Basic"
+@test pretty_string("camelWithAOneLetterWord") == pretty_string(:camelWithAOneLetterWord) == "Camel With A One Letter Word"
+@test pretty_string("snake_case_basic") == pretty_string(:snake_case_basic) == "Snake Case Basic"
+@test pretty_string("_snake__case__weird_") == pretty_string(:_snake__case__weird_) == "Snake Case Weird"
 
 #utils: interpolate
 stepsize = 2       # N.B. ERROR: cannot assign variable Base.step from module Main

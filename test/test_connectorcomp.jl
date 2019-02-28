@@ -4,7 +4,7 @@ using Mimi
 using Test
 
 import Mimi:
-    reset_compdefs, compdef
+    reset_compdefs, compdef, compdefs
 
 reset_compdefs()
 

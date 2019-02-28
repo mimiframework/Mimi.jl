@@ -4,9 +4,8 @@ using Mimi
 using Test
 
 import Mimi:
-    reset_compdefs, compdefs, compdef, compkeys, hascomp, _compdefs, first_period, 
-    last_period, compmodule, compname, numcomponents, dump_components,  
-    dim_keys, dim_values, dimensions
+    reset_compdefs, compdefs, compdef, compkeys, has_comp, _compdefs, first_period, 
+    last_period, compmodule, compname, numcomponents, compinstance, dim_keys, dim_values
 
 reset_compdefs()
 
@@ -81,10 +80,11 @@ comps = collect(compdefs(my_model))
 # Test compdefs, compdef, compkeys, etc.
 @test comps == collect(compdefs(my_model.md))
 @test length(comps) == 3
-@test compdef(:testcomp3) == comps[3]
+@test compdef(:testcomp3).comp_id == comps[3].comp_id
 @test_throws ErrorException compdef(:testcomp4) #this component does not exist
 @test [compkeys(my_model.md)...] == [:testcomp1, :testcomp2, :testcomp3]
-@test hascomp(my_model.md, :testcomp1) == true && hascomp(my_model.md, :testcomp4) == false
+@test has_comp(my_model.md, :testcomp1) == true
+@test has_comp(my_model.md, :testcomp4) == false
 
 @test compmodule(testcomp3) == :TestComponents
 @test compname(testcomp3) == :testcomp3

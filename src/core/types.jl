@@ -390,6 +390,7 @@ Base.values(obj::AbstractComponentInstanceData) = values(nt(obj))
 # Centralizes the shared functionality from the two component data subtypes.
 function _datum_instance(subtype::Type{<: AbstractComponentInstanceData}, 
                          names, types, values, paths)
+    # @info "_datum_instance: names=$names, types=$types"
     NT = NamedTuple{Tuple(names), Tuple{types...}}
     return subtype(NT(values), Vector{ComponentPath}(paths))
 end
@@ -529,7 +530,7 @@ last_period(obj::AbstractComponentInstance)  = obj.last
             comps_dict[ci.comp_name] = ci
         end
         
-        (vars, pars) = _comp_instance_vars_pars(comps)
+        (vars, pars) = _comp_instance_vars_pars(comp_def, comps)
         ComponentInstance(self, comp_def, vars, pars, time_bounds, name)
         CompositeComponentInstance(self, comps_dict)
         return self
@@ -540,7 +541,7 @@ last_period(obj::AbstractComponentInstance)  = obj.last
                                         comp_def::AbstractComponentDef,
                                         time_bounds::Tuple{Int,Int},
                                         name::Symbol=nameof(comp_def))
-        (vars, pars) = _comp_instance_vars_pars(comps)
+        (vars, pars) = _comp_instance_vars_pars(comp_def, comps)
         self = new{typeof(vars), typeof(pars)}()
         CompositeComponentInstance(self, comps, comp_def, time_bounds, name)
     end
@@ -557,13 +558,12 @@ is_composite(ci::AbstractComponentInstance) = !is_leaf(ci)
 
 #
 # TBD: Should include only exported vars and pars, right?
-# TBD: Use (from build.jl) _combine_exported_vars & _pars?
-#
+
 """
 Create a single ComponentInstanceParameters type reflecting those of a composite 
 component's parameters, and similarly for its variables.
 """
-function _comp_instance_vars_pars(comps::Vector{<: AbstractComponentInstance})
+function _comp_instance_vars_pars(comp_def::AbstractComponentDef, comps::Vector{<: AbstractComponentInstance})
     vtypes  = DataType[]
     vnames  = Symbol[]
     vvalues = []
@@ -573,6 +573,8 @@ function _comp_instance_vars_pars(comps::Vector{<: AbstractComponentInstance})
     pnames  = Symbol[]
     pvalues = []
     ppaths  = []
+
+    # exports =
 
     for comp in comps
         v = comp.variables

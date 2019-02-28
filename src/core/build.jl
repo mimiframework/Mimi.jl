@@ -73,7 +73,7 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     return ComponentInstanceVariables(names, types, values, paths)
 end
 
-# Create ComponentInstanceVariables for a composite component from the list of exported vars
+# TBD: Create ComponentInstanceVariables for a composite component from the list of exported vars
 function _combine_exported_vars(comp_def::AbstractCompositeComponentDef, var_dict::Dict{ComponentPath, Any})
     names  = Symbol[]
     values = Any[]
@@ -110,8 +110,7 @@ function _combine_exported_pars(comp_def::AbstractCompositeComponentDef, par_dic
 end
 
 function _instantiate_vars(comp_def::ComponentDef, md::ModelDef, var_dict::Dict{ComponentPath, Any})
-    var_dict[comp_def.comp_path] = v = _instantiate_component_vars(md, comp_def)
-    # @info "_instantiate_vars leaf $comp_name: $v"
+    var_dict[comp_def.comp_path] = _instantiate_component_vars(md, comp_def)
 end
 
 # Creates the top-level vars for the model
@@ -127,9 +126,8 @@ function _instantiate_vars(comp_def::AbstractCompositeComponentDef, md::ModelDef
     # @info "_instantiate_vars composite $comp_path"
     for cd in compdefs(comp_def)
         _instantiate_vars(cd, md, var_dict)
-    end
-    var_dict[comp_path] = v = _combine_exported_vars(comp_def, var_dict)            
-    # @info "composite vars for $comp_path: $v "
+    end    
+    var_dict[comp_path] = _combine_exported_vars(comp_def, var_dict)            
 end
 
 # Do nothing if called on a leaf component
@@ -163,10 +161,11 @@ function _collect_params(comp_def::AbstractCompositeComponentDef,
     # Make the external parameter connections for the hidden ConnectorComps.
     # Connect each :input2 to its associated backup value.
     for (i, backup) in enumerate(comp_def.backups)
-        conn_comp_name = connector_comp_name(i)
+        conn_comp = compdef(comp_def, connector_comp_name(i))
+        conn_path = conn_comp.comp_path
+
         param = external_param(comp_def, backup)
-        par_dict[(conn_comp_name, :input2)] = (param isa ScalarModelParameter ? param : value(param))
-        # @info "backup: $conn_comp_name $param"
+        par_dict[(conn_path, :input2)] = (param isa ScalarModelParameter ? param : value(param))
     end
 end
 
@@ -212,7 +211,29 @@ function _build(comp_def::AbstractCompositeComponentDef,
     return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
 
+# """
+# Perform a depth-first search on components, exporting vars and params up 
+# through each composite level.
+# """
+# function _propagate_exports(obj::AbstractComponentDef)
+#     # nothing to do for leaf components
+#     is_leaf(obj) && return
+
+#     empty!(obj.exports)     # start fresh
+
+#     for comp in compdefs(obj)
+#         _propagate_exports(comp)
+
+#         for (export_name, datum_ref) in comp.exports
+#             if datum_ref isa ParameterDefReference
+#             else
+#             end
+#         end
+#     end
+# end
+
 function _build(md::ModelDef)
+    # _propagate_exports(md)
     add_connector_comps(md)
     
     # check if all parameters are set
@@ -236,7 +257,6 @@ function _build(md::ModelDef)
 
     ci = _build(md, var_dict, par_dict, time_bounds)
     mi = ModelInstance(ci, md)
-
     return mi
 end
 

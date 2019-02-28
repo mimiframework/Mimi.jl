@@ -311,14 +311,18 @@ function set_run_period!(obj::AbstractComponentDef, first, last)
     last_per  = last_period(obj)
     changed = false
 
-    if first_per !== nothing && first_per < first 
-        @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
+    if first !== nothing
+        if first_per !== nothing && first_per < first 
+            @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
+        end
         obj.first = first
         changed = true
     end 
 
-    if last_per !== nothing && last_per > last 
-        @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
+    if last !== nothing
+        if last_per !== nothing && last_per > last 
+            @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
+        end
         obj.last = last
         changed = true
     end
@@ -349,7 +353,7 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
 
     if name == :time
         set_uniform!(ccd, isuniform(keys))
-        set_run_period!(ccd, keys[1], keys[end])
+        #set_run_period!(ccd, keys[1], keys[end])
     end
     
     return set_dimension!(ccd, name, Dimension(keys))
@@ -358,6 +362,13 @@ end
 function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
     dirty!(obj)
     obj.dim_dict[name] = dim
+    
+    if name == :time
+        for subcomp in compdefs(obj)
+            set_dimension!(subcomp, :time, dim)
+        end
+    end
+    return dim
 end
 
 # helper functions used to determine if the provided time values are 
@@ -491,10 +502,13 @@ Set a parameter for a component with the given relative path (as a string), in w
 component with name `:x` beneath the root of the hierarchy in which `obj` is found. If the path does
 not begin with "/", it is treated as relative to `obj`.
 """
-function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-    cp = comp_path(obj, path)
-    comp = find_comp(obj, cp, relative=false)
+function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
+    comp = find_comp(obj, comp_path, relative=false)
     set_param!(comp.parent, nameof(comp), param_name, value, dims)
+end
+
+function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
+    set_param!(obj, comp_path(obj, path), param_name, value, dims)
 end
 
 """
@@ -716,21 +730,6 @@ function comps_dict!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symb
     dirty!(obj)
 end
 
-function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, name::Symbol)
-    path = ComponentPath(parent.comp_path, comp_def.name)
-    root = get_root(parent)
-
-    if has_variable(comp_def, name)
-        return VariableDefReference(name, root, path)
-    end
-
-    if has_parameter(comp_def, name)
-        return ParameterDefReference(name, root, path)
-    end
-
-    error("$(comp_def.comp_path) does not have a data item named $name")
-end
-
 # Save a back-pointer to the container object
 function parent!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     child.parent = parent
@@ -804,33 +803,52 @@ Propagate a time dimension down through the comp def tree.
 function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
     set_dimension!(obj, :time, t)
 
-    if is_composite(obj)
-        for c in compdefs(obj)
-            _propagate_time(c, t)
-        end
+    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
+        _propagate_time(c, t)
     end
 end
 
+function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
+                       comp_name::Symbol, datum_name::Symbol)
+    path = ComponentPath(parent.comp_path, comp_name)
+    root = get_root(parent)
+
+    # for composites, check that the named vars/pars are exported?
+    # if is_composite(comp_def)
+
+    if has_variable(comp_def, datum_name)
+        return VariableDefReference(datum_name, root, path)
+    end
+
+    if has_parameter(comp_def, datum_name)
+        return ParameterDefReference(datum_name, root, path)
+    end
+
+    error("$(comp_def.comp_path) does not have a data item named $datum_name")
+end
+
 """
-    add_comp!(obj::AbstractCompositeComponentDef, comp_def::ComponentDef; 
+    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, comp_name::Symbol; 
               exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component 
-is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
-`comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
-The `exports` arg identifies which vars/pars to export and with what names. If `nothing`, everything is
-exported. The first element of a pair indicates the symbol to export from comp_def to the composite,
-the second element allows this var/par to have a new name in the composite. A symbol alone means to use 
-the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
+is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note that
+a copy of `comp_def` is created and inserted into the composite under the given `comp_name`.
+The `exports` arg identifies which vars/pars to make visible to the next higher composite level, and with 
+what names. If `nothing`, everything is exported. The first element of a pair indicates the symbol to export
+from comp_def to the composite, the second element allows this var/par to have a new name in the composite. 
+A symbol alone means to use the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, comp_name::Symbol;
                    exports=nothing,
                    first::NothingInt=nothing, last::NothingInt=nothing, 
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     
-    # if not specified, export all var/pars. Caller can pass empty list to export nothing.
+    # If not specified, export all var/pars. Caller can pass empty list to export nothing.
+    # TBD: actually, might work better to export nothing unless declared as such.
     if exports === nothing
-        exports = [variable_names(comp_def)..., parameter_names(comp_def)...]
+        exports = []
+        # exports = [variable_names(comp_def)..., parameter_names(comp_def)...]
     end
 
     for item in exports
@@ -842,7 +860,15 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             error("Exports argument to add_comp! must be pair or symbol, got: $item")
         end
 
-        obj.exports[export_name] = _find_var_par(obj, comp_def, name)
+        # TBD: should this just add to obj.variables / obj.parameters dicts?
+        # Those dicts hold ParameterDef / VariableDef, which we want to reference, not
+        # duplicate when building instances. One approach would be for the build step
+        # to create a dict on objectid(x) to store/find the generated var/param.
+        if haskey(obj.exports, export_name)
+            error("Exports may not include a duplicate name ($export_name)")
+        end
+
+        obj.exports[export_name] = _find_var_par(obj, comp_def, comp_name, name)
     end
 
     # check that a time dimension has been set
@@ -955,8 +981,6 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     last  = last  === nothing ? old_comp.last  : last
 
     if reconnect
-        # Assert that new component definition has same parameters and variables needed for the connections
-
         new_comp = compdef(comp_id)
 
         function _compare_datum(dict1, dict2)
@@ -970,15 +994,17 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         old_params = filter(pair -> pair.first in incoming_params, old_comp.parameters)
         new_params = new_comp.parameters
         if !_compare_datum(new_params, old_params)
-            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary parameters.")
+            error("Cannot replace and reconnect; new component does not contain the necessary parameters.")
         end
         
         # Check outgoing variables
-        outgoing_vars = map(ipc -> ipc.src_var_name, filter(ipc -> ipc.src_comp_path == comp_name, internal_param_conns(obj)))
+        _get_name(obj, name) = nameof(compdef(obj, :first))
+        outgoing_vars = map(ipc -> ipc.src_var_name, 
+                            filter(ipc -> nameof(compdef(obj, ipc.src_comp_path)) == comp_name, internal_param_conns(obj)))
         old_vars = filter(pair -> pair.first in outgoing_vars, old_comp.variables)
         new_vars = new_comp.variables
         if !_compare_datum(new_vars, old_vars)
-            error("Cannot replace and reconnect; new component does not contain the same definitions of necessary variables.")
+            error("Cannot replace and reconnect; new component does not contain the necessary variables.")
         end
         
         # Check external parameter connections

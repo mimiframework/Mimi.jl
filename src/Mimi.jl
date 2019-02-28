@@ -63,13 +63,13 @@ include("core/model.jl")
 include("core/show.jl")
 
 # For debugging composites we don't need these
-#include("explorer/explore.jl")
-#include("mcs/mcs.jl")
-#include("utils/getdataframe.jl")
+include("explorer/explore.jl")
+include("mcs/mcs.jl")
+include("utils/getdataframe.jl")
 include("utils/graph.jl")
-#include("utils/lint_helper.jl")
-#include("utils/misc.jl")
-#include("utils/plotting.jl")
+include("utils/lint_helper.jl")
+include("utils/misc.jl")
+include("utils/plotting.jl")
 
 """
     load_comps(dirname::String="./components")

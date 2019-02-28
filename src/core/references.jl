@@ -4,16 +4,16 @@
 Set a component parameter as `set_param!(reference, name, value)`.
 """
 function set_param!(ref::ComponentReference, name::Symbol, value)
-    set_param!(ref.model, ref.comp_name, name, value)
+    set_param!(ref.parent, ref.comp_path, name, value)
 end
 
 """
-    set_param!(ref.model, ref.comp_name, name, value)
+    set_param!(ref.parent, ref.comp_name, name, value)
 
 Set a component parameter as `reference[symbol] = value`.
 """
 function Base.setindex!(ref::ComponentReference, value, name::Symbol)
-    set_param!(ref.model, ref.comp_name, name, value)
+    set_param!(ref.parent, ref.comp_path, name, value)
 end
 
 """
@@ -22,7 +22,7 @@ end
 Connect two components as `connect_param!(dst, dst_name, src, src_name)`.
 """
 function connect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)
-    connect_param!(dst.model, dst.comp_id, dst_name, src.comp_id, src_name)
+    connect_param!(dst.parent, dst.comp_path, dst_name, src.comp_path, src_name)
 end
 
 """
@@ -31,7 +31,7 @@ end
 Connect two components with the same name as `connect_param!(dst, src, name)`.
 """
 function connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
-    connect_param!(dst.model, dst.comp_id, name, src.comp_id, name)
+    connect_param!(dst.parent, dst.comp_path, name, src.comp_path, name)
 end
 
 

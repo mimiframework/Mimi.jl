@@ -168,7 +168,7 @@ function finished(c::Clock)
 	return finished(c.ts)
 end
 
-function reset(c::Clock)
+function Base.reset(c::Clock)
 	c.ts = c.ts - (c.ts.t - 1)
 	nothing
 end

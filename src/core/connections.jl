@@ -429,7 +429,7 @@ end
 
 function _update_param!(obj::AbstractCompositeComponentDef, 
                         name::Symbol, value, update_timesteps; raise_error = true)
-    param = external_param(ext_params, name, missing_ok=true)
+    param = external_param(obj, name, missing_ok=true)
     if param === nothing
         error("Cannot update parameter; $name not found in composite's external parameters.")
     end
@@ -443,7 +443,7 @@ function _update_param!(obj::AbstractCompositeComponentDef,
         _update_array_param!(obj, name, value, update_timesteps, raise_error)
     end
 
-    dirty!(md)
+    dirty!(obj)
 end
 
 function _update_scalar_param!(param::ScalarModelParameter, name, value)
@@ -554,25 +554,25 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
 
             # Add the connector component before the user-defined component that required it
             # @info "add_connector_comps: add_comp!(obj, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)"
-            add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
+            conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
+            conn_path = conn_comp.comp_path
            
             # add a connection between src_component and the ConnectorComp
             add_internal_param_conn!(obj, InternalParameterConnection(conn.src_comp_path, conn.src_var_name,
-                                                                      conn_comp_name, :input1,
+                                                                      conn_path, :input1,
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and dst_component
-            add_internal_param_conn!(obj, InternalParameterConnection(conn_comp_name, :output, 
+            add_internal_param_conn!(obj, InternalParameterConnection(conn_path, :output, 
                                                                       conn.dst_comp_path, conn.dst_par_name, 
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
-            add_external_param_conn!(obj, ExternalParameterConnection(conn_comp_name, :input2, conn.backup))
+            add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
             src_comp_def = compdef(obj, conn.src_comp_path)
             set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def))
             set_param!(obj, conn_comp_name, :last, last_period(obj, src_comp_def))
-
         end
     end
 

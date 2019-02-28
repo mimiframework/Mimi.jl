@@ -123,6 +123,9 @@ Return the `ComponentInstanceVariables` for `comp_name` in CompositeComponentIns
 """
 variables(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = variables(compinstance(obj, comp_name))
 
+variables(obj::AbstractComponentInstance) = obj.variables
+
+
 function variables(m::Model)
     if ! is_built(m)
         error("Must build model to access variable instances. Use variables(modeldef(m)) to get variable definitions.")
@@ -131,11 +134,13 @@ function variables(m::Model)
 end
 
 """
-    parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
+    parameters(obj::AbstractComponentInstance, comp_name::Symbol)
 
 Return the `ComponentInstanceParameters` for `comp_name` in CompositeComponentInstance `obj`.
 """
 parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = parameters(compinstance(obj, comp_name))
+
+parameters(obj::AbstractComponentInstance) = obj.parameters
 
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
     if ! has_comp(obj, comp_name)

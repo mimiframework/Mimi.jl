@@ -274,7 +274,7 @@ The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims'
 is a list of the dimension names of the provided data, and will be used to check 
 that they match the model's index labels.
 """
-@delegate set_param!(m::Model, comp_name::Symbol,    param_name::Symbol, value, dims=nothing) => md
+@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
 
 """
     set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
