@@ -8,7 +8,7 @@ Several improvements are planned, relative to the prototype (Julia) version of M
 
 1. Simplification of internal structure by overloading the "." operator
 2. Simplification of the @defcomp macro to improve maintainability
-3. Support for [Monte Carlo](montecarlo.html) simulation
+3. Support for [Monte Carlo](montecarlo.html) simulation and other sensitivity analysis methods
 4. A simple graphical user interface for viewing model results as plots
 5. Renaming of internal structures and types for clarity and consistency
 6. other stuff?

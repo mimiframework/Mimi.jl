@@ -26,9 +26,9 @@ The following terminology is used throughout the documentation.
 
    [Tutorial 3: Create a Model](@ref) takes a step beyond using registered models, explaining how to create a model from scratch.
 
-4. **Monte Carlo Simulation**
+4. **Sensitivity Analysis**
 
-   [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref) explores Mimi's Monte Carlo Simulation support, using both the simple 2-Region tutorial model and [FUND](http://www.fund-model.org) examples.
+   [Tutorial 4: Sensitivity Analysis (SA) Support](@ref) explores Mimi's Sensitivity Analysis support, using both the simple 2-Region tutorial model and [FUND](http://www.fund-model.org) examples.
 
 
 ## Requirements and Initial Setup

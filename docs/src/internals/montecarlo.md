@@ -1,8 +1,8 @@
-# Monte Carlo Simulation support
+# Sensitivity Analysis support
 
 ## Overview
 
-Monte Carlo Simulation support consists of four primary user-facing elements:
+Sensitivity Analysis support consists of four primary user-facing elements:
 
 1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and
 
@@ -16,7 +16,7 @@ These are described further below.
 
 ## The @defsim macro
 
-Monte Carlo Simulations are defined using the macro `@defsim`, which does the following:
+Sensitivity Analysis Simulations are defined using the macro `@defsim`, which does the following:
 
 * Defines random variables (RV) by assigning names to distributions, which can be any object that supports the following function:
   
@@ -170,7 +170,7 @@ just before or after (respectively) running a trial. The functions must have the
     fn(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the MCS loop to run only
+of all scenario value vectors. In situations in which you want the simulation loop to run only
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
@@ -180,8 +180,8 @@ the signature:
 
     scenario_func(sim::Simulation, tup::Tuple)
 
-By default, the scenario loop encloses the Monte Carlo loop, but the scenario loop can be
-placed inside the Monte Carlo loop by specifying `scenario_placement=INNER`. When `INNER` 
+By default, the scenario loop encloses the simulation loop, but the scenario loop can be
+placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 
@@ -191,7 +191,7 @@ In many cases, scenarios (which we define as a choice of values from a discrete 
 
 `scenario_args=Dict([:name => ["a", "b"], :rate => [0.025, 0.05, 0.07]])`
 
-Of course, the MCS subsystem does not know what you want to do with these values, so the user must also provide a callback function in the `scenario_func` argument. This function must be defined with the signature:
+Of course, the simulation subsystem does not know what you want to do with these values, so the user must also provide a callback function in the `scenario_func` argument. This function must be defined with the signature:
 
 `function any_name_you_like(sim::Simulation, tup)`
 
@@ -208,7 +208,7 @@ In approximate pseudo-julia, these options produce the following behavior:
 for tup in scenario_tuples
   scenario_func(tup)
 
-  # for each scenario, run all MCS trials
+  # for each scenario, run all simulation trials
   for trial in trials
     trial_data = get_trial_data(trial)
     apply_trial_data()
@@ -226,7 +226,7 @@ for trial in trials
   trial_data = get_trial_data(trial)
   apply_trial_data()
 
-  # for each MCS trial, run all scenarios
+  # for each simulation trial, run all scenarios
   for tup in scenario_tuples
     scenario_func(tup)
 
@@ -312,13 +312,13 @@ The remaining sections describe an API that hasn't been developed yet.
 
 There are several types of analyses that require an ensemble of model runs performed over a set of parameter values. These include traditional Monte Carlo simulation, in which random values are drawn from distributions and applied to model parameters, as well as global sensitivity analyses that use prescribed methods for defining trial data (e.g., Sobol sampling), and Markov Chain Monte Carlo, which computes new trial data based on prior model results.
 
-The abstract type `ModelRunner` will be used to define a generic API for model runners, including support for parallelization of analyses on multiprocessors and cluster computing systems. The specific sampling and analysis methods required for each subtype of `ModelRunner` will be defined in the concrete subtype, e.g., `MonteCarloRunner`.
+The abstract type `ModelRunner` will be used to define a generic API for model runners, including support for parallelization of analyses on multiprocessors and cluster computing systems. The specific sampling and analysis methods required for each subtype of `ModelRunner` will be defined in the concrete subtype, e.g., `SimulationRunner`.
 
 The generic process will look something like this:
 
 ```julia
 m = ModelDef(...)
-r = McsRunner(m)
+r = SimRunner(m)
 
 # Optionally redefine random variables, overriding defaults
 setrv!(r, :rvname1, Normal(10, 3))

@@ -1,6 +1,6 @@
-# Tutorial 4: Monte Carlo Simulation (MCS) Support
+# Tutorial 4: Sensitivity Analysis (SA) Support
 
-This tutorial walks through the MCS functionality of Mimi, including core routines and examples.  We will start with looking at using the MCS routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
+This tutorial walks through the SA functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
 
 Working through the following tutorial will require:
 
@@ -14,7 +14,7 @@ Futhermore, if you are not yet comfortable with downloading (only needs to be do
 
 ## The API
 
-The best current documentation on the MCS API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Two-Region Model Example
 
@@ -87,7 +87,7 @@ end
 ```
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the MCS loop to run only
+of all scenario value vectors. In situations in which you want the simulation loop to run only
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
@@ -100,9 +100,9 @@ The optional [`generate_trials!`](@ref) function can be used to pre-generate all
 generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
 ```
 
-### Step 4. Run MCS
+### Step 4. Run Simulation
 
-Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `mcs` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
+Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `sim` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
 function run_sim(sim::Simulation, 
