@@ -145,25 +145,10 @@ Generate trials for the given Simulation instance using the defined `samplesize.
 Call this before running the sim to pre-generate data to be used by all scenarios. 
 Also saves inputs if a filename is given.
 """
-<<<<<<< HEAD
 function generate_trials!(sim::Simulation{T}, samplesize::Int;
                           filename::String="") where T <: AbstractSimulationData
 
     sample!(sim, samplesize)
-=======
-function generate_trials!(mcs::MonteCarloSimulation, trials::Int; 
-                          filename::String="",
-                          sampling::SamplingOptions=RANDOM)
-
-    mcs.trials = trials
-	
-    if sampling == LHS
-        corrmatrix = correlation_matrix(mcs)
-        lhs!(mcs, corrmatrix=corrmatrix)
-    else    # sampling == RANDOM
-        rand!(mcs)
-    end
->>>>>>> master
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
     # open a file that can be written to for each trialnum/scenario set?
@@ -498,7 +483,6 @@ function run_sim(sim::Simulation{T},
 end
 
 # Same as above, but takes a number of trials and converts this to `1:trials`.
-<<<<<<< HEAD
 function run_sim(sim::Simulation{T}, trials::Int=sim.trials, 
                  models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
     return run_sim(sim, 1:trials, models_to_run; kwargs...)
@@ -513,27 +497,10 @@ end
 function set_models!(sim::Simulation{T}, models::Vector{Model}) where T <: AbstractSimulationData
     sim.models = models
     _reset_results!(sim)    # sets results vector to same length
-=======
-function run_mcs(mcs::MonteCarloSimulation, trials::Int=mcs.trials, 
-                 models_to_run::Int=length(mcs.models); kwargs...)
-    return run_mcs(mcs, 1:trials, models_to_run; kwargs...)
-end
-
-""" 
-    set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
-
-Set the `models` to be used by the `mcs` MonteCarloSimulation. 
-"""
-# Set models
-function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
-    mcs.models = models
-    _reset_results!(mcs)    # sets results vector to same length
->>>>>>> master
 end
 
 # Convenience methods for single model and MarginalModel
 """ 
-<<<<<<< HEAD
 set_models!(sim::Simulation{T}, m::Model)
 	
     Set the model `m` to be used by the `sim` Simulation.
@@ -547,21 +514,6 @@ set_models!(sim::Simulation{T}, mm::MarginalModel)
 	which make up the MarginalModel `mm`. 
 """
 set_models!(sim::Simulation{T}, mm::MarginalModel) where T <: AbstractSimulationData = set_models!(sim, [mm.base, mm.marginal])
-=======
-    set_models!(mcs::MonteCarloSimulation, m:Model)
-
-Set the model `m` to be used by the `mcs` MonteCarloSimulation. 
-"""
-set_models!(mcs::MonteCarloSimulation, m::Model) = set_models!(mcs, [m])
-
-""" 
-    set_models!(mcs::MonteCarloSimulation, mm::MarginalModel) 
-
-Set the models to be used by the `mcs` MonteCarloSimulation to be `mm.base` and `mm.marginal`
-which make up the MarginalModel `mm`. 
-"""
-set_models!(mcs::MonteCarloSimulation, mm::MarginalModel) = set_models!(mcs, [mm.base, mm.marginal])
->>>>>>> master
 
 #
 # Iterator functions for Simulation directly, and for use as an IterableTable.
