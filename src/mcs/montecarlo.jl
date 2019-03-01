@@ -229,13 +229,11 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
 
     # special case for handling reshaped data where a single draw returns a matrix of values
     if num_dims == 0
-        elt_size = size(param.values.data)
         indices = repeat([Colon()], num_pdims)
         return indices
     end
 
     if num_pdims != num_dims
-
         pname = trans.paramname
         error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions ($pdims); MCS has $num_dims")
     end
