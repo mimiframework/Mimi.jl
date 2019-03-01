@@ -808,6 +808,13 @@ function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
     end
 end
 
+"""
+    thing(value)
+
+Thing returns a value that is not nothing. (For printing)
+"""
+thing(value) = (value === nothing ? ":nothing:" : value)
+
 function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
                        comp_name::Symbol, datum_name::Symbol)
     path = ComponentPath(parent.comp_path, comp_name)
@@ -824,7 +831,8 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
         return ParameterDefReference(datum_name, root, path)
     end
 
-    error("$(comp_def.comp_path) does not have a data item named $datum_name")
+    comp_path = thing(comp_def.comp_path)
+    error("$(comp_path) does not have a data item named $datum_name")
 end
 
 """
