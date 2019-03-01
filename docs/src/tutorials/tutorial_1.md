@@ -5,7 +5,7 @@ This tutorial walks through the steps to download, run, and view the output of a
 Working through the following tutorial will require:
 
 - [Julia v1.0.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl) 
+- [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl) 
 - [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
@@ -103,7 +103,7 @@ Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega
 
 #### Explore
 
-If you wish to explore the results graphically, use the explorer UI, described [here](http://anthofflab.berkeley.edu/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
+If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
 ```

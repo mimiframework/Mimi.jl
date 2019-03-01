@@ -7,7 +7,7 @@ This tutorial walks through the steps to modify an existing model.  There are se
 Working through the following tutorial will require:
 
 - [Julia v1.0.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl) 
+- [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl) 
 - [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
@@ -18,11 +18,11 @@ Futhermore, this tutorial uses the [DICE](https://github.com/anthofflab/mimi-dic
 
 There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the new model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model they are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
 
-Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These take advantage of the public API listed [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/), as well as other functions listed in the Mimi Documentation.
+Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These take advantage of the public API listed [here](https://www.mimiframework.org/Mimi.jl/dev/reference/), as well as other functions listed in the Mimi Documentation.
 
 ## Parametric Modifications: The API
 
-Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/).
+Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference [here](https://www.mimiframework.org/Mimi.jl/dev/reference/).
 
 When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
 
@@ -124,7 +124,7 @@ Note that here we use the `update_timesteps` flag and set it to `true`, because 
 
 ## Component and Structural Modifications: The API
 
-Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace_comp!`](@ref), [`add_comp!`](@ref)** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](http://anthofflab.berkeley.edu/Mimi.jl/dev/reference/). 
+Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace_comp!`](@ref), [`add_comp!`](@ref)** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](https://www.mimiframework.org/Mimi.jl/dev/reference/). 
 
 If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 
