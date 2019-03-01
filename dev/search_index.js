@@ -869,7 +869,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reference",
     "title": "Mimi.set_models!",
     "category": "function",
-    "text": "set_models!(mcs::MonteCarloSimulation, m:Model)\n\nSet the model m to be used by the mcs MonteCarloSimulation. \n\n\n\n\n\nset_models!(mcs::MonteCarloSimulation, mm::MarginalModel)\n\nSet the models to be used by the mcs MonteCarloSimulation to be mm.base and mm.marginal which make up the MarginalModel mm. \n\n\n\n\n\n"
+    "text": "set_models!(mcs::MonteCarloSimulation, models::Vector{Model})\n\nSet the models to be used by the mcs MonteCarloSimulation. \n\n\n\n\n\nset_models!(mcs::MonteCarloSimulation, m:Model)\n\nSet the model m to be used by the mcs MonteCarloSimulation. \n\n\n\n\n\nset_models!(mcs::MonteCarloSimulation, mm::MarginalModel)\n\nSet the models to be used by the mcs MonteCarloSimulation to be mm.base and mm.marginal which make up the MarginalModel mm. \n\n\n\n\n\n"
 },
 
 {
