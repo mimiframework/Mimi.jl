@@ -1,5 +1,12 @@
 # Mimi.jl v0.6.4 Release Notes
-[TODO]
+* Documentation udpates
+* Tutorials bug and consistency updates
+* Update the way to add models to mcs 
+* Add methods and docstrings for dimension-related functions
+* Add interactive slider bar to explorer line plots
+* Simplify saving single explorer plots
+* Add references to forum and remove references to gitter chatroom
+* Pass correct line numbers to macros to improve error reporting
 
 # Mimi.jl v0.6.3 Release Notes
 * Add tutorials to documentation
