@@ -1,6 +1,6 @@
 # Introduction
 
-The following tutorials target [Mimi](https://github.com/anthofflab/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the [Welcome to Mimi](@ref) documentation, including the [User Guide](@ref), and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
+The following tutorials target [Mimi](https://github.com/mimiframework/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users read the [Welcome to Mimi](@ref) documentation, including the [User Guide](@ref), and refer back to those documents as needed to follow the tutorials.  It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
 
 If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi Framework forum](https://forum.mimiframework.org).  We welcome your feedback.
 
@@ -33,7 +33,7 @@ The following terminology is used throughout the documentation.
 
 ## Requirements and Initial Setup
 
-These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl), or later. You will also need to use [Github](https://github.com) and thus download [Git](https://git-scm.com/downloads).
+These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. You will also need to use [Github](https://github.com) and thus download [Git](https://git-scm.com/downloads).
 
 To use the following tutorials, follow the steps below.
 

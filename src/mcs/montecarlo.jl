@@ -500,7 +500,6 @@ end
 
 Set the `models` to be used by the `mcs` MonteCarloSimulation. 
 """
-# Set models
 function set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
     mcs.models = models
     _reset_results!(mcs)    # sets results vector to same length
