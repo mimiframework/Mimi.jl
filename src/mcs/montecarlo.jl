@@ -3,6 +3,7 @@ using IterableTables
 using TableTraits
 using Random
 using ProgressMeter
+using Serialization
 
 function Base.show(io::IO, mcs::MonteCarloSimulation)
     println("MonteCarloSimulation")
@@ -107,7 +108,22 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
 end
 
 function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
-    mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
+    dir = dirname(filename)
+    mkpath(dir, mode=0o770)   # ensure that the specified path exists
+
+    # If ReshapedDistribution was used, a single trial value for a field
+    # will be an Array of values. CSV format doesn't handle these well,
+    # so we serialize the arrays into a file using the field's name.
+    non_bit_fields = [name for (name, T) in zip(column_names(mcs), column_types(mcs)) if ! isbitstype(T)]
+    for field in non_bit_fields
+        rv = mcs.rvdict[field]
+        if rv isa RandomVariable{Mimi.SampleStore{T}} where T
+            name = first(split(string(field), "!"))     # convert, e.g., :alpha!1 to "alpha"
+            serialize(joinpath(dir, "$name.dat"), mcs.rvdict[field].dist.values)
+        end
+    end
+
+    # TBD: Next, we need to avoid writing array values to CSV files...
     save(filename, mcs)
     return nothing
 end
@@ -545,6 +561,9 @@ IterableTables.getiterator(mcs::MonteCarloSimulation) = MCSIterator{mcs.nt_type}
 
 column_names(mcs::MonteCarloSimulation) = fieldnames(mcs.nt_type)
 column_types(mcs::MonteCarloSimulation) = [eltype(fld) for fld in values(mcs.rvdict)]
+
+# TBD: strip the "!1" off the end of each field name?
+# column_names(iter::MCSIterator) = Tuple([first(split(string(name), "!")) for name in fieldnames(iter.mcs.nt_type)])
 
 column_names(iter::MCSIterator) = column_names(iter.mcs)
 column_types(iter::MCSIterator) = IterableTables.column_types(iter.mcs)
