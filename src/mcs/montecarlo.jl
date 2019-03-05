@@ -84,11 +84,11 @@ function _store_trial_results(mcs::MonteCarloSimulation, trialnum::Int)
 end
 
 """
-    save_trial_results(mcs::MonteCarloSimulation, output_dir::String)
+    save_trial_results(mcs::MonteCarloSimulation, output_dir)
 
 Save the stored MCS results to files in the directory `output_dir`
 """
-function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractString)
+function save_trial_results(mcs::MonteCarloSimulation, output_dir)
     multiple_results = (length(mcs.results) > 1)
 
     for (i, results) in enumerate(mcs.results)
@@ -107,23 +107,44 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
     end
 end
 
-function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
+function _dummy_writer(mcs, pname, dir)
+    @info "_dummy_writer(pname=$pname, dir=$dir)"
+end
+
+
+"""
+    _serialize(mcs::MonteCarloSimulation, pname, dir)
+
+This is the default function used for writing non-bit-type (array-valued)
+random vars, e.g., those produced by ReshapedDistribution.
+
+This default method uses Serialization.serialize to write out the array.
+No application-defined types are written, so the file should be robust.
+"""
+function _serialize(mcs::MonteCarloSimulation, pname, dir)
+    rv = mcs.rvdict[pname]
+    if rv isa RandomVariable{Mimi.SampleStore{T}} where T
+        name = first(split(string(pname), "!"))     # e.g., :alpha!1 --> "alpha"
+        path = joinpath(dir, "$name.dat")
+        serialize(path, mcs.rvdict[pname].dist.values)
+    else
+        error("Tried to _serialize $pname, which isn't a RandomVariable{SampleStore{T}}")
+    end
+end
+
+function save_trial_inputs(mcs::MonteCarloSimulation, filename, non_bit_writer=_serialize)
     dir = dirname(filename)
     mkpath(dir, mode=0o770)   # ensure that the specified path exists
 
     # If ReshapedDistribution was used, a single trial value for a field
     # will be an Array of values. CSV format doesn't handle these well,
     # so we serialize the arrays into a file using the field's name.
-    non_bit_fields = [name for (name, T) in zip(column_names(mcs), column_types(mcs)) if ! isbitstype(T)]
-    for field in non_bit_fields
-        rv = mcs.rvdict[field]
-        if rv isa RandomVariable{Mimi.SampleStore{T}} where T
-            name = first(split(string(field), "!"))     # convert, e.g., :alpha!1 to "alpha"
-            serialize(joinpath(dir, "$name.dat"), mcs.rvdict[field].dist.values)
-        end
+    non_bits = [name for (name, T) in zip(column_names(mcs), column_types(mcs)) if ! isbitstype(T)]
+    for pname in non_bits
+        non_bit_writer(mcs, pname, dir)
     end
 
-    # TBD: Next, we need to avoid writing array values to CSV files...
+    # TBD: avoid writing array values to CSV files...
     save(filename, mcs)
     return nothing
 end
