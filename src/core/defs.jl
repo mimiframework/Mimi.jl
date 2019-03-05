@@ -523,7 +523,7 @@ const NothingSymbol = Union{Nothing, Symbol}
 
 function _add_anonymous_dims!(md::ModelDef, comp_def::ComponentDef)
     for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dimensions)
-        @info "Setting dimension $name to $dim"
+        # @info "Setting dimension $name to $dim"
         set_dimension!(md, name, dim)
     end
 end

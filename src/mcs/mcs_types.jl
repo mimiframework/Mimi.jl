@@ -42,8 +42,6 @@ end
 
 Base.eltype(ss::SampleStore) = eltype(ss.values)
 
-distribution(ss::SampleStore) = ss.dist
-
 #
 # TBD: maybe have a different SampleStore subtype for values drawn from a dist
 # versus those loaded from a file, which would be treated as immutable?
@@ -61,6 +59,28 @@ function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
     return quantile.(ss, probs)
 end
 
+
+"""     ReshapedDistribution
+A pseudo-distribution that returns a reshaped array of values from the
+stored distribution and dimensions.
+
+Example:
+    rd = ReshapedDistribution([5, 5], Dirichlet(25,1))
+"""
+struct ReshapedDistribution
+    dims::Vector{Int}
+    dist::Distribution
+end
+
+# function Base.rand(rd::ReshapedDistribution, draws::Int=1)
+#     values = rand(rd.dist, draws)
+#     dims = (draws == 1 ? rd.dims : [rd.dims..., draws])
+#     return reshape(values, dims...)
+# end
+
+function Base.rand(rd::ReshapedDistribution, draws::Int=1)
+    return [reshape(rand(rd.dist), rd.dims...) for i in 1:draws]
+end
 
 struct TransformSpec
     paramname::Symbol

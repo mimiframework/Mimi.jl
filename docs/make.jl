@@ -20,5 +20,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/anthofflab/Mimi.jl.git",
+    repo = "github.com/mimiframework/Mimi.jl.git",
 )

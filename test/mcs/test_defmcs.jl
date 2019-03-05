@@ -7,6 +7,14 @@ using DelimitedFiles
 
 using Test
 
+using Mimi: reset_compdefs, modelinstance, compinstance, 
+            get_var_value, OUTER, INNER, ReshapedDistribution
+
+reset_compdefs()
+include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
+using .MyModel
+m = construct_MyModel()
+
 N = 100
 
 mcs = @defmcs begin
@@ -38,21 +46,19 @@ mcs = @defmcs begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-Mimi.reset_compdefs()
-include("../../examples/tutorial/02-two-region-model/main.jl")
 
-m = model
 
 # Optionally, user functions can be called just before or after a trial is run
-function print_result(mcs::MonteCarloSimulation, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
+function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
+    mi = modelinstance(m)
+    ci = compinstance(mi, :emissions)
+    value = get_var_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
 end
 
 output_dir = joinpath(tempdir(), "mcs")
 
-generate_trials!(mcs, N, sampling=LHS, filename=joinpath(output_dir, "trialdata.csv"))
+generate_trials!(mcs, N, sampling=RANDOM, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Test that the proper number of trials were saved
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
@@ -117,7 +123,7 @@ run_mcs(mcs, N;
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=outer_loop_func, 
-        scenario_placement=Mimi.OUTER)
+        scenario_placement=OUTER)
  
 @test loop_counter == 6
 
@@ -129,7 +135,7 @@ run_mcs(mcs, N;
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=inner_loop_func, 
-        scenario_placement=Mimi.INNER)
+        scenario_placement=INNER)
 
 @test loop_counter == N * 6
 
@@ -196,3 +202,4 @@ trial2 = copy(mcs.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
+
