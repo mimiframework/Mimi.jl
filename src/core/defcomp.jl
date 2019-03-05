@@ -240,12 +240,14 @@ macro defcomp(comp_name, ex)
 
             @debug "    index $(Tuple(dimensions)), unit '$unit', desc '$desc'"
 
-            dflt = eval(dflt)
-            if (dflt !== nothing && length(dimensions) != ndims(dflt))
-                error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+            if dflt !== nothing
+                dflt = Base.eval(Main, dflt)
+                if length(dimensions) != ndims(dflt)
+                    error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+                end
             end
 
-            vartype = vartype === nothing ? Number : eval(vartype)
+            vartype = (vartype === nothing ? Number : Base.eval(Main, vartype))
             addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else
@@ -253,9 +255,7 @@ macro defcomp(comp_name, ex)
         end
     end
 
-    # addexpr(:($comp_name))
     addexpr(:(nothing))         # reduces noise
-
     return esc(result)
 end
 

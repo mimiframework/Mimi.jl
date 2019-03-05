@@ -357,16 +357,15 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
 
         comp_name   = comp_id.comp_name
         module_name = comp_id.module_name
-        comp_module = Base.eval(Main, module_name)
+        comp_module = getfield(Main, module_name)
 
         # TBD: use FunctionWrapper here?
         function get_func(name)
             func_name = Symbol("$(name)_$(comp_name)")
             try
-                Base.eval(comp_module, func_name)
+                getfield(comp_module, func_name)
             catch err
                 # No need to warn about this...
-                # @warn "Failed to evaluate function name $func_name in module $comp_module"
                 nothing
             end        
         end

@@ -1,4 +1,4 @@
-compdef(comp_id::ComponentId) = Base.eval(Base.eval(Main, comp_id.module_name), comp_id.comp_name)
+compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
 
 compdefs(md::ModelDef) = values(md.comp_defs)
 
