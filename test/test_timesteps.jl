@@ -112,7 +112,7 @@ set_dimension!(m, :time, years)
 @test_throws ErrorException add_comp!(m, Foo; first=1900)
 @test_throws ErrorException add_comp!(m, Foo; last=2100)
 
-foo = add_comp!(m, Foo; first=first_foo) #offset for foo
+foo = add_comp!(m, Foo; first=first_foo) # offset for foo
 bar = add_comp!(m, Bar)
 
 set_param!(m, :Foo, :inputF, 5.)

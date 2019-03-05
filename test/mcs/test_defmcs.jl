@@ -8,6 +8,14 @@ using CSVFiles
 
 using Test
 
+using Mimi: reset_compdefs, modelinstance, compinstance, 
+            get_var_value, OUTER, INNER, ReshapedDistribution
+
+reset_compdefs()
+include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
+using .MyModel
+m = construct_MyModel()
+
 N = 100
 
 sim = @defsim begin
@@ -37,10 +45,7 @@ sim = @defsim begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-Mimi.reset_compdefs()
-include("../../examples/tutorial/02-two-region-model/main.jl")
 
-m = model
 
 # Optionally, user functions can be called just before or after a trial is run
 function print_result(m::Model, sim::Simulation, trialnum::Int)
@@ -115,7 +120,7 @@ run_sim(sim, N;
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=outer_loop_func, 
-        scenario_placement=Mimi.OUTER)
+        scenario_placement=OUTER)
  
 @test loop_counter == 6
 
@@ -127,7 +132,7 @@ run_sim(sim, N;
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=inner_loop_func, 
-        scenario_placement=Mimi.INNER)
+        scenario_placement=INNER)
 
 @test loop_counter == N * 6
 
@@ -221,3 +226,4 @@ trial2 = copy(sim2.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
+

@@ -1,4 +1,4 @@
-julia 1.0
+julia 1.1
 Compose
 CSVFiles
 DataFrames
@@ -13,7 +13,6 @@ GraphPlot 0.3.0
 GlobalSensitivityAnalysis
 JSON
 LightGraphs
-Logging
 MacroTools
 MetaGraphs
 NamedArrays

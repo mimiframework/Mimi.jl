@@ -105,13 +105,6 @@ macro defsim(expr)
                 end
 
             # e.g., ext_var5[2010:2050, :] *= name2
-            # A bug in Macrotools prevents this shorter expression from working:
-            # elseif @capture(elt, ((extvar_  = rvname_Symbol) | 
-            #                       (extvar_ += rvname_Symbol) |
-            #                       (extvar_ *= rvname_Symbol) |
-            #                       (extvar_  = distname_(distargs__)) | 
-            #                       (extvar_ += distname_(distargs__)) |
-            #                       (extvar_ *= distname_(distargs__))))
             elseif (@capture(elt, extvar_  = rvname_Symbol) ||
                     @capture(elt, extvar_ += rvname_Symbol) ||
                     @capture(elt, extvar_ *= rvname_Symbol) ||

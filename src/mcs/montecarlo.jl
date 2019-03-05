@@ -3,6 +3,7 @@ using IterableTables
 using TableTraits
 using Random
 using ProgressMeter
+using Serialization
 
 function print_nonempty(name, vector)
     if length(vector) > 0
@@ -225,7 +226,13 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
     num_pdims = length(pdims)
 
     tdims  = trans.dims
-    num_dims = length(tdims)
+    num_dims = length(tdims) 
+
+    # special case for handling reshaped data where a single draw returns a matrix of values
+    if num_dims == 0
+        indices = repeat([Colon()], num_pdims)
+        return indices
+    end
 
     if num_pdims != num_dims
         pname = trans.paramname
@@ -256,7 +263,8 @@ function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, trans::Tr
     end
 end
 
-function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, trans::TransformSpec, rvalue::Number) where T
+function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
+                         trans::TransformSpec, rvalue::Union{Number, Array{<: Number, N}}) where {T, N}
     op = trans.op
     pvalue = value(param)
     indices = _param_indices(param, md, trans)
