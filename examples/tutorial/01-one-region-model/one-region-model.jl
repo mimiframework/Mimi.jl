@@ -54,7 +54,7 @@ function construct_model()
 	# Set parameters for the emissions component
 	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-	# Note that connect_param! was used here.
+    # Note that connect_param! was used here.
 
 	return m
 

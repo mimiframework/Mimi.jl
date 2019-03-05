@@ -43,14 +43,6 @@ include("../../examples/tutorial/02-two-region-model/main.jl")
 
 m = model
 
-# Optionally, user functions can be called just before or after a trial is run
-function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
-    mi = Mimi.modelinstance(m)
-    ci = Mimi.compinstance(mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
-    println("$(ci.comp_id).E_Global: $value")
-end
-
 output_dir = joinpath(tempdir(), "mcs")
 
 generate_trials!(mcs, N, sampling=LHS, filename=joinpath(output_dir, "trialdata.csv"))
@@ -61,7 +53,7 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 
 # Run trials 1:N, and save results to the indicated directory
 
-Mimi.set_model!(mcs, m)
+set_models!(mcs, m)
 
 run_mcs(mcs, N, output_dir=output_dir)
 
@@ -73,8 +65,6 @@ run_mcs(mcs, N, output_dir=output_dir)
 # run_mcs(mm, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
 # run_mcs(mcs, mcs, mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
 # run_mcs(mcs, m, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
-
-# run_mcs(mcs, m, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
 
 function show_E_Global(year::Int; bins=40)
     df = @from i in E_Global begin

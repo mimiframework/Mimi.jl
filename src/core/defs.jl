@@ -282,6 +282,10 @@ dimension(obj::AbstractCompositeComponentDef, name::Symbol) = obj.dim_dict[name]
 dim_names(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [dimension(obj, dim) for dim in dims]
 
 dim_count_dict(obj::AbstractCompositeComponentDef) = Dict([name => length(value) for (name, value) in dim_dict(obj)])
+
+# deprecated?
+#dim_key_dict(obj::AbstractCompositeComponentDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(obj)])
+
 dim_counts(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(obj, dims)]
 dim_count(obj::AbstractCompositeComponentDef, name::Symbol) = length(dimension(obj, name))
 
@@ -538,10 +542,16 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
     dtype = data_type == Number ? number_type(obj) : data_type
 
     if length(comp_param_dims) > 0
+
         # convert the number type and, if NamedArray, convert to Array
         if dtype <: AbstractArray
             value = convert(dtype, value)
         else
+            #check that number of dimensions matches
+            value_dims = length(size(value))
+            if num_dims != value_dims
+                error("Mismatched data size for a set parameter call: dimension :$param_name in $(comp_name) has $num_dims dimensions; indicated value has $value_dims dimensions.")
+            end            
             value = convert(Array{dtype, num_dims}, value)
         end
 

@@ -2,12 +2,12 @@
 
 This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model. 
 
-While we will walk through the code step by step below, the full code for implementation is also available in the `examples/tutorial` folder in the [Mimi](https://github.com/anthofflab/Mimi.jl) github repository.
+While we will walk through the code step by step below, the full code for implementation is also available in the `examples/tutorial` folder in the [Mimi](https://github.com/mimiframework/Mimi.jl) github repository.
 
 Working through the following tutorial will require:
 
 - [Julia v1.0.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.6.0](https://github.com/anthofflab/Mimi.jl) 
+- [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl) 
 - [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
@@ -303,7 +303,7 @@ We can now run the model and evaluate the results.
 using Mimi
 
 include("MyModel.jl")
-using MyModel
+using .MyModel
 m = construct_MyModel()
 run(m)
 

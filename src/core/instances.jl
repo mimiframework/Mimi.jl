@@ -170,7 +170,7 @@ end
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
 
-Return the size of index `dim_name`` in model instance `mi`.
+Return the size of index `dim_name` in model instance `mi`.
 """
 @delegate dim_count(mi::ModelInstance, dim_name::Symbol) => md
 
@@ -249,8 +249,6 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     if ntimesteps < length(time_keys)
         time_keys = time_keys[1:ntimesteps]
     end
-
-    # _make_clocks(mi, time_keys)     # pre-generate all required sub-component clocks
 
     # TBD: Pass this, but substitute t from above?
     dim_val_dict = DimValueDict(dim_dict(mi.md))

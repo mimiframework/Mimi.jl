@@ -2,13 +2,15 @@
 
 ## Overview
 
-Monte Carlo Simulation support consists of three primary user-facing elements:
+Monte Carlo Simulation support consists of four primary user-facing elements:
 
 1. The `@defmcs` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and
 
 2. The optional `generate_trials!` function, which can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.
 
-3. The `run_mcs` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
+3. The `set_models!` function, which sets the model(s) on which a simulation can be run.
+
+4. The `run_mcs` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
 
 These are described further below.
 
@@ -128,6 +130,19 @@ on the left-hand side of each `=>` operator, e.g.,
 Currently, the more condensed syntax (using the pair operator `=>`) supports only direct assignment 
 of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
+## The set_models! function
+
+
+The "core" `run_mcs` function assumes the `MonteCarloSimulation` instance has references to the model or models to run. The `set_models!` function has several methods for associating the model(s) to run with the `MonteCarloSimulation` instance:
+
+```
+set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
+
+set_models!(mcs::MonteCarloSimulation, m::Model)
+
+set_models!(mcs::MonteCarloSimulation, mm::MarginalModel)
+```
+
 ## The run_mcs function
 
 In it's simplest use, the `run_mcs` function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
@@ -173,28 +188,6 @@ By default, the scenario loop encloses the Monte Carlo loop, but the scenario lo
 placed inside the Monte Carlo loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
-
-### Associating models with a MonteCarloSimulation
-
-The "core" `run_mcs` function assumes the `MonteCarloSimulation` instance has references to the model or models to run. There are several methods for associating the model(s) to run with the `MonteCarloSimulation` instance. The first involves calling one of the following functions:
-
-```
-set_models!(mcs::MonteCarloSimulation, models::Vector{Model})
-
-set_model!(mcs::MonteCarloSimulation, m::Model)
-
-set_model!(mcs::MonteCarloSimulation, mm::MarginalModel)
-```
-
-The other approach is to call a variant of `run_mcs` that takes a model or vector of models as an argument:
-
-```
-run_mcs(mcs::MonteCarloSimulation, m::Model, trials=mcs.trials; kwargs...)
-
-run_mcs(mcs::MonteCarloSimulation, models::Vector{Model}, trials=mcs.trials; kwargs...)
-```
-
-These are simply convenience functions that call `set_model!()` or `set_models!()` prior to calling the core `run_mcs` function.
 
 ### Non-stochastic Scenarios
 
@@ -266,6 +259,8 @@ include("examples/tutorial/02-two-region-model/main.jl")
 
 m = model # defined by 2-region model
 
+N = 100
+
 mcs = @defmcs begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
@@ -285,33 +280,25 @@ mcs = @defmcs begin
     sigma[:, Region1] *= name2
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    # Assign an array of distributions, keyed by region, to parameter depk
-    depk = [Region1 => Uniform(0.7, 1.3),
-            Region2 => Uniform(0.8, 1.2),
-            Region3 => Normal()]
+    depk = [Region1 => Uniform(0.08, 0.14),
+            Region2 => Uniform(0.10, 1.50),
+            Region3 => Uniform(0.10, 0.20)]
 
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, 
-         emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-# Optional user functions can be called just before or after a trial is run
-function print_result(m::Model, mcs::MonteCarloSimulation, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
-    println("$(ci.comp_id).E_Global: $value")
-end
+output_dir = joinpath(tempdir(), "mcs")
 
 # Generate trial data for all RVs and (optionally) save to a file
-generate_trials!(mcs, 1000, filename="/tmp/trialdata.csv")
+generate_trials!(mcs, 1000, filename=joinpath(output_dir, "trialdata.csv"))
 
+# Set the model(s)
+set_models!(mcs, m)
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(m, mcs, 4, output_dir="/tmp/Mimi")
-
-# Same thing but with a post-trial function
-run_mcs(m, mcs, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
+run_mcs(mcs, 4, output_dir=output_dir)
 ```
 
 

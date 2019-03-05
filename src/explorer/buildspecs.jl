@@ -85,46 +85,58 @@ end
 
 # So we can control these in one place...
 global const _plot_width  = 450
-global const _plot_height = 450
+global const _plot_height = 410
+global const _slider_height = 90
 
 function createspec_lineplot(name, df, dffields)
     datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
+        "type" => "line",
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
-            "mark" => "line",
-            "encoding" => Dict(
-                "x" => Dict("field" => dffields[1], "type" => "temporal", "timeUnit" => "year"),                
-                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
-            ),
-            "width"  => _plot_width,
-            "height" => _plot_height 
-        ),
-    )
-    return spec
-end
-
-function createspec_barplot(name, df, dffields)
-    datapart = getdatapart(df, dffields, :bar) #returns JSONtext type     
-    spec = Dict(
-        "name"  => name,
-        "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
-            "description" => "plot for a specific component variable pair",
-            "title" => name,
-            "data"=> Dict("values" => datapart),
-            "mark" => "bar",
-            "encoding" => Dict(
-                "x" => Dict("field" => dffields[1], "type" => "ordinal"),
-                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
-            ),
-            "width"  => _plot_width,
-            "height" => _plot_height 
-        ),
+            "vconcat" => [
+                Dict(
+                    "transform" => [Dict("filter" => Dict("selection" => "brush"))],
+                    "width" => _plot_width,
+                    "height" => _plot_height,
+                    "mark" => Dict("type" => "line", "point" => true),
+                    "encoding" => Dict(
+                        "x" => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear", 
+                            "axis" => Dict("title"=> "")
+                        ),             
+                        "y" => Dict(
+                            "field" => dffields[2], 
+                            "type" => "quantitative",
+                        )
+                    )
+                ), Dict(
+                    "width" => _plot_width,
+                    "height" => _slider_height,
+                    "mark" => Dict("type" => "line", "point" => true),
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                    "encoding" => Dict(
+                        "x" => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear"
+                        ),
+                        "y" => Dict(
+                            "field" => dffields[2], 
+                            "type" => "quantitative",
+                            "axis" => Dict("tickCount" => 3, "grid" => false
+                            )
+                        )
+                    )
+                )
+            ]
+        )
     )
     return spec
 end
@@ -138,16 +150,71 @@ function createspec_multilineplot(name, df, dffields)
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"  => Dict("values" => datapart),
-            "mark"  => "line",
-            "encoding" => Dict(
-                "x"     => Dict("field" => dffields[1], "type" => "temporal", "timeUnit" => "year"),                
-                "y"     => Dict("field" => dffields[3], "type" => "quantitative" ),
-                "color" => Dict("field" => dffields[2], "type" => "nominal", 
-                "scale" => Dict("scheme" => "category20"))
-            ),
-            "width"  => _plot_width,
-            "height" => _plot_height
+            "vconcat" => [
+                Dict(
+                    "transform" => [Dict("filter" => Dict("selection" => "brush"))],
+                    "mark" => Dict("type" => "line", "point" => true),
+                    "encoding" => Dict(
+                        "x"     => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear", 
+                            "axis" => Dict("title"=> "")
+                            ),                
+                        "y"     => Dict(
+                            "field" => dffields[3], 
+                            "type" => "quantitative",
+                            ),
+                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                            "scale" => Dict("scheme" => "category20")),
+                    ),
+                    "width"  => _plot_width,
+                    "height" => _plot_height
+                ), Dict(
+                    "width" => _plot_width,
+                    "height" => _slider_height,
+                    "mark" => Dict("type" => "line", "point" => true),
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                    "encoding" => Dict(
+                        "x" => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear"
+                        ),
+                        "y" => Dict(
+                            "field" => dffields[3], 
+                            "type" => "quantitative",
+                            "axis" => Dict("tickCount" => 3, "grid" => false)
+                        ),
+                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                            "scale" => Dict("scheme" => "category20")
+                        )
+                    )
+                )
+            ]
         ),
+    )
+    return spec
+end
+
+function createspec_barplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :bar) #returns JSONtext type     
+    spec = Dict(
+        "name"  => name,
+        "type" => "bar",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => "bar",
+            "encoding" => Dict(
+                "x" => Dict("field" => dffields[1], "type" => "ordinal"),
+                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
+                ),
+            "width"  => _plot_width,
+            "height" => _plot_height 
+        )
     )
     return spec
 end
@@ -157,6 +224,7 @@ function createspec_singlevalue(name)
     datapart = [];
     spec = Dict(
         "name" => name, 
+        "type" => "singlevalue",
         "VLspec" => Dict()
     )
     return spec
