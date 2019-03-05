@@ -483,8 +483,7 @@ function add_connector_comps(md::ModelDef)
             end
 
             # Fetch the definition of the appropriate connector commponent
-            conn_name = num_dims == 1 ? :ConnectorCompVector : :ConnectorCompMatrix
-            conn_comp_def = compdef(conn_name)
+            conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
             conn_comp_name = connector_comp_name(i)
 
             # Add the connector component before the user-defined component that required it

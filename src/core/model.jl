@@ -160,6 +160,13 @@ function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.com
     return ComponentReference(m, comp_name)
 end
 
+function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
+                      first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(m.md, comp_def, comp_name; first=first, last=last, before=before, after=after)
+    decache(m)
+    return ComponentReference(m, comp_name)
+end
+
 """
     replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
         first::NothingSymbol=nothing, last::NothingSymbol=nothing,
@@ -181,6 +188,13 @@ function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id
     replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
     decache(m)
     return ComponentReference(m, comp_name)
+end
+
+function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
+                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
+                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+                           reconnect::Bool=true)
+    replace_comp!(m, comp_def.comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
 end
 
 """
