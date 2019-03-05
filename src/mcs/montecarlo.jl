@@ -3,6 +3,7 @@ using IterableTables
 using TableTraits
 using Random
 using ProgressMeter
+using Serialization
 
 function Base.show(io::IO, mcs::MonteCarloSimulation)
     println("MonteCarloSimulation")
@@ -83,11 +84,11 @@ function _store_trial_results(mcs::MonteCarloSimulation, trialnum::Int)
 end
 
 """
-    save_trial_results(mcs::MonteCarloSimulation, output_dir::String)
+    save_trial_results(mcs::MonteCarloSimulation, output_dir)
 
 Save the stored MCS results to files in the directory `output_dir`
 """
-function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractString)
+function save_trial_results(mcs::MonteCarloSimulation, output_dir)
     multiple_results = (length(mcs.results) > 1)
 
     for (i, results) in enumerate(mcs.results)
@@ -106,8 +107,44 @@ function save_trial_results(mcs::MonteCarloSimulation, output_dir::AbstractStrin
     end
 end
 
-function save_trial_inputs(mcs::MonteCarloSimulation, filename::String)
-    mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
+function _dummy_writer(mcs, pname, dir)
+    @info "_dummy_writer(pname=$pname, dir=$dir)"
+end
+
+
+"""
+    _serialize(mcs::MonteCarloSimulation, pname, dir)
+
+This is the default function used for writing non-bit-type (array-valued)
+random vars, e.g., those produced by ReshapedDistribution.
+
+This default method uses Serialization.serialize to write out the array.
+No application-defined types are written, so the file should be robust.
+"""
+function _serialize(mcs::MonteCarloSimulation, pname, dir)
+    rv = mcs.rvdict[pname]
+    if rv isa RandomVariable{Mimi.SampleStore{T}} where T
+        name = first(split(string(pname), "!"))     # e.g., :alpha!1 --> "alpha"
+        path = joinpath(dir, "$name.dat")
+        serialize(path, mcs.rvdict[pname].dist.values)
+    else
+        error("Tried to _serialize $pname, which isn't a RandomVariable{SampleStore{T}}")
+    end
+end
+
+function save_trial_inputs(mcs::MonteCarloSimulation, filename, non_bit_writer=_serialize)
+    dir = dirname(filename)
+    mkpath(dir, mode=0o770)   # ensure that the specified path exists
+
+    # If ReshapedDistribution was used, a single trial value for a field
+    # will be an Array of values. CSV format doesn't handle these well,
+    # so we serialize the arrays into a file using the field's name.
+    non_bits = [name for (name, T) in zip(column_names(mcs), column_types(mcs)) if ! isbitstype(T)]
+    for pname in non_bits
+        non_bit_writer(mcs, pname, dir)
+    end
+
+    # TBD: avoid writing array values to CSV files...
     save(filename, mcs)
     return nothing
 end
@@ -190,7 +227,7 @@ function _copy_mcs_params(mcs::MonteCarloSimulation)
 
     for (i, m) in enumerate(mcs.models)
         md = m.mi.md
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in mcs.translist)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => deepcopy(external_param(md, trans.paramname)) for trans in mcs.translist)
     end
 
     return param_vec
@@ -225,7 +262,13 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
     num_pdims = length(pdims)
 
     tdims  = trans.dims
-    num_dims = length(tdims)
+    num_dims = length(tdims) 
+
+    # special case for handling reshaped data where a single draw returns a matrix of values
+    if num_dims == 0
+        indices = repeat([Colon()], num_pdims)
+        return indices
+    end
 
     if num_pdims != num_dims
         pname = trans.paramname
@@ -256,7 +299,8 @@ function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, trans::Tr
     end
 end
 
-function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, trans::TransformSpec, rvalue::Number) where T
+function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
+                         trans::TransformSpec, rvalue::Union{Number, Array{<: Number, N}}) where {T, N}
     op = trans.op
     pvalue = value(param)
     indices = _param_indices(param, md, trans)
@@ -538,6 +582,9 @@ IterableTables.getiterator(mcs::MonteCarloSimulation) = MCSIterator{mcs.nt_type}
 
 column_names(mcs::MonteCarloSimulation) = fieldnames(mcs.nt_type)
 column_types(mcs::MonteCarloSimulation) = [eltype(fld) for fld in values(mcs.rvdict)]
+
+# TBD: strip the "!1" off the end of each field name?
+# column_names(iter::MCSIterator) = Tuple([first(split(string(name), "!")) for name in fieldnames(iter.mcs.nt_type)])
 
 column_names(iter::MCSIterator) = column_names(iter.mcs)
 column_types(iter::MCSIterator) = IterableTables.column_types(iter.mcs)
