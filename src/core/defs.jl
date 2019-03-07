@@ -139,14 +139,6 @@ Add an empty `ComponentDef` to the global component registry with the given
 `addparameter`, etc. Use `@defcomposite` to create composite components.
 """
 function new_comp(comp_id::ComponentId, verbose::Bool=true)
-    if verbose
-        if haskey(_compdefs, comp_id)
-            @warn "Redefining component $comp_id"
-        else
-            @info "new component $comp_id"
-        end
-    end
-
     comp_def = ComponentDef(comp_id)
     _compdefs[comp_id] = comp_def
     return comp_def
@@ -819,16 +811,18 @@ function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
 end
 
 """
-    thing(value)
+    printable(value)
 
-Thing returns a value that is not nothing. (For printing)
+Return a value that is not nothing.
 """
-thing(value) = (value === nothing ? ":nothing:" : value)
+printable(value) = (value === nothing ? ":nothing:" : value)
 
 function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
                        comp_name::Symbol, datum_name::Symbol)
     path = ComponentPath(parent.comp_path, comp_name)
     root = get_root(parent)
+
+    # @info "comp path: $path, datum_name: $datum_name"
 
     # for composites, check that the named vars/pars are exported?
     # if is_composite(comp_def)
@@ -841,8 +835,7 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
         return ParameterDefReference(datum_name, root, path)
     end
 
-    comp_path = thing(comp_def.comp_path)
-    error("$(comp_path) does not have a data item named $datum_name")
+    error("Component $(comp_def.comp_id) does not have a data item named $datum_name")
 end
 
 """

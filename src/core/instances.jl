@@ -151,8 +151,8 @@ end
 
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum_name::Symbol)    
     comp_inst = obj[comp_name]
-    vars = comp_inst.variables
-    pars = comp_inst.parameters
+    vars = variables(comp_inst)
+    pars = parameters(comp_inst)
 
     if datum_name in names(vars)
         which = vars

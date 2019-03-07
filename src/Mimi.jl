@@ -94,7 +94,7 @@ end
 
 # Components are defined here to allow pre-compilation to work
 function __init__()
-    compdir = joinpath(dirname(@__FILE__), "components")
+    compdir = joinpath(@__DIR__, "components")
     load_comps(compdir)
 end
 

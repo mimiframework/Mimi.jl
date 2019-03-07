@@ -1,9 +1,6 @@
 using Mimi
 using Test
 
-# reduce the chatter during testing
-Mimi.set_defcomp_verbosity(false)
-
 @testset "Mimi" begin
 
     @info("test_main.jl")

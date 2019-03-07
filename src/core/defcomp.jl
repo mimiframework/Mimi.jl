@@ -3,13 +3,6 @@
 #
 using MacroTools
 
-global defcomp_verbosity = false
-
-function set_defcomp_verbosity(value::Bool)
-    global defcomp_verbosity = value
-    nothing
-end
-
 # Store a list of built-in components so we can suppress messages about creating them
 # TBD: and (later) suppress their return in the list of components at the user level.
 const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
@@ -142,6 +135,11 @@ macro defcomp(comp_name, ex)
     result = :(
         let current_module = @__MODULE__
             global const $comp_name = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name)))
+
+            # TBD: use instead of the line above
+            # comp_id = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name))),
+            # comp = Mimi.ComponentDef(comp_id)
+            # global $comp_name = comp
         end
     )
 
@@ -151,7 +149,8 @@ macro defcomp(comp_name, ex)
         push!(let_block, expr)
     end
 
-    newcomp = :(comp = new_comp($comp_name, $defcomp_verbosity))
+    # TBD: delete this when uncommenting change in "let" block above
+    newcomp = :(comp = new_comp($comp_name))
     addexpr(newcomp)
 
     for elt in elements
@@ -254,8 +253,6 @@ macro defcomp(comp_name, ex)
         end
     end
 
-    # addexpr(:($comp_name))
     addexpr(:(nothing))         # reduces noise
-
     return esc(result)
 end

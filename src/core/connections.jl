@@ -552,6 +552,9 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
             conn_comp_def = compdef(conn_name)
             conn_comp_name = connector_comp_name(i) # generate a new name
 
+            # TBD: use this instead of the above
+            # conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
+
             # Add the connector component before the user-defined component that required it
             # @info "add_connector_comps: add_comp!(obj, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)"
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)

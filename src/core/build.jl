@@ -73,7 +73,7 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     return ComponentInstanceVariables(names, types, values, paths)
 end
 
-# TBD: Create ComponentInstanceVariables for a composite component from the list of exported vars
+# Create ComponentInstanceVariables for a composite component from the list of exported vars
 function _combine_exported_vars(comp_def::AbstractCompositeComponentDef, var_dict::Dict{ComponentPath, Any})
     names  = Symbol[]
     values = Any[]
@@ -122,8 +122,8 @@ end
 # Recursively instantiate all variables and store refs in the given dict.
 function _instantiate_vars(comp_def::AbstractCompositeComponentDef, md::ModelDef, var_dict::Dict{ComponentPath, Any})
     comp_path = comp_def.comp_path
-
     # @info "_instantiate_vars composite $comp_path"
+    
     for cd in compdefs(comp_def)
         _instantiate_vars(cd, md, var_dict)
     end    
@@ -210,27 +210,6 @@ function _build(comp_def::AbstractCompositeComponentDef,
     comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]   
     return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
-
-# """
-# Perform a depth-first search on components, exporting vars and params up 
-# through each composite level.
-# """
-# function _propagate_exports(obj::AbstractComponentDef)
-#     # nothing to do for leaf components
-#     is_leaf(obj) && return
-
-#     empty!(obj.exports)     # start fresh
-
-#     for comp in compdefs(obj)
-#         _propagate_exports(comp)
-
-#         for (export_name, datum_ref) in comp.exports
-#             if datum_ref isa ParameterDefReference
-#             else
-#             end
-#         end
-#     end
-# end
 
 function _build(md::ModelDef)
     # _propagate_exports(md)
