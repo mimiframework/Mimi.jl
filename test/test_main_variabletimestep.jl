@@ -38,8 +38,6 @@ end
     # foo1.par2 = []
 end
 
-@test length(compdefs()) == 4   # adder, 2 connectors, and foo1
-
 # x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
 # x1 = foo1(Float64, Val{1}, Val{1}, Val{10}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
 
