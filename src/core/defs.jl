@@ -310,6 +310,11 @@ function parameter_unit(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     return param.unit
 end
 
+"""
+    parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+
+Return a vector of the dimensions of `param_name` in component `comp_name` in model `md`
+"""
 function parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     param = parameter(md, comp_name, param_name)
     return param.dimensions
@@ -422,6 +427,11 @@ function variable_unit(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     return var.unit
 end
 
+"""
+    parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+
+Return a vector of the dimensions of `var_name` in component `comp_name` in model `md`
+"""
 function variable_dimensions(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     var = variable(md, comp_name, var_name)
     return var.dimensions

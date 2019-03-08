@@ -37,6 +37,8 @@ export
     name,
     new_comp,
     parameters, 
+    parameter_dimensions,
+    parameter_names,
     plot_comp_graph,
     replace_comp!, 
     run_mcs,
@@ -46,7 +48,9 @@ export
     set_param!, 
     update_param!,
     update_params!,
-    variables 
+    variables,
+    variable_dimensions,
+    variable_names
 
 include("core/types.jl")
 
