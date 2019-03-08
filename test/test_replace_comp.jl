@@ -131,10 +131,10 @@ add_comp!(m, X, :c2)
 add_comp!(m, X, :c3)
 
 replace_comp!(m, X_repl, :c3)        # test replacing the last component
-@test comp_id(compdef(m, :c3)) == X_repl
+@test compdef(m, :c3).comp_id == X_repl.comp_id
 
 replace_comp!(m, X_repl, :c2)        # test replacing not the last one
-@test comp_id(compdef(m, :c2)) == X_repl
+@test compdef(m, :c2).comp_id == X_repl.comp_id
 
 
 end # module

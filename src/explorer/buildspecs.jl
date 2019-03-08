@@ -68,7 +68,7 @@ end
 function menu_item_list(model::Model)
     all_menuitems = []
 
-    for comp_name in map(name, compdefs(model)) 
+    for comp_name in map(nameof, compdefs(model)) 
         items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
 
         for item_name in items

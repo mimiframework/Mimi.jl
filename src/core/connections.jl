@@ -186,7 +186,11 @@ function connect_param!(obj::AbstractCompositeComponentDef,
         src_first, src_last = first_and_last(src_comp_def)
         dst_first, dst_last = first_and_last(dst_comp_def)
         if (dst_first !== nothing && src_first !== nothing && dst_first < src_first) || 
-           (dst_last  !== nothing && src_last  !== nothing && dst_last  > src_last)
+            (dst_last  !== nothing && src_last  !== nothing && dst_last  > src_last)
+            src_first = printable(src_first)
+            src_last  = printable(src_last)
+            dst_first = printable(dst_first)
+            dst_last  = printable(dst_last)
             error("""Cannot connect parameter: $src_comp_path runs only from $src_first to $src_last, 
 whereas $dst_comp_path runs from $dst_first to $dst_last. Backup data must be provided for missing years.
 Try calling: 
@@ -548,12 +552,8 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
             end
 
             # Fetch the definition of the appropriate connector commponent
-            conn_name = num_dims == 1 ? :ConnectorCompVector : :ConnectorCompMatrix
-            conn_comp_def = compdef(conn_name)
+            conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
             conn_comp_name = connector_comp_name(i) # generate a new name
-
-            # TBD: use this instead of the above
-            # conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
 
             # Add the connector component before the user-defined component that required it
             # @info "add_connector_comps: add_comp!(obj, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)"

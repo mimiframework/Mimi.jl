@@ -6,10 +6,8 @@ using Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty, Clock, time_index, get_timestep_array, reset_compdefs, 
+    gettime, getproperty, Clock, time_index, get_timestep_array,
     is_timestep, is_time
-
-reset_compdefs()
 
 #------------------------------------------------------------------------------
 #  Test basic timestep functions and Base functions for Fixed Timestep 
@@ -123,9 +121,10 @@ run(m)
 @test length(m[:Foo, :output]) == length(years)
 @test length(m[:Bar, :output]) == length(years)
 
-dim = Mimi.Dimension(years)
-foo_output = m[:Foo, :output][dim[first_foo]:dim[years[end]]]
-for i in 1:6
+yr_dim = Mimi.Dimension(years)
+idxs = yr_dim[first_foo]:yr_dim[years[end]]
+foo_output = m[:Foo, :output]
+for i in idxs
     @test foo_output[i] == 5+i
 end
 
@@ -195,7 +194,7 @@ connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
-foo_output2 = m2[:Foo2, :output][dim[first_foo]:dim[years[end]]]
+foo_output2 = m2[:Foo2, :output][yr_dim[first_foo]:yr_dim[years[end]]]
 for i in 1:6
     @test foo_output2[i] == (i+5)^2
 end

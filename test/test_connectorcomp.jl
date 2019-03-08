@@ -3,10 +3,7 @@ module TestConnectorComp
 using Mimi
 using Test
 
-import Mimi:
-    reset_compdefs, compdef, compdefs
-
-reset_compdefs()
+import Mimi: compdef, compdefs
 
 @defcomp Long begin
     x = Parameter(index=[time])
@@ -23,7 +20,7 @@ end
 
 years = 2000:2010
 late_start = 2005
-dim = Mimi.Dimension(years)
+year_dim = Mimi.Dimension(years)
 
 
 #------------------------------------------------------------------------------
@@ -50,13 +47,12 @@ x = model1[:Long, :x]
 @test length(b) == length(years)
 @test length(x) == length(years)
 
-@test all(ismissing, b[1:dim[late_start]-1])
-@test all(iszero, x[1:dim[late_start]-1])
+@test all(ismissing, b[1:year_dim[late_start]-1])
+@test all(iszero, x[1:year_dim[late_start]-1])
 
 # Test the values are right after the late start
-@test b[dim[late_start]:end] == 
-    x[dim[late_start]:end] == 
-    [2 * i for i in 1:(years[end]-late_start + 1)]
+@test b[year_dim[late_start]:end] == x[year_dim[late_start]:end]
+@test b[year_dim[late_start]:end] == collect(year_dim[late_start]:year_dim[years[end]]) * 2.0
 
 @test Mimi.datum_size(model1.md, Mimi.compdef(model1.md, :Long), :x) == (length(years),)
 
@@ -146,14 +142,15 @@ x = model3[:Long_multi, :x]
 @test size(b) == (length(years), length(regions))
 @test size(x) == (length(years), length(regions))
 
-@test all(ismissing, b[1:dim[late_start]-1, :])
-@test all(iszero, x[1:dim[late_start]-1, :])
+@test all(ismissing, b[1:year_dim[late_start]-1, :])
+@test all(iszero, x[1:year_dim[late_start]-1, :])
 
 # Test the values are right after the late start
-@test b[dim[late_start]:end, :] == 
-    x[dim[late_start]:end, :] == 
-    [[i + 1 for i in 1:(years[end]-late_start + 1)] [i + 2 for i in 1:(years[end]-late_start + 1)]]
+late_yr_idxs = year_dim[late_start]:year_dim[end]
 
+@test b[late_yr_idxs, :] == x[year_dim[late_start]:end, :]
+
+@test b[late_yr_idxs, :] == [[i + 1 for i in late_yr_idxs] [i + 2 for i in late_yr_idxs]]
 
 #------------------------------------------------------------------------------
 #  4. Test where the short component starts late and ends early
@@ -182,16 +179,16 @@ x = model4[:Long_multi, :x]
 @test size(b) == (length(years), length(regions))
 @test size(x) == (length(years), length(regions))
 
-@test all(ismissing, b[1:dim[first]-1, :])
-@test all(ismissing, b[dim[last]+1:end, :])
-@test all(iszero, x[1:dim[first]-1, :])
-@test all(iszero, x[dim[last]+1:end, :])
+@test all(ismissing, b[1:year_dim[first]-1, :])
+@test all(ismissing, b[year_dim[last]+1:end, :])
+@test all(iszero, x[1:year_dim[first]-1, :])
+@test all(iszero, x[year_dim[last]+1:end, :])
 
 # Test the values are right after the late start
-@test b[dim[first]:dim[last], :] == 
-    x[dim[first]:dim[last], :] == 
-    [[i + 1 for i in 1:(years[end]-late_start + 1)] [i + 2 for i in 1:(years[end]-late_start + 1)]]
-
+yr_idxs = year_dim[first]:year_dim[last]
+@test b[yr_idxs, :] == x[yr_idxs, :]
+#@test b[yr_idxs, :] == [[i + 1 for i in 1:(years[end]-late_start + 1)] [i + 2 for i in 1:(years[end]-late_start + 1)]]
+@test b[yr_idxs, :] == [[i + 1 for i in yr_idxs] [i + 2 for i in yr_idxs]]
 
 #------------------------------------------------------------------------------
 #  5. Test errors with backup data
@@ -229,9 +226,9 @@ end
 
 model6 = Model()
 set_dimension!(model6, :time, years)
-add_comp!(model6, foo, :Long)
-add_comp!(model6, foo, :Short; first=late_start)
-connect_param!(model6, :Short=>:par, :Long=>:var)
+add_comp!(model6, foo, :Long; exports=[:var => :long_var])
+add_comp!(model6, foo, :Short; exports=[:var => :short_var], first=late_start)
+connect_param!(model6, :Short => :par, :Long => :var)
 set_param!(model6, :Long, :par, years)
 
 run(model6)
@@ -244,8 +241,8 @@ short_var = model6[:Short, :var]
 @test short_par == years    # The parameter has values instead of `missing` for years when this component doesn't run, 
                             # because they are coming from the longer component that did run
 
-@test all(ismissing, short_var[1:dim[late_start]-1])
-@test short_var[dim[late_start]:end] == years[dim[late_start]:end]
+@test all(ismissing, short_var[1:year_dim[late_start]-1])
+@test short_var[year_dim[late_start]:end] == years[year_dim[late_start]:end]
 
 
 end #module

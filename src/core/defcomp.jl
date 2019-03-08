@@ -129,17 +129,14 @@ macro defcomp(comp_name, ex)
         comp_name = cmpname
     end
 
-    # We'll return a block of expressions that will define the component. First,
-    # save the ComponentId to a variable with the same name as the component.
-    # @__MODULE__ is evaluated when the expanded macro is interpreted
+    # We'll return a block of expressions that will define the component.
+    # N.B. @__MODULE__ is evaluated when the expanded macro is interpreted.
     result = :(
-        let current_module = @__MODULE__
-            global const $comp_name = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name)))
+        let current_module = @__MODULE__,
+            comp_id = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name))),
+            comp = Mimi.ComponentDef(comp_id)
 
-            # TBD: use instead of the line above
-            # comp_id = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name))),
-            # comp = Mimi.ComponentDef(comp_id)
-            # global $comp_name = comp
+            global $comp_name = comp
         end
     )
 
@@ -148,10 +145,6 @@ macro defcomp(comp_name, ex)
         let_block = result.args[end].args
         push!(let_block, expr)
     end
-
-    # TBD: delete this when uncommenting change in "let" block above
-    newcomp = :(comp = new_comp($comp_name))
-    addexpr(newcomp)
 
     for elt in elements
         @debug "elt: $elt"
@@ -240,12 +233,14 @@ macro defcomp(comp_name, ex)
 
             @debug "    index $(Tuple(dimensions)), unit '$unit', desc '$desc'"
 
-            dflt = eval(dflt)
-            if (dflt !== nothing && length(dimensions) != ndims(dflt))
-                error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+            if dflt !== nothing
+                dflt = Base.eval(Main, dflt)
+                if length(dimensions) != ndims(dflt)
+                    error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+                end
             end
 
-            vartype = vartype === nothing ? Number : eval(vartype)
+            vartype = (vartype === nothing ? Number : Base.eval(Main, vartype))
             addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else

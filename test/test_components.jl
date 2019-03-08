@@ -4,12 +4,8 @@ using Mimi
 using Test
 
 import Mimi:
-    reset_compdefs, compdefs, compdef, compkeys, has_comp, _compdefs, first_period, 
+    reset_compdefs, compdefs, compdef, compkeys, has_comp, first_period, 
     last_period, compmodule, compname, numcomponents, compinstance, dim_keys, dim_values
-
-reset_compdefs()
-
-@test length(_compdefs) == 3 # adder, ConnectorCompVector, ConnectorCompMatrix
 
 my_model = Model()
 
@@ -80,8 +76,8 @@ comps = collect(compdefs(my_model))
 # Test compdefs, compdef, compkeys, etc.
 @test comps == collect(compdefs(my_model.md))
 @test length(comps) == 3
-@test compdef(:testcomp3).comp_id == comps[3].comp_id
-@test_throws ErrorException compdef(:testcomp4) #this component does not exist
+@test compdef(my_model, :testcomp3).comp_id == comps[3].comp_id
+@test_throws KeyError compdef(my_model, :testcomp4) #this component does not exist
 @test [compkeys(my_model.md)...] == [:testcomp1, :testcomp2, :testcomp3]
 @test has_comp(my_model.md, :testcomp1) == true
 @test has_comp(my_model.md, :testcomp4) == false
@@ -92,12 +88,6 @@ comps = collect(compdefs(my_model))
 @test numcomponents(my_model) == 3
 add_comp!(my_model, testcomp3, :testcomp3_v2)
 @test numcomponents(my_model) == 4
-
-# Test reset_compdefs methods
-reset_compdefs()
-@test length(_compdefs) == 3 # adder, ConnectorCompVector, ConnectorCompMatrix
-reset_compdefs(false)
-@test length(_compdefs) == 0 
 
 
 #------------------------------------------------------------------------------
@@ -115,7 +105,7 @@ end
 
 # 1. Test resetting the time dimension without explicit first/last values 
 
-cd = compdef(testcomp1)    
+cd = testcomp1
 @test cd.first === nothing   # original component definition's first and last values are unset
 @test cd.last === nothing
 

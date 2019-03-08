@@ -38,8 +38,7 @@ end
     component(ch4forcing1, ch4forcing2) # add another one with a different name
 end
 
-# this returns the "registered" version defined by @defcomp
-c0 = compdef(ch4forcing1)
+c0 = ch4forcing1
 @test compmodule(c0) == :TestMetaInfo
 @test compname(c0) == :ch4forcing1
 @test nameof(c0) == :ch4forcing1
@@ -48,8 +47,11 @@ c0 = compdef(ch4forcing1)
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
+@test c1.comp_id == ch4forcing1.comp_id
+@test_throws KeyError compdef(test_model, :missingcomp)
+
 @test variable_names(c1) == variable_names(c0)
-@test_throws ErrorException compdef(:missingcomp)
+@test_throws KeyError compdef(test_model, :missingcomp)
 
 @test compmodule(c2) == :TestMetaInfo
 @test compname(c2) == :ch4forcing1

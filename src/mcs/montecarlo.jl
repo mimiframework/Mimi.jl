@@ -190,7 +190,7 @@ function _copy_mcs_params(mcs::MonteCarloSimulation)
 
     for (i, m) in enumerate(mcs.models)
         md = modelinstance_def(m)
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in mcs.translist)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => deepcopy(external_param(md, trans.paramname)) for trans in mcs.translist)
     end
 
     return param_vec

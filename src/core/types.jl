@@ -390,7 +390,7 @@ Base.values(obj::AbstractComponentInstanceData) = values(nt(obj))
 # Centralizes the shared functionality from the two component data subtypes.
 function _datum_instance(subtype::Type{<: AbstractComponentInstanceData},
                          names, types, values, paths)
-    @info "_datum_instance: names=$names, types=$types"
+    # @info "_datum_instance: names=$names, types=$types"
     NT = NamedTuple{Tuple(names), Tuple{types...}}
     return subtype(NT(values), Vector{ComponentPath}(paths))
 end
@@ -466,7 +466,8 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
         self.last  = comp_def.last  !== nothing ? comp_def.last  : time_bounds[2]
 
         # @info "ComponentInstance evaluating $(comp_id.module_name)"
-        comp_module = Main.eval(comp_id.module_name)
+        module_name = comp_id.module_name
+        comp_module = getfield(Main, module_name)
 
         # The try/catch allows components with no run_timestep function (as in some of our test cases)
         # CompositeComponentInstances use a standard method that just loops over inner components.
@@ -478,7 +479,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
 
             func_name = Symbol("$(name)_$(nameof(comp_module))_$(self.comp_id.comp_name)")
             try
-                Base.eval(comp_module, func_name)
+                getfield(comp_module, func_name)
             catch err
                 # @info "Eval of $func_name in module $comp_module failed"
                 nothing
@@ -517,7 +518,7 @@ first_period(obj::AbstractComponentInstance) = obj.first
 last_period(obj::AbstractComponentInstance)  = obj.last
 
 #
-# TBD: Should include only exported vars and pars, right?
+# Include only exported vars and pars
 #
 """
 Rerun the ComponentInstanceParameters/Variables exported by the given list of
@@ -525,28 +526,39 @@ component instances.
 """
 function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
 								  comps::Vector{<: AbstractComponentInstance})
-    vdict = Dict([:types => DataType[], :names => Symbol[], :values => [], :paths => []])
-    pdict = Dict([:types => DataType[], :names => Symbol[], :values => [], :paths => []])
+    vdict = Dict([:types => [], :names => [], :values => [], :paths => []])
+    pdict = Dict([:types => [], :names => [], :values => [], :paths => []])
 
     root = get_root(comp_def)   # to find comp_defs by path
 
+    comps_dict = Dict([comp.comp_name => comp for comp in comps])
+
     for (export_name, dr) in comp_def.exports
         datum_comp = compdef(dr)
-        rpath = rel_path(root.comp_path, datum_comp.comp_path)     # get relative path to the referenced comp def
-        
-        datum_dict = (is_parameter(dr) ? datum_comp.parameters : datum_comp.variables)
-        datum = datum_dict[nameof(dr)]
-        
+        datum_name = nameof(dr)
+        ci = comps_dict[nameof(datum_comp)]
+
+        datum = (is_parameter(dr) ? ci.parameters : ci.variables)
         d = (is_parameter(dr) ? pdict : vdict)
+
+        # Find the position of the desired field in the named tuple
+        # so we can extract it's datatype.
+        pos = findfirst(isequal(datum_name), names(datum))
+        datatypes = types(datum)
+        dtype = datatypes[pos]
+        value = getproperty(datum, datum_name)
+        
         push!(d[:names],  export_name)
-        push!(d[:types],  datum.datatype)
-        push!(d[:values], datum.values)
+        push!(d[:types],  dtype)
+        push!(d[:values], value)
         push!(d[:paths],  dr.comp_path)
     end
 
-    vars = ComponentInstanceVariables( vdict[:names], vdict[:types], vdict[:values], vdict[:paths])
-    pars = ComponentInstanceParameters(pdict[:names], pdict[:types], pdict[:values], pdict[:paths])
+    vars = ComponentInstanceVariables(Vector{Symbol}(vdict[:names]), Vector{DataType}(vdict[:types]), 
+                                      Vector{Any}(vdict[:values]), Vector{ComponentPath}(vdict[:paths]))
 
+    pars = ComponentInstanceParameters(Vector{Symbol}(pdict[:names]), Vector{DataType}(pdict[:types]), 
+                                       Vector{Any}(pdict[:values]), Vector{ComponentPath}(pdict[:paths]))                                      
     return vars, pars
 end
 
@@ -557,7 +569,7 @@ component's parameters, and similarly for its variables.
 function _comp_instance_vars_pars_OLD(comp_def::AbstractComponentDef, comps::Vector{<: AbstractComponentInstance})
 	root = get_root(comp_def)   # to find comp_defs by path
 	exports = comp_def.exports
-	@info "Exported by $(comp_def.comp_id): $exports"
+	# @info "Exported by $(comp_def.comp_id): $exports"
 
     vtypes  = DataType[]
     vnames  = Symbol[]

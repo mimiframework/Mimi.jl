@@ -4,9 +4,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    compdef, reset_compdefs, first_period, last_period, compmodule, compname
-
-reset_compdefs()
+    compdef, first_period, last_period, compmodule, compname
 
 @defcomp ch4forcing1 begin
     c_N2Oconcentration = Parameter(index=[time],unit="ppbv")
@@ -41,8 +39,10 @@ c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
 @test compmodule(c2) == :TestMetaInfo_VariableTimestep
-@test compname(c2) == :ch4forcing1
-@test nameof(c2) == :ch4forcing2
+
+@test c1.comp_id == ch4forcing1.comp_id
+@test c2.comp_id == ch4forcing1.comp_id
+@test_throws KeyError compdef(test_model, :missingcomp)
 
 vars = Mimi.variable_names(c2)
 @test length(vars) == 3

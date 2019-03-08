@@ -207,7 +207,7 @@ function _build(comp_def::AbstractCompositeComponentDef,
     # @info "  var_dict $(var_dict)"
     # @info "  par_dict $(par_dict)"
     
-    comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]   
+    comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]
     return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
 

@@ -119,10 +119,13 @@ Add the component indicated by `comp_id` to the model indicated by `m`. The comp
 the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the new name.
 """
-function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                   exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
-    comp_def = add_comp!(m.md, comp_id, comp_name; exports=exports, first=first, last=last, before=before, after=after)
-    return ComponentReference(m.md, comp_def.comp_path)
+function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
+    comp_def = add_comp!(m.md, comp_id, comp_name; kwargs...)
+    return ComponentReference(m.md, comp_name)
+end
+
+function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+    return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
 """
@@ -139,12 +142,13 @@ The component is added with the same first and last values, unless the keywords
 default value `true` indicates whether the existing parameter connections 
 should be maintained in the new component.  
 """
-function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
-                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                           reconnect::Bool=true)
-    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
-    return ComponentReference(m, comp_name)
+function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
+    comp_def = replace_comp!(m.md, comp_id, comp_name; kwargs...)
+    return ComponentReference(m.md, comp_name)
+end
+
+function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+    return replace_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
 @delegate ComponentReference(m::Model, name::Symbol) => md

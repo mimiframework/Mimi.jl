@@ -47,9 +47,9 @@ end
 
 # Test the calls the macro will produce the following
 comps = [
-    (compdef(Comp1), [:foo => :foo1]),
-    (compdef(Comp2), [:foo => :foo2]),
-    (compdef(Comp3), [:foo => :foo3])
+    (Comp1, [:foo => :foo1]),
+    (Comp2, [:foo => :foo2]),
+    (Comp3, [:foo => :foo3])
 ]
 
 # TBD: need to implement this to create connections and default value

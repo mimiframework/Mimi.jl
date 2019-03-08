@@ -1,26 +1,9 @@
-# Global component registry: @defcomp stores component definitions here
-global const _compdefs = Dict{ComponentId, ComponentDef}()
-
-compdefs() = collect(values(_compdefs))
-
-compdef(comp_id::ComponentId) = _compdefs[comp_id]
-
-function compdef(comp_name::Symbol)
-    matches = collect(Iterators.filter(obj -> nameof(obj) == comp_name, values(_compdefs)))
-    count = length(matches)
-
-    if count == 1
-        return matches[1]
-    elseif count == 0
-        error("Component $comp_name was not found in the global registry")
-    else
-        error("Multiple components named $comp_name were found in the global registry")
-    end
-end
-
-compdef(dr::AbstractDatumReference) = compdef(dr.root, dr.comp_path)
+compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
 
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path, relative=false)
+
+compdef(dr::AbstractDatumReference) = compdef(dr.root, dr.comp_path)
+compdef(cr::ComponentReference)     = compdef(cr.parent, cr.comp_path)
 
 # Allows method to be called on leaf component defs, which sometimes simplifies code.
 compdefs(c::ComponentDef) = []
@@ -41,9 +24,8 @@ compnames() = map(compname, compdefs())
 # Access a subcomponent as comp[:name]
 Base.getindex(obj::AbstractCompositeComponentDef, name::Symbol) = obj.comps_dict[name]
 
+# TBD: deprecated
 function reset_compdefs(reload_builtins=true)
-    empty!(_compdefs)
-
     if reload_builtins
         compdir = joinpath(@__DIR__, "..", "components") 
         load_comps(compdir)
@@ -130,19 +112,6 @@ number_type(obj::AbstractCompositeComponentDef) = number_type(get_root(obj))
 # TBD: should be numcomps()
 numcomponents(obj::AbstractComponentDef) = 0   # no sub-components
 numcomponents(obj::AbstractCompositeComponentDef) = length(obj.comps_dict)
-
-"""
-    new_comp(comp_id::ComponentId, verbose::Bool=true)
-
-Add an empty `ComponentDef` to the global component registry with the given
-`comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
-`addparameter`, etc. Use `@defcomposite` to create composite components.
-"""
-function new_comp(comp_id::ComponentId, verbose::Bool=true)
-    comp_def = ComponentDef(comp_id)
-    _compdefs[comp_id] = comp_def
-    return comp_def
-end
 
 """
     delete!(obj::AbstractCompositeComponentDef, component::Symbol)
@@ -491,6 +460,12 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
+
+function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
+    comp = find_comp(obj, comp_path, relative=false)
+    set_param!(comp.parent, nameof(comp), param_name, value, dims)
+end
+
 """
     set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
@@ -498,11 +473,6 @@ Set a parameter for a component with the given relative path (as a string), in w
 component with name `:x` beneath the root of the hierarchy in which `obj` is found. If the path does
 not begin with "/", it is treated as relative to `obj`.
 """
-function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
-    comp = find_comp(obj, comp_path, relative=false)
-    set_param!(comp.parent, nameof(comp), param_name, value, dims)
-end
-
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
     set_param!(obj, comp_path(obj, path), param_name, value, dims)
 end
@@ -839,7 +809,8 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
 end
 
 """
-    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, comp_name::Symbol; 
+    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
+              comp_name::Symbol=comp_def.comp_id.comp_name; 
               exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component 
@@ -850,7 +821,8 @@ what names. If `nothing`, everything is exported. The first element of a pair in
 from comp_def to the composite, the second element allows this var/par to have a new name in the composite. 
 A symbol alone means to use the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, comp_name::Symbol;
+function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
+                   comp_name::Symbol=comp_def.comp_id.comp_name;
                    exports=nothing,
                    first::NothingInt=nothing, last::NothingInt=nothing, 
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
@@ -940,10 +912,10 @@ is added at the end of the list unless one of the keywords, `first`, `last`, `be
 `comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId, 
-                           comp_name::Symbol=comp_id.comp_name;
-                           exports=nothing,
-                           first::NothingInt=nothing, last::NothingInt=nothing, 
-                           before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+                   comp_name::Symbol=comp_id.comp_name;
+                   exports=nothing,
+                   first::NothingInt=nothing, last::NothingInt=nothing, 
+                   before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
     add_comp!(obj, compdef(comp_id), comp_name, 
               exports=exports, first=first, last=last, before=before, after=after)
@@ -960,7 +932,7 @@ component `comp_id` using the same name. The component is added in the same posi
 old component, unless one of the keywords `before` or `after` is specified. The component is 
 added with the same first and last values, unless the keywords `first` or `last` are specified.
 Optional boolean argument `reconnect` with default value `true` indicates whether the existing 
-parameter connections should be maintained in the new component.
+parameter connections should be maintained in the new component. Returns the added comp def.
 """
 function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId, 
                        comp_name::Symbol=comp_id.comp_name;
@@ -1046,7 +1018,7 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     end
 
     # Re-add
-    add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
+    return add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
 function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)   

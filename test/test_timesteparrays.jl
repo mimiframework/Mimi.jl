@@ -240,10 +240,9 @@ m = Model()
 set_dimension!(m, :time, years)
 add_comp!(m, foo, :first)
 add_comp!(m, foo, :second)
-connect_param!(m, :second=>:par, :first=>:var)
+connect_param!(m, :second => :par, :first => :var)
 set_param!(m, :first, :par, 1:length(years))
 
 @test_throws MissingException run(m)
-
 
 end #module
