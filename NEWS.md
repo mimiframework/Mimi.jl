@@ -1,5 +1,10 @@
 # Mimi.jl v0.7.0 Release Notes
 * Drop julia 1.0 support
+* Move to new github org (mimiframework)
+* Add support for distributions that produce a matrix of values on each draw,
+* Change internals to support precompilation for components as packages
+    - Eliminated global dict of component defs
+    - Fixed uses of eval
 
 # Mimi.jl v0.6.4 Release Notes
 * Documentation udpates
