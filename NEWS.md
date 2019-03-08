@@ -1,7 +1,10 @@
+# Mimi.jl v0.7.0 Release Notes
+* Drop julia 1.0 support
+
 # Mimi.jl v0.6.4 Release Notes
 * Documentation udpates
 * Tutorials bug and consistency updates
-* Update the way to add models to mcs 
+* Update the way to add models to mcs
 * Add methods and docstrings for dimension-related functions
 * Add interactive slider bar to explorer line plots
 * Simplify saving single explorer plots
