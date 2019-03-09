@@ -1,6 +1,6 @@
-# Tutorial 4: Monte Carlo Simulation (MCS) Support
+# Tutorial 4: Sensitivity Analysis (SA) Support
 
-This tutorial walks through the MCS functionality of Mimi, including core routines and examples.  We will start with looking at using the MCS routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
+This tutorial walks through the SA functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
 
 Working through the following tutorial will require:
 
@@ -14,11 +14,11 @@ Futhermore, if you are not yet comfortable with downloading (only needs to be do
 
 ## The API
 
-The best current documentation on the MCS API is the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Two-Region Model Example
 
-This section will walk through the simple example provided in `"Mimi.jl/test/mcs/test_defmcs.jl"`.
+This section will walk through the simple example provided in `"Mimi.jl/test/sim/test_defsim.jl"`.
 
 ### Step 1. Setup
 First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
@@ -32,10 +32,12 @@ m = model # defined by 2-region model
 ```
 
 ### Step 2. Define Random Variables
-The `@defmcs` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.
+The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process. It also selects the sampling method, with
+simple random sampling being the default. Other options include Latin Hypercube Sampling, and Sobol
+Sampling.
 
 ```julia
-mcs = @defmcs begin
+sim = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -45,9 +47,14 @@ mcs = @defmcs begin
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
 
-    # define correlations
-    name1:name2 = 0.7
-    name1:name3 = 0.5
+    # If using LHS, you can define correlations like this:
+    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
+
+    # Exclude the sampling() call, or use the following for simple random sampling:
+    # sampling(MCSData)
+
+    # For Sobol sampling, specify N, and calc_second_order, which defaults to false.
+    # sampling(SobolData, N=100000, calc_second_order=true)
 
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
@@ -68,36 +75,39 @@ end
 ```
 
 ### Step 2. Optional User-Defined Functions
-Next, a user may create a user-defined function, which can be called as a pre or post-trial function by [`run_mcs`](@ref).
+Next, create the user-defined `print_result` function, which can be called as a post-trial function by [`run_sim`](@ref).
 
-If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
-just before or after (respectively) running a trial. The functions must have the signature:
-
-    fn(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+ ```julia
+# Optional user functions can be called just before or after a trial is run
+function print_result(m::Model, sim::Simulation, trialnum::Int)
+    ci = Mimi.compinstance(m.mi, :emissions)
+    value = Mimi.get_variable_value(ci, :E_Global)
+    println("$(ci.comp_id).E_Global: $value")
+end
+```
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the MCS loop to run only
+of all scenario value vectors. In situations in which you want the SA loop to run only
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
 ### Step 2. Generate Trials
 
-The optional [`generate_trials!`](@ref) function can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.  If this function is not called prior to calling [`run_mcs`](@ref), random sampling is used for all distributions and trial data are not saved. Employ this function as follows:
+The optional [`generate_trials!`](@ref) function can be used to pre-generate all trial data, and save all random variable values in a file.  If this function is not called prior to calling [`run_sim`](@ref), trial data are not saved. Employ this function as follows:
 
 ```julia
 # Generate trial data for all RVs and (optionally) save to a file
-output_dir = joinpath(tempdir(), "mcs")
-generate_trials!(mcs, 1000, filename=joinpath(output_dir, "trialdata.csv"))
+generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
 ```
 
-### Step 4. Run MCS
+### Step 4. Run Simulation
 
-Finally, use the [`set_models!`](@ref) and [`run_mcs`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `mcs` simulation.  Next, use [`run_mcs`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_mcs`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
+Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `sim` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
-function run_mcs(mcs::MonteCarloSimulation, 
+function run_sim(sim::Simulation, 
                  trials::Union{Int, Vector{Int}, AbstractRange{Int}},
-                 models_to_run::Int=length(mcs.models);
+                 models_to_run::Int=length(sim.models);
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -107,14 +117,22 @@ function run_mcs(mcs::MonteCarloSimulation,
                  scenario_args=nothing)
 ```
 
-Here, we first employ [`run_mcs`](@ref) in its simplest form to obtain results:
+Here, we first employ [`run_sim`](@ref) in its simplest form to obtain results:
 
 ```julia
-set_models!(mcs, m)
+# Set models
+set_models!(sim, m)
+
 # Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_mcs(mcs,1:4, output_dir=output_dir)
+run_sim(sim, 4, output_dir="/tmp/Mimi")
 ```
 
+and then again using our user-defined post-trial function as the `post_trial_func` parameter:
+
+```julia
+# Same thing but with a post-trial function
+run_sim(m, sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
+```
 ## FUND Example
 
 This example is in progress and will be built out soon.
