@@ -1,3 +1,6 @@
+# Mimi.jl v0.8.0 Release Notes
+[TODO]
+
 # Mimi.jl v0.7.0 Release Notes
 * Drop julia 1.0 support
 * Move to new github org (mimiframework)
