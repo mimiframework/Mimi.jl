@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "User Guide",
     "title": "Overview",
     "category": "section",
-    "text": "See the Tutorials for in-depth examples of Mimi\'s functionality.This guide is organized into six main sections for understanding how to use Mimi.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting and the Explorer UI\nMCS Functionality\nAdvanced topics"
+    "text": "See the Tutorials for in-depth examples of Mimi\'s functionality.This guide is organized into six main sections for understanding how to use Mimi.Defining components\nConstructing a model\nRunning the model\nAccessing results\nPlotting and the Explorer UI\nSA Functionality\nAdvanced topics"
 },
 
 {
@@ -161,11 +161,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "userguide/#Monte-Carlo-Simulation-(MCS)-Support-1",
+    "location": "userguide/#Sensitivity-Analysis-(SA)-Support-1",
     "page": "User Guide",
-    "title": "Monte Carlo Simulation (MCS) Support",
+    "title": "Sensitivity Analysis (SA) Support",
     "category": "section",
-    "text": "Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) on Mimi models. The best current documentation on the MCS API is the internals documentation here, which provides a working, although informal, description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples in Tutorial 4: Monte Carlo Simulation (MCS) Support, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial."
+    "text": "Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. The best current documentation on the SA API is the internals documentation here, which provides a working, although informal, description of the SA support of Mimi. This file should be used in conjunction with the examples in Tutorial 4: Sensitivity Analysis (SA) Support, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial."
 },
 
 {
@@ -269,7 +269,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Tutorials Intro",
     "title": "Available Tutorials",
     "category": "section",
-    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nWhile the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon.\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Create a Model takes a step beyond using registered models, explaining how to create a model from scratch.\nMonte Carlo Simulation\nTutorial 4: Monte Carlo Simulation (MCS) Support explores Mimi\'s Monte Carlo Simulation support, using both the simple 2-Region tutorial model and FUND examples."
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nWhile the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon.\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Create a Model takes a step beyond using registered models, explaining how to create a model from scratch.\nSensitivity Analysis\nTutorial 4: Sensitivity Analysis (SA) Support explores Mimi\'s Sensitivity Analysis support, using both the simple 2-Region tutorial model and FUND examples."
 },
 
 {
@@ -466,39 +466,39 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "tutorials/tutorial_4/#",
-    "page": "4 MCS Functionality",
-    "title": "4 MCS Functionality",
+    "page": "4 SA Functionality",
+    "title": "4 SA Functionality",
     "category": "page",
     "text": ""
 },
 
 {
-    "location": "tutorials/tutorial_4/#Tutorial-4:-Monte-Carlo-Simulation-(MCS)-Support-1",
-    "page": "4 MCS Functionality",
-    "title": "Tutorial 4: Monte Carlo Simulation (MCS) Support",
+    "location": "tutorials/tutorial_4/#Tutorial-4:-Sensitivity-Analysis-(SA)-Support-1",
+    "page": "4 SA Functionality",
+    "title": "Tutorial 4: Sensitivity Analysis (SA) Support",
     "category": "section",
-    "text": "This tutorial walks through the MCS functionality of Mimi, including core routines and examples.  We will start with looking at using the MCS routines with the Mimi two-region model provided in the Mimi repository at examples/tutorial/02-two-region-model, and then build out to examine its use on The Climate Framework for Uncertainty, Negotiation and Distribution (FUND), available on Github here, Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out Steps 1 and 2 from Tutorial 1, and then return to continue with this tutorial. Note that FUND is only requred for the second example in this tutorial. "
+    "text": "This tutorial walks through the SA functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at examples/tutorial/02-two-region-model, and then build out to examine its use on The Climate Framework for Uncertainty, Negotiation and Distribution (FUND), available on Github here, Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out Steps 1 and 2 from Tutorial 1, and then return to continue with this tutorial. Note that FUND is only requred for the second example in this tutorial. "
 },
 
 {
     "location": "tutorials/tutorial_4/#The-API-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "The API",
     "category": "section",
-    "text": "The best current documentation on the MCS API is the internals documentation here, which provides a working and informal description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial."
+    "text": "The best current documentation on the SA API is the internals documentation here, which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial."
 },
 
 {
     "location": "tutorials/tutorial_4/#Two-Region-Model-Example-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "Two-Region Model Example",
     "category": "section",
-    "text": "This section will walk through the simple example provided in \"Mimi.jl/test/mcs/test_defmcs.jl\"."
+    "text": "This section will walk through the simple example provided in \"Mimi.jl/test/sim/test_defsim.jl\"."
 },
 
 {
     "location": "tutorials/tutorial_4/#Step-1.-Setup-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "Step 1. Setup",
     "category": "section",
     "text": "First, set up for the tutorial as follows with the necessary packages and main.jl script for the two-region example.  You should have Mimi installed by now, and if you do not have Distributions, take a moment to add that package using by entering ] to enter the Pkg REPL mode and then typing add Distributions.cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory\nusing Distributions\n\ninclude(\"examples/tutorial/02-two-region-model/main.jl\")\nm = model # defined by 2-region model"
@@ -506,39 +506,39 @@ var documenterSearchIndex = {"docs": [
 
 {
     "location": "tutorials/tutorial_4/#Step-2.-Define-Random-Variables-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "Step 2. Define Random Variables",
     "category": "section",
-    "text": "The @defmcs macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process.mcs = @defmcs begin\n    # Define random variables. The rv() is required to disambiguate an\n    # RV definition name = Dist(args...) from application of a distribution\n    # to an external parameter. This makes the (less common) naming of an\n    # RV slightly more burdensome, but it\'s only required when defining\n    # correlations or sharing an RV across parameters.\n    rv(name1) = Normal(1, 0.2)\n    rv(name2) = Uniform(0.75, 1.25)\n    rv(name3) = LogNormal(20, 4)\n\n    # define correlations\n    name1:name2 = 0.7\n    name1:name3 = 0.5\n\n    # assign RVs to model Parameters\n    share = Uniform(0.2, 0.8)\n    sigma[:, Region1] *= name2\n    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)\n\n    # Assign an array of distributions, keyed by region, to parameter depk\n    depk = [Region1 => Uniform(0.7, 1.3),\n            Region2 => Uniform(0.8, 1.2),\n            Region3 => Normal()]\n\n    # indicate which parameters to save for each model run. Specify\n    # a parameter name or [later] some slice of its data, similar to the\n    # assignment of RVs, above.\n    save(grosseconomy.K, grosseconomy.YGROSS, \n         emissions.E, emissions.E_Global)\nend"
+    "text": "The @defsim macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process. It also selects the sampling method, with simple random sampling being the default. Other options include Latin Hypercube Sampling, and Sobol Sampling.sim = @defsim begin\n    # Define random variables. The rv() is required to disambiguate an\n    # RV definition name = Dist(args...) from application of a distribution\n    # to an external parameter. This makes the (less common) naming of an\n    # RV slightly more burdensome, but it\'s only required when defining\n    # correlations or sharing an RV across parameters.\n    rv(name1) = Normal(1, 0.2)\n    rv(name2) = Uniform(0.75, 1.25)\n    rv(name3) = LogNormal(20, 4)\n\n    # If using LHS, you can define correlations like this:\n    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])\n\n    # Exclude the sampling() call, or use the following for simple random sampling:\n    # sampling(MCSData)\n\n    # For Sobol sampling, specify N, and calc_second_order, which defaults to false.\n    # sampling(SobolData, N=100000, calc_second_order=true)\n\n    # assign RVs to model Parameters\n    share = Uniform(0.2, 0.8)\n    sigma[:, Region1] *= name2\n    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)\n\n    # Assign an array of distributions, keyed by region, to parameter depk\n    depk = [Region1 => Uniform(0.7, 1.3),\n            Region2 => Uniform(0.8, 1.2),\n            Region3 => Normal()]\n\n    # indicate which parameters to save for each model run. Specify\n    # a parameter name or [later] some slice of its data, similar to the\n    # assignment of RVs, above.\n    save(grosseconomy.K, grosseconomy.YGROSS, \n         emissions.E, emissions.E_Global)\nend"
 },
 
 {
     "location": "tutorials/tutorial_4/#Step-2.-Optional-User-Defined-Functions-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "Step 2. Optional User-Defined Functions",
     "category": "section",
-    "text": "Next, a user may create a user-defined function, which can be called as a pre or post-trial function by run_mcs.If pre_trial_func or post_trial_func are defined, the designated functions are called  just before or after (respectively) running a trial. The functions must have the signature:fn(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)where tup is a tuple of scenario arguments representing one element in the cross-product of all scenario value vectors. In situations in which you want the MCS loop to run only some of the models, the remainder of the runs can be handled using a pre_trial_func or post_trial_func."
+    "text": "Next, create the user-defined print_result function, which can be called as a post-trial function by run_sim.# Optional user functions can be called just before or after a trial is run\nfunction print_result(m::Model, sim::Simulation, trialnum::Int)\n    ci = Mimi.compinstance(m.mi, :emissions)\n    value = Mimi.get_variable_value(ci, :E_Global)\n    println(\"$(ci.comp_id).E_Global: $value\")\nendwhere tup is a tuple of scenario arguments representing one element in the cross-product of all scenario value vectors. In situations in which you want the SA loop to run only some of the models, the remainder of the runs can be handled using a pre_trial_func or post_trial_func."
 },
 
 {
     "location": "tutorials/tutorial_4/#Step-2.-Generate-Trials-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "Step 2. Generate Trials",
     "category": "section",
-    "text": "The optional generate_trials! function can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (Latin Hypercube) sampling method.  If this function is not called prior to calling run_mcs, random sampling is used for all distributions and trial data are not saved. Employ this function as follows:# Generate trial data for all RVs and (optionally) save to a file\noutput_dir = joinpath(tempdir(), \"mcs\")\ngenerate_trials!(mcs, 1000, filename=joinpath(output_dir, \"trialdata.csv\"))"
+    "text": "The optional generate_trials! function can be used to pre-generate all trial data, and save all random variable values in a file.  If this function is not called prior to calling run_sim, trial data are not saved. Employ this function as follows:# Generate trial data for all RVs and (optionally) save to a file\ngenerate_trials!(sim, 1000, filename=\"/tmp/trialdata.csv\")"
 },
 
 {
-    "location": "tutorials/tutorial_4/#Step-4.-Run-MCS-1",
-    "page": "4 MCS Functionality",
-    "title": "Step 4. Run MCS",
+    "location": "tutorials/tutorial_4/#Step-4.-Run-Simulation-1",
+    "page": "4 SA Functionality",
+    "title": "Step 4. Run Simulation",
     "category": "section",
-    "text": "Finally, use the set_models! and run_mcs functions.  First, calling [set_models!] with a model, marginal model, or list of models will set those models as those to be run by your mcs simulation.  Next, use run_mcs which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the run_mcs function iterates over a given number of trials, perturbing a chosen set of Mimi\'s \"external parameters\", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical and useful details on the full signature of this function:function run_mcs(mcs::MonteCarloSimulation, \n                 trials::Union{Int, Vector{Int}, AbstractRange{Int}},\n                 models_to_run::Int=length(mcs.models);\n                 ntimesteps::Int=typemax(Int), \n                 output_dir::Union{Nothing, AbstractString}=nothing, \n                 pre_trial_func::Union{Nothing, Function}=nothing, \n                 post_trial_func::Union{Nothing, Function}=nothing,\n                 scenario_func::Union{Nothing, Function}=nothing,\n                 scenario_placement::ScenarioLoopPlacement=OUTER,\n                 scenario_args=nothing)Here, we first employ run_mcs in its simplest form to obtain results:set_models!(mcs, m)\n# Run trials 1:4, and save results to the indicated directory, one CSV file per RV\nrun_mcs(mcs,1:4, output_dir=output_dir)"
+    "text": "Finally, use the set_models! and run_sim functions.  First, calling [set_models!] with a model, marginal model, or list of models will set those models as those to be run by your sim simulation.  Next, use run_sim which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the run_sim function iterates over a given number of trials, perturbing a chosen set of Mimi\'s \"external parameters\", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for critical and useful details on the full signature of this function:function run_sim(sim::Simulation, \n                 trials::Union{Int, Vector{Int}, AbstractRange{Int}},\n                 models_to_run::Int=length(sim.models);\n                 ntimesteps::Int=typemax(Int), \n                 output_dir::Union{Nothing, AbstractString}=nothing, \n                 pre_trial_func::Union{Nothing, Function}=nothing, \n                 post_trial_func::Union{Nothing, Function}=nothing,\n                 scenario_func::Union{Nothing, Function}=nothing,\n                 scenario_placement::ScenarioLoopPlacement=OUTER,\n                 scenario_args=nothing)Here, we first employ run_sim in its simplest form to obtain results:# Set models\nset_models!(sim, m)\n\n# Run trials 1:4, and save results to the indicated directory, one CSV file per RV\nrun_sim(sim, 4, output_dir=\"/tmp/Mimi\")and then again using our user-defined post-trial function as the post_trial_func parameter:# Same thing but with a post-trial function\nrun_sim(m, sim, 4, post_trial_func=print_result, output_dir=\"/tmp/Mimi\")"
 },
 
 {
     "location": "tutorials/tutorial_4/#FUND-Example-1",
-    "page": "4 MCS Functionality",
+    "page": "4 SA Functionality",
     "title": "FUND Example",
     "category": "section",
     "text": "This example is in progress and will be built out soon."
@@ -609,307 +609,11 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "reference/#Mimi.@defcomp",
-    "page": "Reference",
-    "title": "Mimi.@defcomp",
-    "category": "macro",
-    "text": "defcomp(comp_name::Symbol, ex::Expr)\n\nDefine a Mimi component comp_name with the expressions in ex.  The following  types of expressions are supported:\n\ndimension_name = Index()   # defines a dimension\nparameter = Parameter(index = [dimension_name], units = \"unit_name\", default = default_value)    # defines a parameter with optional arguments\nvariable = Variable(index = [dimension_name], units = \"unit_name\")    # defines a variable with optional arguments\ninit(p, v, d)              # defines an init function for the component\nrun_timestep(p, v, d, t)   # defines a run_timestep function for the component\n\nParses a @defcomp definition, converting it into a series of function calls that create the corresponding ComponentDef instance. At model build time, the ModelDef (including its ComponentDefs) will be converted to a runnable model.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.MarginalModel",
-    "page": "Reference",
-    "title": "Mimi.MarginalModel",
-    "category": "type",
-    "text": "MarginalModel\n\nA Mimi Model whose results are obtained by subtracting results of one base Model  from those of another marginal Modelthat has a difference ofdelta`.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.Model",
-    "page": "Reference",
-    "title": "Mimi.Model",
-    "category": "type",
-    "text": "Model\n\nA user-facing API containing a ModelInstance (mi) and a ModelDef (md).   This Model can be created with the optional keyword argument number_type indicating the default type of number used for the ModelDef.  If not specified the Model assumes a number_type of Float64.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.add_comp!",
-    "page": "Reference",
-    "title": "Mimi.add_comp!",
-    "category": "function",
-    "text": "add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)\n\nAdd the component indicated by comp_def to the model indcated by md. The component is added at the  end of the list unless one of the keywords, first, last, before, after. If the comp_name differs from that in the comp_def, a copy of comp_def is made and assigned the new name.\n\n\n\n\n\nadd_comp!(md::ModelDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name, \n    first=nothing, last=nothing, before=nothing, after=nothing)\n\nAdd the component indicated by comp_id to the model indicated by md. The component is added at the end of  the list unless one of the keywords, first, last, before, after. If the comp_name differs from that in the comp_def, a copy of comp_def is made and assigned the new name.\n\n\n\n\n\nadd_comp!(mi::ModelInstance, ci::ComponentInstance)\n\nAdd the component ci to the ModelInstance mi\'s list of components, and add the first and last of mi to the ends of the firsts and lasts lists of  mi, respectively.\n\n\n\n\n\nadd_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;\n    first=nothing, last=nothing, before=nothing, after=nothing)\n\nAdd the component indicated by comp_id to the model indicated by m. The component is added at the end of  the list unless one of the keywords, first, last, before, after. If the comp_name differs from that in the comp_id, a copy of comp_id is made and assigned the new name.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.components",
-    "page": "Reference",
-    "title": "Mimi.components",
-    "category": "function",
-    "text": "components(mi::ModelInstance)\n\nReturn an iterator on the components in model instance mi.\n\n\n\n\n\ncomponents(m::Model)\n\nReturn an iterator on the components in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.connect_param!",
-    "page": "Reference",
-    "title": "Mimi.connect_param!",
-    "category": "function",
-    "text": "connect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)\n\nConnect a parameter param_name in the component comp_name of model md to the external parameter ext_param_name. \n\n\n\n\n\nconnect_param!(md::ModelDef, dst_comp_name::Symbol, dst_par_name::Symbol, \n    src_comp_name::Symbol, src_var_name::Symbol backup::Union{Nothing, Array}=nothing; \n    ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst_par_name of one component dst_comp_name of model md to a variable src_var_name in another component src_comp_name of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination  and the source ie. the value would be 1 if the destination component parameter  should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(md::ModelDef, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, \n    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst[2] of one component dst[1] of model md to a variable src[2] in another component src[1] of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination  component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)\n\nConnect two components as connect_param!(dst, dst_name, src, src_name).\n\n\n\n\n\nconnect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)\n\nConnect two components with the same name as connect_param!(dst, src, name).\n\n\n\n\n\nconnect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, \n    src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst_par_name of one component dst_comp_name of model md to a variable src_var_name in another component src_comp_name of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination  component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)\n\nBind the parameter dst[2] of one component dst[1] of model md to a variable src[2] in another component src[1] of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination  component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.create_marginal_model",
-    "page": "Reference",
-    "title": "Mimi.create_marginal_model",
-    "category": "function",
-    "text": "create_marginal_model(base::Model, delta::Float64=1.0)\n\nCreate a MarginalModel where base is the baseline model and delta is the  difference used to create the marginal model.  Return the resulting MarginaModel which shares the internal ModelDef between the base and marginal.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.dim_count",
-    "page": "Reference",
-    "title": "Mimi.dim_count",
-    "category": "function",
-    "text": "dim_count(md::ModelDef, name::Symbol)\n\nReturn the size of index name in model definition md.\n\n\n\n\n\ndim_count(mi::ModelInstance, dim_name::Symbol)\n\nReturn the size of index dim_name in model instance mi.\n\n\n\n\n\ndim_count(m::Model, dim_name::Symbol)\n\nReturn the size of index dim_name in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.dim_keys",
-    "page": "Reference",
-    "title": "Mimi.dim_keys",
-    "category": "function",
-    "text": "dim_keys(md::ModelDef, name::Symbol)\n\nReturn keys for dimension name in model definition md.\n\n\n\n\n\ndim_keys(mi::ModelInstance, dim_name::Symbol)\n\nReturn keys for dimension dim_name in model instance mi.\n\n\n\n\n\ndim_keys(m::Model, dim_name::Symbol)\n\nReturn keys for dimension dim-name in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.dim_key_dict",
-    "page": "Reference",
-    "title": "Mimi.dim_key_dict",
-    "category": "function",
-    "text": "dim_key_dict(md::ModelDef)\n\nReturn a dict of dimension keys for all dimensions in model definition md.\n\n\n\n\n\ndim_key_dict(mi::ModelInstance)\n\nReturn a dict of dimension keys for all dimensions in model instance mi.\n\n\n\n\n\ndim_key_dict(m::Model)\n\nReturn a dict of dimension keys for all dimensions in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.disconnect_param!",
-    "page": "Reference",
-    "title": "Mimi.disconnect_param!",
-    "category": "function",
-    "text": "disconnect_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol)\n\nRemove any parameter connections for a given parameter param_name in a given component comp_name of model md.\n\n\n\n\n\ndisconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)\n\nRemove any parameter connections for a given parameter param_name in a given component comp_name of model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.explore",
-    "page": "Reference",
-    "title": "Mimi.explore",
-    "category": "function",
-    "text": "explore(m::Model; title = \"Electron\")\n\nProduce a UI to explore the parameters and variables of Model m in a Window with title title.\n\n\n\n\n\nexplore(m::Model, comp_name::Symbol, datum_name::Symbol)\n\nPlot a specific datum_name (a variable or parameter) of Model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.generate_trials!",
-    "page": "Reference",
-    "title": "Mimi.generate_trials!",
-    "category": "function",
-    "text": "generate_trials!(mcs::MonteCarloSimulation, trials::Int; \n                 filename::String=\"\", sampling::SamplingOptions=RANDOM)\n\nGenerate the given number of trials for the given MonteCarloSimulation instance.  Call this before running the MCS to pre-generate data to be used by all  scenarios. Also enables saving of inputs or choosing a sampling method other  than RANDOM. (Currently, only LHS and RANDOM are possible.)\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.getdataframe",
-    "page": "Reference",
-    "title": "Mimi.getdataframe",
-    "category": "function",
-    "text": "getdataframe(m::Model, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)\n\nReturn a DataFrame with values for the given variables or parameters of model m indicated by pairs, where each pair is of the form comp_name => item_name. If more than one pair is provided, all must refer to items with the same dimensions, which are used to join the respective item values.\n\n\n\n\n\ngetdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}})\n\nReturn a DataFrame with values for the given variables or parameters  indicated by pairs, where each pair is of the form comp_name => item_name. If more than one pair is provided, all must refer to items with the same dimensions, which are used to join the respective item values.\n\n\n\n\n\ngetdataframe(m::Model, comp_name::Symbol, item_name::Symbol)\n\nReturn the values for variable or parameter item_name in comp_name of  model m as a DataFrame.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.gettime",
-    "page": "Reference",
-    "title": "Mimi.gettime",
-    "category": "function",
-    "text": "gettime(ts::FixedTimestep)\n\nReturn the time (year) represented by Timestep ts \n\n\n\n\n\ngettime(ts::VariableTimestep)\n\nReturn the time (year) represented by Timestep ts \n\n\n\n\n\ngettime(c::Clock)\n\nReturn the current time of the timestep held by the c clock.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.get_param_value",
-    "page": "Reference",
-    "title": "Mimi.get_param_value",
-    "category": "function",
-    "text": "get_param_value(ci::ComponentInstance, name::Symbol)\n\nReturn the value of parameter name in component ci.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.get_var_value",
-    "page": "Reference",
-    "title": "Mimi.get_var_value",
-    "category": "function",
-    "text": "get_var_value(ci::ComponentInstance, name::Symbol)\n\nReturn the value of variable name in component ci.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.hasvalue",
-    "page": "Reference",
-    "title": "Mimi.hasvalue",
-    "category": "function",
-    "text": "hasvalue(arr::TimestepArray, ts::FixedTimestep)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::VariableTimestep)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::FixedTimestep, idxs::Int...)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts within indices idxs. Used when Array and Timestep have different FIRST, validating all dimensions.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::VariableTimestep, idxs::Int...)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts within indices idxs. Used when Array and Timestep different TIMES, validating all dimensions.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_first",
-    "page": "Reference",
-    "title": "Mimi.is_first",
-    "category": "function",
-    "text": "is_first(ts::AbstractTimestep)\n\nReturn true or false, true if ts is the first timestep to be run.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_last",
-    "page": "Reference",
-    "title": "Mimi.is_last",
-    "category": "function",
-    "text": "is_last(ts::FixedTimestep)\n\nReturn true or false, true if ts is the last timestep to be run.\n\n\n\n\n\nis_last(ts::VariableTimestep)\n\nReturn true or false, true if ts is the last timestep to be run.  Note that you may run next_timestep on ts, as ths final timestep has not been run through yet.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_time",
-    "page": "Reference",
-    "title": "Mimi.is_time",
-    "category": "function",
-    "text": "is_time(ts::AbstractTimestep, t::Int)\n\nReturn true or false, true if the current time (year) for ts is t\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.is_timestep",
-    "page": "Reference",
-    "title": "Mimi.is_timestep",
-    "category": "function",
-    "text": "is_timestep(ts::AbstractTimestep, t::Int)\n\nReturn true or false, true if ts timestep is step t.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.load_comps",
-    "page": "Reference",
-    "title": "Mimi.load_comps",
-    "category": "function",
-    "text": "load_comps(dirname::String=\"./components\")\n\nCall include() on all the files in the indicated directory dirname. This avoids having modelers create a long list of include() statements. Just put all the components in a directory.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.modeldef",
-    "page": "Reference",
-    "title": "Mimi.modeldef",
-    "category": "function",
-    "text": "modeldef(mi)\n\nReturn the ModelDef contained by ModelInstance mi.\n\n\n\n\n\nmodeldef(m)\n\nReturn the ModelDef contained by Model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.name",
-    "page": "Reference",
-    "title": "Mimi.name",
-    "category": "function",
-    "text": "name(def::NamedDef) = def.name\n\nReturn the name of def.  Possible NamedDefs include DatumDef, and ComponentDef.\n\n\n\n\n\nname(ci::ComponentInstance)\n\nReturn the name of the component ci.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.new_comp",
-    "page": "Reference",
-    "title": "Mimi.new_comp",
-    "category": "function",
-    "text": "new_comp(comp_id::ComponentId, verbose::Bool=true)\n\nAdd an empty ComponentDef to the global component registry with the given comp_id. The empty ComponentDef must be populated with calls to addvariable, addparameter, etc.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.parameters",
-    "page": "Reference",
-    "title": "Mimi.parameters",
-    "category": "function",
-    "text": "parameters(comp_def::ComponentDef)\n\nReturn a list of the parameter definitions for comp_def.\n\n\n\n\n\nparameters(comp_id::ComponentDef)\n\nReturn a list of the parameter definitions for comp_id.\n\n\n\n\n\nparameters(mi::ModelInstance, comp_name::Symbol)\n\nReturn the ComponentInstanceParameters for comp_name in ModelInstance \'mi\'.\n\n\n\n\n\nparameters(ci::ComponentInstance)\n\nReturn an iterable over the parameters in ci.\n\n\n\n\n\nparameters(m::Model, comp_name::Symbol)\n\nReturn a list of the parameter definitions for comp_name in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.plot_comp_graph",
-    "page": "Reference",
-    "title": "Mimi.plot_comp_graph",
-    "category": "function",
-    "text": "plot_comp_graph(m::Model, filename::Union{Nothing, Symbol} = nothing)\n\nPlot the DAG of component connections within model m and save to filename. If no filename is given, plot will simply display.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.replace_comp!",
-    "page": "Reference",
-    "title": "Mimi.replace_comp!",
-    "category": "function",
-    "text": "replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;\n    first::NothingInt=nothing, last::NothingInt=nothing,\n    before::NothingSymbol=nothing, after::NothingSymbol=nothing,\n    reconnect::Bool=true)\n\nReplace the component with name comp_name in model definition md with the  component comp_id using the same name. The component is added in the same  position as the old component, unless one of the keywords before or after  is specified. The component is added with the same first and last values,  unless the keywords first or last are specified. Optional boolean argument  reconnect with default value true indicates whether the existing parameter  connections should be maintained in the new component.\n\n\n\n\n\nreplace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;\n    first::NothingSymbol=nothing, last::NothingSymbol=nothing,\n    before::NothingSymbol=nothing, after::NothingSymbol=nothing,\n    reconnect::Bool=true)\n\nReplace the component with name comp_name in model m with the component comp_id using the same name.  The component is added in the same position as  the old component, unless one of the keywords before or after is specified. The component is added with the same first and last values, unless the keywords  first or last are specified. Optional boolean argument reconnect with  default value true indicates whether the existing parameter connections  should be maintained in the new component.  \n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.run_mcs",
-    "page": "Reference",
-    "title": "Mimi.run_mcs",
-    "category": "function",
-    "text": "run_mcs(mcs::MonteCarloSimulation, \n        trials::Union{Int, Vector{Int}, AbstractRange{Int}},\n        models_to_run::Int=length(mcs.models);\n        ntimesteps::Int=typemax(Int), \n        output_dir::Union{Nothing, AbstractString}=nothing, \n        pre_trial_func::Union{Nothing, Function}=nothing, \n        post_trial_func::Union{Nothing, Function}=nothing,\n        scenario_func::Union{Nothing, Function}=nothing,\n        scenario_placement::ScenarioLoopPlacement=OUTER,\n        scenario_args=nothing)\n\nRun the indicated the first trials, which indicates the number of trials to run starting from the first one. The first models_to_run associated models are run  for ntimesteps, if specified, else to the maximum defined time period. Note that trial data are applied to all the associated models even when running only a portion of them.\n\nIf pre_trial_func or post_trial_func are defined, the designated functions are called  just before or after (respectively) running a trial. The functions must have the signature:\n\nfn(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)\n\nwhere tup is a tuple of scenario arguments representing one element in the cross-product of all scenario value vectors. In situations in which you want the MCS loop to run only some of the models, the remainder of the runs can be handled using a pre_trial_func or post_trial_func.\n\nIf provided, scenario_args must be a Vector{Pair}, where each Pair is a symbol and a  Vector of arbitrary values that will be meaningful to scenario_func, which must have the signature:\n\nscenario_func(mcs::MonteCarloSimulation, tup::Tuple)\n\nBy default, the scenario loop encloses the Monte Carlo loop, but the scenario loop can be placed inside the Monte Carlo loop by specifying scenario_placement=INNER. When INNER  is specified, the scenario_func is called after any pre_trial_func but before the model is run.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_dimension!",
-    "page": "Reference",
-    "title": "Mimi.set_dimension!",
-    "category": "function",
-    "text": "set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Range})\n\nSet the values of md dimension name to integers 1 through count, if keys is an integer; or to the values in the vector or range if keys is either of those types.\n\n\n\n\n\nset_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})\n\nSet the values of m dimension name to integers 1 through count, if keysis an integer; or to the values in the vector or range ifkeys`` is either of those types.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_leftover_params!",
-    "page": "Reference",
-    "title": "Mimi.set_leftover_params!",
-    "category": "function",
-    "text": "set_leftover_params!(m::Model, parameters::Dict)\n\nSet all of the parameters in model m that don\'t have a value and are not connected to some other component to a value from a dictionary parameters. This method assumes the dictionary keys are strings that match the names of unset parameters in the model.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_models!",
-    "page": "Reference",
-    "title": "Mimi.set_models!",
-    "category": "function",
-    "text": "set_models!(mcs::MonteCarloSimulation, models::Vector{Model})\n\nSet the models to be used by the mcs MonteCarloSimulation. \n\n\n\n\n\nset_models!(mcs::MonteCarloSimulation, m:Model)\n\nSet the model m to be used by the mcs MonteCarloSimulation. \n\n\n\n\n\nset_models!(mcs::MonteCarloSimulation, mm::MarginalModel)\n\nSet the models to be used by the mcs MonteCarloSimulation to be mm.base and mm.marginal which make up the MarginalModel mm. \n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.set_param!",
-    "page": "Reference",
-    "title": "Mimi.set_param!",
-    "category": "function",
-    "text": "set_param!(m::ModelDef, comp_name::Symbol, name::Symbol, value, dims=nothing)\n\nSet the parameter name of a component comp_name in a model m to a given value. The value can by a scalar, an array, or a NamedAray. Optional argument \'dims\' is a  list of the dimension names ofthe provided data, and will be used to check that  they match the model\'s index labels.\n\n\n\n\n\nset_param!(ref::ComponentReference, name::Symbol, value)\n\nSet a component parameter as set_param!(reference, name, value).\n\n\n\n\n\nset_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)\n\nSet the parameter of a component comp_name in a model m to a given value.  The value can by a scalar, an array, or a NamedAray. Optional argument \'dims\'  is a list of the dimension names of the provided data, and will be used to check  that they match the model\'s index labels.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.variables",
-    "page": "Reference",
-    "title": "Mimi.variables",
-    "category": "function",
-    "text": "variables(mi::ModelInstance, comp_name::Symbol)\n\nReturn the ComponentInstanceVariables for comp_name in ModelInstance \'mi\'.\n\n\n\n\n\nvariables(m::Model, comp_name::Symbol)\n\nReturn a list of the variable definitions for comp_name in model m.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.update_param!",
-    "page": "Reference",
-    "title": "Mimi.update_param!",
-    "category": "function",
-    "text": "update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)\n\nUpdate the value of an external model parameter in ModelDef md, referenced  by name. Optional boolean argument update_timesteps with default value  false indicates whether to update the time keys associated with the parameter  values to match the model\'s time index.\n\n\n\n\n\nupdate_param!(m::Model, name::Symbol, value; update_timesteps = false)\n\nUpdate the value of an external model parameter in model m, referenced by  name. Optional boolean argument update_timesteps with default value false  indicates whether to update the time keys associated with the parameter values  to match the model\'s time index.\n\n\n\n\n\n"
-},
-
-{
-    "location": "reference/#Mimi.update_params!",
-    "page": "Reference",
-    "title": "Mimi.update_params!",
-    "category": "function",
-    "text": "update_params!(md::ModelDef, parameters::Dict{T, Any}; update_timesteps = false) where T\n\nFor each (k, v) in the provided parameters dictionary, update_param! is called to update the external parameter by name k to value v, with optional  Boolean argument update_timesteps. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the  model definition.\n\n\n\n\n\nupdate_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T\n\nFor each (k, v) in the provided parameters dictionary, update_param!`  is called to update the external parameter by name k to value v, with optional  Boolean argument update_timesteps. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the  model definition.\n\n\n\n\n\n"
-},
-
-{
     "location": "reference/#Reference-1",
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "@defcomp\nMarginalModel\nModel\nadd_comp!  \ncomponents \nconnect_param!\ncreate_marginal_model\ndim_count\ndim_keys\ndim_key_dict\ndisconnect_param!\nexplore\ngenerate_trials!\ngetdataframe\ngettime\nget_param_value\nget_var_value\nhasvalue\nis_first\nis_last\nis_time\nis_timestep\nload_comps\nmodeldef\nname\nnew_comp\nparameters\nplot_comp_graph\nreplace_comp! \nrun_mcs\nset_dimension! \nset_leftover_params! \nset_models!\nset_param! \nvariables  \nupdate_param!\nupdate_params!"
+    "text": "@defcomp\nMarginalModel\nModel\nadd_comp!  \ncomponents \nconnect_param!\ncreate_marginal_model\ndim_count\ndim_keys\ndim_key_dict\ndisconnect_param!\nexplore\ngenerate_trials!\ngetdataframe\ngettime\nget_param_value\nget_var_value\nhasvalue\nis_first\nis_last\nis_time\nis_timestep\nload_comps\nmodeldef\nname\nnew_comp\nparameters\nparameter_names\nparameter_dimensions\nplot_comp_graph\nreplace_comp! \nrun_sim\nset_dimension! \nset_leftover_params! \nset_models!\nset_param! \nvariables  \nvariable_dimensions\nvariable_names\nupdate_param!\nupdate_params!"
 },
 
 {
