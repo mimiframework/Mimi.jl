@@ -41,7 +41,7 @@ function _make_dims(args)
         elseif isa(arg, Expr) && arg.head == :tuple  # tuple of Strings/Symbols (@capture didn't work...)
             argtype = typeof(arg.args[1])            # ensure all are same type as first element
             if ! isempty(filter(s -> typeof(s) != argtype, arg.args))
-                error("A parameter dimension tuple must all String or all Symbol (got $arg)")
+                error("A parameter dimension tuple must be all Strings or all Symbols (got $arg)")
             end
             dim = :(convert(Vector{$argtype}, $(arg.args)))
 
@@ -54,12 +54,14 @@ function _make_dims(args)
     return dims
 end
 
-macro defmcs(expr)
+macro defsim(expr)
     let # to make vars local to each macro invocation
         local _rvs        = []
-        local _corrs      = []
         local _transforms = []
         local _saves      = []
+        local _sim_args  = Dict{Symbol, Any}()
+
+        simdatatype = nothing
 
         # distilled into a function since it's called from two branches below
         function saverv(rvname, distname, distargs)
@@ -102,19 +104,7 @@ macro defmcs(expr)
                     end
                 end
 
-            # e.g., name1:name2 = 0.7
-            elseif @capture(elt, name1_:name2_ = value_)
-                expr = :(CorrelationSpec($(QuoteNode(name1)), $(QuoteNode(name2)), $value))
-                push!(_corrs, esc(expr))
-
             # e.g., ext_var5[2010:2050, :] *= name2
-            # A bug in Macrotools prevents this shorter expression from working:
-            # elseif @capture(elt, ((extvar_  = rvname_Symbol) | 
-            #                       (extvar_ += rvname_Symbol) |
-            #                       (extvar_ *= rvname_Symbol) |
-            #                       (extvar_  = distname_(distargs__)) | 
-            #                       (extvar_ += distname_(distargs__)) |
-            #                       (extvar_ *= distname_(distargs__))))
             elseif (@capture(elt, extvar_  = rvname_Symbol) ||
                     @capture(elt, extvar_ += rvname_Symbol) ||
                     @capture(elt, extvar_ *= rvname_Symbol) ||
@@ -152,13 +142,31 @@ macro defmcs(expr)
                     expr = :(TransformSpec($(QuoteNode(extvar)), $(QuoteNode(op)), $(QuoteNode(rvname))))
                 end
                 push!(_transforms, esc(expr))
+
+            elseif @capture(elt, sampling(simdatatype_, simargs__))
+                # General method for setting an SA method's required parameters
+                for arg in simargs
+                    if !@capture(arg, name_=value_)
+                        error("simargs must be given as keyword arguments (got $simargs)")
+                    end
+                    _sim_args[name] = __module__.eval(value)
+                end
             else
-                error("Unrecognized expression '$elt' in @defmcs")
+                error("Unrecognized expression '$elt' in @defsim")
             end
         end
-        return :(MonteCarloSimulation([$(_rvs...)], 
-                                      [$(_transforms...)], 
-                                      CorrelationSpec[$(_corrs...)], 
-                                      Tuple{Symbol, Symbol}[$(_saves...)]))
+
+        # set default
+        simdatatype = (simdatatype == nothing) ? nameof(MCSData) : simdatatype
+    
+        # call constructor on given args
+        data = :($simdatatype(; $(_sim_args)...))
+
+        # TBD: need to generalize this to support other methods
+        return :(Simulation{$simdatatype}(
+                    [$(_rvs...)],
+                    [$(_transforms...)],  
+                    Tuple{Symbol, Symbol}[$(_saves...)],
+                    $data))
     end
 end

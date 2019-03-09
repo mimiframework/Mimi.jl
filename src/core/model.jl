@@ -128,6 +128,13 @@ function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
+function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
+                      first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(m.md, comp_def, comp_name; first=first, last=last, before=before, after=after)
+    decache(m)
+    return ComponentReference(m, comp_name)
+end
+
 """
     replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
         first::NothingSymbol=nothing, last::NothingSymbol=nothing,

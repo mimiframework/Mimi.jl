@@ -11,7 +11,7 @@ This guide is organized into six main sections for understanding how to use Mimi
 3) Running the model
 4) Accessing results
 5) Plotting and the Explorer UI
-6) MCS Functionality
+6) SA Functionality
 7) Advanced topics
 
 ## Defining Components
@@ -170,9 +170,9 @@ save("figure.svg", p)
 
 ![Explorer Single Plot Example](figs/explorer_single_plot_example.png)
 
-## Monte Carlo Simulation (MCS) Support
+## Sensitivity Analysis (SA) Support
 
-Mimi includes a host of routines which support running Monte Carlo Simulation (MCS) on Mimi models. The best current documentation on the MCS API is the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the Monte Carlo Simulation support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Monte Carlo Simulation (MCS) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. The best current documentation on the SA API is the internals documentation [here](internals/montecarlo.md), which provides a working, although informal, description of the SA support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Sensitivity Analysis (SA) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Advanced Topics
 

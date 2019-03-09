@@ -11,7 +11,7 @@ using StringBuilders
 
 export
     @defcomp,
-    @defmcs,
+    @defsim,
     MarginalModel,
     Model,
     add_comp!,
@@ -38,16 +38,20 @@ export
     name,
     new_comp,
     parameters, 
+    parameter_dimensions,
+    parameter_names,
     plot_comp_graph,
     replace_comp!, 
-    run_mcs,
+    run_sim,
     set_dimension!, 
     set_leftover_params!, 
     set_models!,
     set_param!, 
     update_param!,
     update_params!,
-    variables 
+    variables,
+    variable_dimensions,
+    variable_names
 
 include("core/delegate.jl")
 include("core/types.jl")

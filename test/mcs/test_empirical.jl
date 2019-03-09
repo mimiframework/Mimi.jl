@@ -50,7 +50,8 @@ results = zeros(num_scenarios, num_trials)
 _values = collect(1:10)
 _probs = 0.1 * ones(10)
 
-mcs_test = @defmcs begin
+mcs_test = @defsim begin
+    sampling(LHSData)
     p = EmpiricalDistribution(_values, _probs)
 end 
 
@@ -63,12 +64,13 @@ scenario_args = [
     :num => collect(1:num_scenarios)
 ]
 
-function scenario_func(mcs::MonteCarloSimulation, tup::Tuple)
+function scenario_func(sim::Simulation{T}, tup::Tuple) where T <: AbstractSimulationData
     nothing
 end
 
-function post_trial_func(mcs::MonteCarloSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
-    m, = mcs.models
+function post_trial_func(sim::Simulation{T}, trialnum::Int, ntimesteps::Int, 
+                         tup::Tuple)  where T <: AbstractSimulationData
+    m, = sim.models
     scenario_num, = tup
     results[scenario_num, trialnum] = m[:test, :p]
 end
@@ -78,9 +80,11 @@ set_dimension!(m, :time, 2000:2001)
 add_comp!(m, test)
 set_models!(mcs_test, m)
 
-generate_trials!(mcs_test, num_trials; sampling = RANDOM)
+generate_trials!(mcs_test, num_trials)
 
-run_mcs(mcs_test, num_trials;
+set_models!(mcs_test, m)
+
+run_sim(mcs_test, num_trials;
     output_dir = output_dir,
     scenario_args = scenario_args,
     scenario_func = scenario_func, 
@@ -97,16 +101,14 @@ end
 
 rm(output_dir, recursive = true)
 
-# Test in the case of sampling = LHS
-
-generate_trials!(mcs_test, num_trials; sampling = LHS)
+generate_trials!(mcs_test, num_trials)
 trial1 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
 
 for rv in values(mcs_test.rvdict)
     @test rv.dist isa Mimi.SampleStore
 end
 
-generate_trials!(mcs_test, num_trials; sampling = LHS)
+generate_trials!(mcs_test, num_trials)
 trial2 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
 
 @test trial1!=trial2
