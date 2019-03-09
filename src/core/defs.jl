@@ -721,7 +721,7 @@ end
     copy_external_params(md::ModelDef)
 
 Make copies of ModelParameter subtypes representing external parameters of model `md`. 
-This is used both in the copy() function below, and in the MCS subsystem 
+This is used both in the copy() function below, and in the simulation subsystem 
 to restore values between trials.
 
 """
