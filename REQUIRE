@@ -10,6 +10,7 @@ IterTools
 IterableTables
 FileIO
 GraphPlot 0.3.0
+GlobalSensitivityAnalysis
 JSON
 LightGraphs
 MacroTools

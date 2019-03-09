@@ -1,22 +1,4 @@
-# Global component registry: @defcomp stores component definitions here
-global const _compdefs = Dict{ComponentId, ComponentDef}()
-
-compdefs() = collect(values(_compdefs))
-
-compdef(comp_id::ComponentId) = _compdefs[comp_id]
-
-function compdef(comp_name::Symbol)
-    matches = collect(Iterators.filter(obj -> name(obj) == comp_name, values(_compdefs)))
-    count = length(matches)
-
-    if count == 1
-        return matches[1]
-    elseif count == 0
-        error("Component $comp_name was not found in the global registry")
-    else
-        error("Multiple components named $comp_name were found in the global registry")
-    end
-end
+compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
 
 compdefs(md::ModelDef) = values(md.comp_defs)
 
@@ -27,10 +9,8 @@ hascomp(md::ModelDef, comp_name::Symbol) = haskey(md.comp_defs, comp_name)
 compdef(md::ModelDef, comp_name::Symbol) = md.comp_defs[comp_name]
 
 function reset_compdefs(reload_builtins=true)
-    empty!(_compdefs)
-
     if reload_builtins
-        compdir = joinpath(dirname(@__FILE__), "..", "components")
+        compdir = joinpath(@__DIR__, "..", "components")
         load_comps(compdir)
     end
 end
@@ -43,11 +23,14 @@ last_period(md::ModelDef, comp_def::ComponentDef) = last_period(comp_def) === no
 
 # Return the module object for the component was defined in
 compmodule(comp_id::ComponentId) = comp_id.module_name
-
 compname(comp_id::ComponentId) = comp_id.comp_name
 
+compmodule(comp_def::ComponentDef) = compmodule(comp_def.comp_id)
+compname(comp_def::ComponentDef) = compname(comp_def.comp_id)
+
+
 function Base.show(io::IO, comp_id::ComponentId)
-    print(io, "$(comp_id.module_name).$(comp_id.comp_name)")
+    print(io, "<ComponentId $(comp_id.module_name).$(comp_id.comp_name)>")
 end
 
 """
@@ -60,40 +43,6 @@ name(def::NamedDef) = def.name
 number_type(md::ModelDef) = md.number_type
 
 numcomponents(md::ModelDef) = length(md.comp_defs)
-
-
-function dump_components()
-    for comp in compdefs()
-        println("\n$(name(comp))")
-        for (tag, objs) in ((:Variables, variables(comp)), (:Parameters, parameters(comp)), (:Dimensions, dimensions(comp)))
-            println("  $tag")
-            for obj in objs
-                println("    $(obj.name) = $obj")
-            end
-        end
-    end
-end
-
-"""
-    new_comp(comp_id::ComponentId, verbose::Bool=true)
-
-Add an empty `ComponentDef` to the global component registry with the given
-`comp_id`. The empty `ComponentDef` must be populated with calls to `addvariable`,
-`addparameter`, etc.
-"""
-function new_comp(comp_id::ComponentId, verbose::Bool=true)
-    if verbose
-        if haskey(_compdefs, comp_id)
-            @warn "Redefining component $comp_id"
-        else
-            @info "new component $comp_id"
-        end
-    end
-
-    comp_def = ComponentDef(comp_id)
-    _compdefs[comp_id] = comp_def
-    return comp_def
-end
 
 """
     delete!(m::ModelDef, component::Symbol
@@ -361,6 +310,11 @@ function parameter_unit(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     return param.unit
 end
 
+"""
+    parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+
+Return a vector of the dimensions of `param_name` in component `comp_name` in model `md`
+"""
 function parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbol)
     param = parameter(md, comp_name, param_name)
     return param.dimensions
@@ -473,6 +427,11 @@ function variable_unit(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     return var.unit
 end
 
+"""
+    parameter_dimensions(md::ModelDef, comp_name::Symbol, param_name::Symbol)
+
+Return a vector of the dimensions of `var_name` in component `comp_name` in model `md`
+"""
 function variable_dimensions(md::ModelDef, comp_name::Symbol, var_name::Symbol)
     var = variable(md, comp_name, var_name)
     return var.dimensions
@@ -529,13 +488,14 @@ function _add_anonymous_dims!(md::ModelDef, comp_def::ComponentDef)
 end
 
 """
-    add_comp!(md::ModelDef, comp_def::ComponentDef; first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; 
+              first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the model indcated by `md`. The component is added at the 
 end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol;
+function add_comp!(md::ModelDef, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
                    first::NothingInt=nothing, last::NothingInt=nothing, 
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
@@ -761,7 +721,7 @@ end
     copy_external_params(md::ModelDef)
 
 Make copies of ModelParameter subtypes representing external parameters of model `md`. 
-This is used both in the copy() function below, and in the SA subsystem 
+This is used both in the copy() function below, and in the simulation subsystem 
 to restore values between trials.
 
 """

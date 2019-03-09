@@ -17,7 +17,7 @@ m = create_model()
 
 N = 100
 
-mcs = @defmcs begin
+mcs = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -26,10 +26,6 @@ mcs = @defmcs begin
     rv(name1) = Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
-
-    # define correlations
-    name1:name2 = 0.7
-    name1:name3 = 0.5
 
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
@@ -50,11 +46,11 @@ end
 
 output_dir = joinpath(tempdir(), "mcs")
 
-generate_trials!(mcs, N, sampling=RANDOM, filename=joinpath(output_dir, "trialdata.csv"))
+generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Test that the proper number of trials were saved
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names
 
 set_models!(mcs, m)
-run_mcs(mcs, N, output_dir=output_dir)
+run_sim(mcs, N, output_dir=output_dir)

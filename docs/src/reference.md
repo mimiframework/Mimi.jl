@@ -28,6 +28,8 @@ modeldef
 name
 new_comp
 parameters
+parameter_names
+parameter_dimensions
 plot_comp_graph
 replace_comp! 
 run_sim
@@ -36,6 +38,8 @@ set_leftover_params!
 set_models!
 set_param! 
 variables  
+variable_dimensions
+variable_names
 update_param!
 update_params!
 ```

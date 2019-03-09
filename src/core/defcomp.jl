@@ -136,12 +136,14 @@ macro defcomp(comp_name, ex)
         comp_name = cmpname
     end
 
-    # We'll return a block of expressions that will define the component. First,
-    # save the ComponentId to a variable with the same name as the component.
+    # We'll return a block of expressions that will define the component.
     # @__MODULE__ is evaluated when the expanded macro is interpreted
     result = :(
-        let current_module = @__MODULE__
-            global const $comp_name = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name)))
+        let current_module = @__MODULE__,
+            comp_id = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name))),
+            comp = Mimi.ComponentDef(comp_id)
+
+            global $comp_name = comp
         end
     )
 
@@ -150,9 +152,6 @@ macro defcomp(comp_name, ex)
         let_block = result.args[end].args
         push!(let_block, expr)
     end
-
-    newcomp = :(comp = new_comp($comp_name, $defcomp_verbosity))
-    addexpr(newcomp)
 
     for elt in elements
         @debug "elt: $elt"
@@ -241,12 +240,14 @@ macro defcomp(comp_name, ex)
 
             @debug "    index $(Tuple(dimensions)), unit '$unit', desc '$desc'"
 
-            dflt = eval(dflt)
-            if (dflt !== nothing && length(dimensions) != ndims(dflt))
-                error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+            if dflt !== nothing
+                dflt = Base.eval(Main, dflt)
+                if length(dimensions) != ndims(dflt)
+                    error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+                end
             end
 
-            vartype = vartype === nothing ? Number : eval(vartype)
+            vartype = (vartype === nothing ? Number : Base.eval(Main, vartype))
             addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else
@@ -254,9 +255,7 @@ macro defcomp(comp_name, ex)
         end
     end
 
-    # addexpr(:($comp_name))
     addexpr(:(nothing))         # reduces noise
-
     return esc(result)
 end
 
@@ -297,7 +296,7 @@ macro defmodel(model_name, ex)
             addexpr(expr)
 
             name = (alias === nothing ? comp_name : alias)
-            expr = :(add_comp!($model_name, eval(comp_mod_name).$comp_name, $(QuoteNode(name))))
+            expr = :(add_comp!($model_name, Mimi.ComponentId(comp_mod_name, $(QuoteNode(comp_name))), $(QuoteNode(name))))
 
         # TBD: extend comp.var syntax to allow module name, e.g., FUND.economy.ygross
         elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||

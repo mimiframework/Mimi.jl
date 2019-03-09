@@ -10,7 +10,7 @@ using StringBuilders
 
 export
     @defcomp,
-    @defmcs,
+    @defsim,
     MarginalModel,
     Model,
     add_comp!,  
@@ -37,16 +37,20 @@ export
     name,
     new_comp,
     parameters, 
+    parameter_dimensions,
+    parameter_names,
     plot_comp_graph,
     replace_comp!, 
-    run_mcs,
+    run_sim,
     set_dimension!, 
     set_leftover_params!, 
     set_models!,
     set_param!, 
     update_param!,
     update_params!,
-    variables 
+    variables,
+    variable_dimensions,
+    variable_names
 
 include("core/types.jl")
 
@@ -87,7 +91,7 @@ end
 
 # Components are defined here to allow pre-compilation to work
 function __init__()
-    compdir = joinpath(dirname(@__FILE__), "components")
+    compdir = joinpath(@__DIR__, "components")
     load_comps(compdir)
 end
 
