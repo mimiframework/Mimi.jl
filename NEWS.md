@@ -1,5 +1,6 @@
 # Mimi.jl v0.8.0 Release Notes
-[TODO]
+* Generalize mcs functionality to support other sensitivity analysis methods
+* Update and augment documentation for sensitvity analysis
 
 # Mimi.jl v0.7.0 Release Notes
 * Drop julia 1.0 support
