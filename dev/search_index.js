@@ -33,6 +33,14 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "#Mimi-Registry-1",
+    "page": "Home",
+    "title": "Mimi Registry",
+    "category": "section",
+    "text": "Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the MimiRegistry, and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: pkg> registry add https://github.com/mimiframework/MimiRegistry.gitYou only need to run this command once on a computer. From there you may add any of the registered packages, such as MimiRICE2010.jl by running the following command at the julia package REPL:pkg> add MimiRICE2010"
+},
+
+{
     "location": "#Models-using-Mimi-1",
     "page": "Home",
     "title": "Models using Mimi",
@@ -277,7 +285,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Tutorials Intro",
     "title": "Requirements and Initial Setup",
     "category": "section",
-    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiWe also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
+    "text": "These tutorials require Julia v1.0.0 and Mimi v0.6.0, or later. You will also need to use Github and thus download Git.To use the following tutorials, follow the steps below.Download Git here.\nDownload the latest version of Julia here, making sure that your downloaded version is v1.0.0 or later.\nOpen a Julia REPL, and enter ] to enter the Pkg REPL mode, and then type add Mimi to install the latest tagged version of Mimi, which must be version 0.6.0 or later.pkg> add MimiTo access the models in the MimiRegistry, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:pkg> registry add https://github.com/mimiframework/MimiRegistry.gitYou only need to run this command once on a computer. From there you will be add any of the registered packages, such as MimiRICE2010.jl by running the following command at the julia package REPL:pkg> add MimiRICE2010We also recommend that you frequently update your packages and requirements using the update command, which can be abbreviated up:pkg> upYou are now ready to begin the tutorials!"
 },
 
 {
@@ -293,7 +301,7 @@ var documenterSearchIndex = {"docs": [
     "page": "1 Run an Existing Model",
     "title": "Tutorial 1: Run an Existing Model",
     "category": "section",
-    "text": "This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github for the purposes of this tutorial we will use The Climate Framework for Uncertainty, Negotiation and Distribution (FUND), available on Github here.Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  "
+    "text": "This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github for the purposes of this tutorial we will use The Climate Framework for Uncertainty, Negotiation and Distribution (FUND), available on Github here.Working through the following tutorial will require:Julia v1.1.0 or higher\nMimi v0.8.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  "
 },
 
 {
@@ -301,7 +309,7 @@ var documenterSearchIndex = {"docs": [
     "page": "1 Run an Existing Model",
     "title": "Step 1. Download FUND",
     "category": "section",
-    "text": "The first step in this process is downloading the FUND model.  First, open your command line interface and navigate to the folder where you would like to download FUND.cd(<directory-path>) # directory-path is a placeholder for the string describing your desired file pathNext, clone the FUND repository from Github, enter the repository, and checkout the next branch, which holds the Julia version of FUND.git clone https://github.com/fund-model/fund.git\ncd(\"fund\")\ngit checkout nextYou have now successfully downloaded FUND to your local machine."
+    "text": "The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry.  Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi modelspkg> registry add https://github.com/mimiframework/MimiRegistry.gitYou simply need to add the FUND model with add MimiFUND"
 },
 
 {
@@ -309,7 +317,7 @@ var documenterSearchIndex = {"docs": [
     "page": "1 Run an Existing Model",
     "title": "Step 2. Run FUND",
     "category": "section",
-    "text": "The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  In order to run FUND, you will need to open a Julia REPL (here done with the alias julia) and navigate to the source code folder, labeled src.Julia \ncd(<fund-directory-path>) # fund-directory-path is a placeholder for the string describing your the file path of the downloaded `fund` folder from Step 1.Next, run the main fund file fund.jl (make sure to have the packages Distributions and StatsBase installed, and if not do so by entering Pkg mode by typing ], and then add StatsBase and add Distributions.  This file defines a new module called Fund, which exports the function getfund, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call using .Fund, where .Fund is a shortcut for Main.Fund, since the Fund module is nested inside the Main module. After creating the model m, simply run the model using the run function.include(\"src/fund.jl\")\nusing .Fund\nm = getfund()\nrun(m)Note that these steps should be relatively consistent across models, where a repository for ModelX should contain a primary file ModelX.jl which exports, at minimum, a function named something like getModelX or construct_ModelX which returns a version of the model, and can allow for model customization within the call.In this case, the function getfund has the signaturegetfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)Thus there are no required arguments, although the user can input nsteps to define the number of timesteps (years in this case) the model runs for, datadir to define the location of the input data, and params, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:include(\"src/fund.jl\")\nusing .Fund\nm = getfund(nsteps = 100)\nrun(m)"
+    "text": "The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  In order to run FUND, you will need to have the packages Distributions and StatsBase installed, and if not do so by entering Pkg mode by typing ], and then add StatsBase and add Distributions.  Now open a julia REPL and type using MimiFUNDto access the public API to FUND, which currently includes the function getfund, a function that returns a version of fund allowing for different user specifications.  m = getfund()\nrun(m)Note that these steps should be relatively consistent across models, where a repository for ModelX should contain a primary file ModelX.jl which exports, at minimum, a function named something like getModelX or construct_ModelX which returns a version of the model, and can allow for model customization within the call.In this case, the function getfund has the signaturegetfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)Thus there are no required arguments, although the user can input nsteps to define the number of timesteps (years in this case) the model runs for, datadir to define the location of the input data, and params, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:include(\"src/fund.jl\")\nusing .Fund\nm = getfund(nsteps = 100)\nrun(m)"
 },
 
 {
@@ -365,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2 Modify an Existing Model",
     "title": "Tutorial 2: Modify an Existing Model",
     "category": "section",
-    "text": "While the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon.This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use DICE-2010, available on Github here.Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. Futhermore, this tutorial uses the DICE model as an example.  Downloading DICE uses similar steps to those described for FUND in Tutorial 1 Steps 1 and 2, but are repeated in in Step 1 for clarity."
+    "text": "While the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon.This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use DICE-2010, available on Github here.Working through the following tutorial will require:Julia v1.1.0 or higher\nMimi v0.8.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. Futhermore, this tutorial uses the DICE model as an example.  Downloading DICE uses similar steps to those described for FUND in Tutorial 1 Steps 1 and 2."
 },
 
 {
@@ -397,7 +405,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2 Modify an Existing Model",
     "title": "Step 1. Download DICE",
     "category": "section",
-    "text": "The first step in this process is downloading the DICE model.  First, open your command line interface and navigate to the folder where you would like to download DICE.cd(<directory-path>) # directory-path is a placeholder for the string describing your desired file pathNext, clone the DICE repository from Github, and enter the repository.git clone https://github.com/anthofflab/mimi-dice-2010.jl.git\ncd(\"mimi-dice-2010.jl\")\nYou have now successfully downloaded DICE to your local machine."
+    "text": "The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry.  Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi modelspkg> registry add https://github.com/mimiframework/MimiRegistry.gitYou simply need to add the DICE2010 model with add MimiDICE2010You have now successfully downloaded DICE to your local machine."
 },
 
 {
@@ -405,7 +413,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2 Modify an Existing Model",
     "title": "Step 2. Run DICE",
     "category": "section",
-    "text": "The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  In order to run DICE, you will need to open a Julia REPL (here done witht the alias julia) and navigate to the source code folder, labeled src.Julia \ncd(<dice-directory-path>) # <dice-directory-path> is a placeholder for the string describing your the file path of the downloaded `dice-2010` folder from Step 1.Next, run the main fund file dice2010.jl.  This file defines a new module called Dice2010, which exports the function construct_dice, a function that returns a version of dice allowing for user specification of parameters.  Note that in order to allow access to the module, we must call using .Dice2010, where .Dice2010 is a shortcut for Main.Dice2010, since the Dice2010 module is nested inside the Main module. After creating the model m, simply run the model using the run function.include(\"src/dice2010.jl\")\nusing .Dice2010\nm = construct_dice()\nrun(m)Note that these steps should be relatively consistent across models, where a repository for ModelX should contain a primary file ModelX.jl which exports, at minimum, a function named something like getModelX or construct_ModelX which returns a version of the model, and can allow for model customization within the call.In this case, the function construct_dice has the signatureconstruct_dice(params=nothing)Thus there are no required arguments, although the user can input params, a dictionary definining the parameters of the model. "
+    "text": "The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  Now run DICE using the provided API for the package:using MimiDICE2010\nm = construct_dice()\nrun(m)Note that these steps should be relatively consistent across models, where a repository for ModelX should contain a primary file ModelX.jl which exports, at minimum, a function named something like getModelX or construct_ModelX which returns a version of the model, and can allow for model customization within the call.In this case, the function construct_dice has the signatureconstruct_dice(params=nothing)Thus there are no required arguments, although the user can input params, a dictionary definining the parameters of the model. "
 },
 
 {
@@ -445,7 +453,7 @@ var documenterSearchIndex = {"docs": [
     "page": "3 Create a Model",
     "title": "Tutorial 3: Create a Model",
     "category": "section",
-    "text": "This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model. While we will walk through the code step by step below, the full code for implementation is also available in the examples/tutorial folder in the Mimi github repository.Working through the following tutorial will require:Julia v1.0.0 or higher\nMimi v0.6.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. "
+    "text": "This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model. While we will walk through the code step by step below, the full code for implementation is also available in the examples/tutorial folder in the Mimi github repository.Working through the following tutorial will require:Julia v1.1.0 or higher\nMimi v0.8.0 \nGit and GithubIf you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. "
 },
 
 {
