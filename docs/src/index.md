@@ -14,6 +14,23 @@ Pkg.add("Mimi")
 
 For more complete setup instructions, follow the [Installation Guide](@ref).
 
+
+## Mimi Registry
+
+Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/anthofflab/Mimi.jl), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
+
+```julia
+pkg> registry add https://github.com/mimiframework/MimiRegistry.git
+```
+
+You only need to run this command once on a computer. 
+
+From there you may add any of the registered packages, such as MimiRICE2010.jl by running the following command at the julia package REPL:
+
+```julia
+pkg> add MimiRICE2010
+```
+
 ## Models using Mimi
 
 * [FUND.jl](https://github.com/davidanthoff/fund.jl) (currently in beta)
