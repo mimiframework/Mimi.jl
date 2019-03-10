@@ -4,45 +4,39 @@ This tutorial walks through the steps to download, run, and view the output of a
 
 Working through the following tutorial will require:
 
-- [Julia v1.0.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl) 
+- [Julia v1.1.0](https://julialang.org/downloads/) or higher
+- [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
 - [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
 ### Step 1. Download FUND
 
-The first step in this process is downloading the FUND model.  First, open your command line interface and navigate to the folder where you would like to download FUND.
+The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry.  Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models
 
-```
-cd(<directory-path>) # directory-path is a placeholder for the string describing your desired file path
+```julia
+pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-Next, clone the FUND repository from Github, enter the repository, and checkout the `next` branch, which holds the Julia version of FUND.
-
+You simply need to add the FUND model with 
 ```
-git clone https://github.com/fund-model/fund.git
-cd("fund")
-git checkout next
+add MimiFUND
 ```
-You have now successfully downloaded FUND to your local machine.
 
 ### Step 2. Run FUND
 
 The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  
 
-In order to run FUND, you will need to open a Julia REPL (here done with the alias `julia`) and navigate to the source code folder, labeled `src`.
+In order to run FUND, you will need to have the packages `Distributions` and `StatsBase` installed, and if not do so by entering [Pkg mode](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) by typing `]`, and then `add StatsBase` and `add Distributions`.  
+
+Now open a julia REPL and type 
 
 ```
-Julia 
-cd(<fund-directory-path>) # fund-directory-path is a placeholder for the string describing your the file path of the downloaded `fund` folder from Step 1.
+using MimiFUND
 ```
-
-Next, run the main fund file `fund.jl` (make sure to have the packages `Distributions` and `StatsBase` installed, and if not do so by entering [Pkg mode](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) by typing `]`, and then `add StatsBase` and `add Distributions`.  This file defines a new [module](https://docs.julialang.org/en/v1/manual/modules/index.html) called `Fund`, which exports the function `getfund`, a function that returns a version of fund allowing for different user specifications.  Note that in order to allow access to the module, we must call `using .Fund`, where `.Fund` is a shortcut for `Main.Fund`, since the `Fund` module is nested inside the `Main` module. After creating the model `m`, simply run the model using the `run` function.
+to access the public API to FUND, which currently includes the function `getfund`, a function that returns a version of fund allowing for different user specifications.  
 
 ```
-include("src/fund.jl")
-using .Fund
 m = getfund()
 run(m)
 ```
