@@ -15,6 +15,6 @@ include("defmcs.jl")
 
 export 
     @defsim, generate_trials!, run_sim, save_trial_inputs, save_trial_results, set_models!,
-    EmpiricalDistribution, RandomVariable, TransformSpec, CorrelationSpec, Simulation, AbstractSimulationData,
-    LHSData, LatinHypercubeSimulation, MCSData, MonteCarloSimulation, SobolData, SobolSimulation,
-    INNER, OUTER, sample!, analyze
+    EmpiricalDistribution, ReshapedDistribution, RandomVariable, TransformSpec, CorrelationSpec, 
+    AbstractSimulationData, Simulation, LHSData, LatinHypercubeSimulation, MCSData, 
+    MonteCarloSimulation, SobolData, SobolSimulation, INNER, OUTER, sample!, analyze
