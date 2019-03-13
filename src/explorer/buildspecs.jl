@@ -1,5 +1,7 @@
 ## Mimi UI
 using Dates
+using StringBuilders
+using JSON
 
 function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
@@ -45,6 +47,35 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
 
     return spec
         
+end
+
+# Sobol spec
+function _spec_for_item(sim::Simulation{SobolData}, results::Dict) # TODO parameterize
+    
+    # get params for x axis labels
+    params = [keys(sim.rvdict)...]
+    params_string = string.(params)
+    numrvs = length(params)
+
+    # create dataframe
+    df = DataFrame()
+
+    if sim.data.calc_second_order
+        df.rvname = repeat(params_string, 3)
+        df.index= [results[:firstorder]; results[:secondorder]; results[:totalorder]]
+        df.category = [fill("1st Order", numrvs); fill("2nd Order", numrvs); fill("3rd Order", numrvs)]
+    else
+        df.rvname = repeat(params_string, 2)
+        df.index = [results[:firstorder]; results[:totalorder]]
+        df.category = [fill("1st Order", numrvs); fill("2nd Order", numrvs)]
+    end
+
+    dffields = map(string, names(df))
+
+    # get the spec
+    spec = createspec_groupedbarplot(df, dffields)
+
+    return spec
 end
 
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
@@ -219,6 +250,29 @@ function createspec_barplot(name, df, dffields)
     return spec
 end
 
+
+function createspec_groupedbarplot(df, dffields)
+    datapart = getdatapart(df, dffields, :groupedbar) #returns JSONtext type     
+    
+    spec = Dict(
+        "type" => "groupedbar",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "description" => "plot for the results of Sobol Analysis",
+            "title" => "Sensitivity Indices",
+            "data" => Dict("values" => datapart),
+            "mark" => "bar", 
+            "spacing" => 10, 
+            "encoding" => Dict(
+                "column" => Dict("field" => "rvname", "type" => "nominal"),
+                "y" => Dict("field" => dffields[2], "type" => "quantitative"),
+                "x" => Dict("field" => dffields[3], "type" => "nominal")
+            )
+        )
+    )
+    return spec
+end
+
 function createspec_singlevalue(name)
 
     datapart = [];
@@ -239,6 +293,9 @@ function getdatapart(df, dffields, plottype::Symbol)
     if plottype == :multiline
         cols = (df[1], df[2], df[3])
         datastring = getmultiline(cols, dffields)
+    elseif plottype == :multibar
+        cols = (df[1], df[2], df[3])
+        datastring = getgroupedbar(cols, dffields)
     elseif plottype == :line
         cols = (df[1], df[2])
         datastring = getline(cols, dffields)
@@ -268,6 +325,23 @@ function getmultiline(cols, dffields)
         end  
     end
     return String(datasb)
+end
+
+function getgroupedbar(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    num
+    for i = 1:numrows
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
+            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
+            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
+        
+        if i != numrows
+            append!(datasb, ",")
+        end  
+    end
+    return String(datasb)
+    
 end
 
 function getline(cols, dffields)

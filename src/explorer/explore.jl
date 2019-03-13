@@ -3,6 +3,7 @@ using VegaLite
 using FilePaths
 import FileIO:save
 export save
+using DataFrames
 
 global app = nothing
 
@@ -64,6 +65,17 @@ function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
     
     spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
     spec === nothing && error("Spec cannot be built.")        
+
+    return VegaLite.VLSpec{:plot}(spec)
+end
+
+"""
+    exploreSobol(sim::Simulation, results::Dict)
+Plot a bar graph of the `results` from sobol analysis of `sim`
+"""
+function exploreSobol(sim::Simulation, results::Dict)
+    spec = Mimi._spec_for_item(sim, results)
+    spec === nothing && error("Spec cannot be built.")
 
     return VegaLite.VLSpec{:plot}(spec)
 end
