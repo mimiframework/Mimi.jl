@@ -134,16 +134,17 @@ function connect_param!(md::ModelDef,
         if dim_count == 0
             values = backup
         else
+            ti = get_time_index_position(dst_param)
             
             if isuniform(md)
                 # use the first from the comp_def not the ModelDef
                 _, stepsize = first_and_step(md)
-                values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
+                values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count, ti}(backup)
             else
                 times = time_labels(md)
                 # use the first from the comp_def 
                 first_index = findfirst(isequal(first), times) 
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count, ti}(backup)
             end
             
         end
@@ -426,7 +427,8 @@ function _update_array_param!(md::ModelDef, name, value, update_timesteps, raise
         if param.values isa TimestepArray 
             T = eltype(value)
             N = length(size(value))
-            new_timestep_array = get_timestep_array(md, T, N, value)
+            ti = get_time_index_position(param)
+            new_timestep_array = get_timestep_array(md, T, N, ti, value)
             md.external_params[name] = ArrayModelParameter(new_timestep_array, param.dimensions)
         elseif raise_error
             error("Cannot update timesteps; parameter $name is not a TimestepArray.")

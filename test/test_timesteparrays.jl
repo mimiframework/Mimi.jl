@@ -102,7 +102,7 @@ years = Tuple(2000:1:2003)
 #3a.  test constructor (with both matching years 
 # and mismatched years)
 
-y = TimestepMatrix{FixedTimestep{2000, 1}, Int}(a[:,1:2])
+y = TimestepMatrix{FixedTimestep{2000, 1}, Int, 1}(a[:,1:2])
 
 #3b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
@@ -135,7 +135,7 @@ y[:,:] = 11
 @test all([y[1,j] == 11 for j in 1:2])    
 
 #3c.  interval wider than 1
-z = TimestepMatrix{FixedTimestep{2000, 2}, Int}(a[:,3:4])
+z = TimestepMatrix{FixedTimestep{2000, 2}, Int, 1}(a[:,3:4])
 t = FixedTimestep{1980, 2, 3000}(11)
 
 @test z[t,1] == 9
@@ -151,7 +151,7 @@ t2 = next_timestep(t)
 #------------------------------------------------------------------------------
 
 years = Tuple([2000:5:2005; 2015:10:2025])
-y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
+y = TimestepMatrix{VariableTimestep{years}, Int, 1}(a[:,1:2])
 
 #4a.  test hasvalue, getindex, setindex!, and lastindex (with both matching years and
 # mismatched years)
@@ -192,9 +192,9 @@ x_years = Tuple(2000:5:2015) #fixed
 y_years = Tuple([2000:5:2005; 2015:10:2025]) #variable
 
 x_vec = TimestepVector{FixedTimestep{2000, 5}, Int}(a[:,3]) 
-x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int}(a[:,1:2])
+x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int, 1}(a[:,1:2])
 y_vec = TimestepVector{VariableTimestep{y_years}, Int}(a[:,3]) 
-y_mat = TimestepMatrix{VariableTimestep{y_years}, Int}(a[:,1:2])
+y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(a[:,1:2])
 
 @test first_period(x_vec) == first_period(x_mat) == x_years[1] 
 @test first_period(y_vec) == first_period(y_mat) == y_years[1]

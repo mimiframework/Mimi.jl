@@ -6,19 +6,21 @@ function _instance_datatype(md::ModelDef, def::DatumDef)
     dims = dimensions(def)
     num_dims = dim_count(def)
 
+    ti = get_time_index_position(def)
+
     if num_dims == 0
         T = ScalarModelParameter{dtype}
 
-    elseif dims[1] != :time
+    elseif ti == nothing     # there's no time dimension
         T = Array{dtype, num_dims}
     
     else   
         if isuniform(md)
             first, stepsize = first_and_step(md)
-            T = TimestepArray{FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims}
+            T = TimestepArray{FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims, ti}
         else
             times = time_labels(md)
-            T = TimestepArray{VariableTimestep{(times...,)}, Union{dtype, Missing}, num_dims}
+            T = TimestepArray{VariableTimestep{(times...,)}, Union{dtype, Missing}, num_dims, ti}
         end
     end
 
