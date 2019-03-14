@@ -294,10 +294,11 @@ end
 
 function set_external_param!(md::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    if param_dims[1] == :time   
+    ti = get_time_index_position(param_dims)
+    if ti != nothing
         value = convert(Array{md.number_type}, value)
         num_dims = length(param_dims)
-        values = get_timestep_array(md, eltype(value), num_dims, value)      
+        values = get_timestep_array(md, eltype(value), num_dims, ti, value)      
     else
         values = value
     end

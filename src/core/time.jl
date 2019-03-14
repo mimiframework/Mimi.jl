@@ -178,6 +178,7 @@ end
 # Return the index position of the time dimension in the datumdef or parameter. If there is no time dimension, return nothing
 get_time_index_position(datumdef::DatumDef) = findfirst(isequal(:time), datumdef.dimensions)
 get_time_index_position(param::ArrayModelParameter) = findfirst(isequal(:time), param.dimensions)
+get_time_index_position(dims::Union{Nothing, Array{Symbol}}) = findfirst(isequal(:time), dims)
 function get_time_index_position(md::ModelDef, comp_name::Symbol, datum_name::Symbol)
 	datumdef = parameter(md, comp_name, datum_name)
 	return get_time_index_position(datumdef)
