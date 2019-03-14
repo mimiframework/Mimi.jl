@@ -246,4 +246,49 @@ set_param!(m, :first, :par, 1:length(years))
 @test_throws MissingException run(m)
 
 
+#------------------------------------------------------------------------------
+# 7. Test TimestepArrays with time not as the first dimension
+#------------------------------------------------------------------------------
+
+@defcomp gdp begin
+    growth = Parameter(index=[regions, foo, time, 2])   # test that time is not first but not last
+    gdp = Variable(index=[regions, foo, time, 2])
+    gdp0 = Parameter(index=[regions, foo, 2])
+
+    pgrowth = Parameter(index=[regions, 3, time])       # test time as last
+    pop = Variable(index=[regions, 3, time])
+
+    mat = Parameter(index=[regions, time])              # test time as last for a matrix
+    mat2 = Variable(index=[regions, time])
+
+    function run_timestep(p, v, d, ts)
+        if is_first(ts)
+            v.gdp[:, :, ts, :] = (1 .+ p.growth[:, :, ts, :]) .* p.gdp0
+            v.pop[:, :, ts] = zeros(2, 3)
+        else
+            v.gdp[:, :, ts, :] = (1 .+ p.growth[:, :, ts, :]) .* v.gdp[:, :, ts-1, :]
+            v.pop[:, :, ts] = v.pop[:, :, ts-1] .+ p.pgrowth[:, :, ts]
+        end
+        v.mat2[:, ts] = p.mat[:, ts]
+    end
+end
+
+time_index = 2000:2100
+regions = ["OECD","non-OECD"]
+nsteps=length(time_index)
+
+m = Model()
+set_dimension!(m, :time, time_index)
+set_dimension!(m, :regions, regions)
+set_dimension!(m, :foo, 3)
+add_comp!(m, gdp)
+set_param!(m, :gdp, :gdp0, [3; 7] .* ones(length(regions), 3, 2))
+set_param!(m, :gdp, :growth, [0.02; 0.03] .* ones(length(regions), 3, nsteps, 2))
+set_leftover_params!(m, Dict{String, Any}([
+    "pgrowth" => ones(length(regions), 3, nsteps),
+    "mat" => rand(length(regions), nsteps)
+]))
+run(m)
+
+
 end #module

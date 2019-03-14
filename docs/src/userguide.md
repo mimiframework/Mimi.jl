@@ -20,8 +20,6 @@ Any Mimi model is made up of at least one component, so before you construct a m
 
 A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the `run_timestep` function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
 
-Also note that if a  `Variable` or `Parameter` has `time` as an index, it must be listed as the first index in the definition, eg. `B = Variable(index = [time, regions])` is allowed, but `B = Variable(index = [regions, time])` is not.
-
 The user must define a `run_timestep` function for each component. 
 
 We define a component in the following way:

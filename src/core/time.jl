@@ -176,13 +176,10 @@ function get_timestep_array(md::ModelDef, T, N, ti, value)
 end
 
 # Return the index position of the time dimension in the datumdef or parameter. If there is no time dimension, return nothing
-get_time_index_position(datumdef::DatumDef) = findfirst(isequal(:time), datumdef.dimensions)
-get_time_index_position(param::ArrayModelParameter) = findfirst(isequal(:time), param.dimensions)
 get_time_index_position(dims::Union{Nothing, Array{Symbol}}) = findfirst(isequal(:time), dims)
-function get_time_index_position(md::ModelDef, comp_name::Symbol, datum_name::Symbol)
-	datumdef = parameter(md, comp_name, datum_name)
-	return get_time_index_position(datumdef)
-end
+get_time_index_position(datumdef::DatumDef) = get_time_index_position(datumdef.dimensions)
+get_time_index_position(param::ArrayModelParameter) = get_time_index_position(param.dimensions)
+get_time_index_position(md::ModelDef, comp_name::Symbol, datum_name::Symbol) = get_time_index_position(dimensions(compdef(md, comp_name), datum_name))
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 
@@ -423,46 +420,48 @@ last_period(obj::TimestepArray{VariableTimestep{TIMES}, T, N, ti}) where {TIMES,
 time_labels(obj::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}) where {FIRST, STEP, T, N, ti} = collect(FIRST:STEP:(FIRST + (size(obj, 1) - 1) * STEP))
 time_labels(obj::TimestepArray{VariableTimestep{TIMES}, T, N, ti}) where {TIMES, T, N, ti} = collect(TIMES)
 
+split_indices(idxs, ti) = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+
 function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idxs::Union{FixedTimestep{FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	return arr.data[idxs1..., ts.t, idxs2...]
 end
 
 function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{VariableTimestep{TIMES}, AnyIndex}...) where {T, N, ti, TIMES}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	return arr.data[idxs1..., ts.t, idxs2...]
 end
 
 function Base.getindex(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N, ti}, idxs::Union{FixedTimestep{T_FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, D_FIRST, T_FIRST, STEP, LAST}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = Int(ts.t + (FIRST - TIMES[1]) / STEP)					
 	return arr.data[idxs1..., t, idxs2...]
 end
 
 function Base.getindex(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti}, idxs::Union{VariableTimestep{T_TIMES}, AnyIndex}...) where {T, N, ti, D_TIMES, T_TIMES}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = ts.t + findfirst(isequal(T_TIMES[1]), D_TIMES) - 1	
 	return arr.data[idxs1..., t, idxs2...]
 end
 
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::Union{FixedTimestep{FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	setindex!(arr.data, val, idxs1..., ts.t, idxs2...)
 end
 
 function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::Union{VariableTimestep{TIMES}, AnyIndex}...) where {T, N, ti, TIMES}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	setindex!(arr.data, val, idxs1..., ts.t, idxs2...)
 end
 
 function Base.setindex!(arr::TimestepArray{FixedTimestep{D_FIRST, STEP}, T, N, ti}, val, idxs::Union{FixedTimestep{T_FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, D_FIRST, T_FIRST, STEP, LAST}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = ts.t + findfirst(isequal(T_FIRST[1]), D_FIRST) - 1	
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
 function Base.setindex!(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti}, val, idxs::Union{VariableTimestep{T_TIMES}, AnyIndex}...) where {T, N, ti, D_TIMES, T_TIMES}
-	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = ts.t + findfirst(isequal(T_FIRST[1]), T_TIMES) - 1	
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
