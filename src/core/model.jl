@@ -317,12 +317,12 @@ function variable(m::Model, comp_name::Symbol, var_name::Symbol)
 end
 
 function variable_unit(m::Model, comp_name::Symbol, var_name::Symbol)
-    var = variable(m, comp_id, var_name)
+    var = variable(m, comp_name, var_name)
     return var.unit
 end
 
 function variable_dimensions(m::Model, comp_name::Symbol, var_name::Symbol)
-    var = variable(m, comp_id, var_name)
+    var = variable(m, comp_name, var_name)
     return var.dimensions
 end
 
