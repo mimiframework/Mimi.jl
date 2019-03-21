@@ -36,7 +36,7 @@ pkg> add MimiRICE2010
 * [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl) (currently in beta)
 * [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl) (currently in closed beta)
 * [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl) (currently in closed beta)
-* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl))
+* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl) (currently in closed beta)
 * [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl) (currently in closed beta)
 * [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl) (currently in closed beta)
