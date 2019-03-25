@@ -7,10 +7,8 @@ using Mimi
 
 import Mimi: 
     connect_param!, unconnected_params, set_dimension!, 
-    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count,  dim_names,
+    numcomponents, get_connections, internal_param_conns, dim_count,  dim_names,
     modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs, comp_path
-
-reset_compdefs()
 
 @defcomp A begin
     varA::Int = Variable(index=[time])
@@ -44,8 +42,9 @@ end
 
 m = Model()
 
+# TBD: This is not necessarily an error with composites.
 # make sure you can't add a component before setting time dimension
-@test_throws ErrorException add_comp!(m, A)
+# @test_throws ErrorException add_comp!(m, A)
 
 set_dimension!(m, :time, 2015:5:2100)
 

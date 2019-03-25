@@ -387,6 +387,7 @@ function parameters(ccd::AbstractCompositeComponentDef)
     # return cached parameters, if any
     if length(pars) == 0
         for (name, dr) in ccd.exports
+            @info "dr: $dr"
             cd = compdef(dr)
             if has_parameter(cd, nameof(dr))
                 pars[name] = parameter(cd, nameof(dr))
@@ -463,6 +464,7 @@ end
 
 function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
     comp = find_comp(obj, comp_path, relative=false)
+    @or(comp, error("Component with path $comp_path not found"))
     set_param!(comp.parent, nameof(comp), param_name, value, dims)
 end
 
@@ -780,13 +782,6 @@ function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
     end
 end
 
-"""
-    printable(value)
-
-Return a value that is not nothing.
-"""
-printable(value) = (value === nothing ? ":nothing:" : value)
-
 function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
                        comp_name::Symbol, datum_name::Symbol)
     path = ComponentPath(parent.comp_path, comp_name)
@@ -854,32 +849,30 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         obj.exports[export_name] = _find_var_par(obj, comp_def, comp_name, name)
     end
 
-    # check that a time dimension has been set
-    if ! has_dim(obj, :time)
-        error("Cannot add component to composite without first setting time dimension.")
-    end
-    
-    # check that first and last are within the model's time index range
-    time_index = dim_keys(obj, :time)
-
-    if first !== nothing && first < time_index[1]
-        error("Cannot add component $comp_name with first time before first of model's time index range.")
-    end
-
-    if last !== nothing && last > time_index[end]
-        error("Cannot add component $comp_name with last time after end of model's time index range.")
-    end
-
-    if before !== nothing && after !== nothing
-        error("Cannot specify both 'before' and 'after' parameters")
-    end
-
     # Check if component being added already exists
     if has_comp(obj, comp_name)
         error("Cannot add two components of the same name ($comp_name)")
     end
-
+    
+    # check that a time dimension has been set
     if has_dim(obj, :time)
+        # error("Cannot add component to composite without first setting time dimension.")
+    
+        # check that first and last are within the model's time index range
+        time_index = dim_keys(obj, :time)
+
+        if first !== nothing && first < time_index[1]
+            error("Cannot add component $comp_name with first time before first of model's time index range.")
+        end
+
+        if last !== nothing && last > time_index[end]
+            error("Cannot add component $comp_name with last time after end of model's time index range.")
+        end
+
+        if before !== nothing && after !== nothing
+            error("Cannot specify both 'before' and 'after' parameters")
+        end
+
         _propagate_time(comp_def, dimension(obj, :time))
     end
 
@@ -1021,8 +1014,10 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     return add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
 
-function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)   
-    if relative
+function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)
+    @info "find_comp($(obj.name), $path; relative=$relative)"
+    @info "obj.parent = $(printable(obj.parent))"
+    if (relative || obj.parent === nothing)
         if isempty(path)
             return obj
         end

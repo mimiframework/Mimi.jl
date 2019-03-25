@@ -43,9 +43,6 @@ end
     end
 end
 
-# Can't add component before setting time dimension
-@test_throws ErrorException add_comp!(my_model, testcomp1)
-
 # Start building up the model
 set_dimension!(my_model, :time, 2015:5:2110)
 add_comp!(my_model, testcomp1)

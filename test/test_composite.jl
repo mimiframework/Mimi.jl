@@ -5,9 +5,7 @@ using Mimi
 
 import Mimi:
     ComponentId, DatumReference, ComponentDef, AbstractComponentDef, CompositeComponentDef,
-    Binding, ExportsDict, ModelDef, build, time_labels, reset_compdefs, compdef
-
-reset_compdefs()
+    Binding, ExportsDict, ModelDef, build, time_labels, compdef
 
 
 @defcomp Comp1 begin
@@ -44,44 +42,64 @@ end
     end
 end
 
-
-# Test the calls the macro will produce the following
-comps = [
-    (Comp1, [:foo => :foo1]),
-    (Comp2, [:foo => :foo2]),
-    (Comp3, [:foo => :foo3])
-]
-
-# TBD: need to implement this to create connections and default value
-bindings = Binding[]
-    # DatumReference(:par_1_1, Comp1) => 5,                                 # bind Comp1.par_1_1 to constant value of 5
-    # DatumReference(:par_2_2, Comp2) => DatumReference(:var_1_1, Comp1),   # connect target Comp2.par_2_1 to source Comp1.var_1_1
-    # DatumReference(:par_3_1, Comp3) => DatumReference(:var_2_1, Comp2)
-# ]
-
-exports = []
-    # DatumReference(:par_1_1, Comp1) => :c1p1,        # i.e., export Comp1.par_1_1 as :c1p1
-    # DatumReference(:par_2_2, Comp2) => :c2p2,
-    # DatumReference(:var_3_1, Comp3) => :c3v1
-# ]
-
-compos_name = :top
-compos_id = ComponentId(:TestComposite, compos_name)
-compos = CompositeComponentDef(compos_id)
-# CompositeComponentDef(compos, ccid) # , comps, bindings, exports)
-
 global m = Model()
 set_dimension!(m, :time, 2005:2020)
 md = m.md
-top = add_comp!(md, compos, nameof(compos))   # add top-level composite under model def to test 2-layer model
 
-# Add components to composite
-for (c, exports) in comps
-    add_comp!(top, c, nameof(c), exports=exports)     # later allow pair for renaming
+LONG_WAY = false
+
+if LONG_WAY
+
+    # Test the calls the macro will produce the following
+    comps = [
+        (Comp1, [:foo => :foo1]),
+        (Comp2, [:foo => :foo2]),
+        (Comp3, [:foo => :foo3])
+    ]
+
+    # TBD: need to implement this to create connections and default value
+    bindings = Binding[]
+        # DatumReference(:par_1_1, Comp1) => 5,                                 # bind Comp1.par_1_1 to constant value of 5
+        # DatumReference(:par_2_2, Comp2) => DatumReference(:var_1_1, Comp1),   # connect target Comp2.par_2_1 to source Comp1.var_1_1
+        # DatumReference(:par_3_1, Comp3) => DatumReference(:var_2_1, Comp2)
+    # ]
+
+    exports = []
+        # DatumReference(:par_1_1, Comp1) => :c1p1,        # i.e., export Comp1.par_1_1 as :c1p1
+        # DatumReference(:par_2_2, Comp2) => :c2p2,
+        # DatumReference(:var_3_1, Comp3) => :c3v1
+    # ]
+
+    compos_name = :top
+    compos_id = ComponentId(:TestComposite, compos_name)
+    compos = CompositeComponentDef(compos_id)
+
+    top = add_comp!(md, compos, nameof(compos))   # add top-level composite under model def to test 2-layer model
+
+    # Add components to composite
+    for (c, exports) in comps
+        add_comp!(top, c, nameof(c), exports=exports)     # later allow pair for renaming
+    end
+else
+    exports = []        # TBD: what to export from the composite
+    bindings = Binding[]
+
+    @defcomposite top begin
+        component(Comp1; exports=[foo => foo1])
+        component(Comp2, exports=[foo => foo2])
+        component(Comp3, exports=[foo => foo3]) #bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
+        # exports(list of names or pairs to export)
+    end
+    
+    add_comp!(md, top, nameof(top))
 end
 
 merge!(md.exports, ExportsDict(exports))
 append!(md.bindings, bindings)
+
+set_param!(m, "/top/Comp1", :foo, 10)
+set_param!(m, "/top/Comp2", :foo, 20)
+set_param!(m, "/top/Comp3", :foo, 30)
 
 set_param!(m, "/top/Comp1", :par_1_1, zeros(length(time_labels(md))))
 

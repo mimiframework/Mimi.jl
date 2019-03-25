@@ -1,6 +1,15 @@
 using Classes
 using DataStructures
 
+"""
+    @or(args...)
+
+Return the first argument whose value is not `nothing`
+"""
+macro or(a, b)
+    esc(:($a === nothing ? $b : $a))
+end
+
 # Having all our structs/classes subtype these simplifies "show" methods
 abstract type MimiStruct end
 @class MimiClass <: Class
@@ -19,6 +28,8 @@ end
 struct ComponentPath <: MimiStruct
     names::NTuple{N, Symbol} where N
 end
+
+const ParamPath = Tuple{ComponentPath, Symbol}
 
 ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
 
@@ -262,10 +273,10 @@ end
                           name::Union{Nothing, Symbol}=nothing)
         if comp_id === nothing
             # ModelDefs are anonymous, but since they're gensym'd, they can claim the Mimi package
-            comp_id = ComponentId(Mimi, name === nothing ? gensym(nameof(typeof(self))) : name)
+            comp_id = ComponentId(Mimi, @or(name, gensym(nameof(typeof(self)))))
         end
 
-        name = (name === nothing ? comp_id.comp_name : name)
+        name = @or(name, comp_id.comp_name)
         NamedObj(self, name)
 
         self.comp_id = comp_id
@@ -303,6 +314,14 @@ end
 @class ParameterDefReference <: DatumReference
 @class VariableDefReference  <: DatumReference
 
+# Used by @defcomposite to communicate subcomponent information
+struct SubComponent <: MimiStruct
+    module_name::Union{Nothing, Symbol}
+    comp_name::Symbol
+    alias::Union{Nothing, Symbol}
+    exports::Vector{Union{Symbol, Pair{Symbol, Symbol}}}
+    bindings::Vector{Pair{Symbol, Any}}
+end
 
 # Define type aliases to avoid repeating these in several places
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
@@ -340,6 +359,20 @@ global const ExportsDict = Dict{Symbol, AbstractDatumReference}
         self.backups = Vector{Symbol}()
         self.sorted_comps = nothing
     end
+end
+
+# Used by @defcomposite
+function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Vector{SubComponent}, 
+                               calling_module::Module)
+    # @info "CompositeComponentDef($comp_id, $alias, $subcomps)"
+    composite = CompositeComponentDef(comp_id)
+
+    for c in subcomps
+        subcomp_id = ComponentId(@or(c.module_name, calling_module), c.comp_name)
+        subcomp = compdef(subcomp_id)
+        add_comp!(composite, subcomp, @or(c.alias, c.comp_name), exports=c.exports)
+    end
+    return composite
 end
 
 # TBD: these should dynamically and recursively compute the lists
@@ -462,8 +495,8 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
         self.parameters = pars
 
         # If first or last is `nothing`, substitute first or last time period
-        self.first = comp_def.first !== nothing ? comp_def.first : time_bounds[1]
-        self.last  = comp_def.last  !== nothing ? comp_def.last  : time_bounds[2]
+        self.first = @or(comp_def.first, time_bounds[1])
+        self.last  = @or(comp_def.last,  time_bounds[2])
 
         # @info "ComponentInstance evaluating $(comp_id.module_name)"
         module_name = comp_id.module_name

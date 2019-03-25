@@ -27,7 +27,7 @@ is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 @delegate external_params(m::Model) => md
 @delegate external_param(m::Model, name::Symbol; missing_ok=false) => md
 
-@delegate connected_params(m::Model, comp_name::Symbol) => md
+@delegate connected_params(m::Model) => md
 @delegate unconnected_params(m::Model) => md
 
 @delegate add_connector_comps(m::Model) => md
@@ -126,13 +126,6 @@ end
 
 function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
-end
-
-function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
-                      first=nothing, last=nothing, before=nothing, after=nothing)
-    add_comp!(m.md, comp_def, comp_name; first=first, last=last, before=before, after=after)
-    decache(m)
-    return ComponentReference(m, comp_name)
 end
 
 """

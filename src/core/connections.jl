@@ -241,35 +241,69 @@ function connect_param!(obj::AbstractCompositeComponentDef,
     connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
+const ParamVector = Vector{ParamPath}
+
+_collect_connected_params(obj::ComponentDef, connected) = nothing
+
+function _collect_connected_params(obj::AbstractCompositeComponentDef, connected::ParamVector)
+    for comp_def in compdefs(obj)
+        _collect_connected_params(comp_def, connected)
+    end
+
+    ext_set_params = map(x->(x.comp_path, x.param_name), external_param_conns(obj))
+    int_set_params = map(x->(x.dst_comp_path, x.dst_par_name), internal_param_conns(obj))
+
+    append!(connected, union(ext_set_params, int_set_params))
+end
+
+function connected_params(md::ModelDef)
+    connected = ParamVector()
+    _collect_connected_params(md, connected)
+    return connected
+end
+
 """
     connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
 
 Return list of parameters that have been set for component `comp_name` in composite `obj`.
 """
-function connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
-    ext_set_params = map(x->x.param_name,   external_param_conns(obj, comp_name))
-    int_set_params = map(x->x.dst_par_name, internal_param_conns(obj, comp_name))
+# Deprecated
+# function connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
+#     ext_set_params = map(x->x.param_name,   external_param_conns(obj, comp_name))
+#     int_set_params = map(x->x.dst_par_name, internal_param_conns(obj, comp_name))
 
-    return union(ext_set_params, int_set_params)
+#     return union(ext_set_params, int_set_params)
+# end
+
+"""
+Depth-first search for unconnected parameters, which are appended to `unconnected`. Parameter
+connections are made to the "original" component, not to a composite that exports the parameter.
+Thus, only the leaf (non-composite) variant of this method actually collects uncollected params.
+"""
+function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
+    comp_path = obj.comp_path
+    params = map(x->(comp_path, x), parameter_names(obj))
+    append!(unconnected, setdiff(params, connected))
+end
+
+function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connected::ParamVector, unconnected::ParamVector)
+    for comp_def in compdefs(obj)
+        _collect_unconnected_params(comp_def, connected, unconnected)
+    end
 end
 
 """
-    unconnected_params(obj::AbstractCompositeComponentDef)
+    unconnected_params(md::ModelDef)
 
-Return a list of tuples (comp_path, parame_name) of parameters
-that have not been connected to a value in the composite `obj`.
+Return a list of tuples (comp_path, param_name) of parameters
+that have not been connected to a value anywhere in `md`.
 """
-function unconnected_params(obj::AbstractCompositeComponentDef)
-    unconnected = Vector{Tuple{ComponentPath,Symbol}}()
-    
-    for comp_def in compdefs(obj)
-        comp_path = comp_def.comp_path
-        params = parameter_names(comp_def)
-        connected = connected_params(obj, nameof(comp_def))
-        append!(unconnected, map(x->(comp_path, x), setdiff(params, connected)))
-    end
+function unconnected_params(md::ModelDef)
+    unconnected = ParamVector()
+    connected = connected_params(md)
 
-    return unconnected
+    _collect_unconnected_params(md, connected, unconnected)
+    return unconnected    
 end
 
 """

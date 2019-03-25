@@ -96,6 +96,8 @@ function _combine_exported_pars(comp_def::AbstractCompositeComponentDef, par_dic
     names  = Symbol[]
     values = Any[]
 
+    # @info "_combine_exported_pars: $(comp_def.exports)"
+
     for (name, dr) in comp_def.exports
         if is_parameter(dr)
             value = par_dict[(dr.comp_path, dr.name)]
@@ -212,11 +214,13 @@ function _build(comp_def::AbstractCompositeComponentDef,
 end
 
 function _build(md::ModelDef)
+    # @info "_build(md)"
     # _propagate_exports(md)
     add_connector_comps(md)
     
     # check if all parameters are set
     not_set = unconnected_params(md)
+    # @info "not_set: $not_set"
     if ! isempty(not_set)
         params = join(not_set, " ")
         error("Cannot build model; the following parameters are not set: $params")

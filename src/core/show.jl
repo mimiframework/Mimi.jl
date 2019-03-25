@@ -15,6 +15,13 @@ end
 
 indent(io::IO) = _indent_level!(io, 1)
 
+"""
+    printable(value)
+
+Return a value that is not nothing.
+"""
+printable(value) = (value === nothing ? ":nothing:" : value)
+
 function print_indented(io::IO, args...)
     level = get(io, :indent_level, 0)
     print(io, repeat(spaces, level), args...)
@@ -48,6 +55,9 @@ function _show_field(io::IO, name::Symbol, dict::AbstractDict; show_empty=true)
 end
 
 function _show_field(io::IO, name::Symbol, vec::Vector{T}; show_empty=true) where T
+    print(io, "\n")
+    print_indented(io, name, ": ", typeof(vec))
+
     count = length(vec)
     elide = false
     max_shown = 5
@@ -152,7 +162,7 @@ function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
         pos = findfirst(x -> x == field, fields)
         if pos !== nothing
             value = getfield(obj, field)
-            name = (value === nothing ? "nothing" : nameof(value))
+            name = printable(value === nothing ? nothing : nameof(value))
             fields = deleteat!([fields...], pos)
             print(io, "\n")
             print_indented(indent(io), "$field: $(typeof(value))($name)")

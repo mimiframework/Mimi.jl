@@ -12,6 +12,7 @@ using StringBuilders
 export
     @defcomp,
     @defsim,
+    @defcomposite,
     MarginalModel,
     Model,
     add_comp!,
@@ -36,7 +37,6 @@ export
     load_comps,
     modeldef,
     name,
-    new_comp,
     parameters, 
     parameter_dimensions,
     parameter_names,

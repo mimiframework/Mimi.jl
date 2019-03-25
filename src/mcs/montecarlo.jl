@@ -151,8 +151,6 @@ function generate_trials!(sim::Simulation{T}, samplesize::Int;
 
     sample!(sim, samplesize)
 
-    # TBD: If user asks for trial data to be saved, generate it up-front, or 
-    # open a file that can be written to for each trialnum/scenario set?
     if filename != ""
         save_trial_inputs(sim, filename)
     end
@@ -188,9 +186,9 @@ is necessary when we are applying distributions by adding or multiplying origina
 function _copy_sim_params(sim::Simulation{T}) where T <: AbstractSimulationData
     param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(sim.models))
 
-    for (i, m) in enumerate(mcs.models)
+    for (i, m) in enumerate(sim.models)
         md = modelinstance_def(m)
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => deepcopy(external_param(md, trans.paramname)) for trans in mcs.translist)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => deepcopy(external_param(md, trans.paramname)) for trans in sim.translist)
     end
 
     return param_vec
@@ -381,7 +379,7 @@ function run_sim(sim::Simulation{T},
         error("run_sim: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
     end
 
-    for m in mcs.models
+    for m in sim.models
         if ! is_built(m)
             build(m)
         end
