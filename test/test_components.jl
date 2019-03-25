@@ -22,6 +22,9 @@ my_model = Model()
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
     
+    """
+    Test docstring.
+    """
     function run_timestep(p, v, d, t)
         v.var1[t] = p.par1[t]
     end
