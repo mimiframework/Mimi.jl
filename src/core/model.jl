@@ -7,7 +7,8 @@ using MacroTools
 # Simplify delegation of calls to ::Model to internal ModelInstance or ModelDelegate objects.
 macro modelegate(ex)
     if @capture(ex, fname_(varname_::Model, args__) => rhs_)
-        result = esc(:($fname($varname::Model, $(args...)) = $fname($varname.$rhs, $(args...))))
+
+        result = esc(:($fname($varname::Model, $(args...)) = ($varname.$rhs === nothing ? error("This function is not callable on an model that has not been run because it requires a ModelInstance.") : $fname($varname.$rhs, $(args...)))))
         #println(result)
         return result
     end
