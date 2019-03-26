@@ -4,13 +4,13 @@
 
 Sensitivity Analysis support consists of four primary user-facing elements:
 
-1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and
+1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
-2. The optional `generate_trials!` function, which can be used to pre-generate all trial data, save all random variable values in a file, and/or override the default (random) sampling method.
+2. The `generate_trials!` function, which is be used to pre-generate all trial data and save all random variable values in a file.
 
 3. The `set_models!` function, which sets the model(s) on which a simulation can be run.
 
-4. The `run_sim` function, which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior.
+4. The `run_sim` function, which runs a simulation, with optional parameters describing the number of trials and models to run, and optional callback functions to customize simulation behavior.
 
 These are described further below.
 
@@ -69,7 +69,7 @@ Latin Hypercube sampling divides the distribution into equally-spaced quantiles,
 
 ## The generate_trials! function
 
-The `generate_trials!` function can be used to pre-generate data using the given `samplesize`, save all random variable values in the file `filename`. Its calling signature is:
+The `generate_trials!` function is be used to pre-generate data using the given `samplesize` and save all random variable values in the file `filename`. Its calling signature is:
 
 ```julia
   generate_trials!(sim::Simulation, samplesize::Int; filename::String="")
@@ -78,8 +78,6 @@ The `generate_trials!` function can be used to pre-generate data using the given
 If the `sim` parameter has multiple scenarios and the `scenario_loop` placement is set to `OUTER`, this function must be called if the user wants to ensure the same trial data be used in each scenario. If this function is not called, new trial data will be generated for each scenario. 
 
 Also note that if the `filename` argument is used, all random variable draws are saved to the given filename. Internally, any `Distribution` instance is converted to a `SampleStore` and the values are subsequently returned in the order generated when `rand!` is called.
-
-If this function is not called prior to calling `run_sim`, random sampling is used for all distributions and trial data are not saved.
 
 ## Assigning distributions
 
@@ -159,16 +157,16 @@ set_models!(sim::Simulation, mm::MarginalModel)
 	
 ## The run_sim function
 
-In it's simplest use, the `run_sim` function iterates over a given number of trials (in this simple case equivalent to sample size), perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the `run_sim` function iterates over all pre-generated , perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
 The full signature for the `run_sim` is:
 
 ```
-function run_sim(sim::Simulation, 
-                 trials::Union{Int, Vector{Int}, AbstractRange{Int}},
-                 models_to_run::Int=length(sim.models);
+function run_sim(sim::Simulation; 
+                 trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
+                 models_to_run::Int=length(sim.models),
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -178,7 +176,7 @@ function run_sim(sim::Simulation,
                  scenario_args=nothing)
 ```
 
-The `run_sim` function runs the indicated trial numbers, where the first `models_to_run` 
+The `run_sim` function runs the optionally indicated trial numbers, or by default trials, where the first `models_to_run` 
 associated models are each run for `ntimesteps`, if specified, else to the maximum defined time period. 
 Note that trial data are applied to all the associated models even when running only a portion of them.
     
@@ -315,6 +313,6 @@ output_dir = joinpath(tempdir(), "sim")
 generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv"))
 
 # Run trials 1:N, and save results to the indicated directory
-Mimi.set_models!(sim, m)
-run_sim(sim, N, output_dir=output_dir)
+set_models!(sim, m)
+run_sim(sim, output_dir=output_dir)
 ```

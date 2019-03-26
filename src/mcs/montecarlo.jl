@@ -329,9 +329,9 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run_sim(sim::Simulation{T}, 
-            trials::Union{Int, Vector{Int}, AbstractRange{Int}},
-            models_to_run::Int=length(sim.models);
+    run_sim(sim::Simulation{T}; 
+            trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
+            models_to_run::Int=length(sim.models),
             ntimesteps::Int=typemax(Int), 
             output_dir::Union{Nothing, AbstractString}=nothing, 
             pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -340,7 +340,7 @@ end
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing)
 
-Run the indicated the first `trials`, which indicates the number of trials to run
+Optionally run the indicated the first `trials`, which indicates the number of trials to run
 starting from the first one. The first `models_to_run` associated models are run 
 for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial
 data are applied to all the associated models even when running only a portion of them.   
@@ -366,9 +366,9 @@ placed inside the simulation loop by specifying `scenario_placement=INNER`. When
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 """
-function run_sim(sim::Simulation{T}, 
-                 trials::Union{Vector{Int}, AbstractRange{Int}},
-                 models_to_run::Int=length(sim.models);     # run all models by default
+function run_sim(sim::Simulation{T}; 
+                 trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
+                 models_to_run::Int=length(sim.models),     # run all models by default
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -388,7 +388,22 @@ function run_sim(sim::Simulation{T},
     end
     
     # TBD: address confusion over whether trials is a list of trialnums or just the number of trials
-    sim.trials = length(trials)
+
+    # Machinery to handle trials cases
+    if trials === nothing
+        # If trials is not set, assume it is 1:sim.trials.  
+        trials = 1:sim.trials
+    else
+
+        # Handle Int
+        if typeof(trials) <: Int
+            trials = 1:trials
+        end
+
+        # If the user input a trials arg, we must reset sim.trials to length(trials),
+        # otherwise sim.trials is already set from generate_trials
+        sim.trials = length(trials)
+    end
 
     # Save the original dir since we modify the output_dir to store scenario results
     orig_output_dir = output_dir
@@ -488,12 +503,6 @@ function run_sim(sim::Simulation{T},
             _reset_results!(sim)
         end
     end
-end
-
-# Same as above, but takes a number of trials and converts this to `1:trials`.
-function run_sim(sim::Simulation{T}, trials::Int=sim.trials, 
-                 models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
-    return run_sim(sim, 1:trials, models_to_run; kwargs...)
 end
 
 # Set models
