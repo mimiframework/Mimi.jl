@@ -240,7 +240,7 @@ macro defcomp(comp_name, ex)
                 end
             end
 
-            vartype = (vartype === nothing ? Number : getproperty(Main, vartype))
+            vartype = (vartype === nothing ? Number : Main.eval(vartype))
             addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else

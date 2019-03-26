@@ -1,17 +1,16 @@
 compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
 
-compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path, relative=false)
+compdef(cr::ComponentReference) = find_comp(cr.parent, cr.comp_path; relative=false)
 
-compdef(dr::AbstractDatumReference) = compdef(dr.root, dr.comp_path)
-compdef(cr::ComponentReference)     = compdef(cr.parent, cr.comp_path)
-
-# Allows method to be called on leaf component defs, which sometimes simplifies code.
-compdefs(c::ComponentDef) = []
+compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path; relative=false)
+compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.comps_dict[comp_name]
 
 compdefs(c::AbstractCompositeComponentDef) = values(c.comps_dict)
 compkeys(c::AbstractCompositeComponentDef) = keys(c.comps_dict)
 has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
-compdef(c::AbstractCompositeComponentDef, comp_name::Symbol) = c.comps_dict[comp_name]
+
+# Allows method to be called on leaf component defs, which sometimes simplifies code.
+compdefs(c::ComponentDef) = []
 
 compmodule(comp_id::ComponentId) = comp_id.module_name
 compname(comp_id::ComponentId)   = comp_id.comp_name
@@ -27,7 +26,7 @@ Base.getindex(obj::AbstractCompositeComponentDef, name::Symbol) = obj.comps_dict
 # TBD: deprecated
 function reset_compdefs(reload_builtins=true)
     if reload_builtins
-        compdir = joinpath(@__DIR__, "..", "components") 
+        compdir = joinpath(@__DIR__, "..", "components")
         load_comps(compdir)
     end
 end
@@ -37,11 +36,13 @@ function comp_path!(parent::AbstractCompositeComponentDef, child::AbstractCompon
 end
 
 """
-    comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+    _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
 
-Convert a string describing a path from a node to a ComponentPath.
+Convert a string describing a path from a node to a ComponentPath. The validity
+of the path is not checked. If `path` starts with "/", the first element in the
+returned component path is set to the root of the hierarchy containing `node`.
 """
-function comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+function _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
     # empty path means just select the node's path
     isempty(path) && return node.comp_path
 
@@ -54,6 +55,71 @@ function comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
     return ComponentPath([Symbol(elt) for elt in elts])
 end
 
+function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)
+    # @info "find_comp($(obj.name), $path; relative=$relative)"
+    # @info "obj.parent = $(printable(obj.parent))"
+
+    # Convert "absolute" path from a root node to relative
+    if ! relative
+        relative = true
+        path = rel_path(obj.comp_path, path)
+    end
+
+    if isempty(path)
+        return obj
+    end
+
+    names = path.names
+    if has_comp(obj, names[1])
+        return find_comp(compdef(obj, names[1]), ComponentPath(names[2:end]))
+    end
+
+    return nothing
+end
+
+find_comp(obj::AbstractComponentDef, name::Symbol) = compdef(obj, name)
+
+find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)
+
+function find_comp(obj::AbstractCompositeComponentDef, pathstr::AbstractString)
+    path = _comp_path(obj, pathstr)
+    relative = (isempty(pathstr) || pathstr[1] != '/')
+    find_comp(obj, path, relative=relative)
+end
+
+find_comp(dr::AbstractDatumReference; relative=false) = find_comp(dr.root, dr.comp_path; relative=relative)
+
+"""
+Return the relative path of `descendant` if is within the path of composite `ancestor` or
+or nothing otherwise.
+"""
+function rel_path(ancestor_path::ComponentPath, descendant_path::ComponentPath)
+    a_names = ancestor_path.names
+    d_names = descendant_path.names
+
+    if ((a_len = length(a_names)) >= (d_len = length(d_names)) || d_names[1:a_len] != a_names)
+        # @info "rel_path($a_names, $d_names) returning nothing"
+        return nothing
+    end
+
+    return ComponentPath(d_names[a_len+1:end])
+end
+
+"""
+Return whether component `descendant` is within the composite structure of `ancestor` or
+any of its descendants. If the comp_paths check out, the node is located within the
+structure to ensure that the component is really where it says it is. (Trust but verify!)
+"""
+function is_descendant(ancestor::AbstractCompositeComponentDef, descendant::AbstractComponentDef)
+    a_path = ancestor.comp_path
+    d_path = descendant.comp_path
+    if (relpath = rel_path(a_path, d_path)) === nothing
+        return false
+    end
+
+    return find_comp(ancestor, relpath; relative=true)
+end
+
 dirty(md::ModelDef) = md.dirty
 
 function dirty!(obj::AbstractComponentDef)
@@ -62,7 +128,7 @@ function dirty!(obj::AbstractComponentDef)
         return
     end
 
-    if root isa ModelDef        
+    if root isa ModelDef
         dirty!(root)
     end
 end
@@ -103,11 +169,17 @@ compname(dr::AbstractDatumReference) = dr.comp_path.names[end]
 is_variable(dr::AbstractDatumReference) = false
 is_parameter(dr::AbstractDatumReference) = false
 
-is_variable(dr::VariableDefReference)   = has_variable(compdef(dr), nameof(dr))
-is_parameter(dr::ParameterDefReference) = has_parameter(compdef(dr), nameof(dr))
+is_variable(dr::VariableDefReference)   = has_variable(find_comp(dr), nameof(dr))
+is_parameter(dr::ParameterDefReference) = has_parameter(find_comp(dr), nameof(dr))
 
 number_type(md::ModelDef) = md.number_type
-number_type(obj::AbstractCompositeComponentDef) = number_type(get_root(obj))
+
+function number_type(obj::AbstractCompositeComponentDef)
+    root = get_root(obj)
+    # TBD: hack alert. Need to allow number_type to be specified
+    # for composites that are not yet connected to a ModelDef?
+    return root isa ModelDef ? number_type(md) : Float64
+end
 
 # TBD: should be numcomps()
 numcomponents(obj::AbstractComponentDef) = 0   # no sub-components
@@ -125,7 +197,7 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
 
     comp_def = compdef(ccd, comp_name)
     delete!(ccd.comps_dict, comp_name)
-    
+
     # Remove references to the deleted comp
     comp_path = comp_def.comp_path
     exports = ccd.exports
@@ -142,7 +214,7 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
     filter!(ipc_filter, ccd.internal_param_conns)
 
     epc_filter = x -> x.comp_path != comp_path
-    filter!(epc_filter, ccd.external_param_conns)  
+    filter!(epc_filter, ccd.external_param_conns)
 end
 
 #
@@ -261,7 +333,7 @@ function _show_run_period(obj::AbstractComponentDef, first, last)
     @info "Setting run period for $which $(nameof(obj)) to ($first, $last)"
 end
 
-"""     
+"""
     set_run_period!(obj::ComponentDef, first, last)
 
 Allows user to narrow the bounds on the time dimension.
@@ -277,15 +349,15 @@ function set_run_period!(obj::AbstractComponentDef, first, last)
     changed = false
 
     if first !== nothing
-        if first_per !== nothing && first_per < first 
+        if first_per !== nothing && first_per < first
             @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
         end
         obj.first = first
         changed = true
-    end 
+    end
 
     if last !== nothing
-        if last_per !== nothing && last_per > last 
+        if last_per !== nothing && last_per > last
             @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
         end
         obj.last = last
@@ -300,12 +372,12 @@ function set_run_period!(obj::AbstractComponentDef, first, last)
     for subcomp in compdefs(obj)
         set_run_period!(subcomp, first, last)
     end
-    
+
     nothing
 end
- 
+
 """
-    set_dimension!(ccd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) 
+    set_dimension!(ccd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
 
 Set the values of `ccd` dimension `name` to integers 1 through `count`, if `keys` is
 an integer; or to the values in the vector or range if `keys` is either of those types.
@@ -320,14 +392,14 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
         set_uniform!(ccd, isuniform(keys))
         #set_run_period!(ccd, keys[1], keys[end])
     end
-    
+
     return set_dimension!(ccd, name, Dimension(keys))
 end
 
 function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
     dirty!(obj)
     obj.dim_dict[name] = dim
-    
+
     if name == :time
         for subcomp in compdefs(obj)
             set_dimension!(subcomp, :time, dim)
@@ -336,17 +408,17 @@ function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
     return dim
 end
 
-# helper functions used to determine if the provided time values are 
+# helper functions used to determine if the provided time values are
 # a uniform range.
 
 function all_equal(values)
     return all(map(val -> val == values[1], values[2:end]))
 end
-    
+
 function isuniform(values)
    if length(values) == 0
         return false
-   else 
+   else
         return all_equal(diff(collect(values)))
    end
 end
@@ -356,7 +428,7 @@ function isuniform(values::Int)
     return true
 end
 
-#             
+#
 # Parameters
 #
 
@@ -387,15 +459,15 @@ function parameters(ccd::AbstractCompositeComponentDef)
     # return cached parameters, if any
     if length(pars) == 0
         for (name, dr) in ccd.exports
-            @info "dr: $dr"
-            cd = compdef(dr)
+            cd = find_comp(dr; relative=true)
+
             if has_parameter(cd, nameof(dr))
                 pars[name] = parameter(cd, nameof(dr))
             end
         end
     end
 
-    return values(pars)    
+    return values(pars)
 end
 
 """
@@ -476,15 +548,15 @@ component with name `:x` beneath the root of the hierarchy in which `obj` is fou
 not begin with "/", it is treated as relative to `obj`.
 """
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-    set_param!(obj, comp_path(obj, path), param_name, value, dims)
+    set_param!(obj, _comp_path(obj, path), param_name, value, dims)
 end
 
 """
     set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
 Set the parameter `name` of a component `comp_name` in a composite `obj` to a given `value`. The
-`value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a 
-list of the dimension names of the provided data, and will be used to check that 
+`value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a
+list of the dimension names of the provided data, and will be used to check that
 they match the model's index labels.
 """
 function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
@@ -499,7 +571,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
 
     comp_param_dims = parameter_dimensions(obj, comp_name, param_name)
     num_dims = length(comp_param_dims)
-    
+
     comp_def = compdef(obj, comp_name)
     param  = parameter(comp_def, param_name)
     data_type = param.datatype
@@ -515,7 +587,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             value_dims = length(size(value))
             if num_dims != value_dims
                 error("Mismatched data size for a set parameter call: dimension :$param_name in $(comp_name) has $num_dims dimensions; indicated value has $value_dims dimensions.")
-            end            
+            end
             value = convert(Array{dtype, num_dims}, value)
         end
 
@@ -532,11 +604,11 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
                     stepsize = step_size(obj)
                     values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims}(value)
                 else
-                    times = time_labels(obj)  
-                    #use the first from the comp_def 
-                    first_index = findfirst(isequal(first), times)                
+                    times = time_labels(obj)
+                    #use the first from the comp_def
+                    first_index = findfirst(isequal(first), times)
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
-                end 
+                end
             end
         else
             values = value
@@ -569,7 +641,7 @@ function variables(ccd::AbstractCompositeComponentDef)
             cd = compdef(dr.comp_id)
             if has_variable(cd, nameof(dr))
                 vars[name] = variable(cd, nameof(dr))
-            end          
+            end
         end
     end
 
@@ -640,7 +712,7 @@ function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
 end
 
 
-# Add a variable to a ComponentDef. CompositeComponents have no vars of their own, 
+# Add a variable to a ComponentDef. CompositeComponents have no vars of their own,
 # only references to vars in components contained within.
 function addvariable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
     var_def = VariableDef(name, datatype, dimensions, description, unit)
@@ -782,10 +854,12 @@ function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
     end
 end
 
-function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
+function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                        comp_name::Symbol, datum_name::Symbol)
     path = ComponentPath(parent.comp_path, comp_name)
     root = get_root(parent)
+
+    root === nothing && error("Component $(parent.comp_id) does have a root")
 
     # @info "comp path: $path, datum_name: $datum_name"
 
@@ -804,24 +878,24 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
 end
 
 """
-    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
-              comp_name::Symbol=comp_def.comp_id.comp_name; 
+    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
+              comp_name::Symbol=comp_def.comp_id.comp_name;
               exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component 
+Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component
 is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note that
 a copy of `comp_def` is created and inserted into the composite under the given `comp_name`.
-The `exports` arg identifies which vars/pars to make visible to the next higher composite level, and with 
+The `exports` arg identifies which vars/pars to make visible to the next higher composite level, and with
 what names. If `nothing`, everything is exported. The first element of a pair indicates the symbol to export
-from comp_def to the composite, the second element allows this var/par to have a new name in the composite. 
+from comp_def to the composite, the second element allows this var/par to have a new name in the composite.
 A symbol alone means to use the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, 
+function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
                    exports=nothing,
-                   first::NothingInt=nothing, last::NothingInt=nothing, 
+                   first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
-    
+
     # If not specified, export all var/pars. Caller can pass empty list to export nothing.
     # TBD: actually, might work better to export nothing unless declared as such.
     if exports === nothing
@@ -853,11 +927,11 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     if has_comp(obj, comp_name)
         error("Cannot add two components of the same name ($comp_name)")
     end
-    
+
     # check that a time dimension has been set
     if has_dim(obj, :time)
         # error("Cannot add component to composite without first setting time dimension.")
-    
+
         # check that first and last are within the model's time index range
         time_index = dim_keys(obj, :time)
 
@@ -891,26 +965,26 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             set_param!(obj, comp_name, nameof(param), param.default)
         end
     end
-    
+
     # Return the comp since it's a copy of what was passed in
     return comp_def
 end
 
 """
-    add_comp!(obj::CompositeComponentDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name, 
+    add_comp!(obj::CompositeComponentDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name,
         exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_id` to the composite component indicated by `obj`. The component 
-is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
+Add the component indicated by `comp_id` to the composite component indicated by `obj`. The component
+is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the
 `comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId, 
+function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                    comp_name::Symbol=comp_id.comp_name;
                    exports=nothing,
-                   first::NothingInt=nothing, last::NothingInt=nothing, 
+                   first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
-    add_comp!(obj, compdef(comp_id), comp_name, 
+    add_comp!(obj, compdef(comp_id), comp_name,
               exports=exports, first=first, last=last, before=before, after=after)
 end
 
@@ -920,14 +994,14 @@ end
         before::NothingSymbol=nothing, after::NothingSymbol=nothing,
         reconnect::Bool=true)
 
-Replace the component with name `comp_name` in composite component definition `obj` with the 
-component `comp_id` using the same name. The component is added in the same position as the 
-old component, unless one of the keywords `before` or `after` is specified. The component is 
+Replace the component with name `comp_name` in composite component definition `obj` with the
+component `comp_id` using the same name. The component is added in the same position as the
+old component, unless one of the keywords `before` or `after` is specified. The component is
 added with the same first and last values, unless the keywords `first` or `last` are specified.
-Optional boolean argument `reconnect` with default value `true` indicates whether the existing 
+Optional boolean argument `reconnect` with default value `true` indicates whether the existing
 parameter connections should be maintained in the new component. Returns the added comp def.
 """
-function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId, 
+function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                        comp_name::Symbol=comp_id.comp_name;
                        first::NothingInt=nothing, last::NothingInt=nothing,
                        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
@@ -943,13 +1017,13 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         n = length(comps)
         if n > 1
             idx = findfirst(isequal(comp_name), comps)
-            if idx == n 
+            if idx == n
                 after = comps[idx - 1]
             else
                 before = comps[idx + 1]
             end
         end
-    end 
+    end
 
     # Get original first and last if new run period not specified
     old_comp = compdef(obj, comp_name)
@@ -972,17 +1046,17 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         if !_compare_datum(new_params, old_params)
             error("Cannot replace and reconnect; new component does not contain the necessary parameters.")
         end
-        
+
         # Check outgoing variables
         _get_name(obj, name) = nameof(compdef(obj, :first))
-        outgoing_vars = map(ipc -> ipc.src_var_name, 
+        outgoing_vars = map(ipc -> ipc.src_var_name,
                             filter(ipc -> nameof(compdef(obj, ipc.src_comp_path)) == comp_name, internal_param_conns(obj)))
         old_vars = filter(pair -> pair.first in outgoing_vars, old_comp.variables)
         new_vars = new_comp.variables
         if !_compare_datum(new_vars, old_vars)
             error("Cannot replace and reconnect; new component does not contain the necessary variables.")
         end
-        
+
         # Check external parameter connections
         remove = []
         for epc in external_param_conns(obj, comp_name)
@@ -1003,69 +1077,13 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         end
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
-        # Delete the old component from comps_dict, leaving the existing parameter connections 
-        delete!(obj.comps_dict, comp_name)      
+        # Delete the old component from comps_dict, leaving the existing parameter connections
+        delete!(obj.comps_dict, comp_name)
     else
         # Delete the old component and all its internal and external parameter connections
-        delete!(obj, comp_name)  
+        delete!(obj, comp_name)
     end
 
     # Re-add
     return add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
 end
-
-function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)
-    @info "find_comp($(obj.name), $path; relative=$relative)"
-    @info "obj.parent = $(printable(obj.parent))"
-    if (relative || obj.parent === nothing)
-        if isempty(path)
-            return obj
-        end
-
-        names = path.names
-        if has_comp(obj, names[1])
-            return find_comp(compdef(obj, names[1]), ComponentPath(names[2:end]))
-        end
-    else   
-        return find_comp(obj, rel_path(obj.comp_path, path))  # perform a relative search
-    end
-    return nothing
-end
-
-find_comp(obj::AbstractComponentDef, name::Symbol; relative=true) = find_comp(obj, ComponentPath(name), relative=relative)
-
-find_comp(obj::ComponentDef, path::ComponentPath; relative=true) = (isempty(path) ? obj : nothing)
-
-find_comp(obj::AbstractCompositeComponentDef, path::AbstractString; relative=true) = find_comp(obj, comp_path(obj, path), relative=relative)
-
-"""
-Return the relative path of `descendant` if is within the path of composite `ancestor` or 
-or nothing otherwise.
-"""
-function rel_path(ancestor_path::ComponentPath, descendant_path::ComponentPath)
-    a_names = ancestor_path.names
-    d_names = descendant_path.names
-
-    if ((a_len = length(a_names)) >= (d_len = length(d_names)) || d_names[1:a_len] != a_names)
-        return nothing
-    end
-
-    return ComponentPath(d_names[a_len+1:end])
-end
-
-"""
-Return whether component `descendant` is within the composite structure of `ancestor` or 
-any of its descendants. If the comp_paths check out, the node is located within the 
-structure to ensure that the component is really where it says it is. (Trust but verify!)
-"""
-function is_descendant(ancestor::AbstractCompositeComponentDef, descendant::AbstractComponentDef)
-    a_path = ancestor.comp_path
-    d_path = descendant.comp_path
-    if (relpath = rel_path(a_path, d_path)) === nothing
-        return false
-    end
-
-    return find_comp(ancestor, relpath)
-end
-
-

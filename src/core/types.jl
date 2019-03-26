@@ -35,7 +35,7 @@ ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
 
 ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath((path.names..., name))
 
-ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath((path1.names..., path1.names...))
+ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath((path1.names..., path2.names...))
 
 ComponentPath(name::Symbol) = ComponentPath((name,))
 
@@ -554,7 +554,7 @@ last_period(obj::AbstractComponentInstance)  = obj.last
 # Include only exported vars and pars
 #
 """
-Rerun the ComponentInstanceParameters/Variables exported by the given list of
+Return the ComponentInstanceParameters/Variables exported by the given list of
 component instances.
 """
 function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
@@ -567,7 +567,7 @@ function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
     comps_dict = Dict([comp.comp_name => comp for comp in comps])
 
     for (export_name, dr) in comp_def.exports
-        datum_comp = compdef(dr)
+        datum_comp = find_comp(dr)
         datum_name = nameof(dr)
         ci = comps_dict[nameof(datum_comp)]
 
@@ -594,49 +594,6 @@ function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
                                        Vector{Any}(pdict[:values]), Vector{ComponentPath}(pdict[:paths]))                                      
     return vars, pars
 end
-
-"""
-Create a single ComponentInstanceParameters type reflecting those of a composite
-component's parameters, and similarly for its variables.
-"""
-function _comp_instance_vars_pars_OLD(comp_def::AbstractComponentDef, comps::Vector{<: AbstractComponentInstance})
-	root = get_root(comp_def)   # to find comp_defs by path
-	exports = comp_def.exports
-	# @info "Exported by $(comp_def.comp_id): $exports"
-
-    vtypes  = DataType[]
-    vnames  = Symbol[]
-    vvalues = []
-    vpaths  = []
-
-    ptypes  = DataType[]
-    pnames  = Symbol[]
-    pvalues = []
-    ppaths  = []
-
-    for comp in comps
-        v = comp.variables
-        p = comp.parameters
-
-        append!(vnames, names(v))
-        append!(pnames, names(p))
-
-        append!(vtypes, types(v))
-        append!(ptypes, types(p))
-
-        append!(vvalues, values(v))
-        append!(pvalues, values(p))
-
-        append!(vpaths, comp_paths(v))
-        append!(ppaths, comp_paths(p))
-    end
-
-    vars = ComponentInstanceVariables(vnames, vtypes, vvalues, vpaths)
-    pars = ComponentInstanceParameters(pnames, ptypes, pvalues, ppaths)
-
-    return vars, pars
-end
-
 
 @class mutable CompositeComponentInstance <: ComponentInstance begin
     comps_dict::OrderedDict{Symbol, AbstractComponentInstance}

@@ -33,26 +33,26 @@ is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 @delegate add_connector_comps(m::Model) => md
 
 """
-    connect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, src_comp_path::ComponentPath, 
+    connect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, src_comp_path::ComponentPath,
         src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_path` of model `md`
 to a variable `src_var_name` in another component `src_comp_path` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
+between the destination and the source ie. the value would be `1` if the destination
 component parameter should only be calculated for the second timestep and beyond.
 """
-@delegate connect_param!(m::Model, 
-                         dst_comp_path::ComponentPath, dst_par_name::Symbol, 
-                         src_comp_path::ComponentPath, src_var_name::Symbol, 
-                         backup::Union{Nothing, Array}=nothing; 
+@delegate connect_param!(m::Model,
+                         dst_comp_path::ComponentPath, dst_par_name::Symbol,
+                         src_comp_path::ComponentPath, src_var_name::Symbol,
+                         backup::Union{Nothing, Array}=nothing;
                          ignoreunits::Bool=false, offset::Int=0) => md
 
-@delegate connect_param!(m::Model, 
-                         dst_comp_name::Symbol, dst_par_name::Symbol, 
+@delegate connect_param!(m::Model,
+                         dst_comp_name::Symbol, dst_par_name::Symbol,
                          src_comp_name::Symbol, src_var_name::Symbol,
-                         backup::Union{Nothing, Array}=nothing; 
+                         backup::Union{Nothing, Array}=nothing;
                          ignoreunits::Bool=false, offset::Int=0) => md
 
 """
@@ -62,12 +62,12 @@ Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
+between the destination and the source ie. the value would be `1` if the destination
 component parameter should only be calculated for the second timestep and beyond.
 
 """
-function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Nothing, Array}=nothing; 
+function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
+                           backup::Union{Nothing, Array}=nothing;
                            ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
@@ -77,10 +77,10 @@ end
 
 @delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
-@delegate set_external_param!(m::Model, name::Symbol, value::Number; 
+@delegate set_external_param!(m::Model, name::Symbol, value::Number;
                               param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
-@delegate set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; 
+@delegate set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple};
                               param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
@@ -93,9 +93,9 @@ end
 """
     update_param!(m::Model, name::Symbol, value; update_timesteps = false)
 
-Update the `value` of an external model parameter in model `m`, referenced by 
-`name`. Optional boolean argument `update_timesteps` with default value `false` 
-indicates whether to update the time keys associated with the parameter values 
+Update the `value` of an external model parameter in model `m`, referenced by
+`name`. Optional boolean argument `update_timesteps` with default value `false`
+indicates whether to update the time keys associated with the parameter values
 to match the model's time index.
 """
 @delegate update_param!(m::Model, name::Symbol, value; update_timesteps = false) => md
@@ -103,10 +103,10 @@ to match the model's time index.
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, `update_param!`` 
-is called to update the external parameter by name k to value v, with optional 
+For each (k, v) in the provided `parameters` dictionary, `update_param!``
+is called to update the external parameter by name k to value v, with optional
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the 
+symbol matching the name of an external parameter that already exists in the
 model definition.
 """
 @delegate update_params!(m::Model, parameters::Dict; update_timesteps = false) => md
@@ -115,7 +115,7 @@ model definition.
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
               exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_id` to the model indicated by `m`. The component is added at the end of 
+Add the component indicated by `comp_id` to the model indicated by `m`. The component is added at the end of
 the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
 differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the new name.
 """
@@ -124,7 +124,7 @@ function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.com
     return ComponentReference(m.md, comp_name)
 end
 
-function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
@@ -133,14 +133,14 @@ end
         first::NothingSymbol=nothing, last::NothingSymbol=nothing,
         before::NothingSymbol=nothing, after::NothingSymbol=nothing,
         reconnect::Bool=true)
-        
+
 Replace the component with name `comp_name` in model `m` with the component
-`comp_id` using the same name.  The component is added in the same position as 
+`comp_id` using the same name.  The component is added in the same position as
 the old component, unless one of the keywords `before` or `after` is specified.
-The component is added with the same first and last values, unless the keywords 
-`first` or `last` are specified. Optional boolean argument `reconnect` with 
-default value `true` indicates whether the existing parameter connections 
-should be maintained in the new component.  
+The component is added with the same first and last values, unless the keywords
+`first` or `last` are specified. Optional boolean argument `reconnect` with
+default value `true` indicates whether the existing parameter connections
+should be maintained in the new component.
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = replace_comp!(m.md, comp_id, comp_name; kwargs...)
@@ -206,7 +206,7 @@ dim_names(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(compdef(m
 
 """
     dim_count(m::Model, dim_name::Symbol)
-    
+
 Return the size of index `dim_name` in model `m`.
 """
 @delegate dim_count(m::Model, dim_name::Symbol) => md
@@ -215,25 +215,25 @@ Return the size of index `dim_name` in model `m`.
 
 """
     dim_keys(m::Model, dim_name::Symbol)
-    
+
 Return keys for dimension `dim-name` in model `m`.
 """
 @delegate dim_keys(m::Model, dim_name::Symbol) => md
 """
     dim_key_dict(m::Model)
-    
+
 Return a dict of dimension keys for all dimensions in model `m`.
 """
 @delegate dim_key_dict(m::Model) => md
 """
     dim_values(m::Model, name::Symbol)
-    
+
 Return values for dimension `name` in Model `m`.
 """
 @delegate dim_values(m::Model, name::Symbol) => md
 """
     dim_value_dict(m::Model)
-    
+
 Return a dictionary of the values of all dimensions in Model `m`.
 """
 @delegate dim_value_dict(m::Model) => md
@@ -284,7 +284,7 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 """
     set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 
-Add a one or two dimensional (optionally, time-indexed) array parameter `name` 
+Add a one or two dimensional (optionally, time-indexed) array parameter `name`
 with value `value` to the model `m`.
 """
 @delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
@@ -306,9 +306,9 @@ Delete a `component`` by name from a model `m`'s ModelDef, and nullify the Model
 """
     set_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
-Set the parameter of a component `comp_name` in a model `m` to a given `value`. 
-The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' 
-is a list of the dimension names of the provided data, and will be used to check 
+Set the parameter of a component `comp_name` in a model `m` to a given `value`.
+The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims'
+is a list of the dimension names of the provided data, and will be used to check
 that they match the model's index labels.
 """
 @delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
@@ -317,7 +317,7 @@ that they match the model's index labels.
     set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
 Set a parameter for a component with the given relative path (as a string), in which "/x" means the
-component with name `:x` beneath `m.md`. If the path does not begin with "/", it is treated as 
+component with name `:x` beneath `m.md`. If the path does not begin with "/", it is treated as
 relative to `m.md`, which at the top of the hierarchy, produces the same result as starting with "/".
 """
 @delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md

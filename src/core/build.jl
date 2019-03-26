@@ -79,6 +79,8 @@ function _combine_exported_vars(comp_def::AbstractCompositeComponentDef, var_dic
     values = Any[]
 
     for (name, dr) in comp_def.exports
+        root = dr.root === nothing ? nothing : dr.root.comp_id
+        # @info "dr.root: $(printable(root)), comp_path: $(printable(dr.comp_path))"
         if is_variable(dr)
             obj = var_dict[dr.comp_path]
             value = getproperty(obj, nameof(dr))
