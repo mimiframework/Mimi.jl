@@ -93,7 +93,7 @@ some of the models, the remainder of the runs can be handled using a `pre_trial_
 
 ### Step 2. Generate Trials
 
-The  [`generate_trials!`](@ref) function is used to pre-generate all trial data, and save all random variable values in a file. Employ this function as follows:
+The  [`generate_trials!`](@ref) function generates all trial data, and save all random variable values in a file. Employ this function as follows:
 
 ```julia
 # Generate trial data for all RVs and (optionally) save to a file

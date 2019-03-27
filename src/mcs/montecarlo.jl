@@ -340,7 +340,7 @@ end
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing)
 
-Optionally run the indicated the first `trials`, which indicates the number of trials to run
+Optionally run the first indicated `trials`, which indicates the number of trials to run
 starting from the first one. The first `models_to_run` associated models are run 
 for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial
 data are applied to all the associated models even when running only a portion of them.   
