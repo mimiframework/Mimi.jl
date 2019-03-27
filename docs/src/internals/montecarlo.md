@@ -6,7 +6,7 @@ Sensitivity Analysis support consists of four primary user-facing elements:
 
 1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
-2. The `generate_trials!` function, which is be used to pre-generate all trial data and save all random variable values in a file.
+2. The `generate_trials!` function, which generates all trial data and save all random variable values in a file.
 
 3. The `set_models!` function, which sets the model(s) on which a simulation can be run.
 
@@ -69,7 +69,7 @@ Latin Hypercube sampling divides the distribution into equally-spaced quantiles,
 
 ## The generate_trials! function
 
-The `generate_trials!` function is be used to pre-generate data using the given `samplesize` and save all random variable values in the file `filename`. Its calling signature is:
+The `generate_trials!` function is used to pre-generate data using the given `samplesize` and save all random variable values in the file `filename`. Its calling signature is:
 
 ```julia
   generate_trials!(sim::Simulation, samplesize::Int; filename::String="")
@@ -157,7 +157,7 @@ set_models!(sim::Simulation, mm::MarginalModel)
 	
 ## The run_sim function
 
-In it's simplest use, the `run_sim` function iterates over all pre-generated , perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the `run_sim` function iterates over all pre-generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
