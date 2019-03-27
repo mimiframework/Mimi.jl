@@ -1,3 +1,15 @@
+# Mimi.jl v0.8.3 Release Notes
+* Add error messages to modelegate
+* Fix docstring bug
+* Improve sensitivity analysis framework (change keyword args for run_sim)
+
+# Mimi.jl v0.8.2 Release Notes
+* Update dependency testing
+* Fix bugs in variable dimensions functions
+
+# Mimi.jl v0.8.1 Release Notes
+* Update documentation to reflect use of Mimi Registry
+
 # Mimi.jl v0.8.0 Release Notes
 * Generalize mcs functionality to support other sensitivity analysis methods
 * Update and augment documentation for sensitvity analysis
