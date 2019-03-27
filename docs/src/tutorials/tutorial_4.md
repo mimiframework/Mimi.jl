@@ -93,7 +93,7 @@ some of the models, the remainder of the runs can be handled using a `pre_trial_
 
 ### Step 2. Generate Trials
 
-The optional [`generate_trials!`](@ref) function can be used to pre-generate all trial data, and save all random variable values in a file.  If this function is not called prior to calling [`run_sim`](@ref), trial data are not saved. Employ this function as follows:
+The  [`generate_trials!`](@ref) function generates all trial data, and save all random variable values in a file. Employ this function as follows:
 
 ```julia
 # Generate trial data for all RVs and (optionally) save to a file
@@ -102,12 +102,12 @@ generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
 
 ### Step 4. Run Simulation
 
-Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `sim` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over a given number of trials, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
+Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `sim` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over all pre-generated trial data, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
-function run_sim(sim::Simulation, 
-                 trials::Union{Int, Vector{Int}, AbstractRange{Int}},
-                 models_to_run::Int=length(sim.models);
+function run_sim(sim::Simulation; 
+                 trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}} = nothing,
+                 models_to_run::Int=length(sim.models),
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -117,7 +117,7 @@ function run_sim(sim::Simulation,
                  scenario_args=nothing)
 ```
 
-Here, we first employ [`run_sim`](@ref) in its simplest form to obtain results:
+Here, we first employ [`run_sim`](@ref) to obtain results:
 
 ```julia
 # Set models
