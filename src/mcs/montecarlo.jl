@@ -140,20 +140,19 @@ function get_trial(sim::Simulation, trialnum::Int)
 end
 
 """
-    generate_trials!(sim::Simulation{T}, samples::Int; filename::String="")
+    generate_trials!(sim::Simulation{T}, samples::Int; filename::Union{String, Nothing}=nothing)
 
 Generate trials for the given Simulation instance using the defined `samplesize.
 Call this before running the sim to pre-generate data to be used by all scenarios. 
 Also saves inputs if a filename is given.
 """
 function generate_trials!(sim::Simulation{T}, samplesize::Int;
-                          filename::String="") where T <: AbstractSimulationData
-
+                        filename::Union{String, Nothing}=nothing) where T <: AbstractSimulationData
     sample!(sim, samplesize)
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
     # open a file that can be written to for each trialnum/scenario set?
-    if filename != ""
+    if filename != nothing
         save_trial_inputs(sim, filename)
     end
 end
