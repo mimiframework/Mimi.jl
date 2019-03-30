@@ -72,7 +72,7 @@ Latin Hypercube sampling divides the distribution into equally-spaced quantiles,
 The `generate_trials!` function is used to pre-generate data using the given `samplesize` and save all random variable values in the file `filename`. Its calling signature is:
 
 ```julia
-  generate_trials!(sim::Simulation, samplesize::Int; filename::String="")
+  generate_trials!(sim::Simulation, samplesize::Int; filename::Union{String, Nothing}=nothing)
 ```
 
 If the `sim` parameter has multiple scenarios and the `scenario_loop` placement is set to `OUTER`, this function must be called if the user wants to ensure the same trial data be used in each scenario. If this function is not called, new trial data will be generated for each scenario. 
