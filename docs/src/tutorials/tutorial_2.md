@@ -8,7 +8,6 @@ Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
-- [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
