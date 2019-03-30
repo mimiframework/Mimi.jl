@@ -33,15 +33,13 @@ The following terminology is used throughout the documentation.
 
 ## Requirements and Initial Setup
 
-These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. You will also need to use [Github](https://github.com) and thus download [Git](https://git-scm.com/downloads).
+These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. 
 
 To use the following tutorials, follow the steps below.
 
-1. Download Git [here](https://git-scm.com/downloads).
+1. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.0.0 or later.
 
-2. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.0.0 or later.
-
-3. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode, and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.6.0 or later.
+2. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode, and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.6.0 or later.
 
 ```
 pkg> add Mimi
