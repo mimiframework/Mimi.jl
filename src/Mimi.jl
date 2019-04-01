@@ -68,6 +68,7 @@ include("core/instances.jl")
 include("core/references.jl")
 include("core/time.jl")
 include("core/model.jl")
+include("core/paths.jl")
 include("core/show.jl")
 
 # For debugging composites we don't need these
@@ -78,6 +79,10 @@ include("utils/graph.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
 include("utils/plotting.jl")
+
+# Load built-in components
+include("components/adder.jl")
+include("components/connector.jl")
 
 """
     load_comps(dirname::String="./components")
@@ -96,10 +101,10 @@ function load_comps(dirname::String="./components")
     end
 end
 
-# Components are defined here to allow pre-compilation to work
-function __init__()
-    compdir = joinpath(@__DIR__, "components")
-    load_comps(compdir)
-end
+# # Components are defined here to allow pre-compilation to work
+# function __init__()
+#     compdir = joinpath(@__DIR__, "components")
+#     load_comps(compdir)
+# end
 
 end # module

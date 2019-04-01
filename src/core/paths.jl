@@ -1,0 +1,137 @@
+#
+# ComponentPath manipulation methods
+#
+
+Base.length(path::ComponentPath) = length(path.names)
+Base.isempty(path::ComponentPath) = isempty(path.names)
+
+head(path::ComponentPath) = (isempty(path) ? Symbol[] : path.names[1])
+tail(path::ComponentPath) = ComponentPath(length(path) < 2 ? Symbol[] : path.names[2:end])
+
+# The equivalent of ".." in the file system.
+Base.parent(path::ComponentPath) = ComponentPath(path.names[1:end-1])
+
+# Return a string like "/##ModelDef#367/top/Comp1"
+function Base.string(path::ComponentPath)
+    s = join(path.names, "/")
+    return is_abspath(path) ? string("/", s) : s
+end
+
+function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
+    child.comp_path = ComponentPath(parent.comp_path, child.name)
+
+    # recursively reset all comp_paths
+    for cd in compdefs(child)
+        comp_path!(cd, child)
+    end
+end
+
+"""
+    _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+
+Convert a string describing a path from a node to a ComponentPath. The validity
+of the path is not checked. If `path` starts with "/", the first element in the
+returned component path is set to the root of the hierarchy containing `node`.
+"""
+function _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+    # empty path means just select the node's path
+    isempty(path) && return node.comp_path
+
+    elts = split(path, "/")
+
+    if elts[1] == ""    # if path starts with "/", elt[1] == ""
+        root = get_root(node)
+        elts[1] = string(nameof(root))
+    end
+    return ComponentPath([Symbol(elt) for elt in elts])
+end
+
+find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)
+
+function find_comp(obj::AbstractComponentDef, name::Symbol)
+    # N.B. test here since compdef doesn't check existence
+    return has_comp(obj, name) ? compdef(obj, name) : nothing
+end
+
+
+function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
+    # @info "find_comp($(obj.name), $path)"
+
+    # @info "obj.parent = $(printable(obj.parent))"
+
+    if isempty(path)
+        return obj
+    end
+
+    # Convert "absolute" path from a root node to relative
+    if is_abspath(path)
+        path = rel_path(obj.comp_path, path)
+        
+    elseif (child = find_comp(obj, head(path))) !== nothing
+        path = rel_path(obj.comp_path, child.comp_path)
+        
+    elseif nameof(obj) == head(path)
+        # @info "nameof(obj) == head(path); path: $path"
+        path = tail(path)
+    else
+        error("Cannot find path $path from component $(obj.comp_id)")
+    end
+
+    names = path.names
+    if has_comp(obj, names[1])
+        return find_comp(compdef(obj, names[1]), ComponentPath(names[2:end]))
+    end
+
+    return nothing
+end
+
+function find_comp(obj::AbstractCompositeComponentDef, pathstr::AbstractString)
+    path = _comp_path(obj, pathstr)
+    find_comp(obj, path)
+end
+
+find_comp(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
+
+find_comp(cr::ComponentReference) = find_comp(cr.parent, cr.comp_path)
+
+"""
+Return the relative path of `descendant` if is within the path of composite `ancestor` or
+or nothing otherwise.
+"""
+function rel_path(ancestor_path::ComponentPath, descendant_path::ComponentPath)
+    a_names = ancestor_path.names
+    d_names = descendant_path.names
+
+    if ((a_len = length(a_names)) >= (d_len = length(d_names)) || d_names[1:a_len] != a_names)
+        # @info "rel_path($a_names, $d_names) returning nothing"
+        return nothing
+    end
+
+    return ComponentPath(d_names[a_len+1:end])
+end
+
+"""
+Return whether component `descendant` is within the composite structure of `ancestor` or
+any of its descendants. If the comp_paths check out, the node is located within the
+structure to ensure that the component is really where it says it is. (Trust but verify!)
+"""
+function is_descendant(ancestor::AbstractCompositeComponentDef, descendant::AbstractComponentDef)
+    a_path = ancestor.comp_path
+    d_path = descendant.comp_path
+    if (relpath = rel_path(a_path, d_path)) === nothing
+        return false
+    end
+
+    # @info "is_descendant calling find_comp($a_path, $relpath)"
+    return find_comp(ancestor, relpath)
+end
+
+"""
+    is_abspath(path::ComponentPath)
+
+Return true if the path starts from a ModelDef, whose name is generated with
+gensym("ModelDef") names look like Symbol("##ModelDef#123")
+"""
+function is_abspath(path::ComponentPath)
+    return ! isempty(path) && match(r"^##ModelDef#\d+$", string(path.names[1])) !== nothing
+end

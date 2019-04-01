@@ -1,13 +1,15 @@
 compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
 
-compdef(cr::ComponentReference) = find_comp(cr.parent, cr.comp_path; relative=false)
+compdef(cr::ComponentReference) = find_comp(cr)
 
-compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path; relative=false)
+compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
+
 compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.comps_dict[comp_name]
+
+has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
 
 compdefs(c::AbstractCompositeComponentDef) = values(c.comps_dict)
 compkeys(c::AbstractCompositeComponentDef) = keys(c.comps_dict)
-has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
 
 # Allows method to be called on leaf component defs, which sometimes simplifies code.
 compdefs(c::ComponentDef) = []
@@ -31,94 +33,13 @@ function reset_compdefs(reload_builtins=true)
     end
 end
 
-function comp_path!(parent::AbstractCompositeComponentDef, child::AbstractComponentDef)
-    child.comp_path = ComponentPath(parent.comp_path, child.name)
-end
-
 """
-    _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+     is_detached(obj::AbstractComponentDef)
 
-Convert a string describing a path from a node to a ComponentPath. The validity
-of the path is not checked. If `path` starts with "/", the first element in the
-returned component path is set to the root of the hierarchy containing `node`.
+Return true if `obj` is not a ModelDef and it has no parent.
 """
-function _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
-    # empty path means just select the node's path
-    isempty(path) && return node.comp_path
-
-    elts = split(path, "/")
-
-    if elts[1] == ""
-        root = get_root(node)
-        elts[1] = String(nameof(root))
-    end
-    return ComponentPath([Symbol(elt) for elt in elts])
-end
-
-function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath; relative=true)
-    # @info "find_comp($(obj.name), $path; relative=$relative)"
-    # @info "obj.parent = $(printable(obj.parent))"
-
-    # Convert "absolute" path from a root node to relative
-    if ! relative
-        relative = true
-        path = rel_path(obj.comp_path, path)
-    end
-
-    if isempty(path)
-        return obj
-    end
-
-    names = path.names
-    if has_comp(obj, names[1])
-        return find_comp(compdef(obj, names[1]), ComponentPath(names[2:end]))
-    end
-
-    return nothing
-end
-
-find_comp(obj::AbstractComponentDef, name::Symbol) = compdef(obj, name)
-
-find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)
-
-function find_comp(obj::AbstractCompositeComponentDef, pathstr::AbstractString)
-    path = _comp_path(obj, pathstr)
-    relative = (isempty(pathstr) || pathstr[1] != '/')
-    find_comp(obj, path, relative=relative)
-end
-
-find_comp(dr::AbstractDatumReference; relative=false) = find_comp(dr.root, dr.comp_path; relative=relative)
-
-"""
-Return the relative path of `descendant` if is within the path of composite `ancestor` or
-or nothing otherwise.
-"""
-function rel_path(ancestor_path::ComponentPath, descendant_path::ComponentPath)
-    a_names = ancestor_path.names
-    d_names = descendant_path.names
-
-    if ((a_len = length(a_names)) >= (d_len = length(d_names)) || d_names[1:a_len] != a_names)
-        # @info "rel_path($a_names, $d_names) returning nothing"
-        return nothing
-    end
-
-    return ComponentPath(d_names[a_len+1:end])
-end
-
-"""
-Return whether component `descendant` is within the composite structure of `ancestor` or
-any of its descendants. If the comp_paths check out, the node is located within the
-structure to ensure that the component is really where it says it is. (Trust but verify!)
-"""
-function is_descendant(ancestor::AbstractCompositeComponentDef, descendant::AbstractComponentDef)
-    a_path = ancestor.comp_path
-    d_path = descendant.comp_path
-    if (relpath = rel_path(a_path, d_path)) === nothing
-        return false
-    end
-
-    return find_comp(ancestor, relpath; relative=true)
-end
+is_detached(obj::AbstractComponentDef) = (obj.parent === nothing)
+is_detached(obj::ModelDef) = false     # by definition
 
 dirty(md::ModelDef) = md.dirty
 
@@ -135,10 +56,7 @@ end
 
 dirty!(md::ModelDef) = (md.dirty = true)
 
-function Base.parent(obj::AbstractComponentDef)
-    parent_path = parent(obj.comp_path)
-    return compdef(parent_path)
-end
+Base.parent(obj::AbstractComponentDef) = obj.parent
 
 first_period(comp_def::ComponentDef) = comp_def.first
 last_period(comp_def::ComponentDef)  = comp_def.last
@@ -178,7 +96,7 @@ function number_type(obj::AbstractCompositeComponentDef)
     root = get_root(obj)
     # TBD: hack alert. Need to allow number_type to be specified
     # for composites that are not yet connected to a ModelDef?
-    return root isa ModelDef ? number_type(md) : Float64
+    return root isa ModelDef ? root.number_type : Float64
 end
 
 # TBD: should be numcomps()
@@ -459,7 +377,11 @@ function parameters(ccd::AbstractCompositeComponentDef)
     # return cached parameters, if any
     if length(pars) == 0
         for (name, dr) in ccd.exports
-            cd = find_comp(dr; relative=true)
+            cd = find_comp(dr)
+            
+            if cd === nothing
+                @info "find_comp failed on path: $(printable(dr.comp_path)), name: $(printable(dr.name)), root: $(printable(dr.root.comp_id))"
+            end
 
             if has_parameter(cd, nameof(dr))
                 pars[name] = parameter(cd, nameof(dr))
@@ -535,7 +457,8 @@ end
 
 
 function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
-    comp = find_comp(obj, comp_path, relative=false)
+    @info "set_param!($(obj.comp_id), $comp_path, $param_name, $value)"
+    comp = find_comp(obj, comp_path)
     @or(comp, error("Component with path $comp_path not found"))
     set_param!(comp.parent, nameof(comp), param_name, value, dims)
 end
@@ -548,6 +471,7 @@ component with name `:x` beneath the root of the hierarchy in which `obj` is fou
 not begin with "/", it is treated as relative to `obj`.
 """
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
+    @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
     set_param!(obj, _comp_path(obj, path), param_name, value, dims)
 end
 
@@ -560,6 +484,7 @@ list of the dimension names of the provided data, and will be used to check that
 they match the model's index labels.
 """
 function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+    @info "set_param!($(obj.comp_id), $comp_name, $param_name, $value)"
     # perform possible dimension and labels checks
     if value isa NamedArray
         dims = dimnames(value)
@@ -569,10 +494,10 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
         check_parameter_dimensions(obj, value, dims, param_name)
     end
 
-    comp_param_dims = parameter_dimensions(obj, comp_name, param_name)
+    comp_def = compdef(obj, comp_name)
+    comp_param_dims = parameter_dimensions(comp_def, param_name)
     num_dims = length(comp_param_dims)
 
-    comp_def = compdef(obj, comp_name)
     param  = parameter(comp_def, param_name)
     data_type = param.datatype
     dtype = data_type == Number ? number_type(obj) : data_type
@@ -622,6 +547,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
     end
 
     # connect_param! calls dirty! so we don't have to
+    # @info "Calling connect_param!($(printable(obj === nothing ? nothing : obj.comp_id))"
     connect_param!(obj, comp_name, param_name, param_name)
     nothing
 end
@@ -673,7 +599,7 @@ variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), va
 variable(obj::AbstractCompositeComponentDef, comp_name::Symbol, var_name::Symbol) = variable(compdef(obj, comp_name), var_name)
 
 function variable(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
-    comp_def = find_comp(obj, comp_path, relative=false)
+    comp_def = find_comp(obj, comp_path)
     return variable(comp_def, var_name)
 end
 
@@ -827,7 +753,9 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
         comps_dict!(obj, new_comps)
     end
 
-    comp_path!(obj, comp_def)
+    comp_path!(comp_def, obj)
+    @info "parent obj comp_path: $(printable(obj.comp_path))"
+    @info "inserted comp's path: $(comp_def.comp_path)"
     dirty!(obj)
 
     nothing
@@ -959,9 +887,15 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 
+    ########################################################################
+    # TBD: set parameter values only in ComponentDefs, not in Composites
+    ########################################################################
+
     # Set parameters to any specified defaults
     for param in parameters(comp_def)
         if param.default !== nothing
+            x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
+            @info "add_comp! calling set_param!($x, $comp_name, $(nameof(param)), $(param.default))"
             set_param!(obj, comp_name, nameof(param), param.default)
         end
     end

@@ -23,30 +23,23 @@ struct ComponentId <: MimiStruct
     comp_name::Symbol
 end
 
-# Identifies the path through multiple composites to a leaf component
-# TBD: Could be just a tuple of Symbols since they are unique at each level.
+ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
+
+# ComponentPath identifies the path through multiple composites to a leaf comp.
 struct ComponentPath <: MimiStruct
     names::NTuple{N, Symbol} where N
 end
 
-const ParamPath = Tuple{ComponentPath, Symbol}
-
 ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
+ComponentPath(names::Vararg{Symbol}) = ComponentPath(names)
 
-ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath((path.names..., name))
+ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath(path.names..., name)
 
-ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath((path1.names..., path2.names...))
-
-ComponentPath(name::Symbol) = ComponentPath((name,))
+ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath(path1.names..., path2.names...)
 
 ComponentPath(::Nothing, name::Symbol) = ComponentPath(name)
 
-Base.isempty(obj::ComponentPath) = isempty(obj.names)
-
-# The equivalent of ".." in the file system.
-Base.parent(path::ComponentPath) = ComponentPath(path.names[1:end-1])
-
-ComponentId(m::Module, comp_name::Symbol) = ComponentId(nameof(m), comp_name)
+const ParamPath = Tuple{ComponentPath, Symbol}
 
 #
 # 1. Types supporting parameterized Timestep and Clock objects
@@ -350,6 +343,7 @@ global const ExportsDict = Dict{Symbol, AbstractDatumReference}
     function CompositeComponentDef(self::AbstractCompositeComponentDef, comp_id::Union{Nothing, ComponentId}=nothing)
         ComponentDef(self, comp_id) # call superclass' initializer
 
+        self.comp_path = ComponentPath(self.name)
         self.comps_dict = OrderedDict{Symbol, AbstractComponentDef}()
         self.bindings = Vector{Binding}()
         self.exports  = ExportsDict()
@@ -370,6 +364,11 @@ function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Ve
     for c in subcomps
         subcomp_id = ComponentId(@or(c.module_name, calling_module), c.comp_name)
         subcomp = compdef(subcomp_id)
+
+        x = printable(subcomp === nothing ? nothing : subcomp_id)
+        y = printable(composite === nothing ? nothing : comp_id)
+        @info "CompositeComponentDef calling add_comp!($y, $x)"
+
         add_comp!(composite, subcomp, @or(c.alias, c.comp_name), exports=c.exports)
     end
     return composite
@@ -400,7 +399,10 @@ ComponentPath(obj::AbstractCompositeComponentDef, name::Symbol) = ComponentPath(
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        self.comp_path = ComponentPath(self.name)
+        
+        # TBD: now set in CompositeComponentDef(self); delete if that works better
+        # self.comp_path = ComponentPath(self.name)
+
         return ModelDef(self, number_type, false)       # call @class-generated method
     end
 end

@@ -25,7 +25,10 @@ Remove any parameter connections for a given parameter `param_name` in a given c
 `comp_def` which must be a direct subcomponent of composite `obj`.
 """
 function disconnect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol)
-    disconnect_param!(obj, compdef(obj, comp_name), param_name)
+    # @info "disconnect_param! calling compdef($(printable(obj.comp_id)), $comp_name) (comp_path: $(printable(obj.comp_path)))"
+    comp = compdef(obj, comp_name)
+    comp === nothing && error("Did not find $comp_name in composite $(printable(obj.comp_path))")
+    disconnect_param!(obj, comp, param_name)
 end
 
 """
@@ -35,7 +38,7 @@ Remove any parameter connections for a given parameter `param_name` in the compo
 `comp_path` which must be under the composite `obj`.
 """
 function disconnect_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol)
-    if (comp_def = find_comp(obj, comp_path, relative=false)) === nothing
+    if (comp_def = find_comp(obj, comp_path)) === nothing
         return
     end
     disconnect_param!(obj, comp_def, param_name)

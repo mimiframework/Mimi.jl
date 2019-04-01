@@ -59,7 +59,7 @@ md = m.md
 
 @test find_comp(md, :top) == top_comp
 
-c1 = find_comp(md, ComponentPath((:top, :Comp1)), relative=true) 
+c1 = find_comp(md, ComponentPath(:top, :Comp1))
 @test c1.comp_id == Comp1.comp_id
 
 c3 = find_comp(md, "/top/Comp3")
