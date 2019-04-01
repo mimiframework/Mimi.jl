@@ -1,3 +1,7 @@
+# Mimi.jl v0.8.4 Release Notes
+* Update docs to no longer indicate Git requirement
+* Change default for filename in generate_trials! function
+
 # Mimi.jl v0.8.3 Release Notes
 * Add error messages to modelegate
 * Fix docstring bug
