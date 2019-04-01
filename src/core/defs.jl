@@ -457,7 +457,7 @@ end
 
 
 function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
-    @info "set_param!($(obj.comp_id), $comp_path, $param_name, $value)"
+    # @info "set_param!($(obj.comp_id), $comp_path, $param_name, $value)"
     comp = find_comp(obj, comp_path)
     @or(comp, error("Component with path $comp_path not found"))
     set_param!(comp.parent, nameof(comp), param_name, value, dims)
@@ -471,7 +471,7 @@ component with name `:x` beneath the root of the hierarchy in which `obj` is fou
 not begin with "/", it is treated as relative to `obj`.
 """
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-    @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
+    # @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
     set_param!(obj, _comp_path(obj, path), param_name, value, dims)
 end
 
@@ -484,7 +484,7 @@ list of the dimension names of the provided data, and will be used to check that
 they match the model's index labels.
 """
 function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    @info "set_param!($(obj.comp_id), $comp_name, $param_name, $value)"
+    # @info "set_param!($(obj.comp_id), $comp_name, $param_name, $value)"
     # perform possible dimension and labels checks
     if value isa NamedArray
         dims = dimnames(value)
@@ -754,8 +754,8 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     end
 
     comp_path!(comp_def, obj)
-    @info "parent obj comp_path: $(printable(obj.comp_path))"
-    @info "inserted comp's path: $(comp_def.comp_path)"
+    # @info "parent obj comp_path: $(printable(obj.comp_path))"
+    # @info "inserted comp's path: $(comp_def.comp_path)"
     dirty!(obj)
 
     nothing
@@ -887,16 +887,14 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 
-    ########################################################################
-    # TBD: set parameter values only in ComponentDefs, not in Composites
-    ########################################################################
-
-    # Set parameters to any specified defaults
-    for param in parameters(comp_def)
-        if param.default !== nothing
-            x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
-            @info "add_comp! calling set_param!($x, $comp_name, $(nameof(param)), $(param.default))"
-            set_param!(obj, comp_name, nameof(param), param.default)
+    # Set parameters to any specified defaults, but only for leaf components
+    if is_leaf(comp_def)
+        for param in parameters(comp_def)
+            if param.default !== nothing
+                x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
+                # @info "add_comp! calling set_param!($x, $comp_name, $(nameof(param)), $(param.default))"
+                set_param!(obj, comp_name, nameof(param), param.default)
+            end
         end
     end
 

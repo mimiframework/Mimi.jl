@@ -367,7 +367,7 @@ function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Ve
 
         x = printable(subcomp === nothing ? nothing : subcomp_id)
         y = printable(composite === nothing ? nothing : comp_id)
-        @info "CompositeComponentDef calling add_comp!($y, $x)"
+        # @info "CompositeComponentDef calling add_comp!($y, $x)"
 
         add_comp!(composite, subcomp, @or(c.alias, c.comp_name), exports=c.exports)
     end

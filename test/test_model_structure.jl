@@ -8,7 +8,7 @@ using Mimi
 import Mimi: 
     connect_param!, unconnected_params, set_dimension!, 
     numcomponents, get_connections, internal_param_conns, dim_count,  dim_names,
-    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs, comp_path
+    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
 
 @defcomp A begin
     varA::Int = Variable(index=[time])

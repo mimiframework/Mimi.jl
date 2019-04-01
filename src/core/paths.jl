@@ -56,7 +56,6 @@ end
 
 function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
     # @info "find_comp($(obj.name), $path)"
-
     # @info "obj.parent = $(printable(obj.parent))"
 
     if isempty(path)
@@ -66,15 +65,17 @@ function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
     # Convert "absolute" path from a root node to relative
     if is_abspath(path)
         path = rel_path(obj.comp_path, path)
+        # @info "abspath converted to relpath is $path"
         
     elseif (child = find_comp(obj, head(path))) !== nothing
-        path = rel_path(obj.comp_path, child.comp_path)
+        # @info "path is unchanged: $path"
         
+
     elseif nameof(obj) == head(path)
-        # @info "nameof(obj) == head(path); path: $path"
+        # @info "nameof(obj) == head(path); path: $(printable(path))"
         path = tail(path)
     else
-        error("Cannot find path $path from component $(obj.comp_id)")
+        error("Cannot find path $(printable(path)) from component $(printable(obj.comp_id))")
     end
 
     names = path.names
