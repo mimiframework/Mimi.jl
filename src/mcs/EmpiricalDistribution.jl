@@ -56,6 +56,10 @@ function Base.length(d::EmpiricalDistribution, args::Vararg{Integer,N}) where {N
     return length(d.values)
 end
 
+function Base.iterate(d::EmpiricalDistribution, args::Vararg{Integer,N}) where {N}
+    return iterate(d.values)
+end
+
 function Statistics.quantile(d::EmpiricalDistribution, args...)
     indices = quantile.(d.dist, args...)
     return d.values[indices]
