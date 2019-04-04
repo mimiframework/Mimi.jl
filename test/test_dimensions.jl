@@ -94,29 +94,20 @@ set_dimension!(m, :time, 2000:2100)
 foo2_ref = add_comp!(m, foo2; first = 2005, last = 2095)
 my_foo2 = compdef(foo2_ref)
 
-# Test that foo's time dimension is unchanged
-@test_logs(
-    (:warn, "Redefining dimension :time"),
-    set_dimension!(m, :time, 1990:2200)
-)
+# Can't set time more narrowly than components are defined as
+@test_throws ErrorException set_dimension!(m, :time, 1990:2200)
 
 @test first_period(my_foo2) == 2005
 @test last_period(my_foo2)  == 2095
 
 # Test parameter connections
 @test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
+
 set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
 
-# Test that foo's time dimension is updated
-@test_logs(
-    (:warn, "Redefining dimension :time"),
-    # (:warn, "Resetting foo2 component's first timestep to 2010"),
-    # (:warn, "Resetting foo2 component's last timestep to 2050"),
-    set_dimension!(m, :time, 2010:2050)
-)
+set_dimension!(m, :time, 2010:2050)
 
-# TBD: should these be changed as a result of changing model time?
-@test first_period(my_foo2) == 2010
-@test last_period(my_foo2)  == 2050
+@test first_period(m.md) == 2010
+@test last_period(m.md)  == 2050
 
 end #module

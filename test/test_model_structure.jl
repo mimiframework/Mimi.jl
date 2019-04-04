@@ -6,7 +6,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    connect_param!, unconnected_params, set_dimension!, 
+    connect_param!, unconnected_params, set_dimension!,  build,
     numcomponents, get_connections, internal_param_conns, dim_count,  dim_names,
     modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
 
@@ -133,7 +133,7 @@ delete!(m, :A)
 end
 
 add_comp!(m, D)
-@test_throws ErrorException Mimi.build(m)
+@test_throws ErrorException build(m)
 
 ##########################################
 #   Test init function                   #
@@ -168,11 +168,7 @@ run(m)
 @test m[:E, :varE] == 10
 
 # run for just one timestep, so init sets the value here
-# This results in 2 warnings, so we test for both.
-@test_logs(
-    (:warn, "Redefining dimension :time"),
-    set_dimension!(m, :time, [2015])
-)
+set_dimension!(m, :time, [2015])
 
 run(m)
 @test m[:E, :varE] == 1

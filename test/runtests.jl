@@ -75,9 +75,8 @@ using Test
     @info("test_timesteparrays.jl")
     include("test_timesteparrays.jl")
 
-    @warn("SKIPPING test_dimensions")           # question about proper behavior in comp first/last when setting :time
-    # @info("test_dimensions")
-    # include("test_dimensions.jl")
+    @info("test_dimensions")
+    include("test_dimensions.jl")
 
     @info("test_datum_storage.jl")
     include("test_datum_storage.jl")

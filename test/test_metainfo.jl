@@ -4,7 +4,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    compdef, compname, reset_compdefs, compmodule, first_period, last_period,
+    compdef, compname, reset_compdefs, compmodule, first_period, last_period, 
     variable_names
 
 reset_compdefs()

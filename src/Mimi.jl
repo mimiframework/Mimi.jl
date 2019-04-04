@@ -84,27 +84,4 @@ include("utils/plotting.jl")
 include("components/adder.jl")
 include("components/connector.jl")
 
-"""
-    load_comps(dirname::String="./components")
-
-Call include() on all the files in the indicated directory `dirname`.
-This avoids having modelers create a long list of include()
-statements. Just put all the components in a directory.
-"""
-function load_comps(dirname::String="./components")
-    files = readdir(dirname)
-    for file in files
-        if endswith(file, ".jl")
-            pathname = joinpath(dirname, file)
-            include(pathname)
-        end
-    end
-end
-
-# # Components are defined here to allow pre-compilation to work
-# function __init__()
-#     compdir = joinpath(@__DIR__, "components")
-#     load_comps(compdir)
-# end
-
 end # module

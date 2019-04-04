@@ -297,6 +297,8 @@ first_period(obj::AbstractComponentDef) = obj.first
 last_period(obj::AbstractComponentDef) = obj.last
 isuniform(obj::AbstractComponentDef) = obj.is_uniform
 
+Base.parent(obj::AbstractComponentDef) = obj.parent
+
 # Stores references to the name of a component variable or parameter
 # and the ComponentPath of the component in which it is defined
 @class DatumReference <: NamedObj begin

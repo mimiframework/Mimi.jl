@@ -155,11 +155,8 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 @test typeof(t_matrix) <: TimestepMatrix
 
 
-#try with variable timestep
-@test_logs(
-    (:warn, "Redefining dimension :time"),
-    set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
-)
+# try with variable timestep
+set_dimension!(m, :time, [2000:1:2004; 2005:2:2009])
 
 t_vector= get_timestep_array(m.md, Float64, 1, vector)
 t_matrix = get_timestep_array(m.md, Float64, 2, matrix)

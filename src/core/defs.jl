@@ -56,31 +56,6 @@ end
 
 dirty!(md::ModelDef) = (md.dirty = true)
 
-Base.parent(obj::AbstractComponentDef) = obj.parent
-
-first_period(comp_def::ComponentDef) = comp_def.first
-last_period(comp_def::ComponentDef)  = comp_def.last
-
-function first_period(comp::AbstractCompositeComponentDef)
-    values = filter(!isnothing, [first_period(c) for c in compdefs(comp)])
-    return length(values) > 0 ? min(values...) : nothing
-end
-
-function last_period(comp::AbstractCompositeComponentDef)
-    values = filter(!isnothing, [last_period(c) for c in compdefs(comp)])
-    return length(values) > 0 ? max(values...) : nothing
-end
-
-function first_period(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
-    period = first_period(comp_def)
-    return period === nothing ? time_labels(obj)[1] : period
-end
-
-function last_period(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
-    period = last_period(comp_def)
-    return period === nothing ? time_labels(obj)[end] : period
-end
-
 compname(dr::AbstractDatumReference) = dr.comp_path.names[end]
 #@delegate compmodule(dr::DatumReference) => comp_id
 
@@ -98,6 +73,12 @@ function number_type(obj::AbstractCompositeComponentDef)
     # for composites that are not yet connected to a ModelDef?
     return root isa ModelDef ? root.number_type : Float64
 end
+
+first_period(root::AbstractCompositeComponentDef, comp::AbstractComponentDef) = @or(first_period(comp), first_period(root))
+last_period(root::AbstractCompositeComponentDef,  comp::AbstractComponentDef) = @or(last_period(comp),  last_period(root))
+
+find_first_period(comp_def::AbstractComponentDef) = @or(first_period(comp_def), first_period(get_root(comp_def)))
+find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), last_period(get_root(comp_def)))
 
 # TBD: should be numcomps()
 numcomponents(obj::AbstractComponentDef) = 0   # no sub-components
@@ -162,33 +143,26 @@ dim_names(comp_def::AbstractComponentDef, datum_name::Symbol) = dim_names(datumd
 
 dim_count(def::AbstractDatumDef) = length(dim_names(def))
 
-function step_size(values::Vector{Int})
-    return length(values) > 1 ? values[2] - values[1] : 1
-end
+step_size(values::Vector{Int}) = (length(values) > 1 ? values[2] - values[1] : 1)
 
 #
 # TBD: should these be defined as methods of CompositeComponentDef?
 #
-function step_size(obj::AbstractCompositeComponentDef)
-    keys::Vector{Int} = time_labels(obj)
+function step_size(obj::AbstractComponentDef)
+    keys = time_labels(obj)
     return step_size(keys)
 end
 
-function first_and_step(obj::AbstractCompositeComponentDef)
-    keys::Vector{Int} = time_labels(obj) # labels are the first times of the model runs
+function first_and_step(obj::AbstractComponentDef)
+    keys = time_labels(obj)
     return first_and_step(keys)
 end
 
-function first_and_step(values::Vector{Int})
-     return values[1], step_size(values)
-end
+first_and_step(values::Vector{Int}) = (values[1], step_size(values))
 
 first_and_last(obj::AbstractComponentDef) = (obj.first, obj.last)
 
-function time_labels(obj::AbstractCompositeComponentDef)
-    keys::Vector{Int} = dim_keys(obj, :time)
-    return keys
-end
+time_labels(obj::AbstractComponentDef) = dim_keys(obj, :time)
 
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
@@ -221,6 +195,12 @@ function datum_size(obj::AbstractCompositeComponentDef, comp_def::ComponentDef, 
     return datum_size
 end
 
+########
+# Should these all be defined for leaf ComponentDefs? What is the time (or other) dimension for
+# a leaf component? Is time always determined from ModelDef? What about other dimensions that may
+# be defined differently in a component?
+########
+
 # Symbols are added to the dim_dict in @defcomp (with value of nothing), but are set later using set_dimension!
 has_dim(obj::AbstractCompositeComponentDef, name::Symbol) = (haskey(obj.dim_dict, name) && obj.dim_dict[name] !== nothing)
 
@@ -243,52 +223,59 @@ dim_count(obj::AbstractCompositeComponentDef, name::Symbol) = length(dimension(o
 dim_keys(obj::AbstractCompositeComponentDef, name::Symbol)   = collect(keys(dimension(obj, name)))
 dim_values(obj::AbstractCompositeComponentDef, name::Symbol) = collect(values(dimension(obj, name)))
 
-# For debugging only
-function _show_run_period(obj::AbstractComponentDef, first, last)
-    first = (first === nothing ? :nothing : first)
-    last  = (last  === nothing ? :nothing : last)
-    which = (is_leaf(obj) ? :leaf : :composite)
-    @info "Setting run period for $which $(nameof(obj)) to ($first, $last)"
+"""
+    check_run_period(obj::AbstractComponentDef, first, last)
+
+Raise an error if the component has an earlier start than `first` or a later finish than
+`last`. Values of `nothing` are not checked. Composites recurse to check sub-components.
+"""
+function check_run_period(obj::AbstractComponentDef, new_first, new_last)
+    # @info "check_run_period($(obj.comp_id), $(printable(new_first)), $(printable(new_last))"
+    old_first = first_period(obj)
+    old_last  = last_period(obj)
+
+    if new_first !== nothing && old_first !== nothing && new_first < old_first
+        error("Attempted to set first period of $(obj.comp_id) to an earlier period ($new_first) than component indicates ($old_first)")
+    end
+    
+    if new_last !== nothing && old_last !== nothing && new_last > old_last
+        error("Attempted to set last period of $(obj.comp_id) to a later period ($new_last) than component indicates ($old_last)")
+    end
+
+    # N.B. compdefs() returns an empty list for leaf ComponentDefs
+    for subcomp in compdefs(obj)
+        check_run_period(subcomp, new_first, new_last)
+    end
+
+    nothing
 end
 
 """
-    set_run_period!(obj::ComponentDef, first, last)
+    _set_run_period!(obj::AbstractComponentDef, first, last)
 
-Allows user to narrow the bounds on the time dimension.
-
-If the component has an earlier start than `first` or a later finish than `last`,
-the values are reset to the tighter bounds. Values of `nothing` are left unchanged.
-Composites recurse on sub-components.
+Allows user to change the bounds on a AbstractComponentDef's time dimension.
+An error is raised if the new time bounds are outside those of any 
+subcomponent, recursively.
 """
-function set_run_period!(obj::AbstractComponentDef, first, last)
-    #_show_run_period(obj, first, last)
+function _set_run_period!(obj::AbstractComponentDef, first, last)
+    check_run_period(obj, first, last)
+
     first_per = first_period(obj)
     last_per  = last_period(obj)
     changed = false
 
     if first !== nothing
-        if first_per !== nothing && first_per < first
-            @warn "Resetting $(nameof(comp_def)) component's first timestep to $first"
-        end
         obj.first = first
         changed = true
     end
 
     if last !== nothing
-        if last_per !== nothing && last_per > last
-            @warn "Resetting $(nameof(comp_def)) component's last timestep to $last"
-        end
         obj.last = last
         changed = true
     end
 
     if changed
         dirty!(obj)
-    end
-
-    # N.B. compdefs() returns an empty list for leaf ComponentDefs
-    for subcomp in compdefs(obj)
-        set_run_period!(subcomp, first, last)
     end
 
     nothing
@@ -302,13 +289,13 @@ an integer; or to the values in the vector or range if `keys` is either of those
 """
 function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
     redefined = has_dim(ccd, name)
-    if redefined
-        @warn "Redefining dimension :$name"
-    end
+    # if redefined
+    #     @warn "Redefining dimension :$name"
+    # end
 
     if name == :time
+        _set_run_period!(ccd, keys[1], keys[end])
         set_uniform!(ccd, isuniform(keys))
-        #set_run_period!(ccd, keys[1], keys[end])
     end
 
     return set_dimension!(ccd, name, Dimension(keys))
@@ -522,7 +509,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             if num_dims == 0
                 values = value
             else
-                # Want to use the first from the comp_def if it has it, if not use ModelDef
+                # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
                 first = first_period(obj, comp_def)
 
                 if isuniform(obj)
@@ -668,7 +655,7 @@ end
 #
 
 # Return the number of timesteps a given component in a model will run for.
-function getspan(obj::AbstractCompositeComponentDef, comp_name::Symbol)
+function getspan(obj::AbstractComponentDef, comp_name::Symbol)
     comp_def = compdef(obj, comp_name)
     return getspan(obj, comp_def)
 end
@@ -824,6 +811,11 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
                    first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
+    # When adding composites to another composite, we disallow setting first and last periods.
+    if is_composite(comp_def) && (first !== nothing || last !== nothing)
+        error("Cannot set first or last period when adding a composite component: $(comp_def.comp_id)")
+    end
+
     # If not specified, export all var/pars. Caller can pass empty list to export nothing.
     # TBD: actually, might work better to export nothing unless declared as such.
     if exports === nothing
@@ -856,12 +848,12 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         error("Cannot add two components of the same name ($comp_name)")
     end
 
-    # check that a time dimension has been set
+    # check time constraints if the time dimension has been set
     if has_dim(obj, :time)
         # error("Cannot add component to composite without first setting time dimension.")
 
         # check that first and last are within the model's time index range
-        time_index = dim_keys(obj, :time)
+        time_index = time_labels(obj)
 
         if first !== nothing && first < time_index[1]
             error("Cannot add component $comp_name with first time before first of model's time index range.")
@@ -883,7 +875,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     comp_def.name = comp_name
     parent!(comp_def, obj)
 
-    set_run_period!(comp_def, first, last)
+    _set_run_period!(comp_def, first, last)
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 

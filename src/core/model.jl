@@ -245,8 +245,6 @@ an integer; or to the values in the vector or range if `keys`` is either of thos
 """
 @delegate set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) => md
 
-@delegate set_run_period!(m::Model, first, last) => md
-
 @delegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
 
 @delegate parameter_names(m::Model, comp_name::Symbol) => md

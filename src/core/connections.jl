@@ -78,8 +78,8 @@ function _check_labels(obj::AbstractCompositeComponentDef,
             param_length = size(ext_param.values)[i]
             if dim == :time 
                 t = dimension(obj, :time)
-                first = first_period(obj, comp_def)
-                last = last_period(obj, comp_def)
+                first = find_first_period(comp_def)
+                last = find_last_period(comp_def)
                 comp_length = t[last] - t[first] + 1
             else
                 comp_length = dim_count(obj, dim)

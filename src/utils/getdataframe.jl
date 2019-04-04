@@ -75,7 +75,7 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         df[dim1name] = repeat(keys1, inner = [len_dim2])
         df[dim2name] = repeat(keys2, outer = [len_dim1])
 
-        if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
+        if dim1name == :time && size(data)[1] != len_dim1
             mi = modelinstance(m)
             ci = compinstance(mi, comp_name)
             t = dimension(m, :time)
@@ -91,7 +91,7 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
     else
 
         # shift the data to be padded with missings if this data is shorter than the model
-        if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
+        if dim1name == :time && size(data)[1] != len_dim1
             mi = modelinstance(m)
             ci = compinstance(mi, comp_name)
             t = dimension(m, :time)
