@@ -52,6 +52,10 @@ function Statistics.var(d::EmpiricalDistribution)
     return var(d.values, d.weights, corrected=true)
 end
 
+function Base.length(d::EmpiricalDistribution, args::Vararg{Integer,N}) where {N}
+    return length(d.values)
+end
+
 function Statistics.quantile(d::EmpiricalDistribution, args...)
     indices = quantile.(d.dist, args...)
     return d.values[indices]
@@ -66,3 +70,4 @@ function Random.rand!(d::EmpiricalDistribution, args::Vararg{Integer,N}) where {
     indices = rand!(d.dist, args...)
     return d.values[indices]
 end
+
