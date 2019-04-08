@@ -115,9 +115,12 @@ model definition.
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
               exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_id` to the model indicated by `m`. The component is added at the end of
-the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
-differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the new name.
+Add the component indicated by `comp_id` to the model indicated by `m`. The component is added 
+at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
+`comp_name` differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the 
+new name.
+
+Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = add_comp!(m.md, comp_id, comp_name; kwargs...)
@@ -141,6 +144,8 @@ The component is added with the same first and last values, unless the keywords
 `first` or `last` are specified. Optional boolean argument `reconnect` with
 default value `true` indicates whether the existing parameter connections
 should be maintained in the new component.
+
+Note: `first` and `last` keywords are currently disabled.
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = replace_comp!(m.md, comp_id, comp_name; kwargs...)

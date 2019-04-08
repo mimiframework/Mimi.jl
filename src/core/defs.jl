@@ -804,12 +804,19 @@ The `exports` arg identifies which vars/pars to make visible to the next higher 
 what names. If `nothing`, everything is exported. The first element of a pair indicates the symbol to export
 from comp_def to the composite, the second element allows this var/par to have a new name in the composite.
 A symbol alone means to use the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
+
+Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
                    exports=nothing,
                    first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+
+    if first !== nothing || last !== nothing
+        @warn "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."
+        first = last = nothing
+    end
 
     # When adding composites to another composite, we disallow setting first and last periods.
     if is_composite(comp_def) && (first !== nothing || last !== nothing)
@@ -901,6 +908,8 @@ end
 Add the component indicated by `comp_id` to the composite component indicated by `obj`. The component
 is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the
 `comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
+
+Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                    comp_name::Symbol=comp_id.comp_name;
@@ -924,12 +933,19 @@ old component, unless one of the keywords `before` or `after` is specified. The 
 added with the same first and last values, unless the keywords `first` or `last` are specified.
 Optional boolean argument `reconnect` with default value `true` indicates whether the existing
 parameter connections should be maintained in the new component. Returns the added comp def.
+
+Note: `first` and `last` keywords are currently disabled.
 """
 function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                        comp_name::Symbol=comp_id.comp_name;
                        first::NothingInt=nothing, last::NothingInt=nothing,
                        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
                        reconnect::Bool=true)
+
+    if first !== nothing || last !== nothing
+        @warn "replace_comp!: Keyword arguments 'first' and 'last' are currently disabled."
+        first = last = nothing
+    end
 
     if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
