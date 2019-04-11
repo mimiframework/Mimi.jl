@@ -132,6 +132,135 @@ and then again using our user-defined post-trial function as the `post_trial_fun
 # Same thing but with a post-trial function
 run_sim(m, sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
-## FUND Example
+## Advanced Post-trial Functions
 
-This example is in progress and will be built out soon.
+_While the instructions in this section are informative and correct, this code example is based on MimiDICE2010 which is not currently publically available, so the direct use is currently limited._
+
+While the model above employed a fairly simple `post_trial_func` that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run.
+
+### NPV of Damages
+
+Case: We want to run MimiDICE2010, varying the climate sensitivity `t2xco2` over a distribution `MyDistribution`, and for each run return the sum of discounted climate damages `DAMAGES` using three different discount rates.
+
+Without using the Mimi functionality, this may look something like:
+
+```julia
+# N = number of trials
+# m = DICE2010 model
+# df = array of discount factors
+# npv_damages= an empty array to store my results
+# ECS_sample = a vector of climate sensitivity values drawn from the desired distribution
+
+for i = 1:N
+    update_param!(m, :t2xco2, ECS_sample[i])
+    run(m)
+    npv_damages[i] = sum(df .* m[:neteconomy, :DAMAGES])
+end
+```
+
+We encourage users to employ the Mimi framework for this type of analysis, in large part because the underlying functions have optimizations that will improve speed and memory use, especially as the number of runs climbs.
+
+Employing the SA functionality could look like the following template:
+
+First, we define the typical variables for a simulation, including the number of trials `N` and the simulation `sim`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
+
+```julia
+using Mimi
+using MimiDICE2010
+
+# define your trial number
+N = 1000000 
+
+# define your simulation (defaults to Monte Carlo sampling)
+mcs = @defsim begin
+    t2xco2 = MyDistribution()
+end
+```
+
+Next, we consider the requirements for our post-trial function.  We will need to define the array of discount rates `discount_rates`, and a function that converts `discount_rates` into the necessary array of discount factors `df`, as follows.
+
+```julia   
+# define your desired discount rates and pre compute the discount factors
+discount_rates = [0.025, 0.03, 0.05]
+dfs = [calculate_df(rate) for rate in discount_rates]    # need to define or replace calculate_df
+```
+
+Next, we must create an array to store the npv damages results to during the post-trial funciton
+```julia
+# make an array to store the npv damages results to during the post trial function
+npv_results = zeros(N, length(discount_rates))    
+```
+
+We are now ready to define a post-trial function, which has a required type signature `MyFunction((mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)` although not all arguments have to be used within the function. Our function will access our model from the list of models in `mcs.models` (length of one in this case) and then perform calculations on the `DAMAGES` variable from the `neteconomy` component in that model as follows.
+
+```julia
+# define your post trial function; this is the required type signature, even though we won't use all of the arguments
+function my_npv_calculation(mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    m = mcs.models[1]    # access the model after it is run for this trial
+    damages = m[:neteconomy, :DAMAGES]    # access the damage values for this run
+    for (i, df) in enumerate(dfs)    # loop through our precomputed discount factors
+        npv_results[trialnum, i] = sum(df .* damages)    # do the npv calculation and save it to our array of results
+    end
+    nothing    # return nothing
+end
+```
+Now that we have defined  our post-trial function, we can set our models and run the simulation! Afterwards, we can use the `npv_results` array as we need.
+
+```julia
+# set the model, generate trials, and run the simulation
+set_models!(mcs, m)
+generate_trials!(mcs, N; filename = "ECS_sample.csv")   # providing a file name is optional; only use if you want to see the climate sensitivity values later
+run_sim(mcs; post_trial_func = my_npv_calculation)
+
+# do something with the npv_results array
+println(mean(npv_results, dims=2))    # or write to a file
+```
+
+### Social Cost of Carbon (SCC)
+
+Case: We want to do an SCC calculation across a base and marginal model of `MimiDICE2010`, which consists of running both a `base` and `marginal` model (the latter being a model including an emissions pulse, see the [`create_marginal_model`](@ref) or create your own two models). We then take the difference between the `DAMAGES` in these two models and obtain the NPV to get the SCC.
+
+The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation `sim`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
+
+```julia
+using Mimi
+using MimiDICE2010
+
+# define your trial number
+N = 1000000 
+
+# define your simulation (defaults to Monte Carlo sampling)
+mcs = @defsim begin
+    t2xco2 = MyDistribution()
+end
+```
+
+Next, we prepare our post-trial calculations by setting up a `scc_results` array to hold the results.  We then define a `post_trial_function` called `my_scc_calculation` which will calculate the SCC for that run.
+
+```julia
+scc_results = zeros(N, length(discount_rates))
+
+function my_scc_calculation(mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    base, marginal = mcs.models
+    base_damages = base[:neteconomy, :DAMAGES]
+    marg_damages = marginal[:neteconomy, :DAMAGES]
+    for (i, df) in enumerate(dfs)
+        scc_results[trialnum, i] = sum(df .* (marg_damages .- base_damages))
+    end
+end
+```
+
+Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation.
+
+```julia
+# Build the base model
+base = construct_dice()
+
+#Build the marginal model, which here involves a dummy function `construct_marginal_dice()` that you will need to write
+marginal = construct_marginal_dice(year) 
+
+# Set models and run
+set_models!(mcs, [base, marginal])
+generate_trials!(mcs, N; filename = "ecs_sample.csv")
+run_sim!(mcs; post_trial_func = my_scc_calculation)
+```
