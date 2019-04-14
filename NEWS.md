@@ -1,3 +1,6 @@
+# Mimi.jl v0.8.5 Release Notes
+* Add keyword argument N to Sobol analyze function
+
 # Mimi.jl v0.8.4 Release Notes
 * Update docs to no longer indicate Git requirement
 * Change default for filename in generate_trials! function
