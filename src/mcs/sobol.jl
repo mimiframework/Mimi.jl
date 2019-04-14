@@ -41,7 +41,8 @@ end
 
 function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N1}; N::Union{Nothing, Int}=nothing) where N1
     if N != nothing
-        sim.trials = N
+        sim.calc_second_order ? factor = 2 * length(sim.rvdict) : factor = length(sim.rvdict)
+        sim.trials = N * (factor + 2)
     end
 
     if sim.trials == 0
