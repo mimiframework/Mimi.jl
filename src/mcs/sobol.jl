@@ -39,7 +39,15 @@ function sample!(sim::SobolSimulation, samplesize::Int)
     end
 end
 
-function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N}) where N
+function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N1}; N::Union{Nothing, Int}=nothing) where N1
+    if N != nothing
+        sim.trials = N
+    end
+
+    if sim.trials == 0
+        error("Cannot analyze simulation with 0 trials (sim.trials == 0), either run generate_trials with a given N, or pass N to analyze function")
+    end
+    
     payload = create_GSA_payload(sim)
     return GlobalSensitivityAnalysis.analyze(payload, model_output)
 end
