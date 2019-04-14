@@ -45,7 +45,7 @@ function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N1}
     end
 
     if sim.trials == 0
-        error("Cannot analyze simulation with 0 trials (sim.trials == 0), either run generate_trials with a given N, or pass N to analyze function")
+        error("Cannot analyze simulation with 0 trials (sim.trials == 0), either run generate_trials to set N, or pass N to analyze function as a keyword argument")
     end
     
     payload = create_GSA_payload(sim)
