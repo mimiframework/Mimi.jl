@@ -5,6 +5,9 @@ os:
 julia:
   - 1.1
   - nightly
+dist: xenial
+services:
+  - xvfb  
 matrix:
   allow_failures:
   - julia: nightly
