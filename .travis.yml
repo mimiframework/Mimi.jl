@@ -5,6 +5,13 @@ os:
 julia:
   - 1.1
   - nightly
+dist: xenial
+services:
+  - xvfb
+addons:
+  apt:
+    packages:
+    - libgconf-2-4
 matrix:
   allow_failures:
   - julia: nightly
@@ -16,15 +23,7 @@ branches:
   - /release-.*/
   - /v(\d+)\.(\d+)\.(\d+)/
 env:
-  - PYTHON=""
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi
-  - $TESTCMD --check-bounds=yes -e 'using Pkg; Pkg.clone(pwd()); Pkg.build("Mimi"); Pkg.test("Mimi"; coverage=true)'
-  - julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url = "https://github.com/mimiframework/MimiRegistry.git"))'
-  - julia -e 'using Pkg; Pkg.add("MimiFUND")'
-  - julia -e 'using Pkg; Pkg.add("MimiRICE2010")'
-  - julia --check-bounds=yes -e 'include("test/test_dependencies.jl"); run_dependency_tests()'
+  - PYTHON="" MIMI_RUN_DEPENDENCY_TESTS="TRUE"
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
   - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'

@@ -91,4 +91,8 @@ Mimi.set_defcomp_verbosity(false)
     include("test_plotting.jl")
 
     include("mcs/runtests.jl")
+
+    if get(ENV, "MIMI_RUN_DEPENDENCY_TESTS", "")=="TRUE"
+        run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)
+    end
 end
