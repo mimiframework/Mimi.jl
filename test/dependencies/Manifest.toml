@@ -360,8 +360,8 @@ version = "0.8.7-DEV"
 
 [[MimiFUND]]
 deps = ["Dates", "DelimitedFiles", "Distributions", "Mimi", "StatsBase"]
-git-tree-sha1 = "63d0f1800fa67ead5a036bdb28b824b1046c89d1"
-repo-rev = "4aa7146a735c547c9d4d0c63b9ecd64dbc4ed3e9"
+git-tree-sha1 = "5bb67d3ef5bb3f7840fd1ad92c8896bcc6c9c68e"
+repo-rev = "master"
 repo-url = "https://github.com/fund-model/MimiFUND.jl.git"
 uuid = "b3ba11de-429f-11e9-29f7-cb478ab96e7c"
 version = "3.11.1+"
