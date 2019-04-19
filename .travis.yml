@@ -26,7 +26,6 @@ env:
   - PYTHON="" MIMI_RUN_DEPENDENCY_TESTS="TRUE"
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
-  - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
 
 jobs:
   include:
