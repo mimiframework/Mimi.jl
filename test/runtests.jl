@@ -84,8 +84,8 @@ Mimi.set_defcomp_verbosity(false)
     @info("test_connectorcomp.jl")
     include("test_connectorcomp.jl")
 
-    # @info("test_explorer.jl")
-    # include("test_explorer.jl")
+    @info("test_explorer.jl")
+    include("test_explorer.jl")
 
     @info("test_plotting.jl")
     include("test_plotting.jl")
