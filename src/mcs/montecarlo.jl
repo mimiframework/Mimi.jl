@@ -114,7 +114,7 @@ function save_trial_results(sim::Simulation{T}, output_dir::AbstractString) wher
 end
 
 function save_trial_inputs(sim::Simulation, filename::String)
-    mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
+    mkpath(dirname(filename), mode=0o750)   # ensure that the specified path exists
     save(filename, sim)
     return nothing
 end
