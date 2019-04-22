@@ -37,8 +37,8 @@ TableTraits = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"
 
 [compat]
-GraphPlot = "≥ 0.3.0"
-julia = "≥ 1.1.0"
+GraphPlot = "0.3"
+julia = "1"
 
 [extras]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
