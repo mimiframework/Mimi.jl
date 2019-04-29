@@ -48,8 +48,7 @@ getfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_p
 ```
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:
 ```
-include("src/fund.jl")
-using .Fund
+using MimiFUND
 m = getfund(nsteps = 100)
 run(m)
 ```
