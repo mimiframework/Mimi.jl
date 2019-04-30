@@ -1,6 +1,6 @@
 using IterTools
-using IterableTables
-using TableTraits
+import IteratorInterfaceExtensions
+import TableTraits
 using Random
 using ProgressMeter
 using Serialization
@@ -550,10 +550,10 @@ function Base.iterate(sim::Simulation{T}, trialnum) where T <: AbstractSimulatio
     end
 end
 
-TableTraits.isiterable(sim::Simulation{T}) where T <: AbstractSimulationData = true
+IteratorInterfaceExtensions.isiterable(sim::Simulation{T}) where T <: AbstractSimulationData = true
 TableTraits.isiterabletable(sim::Simulation{T}) where T <: AbstractSimulationData = true
 
-IterableTables.getiterator(sim::Simulation) = SimIterator{sim.nt_type}(sim)
+IteratorInterfaceExtensions.getiterator(sim::Simulation) = SimIterator{sim.nt_type}(sim)
 
 column_names(sim::Simulation{T}) where T <: AbstractSimulationData = fieldnames(sim.nt_type)
 column_types(sim::Simulation{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim.rvdict)]
@@ -562,7 +562,7 @@ column_types(sim::Simulation{T}) where T <: AbstractSimulationData = [eltype(fld
 # Iteration support (which in turn supports the "save" method)
 #
 column_names(iter::SimIterator) = column_names(iter.sim)
-column_types(iter::SimIterator) = IterableTables.column_types(iter.sim)
+column_types(iter::SimIterator) = error("Not implemented") # Used to be `IterableTables.column_types(iter.sim)`
 
 function Base.iterate(iter::SimIterator)
     _reset_rvs!(iter.sim)
