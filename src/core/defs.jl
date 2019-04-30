@@ -224,13 +224,13 @@ dim_keys(obj::AbstractCompositeComponentDef, name::Symbol)   = collect(keys(dime
 dim_values(obj::AbstractCompositeComponentDef, name::Symbol) = collect(values(dimension(obj, name)))
 
 """
-    check_run_period(obj::AbstractComponentDef, first, last)
+    _check_run_period(obj::AbstractComponentDef, first, last)
 
 Raise an error if the component has an earlier start than `first` or a later finish than
 `last`. Values of `nothing` are not checked. Composites recurse to check sub-components.
 """
-function check_run_period(obj::AbstractComponentDef, new_first, new_last)
-    # @info "check_run_period($(obj.comp_id), $(printable(new_first)), $(printable(new_last))"
+function _check_run_period(obj::AbstractComponentDef, new_first, new_last)
+    # @info "_check_run_period($(obj.comp_id), $(printable(new_first)), $(printable(new_last))"
     old_first = first_period(obj)
     old_last  = last_period(obj)
 
@@ -244,7 +244,7 @@ function check_run_period(obj::AbstractComponentDef, new_first, new_last)
 
     # N.B. compdefs() returns an empty list for leaf ComponentDefs
     for subcomp in compdefs(obj)
-        check_run_period(subcomp, new_first, new_last)
+        _check_run_period(subcomp, new_first, new_last)
     end
 
     nothing
@@ -258,7 +258,8 @@ An error is raised if the new time bounds are outside those of any
 subcomponent, recursively.
 """
 function _set_run_period!(obj::AbstractComponentDef, first, last)
-    check_run_period(obj, first, last)
+    # We've disabled `first` and `last` args to add_comp!, so we don't test bounds
+    # _check_run_period(obj, first, last)
 
     first_per = first_period(obj)
     last_per  = last_period(obj)
@@ -487,7 +488,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
 
     param  = parameter(comp_def, param_name)
     data_type = param.datatype
-    dtype = data_type == Number ? number_type(obj) : data_type
+    dtype = Union{Missing, (data_type == Number ? number_type(obj) : data_type)}
 
     if length(comp_param_dims) > 0
 

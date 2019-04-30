@@ -53,7 +53,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
 
     t1 = eltype(ext_param.values)
     t2 = eltype(param_def.datatype)
-    if !(t1 <: t2)
+    if !(t1 <: Union{Missing, t2})
         error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
 
@@ -437,7 +437,7 @@ Add an array type parameter `name` with value `value` and `dims` dimensions to t
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::AbstractArray, dims)
-    numtype = number_type(obj)
+    numtype = Union{Missing, number_type(obj)}
     if !(typeof(value) <: Array{numtype})
         # Need to force a conversion (simple convert may alias in v0.6)
         value = Array{numtype}(undef, value)

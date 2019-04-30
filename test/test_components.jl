@@ -135,10 +135,23 @@ ci = compinstance(m, :C) # Get the component instance
 
 m = Model()
 set_dimension!(m, :time, 2000:2100)
-add_comp!(m, testcomp1, :C; first=2010, last=2090)  # Give explicit first and last values for the component
+
+@test_logs(
+    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
+    add_comp!(m, testcomp1, :C; first=2010, last=2090)  # Give explicit first and last values for the component
+)
+
 cd = compdef(m.md, :C)      # Get the component definition in the model
-@test cd.first == 2010      # First and last values are defined in the comp def because they were explicitly given
-@test cd.last == 2090
+
+# first and last are disabled currently
+# @test cd.first == 2010      # First and last values are defined in the comp def because they were explicitly given
+# @test cd.last == 2090
+
+# Verify that they didn't change
+@test cd.first === nothing
+@test cd.last === nothing
+
+set_dimension!(m, :time, 2010:2090)
 
 set_param!(m, :C, :par1, zeros(81))
 Mimi.build(m)               # Build the model
@@ -148,13 +161,12 @@ ci = compinstance(m, :C) # Get the component instance
 
 set_dimension!(m, :time, 2000:2200) # Reset the time dimension
 cd = compdef(m.md, :C)      # Get the component definition in the model
-@test cd.first == 2010      # First and last values should still be the same
-@test cd.last == 2090
+# @test cd.first == 2010      # First and last values should still be the same
+# @test cd.last == 2090
 
 Mimi.build(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance
-@test ci.first == 2010      # The component instance's first and last values are the same as the comp def
-@test ci.last == 2090
-
+# @test ci.first == 2010      # The component instance's first and last values are the same as the comp def
+# @test ci.last == 2090
 
 end #module

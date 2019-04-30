@@ -6,7 +6,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    connect_param!, unconnected_params, set_dimension!, 
+    connect_param!, unconnected_params, set_dimension!, has_comp,
     reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
     dim_names, compdef, getproperty, setproperty!, dimension, compdefs
 
@@ -49,11 +49,26 @@ last_A = 2150
 m = Model()
 set_dimension!(m, :time, years)
 
-@test_throws ErrorException add_comp!(m, A, last = 2210) 
-@test_throws ErrorException add_comp!(m, A, first = 2010) 
+# first and last are now disabled
+# @test_throws ErrorException add_comp!(m, A, last = 2210) 
+# @test_throws ErrorException add_comp!(m, A, first = 2010)
+
+@test_logs(
+    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
+    add_comp!(m, A, last = 2210)
+)
+
+# remove the comp we just added so later tests succeed
+delete!(m, :A)
+@test has_comp(m, :A) == false
+
 @test_throws ArgumentError add_comp!(m, A, after=:B)
 # @test_throws ErrorException add_comp!(m, A, after=:B)
-add_comp!(m, A, first = first_A, last = last_A) #test specific last and first
+
+@test_logs(
+    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
+    add_comp!(m, A, first = first_A, last = last_A) #test specific last and first
+)
 
 add_comp!(m, B, before=:A)
 

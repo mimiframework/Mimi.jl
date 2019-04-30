@@ -4,7 +4,8 @@ using Mimi
 using Test
 
 import Mimi:
-    compdef, AbstractDimension, RangeDimension, Dimension, key_type, first_period, last_period
+    compdef, AbstractDimension, RangeDimension, Dimension, key_type, first_period, last_period,
+    ComponentReference
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
 dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
@@ -90,20 +91,27 @@ end
 
 m = Model()
 set_dimension!(m, :time, 2000:2100)
-@test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
-foo2_ref = add_comp!(m, foo2; first = 2005, last = 2095)
+
+# First and last have been disabled...
+#@test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
+
+@test_logs(
+    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
+    foo2_ref = add_comp!(m, foo2; first = 2005, last = 2095)
+)
+
+foo2_ref = ComponentReference(m, :foo2)
 my_foo2 = compdef(foo2_ref)
 
+# First and last have been disabled... 
 # Can't set time more narrowly than components are defined as
-@test_throws ErrorException set_dimension!(m, :time, 1990:2200)
-
-@test first_period(my_foo2) == 2005
-@test last_period(my_foo2)  == 2095
+# @test_throws ErrorException set_dimension!(m, :time, 1990:2200)
+# @test first_period(my_foo2) == 2005
+# @test last_period(my_foo2)  == 2095
 
 # Test parameter connections
-@test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
-
-set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
+# @test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
+# set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
 
 set_dimension!(m, :time, 2010:2050)
 

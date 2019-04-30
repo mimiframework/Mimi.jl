@@ -49,7 +49,7 @@ run(m)
 @test typeof(dataframe_or_scalar(m, :MyComp, :d)) == Float64
 
 #2.  JSON strings for the spec "values" key
-# TODO:  getmultiline, getline, getbar, getdatapart
+#:  getmultiline, getline, getbar, getdatapart
 
 #3.  full specs for VegaLit
 

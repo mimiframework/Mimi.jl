@@ -106,11 +106,12 @@ first_foo = 2005
 m = Model()
 set_dimension!(m, :time, years)
 
+# first and last disabled
 # test that you can only add components with first/last within model's time index range
-@test_throws ErrorException add_comp!(m, Foo; first=1900)
-@test_throws ErrorException add_comp!(m, Foo; last=2100)
+# @test_throws ErrorException add_comp!(m, Foo; first=1900)
+# @test_throws ErrorException add_comp!(m, Foo; last=2100)
 
-foo = add_comp!(m, Foo; first=first_foo) #offset for foo
+foo = add_comp!(m, Foo) # DISABLED: first=first_foo) # offset for foo
 bar = add_comp!(m, Bar; exports=[:output => :bar_output])
 
 set_param!(m, :Foo, :inputF, 5.)
@@ -158,7 +159,7 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 # try with variable timestep
 set_dimension!(m, :time, [2000:1:2004; 2005:2:2009])
 
-t_vector= get_timestep_array(m.md, Float64, 1, vector)
+t_vector = get_timestep_array(m.md, Float64, 1, vector)
 t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 
 @test typeof(t_vector) <: TimestepVector
