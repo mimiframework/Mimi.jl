@@ -732,6 +732,8 @@ end
 
 Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter{T}(copy(obj.value))
 
+Base.copy(obj::ScalarModelParameter{T}) where T <: Union{Symbol, AbstractString} = ScalarModelParameter{T}(obj.value)
+
 Base.copy(obj::ArrayModelParameter{T})  where T = ArrayModelParameter{T}(copy(obj.values), obj.dimensions)
 
 function Base.copy(obj::TimestepVector{T_ts, T}) where {T_ts, T}
