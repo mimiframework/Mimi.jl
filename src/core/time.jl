@@ -279,11 +279,7 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex) where {T, Start, STEP}
-	setindex!(v.data, val, i)
-end
-
-function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex) where {T, TIMES}
+function Base.setindex!(v::TimestepVector, val, i::AnyIndex)
 	setindex!(v.data, val, i)
 end
 
@@ -322,11 +318,7 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
-	return mat.data[idx1, idx2]
-end
-
-function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
+function Base.getindex(mat::TimestepMatrix, idx1::AnyIndex, idx2::AnyIndex)
 	return mat.data[idx1, idx2]
 end
 
@@ -351,25 +343,20 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, idx1::Int, idx2::Int) where {T, FIRST, STEP}
+function Base.setindex!(mat::TimestepMatrix, val, idx1::Int, idx2::Int)
 	setindex!(mat.data, val, idx1, idx2)
 end
 
-function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP}
-	mat.data[idx1,idx2] .= val
-end
-
-function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, val, idx1::Int, idx2::Int) where {T, TIMES}
-	setindex!(mat.data, val, idx1, idx2)
-end
-
-function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES}
+function Base.setindex!(mat::TimestepMatrix, val, idx1::AnyIndex, idx2::AnyIndex)
 	mat.data[idx1,idx2] .= val
 end
 
 #
 # 4. TimestepArray methods
 #
+
+# Enables broadcast assignment
+Base.dotview(v::Mimi.TimestepArray, args...) = Base.dotview(v.data, args...)
 
 Base.fill!(obj::TimestepArray, value) = fill!(obj.data, value)
 
@@ -411,11 +398,7 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API; first index is Int or Range, rather than a Timestep
 
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, FIRST, STEP}
-	return arr.data[idx1, idx2, idxs...]
-end
-
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, TIMES}
+function Base.getindex(arr::TimestepArray, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...)
 	return arr.data[idx1, idx2, idxs...]
 end
 
