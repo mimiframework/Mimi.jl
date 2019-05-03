@@ -356,6 +356,7 @@ end
 #
 # 4. TimestepArray methods
 #
+Base.dotview(v::Mimi.TimestepArray, args...) = Base.dotview(v.data, args...)
 
 Base.fill!(obj::TimestepArray, value) = fill!(obj.data, value)
 
