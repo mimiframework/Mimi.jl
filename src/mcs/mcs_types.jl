@@ -1,4 +1,3 @@
-using IterableTables
 using Distributions
 using Statistics
 
