@@ -354,8 +354,6 @@ end
 #
 # 4. TimestepArray methods
 #
-Base.dotview(v::Mimi.TimestepArray, args...) = Base.dotview(v.data, args...)
-
 # Enables broadcast assignment
 Base.dotview(v::Mimi.TimestepArray, args...) = Base.dotview(v.data, args...)
 
