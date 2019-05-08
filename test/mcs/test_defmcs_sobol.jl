@@ -59,7 +59,7 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 
 # Run trials 1:sim.trials, and save results to the indicated directory
 set_models!(sim, m)
-run_sim(sim, sim.trials, output_dir=output_dir)
+run_sim(sim, output_dir=output_dir)
 
 # do some analysis
 E = CSVFiles.load(joinpath(output_dir, "E.csv")) |> DataFrame
@@ -101,7 +101,7 @@ end
 
 loop_counter = 0
 
-run_sim(sim, N;
+run_sim(sim;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -112,7 +112,7 @@ run_sim(sim, N;
 
 loop_counter = 0
 
-run_sim(sim, N;
+run_sim(sim;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -133,7 +133,7 @@ end
 
 loop_counter = 0
 
-run_sim(sim, N;
+run_sim(sim;
         output_dir=output_dir,
         pre_trial_func=pre_trial,
         scenario_func=other_loop_func,
@@ -154,7 +154,8 @@ end
 loop_counter = 0
 
 N = 10
-run_sim(sim, N;
+run_sim(sim;
+        trials = N,
         output_dir=output_dir,
         post_trial_func=post_trial)
 

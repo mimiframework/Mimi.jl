@@ -84,7 +84,7 @@ generate_trials!(mcs_test, num_trials)
 
 set_models!(mcs_test, m)
 
-run_sim(mcs_test, num_trials;
+run_sim(mcs_test;
     output_dir = output_dir,
     scenario_args = scenario_args,
     scenario_func = scenario_func, 

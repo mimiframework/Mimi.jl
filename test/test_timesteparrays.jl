@@ -245,4 +245,9 @@ set_param!(m, :first, :par, 1:length(years))
 
 @test_throws MissingException run(m)
 
+# Check broadcast assignment to underlying array
+x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10}, Float64}(zeros(10))
+x[:] .= 10
+@test all(x.data .== 10)
+
 end #module

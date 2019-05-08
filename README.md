@@ -1,7 +1,5 @@
 [![Build Status](https://travis-ci.org/mimiframework/Mimi.jl.svg?branch=master)](https://travis-ci.org/mimiframework/Mimi.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/f915ntkc0etgvim9/branch/master?svg=true)](https://ci.appveyor.com/project/mimiframework/mimi-jl/branch/master)
-[![Mimi](http://pkg.julialang.org/badges/Mimi_0.5.svg)](http://pkg.julialang.org/?pkg=Mimi)
-[![Coverage Status](https://coveralls.io/repos/github/mimiframework/Mimi.jl/badge.svg?branch=master)](https://coveralls.io/github/mimiframework/Mimi.jl?branch=master)
 [![codecov](https://codecov.io/gh/mimiframework/Mimi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mimiframework/Mimi.jl)
 
 [![Stable documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://www.mimiframework.org/Mimi.jl/stable)
@@ -31,15 +29,30 @@ Mimi is an installable package. To install Mimi, use the following:
 Pkg.add("Mimi")
 ````
 
+## Mimi Registry
+
+Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/anthofflab/Mimi.jl), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
+
+```julia
+pkg> registry add https://github.com/mimiframework/MimiRegistry.git
+```
+
+You only need to run this command once on a computer. 
+
+From there you may add any of the registered packages, such as MimiRICE2010.jl by running the following command at the julia package REPL:
+
+```julia
+pkg> add MimiRICE2010
+```
 ## Models using Mimi
 
-* [FUND.jl](https://github.com/davidanthoff/fund.jl) (currently in beta)
-* [Mimi-DICE-2010.jl](https://github.com/anthofflab/mimi-dice-2010.jl) (currently in closed beta)
-* [Mimi-DICE-2013.jl](https://github.com/anthofflab/mimi-dice-2013.jl) (currently in closed beta)
-* [Mimi-RICE.jl](https://github.com/anthofflab/mimi-rice-2010.jl)
+* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)
+* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl) (currently in closed beta)
+* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl) (currently in closed beta)
+* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl) (currently in closed beta)
-* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/) (currently in closed beta)
-* [Mimi-PAGE.jl](https://github.com/anthofflab/mimi-page.jl/) (currently in closed beta)
+* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl) (currently in closed beta)
+* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl)
 * [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl) (CH4 parts currently in closed beta)
 * [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl) (CH4 parts currently in closed beta)
 * [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed beta)
