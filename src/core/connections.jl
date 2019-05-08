@@ -327,7 +327,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
         comp_name = nameof(comp_def)
 
         # check whether we need to set the external parameter
-        if external_param(md, param_name, missing_ok=true) !== nothing
+        if external_param(md, param_name, missing_ok=true) == nothing
             value = parameters[string(param_name)]
             param_dims = parameter_dimensions(md, comp_name, param_name)
 
