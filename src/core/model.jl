@@ -55,6 +55,8 @@ component parameter should only be calculated for the second timestep and beyond
                          backup::Union{Nothing, Array}=nothing;
                          ignoreunits::Bool=false, offset::Int=0) => md
 
+@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
+
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
 

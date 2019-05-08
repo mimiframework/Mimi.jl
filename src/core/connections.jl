@@ -309,6 +309,8 @@ function unconnected_params(md::ModelDef)
     return unconnected    
 end
 
+global ARGS = nothing
+
 """
     set_leftover_params!(m::Model, parameters::Dict)
 
@@ -317,6 +319,7 @@ to some other component to a value from a dictionary `parameters`. This method a
 the dictionary keys are strings that match the names of unset parameters in the model.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
+    ARGS = (md, parameters)
     parameters = Dict(k => v for (k, v) in parameters)
 
     for (comp_path, param_name) in unconnected_params(md)
@@ -411,7 +414,7 @@ Add a one dimensional time-indexed array parameter indicated by `name` and
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::TimestepVector, dims)
-    # println("set_external_array_param!: dims=$dims, setting dims to [:time]")
+    # @info "1. set_external_array_param!: name=$name value=$value dims=$dims, setting dims to [:time]"
     param = ArrayModelParameter(value, [:time])  # must be :time
     set_external_param!(obj, name, param)
 end
@@ -425,6 +428,7 @@ Add a multi-dimensional time-indexed array parameter `name` with value
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::TimestepArray, dims)
+    # @info "2. set_external_array_param!: name=$name value=$value dims=$dims"
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)
 end
@@ -437,8 +441,10 @@ Add an array type parameter `name` with value `value` and `dims` dimensions to t
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::AbstractArray, dims)
+    # @info "3. set_external_array_param!: name=$name value=$value dims=$dims"
     numtype = Union{Missing, number_type(obj)}
-    if !(typeof(value) <: Array{numtype})
+
+    if !(typeof(value) <: Array{numtype} || (value isa AbstractArray && eltype(value) <: numtype))
         # Need to force a conversion (simple convert may alias in v0.6)
         value = Array{numtype}(undef, value)
     end
