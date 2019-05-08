@@ -266,22 +266,9 @@ function connected_params(md::ModelDef)
 end
 
 """
-    connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
-
-Return list of parameters that have been set for component `comp_name` in composite `obj`.
-"""
-# Deprecated
-# function connected_params(obj::AbstractCompositeComponentDef, comp_name::Symbol)
-#     ext_set_params = map(x->x.param_name,   external_param_conns(obj, comp_name))
-#     int_set_params = map(x->x.dst_par_name, internal_param_conns(obj, comp_name))
-
-#     return union(ext_set_params, int_set_params)
-# end
-
-"""
 Depth-first search for unconnected parameters, which are appended to `unconnected`. Parameter
 connections are made to the "original" component, not to a composite that exports the parameter.
-Thus, only the leaf (non-composite) variant of this method actually collects uncollected params.
+Thus, only the leaf (non-composite) variant of this method actually collects unconnected params.
 """
 function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
     comp_path = obj.comp_path
@@ -309,8 +296,6 @@ function unconnected_params(md::ModelDef)
     return unconnected    
 end
 
-global ARGS = nothing
-
 """
     set_leftover_params!(m::Model, parameters::Dict)
 
@@ -319,15 +304,12 @@ to some other component to a value from a dictionary `parameters`. This method a
 the dictionary keys are strings that match the names of unset parameters in the model.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-    ARGS = (md, parameters)
-    parameters = Dict(k => v for (k, v) in parameters)
-
     for (comp_path, param_name) in unconnected_params(md)
         comp_def = compdef(md, comp_path)
         comp_name = nameof(comp_def)
 
         # check whether we need to set the external parameter
-        if external_param(md, param_name, missing_ok=true) == nothing
+        if external_param(md, param_name, missing_ok=true) === nothing
             value = parameters[string(param_name)]
             param_dims = parameter_dimensions(md, comp_name, param_name)
 
