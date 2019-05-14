@@ -169,7 +169,7 @@ function lhs!(sim::LatinHypercubeSimulation; corrmatrix::Union{Matrix{Float64},N
     trials = sim.trials
     rvdict = sim.rvdict
     num_rvs = length(rvdict)
-    rvlist = sim.dist_rvs
+    rvlist = values(sim.rvdict)
 
     samples = lhs(rvlist, sim.trials, corrmatrix=corrmatrix, asDataFrame=false)
 

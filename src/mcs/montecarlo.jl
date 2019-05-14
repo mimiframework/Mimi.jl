@@ -174,7 +174,7 @@ function Random.rand!(sim::Simulation{T}) where T <: AbstractSimulationData
     rvdict = sim.rvdict
     trials = sim.trials
 
-    for rv in sim.dist_rvs
+    for rv in values(sim.rvdict)
         values = rand(rv.dist, trials)
         rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
     end

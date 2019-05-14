@@ -18,8 +18,8 @@ const SobolSimulation = Simulation{SobolData}
 function sample!(sim::SobolSimulation, samplesize::Int)
 
     rvdict = sim.rvdict
-    rvlist = sim.dist_rvs
-    num_rvs = length(rvdict)
+    rvlist = values(rvdict)
+    num_rvs = length(rvlist)
 
     if sim.data.calc_second_order
         sim.trials = samplesize * (2 * num_rvs + 2)
@@ -55,7 +55,7 @@ end
 
 function create_GSA_payload(sim::SobolSimulation)
 
-    rvlist = sim.dist_rvs
+    rvlist = values(sim.rvdict)
 
     # add all distinct rvs to the rv_info dictionary to be passed to GSA's 
     # SobolData payload

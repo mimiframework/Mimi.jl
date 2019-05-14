@@ -127,7 +127,6 @@ mutable struct Simulation{T}
     rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
-    dist_rvs::Vector{RandomVariable}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
@@ -144,7 +143,6 @@ mutable struct Simulation{T}
         self.rvdict = OrderedDict([rv.name => rv for rv in rvlist])
         self.translist = translist
         self.savelist = savelist
-        self.dist_rvs = [rv for rv in rvlist]
 
         names = (keys(self.rvdict)...,)
         types = [eltype(fld) for fld in values(self.rvdict)]
