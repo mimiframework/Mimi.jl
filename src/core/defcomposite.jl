@@ -117,6 +117,8 @@ functions; these are defined internally to iterate over constituent components a
 associated method on each.
 """
 macro defcomposite(cc_name, ex)
+    @info "defining composite $cc_name in module $(fullname(__module__))"
+    
     @capture(ex, elements__)
     comps = SubComponent[]
 
@@ -128,12 +130,20 @@ macro defcomposite(cc_name, ex)
         end
     end
 
+    # module_name = nameof(__module__)
+
+    # TBD: use fullname(__module__) to get "path" to module, as tuple of Symbols, e.g., (:Main, :ABC, :DEF)
+    # TBD: use Base.moduleroot(__module__) to get the first in that sequence, if needed
+    # TBD: parentmodule(m) gets the enclosing module (but for root modules returns self)
+    # TBD: might need to replace the single symbol used for module name in ComponentId with Module path.
+
     result = quote
-        cc_id = Mimi.ComponentId(nameof(@__MODULE__), $(QuoteNode(cc_name)))
-        global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, @__MODULE__)
+        cc_id = Mimi.ComponentId($__module__, $(QuoteNode(cc_name)))
+        global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
         $cc_name
     end
 
+    # @info "defcomposite:\n$result"
     return esc(result)
 end
 

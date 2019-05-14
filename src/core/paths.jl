@@ -39,14 +39,18 @@ function _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
 
     elts = split(path, "/")
 
-    if elts[1] == ""    # if path starts with "/", elt[1] == ""
+    if elts[1] == ""    # path started with "/"
         root = get_root(node)
         elts[1] = string(nameof(root))
     end
     return ComponentPath([Symbol(elt) for elt in elts])
 end
 
-find_comp(obj::ComponentDef, path::ComponentPath) = (isempty(path) ? obj : nothing)
+# For leaf components, we can only "find" the component itself
+# when the path is empty.
+function find_comp(obj::ComponentDef, path::ComponentPath)
+    return isempty(path) ? obj : nothing
+end
 
 function find_comp(obj::AbstractComponentDef, name::Symbol)
     # N.B. test here since compdef doesn't check existence

@@ -1,4 +1,24 @@
-compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
+
+function find_module(path::NTuple{N, Symbol} where N)
+    m = Main
+    for name in path
+        try
+            m = getfield(m, name)
+        catch
+            error("Module name $name was not found in module $m")
+        end
+    end
+    return m
+end
+
+function compdef(comp_id::ComponentId; module_obj::Union{Nothing, Module}=nothing)
+    if module_obj === nothing
+        path = @or(comp_id.module_path, (:Main, comp_id.module_name))        
+        module_obj = find_module(path)
+    end
+
+    return getfield(module_obj, comp_id.comp_name)
+end
 
 compdef(cr::ComponentReference) = find_comp(cr)
 
@@ -11,7 +31,7 @@ has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_d
 compdefs(c::AbstractCompositeComponentDef) = values(c.comps_dict)
 compkeys(c::AbstractCompositeComponentDef) = keys(c.comps_dict)
 
-# Allows method to be called on leaf component defs, which sometimes simplifies code.
+# Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
 compdefs(c::ComponentDef) = []
 
 compmodule(comp_id::ComponentId) = comp_id.module_name
@@ -443,6 +463,31 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
+"""
+    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, 
+                value_dict::Dict{Symbol, Any}, param_names)
+
+Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from 
+`value_dict[param_name`.
+"""
+function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
+    for param_name in param_names
+        set_param!(obj, comp_name, value_dict, param_name)
+    end
+end
+
+"""
+    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, 
+               value_dict::Dict{Symbol, Any}, dims=nothing)
+
+Call `set_param!()` with `param_name` and a value dict in which `value_dict[param_name]` references 
+the value of parameter `param_name`.
+"""
+function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, 
+                    param_name::Symbol, dims=nothing)
+    value = value_dict[param_name]
+    set_param!(obj, comp_name, param_name, value, dims)
+end
 
 function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
     # @info "set_param!($(obj.comp_id), $comp_path, $param_name, $value)"

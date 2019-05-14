@@ -54,9 +54,10 @@ export
     variable_names
 
 include("core/delegate.jl")
-include("core/types.jl")
-
-# After loading types and delegation macro, the rest is alphabetical
+include("core/types/_includes.jl")
+#
+# After loading types and delegation macro, the rest can be loaded in any order.
+#
 include("core/build.jl")
 include("core/connections.jl")
 include("core/defs.jl")
@@ -67,11 +68,11 @@ include("core/dimensions.jl")
 include("core/instances.jl")
 include("core/references.jl")
 include("core/time.jl")
+include("core/time_arrays.jl")
 include("core/model.jl")
 include("core/paths.jl")
 include("core/show.jl")
 
-# For debugging composites we don't need these
 include("explorer/explore.jl")
 include("mcs/mcs.jl")
 include("utils/getdataframe.jl")
