@@ -184,7 +184,7 @@ function create_marginal_model(base::Model, delta::Float64=1.0)
     mm = MarginalModel(base, delta)
 end
 
-function Base.run(mm::MarginalModel, ntimesteps::Int=typemax(Int))
+function Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
     run(mm.base, ntimesteps=ntimesteps)
     run(mm.marginal, ntimesteps=ntimesteps)
 end
