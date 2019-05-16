@@ -9,7 +9,7 @@ Mimi is a package that provides a component model for [integrated assessment mod
 Mimi is an installable package. To install Mimi, first enter Pkg REPL mode by typing `]`, and then use the following:
 
 ```julia
-pkg> add("Mimi")
+pkg> add Mimi
 ```
 
 You may then exit Pkg REPL mode with a single backpace. For more complete setup instructions, follow the [Installation Guide](@ref).

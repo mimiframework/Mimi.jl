@@ -11,7 +11,7 @@ Mimi requires the programming language [julia](http://julialang.org/) to run. Yo
 Once julia is installed, start julia and you should see a julia command prompt. To install the Mimi package, issue the following command from the Pkg REPL mode, which is entered by typing `]` and exited with a single backspace:
 
 ```julia
-pkg> add("Mimi")
+pkg> add Mimi
 ```
 You only have to run this command once on your machine.
 
