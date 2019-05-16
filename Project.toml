@@ -1,6 +1,6 @@
 name = "Mimi"
 uuid = "e4e893b0-ee5e-52ea-8111-44b3bdec128c"
-version = "0.8.7-DEV"
+version = "0.8.7"
 
 [deps]
 CSVFiles = "5d742f6a-9f54-50ce-8119-2520741973ca"
