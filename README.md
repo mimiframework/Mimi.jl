@@ -23,11 +23,13 @@ Porting to [Mimi 0.5.0](https://github.com/mimiframework/Mimi.jl/releases/tag/v0
 
 ## Installation
 
-Mimi is an installable package. To install Mimi, use the following:
+Mimi is an installable package. To install Mimi, first enter Pkg REPL mode by typing `]`, and then use the following:
 
-````
-Pkg.add("Mimi")
-````
+```julia
+pkg> add("Mimi")
+```
+
+You may then exit Pkg REPL mode with a single backpace.
 
 ## Mimi Registry
 
