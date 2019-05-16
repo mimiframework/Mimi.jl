@@ -18,7 +18,7 @@ You only have to run this command once on your machine.
 As Mimi gets improved we will release new versions of the package. To make sure you always have the latest version of Mimi installed, you can run the following command at the julia Pkg REPL:
 
 ```julia
-pkg> update()
+pkg> update
 ```
 This will update *all* installed packages to their latest version (not just the Mimi package).
 
