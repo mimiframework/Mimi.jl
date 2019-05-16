@@ -16,6 +16,7 @@ You only have to run this command once on your machine.
 
 As Mimi gets improved we will release new versions of the package. To make sure you always have the latest version of Mimi installed, you can run the following command at the julia prompt:
 ```julia
+
 julia> Pkg.update()
 ```
 This will update *all* installed packages to their latest version (not just the Mimi package).
@@ -24,6 +25,7 @@ This will update *all* installed packages to their latest version (not just the 
 
 When you start a new julia command prompt, Mimi is not yet loaded into that julia session. To load Mimi, issue the following command:
 ```julia
+# If you are running Julia for the first time, you might need to run "import Pkg" first. 
 julia> using Mimi
 ```
 You will have to run this command every time you want to use Mimi in julia. You would typically also add `using Mimi` to the top of any julia code file that for example defines Mimi components.
