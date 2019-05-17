@@ -55,7 +55,7 @@ end
 
 function create_GSA_payload(sim::SobolSimulation)
 
-    rvlist = values(sim.rvdict)
+    rvlist = collect(values(sim.rvdict))
 
     # add all distinct rvs to the rv_info dictionary to be passed to GSA's 
     # SobolData payload
