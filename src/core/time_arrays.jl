@@ -9,7 +9,8 @@
 # Get a timestep array of type T with N dimensions. Time labels will match those from the time dimension in md
 function get_timestep_array(md::ModelDef, T, N, value)
 	if isuniform(md)
-        first, stepsize = first_and_step(md)
+		first, stepsize = first_and_step(md)
+		first === nothing && @warn "get_timestep_array: first === nothing"
         return TimestepArray{FixedTimestep{first, stepsize}, T, N}(value)
     else
         TIMES = (time_labels(md)...,)

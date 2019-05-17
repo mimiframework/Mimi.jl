@@ -314,12 +314,15 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
     #     @warn "Redefining dimension :$name"
     # end
 
+    dim = Dimension(keys)
+
     if name == :time
         _set_run_period!(ccd, keys[1], keys[end])
+        propagate_time(ccd, dim)
         set_uniform!(ccd, isuniform(keys))
     end
 
-    return set_dimension!(ccd, name, Dimension(keys))
+    return set_dimension!(ccd, name, dim)
 end
 
 function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
@@ -557,6 +560,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             else
                 # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
                 first = first_period(obj, comp_def)
+                first === nothing && @warn "set_param!: first === nothing"
 
                 if isuniform(obj)
                     stepsize = step_size(obj)
@@ -804,23 +808,12 @@ function time_contains(outer::Dimension, inner::Dimension)
     return outer_idx[1] <= inner_idx[1] && outer_idx[end] >= inner_idx[end]
 end
 
-"""
-Propagate a time dimension down through the comp def tree.
-"""
-function  _propagate_time(obj::AbstractComponentDef, t::Dimension)
-    set_dimension!(obj, :time, t)
-
-    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        _propagate_time(c, t)
-    end
-end
-
 function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                        comp_name::Symbol, datum_name::Symbol)
     path = ComponentPath(parent.comp_path, comp_name)
     root = get_root(parent)
 
-    root === nothing && error("Component $(parent.comp_id) does have a root")
+    root === nothing && error("Component $(parent.comp_id) does not have a root")
 
     # @info "comp path: $path, datum_name: $datum_name"
 
@@ -836,6 +829,22 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
     end
 
     error("Component $(comp_def.comp_id) does not have a data item named $datum_name")
+end
+
+"""
+    propagate_time(obj::AbstractComponentDef, t::Dimension)
+
+Propagate a time dimension down through the comp def tree.
+"""
+function propagate_time(obj::AbstractComponentDef, t::Dimension)
+    set_dimension!(obj, :time, t)
+    
+    obj.first = firstindex(t)
+    obj.last  = lastindex(t)
+
+    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
+        propagate_time(c, t)
+    end
 end
 
 """
@@ -920,7 +929,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             error("Cannot specify both 'before' and 'after' parameters")
         end
 
-        _propagate_time(comp_def, dimension(obj, :time))
+        propagate_time(comp_def, dimension(obj, :time))
     end
 
     # Copy the original so we don't step on other uses of this comp

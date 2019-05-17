@@ -15,6 +15,7 @@ function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     else   
         if isuniform(md)
             first, stepsize = first_and_step(md)
+            first === nothing && @warn "_instance_datatype: first === nothing"
             T = TimestepArray{FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims}
         else
             times = time_labels(md)
@@ -239,6 +240,8 @@ function _build(md::ModelDef)
 
     t = dimension(md, :time)
     time_bounds = (firstindex(t), lastindex(t))
+
+    propagate_time(md, t)
 
     ci = _build(md, var_dict, par_dict, time_bounds)
     mi = ModelInstance(ci, md)

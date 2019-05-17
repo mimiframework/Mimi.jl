@@ -140,8 +140,8 @@ function connect_param!(obj::AbstractCompositeComponentDef,
     dst_comp_def = compdef(obj, dst_comp_path)
     src_comp_def = compdef(obj, src_comp_path)
 
-    @info "src_comp_def calling compdef($(obj.comp_id), $src_comp_path)"
-    src_comp_def === nothing && @info "src_comp_def === nothing"
+    # @info "src_comp_def calling compdef($(obj.comp_id), $src_comp_path)"
+    # src_comp_def === nothing && @info "src_comp_def === nothing"
 
     if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
@@ -162,8 +162,9 @@ function connect_param!(obj::AbstractCompositeComponentDef,
         dst_dims  = dim_names(dst_param)
 
         backup = convert(Array{Union{Missing, number_type(obj)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        first = first_period(obj, dst_comp_def)
-        T = eltype(backup)        
+        first = first_period(obj, dst_comp_def)        
+
+        T = eltype(backup)
         
         dim_count = length(dst_dims)
 
