@@ -175,8 +175,11 @@ function Random.rand!(sim::Simulation{T}) where T <: AbstractSimulationData
     trials = sim.trials
 
     for rv in values(sim.rvdict)
-        values = rand(rv.dist, trials)
-        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
+        # use underlying distribution, if known
+        orig_dist = (rv.dist isa SampleStore ? rv.dist.dist : rv.dist)
+        dist = (orig_dist === nothing ? rv.dist : orig_dist)
+        values = rand(dist, trials)
+        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values, orig_dist))
     end
 end
 

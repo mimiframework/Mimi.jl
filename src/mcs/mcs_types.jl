@@ -1,6 +1,8 @@
 using Distributions
 using Statistics
 
+@enum ScenarioLoopPlacement OUTER INNER
+
 """
     RandomVariable{T}
 
@@ -24,17 +26,34 @@ Base.eltype(rv::RandomVariable) = eltype(rv.dist)
 
 distribution(rv::RandomVariable) = rv.dist
 
+abstract type PseudoDistribution end
 
-@enum ScenarioLoopPlacement OUTER INNER
+"""     ReshapedDistribution
+A pseudo-distribution that returns a reshaped array of values from the
+stored distribution and dimensions.
+
+Example:
+    rd = ReshapedDistribution([5, 5], Dirichlet(25,1))
+"""
+struct ReshapedDistribution <: PseudoDistribution
+    dims::Vector{Int}
+    dist::Distribution
+end
+
+function Base.rand(rd::ReshapedDistribution, draws::Int=1)
+    return [reshape(rand(rd.dist), rd.dims...) for i in 1:draws]
+end
+
 
 # SampleStore is a faux Distribution that implements base.rand() 
 # to yield stored values.
-mutable struct SampleStore{T}
-    values::Vector{T}   # generally Int or Float64
-    idx::Int            # index of next value to return
+mutable struct SampleStore{T} <: PseudoDistribution
+    values::Vector{T}       # generally Int or Float64
+    idx::Int                # index of next value to return
+    dist::Union{Nothing, Distribution, PseudoDistribution}  # original distribution, if any
 
-    function SampleStore(values::Vector{T}) where T
-        return new{T}(values, 1)
+    function SampleStore(values::Vector{T}, dist::Union{Nothing, Distribution, PseudoDistribution}=nothing) where T
+        return new{T}(values, 1, dist)
     end
 end
 
@@ -54,31 +73,13 @@ end
 # Probably shouldn't use correlation on values loaded from a file rather than 
 # from a proper distribution.
 function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
-    return quantile.(ss, probs)
+    return quantile(sort(ss.values), probs)
 end
 
+Base.length(ss::SampleStore{T}) where T = length(ss.values)
 
-"""     ReshapedDistribution
-A pseudo-distribution that returns a reshaped array of values from the
-stored distribution and dimensions.
-
-Example:
-    rd = ReshapedDistribution([5, 5], Dirichlet(25,1))
-"""
-struct ReshapedDistribution
-    dims::Vector{Int}
-    dist::Distribution
-end
-
-# function Base.rand(rd::ReshapedDistribution, draws::Int=1)
-#     values = rand(rd.dist, draws)
-#     dims = (draws == 1 ? rd.dims : [rd.dims..., draws])
-#     return reshape(values, dims...)
-# end
-
-function Base.rand(rd::ReshapedDistribution, draws::Int=1)
-    return [reshape(rand(rd.dist), rd.dims...) for i in 1:draws]
-end
+Base.iterate(ss::SampleStore{T}) where T = iterate(ss.values)
+Base.iterate(ss::SampleStore{T}, idx) where T = iterate(ss.values, idx)
 
 struct TransformSpec
     paramname::Symbol
