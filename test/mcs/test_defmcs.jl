@@ -11,7 +11,6 @@ using Test
 using Mimi: reset_compdefs, modelinstance, compinstance, 
             get_var_value, OUTER, INNER, ReshapedDistribution
 
-reset_compdefs()
 include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
@@ -44,7 +43,6 @@ sim = @defsim begin
     # assignment of RVs, above.
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
-
 
 
 # Optionally, user functions can be called just before or after a trial is run
@@ -227,4 +225,3 @@ trial2 = copy(sim2.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
-

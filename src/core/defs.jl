@@ -38,7 +38,8 @@ end
 
 Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, and `ComponentDef`.
 """
-name(def::NamedDef) = def.name
+name(def::NamedDef) = def.name          # old definition; should deprecate this...
+Base.nameof(def::NamedDef) = def.name   # 'nameof' is the more julian name
 
 number_type(md::ModelDef) = md.number_type
 

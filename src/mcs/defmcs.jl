@@ -170,3 +170,66 @@ macro defsim(expr)
                     $data))
     end
 end
+
+#
+# Simulation update methods
+#
+function _update_nt_type!(sim::Simulation{T}) where T <: AbstractSimulationData
+    names = (keys(sim.rvdict)...,)
+    types = [eltype(fld) for fld in values(sim.rvdict)]
+    sim.nt_type = NamedTuple{names, Tuple{types...}}
+    nothing
+end
+
+function deleteRV!(sim::Simulation, name::Symbol)
+    deleteTransform!(sim, name)
+    delete!(sim.rvdict, name)
+    _update_nt_type!(sim)
+end
+
+function addRV!(sim::Simulation, rv::RandomVariable)
+    name = rv.name
+    haskey(sim.rvdict, name) && error("Simulation already has RV :$name. Use replaceRV! to replace it.")
+    sim.rvdict[name] = rv
+    _update_nt_type!(sim)
+end
+
+addRV!(sim::Simulation, name::Symbol, dist::Distribution) = addRV!(sim, RandomVariable(name, dist))
+
+function replaceRV!(sim::Simulation, rv::RandomVariable)
+    sim.rvdict[rv.name] = rv
+    _update_nt_type!(sim)
+end
+
+replaceRV!(sim::Simulation, name::Symbol, dist::Distribution) = replaceRV!(sim, RandomVariable(name, dist))
+
+function deleteTransform!(sim::Simulation, name::Symbol)
+    pos = findall(t -> t.rvname == name, sim.translist)
+    deleteat!(sim.translist, pos)    
+    _update_nt_type!(sim)
+end
+
+function addTransform!(sim::Simulation, t::TransformSpec)
+    push!(sim.translist, t)
+    _update_nt_type!(sim)
+end
+
+function addTransform!(sim::Simulation, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+    addTransform!(sim, TransformSpec(paramname, op, rvname, dims))
+end
+
+
+function deleteSave!(sim::Simulation, key::Tuple{Symbol, Symbol})
+    pos = findall(isequal(key), sim.savelist)
+    deleteat!(sim.savelist, pos)
+end
+
+deleteSave!(sim::Simulation, comp_name::Symbol, datum_name::Symbol) = deleteSave!(sim, (comp_name, datum_name))
+
+function addSave!(sim::Simulation, key::Tuple{Symbol, Symbol})
+    deleteSave!(sim, key) 
+    push!(sim.savelist, key)
+    nothing
+end
+
+addSave!(sim::Simulation, comp_name::Symbol, datum_name::Symbol) = addSave!(sim, (comp_name, datum_name))

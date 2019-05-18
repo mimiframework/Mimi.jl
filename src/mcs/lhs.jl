@@ -163,18 +163,21 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
     return asDataFrame ? DataFrame(samples, map(rv->rv.name, rvlist)) : samples
 end
 
+function lhs(sim::LatinHypercubeSimulation; 
+             corrmatrix::Union{Matrix{Float64},Nothing}=nothing,
+             asDataFrame::Bool=true)
+    rvlist = collect(values(sim.rvdict))
+    lhs(rvlist, sim.trials, corrmatrix=corrmatrix, asDataFrame=asDataFrame)
+end
+
 function lhs!(sim::LatinHypercubeSimulation; corrmatrix::Union{Matrix{Float64},Nothing}=nothing)
     # TBD: verify that any correlated values are actual distributions, not stored vectors?
 
-    trials = sim.trials
     rvdict = sim.rvdict
-    num_rvs = length(rvdict)
-    rvlist = sim.dist_rvs
 
-    samples = lhs(rvlist, sim.trials, corrmatrix=corrmatrix, asDataFrame=false)
+    samples = lhs(sim, corrmatrix=corrmatrix, asDataFrame=false)
 
-    for (i, rv) in enumerate(rvlist)
-        dist = rv.dist
+    for (i, rv) in enumerate(values(rvdict))
         name = rv.name
         values = samples[:, i]
         rvdict[name] = RandomVariable(name, SampleStore(values))
