@@ -11,7 +11,7 @@ This guide is organized into six main sections for understanding how to use Mimi
 3) Running the model
 4) Accessing results
 5) Plotting and the Explorer UI
-6) SA Functionality
+6) Sensitivity Analysis
 7) Advanced topics
 
 ## Defining Components

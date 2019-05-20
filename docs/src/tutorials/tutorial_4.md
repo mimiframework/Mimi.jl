@@ -1,6 +1,6 @@
 # Tutorial 4: Sensitivity Analysis (SA) Support
 
-This tutorial walks through the SA functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
+This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
 
 Working through the following tutorial will require:
 
@@ -160,7 +160,7 @@ end
 
 We encourage users to employ the Mimi framework for this type of analysis, in large part because the underlying functions have optimizations that will improve speed and memory use, especially as the number of runs climbs.
 
-Employing the SA functionality could look like the following template:
+Employing the sensitivity analysis functionality could look like the following template:
 
 First, we define the typical variables for a simulation, including the number of trials `N` and the simulation `sim`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 

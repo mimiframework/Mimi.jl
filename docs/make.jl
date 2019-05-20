@@ -12,7 +12,7 @@ makedocs(
 			"1 Run an Existing Model" => "tutorials/tutorial_1.md",
 			"2 Modify an Existing Model" => "tutorials/tutorial_2.md",
 			"3 Create a Model" => "tutorials/tutorial_3.md",
-			"4 SA Functionality" => "tutorials/tutorial_4.md"
+			"4 Sensitivity Analysis" => "tutorials/tutorial_4.md"
 		],
 		"FAQ" => "faq.md",
 		"Reference" => "reference.md",
