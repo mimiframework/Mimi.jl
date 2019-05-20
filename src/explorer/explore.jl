@@ -52,11 +52,11 @@ function explore(m::Model; title = "Electron")
 end
 
 """
-    explore(m::Model, comp_name::Symbol, datum_name::Symbol; interactive::String=true)
+    plot(m::Model, comp_name::Symbol, datum_name::Symbol)
 
 Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`.
 """
-function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
+function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
 
     if m.mi === nothing
         error("A model must be run before it can be plotted")
