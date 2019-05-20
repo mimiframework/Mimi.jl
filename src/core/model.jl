@@ -399,4 +399,34 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
     run(m.mi, ntimesteps, dim_keys)
     nothing
 end
- 
+
+function Base.show(io::IO, obj::Model)
+    print(io, "Model\n")
+    md = obj.md
+    mi = obj.mi
+
+    print(io, "  Module: $(md.module_name)\n")
+    print(io, "  Dimensions:\n")
+    for (k, v) in md.dimensions
+        print(io, "    $k => $v\n")
+    end
+
+    print(io, "  Components:\n")
+    for comp in values(md.comp_defs)
+        print(io, "    $(comp.comp_id)\n")
+    end
+
+    print(io, "  Internal Connections:\n")
+    for conn in md.internal_param_conns
+        print(io, "    $(conn)\n")
+    end
+
+    print(io, "  External Connections:\n")
+    for conn in md.external_param_conns
+        print(io, "    $(conn)\n")
+    end
+
+    print(io, "  Backups: $(md.backups)\n")
+    print(io, "  Number type: $(md.number_type)\n")
+    print(io, "  Built: $(mi !== nothing)\n")
+end
