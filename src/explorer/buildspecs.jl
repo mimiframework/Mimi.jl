@@ -7,7 +7,7 @@ function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
 end
 
 # Generate the VegaLite spec for a variable or parameter
-function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
+function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
     dims = dimensions(m, comp_name, item_name)
 
     # Control flow logic selects the correct plot type based on dimensions
@@ -32,9 +32,9 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol)
         # a 'time' field necessitates a line plot  
         elseif dffields[1] == "time"
             if length(dffields) > 2
-                spec = createspec_multilineplot(name, df, dffields)
+                spec = createspec_multilineplot(name, df, dffields, interactive=interactive)
             else
-                spec = createspec_lineplot(name, df, dffields)
+                spec = createspec_lineplot(name, df, dffields, interactive=interactive)
             end
         
         #otherwise we are dealing with a barplot
@@ -88,7 +88,11 @@ global const _plot_width  = 450
 global const _plot_height = 410
 global const _slider_height = 90
 
-function createspec_lineplot(name, df, dffields)
+function createspec_lineplot(name, df, dffields; interactive::Bool=true)
+    interactive ? createspec_lineplot_interactive(name, df, dffields) : createspec_lineplot_static(name, df, dffields)
+end
+ 
+function createspec_lineplot_interactive(name, df, dffields)
     datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
@@ -141,7 +145,40 @@ function createspec_lineplot(name, df, dffields)
     return spec
 end
 
-function createspec_multilineplot(name, df, dffields)
+function createspec_lineplot_static(name, df, dffields)
+    datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "type" => "line",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => Dict("type" => "line"),
+            "encoding" => Dict(
+                "x" => Dict(
+                    "field" => dffields[1], 
+                    "type" => "temporal", 
+                    "timeUnit" => "utcyear", 
+                ),             
+                "y" => Dict(
+                    "field" => dffields[2], 
+                    "type" => "quantitative",
+                )
+            ),
+            "width" => _plot_width,
+            "height" => _plot_height,
+        )
+    )
+    return spec
+end
+
+function createspec_multilineplot(name, df, dffields; interactive::Bool=true)
+    interactive ? createspec_multilineplot_interactive(name, df, dffields) : createspec_multilineplot_static(name, df, dffields)
+end
+
+function createspec_multilineplot_interactive(name, df, dffields)
     datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
@@ -192,6 +229,37 @@ function createspec_multilineplot(name, df, dffields)
                     )
                 )
             ]
+        ),
+    )
+    return spec
+end
+
+function createspec_multilineplot_static(name, df, dffields)
+    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"  => Dict("values" => datapart),
+    
+            "mark" => Dict("type" => "line"),
+            "encoding" => Dict(
+                "x"     => Dict(
+                    "field" => dffields[1], 
+                    "type" => "temporal", 
+                    "timeUnit" => "utcyear", 
+                    ),                
+                "y"     => Dict(
+                    "field" => dffields[3], 
+                    "type" => "quantitative",
+                    ),
+                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                    "scale" => Dict("scheme" => "category20")),
+            ),
+            "width"  => _plot_width,
+            "height" => _plot_height
         ),
     )
     return spec
@@ -252,7 +320,6 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     return JSON.JSONText(datapart)
 end
-
 
 function getmultiline(cols, dffields)
     datasb = StringBuilder()
