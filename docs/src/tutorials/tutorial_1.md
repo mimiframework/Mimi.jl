@@ -106,14 +106,14 @@ Alternatively, in order to view just one parameter or variable, call the functio
 ```julia
 using VegaLite
 run(m)
-p = explore(m, component1, parameter1)
+p = Mimi.plot(m, component1, parameter1)
 save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
 ```julia
 using VegaLite
-p = explore(m, :socioeconomic, :income)
+p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 ```
 
