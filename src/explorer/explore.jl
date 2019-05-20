@@ -62,7 +62,7 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
         error("A model must be run before it can be plotted")
     end
     
-    spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
+    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=false)["VLspec"]
     spec === nothing && error("Spec cannot be built.")        
 
     return VegaLite.VLSpec{:plot}(spec)
