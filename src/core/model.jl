@@ -400,33 +400,41 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
     nothing
 end
 
-function Base.show(io::IO, obj::Model)
-    print(io, "Model\n")
+function _show(io::IO, obj::Model, which::Symbol)
+
+    println(io, "Mimi.Model")
     md = obj.md
     mi = obj.mi
 
-    print(io, "  Module: $(md.module_name)\n")
-    print(io, "  Dimensions:\n")
-    for (k, v) in md.dimensions
-        print(io, "    $k => $v\n")
-    end
-
-    print(io, "  Components:\n")
+    println(io, "  Module: $(md.module_name)")
+    
+    println(io, "  Components:")
     for comp in values(md.comp_defs)
-        print(io, "    $(comp.comp_id)\n")
+        println(io, "    $(comp.comp_id)")
     end
+    
+    if which == :full
+        println(io, "  Dimensions:")
+        for (k, v) in md.dimensions
+            println(io, "    $k => $v")
+        end
 
-    print(io, "  Internal Connections:\n")
-    for conn in md.internal_param_conns
-        print(io, "    $(conn)\n")
+        println(io, "  Internal Connections:")
+        for conn in md.internal_param_conns
+            println(io, "    $(conn)")
+        end
+
+        println(io, "  External Connections:")
+        for conn in md.external_param_conns
+            println(io, "    $(conn)")
+        end
+        
+        println(io, "  Backups: $(md.backups)")
+        println(io, "  Number type: $(md.number_type)")
     end
-
-    print(io, "  External Connections:\n")
-    for conn in md.external_param_conns
-        print(io, "    $(conn)\n")
-    end
-
-    print(io, "  Backups: $(md.backups)\n")
-    print(io, "  Number type: $(md.number_type)\n")
-    print(io, "  Built: $(mi !== nothing)\n")
+    println(io, "  Built: $(mi !== nothing)")    
 end
+
+Base.show(io::IO, obj::Model) = _show(io, obj, :full)
+
+Base.show(io::IO, ::MIME"text/plain", obj::Model) = _show(io, obj, :short)
