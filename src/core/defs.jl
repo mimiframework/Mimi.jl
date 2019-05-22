@@ -217,7 +217,7 @@ set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Abstr
 function set_dimension!(md::ModelDef, name::Symbol, dim::Dimension)
     redefined = haskey(md, name)
     if redefined
-        @warn "Redefining dimension :$name"
+        @debug "Redefining dimension :$name"
     end
 
     if name == :time
@@ -667,7 +667,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         for epc in external_param_conns(md, comp_name)
             param_name = epc.param_name
             if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just (warn)?
-                @warn "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
+                @debug "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
                 push!(remove, epc)
             else
                 old_p = old_comp.parameters[param_name]
