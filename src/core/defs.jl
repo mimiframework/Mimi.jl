@@ -186,14 +186,14 @@ function reset_run_periods!(md, first, last)
         last_per  = last_period(comp_def)
 
         if first_per !== nothing && first_per < first 
-            @warn "Resetting $(comp_def.name) component's first timestep to $first"
+            @debug "Resetting $(comp_def.name) component's first timestep to $first"
             changed = true
         else
             first = first_per
         end 
 
         if last_per !== nothing && last_per > last 
-            @warn "Resetting $(comp_def.name) component's last timestep to $last"
+            @debug "Resetting $(comp_def.name) component's last timestep to $last"
             changed = true
         else 
             last = last_per
