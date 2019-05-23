@@ -131,7 +131,8 @@ mutable struct Simulation{T}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
-    data::T
+    data::T                         # data specific to a given sensitivity analysis method
+    payload::Any                    # opaque (to Mimi) data the user wants access to in callbacks
 
     function Simulation{T}(rvlist::Vector, 
                            translist::Vector{TransformSpec}, 
@@ -153,12 +154,15 @@ mutable struct Simulation{T}
         self.models = Vector{Model}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
 
-        # data specific to a given sensitivity analysis method
         self.data = data
+        self.payload = nothing
 
         return self
     end
 end
+
+set_payload!(sim::Simulation, payload) = (sim.payload = payload)
+payload(sim::Simulation) = sim.payload
 
 struct MCSData <: AbstractSimulationData end
 
