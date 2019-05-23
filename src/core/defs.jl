@@ -1,4 +1,11 @@
-compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
+# Try to locate a module object by its symbolic name
+get_module(name::Symbol) = (name == :Mimi ? Mimi : getfield(Mimi.Main, name))
+
+function compdef(comp_id::ComponentId)
+    comp_module = get_module(comp_id.module_name)
+    comp_def = getfield(comp_module, comp_id.comp_name)
+    return comp_def
+end
 
 compdefs(md::ModelDef) = values(md.comp_defs)
 
