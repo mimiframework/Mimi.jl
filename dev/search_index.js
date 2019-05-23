@@ -277,7 +277,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Tutorials Intro",
     "title": "Available Tutorials",
     "category": "section",
-    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nWhile the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon.\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Create a Model takes a step beyond using registered models, explaining how to create a model from scratch.\nSensitivity Analysis\nTutorial 4: Sensitivity Analysis (SA) Support explores Mimi\'s Sensitivity Analysis support, using both the simple 2-Region tutorial model and FUND examples."
+    "text": "Run an Existing Model\nTutorial 1: Run an Existing Model steps through the tasks to download, run, and view the results of a registered model such as FUND.  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.\nModify an Existing Model\nTutorial 2: Modify an Existing Model builds on Tutorial 1, showing how to modify an existing model such as DICE.\nCreate a Model\nTutorial 3: Create a Model takes a step beyond using registered models, explaining how to create a model from scratch.\nSensitivity Analysis\nTutorial 4: Sensitivity Analysis (SA) Support explores Mimi\'s Sensitivity Analysis support, using both the simple 2-Region tutorial model and FUND examples."
 },
 
 {
@@ -373,7 +373,7 @@ var documenterSearchIndex = {"docs": [
     "page": "2 Modify an Existing Model",
     "title": "Tutorial 2: Modify an Existing Model",
     "category": "section",
-    "text": "While the instructions in this tutorial are informative, the code examples are based on MimiDICE2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon.This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github here.Working through the following tutorial will require:Julia v1.1.0 or higher\nMimi v0.8.0 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. Futhermore, this tutorial uses the DICE model as an example.  Downloading DICE uses similar steps to those described for FUND in Tutorial 1 Steps 1 and 2."
+    "text": "This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github here.Working through the following tutorial will require:Julia v1.1.0 or higher\nMimi v0.8.0 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. Futhermore, this tutorial uses the DICE model as an example.  Downloading DICE uses similar steps to those described for FUND in Tutorial 1 Steps 1 and 2."
 },
 
 {
@@ -549,7 +549,7 @@ var documenterSearchIndex = {"docs": [
     "page": "4 Sensitivity Analysis",
     "title": "Advanced Post-trial Functions",
     "category": "section",
-    "text": "While the instructions in this section are informative and correct, this code example is based on MimiDICE2010 which is not currently publically available, so the direct use is currently limited.While the model above employed a fairly simple post_trial_func that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run."
+    "text": "While the model above employed a fairly simple post_trial_func that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run."
 },
 
 {
