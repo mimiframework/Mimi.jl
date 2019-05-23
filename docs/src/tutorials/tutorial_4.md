@@ -134,8 +134,6 @@ run_sim(m, sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
 ## Advanced Post-trial Functions
 
-_While the instructions in this section are informative and correct, this code example is based on MimiDICE2010 which is not currently publically available, so the direct use is currently limited._
-
 While the model above employed a fairly simple `post_trial_func` that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run.
 
 ### NPV of Damages
