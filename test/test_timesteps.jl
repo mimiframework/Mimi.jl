@@ -158,7 +158,7 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
 
 #try with variable timestep
 @test_logs(
-    (:warn, "Redefining dimension :time"),
+    # (:warn, "Redefining dimension :time"),
     set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
 )
 
