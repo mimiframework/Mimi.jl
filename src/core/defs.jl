@@ -1,11 +1,5 @@
 function compdef(comp_id::ComponentId)
-    module_name = comp_id.module_name
-    curr_module = @__MODULE__
-    # @info "@__MODULE__ is $(@__MODULE__)"
-
-    lookup_module = isdefined(curr_module, module_name) ? curr_module : Main
-    comp_module = getfield(lookup_module, module_name)
-    
+    comp_module = (comp_id.module_name == :Mimi ? Mimi : getfield(Main, comp_id.module_name))
     comp_def = getfield(comp_module, comp_id.comp_name)
     return comp_def
 end
