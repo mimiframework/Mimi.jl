@@ -161,7 +161,20 @@ mutable struct Simulation{T}
     end
 end
 
+"""
+    set_payload!(sim::Simulation, payload) 
+
+Attach a user's `payload` to the `Simulation` instance so it can be
+accessed in scenario and pre-/post-trial callback functions. The value
+is not used by Mimi in any way; it can be anything useful to the user.
+"""
 set_payload!(sim::Simulation, payload) = (sim.payload = payload)
+
+"""
+    payload(sim::Simulation)
+
+Return the `payload` value set by the user via `set_payload!()`.
+"""
 payload(sim::Simulation) = sim.payload
 
 struct MCSData <: AbstractSimulationData end
