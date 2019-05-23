@@ -33,7 +33,6 @@ is_timestep
 load_comps
 modeldef
 name
-new_comp
 parameters
 parameter_names
 parameter_dimensions

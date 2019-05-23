@@ -35,7 +35,6 @@ export
     load_comps,
     modeldef,
     name,
-    new_comp,
     parameters, 
     parameter_dimensions,
     parameter_names,
