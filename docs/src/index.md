@@ -6,13 +6,13 @@ Mimi is a package that provides a component model for [integrated assessment mod
 
 ## Installation
 
-Mimi is an installable package. To install Mimi, use the following:
+Mimi is an installable package. To install Mimi, first enter Pkg REPL mode by typing `]`, and then use the following:
 
 ```julia
-Pkg.add("Mimi")
+pkg> add Mimi
 ```
 
-For more complete setup instructions, follow the [Installation Guide](@ref).
+You may then exit Pkg REPL mode with a single backpace. For more complete setup instructions, follow the [Installation Guide](@ref).
 
 
 ## Mimi Registry
@@ -44,3 +44,5 @@ pkg> add MimiRICE2010
 * [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl) (CH4 parts currently in closed beta)
 * [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed beta)
 * [Mimi-BRICK.jl](https://github.com/anthofflab/mimi-brick.jl) (currently in closed beta)
+* [AWASH](http://awashmodel.org/)
+* [PAGE-ICE](https://github.com/openmodels/PAGE-ICE)

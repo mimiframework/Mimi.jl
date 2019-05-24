@@ -11,7 +11,6 @@ using Test
 using Mimi: reset_compdefs, modelinstance, compinstance, 
             get_var_value, OUTER, INNER, ReshapedDistribution
 
-reset_compdefs()
 include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
@@ -47,7 +46,7 @@ end
 
 
 
-output_dir = joinpath(tempdir(), "mcs")
+output_dir = joinpath(tempdir(), "sim")
 
 generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv"))
 
@@ -218,4 +217,3 @@ trial2 = copy(sim2.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
-

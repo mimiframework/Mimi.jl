@@ -66,7 +66,10 @@ t3 = VariableTimestep{years}(42)
 
 t4 = next_timestep(t3)
 @test is_timestep(t4, 43)
-@test is_time(t4, 2106) #note here that this comes back to an assumption made in variable timesteps that we may assume the next step is 1 year
+
+# note here that this comes back to an assumption made in variable 
+# timesteps that we may assume the next step is 1 year
+@test is_time(t4, 2106) 
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 

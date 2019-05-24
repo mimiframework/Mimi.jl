@@ -63,11 +63,12 @@ s = menu_item_list(m)
 #4.  explore(m::Model, title = "Electron")
 w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
+close(w)
 
-#5.  explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
+#5.  Mim.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
 #       dim_name::Union{Nothing, Symbol} = nothing)
 
-p = explore(m, :MyComp, :a)
+p = Mimi.plot(m, :MyComp, :a)
 @test typeof(p) == VegaLite.VLSpec{:plot}
 
 #6.  errors and warnings

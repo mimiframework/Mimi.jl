@@ -89,7 +89,10 @@ add_comp!(m, X)
 set_param!(m, :X, :x, zeros(6))                     # Set external parameter for :x
 
 # Replaces with bad3, but warns that there is no parameter by the same name :x
-@test_logs (:warn, r".*parameter x no longer exists in component.*") replace_comp!(m, bad3, :X)
+@test_logs(
+    # (:warn, r".*parameter x no longer exists in component.*"), 
+    replace_comp!(m, bad3, :X)
+)
 
 @test compname(compdef(m, :X)) == :bad3            # The replacement was still successful
 @test length(external_param_conns(m)) == 0         # The external parameter connection was removed

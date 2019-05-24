@@ -1,7 +1,5 @@
 # Tutorial 2: Modify an Existing Model
 
-_While the instructions in this tutorial are informative, the code examples are based on MimiDICE2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon._
-
 This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github [here](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:

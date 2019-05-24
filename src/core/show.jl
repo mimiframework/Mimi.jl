@@ -187,3 +187,45 @@ function show(io::IO, obj::ModelInstance)
     print(io, "\n")
     print_indented(io, "md: (not shown)")
 end
+
+#
+# We might want to use a version of this to simplify. Imported forward from Mimi v0.9.1.
+#
+function _show(io::IO, obj::Model, which::Symbol)
+
+    println(io, "Mimi.Model")
+    md = obj.md
+    mi = obj.mi
+
+    println(io, "  Module: $(md.module_name)")
+    
+    println(io, "  Components:")
+    for comp in values(md.comp_defs)
+        println(io, "    $(comp.comp_id)")
+    end
+    
+    if which == :full
+        println(io, "  Dimensions:")
+        for (k, v) in md.dimensions
+            println(io, "    $k => $v")
+        end
+
+        println(io, "  Internal Connections:")
+        for conn in md.internal_param_conns
+            println(io, "    $(conn)")
+        end
+
+        println(io, "  External Connections:")
+        for conn in md.external_param_conns
+            println(io, "    $(conn)")
+        end
+        
+        println(io, "  Backups: $(md.backups)")
+        println(io, "  Number type: $(md.number_type)")
+    end
+    println(io, "  Built: $(mi !== nothing)")    
+end
+
+Base.show(io::IO, obj::Model) = _show(io, obj, :full)
+
+Base.show(io::IO, ::MIME"text/plain", obj::Model) = _show(io, obj, :short)

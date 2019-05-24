@@ -1,6 +1,6 @@
 # Tutorial 4: Sensitivity Analysis (SA) Support
 
-This tutorial walks through the SA functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
+This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
 
 Working through the following tutorial will require:
 
@@ -90,7 +90,7 @@ of all scenario value vectors. In situations in which you want the SA loop to ru
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
-### Step 2. Generate Trials
+### Step 3. Generate Trials
 
 The  [`generate_trials!`](@ref) function generates all trial data, and save all random variable values in a file. Employ this function as follows:
 
@@ -134,8 +134,6 @@ run_sim(m, sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
 ```
 ## Advanced Post-trial Functions
 
-_While the instructions in this section are informative and correct, this code example is based on MimiDICE2010 which is not currently publically available, so the direct use is currently limited._
-
 While the model above employed a fairly simple `post_trial_func` that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run.
 
 ### NPV of Damages
@@ -160,7 +158,7 @@ end
 
 We encourage users to employ the Mimi framework for this type of analysis, in large part because the underlying functions have optimizations that will improve speed and memory use, especially as the number of runs climbs.
 
-Employing the SA functionality could look like the following template:
+Employing the sensitivity analysis functionality could look like the following template:
 
 First, we define the typical variables for a simulation, including the number of trials `N` and the simulation `sim`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 
@@ -264,3 +262,14 @@ set_models!(mcs, [base, marginal])
 generate_trials!(mcs, N; filename = "ecs_sample.csv")
 run_sim!(mcs; post_trial_func = my_scc_calculation)
 ```
+## Simulation Modification Functions
+A small set of unexported functions are available to modify an existing `Simulation`.  The functions include:
+* `deleteRV!`
+* `addRV!`
+* `replaceRV!`
+* `deleteTransform!`
+* `addTransform!`
+* `deleteSave!`
+* `addSave!`
+* `set_payload!`
+* `payload`

@@ -316,3 +316,14 @@ generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv"))
 set_models!(sim, m)
 run_sim(sim, output_dir=output_dir)
 ```
+### Simulation Modification Functions
+A small set of unexported functions are available to modify an existing `Simulation`.  The functions include:
+* `deleteRV!`
+* `addRV!`
+* `replaceRV!`
+* `deleteTransform!`
+* `addTransform!`
+* `deleteSave!`
+* `addSave!`
+* `set_payload!`
+* `payload`

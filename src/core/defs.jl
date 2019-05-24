@@ -13,6 +13,7 @@ end
 
 function compdef(comp_id::ComponentId; module_obj::Union{Nothing, Module}=nothing)
     if module_obj === nothing
+        name = comp_id.module_name
         path = @or(comp_id.module_path, (:Main, comp_id.module_name))        
         module_obj = find_module(path)
     end
@@ -84,6 +85,12 @@ is_parameter(dr::AbstractDatumReference) = false
 
 is_variable(dr::VariableDefReference)   = has_variable(find_comp(dr), nameof(dr))
 is_parameter(dr::ParameterDefReference) = has_parameter(find_comp(dr), nameof(dr))
+
+"""
+Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, and `ComponentDef`.
+"""
+name(def::NamedDef) = def.name          # old definition; should deprecate this...
+Base.nameof(def::NamedDef) = def.name   # 'nameof' is the more julian name
 
 number_type(md::ModelDef) = md.number_type
 
@@ -1057,7 +1064,7 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         for epc in external_param_conns(obj, comp_name)
             param_name = epc.param_name
             if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just (warn)?
-                @warn "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
+                @debug "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
                 push!(remove, epc)
             else
                 old_p = old_comp.parameters[param_name]
