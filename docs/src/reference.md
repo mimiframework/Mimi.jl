@@ -4,17 +4,10 @@
 @defcomp
 MarginalModel
 Model
-Simulation
 add_comp!  
-addRV!
-addSave!
-addTransform!
 components 
 connect_param!
 create_marginal_model
-deleteRV!
-deleteSave!
-deleteTransform!
 dim_count
 dim_keys
 dim_key_dict
@@ -36,7 +29,6 @@ name
 parameters
 parameter_names
 parameter_dimensions
-payload
 plot_comp_graph
 replace_comp! 
 replaceRV!
@@ -45,7 +37,6 @@ set_dimension!
 set_leftover_params! 
 set_models!
 set_param! 
-set_payload!
 variables  
 variable_dimensions
 variable_names

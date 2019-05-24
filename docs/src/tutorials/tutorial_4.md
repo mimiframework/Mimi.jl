@@ -263,13 +263,13 @@ generate_trials!(mcs, N; filename = "ecs_sample.csv")
 run_sim!(mcs; post_trial_func = my_scc_calculation)
 ```
 ## Simulation Modification Functions
-A small API is available to modify an existing [Simulation](@ref).  The functions include:
-* [deleteRV!](@ref)
-* [addRV!](@ref)
-* [replaceRV!](@ref)
-* [deleteTransform!](@ref)
-* [addTransform!](@ref)
-* [deleteSave!](@ref)
-* [addSave!](@ref)
-* [set_payload!](@ref)
-* [payload](@ref)
+A small set of unexported functions are available to modify an existing `Simulation`.  The functions include:
+* `deleteRV!`
+* `addRV!`
+* `replaceRV!`
+* `deleteTransform!`
+* `addTransform!`
+* `deleteSave!`
+* `addSave!`
+* `set_payload!`
+* `payload`
