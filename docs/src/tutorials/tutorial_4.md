@@ -90,7 +90,7 @@ of all scenario value vectors. In situations in which you want the SA loop to ru
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
-### Step 2. Generate Trials
+### Step 3. Generate Trials
 
 The  [`generate_trials!`](@ref) function generates all trial data, and save all random variable values in a file. Employ this function as follows:
 
@@ -262,3 +262,14 @@ set_models!(mcs, [base, marginal])
 generate_trials!(mcs, N; filename = "ecs_sample.csv")
 run_sim!(mcs; post_trial_func = my_scc_calculation)
 ```
+## Simulation Modification Functions
+A small set of unexported functions are available to modify an existing `Simulation`.  The functions include:
+* `deleteRV!`
+* `addRV!`
+* `replaceRV!`
+* `deleteTransform!`
+* `addTransform!`
+* `deleteSave!`
+* `addSave!`
+* `set_payload!`
+* `payload`
