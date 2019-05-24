@@ -529,9 +529,9 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
-    "location": "tutorials/tutorial_4/#Step-2.-Generate-Trials-1",
+    "location": "tutorials/tutorial_4/#Step-3.-Generate-Trials-1",
     "page": "4 Sensitivity Analysis",
-    "title": "Step 2. Generate Trials",
+    "title": "Step 3. Generate Trials",
     "category": "section",
     "text": "The  generate_trials! function generates all trial data, and save all random variable values in a file. Employ this function as follows:# Generate trial data for all RVs and (optionally) save to a file\ngenerate_trials!(sim, 1000, filename=\"/tmp/trialdata.csv\")"
 },
@@ -566,6 +566,14 @@ var documenterSearchIndex = {"docs": [
     "title": "Social Cost of Carbon (SCC)",
     "category": "section",
     "text": "Case: We want to do an SCC calculation across a base and marginal model of MimiDICE2010, which consists of running both a base and marginal model (the latter being a model including an emissions pulse, see the create_marginal_model or create your own two models). We then take the difference between the DAMAGES in these two models and obtain the NPV to get the SCC.The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials N and the simulation sim.  In this case we only define one random variable, t2xco2, but note there could be any number of random variables defined here.using Mimi\nusing MimiDICE2010\n\n# define your trial number\nN = 1000000 \n\n# define your simulation (defaults to Monte Carlo sampling)\nmcs = @defsim begin\n    t2xco2 = MyDistribution()\nendNext, we prepare our post-trial calculations by setting up a scc_results array to hold the results.  We then define a post_trial_function called my_scc_calculation which will calculate the SCC for that run.scc_results = zeros(N, length(discount_rates))\n\nfunction my_scc_calculation(mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)\n    base, marginal = mcs.models\n    base_damages = base[:neteconomy, :DAMAGES]\n    marg_damages = marginal[:neteconomy, :DAMAGES]\n    for (i, df) in enumerate(dfs)\n        scc_results[trialnum, i] = sum(df .* (marg_damages .- base_damages))\n    end\nendNow that we have our post-trial function, we can proceed to obtain our two models and run the simulation.# Build the base model\nbase = construct_dice()\n\n#Build the marginal model, which here involves a dummy function `construct_marginal_dice()` that you will need to write\nmarginal = construct_marginal_dice(year) \n\n# Set models and run\nset_models!(mcs, [base, marginal])\ngenerate_trials!(mcs, N; filename = \"ecs_sample.csv\")\nrun_sim!(mcs; post_trial_func = my_scc_calculation)"
+},
+
+{
+    "location": "tutorials/tutorial_4/#Simulation-Modification-Functions-1",
+    "page": "4 Sensitivity Analysis",
+    "title": "Simulation Modification Functions",
+    "category": "section",
+    "text": "A small set of unexported functions are available to modify an existing Simulation.  The functions include:deleteRV!\naddRV!\nreplaceRV!\ndeleteTransform!\naddTransform!\ndeleteSave!\naddSave!\nset_payload!\npayload"
 },
 
 {
@@ -637,7 +645,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Reference",
     "title": "Reference",
     "category": "section",
-    "text": "@defcomp\nMarginalModel\nModel\nadd_comp!  \ncomponents \nconnect_param!\ncreate_marginal_model\ndim_count\ndim_keys\ndim_key_dict\ndisconnect_param!\nexplore\ngenerate_trials!\ngetdataframe\ngettime\nget_param_value\nget_var_value\nhasvalue\nis_first\nis_last\nis_time\nis_timestep\nload_comps\nmodeldef\nname\nnew_comp\nparameters\nparameter_names\nparameter_dimensions\nplot_comp_graph\nreplace_comp! \nrun_sim\nset_dimension! \nset_leftover_params! \nset_models!\nset_param! \nvariables  \nvariable_dimensions\nvariable_names\nupdate_param!\nupdate_params!"
+    "text": "@defcomp\nMarginalModel\nModel\nadd_comp!  \ncomponents \nconnect_param!\ncreate_marginal_model\ndim_count\ndim_keys\ndim_key_dict\ndisconnect_param!\nexplore\ngenerate_trials!\ngetdataframe\ngettime\nget_param_value\nget_var_value\nhasvalue\nis_first\nis_last\nis_time\nis_timestep\nload_comps\nmodeldef\nname\nparameters\nparameter_names\nparameter_dimensions\nplot_comp_graph\nreplace_comp! \nreplaceRV!\nrun_sim\nset_dimension! \nset_leftover_params! \nset_models!\nset_param! \nvariables  \nvariable_dimensions\nvariable_names\nupdate_param!\nupdate_params!"
 },
 
 {
