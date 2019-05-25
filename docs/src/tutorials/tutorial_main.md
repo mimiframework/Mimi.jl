@@ -43,7 +43,7 @@ To use the following tutorials, follow the steps below.
 pkg> add Mimi
 ```
 
-4. To access the models in the [MimiRegistry](https://github.com/anthofflab/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
+4. To access the models in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
