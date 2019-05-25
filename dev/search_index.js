@@ -45,7 +45,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Models using Mimi",
     "category": "section",
-    "text": "MimiFUND.jl (currently in beta)\nMimiDICE2010.jl (currently in closed beta)\nMimiDICE2013.jl (currently in closed beta)\nMimiRICE2010.jl\nMimi-SNEASY.jl (currently in closed beta)\nMimi-FAIR.jl (currently in closed beta)\nMimiPAGE2009.jl (currently in closed beta)\nMimi-MAGICC.jl (CH4 parts currently in closed beta)\nMimi-HECTOR.jl (CH4 parts currently in closed beta)\nMimi-CIAM.jl (currently in closed beta)\nMimi-BRICK.jl (currently in closed beta)\nAWASH\nPAGE-ICE"
+    "text": "MimiFUND.jl (currently in beta)\nMimiDICE2010.jl\nMimiDICE2013.jl\nMimiRICE2010.jl\nMimi-SNEASY.jl (currently in closed beta)\nMimi-FAIR.jl (currently in closed beta)\nMimiPAGE2009.jl (currently in closed beta)\nMimi-MAGICC.jl (CH4 parts currently in closed beta)\nMimi-HECTOR.jl (CH4 parts currently in closed beta)\nMimi-CIAM.jl (currently in closed beta)\nMimi-BRICK.jl (currently in closed beta)\nAWASH\nPAGE-ICE"
 },
 
 {
