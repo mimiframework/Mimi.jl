@@ -17,7 +17,7 @@ You may then exit Pkg REPL mode with a single backpace. For more complete setup 
 
 ## Mimi Registry
 
-Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/anthofflab/Mimi.jl), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
+Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
@@ -34,8 +34,8 @@ pkg> add MimiRICE2010
 ## Models using Mimi
 
 * [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl) (currently in beta)
-* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl) (currently in closed beta)
-* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl) (currently in closed beta)
+* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)
+* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)
 * [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl) (currently in closed beta)
 * [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl) (currently in closed beta)
