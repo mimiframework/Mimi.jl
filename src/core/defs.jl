@@ -23,9 +23,12 @@ end
 
 compdef(cr::ComponentReference) = find_comp(cr)
 
+compdef(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
+
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
 
 compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.comps_dict[comp_name]
+
 
 has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
 
@@ -45,14 +48,6 @@ compnames() = map(compname, compdefs())
 
 # Access a subcomponent as comp[:name]
 Base.getindex(obj::AbstractCompositeComponentDef, name::Symbol) = obj.comps_dict[name]
-
-# TBD: deprecated
-function reset_compdefs(reload_builtins=true)
-    if reload_builtins
-        compdir = joinpath(@__DIR__, "..", "components")
-        load_comps(compdir)
-    end
-end
 
 """
      is_detached(obj::AbstractComponentDef)
@@ -85,12 +80,6 @@ is_parameter(dr::AbstractDatumReference) = false
 
 is_variable(dr::VariableDefReference)   = has_variable(find_comp(dr), nameof(dr))
 is_parameter(dr::ParameterDefReference) = has_parameter(find_comp(dr), nameof(dr))
-
-"""
-Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, and `ComponentDef`.
-"""
-name(def::NamedDef) = def.name          # old definition; should deprecate this...
-Base.nameof(def::NamedDef) = def.name   # 'nameof' is the more julian name
 
 number_type(md::ModelDef) = md.number_type
 
@@ -365,6 +354,39 @@ function isuniform(values::Int)
 end
 
 #
+# Data references
+#
+
+function _store_datum_ref(ccd::AbstractCompositeComponentDef, dr::ParameterDefReference, name::Symbol)
+    ccd.parameters[name] = parameter(dr)
+end
+
+function _store_datum_ref(ccd::AbstractCompositeComponentDef, dr::VariableDefReference, name::Symbol)
+    ccd.variables[name] = variable(dr)
+end
+
+# Define this no-op for leaf components, to simplify coding
+_collect_data_refs(cd::ComponentDef; reset::Bool=false) = nothing
+
+function _collect_data_refs(ccd::AbstractCompositeComponentDef; reset::Bool=false)
+    if reset
+        empty!(ccd.variables)
+        empty!(ccd.parameters)
+    end
+
+    for (name, dr) in ccd.exports
+        _store_datum_ref(ccd, dr, name)
+    end
+
+    # recurse down composite tree
+    for obj in compdefs(ccd)
+        _collect_data_refs(obj, reset=reset)
+    end
+
+    nothing
+end
+
+#
 # Parameters
 #
 
@@ -372,7 +394,7 @@ end
 dim_names(obj::AbstractDatumDef) = obj.dim_names
 
 function addparameter(comp_def::AbstractComponentDef, name, datatype, dimensions, description, unit, default)
-    p = ParameterDef(name, datatype, dimensions, description, unit, default)
+    p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
     comp_def.parameters[name] = p
     dirty!(comp_def)
     return p
@@ -389,24 +411,13 @@ Return a list of the parameter definitions for `comp_def`.
 """
 parameters(obj::AbstractComponentDef) = values(obj.parameters)
 
-function parameters(ccd::AbstractCompositeComponentDef)
+function parameters(ccd::AbstractCompositeComponentDef; reset::Bool=false)
     pars = ccd.parameters
-
-    # return cached parameters, if any
-    if length(pars) == 0
-        for (name, dr) in ccd.exports
-            cd = find_comp(dr)
-            
-            if cd === nothing
-                @info "find_comp failed on path: $(printable(dr.comp_path)), name: $(printable(dr.name)), root: $(printable(dr.root.comp_id))"
-            end
-
-            if has_parameter(cd, nameof(dr))
-                pars[name] = parameter(cd, nameof(dr))
-            end
-        end
+    
+    if reset || (ccd isa ModelDef && dirty(ccd)) || length(pars) == 0
+        _collect_data_refs(ccd; reset=reset)
     end
-
+    
     return values(pars)
 end
 
@@ -416,9 +427,6 @@ end
 Return a list of the parameter definitions for `comp_id`.
 """
 parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
-
-# TBD: deprecated?
-# parameters(obj::ParameterDefReference) = parameters(obj.comp_id)
 
 """
     parameter_names(md::ModelDef, comp_name::Symbol)
@@ -442,9 +450,7 @@ function _parameter(obj::AbstractComponentDef, name::Symbol)
     end
 end
 
-function parameter(obj::ComponentDef, name::Symbol)
-    _parameter(obj, name)
-end
+parameter(obj::ComponentDef, name::Symbol) = _parameter(obj, name)
 
 function parameter(obj::AbstractCompositeComponentDef, name::Symbol)
     if ! is_exported(obj, name)
@@ -599,20 +605,17 @@ end
 #
 # Variables
 #
+
+# Leaf components
 variables(comp_def::AbstractComponentDef) = values(comp_def.variables)
 
+# Composite components
 # TBD: if we maintain vars/pars dynamically, this can be dropped
-function variables(ccd::AbstractCompositeComponentDef)
+function variables(ccd::AbstractCompositeComponentDef; reset::Bool=false)
     vars = ccd.variables
 
-    # return cached variables, if any
-    if length(vars) == 0
-        for (dr, name) in ccd.exports
-            cd = compdef(dr.comp_id)
-            if has_variable(cd, nameof(dr))
-                vars[name] = variable(cd, nameof(dr))
-            end
-        end
+    if reset || (ccd isa ModelDef && dirty(ccd)) || length(vars) == 0
+        _collect_data_refs(ccd; reset=reset)
     end
 
     return values(vars)
@@ -620,22 +623,24 @@ end
 
 variables(comp_id::ComponentId) = variables(compdef(comp_id))
 
-# TBD: Not sure this makes sense
-# variables(dr::DatumReference) = variables(dr.comp_id)
-
-# TBD: Perhaps define _variable to behave as below, and have the public version
-# check it's exported before returning it. (Could error("exists but not exported?"))
-function variable(comp_def::AbstractComponentDef, var_name::Symbol)
-    # TBD test this can be dropped if we maintain vars/pars dynamically
-    if is_composite(comp_def)
-        variables(comp_def)  # make sure values have been gathered
-    end
-
+function _variable(obj::AbstractComponentDef, name::Symbol)
     try
-        return comp_def.variables[var_name]
-    catch KeyError
-        error("Variable $var_name was not found in component $(comp_def.comp_id)")
+        return obj.variables[name]
+    catch
+        error("Variable $name was not found in component $(nameof(obj))")
     end
+end
+
+variable(obj::ComponentDef, name::Symbol) = _variable(obj, name)
+
+function variable(obj::AbstractCompositeComponentDef, name::Symbol)
+    # TBD test this can be dropped if we maintain vars/pars dynamically
+    _collect_data_refs(obj)  
+    
+    if ! is_exported(obj, name)
+        error("Variable $name is not exported by composite component $(obj.comp_path)")
+    end
+    _variable(obj, name)
 end
 
 variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), var_name)
@@ -647,7 +652,7 @@ function variable(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, 
     return variable(comp_def, var_name)
 end
 
-variable(obj::VariableDefReference) = variable(compdef(obj), nameof(dr))
+variable(dr::VariableDefReference) = variable(compdef(dr), nameof(dr))
 
 has_variable(comp_def::AbstractComponentDef, name::Symbol) = haskey(comp_def.variables, name)
 
@@ -685,11 +690,14 @@ end
 # Add a variable to a ComponentDef. CompositeComponents have no vars of their own,
 # only references to vars in components contained within.
 function addvariable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
-    var_def = VariableDef(name, datatype, dimensions, description, unit)
+    var_def = VariableDef(name, comp_def.comp_path, datatype, dimensions, description, unit)
     comp_def.variables[name] = var_def
     return var_def
 end
 
+#
+# TBD: this is clearly not used because there is no "variable" (other than the func) defined here
+#
 """
     addvariables(obj::CompositeComponentDef, exports::Vector{Pair{AbstractDatumReference, Symbol}})
 
@@ -824,8 +832,11 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
 
     # @info "comp path: $path, datum_name: $datum_name"
 
-    # for composites, check that the named vars/pars are exported?
-    # if is_composite(comp_def)
+    if is_composite(comp_def)
+        # find and cache locally exported vars & pars
+        variables(comp_def)
+        parameters(comp_def)
+    end
 
     if has_variable(comp_def, datum_name)
         return VariableDefReference(datum_name, root, path)

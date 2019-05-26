@@ -15,12 +15,12 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
-# TBD: if DatumReference refers to the "registered" components, then ComponentId
-# is adequate for locating it. As David suggested, having separate types for the
-# registered components and the user's ModelDef structure would be clarifying.
+# TBD: old definition; should deprecate this...
+name(obj::AbstractNamedObj) = obj.name
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
+    comp_path::Union{Nothing, ComponentPath}
     datatype::DataType
     dim_names::Vector{Symbol}
     description::String
@@ -93,6 +93,7 @@ Base.parent(obj::AbstractComponentDef) = obj.parent
 # Stores references to the name of a component variable or parameter
 # and the ComponentPath of the component in which it is defined
 @class DatumReference <: NamedObj begin
+    # name::Symbol is inherited from NamedObj
     root::AbstractComponentDef
     comp_path::ComponentPath
 end

@@ -106,7 +106,7 @@ end
 function _show_datum_def(io::IO, obj::AbstractDatumDef)
     print(io, typeof(obj), "($(obj.name)::$(obj.datatype))")
     io = indent(io)
-
+    _show_field(io, :comp_path, obj.comp_path)
     _show_field(io, :dim_names, obj.dim_names)
 
     for field in (:description, :unit)
@@ -197,10 +197,10 @@ function _show(io::IO, obj::Model, which::Symbol)
     md = obj.md
     mi = obj.mi
 
-    println(io, "  Module: $(md.module_name)")
+    println(io, "  Module: $(md.comp_id.module_path)")
     
     println(io, "  Components:")
-    for comp in values(md.comp_defs)
+    for comp in values(md.comps_dict)
         println(io, "    $(comp.comp_id)")
     end
     

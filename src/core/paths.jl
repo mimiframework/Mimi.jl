@@ -17,12 +17,24 @@ function Base.string(path::ComponentPath)
     return is_abspath(path) ? string("/", s) : s
 end
 
+"""
+    comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
+
+Set the ComponentPath of a child object to extend the path of its composite parent.
+For leaf components, also sets the ComponentPath in all ParameterDefs and VariableDefs.
+"""
 function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
-    child.comp_path = ComponentPath(parent.comp_path, child.name)
+    child.comp_path = path = ComponentPath(parent.comp_path, child.name)
 
     # recursively reset all comp_paths
-    for cd in compdefs(child)
-        comp_path!(cd, child)
+    if is_composite(child)
+        for cd in compdefs(child)
+            comp_path!(cd, child)
+        end
+    else
+        for datum in [variables(child)..., parameters(child)...]
+            datum.comp_path = path
+        end
     end
 end
 
