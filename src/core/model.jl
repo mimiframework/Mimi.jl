@@ -401,16 +401,16 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
 end
 
 function _show(io::IO, obj::Model, which::Symbol)
+    println(io, "$(length(obj.md.comp_defs))-component Mimi.Model:")
 
-    println(io, "Mimi.Model")
     md = obj.md
     mi = obj.mi
 
-    println(io, "  Module: $(md.module_name)")
+    # println(io, "  Module: $(md.module_name)")
     
-    println(io, "  Components:")
+    # println(io, "  Components:")
     for comp in values(md.comp_defs)
-        println(io, "    $(comp.comp_id)")
+        println(io, "  $(comp.name)::$(comp.comp_id.module_name).$(comp.comp_id.comp_name)")
     end
     
     if which == :full
@@ -431,10 +431,11 @@ function _show(io::IO, obj::Model, which::Symbol)
         
         println(io, "  Backups: $(md.backups)")
         println(io, "  Number type: $(md.number_type)")
-    end
-    println(io, "  Built: $(mi !== nothing)")    
+
+        println(io, "  Built: $(mi !== nothing)")    
+    end 
 end
 
-Base.show(io::IO, obj::Model) = _show(io, obj, :full)
+Base.show(io::IO, obj::Model) = _show(io, obj, :short)
 
 Base.show(io::IO, ::MIME"text/plain", obj::Model) = _show(io, obj, :short)
