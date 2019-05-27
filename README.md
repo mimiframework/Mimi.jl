@@ -5,11 +5,11 @@
 
 # Mimi - Integrated Assessment Modeling Framework
 
-Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the **[Mimi Framework Homepage](https://www.mimiframework.org)**. For more information on the package functionality, installation, the Mimi registry, and step-by-step tutorials, see the **[Documentation](https://www.mimiframework.org/Mimi.jl/stable/)**.
+Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org). The [Documentation](https://www.mimiframework.org/Mimi.jl/stable/) includes information on the installation and use of this package, as well as details on the Mimi registry and step-by-step tutorials which users of different experience levels, starting with first-time users. The development team closely monitors the [Mimi Framework forum](https://forum.mimiframework.org) and we suggest this as a starting place for any questoins users may have.
 
 ## Updates
 
-* Also see the [OptiMimi](http://github.com/jrising/OptiMimi.jl) package for optimizing parameters within Mimi models.
+* [OptiMimi](http://github.com/jrising/OptiMimi.jl): See this package for optimizing parameters within Mimi models.
 
 * Porting to [Mimi 0.5.0](https://github.com/mimiframework/Mimi.jl/releases/tag/v0.5.1):  If you are adapting models to the [Mimi 0.5.0](https://github.com/mimiframework/Mimi.jl/releases/tag/v0.5.1) breaking release or later, please use the [Integration Guide](https://www.mimiframework.org/Mimi.jl/stable/integrationguide/) as guide to help port your models as easily as possible.
 
