@@ -1,4 +1,7 @@
-# Example sent by James Rising
+module TestBroadcast
+
+using Mimi
+using Test
 
 @defcomp Simple begin
     region = Index()
@@ -11,8 +14,12 @@
 end
 
 model = Model()
-set_dimension!(model, :time, collect(1:10))
+set_dimension!(model, :time, 2015:2024)
 set_dimension!(model, :region, ["Tropics", "Subtropics", "Temperates"])
 add_comp!(model, Simple)
 
 run(model)
+
+@test all(model[:Simple, :var] .== 0)
+
+end
