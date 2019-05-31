@@ -356,7 +356,11 @@ end
 #
 # 4. TimestepArray methods
 #
-Base.dotview(v::Mimi.TimestepArray, args...) = Base.dotview(v.data, args...)
+function Base.dotview(v::Mimi.TimestepArray, args...)
+	# convert any timesteps to their underlying index
+	args = map(arg -> (arg isa AbstractTimestep ? arg.t : arg), args)
+	Base.dotview(v.data, args...)
+end
 
 Base.fill!(obj::TimestepArray, value) = fill!(obj.data, value)
 
