@@ -73,7 +73,7 @@ dim = Mimi.dimension(model1, :time)
 @test all(ismissing, df[:par2][dim[years[end]] : dim[early_last]])
 
 # Test trying to load an item into an existing dataframe where that item key already exists
-@test_throws ErrorException _load_dataframe(model1, :testcomp1, :var1, df)
+@test_throws UndefVarError _load_dataframe(model1, :testcomp1, :var1, df)
 
 
 #------------------------------------------------------------------------------

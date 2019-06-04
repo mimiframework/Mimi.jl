@@ -3,6 +3,8 @@ module TestPlotting
 using Mimi
 using Test
 
+using Mimi: plot_comp_graph
+
 @defcomp LongComponent begin
     x = Parameter(index=[time])
     y = Parameter()

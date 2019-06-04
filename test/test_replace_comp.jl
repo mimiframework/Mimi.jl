@@ -89,7 +89,6 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs(
     # (:warn, r".*parameter x no longer exists in component.*"), 
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
     replace_comp!(m, bad3, :X)
 )
 
@@ -124,7 +123,7 @@ add_comp!(m, X)
 @test_throws ErrorException replace_comp!(m, X_repl, :Z)    # Component Z does not exist in the model, cannot be replaced
 
 
-# 8. Test original postion placement functionality
+# 8. Test original position placement functionality
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)

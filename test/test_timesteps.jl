@@ -185,7 +185,7 @@ end
 m2 = Model()
 set_dimension!(m2, :time, years)
 bar = add_comp!(m2, Bar)
-foo2 = add_comp!(m2, Foo2, first=first_foo)
+foo2 = add_comp!(m2, Foo2) # , first=first_foo)
 
 set_param!(m2, :Bar, :inputB, collect(1:length(years)))
 
@@ -218,7 +218,7 @@ years = 2000:2010
 m3 = Model()
 
 set_dimension!(m3, :time, years)
-add_comp!(m3, Foo, first=2005)
+add_comp!(m3, Foo) #, first=2005)
 add_comp!(m3, Bar2)
 
 set_param!(m3, :Foo, :inputF, 5.)
