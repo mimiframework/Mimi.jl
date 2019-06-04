@@ -1,5 +1,6 @@
 ## Mimi UI
 using Dates
+using CSVFiles
 
 function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
@@ -20,12 +21,12 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
         return nothing
     else
-        name = "$comp_name : $item_name"          # the name is needed for the list label
+        name = "$comp_name : $item_name"          
         df = getdataframe(m, comp_name, item_name)
 
         dffields = map(string, names(df))         # convert to string once before creating specs
 
-        # check if there are too many dimensions to map and if so, warn
+        # check if there are too many dimensions to map and if so, error
         if length(dffields) > 3
             error()
                 
@@ -47,6 +48,63 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         
 end
 
+function _spec_for_sim_item(sim::Simulation, output_dir::Union{Nothing, String}, model_index::Int, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
+    
+    multiple_results = (length(sim.results) > 1)
+
+    # get results
+    if isnothing(output_dir) # results stored in results.sim
+        df = sim.results[model_index](comp_name, item_name)
+    else # results stored in external csv files
+        if multiple_results
+            sub_dir = joinpath(output_dir, "model_$i")
+        else
+            sub_dir = output_dir 
+        end
+
+        filename = joinpath(sub_dir, "$item_name.csv")
+        df = CSVFiles.load(filename) |> DataFrame
+    end
+
+    # Control flow logic selects the correct plot type based on dimensions
+    # and dataframe fields
+    m = sim.models[model_index]
+    dims = dimensions(m, comp_name, item_name)
+
+    if length(dims) == 0 # histogram
+        spec = nothing # TODO - histogram
+    elseif length(dims) > 2
+        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        return nothing
+    else
+        name = "$comp_name : $item_name"          
+        df = getdataframe(m, comp_name, item_name)
+
+        dffields = map(string, names(df))         # convert to string once before creating specs
+
+        # check if there are too many dimensions to map and if so, error
+        if length(dffields) > 3
+            error()
+                
+        # a 'time' field necessitates a trumpet plot
+        elseif dffields[1] == "time"
+            if length(dffields) > 2
+                spec = nothing # TODO - layered trumpet plot
+            else
+                spec = nothing # TODO - single trumpet plot
+            end
+        
+        #otherwise we are dealing with layered histograms
+        else
+            spec = nothing # TODO
+        end
+    end
+    
+    return spec
+        
+end
+
+# Create menu item
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
 
@@ -64,6 +122,20 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     return menu_item
 end
 
+function _menu_item(datum_key::Tuple{Symbol, Symbol}, sim::Simulation)
+    (comp_name, item_name) = datum_key
+    dims = dimensions(sim.models[1], comp_name, item_name)
+    if length(dims) > 2
+        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        return nothing
+    else
+        name = "$comp_name : $item_name"          # the name is needed for the list label
+    end
+
+    menu_item = Dict("name" => "$item_name", "comp_name" => comp_name, "item_name" => item_name)
+    return menu_item
+end
+
 # Create the list of variables and parameters
 function menu_item_list(model::Model)
     all_menuitems = []
@@ -76,6 +148,21 @@ function menu_item_list(model::Model)
             if menu_item !== nothing
                 push!(all_menuitems, menu_item) 
             end
+        end
+    end
+
+    # Return sorted list so that the UI list of items will be in alphabetical order 
+    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+end
+
+# Create the list of variables and parameters
+function menu_item_list(sim::Simulation)
+    all_menuitems = []
+    for datum_key in sim.savelist
+
+        menu_item = _menu_item(sim, datum_key)
+        if menu_item !== nothing
+            push!(all_menuitems, menu_item) 
         end
     end
 
