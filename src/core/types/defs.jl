@@ -189,6 +189,10 @@ is_composite(c::AbstractComponentDef) = !is_leaf(c)
 
 ComponentPath(obj::AbstractCompositeComponentDef, name::Symbol) = ComponentPath(obj.comp_path, name)
 
+ComponentPath(obj::AbstractCompositeComponentDef, path::AbstractString) = comp_path(obj, path)
+
+ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentPath(obj.comp_path.names..., names...)
+
 @class mutable ModelDef <: CompositeComponentDef begin
     number_type::DataType
     dirty::Bool
@@ -196,10 +200,6 @@ ComponentPath(obj::AbstractCompositeComponentDef, name::Symbol) = ComponentPath(
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        
-        # TBD: now set in CompositeComponentDef(self); delete if that works better
-        # self.comp_path = ComponentPath(self.name)
-
         return ModelDef(self, number_type, false)       # call @class-generated method
     end
 end

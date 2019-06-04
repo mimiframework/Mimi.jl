@@ -521,7 +521,7 @@ not begin with "/", it is treated as relative to `obj`.
 """
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
     # @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
-    set_param!(obj, _comp_path(obj, path), param_name, value, dims)
+    set_param!(obj, comp_path(obj, path), param_name, value, dims)
 end
 
 """
@@ -1098,5 +1098,5 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     end
 
     # Re-add
-    return add_comp!(obj, comp_id, comp_name; first=first, last=last, before=before, after=after)
+    return add_comp!(obj, comp_id, comp_name; before=before, after=after) # first=first, last=last, 
 end

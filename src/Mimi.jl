@@ -70,6 +70,7 @@ include("core/references.jl")
 include("core/time.jl")
 include("core/time_arrays.jl")
 include("core/model.jl")
+include("core/order.jl")
 include("core/paths.jl")
 include("core/show.jl")
 

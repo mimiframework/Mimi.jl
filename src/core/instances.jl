@@ -27,9 +27,6 @@ end
 # Setting/getting parameter and variable values
 #
 
-#
-# TBD: once working, explore whether these can be methods of ComponentInstanceData{NT}
-#
 # Get the object stored for the given variable, not the value of the variable.
 # This is used in the model building process to connect internal parameters.
 @inline function get_property_obj(obj::ComponentInstanceParameters{NT}, name::Symbol) where {NT}

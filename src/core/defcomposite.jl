@@ -117,7 +117,7 @@ functions; these are defined internally to iterate over constituent components a
 associated method on each.
 """
 macro defcomposite(cc_name, ex)
-    @info "defining composite $cc_name in module $(fullname(__module__))"
+    # @info "defining composite $cc_name in module $(fullname(__module__))"
     
     @capture(ex, elements__)
     comps = SubComponent[]

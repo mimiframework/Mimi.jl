@@ -225,8 +225,8 @@ function _build(md::ModelDef)
     not_set = unconnected_params(md)
     # @info "not_set: $not_set"
     if ! isempty(not_set)
-        params = join(not_set, " ")
-        error("Cannot build model; the following parameters are not set: $params")
+        params = join(not_set, "\n  ")
+        error("Cannot build model; the following parameters are not set:\n  $params")
     end
     
     var_dict = Dict{ComponentPath, Any}()                 # collect all var defs and

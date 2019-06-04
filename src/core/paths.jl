@@ -39,13 +39,13 @@ function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeCompon
 end
 
 """
-    _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+    comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
 
 Convert a string describing a path from a node to a ComponentPath. The validity
 of the path is not checked. If `path` starts with "/", the first element in the
 returned component path is set to the root of the hierarchy containing `node`.
 """
-function _comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
+function comp_path(node::AbstractCompositeComponentDef, path::AbstractString)
     # empty path means just select the node's path
     isempty(path) && return node.comp_path
 
@@ -103,7 +103,7 @@ function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
 end
 
 function find_comp(obj::AbstractCompositeComponentDef, pathstr::AbstractString)
-    path = _comp_path(obj, pathstr)
+    path = comp_path(obj, pathstr)
     find_comp(obj, path)
 end
 
