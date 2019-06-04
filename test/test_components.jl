@@ -4,7 +4,7 @@ using Mimi
 using Test
 
 import Mimi:
-    reset_compdefs, compdefs, compdef, compkeys, has_comp, first_period, 
+    compdefs, compdef, compkeys, has_comp, first_period, 
     last_period, compmodule, compname, numcomponents, compinstance, dim_keys, dim_values
 
 my_model = Model()

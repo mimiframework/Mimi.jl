@@ -3,9 +3,7 @@ module TestReplaceComp
 using Test
 using Mimi
 import Mimi:
-    reset_compdefs, compdefs, compname, compdef, comp_id, external_param_conns, external_params
-
-reset_compdefs()
+    compdefs, compname, compdef, comp_id, external_param_conns, external_params
 
 @defcomp X begin    
     x = Parameter(index = [time])
@@ -91,6 +89,7 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs(
     # (:warn, r".*parameter x no longer exists in component.*"), 
+    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
     replace_comp!(m, bad3, :X)
 )
 

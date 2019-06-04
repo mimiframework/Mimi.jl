@@ -4,12 +4,10 @@ using Mimi
 using Test
 
 import Mimi:
-    reset_compdefs, variable_names, compinstance, get_var_value, get_param_value, 
+    variable_names, compinstance, get_var_value, get_param_value, 
     set_param_value, set_var_value, dim_count, compdef,
     ComponentInstance, AbstractComponentInstance, ComponentDef, TimestepArray, 
     ComponentInstanceParameters, ComponentInstanceVariables
-
-reset_compdefs()
 
 my_model = Model()
 

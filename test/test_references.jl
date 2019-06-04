@@ -4,9 +4,7 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, getproperty, @defmodel
-
-reset_compdefs()
+    getproperty, @defmodel
 
 @defcomp Foo begin
     input = Parameter()

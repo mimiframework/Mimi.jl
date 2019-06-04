@@ -3,9 +3,7 @@ module TestShow
 using Test
 using Mimi
 import Mimi:
-    reset_compdefs, compdefs, compdef, ComponentId, MimiStruct, ParameterDef
-
-# reset_compdefs()
+    compdefs, compdef, ComponentId, MimiStruct, ParameterDef
 
 @defcomp X begin    
     x = Parameter(index = [time])

@@ -1,8 +1,6 @@
 using Mimi
 using Test
 
-reset_compdefs()
-
 my_model = Model()
 
 #Testing that you cannot add two components of the same name

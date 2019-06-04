@@ -4,10 +4,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    compdef, compname, reset_compdefs, compmodule, first_period, last_period, 
-    variable_names
-
-reset_compdefs()
+    compdef, compname, compmodule, first_period, last_period, variable_names
 
 @defcomp ch4forcing1 begin
     c_N2Oconcentration = Parameter(index=[time],unit="ppbv")

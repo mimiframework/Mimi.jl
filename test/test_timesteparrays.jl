@@ -5,9 +5,7 @@ using Test
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
-    isuniform, first_period, last_period, first_and_step, reset_compdefs
-
-reset_compdefs()
+    isuniform, first_period, last_period, first_and_step
 
 a = collect(reshape(1:16,4,4))
 

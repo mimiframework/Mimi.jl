@@ -3,9 +3,7 @@ module Tmp
 using Test
 using Mimi
 import Mimi:
-    reset_compdefs, compdefs, compdef, external_param_conns
-
-reset_compdefs()
+    compdefs, compdef, external_param_conns
 
 @defcomp X begin    
     x = Parameter(index = [time])

@@ -3,11 +3,6 @@ module TestGetDataframe
 using Mimi
 using Test
 
-import Mimi:
-    reset_compdefs, _load_dataframe
-
-reset_compdefs()
-
 #------------------------------------------------------------------------------
 #   1. Test with 1 dimension
 #------------------------------------------------------------------------------

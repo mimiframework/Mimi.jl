@@ -4,9 +4,7 @@ using Test
 using Mimi
 
 import Mimi:
-    getproperty, reset_compdefs, pretty_string
-
-reset_compdefs()
+    getproperty, pretty_string
 
 #utils: pretty_string
 @test pretty_string("camelCaseBasic") == pretty_string(:camelCaseBasic) == "Camel Case Basic"

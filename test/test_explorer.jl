@@ -8,9 +8,7 @@ import Mimi:
     dataframe_or_scalar, createspec_singlevalue, 
     createspec_lineplot, createspec_multilineplot, createspec_barplot,
     getmultiline, getline, getbar, _spec_for_item, menu_item_list, explore, 
-    getdataframe, reset_compdefs
-
-reset_compdefs()
+    getdataframe
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])

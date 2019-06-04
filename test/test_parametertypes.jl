@@ -206,14 +206,7 @@ set_dimension!(m, :time, 2000:2002)     # length 3
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
-<<<<<<< HEAD
 set_dimension!(m, :time, 1999:2003)     # length 5
-=======
-@test_logs(
-    # (:warn, "Redefining dimension :time"), 
-    set_dimension!(m, :time, 1999:2003)     # length 5
-)
->>>>>>> master
 
 @test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
 update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)

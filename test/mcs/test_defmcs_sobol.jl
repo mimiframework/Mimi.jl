@@ -38,7 +38,6 @@ sim = @defsim begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-Mimi.reset_compdefs()
 include("../../examples/tutorial/02-two-region-model/main.jl")
 
 m = model

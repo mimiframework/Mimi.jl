@@ -14,7 +14,6 @@ import Mimi:
     foo = Parameter()
 
     function run_timestep(p, v, d, t)
-        # @info "Comp1 run_timestep"
         v.var_1_1[t] = p.par_1_1[t]
     end
 end
@@ -26,8 +25,7 @@ end
     foo = Parameter()
 
     function run_timestep(p, v, d, t)
-        # @info "Comp2 run_timestep"
-        v.var_2_1[t] = p.par_2_1[t] + p.par_2_2[t]
+        v.var_2_1[t] = p.par_2_1[t] + p.foo * p.par_2_2[t]
     end
 end
 
@@ -92,23 +90,49 @@ c1 = find_comp(md, ComponentPath(:top, :A, :Comp1))
 # c3 = find_comp(md, "/top/B/Comp3")
 # @test c3.comp_id == Comp3.comp_id
 
-set_param!(m, "/top/A/Comp1", :foo, 10)
-set_param!(m, "/top/A/Comp2", :foo, 20)
+set_param!(m, "/top/A/Comp1", :foo, 1)
+set_param!(m, "/top/A/Comp2", :foo, 2)
 
-set_param!(m, "/top/A/Comp1", :par_1_1, zeros(length(time_labels(md))))
+set_param!(m, "/top/A/Comp1", :par_1_1, collect(1:length(time_labels(md))))
 
-c1_path = ComponentPath(:A, :Comp1)
-c2_path = ComponentPath(:A, :Comp2)
-# c3_path = ComponentPath(:B, :Comp3)
-# c4_path = ComponentPath(:B, :Comp4)
+c1_path = ComponentPath(md, :top, :A, :Comp1)
+c2_path = ComponentPath(md, "/top/A/Comp2")
+# c3_path = ComponentPath(md, "/top/B/Comp3")
+# c4_path = ComponentPath(md, "top/B/Comp4")
 
-connect_param!(top, c2_path, :par_2_1, c1_path, :var_1_1)
-connect_param!(top, c2_path, :par_2_2, c1_path, :var_1_1)
-# connect_param!(top, c3_path, :par_3_1, c2_path, :var_2_1)
+connect_param!(md, c2_path, :par_2_1, c1_path, :var_1_1)
+connect_param!(top_comp, c2_path, :par_2_2, c1_path, :var_1_1)
+# connect_param!(top_comp, c3_path, :par_3_1, c2_path, :var_2_1)
 
-# build(m)
-# run(m)
+build(m)
+run(m)
+
+#
+# TBD
+#
+# 1. Create parallel structure of exported vars/pars in Instance hierarchy
+#    - Perhaps just a dict mapping local name to a component path under mi, to where the var actually exists
+# 2. Be able to connect to the leaf version of vars/pars or by specifying exported version below the compdef
+#    given as first arg to connect_param!().
+# 3. set_param!() should work with relative path from any compdef.
+# 4. get_index should work for any comp/var/par below the given compinstance
+#    - also support indexing by a path or tuple indicating a path below the given instance
+
+
 
 end # module
+
+m = TestComposite.m
+md = m.md
+top   = Mimi.find_comp(md, :top)
+A     = Mimi.find_comp(top, :A)
+comp1 = Mimi.find_comp(A, :Comp1)
+
+mi = m.mi
+top_i = mi[:top]
+A_i = top_i[:A]
+comp1_i = A_i[:Comp1]
+comp2_i = A_i[:Comp2]
+var_2_1 = A_i[:Comp2, :var_2_1]
 
 nothing

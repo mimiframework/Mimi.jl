@@ -3,11 +3,6 @@ module TestGetIndex
 using Mimi
 using Test
 
-import Mimi:
-    reset_compdefs
-
-reset_compdefs()
-
 my_model = Model()
 
 #Testing that you cannot add two components of the same name

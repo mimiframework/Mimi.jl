@@ -3,11 +3,6 @@ module TestPlotting
 using Mimi
 using Test
 
-import Mimi: 
-    reset_compdefs
-
-reset_compdefs()
-
 @defcomp LongComponent begin
     x = Parameter(index=[time])
     y = Parameter()
