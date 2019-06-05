@@ -121,7 +121,7 @@ global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
-    external_params::Dict{Symbol, ModelParameter}
+    external_params::Dict{Symbol, ModelParameter}               # TBD: make key (ComponentPath, Symbol)?
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
@@ -171,11 +171,10 @@ function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Ve
     return composite
 end
 
-# TBD: these should dynamically and recursively compute the lists
+# TBD: Recursively compute the lists on demand?
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
 external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
 
-# TBD: should only ModelDefs have external params?
 external_params(obj::AbstractCompositeComponentDef) = obj.external_params
 
 exported_names(obj::AbstractCompositeComponentDef) = keys(obj.exports)

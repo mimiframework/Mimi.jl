@@ -92,24 +92,21 @@ c1 = find_comp(md, ComponentPath(:top, :A, :Comp1))
 c3 = find_comp(md, "/top/B/Comp3")
 @test c3.comp_id == Comp3.comp_id
 
-set_param!(m, "/top/A/Comp1", :foo, 1)
-set_param!(m, "/top/A/Comp2", :foo, 2)
+set_param!(m, "/top/A/Comp1:foo", 1)
+set_param!(m, "/top/A/Comp2:foo", 2)
 
 # TBD: default values set in @defcomp are not working...
-set_param!(m, "/top/B/Comp3", :foo, 10)
-set_param!(m, "/top/B/Comp4", :foo, 20)
+# Also, external_parameters are stored in the parent, so both of the
+# following set parameter :foo in "/top/B", with 2nd overwriting 1st.
+set_param!(m, "/top/B/Comp3:foo", 10)
+set_param!(m, "/top/B/Comp4:foo", 20)
 
 set_param!(m, "/top/A/Comp1", :par_1_1, collect(1:length(time_labels(md))))
 
-c1_path = ComponentPath(md, :top, :A, :Comp1)
-c2_path = ComponentPath(md, "/top/A/Comp2")
-c3_path = ComponentPath(md, "/top/B/Comp3")
-c4_path = ComponentPath(md, "/top/B/Comp4")
-
-connect_param!(md, c2_path, :par_2_1, c1_path, :var_1_1)
-connect_param!(md, c2_path, :par_2_2, c1_path, :var_1_1)
-connect_param!(md, c3_path, :par_3_1, c2_path, :var_2_1)
-connect_param!(md, c4_path, :par_4_1, c3_path, :var_3_1)
+connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
+connect_param!(m, "/top/A/Comp2:par_2_2", "/top/A/Comp1:var_1_1")
+connect_param!(m, "/top/B/Comp3:par_3_1", "/top/A/Comp2:var_2_1")
+connect_param!(m, "/top/B/Comp4:par_4_1", "/top/B/Comp3:var_3_1")
 
 build(m)
 run(m)
@@ -122,14 +119,14 @@ run(m)
 # 2. Be able to connect to the leaf version of vars/pars or by specifying exported version below the compdef
 #    given as first arg to connect_param!().
 # 3. set_param!() should work with relative path from any compdef.
-# 4. get_index should work for any comp/var/par below the given compinstance
-#    - also support indexing by a path or tuple indicating a path below the given instance
+# 4. set_param!() stores external_parameters in the parent object, creating namespace conflicts between comps.
+#    Either store these in the leaf or store them with a key (comp_name, param_name)
 
 mi = m.mi
 
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
-@test mi[c2_path, :par_2_2]        == collect(1.0:16.0)
-@test mi[c2_path.names, :var_2_1]  == collect(3.0:3:48.0)
+@test mi[ComponentPath(md, :top, :A, :Comp2), :par_2_2] == collect(1.0:16.0)
+@test mi[(:top, :A, :Comp2), :var_2_1]  == collect(3.0:3:48.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
 end # module

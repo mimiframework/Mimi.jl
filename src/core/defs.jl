@@ -1,4 +1,3 @@
-
 function find_module(path::NTuple{N, Symbol} where N)
     m = Main
     for name in path
@@ -484,7 +483,7 @@ end
                 value_dict::Dict{Symbol, Any}, param_names)
 
 Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from 
-`value_dict[param_name`.
+`value_dict[param_name]`.
 """
 function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
     for param_name in param_names
@@ -522,6 +521,17 @@ not begin with "/", it is treated as relative to `obj`.
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
     # @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
     set_param!(obj, comp_path(obj, path), param_name, value, dims)
+end
+
+"""
+    set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
+
+Set a parameter using a colon-delimited string to specify the component path (before the ":")
+and the param name (after the ":").
+"""
+function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
+    comp_path, param_name = split_datum_path(obj, path)
+    set_param!(obj, comp_path, param_name, value, dims)
 end
 
 """

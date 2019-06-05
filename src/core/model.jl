@@ -57,6 +57,10 @@ component parameter should only be calculated for the second timestep and beyond
 
 @delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
 
+@delegate connect_param!(m::Model, dst::AbstractString, src::AbstractString, backup::Union{Nothing, Array}=nothing; 
+                         ignoreunits::Bool=false, offset::Int=0) => md
+
+
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
 
@@ -326,6 +330,13 @@ component with name `:x` beneath `m.md`. If the path does not begin with "/", it
 relative to `m.md`, which at the top of the hierarchy, produces the same result as starting with "/".
 """
 @delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
+
+"""
+    set_param!(m::Model, path::AbstractString, value, dims=nothing)
+
+Similar to above but param_name appears in `path` after a colon delimiter.
+"""
+@delegate set_param!(m::Model, path::AbstractString, value, dims=nothing) => md
 
 """
     run(m::Model)

@@ -248,6 +248,33 @@ function connect_param!(obj::AbstractCompositeComponentDef,
     connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
+"""
+    split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
+
+Split a string of the form "/path/to/component:datum_name" into the component path,
+`ComponentPath(:path, :to, :component)` and name `:datum_name`.
+"""
+function split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
+    elts = split(s, ":")
+    length(elts) != 2 && error("Can't split datum path '$s' into ComponentPath and datum name")   
+    return (ComponentPath(obj, elts[1]), Symbol(elts[2]))
+end
+
+"""
+Connect a parameter and variable using string notation "/path/to/component:datum_name" where
+the potion before the ":" is the string representation of a component path from `obj` and the
+portion after is the name of the src or dst datum.
+"""
+function connect_param!(obj::AbstractCompositeComponentDef, dst::AbstractString, src::AbstractString,
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    dst_path, dst_name = split_datum_path(obj, dst)
+    src_path, src_name = split_datum_path(obj, src)
+
+    connect_param!(obj, dst_path, dst_name, src_path, src_name,
+                   backup; ignoreunits=ignoreunits, offset=offset)    
+end
+
+
 const ParamVector = Vector{ParamPath}
 
 _collect_connected_params(obj::ComponentDef, connected) = nothing
@@ -344,17 +371,11 @@ function external_param_conns(obj::AbstractCompositeComponentDef, comp_name::Sym
 end
 
 function external_param(obj::AbstractCompositeComponentDef, name::Symbol; missing_ok=false)
-    try
-        return obj.external_params[name]
-    catch err
-        if err isa KeyError
-            missing_ok && return nothing
+    haskey(obj.external_params, name) && return obj.external_params[name]
 
-            error("$name not found in external parameter list")
-        else
-            rethrow(err)
-        end
-    end
+    missing_ok && return nothing
+
+    error("$name not found in external parameter list")
 end
 
 function add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
@@ -368,6 +389,9 @@ function add_external_param_conn!(obj::AbstractCompositeComponentDef, conn::Exte
 end
 
 function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::ModelParameter)
+    if haskey(obj.external_params, name)
+        @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
+    end
     obj.external_params[name] = value
     dirty!(obj)
 end

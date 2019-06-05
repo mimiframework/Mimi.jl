@@ -54,7 +54,7 @@ export
     variable_names
 
 include("core/delegate.jl")
-include("core/types/_includes.jl")
+include("core/types/includes.jl")
 #
 # After loading types and delegation macro, the rest can be loaded in any order.
 #
