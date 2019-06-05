@@ -51,8 +51,7 @@ run(m)
 #2.  JSON strings for the spec "values" key
 # TODO:  getmultiline, getline, getbar, getdatapart
 
-#3.  full specs for VegaLit
-
+#3.  full specs for VegaLite
 #TODO:  createspec_singlevalue, createspec_multilineplot, 
 #createspec_lineplot, createspec_barplot, _spec_for_item
 

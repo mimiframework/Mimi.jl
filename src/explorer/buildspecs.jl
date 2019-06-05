@@ -54,10 +54,12 @@ function _spec_for_sim_item(sim::Simulation, output_dir::Union{Nothing, String},
 
     # get results
     if isnothing(output_dir) # results stored in results.sim
-        df = sim.results[model_index](comp_name, item_name)
+        key = (comp_name, item_name)
+        results = sim.results[model_index]
+        df = results[key]
     else # results stored in external csv files
         if multiple_results
-            sub_dir = joinpath(output_dir, "model_$i")
+            sub_dir = joinpath(output_dir, "model_$model_index")
         else
             sub_dir = output_dir 
         end
@@ -72,31 +74,28 @@ function _spec_for_sim_item(sim::Simulation, output_dir::Union{Nothing, String},
     dims = dimensions(m, comp_name, item_name)
 
     if length(dims) == 0 # histogram
-        spec = nothing # TODO - histogram
+        spec = createspec_histogram(name, df, dffields)
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
         return nothing
     else
         name = "$comp_name : $item_name"          
-        df = getdataframe(m, comp_name, item_name)
-
         dffields = map(string, names(df))         # convert to string once before creating specs
 
         # check if there are too many dimensions to map and if so, error
-        if length(dffields) > 3
+        if length(dffields) > 4
             error()
                 
         # a 'time' field necessitates a trumpet plot
         elseif dffields[1] == "time"
-            if length(dffields) > 2
-                spec = nothing # TODO - layered trumpet plot
+            if length(dffields) > 3
+                spec =createspec_multitrumpet(name, df, dffields; interactive = interactive)
             else
-                spec = nothing # TODO - single trumpet plot
+                spec = createspec_singletrumpet(name, df, dffields; interactive = interactive)
             end
-        
         #otherwise we are dealing with layered histograms
         else
-            spec = nothing # TODO
+            spec = createspec_multihistogram(name, df, dffields)
         end
     end
     
@@ -122,7 +121,7 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     return menu_item
 end
 
-function _menu_item(datum_key::Tuple{Symbol, Symbol}, sim::Simulation)
+function _menu_item(sim::Simulation, datum_key::Tuple{Symbol, Symbol},)
     (comp_name, item_name) = datum_key
     dims = dimensions(sim.models[1], comp_name, item_name)
     if length(dims) > 2
@@ -175,6 +174,7 @@ global const _plot_width  = 450
 global const _plot_height = 410
 global const _slider_height = 90
 
+# Create individual specs for exploring a model
 function createspec_lineplot(name, df, dffields; interactive::Bool=true)
     interactive ? createspec_lineplot_interactive(name, df, dffields) : createspec_lineplot_static(name, df, dffields)
 end
@@ -385,6 +385,172 @@ function createspec_singlevalue(name)
     return spec
 end
 
+# Create individual specs for exploring a Simulation
+function createspec_singletrumpet(name, df, dffields; interactive::Bool=true)
+    interactive ? createspec_singletrumpet_interactive(name, df, dffields) : createspec_singletrumpet_static(name, df, dffields)
+end
+
+# https://vega.github.io/vega-lite/examples/layer_line_errorband_ci.html
+function createspec_singletrumpet_static(name, df, dffields)
+
+    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "encoding" => Dict(
+                "x"     => Dict(
+                    "field" => dffields[1], 
+                    "type" => "temporal", 
+                    "timeUnit" => "utcyear", 
+                )
+            ),
+            "layer" => [
+                Dict(
+                    "mark"  => Dict("type" => "errorband", "extent" => "ci", "borders" => false),
+                    "encoding" => Dict(
+                        "y"     => Dict(
+                            "field" => dffields[2], 
+                            "type" => "quantitative",
+                            "title" => "Mean of $(dffields[2]) (95% CIs)"
+                        )
+                    )
+                ),
+
+                Dict(
+                    "mark" => "line",
+                    "encoding" => Dict(
+                        "y" => Dict(
+                            "aggregate" => "mean", 
+                            "field" => dffields[2],
+                            "type" => "quantitative"
+                        )
+                    )
+                )
+            ]
+        ),
+        "width"  => _plot_width,
+        "height" => _plot_height
+    )
+    return spec
+end
+
+function createspec_singletrumpet_interactive(name, df, dffields)
+
+    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "vconcat" => [
+                Dict(
+                    "width" => _plot_width,
+                    "height" => _plot_height,
+                    "encoding" => Dict(
+                        "x"     => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear", 
+                            "scale" => Dict("domain" => Dict("selection" => "brush"))
+                        )
+                    ),
+                    "layer" => [
+                        Dict(
+                            "mark"  => Dict("type" => "errorband", "extent" => "ci", "borders" => false),
+                            "encoding" => Dict(
+                                "y"     => Dict(
+                                    "field" => dffields[2], 
+                                    "type" => "quantitative",
+                                    "title" => "Mean of $(dffields[2]) (95% CIs)"
+                                )
+                            )
+                        ),
+
+                        Dict(
+                            "mark" => "line",
+                            "encoding" => Dict(
+                                "y" => Dict(
+                                    "aggregate" => "mean", 
+                                    "field" => dffields[2],
+                                    "type" => "quantitative"
+                                )
+                            )
+                        )
+                    ]
+                ),
+                Dict(
+                    "width" => _plot_width,
+                    "height" => _slider_height,
+                    "encoding" => Dict(
+                        "x"     => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear", 
+                        )
+                    ),
+                    "layer" => [
+                        Dict(
+                            "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                            "mark"  => Dict("type" => "errorband", "extent" => "ci", "borders" => false),
+                            "encoding" => Dict(
+                                "y"     => Dict(
+                                    "field" => dffields[2], 
+                                    "type" => "quantitative",
+                                    "title" => "Mean of $(dffields[2]) (95% CIs)"
+                                )
+                            )
+                        ),
+                        Dict(
+                            "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                            "mark" => "line",
+                            "encoding" => Dict(
+                                "y" => Dict(
+                                    "aggregate" => "mean", 
+                                    "field" => dffields[2],
+                                    "type" => "quantitative"
+                                )
+                            )
+                        )
+                    ]
+                )
+            ]
+        )
+    )
+    return spec
+end
+
+function createspec_multitrumpet(name, df, dffields; interactive::Bool = true)
+    interactive ? createspec_multitrumpet_interactive(name, df, dffields) : createspec_multitrumpet_static(name, df, dffields)
+
+end
+
+function createspec_multitrumpet_interactive(name, df, dffields)
+    # TODO
+    return nothing
+end
+
+function createspec_multitrumpet_static(name, df, dffields)
+    # TODO
+    return nothing
+end
+
+function createspec_histogram(name, df, dffields)
+    # TODO
+    return nothing
+end
+
+function createspec_multihistogram(name, df, dffields)
+    # TODO
+    return nothing
+end
+
+# Helper functions to get JSONtext of the data
 function getdatapart(df, dffields, plottype::Symbol)
 
     sb = StringBuilder()

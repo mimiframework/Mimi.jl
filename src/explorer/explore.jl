@@ -52,11 +52,11 @@ function explore(m::Model; title = "Electron")
 end
 
 """
-    explore(sim::Simulation, output_dir::String; title = "Electron")
+    explore(sim::Simulation; output_dir::Union{Nothing, String} = nothing, title="Electron", model_index = 1)
 
 Produce a UI to explore the output distributions of the saved variables in Simulation
 `sim` for results of model `model_index`, which defaults to 1 in a Window with title `title`.
-If an `output_dir` is provided, results are stored tehre, otherwise it is assumed
+If an `output_dir` is provided, results are stored there, otherwise it is assumed
 that results are held in results.sim and not in an output folder.
 
 """
@@ -105,8 +105,27 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
         error("A model must be run before it can be plotted")
     end
     
-    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=false)["VLspec"]
-    spec === nothing && error("Spec cannot be built.")        
+    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=r)["VLspec"]
+    if spec === nothing
+        error("Spec cannot be built.")  
+    end      
+
+    return VegaLite.VLSpec{:plot}(spec)
+end
+
+"""
+    plot(sim::Simulation, comp_name::Symbol, datum_name::Symbol; output_dir::Union{Nothing, String} = nothing, model_index = 1)
+
+Plot a specific `datum_name` that was one of the saved variables of Simulation `sim`
+for results of model `model_index`, which dfaults to 1. If an `output_dir` is provided, 
+results are stored there, otherwise it is assumed that results are held in results.sim and not in an output folder.
+"""
+function plot(sim::Simulation, comp_name::Symbol, datum_name::Symbol; output_dir::Union{Nothing, String} = nothing, model_index = 1)
+    
+    spec = Mimi._spec_for_sim_item(sim, output_dir, model_index, comp_name, datum_name, interactive = false)["VLspec"]
+    if spec === nothing 
+        error("Spec cannot be built.")
+    end
 
     return VegaLite.VLSpec{:plot}(spec)
 end
