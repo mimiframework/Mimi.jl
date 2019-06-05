@@ -139,6 +139,28 @@ parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = paramet
 
 parameters(obj::AbstractComponentInstance) = obj.parameters
 
+function Base.getindex(mi::ModelInstance, names::NTuple{N, Symbol}) where N
+    obj = mi
+
+    # skip past first element if same as root node
+    if length(names) > 0 && head(obj.comp_path) == names[1]
+        names = names[2:end]
+    end
+
+    for name in names
+        if has_comp(obj, name)
+            obj = obj[name]
+        else
+            error("Component $(obj.comp_path) does not have sub-component :$name")
+        end
+    end
+    return obj
+end
+
+Base.getindex(mi::ModelInstance, comp_path::ComponentPath) = Base.getindex(mi, comp_path.names)
+
+Base.getindex(mi::ModelInstance, path_str::AbstractString) = Base.getindex(mi, ComponentPath(mi.md, path_str))
+
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
     if ! has_comp(obj, comp_name)
         error("Component :$comp_name does not exist in the given composite")
@@ -146,22 +168,30 @@ function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbo
     return compinstance(obj, comp_name)
 end
 
-function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum_name::Symbol)    
-    comp_inst = obj[comp_name]
-    vars = variables(comp_inst)
-    pars = parameters(comp_inst)
-
+function _get_datum(ci::AbstractComponentInstance, datum_name::Symbol)
+    vars = variables(ci)
+    
     if datum_name in names(vars)
         which = vars
-    elseif datum_name in names(pars)
-        which = pars
     else
-        error("$datum_name is not a parameter or a variable in component $comp_name.")
+        pars = parameters(ci)
+        if datum_name in names(pars)
+            which = pars          
+        else
+            error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
+        end
     end
 
     value = getproperty(which, datum_name)
 
     return value isa TimestepArray ? value.data : value
+end
+
+Base.getindex(mi::ModelInstance, key, datum::Symbol) = _get_datum(mi[key], datum)
+
+function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
+    ci = obj[comp_name]
+    return _get_datum(ci, datum)
 end
 
 """
