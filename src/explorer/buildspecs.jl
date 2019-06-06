@@ -410,17 +410,6 @@ function createspec_singletrumpet_static(name, df, dffields)
             ),
             "layer" => [
                 Dict(
-                    "mark"  => Dict("type" => "errorband", "extent" => "ci", "borders" => false),
-                    "encoding" => Dict(
-                        "y"     => Dict(
-                            "field" => dffields[2], 
-                            "type" => "quantitative",
-                            "title" => "Mean of $(dffields[2]) (95% CIs)"
-                        )
-                    )
-                ),
-
-                Dict(
                     "mark" => "line",
                     "encoding" => Dict(
                         "y" => Dict(
@@ -429,7 +418,26 @@ function createspec_singletrumpet_static(name, df, dffields)
                             "type" => "quantitative"
                         )
                     )
+                ),
+                Dict(
+                    "mark" => "area",
+                    "encoding" => Dict(
+                        "y" => Dict(
+                            "aggregate" => "max", 
+                            "field" => dffields[2],
+                            "type" => "quantitative",
+                            "title" => "$(dffields[2])"
+                        ),
+                        "y2" => Dict(
+                            "aggregate" => "min", 
+                            "field" => dffields[2],
+                        ),
+                        "opacity" => Dict(
+                            "value" => 0.5
+                        )
+                    )
                 )
+
             ]
         ),
         "width"  => _plot_width,
@@ -462,17 +470,6 @@ function createspec_singletrumpet_interactive(name, df, dffields)
                     ),
                     "layer" => [
                         Dict(
-                            "mark"  => Dict("type" => "errorband", "extent" => "ci", "borders" => false),
-                            "encoding" => Dict(
-                                "y"     => Dict(
-                                    "field" => dffields[2], 
-                                    "type" => "quantitative",
-                                    "title" => "Mean of $(dffields[2]) (95% CIs)"
-                                )
-                            )
-                        ),
-
-                        Dict(
                             "mark" => "line",
                             "encoding" => Dict(
                                 "y" => Dict(
@@ -481,7 +478,26 @@ function createspec_singletrumpet_interactive(name, df, dffields)
                                     "type" => "quantitative"
                                 )
                             )
+                        ),
+                        Dict(
+                            "mark" => "area",
+                            "encoding" => Dict(
+                                "y" => Dict(
+                                    "aggregate" => "max", 
+                                    "field" => dffields[2],
+                                    "type" => "quantitative",
+                                    "title" => "$(dffields[2])"
+                                ),
+                                "y2" => Dict(
+                                    "aggregate" => "min", 
+                                    "field" => dffields[2],
+                                ),
+                                "opacity" => Dict(
+                                    "value" => 0.5
+                                )
+                            )
                         )
+        
                     ]
                 ),
                 Dict(
@@ -494,20 +510,9 @@ function createspec_singletrumpet_interactive(name, df, dffields)
                             "timeUnit" => "utcyear", 
                         )
                     ),
+
                     "layer" => [
                         Dict(
-                            "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
-                            "mark"  => Dict("type" => "errorband", "extent" => "ci", "borders" => false),
-                            "encoding" => Dict(
-                                "y"     => Dict(
-                                    "field" => dffields[2], 
-                                    "type" => "quantitative",
-                                    "title" => "Mean of $(dffields[2]) (95% CIs)"
-                                )
-                            )
-                        ),
-                        Dict(
-                            "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
                             "mark" => "line",
                             "encoding" => Dict(
                                 "y" => Dict(
@@ -516,7 +521,27 @@ function createspec_singletrumpet_interactive(name, df, dffields)
                                     "type" => "quantitative"
                                 )
                             )
+                        ),
+                        Dict(
+                            "mark" => "area",
+                            "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                            "encoding" => Dict(
+                                "y" => Dict(
+                                    "aggregate" => "max", 
+                                    "field" => dffields[2],
+                                    "type" => "quantitative",
+                                    "title" => "$(dffields[2])"
+                                ),
+                                "y2" => Dict(
+                                    "aggregate" => "min", 
+                                    "field" => dffields[2],
+                                ),
+                                "opacity" => Dict(
+                                    "value" => 0.5
+                                )
+                            )
                         )
+        
                     ]
                 )
             ]
