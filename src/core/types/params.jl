@@ -4,7 +4,7 @@
 
 abstract type ModelParameter <: MimiStruct end
 
-# TBD: rename ScalarParameter, ArrayParameter, and AbstractParameter?
+# TBD: rename as ScalarParameter, ArrayParameter, and AbstractParameter?
 
 mutable struct ScalarModelParameter{T} <: ModelParameter
     value::T
