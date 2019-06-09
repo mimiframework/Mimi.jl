@@ -53,4 +53,4 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names
 
 set_models!(mcs, m)
-run_sim(mcs, output_dir=output_dir)
+run(mcs, output_dir=output_dir)

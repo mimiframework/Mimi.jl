@@ -22,7 +22,7 @@ This section will walk through the simple example provided in `"Mimi.jl/test/sim
 ### Step 1. Setup
 First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
 
-```juila
+```julia
 cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory
 using Distributions
 
@@ -73,12 +73,12 @@ sim = @defsim begin
 end
 ```
 
-### Step 2. Optional User-Defined Functions
-Next, create the user-defined `print_result` function, which can be called as a post-trial function by [`run_sim`](@ref).
+### Step 3. Optional User-Defined Functions
+Next, create the user-defined `print_result` function, which can be called as a post-trial function by `run`.
 
  ```julia
 # Optional user functions can be called just before or after a trial is run
-function print_result(m::Model, sim::Simulation, trialnum::Int)
+function print_result(m::Model, sim_results::SimulationResults, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
@@ -90,47 +90,38 @@ of all scenario value vectors. In situations in which you want the SA loop to ru
 some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
 `post_trial_func`.
 
-### Step 3. Generate Trials
-
-The  [`generate_trials!`](@ref) function generates all trial data, and save all random variable values in a file. Employ this function as follows:
-
-```julia
-# Generate trial data for all RVs and (optionally) save to a file
-generate_trials!(sim, 1000, filename="/tmp/trialdata.csv")
-```
-
 ### Step 4. Run Simulation
 
-Finally, use the [`set_models!`](@ref) and [`run_sim`](@ref) functions.  First, calling [`set_models!`] with a model, marginal model, or list of models will set those models as those to be run by your `sim` simulation.  Next, use [`run_sim`](@ref) which runs a simulation, with parameters describing the number of trials and optional callback functions to customize simulation behavior. In its simplest use, the [`run_sim`](@ref) function iterates over all pre-generated trial data, perturbing a chosen set of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
+ Finally, use `run` which runs a simulation, indicating the `sim`, the `models` is a model, marginal model, or list of models to be run by your `sim` simulation, and `samplesize` the number of samples to use.
+ 
+  In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationResults`, holding a mutated copy of the original `Simulation` with additional trial information as well as a list of references ot the models and a Dictionary of results. Optionally, trial values and/or model results are saved to CSV files. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
-function run_sim(sim::Simulation; 
-                 trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}} = nothing,
-                 models_to_run::Int=length(sim.models),
+function Base.run(sim::Simulation{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
                  ntimesteps::Int=typemax(Int), 
-                 output_dir::Union{Nothing, AbstractString}=nothing, 
+                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
+                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
                  post_trial_func::Union{Nothing, Function}=nothing,
                  scenario_func::Union{Nothing, Function}=nothing,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
-                 scenario_args=nothing)
+                 scenario_args=nothing,
+                 results_in_memory::Bool=true) where T <: AbstractSimulationData
 ```
 
-Here, we first employ [`run_sim`](@ref) to obtain results:
+Here, we first employ `run` to obtain results:
 
 ```julia
-# Set models
-set_models!(sim, m)
 
-# Run trials 1:4, and save results to the indicated directory, one CSV file per RV
-run_sim(sim, 4, output_dir="/tmp/Mimi")
+# Run 100 trials and save results to the indicated directories, one CSV file per RV for the results
+res = run(sim, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi")
 ```
 
 and then again using our user-defined post-trial function as the `post_trial_func` parameter:
 
 ```julia
 # Same thing but with a post-trial function
-run_sim(m, sim, 4, post_trial_func=print_result, output_dir="/tmp/Mimi")
+res = run(sim, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi", post_trial_func=print_result)
 ```
 ## Advanced Post-trial Functions
 
@@ -189,11 +180,11 @@ Next, we must create an array to store the npv damages results to during the pos
 npv_results = zeros(N, length(discount_rates))    
 ```
 
-We are now ready to define a post-trial function, which has a required type signature `MyFunction((mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)` although not all arguments have to be used within the function. Our function will access our model from the list of models in `mcs.models` (length of one in this case) and then perform calculations on the `DAMAGES` variable from the `neteconomy` component in that model as follows.
+We are now ready to define a post-trial function, which has a required type signature `MyFunction((mcs::ResultsSimulation, trialnum::Int, ntimesteps::Int, tup::Tuple)` although not all arguments have to be used within the function. Our function will access our model from the list of models in `mcs.models` (length of one in this case) and then perform calculations on the `DAMAGES` variable from the `neteconomy` component in that model as follows.
 
 ```julia
 # define your post trial function; this is the required type signature, even though we won't use all of the arguments
-function my_npv_calculation(mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+function my_npv_calculation(mcs::SimulationResults, trialnum::Int, ntimesteps::Int, tup::Tuple)
     m = mcs.models[1]    # access the model after it is run for this trial
     damages = m[:neteconomy, :DAMAGES]    # access the damage values for this run
     for (i, df) in enumerate(dfs)    # loop through our precomputed discount factors
@@ -204,11 +195,8 @@ end
 ```
 Now that we have defined  our post-trial function, we can set our models and run the simulation! Afterwards, we can use the `npv_results` array as we need.
 
-```julia
-# set the model, generate trials, and run the simulation
-set_models!(mcs, m)
-generate_trials!(mcs, N; filename = "ECS_sample.csv")   # providing a file name is optional; only use if you want to see the climate sensitivity values later
-run_sim(mcs; post_trial_func = my_npv_calculation)
+```julia  
+res = run(mcs, m, N; post_trial_func = my_npv_calculation, trials_output_filename = "ECS_sample.csv")# providing a file name is optional; only use if you want to see the climate sensitivity values later
 
 # do something with the npv_results array
 println(mean(npv_results, dims=2))    # or write to a file
@@ -238,7 +226,7 @@ Next, we prepare our post-trial calculations by setting up a `scc_results` array
 ```julia
 scc_results = zeros(N, length(discount_rates))
 
-function my_scc_calculation(mcs::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+function my_scc_calculation(mcs::SimulationResults, trialnum::Int, ntimesteps::Int, tup::Tuple)
     base, marginal = mcs.models
     base_damages = base[:neteconomy, :DAMAGES]
     marg_damages = marginal[:neteconomy, :DAMAGES]
@@ -259,8 +247,7 @@ marginal = construct_marginal_dice(year)
 
 # Set models and run
 set_models!(mcs, [base, marginal])
-generate_trials!(mcs, N; filename = "ecs_sample.csv")
-run_sim!(mcs; post_trial_func = my_scc_calculation)
+run!(mcs, [base, marginal], N; trials_output_filename = "ecs_sample.csv", post_trial_func = my_scc_calculation)
 ```
 ## Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `Simulation`.  The functions include:

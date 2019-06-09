@@ -63,18 +63,18 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 # Run trials 1:N, and save results to the indicated directory
 
 Mimi.set_models!(sim, m)
-run_sim(sim, output_dir=output_dir)
+run(sim, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018
 # generate_trials(sim, samples=load("foo.csv"))
 #
-# run_sim(sim, [:foo=>m1,:bar=>m2], output_vars=[:foo=>[:grosseconomy=>[:bar,:bar2,:bar3], :comp2=>:var2], :bar=>[]], N, output_dir="/tmp/Mimi")
-# run_sim(sim, m1, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
-# run_sim(mm, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
-# run_sim(sim, sim, mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
-# run_sim(sim, m, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
+# run(sim, [:foo=>m1,:bar=>m2], output_vars=[:foo=>[:grosseconomy=>[:bar,:bar2,:bar3], :comp2=>:var2], :bar=>[]], N, output_dir="/tmp/Mimi")
+# run(sim, m1, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
+# run(mm, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
+# run(sim, sim, mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
+# run(sim, m, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
 
-# run_sim(sim, m, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
+# run(sim, m, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
 
 function show_E_Global(year::Int; bins=40)
     df = @from i in E_Global begin
@@ -113,7 +113,7 @@ end
 
 loop_counter = 0
 
-run_sim(sim;
+run(sim;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -125,7 +125,7 @@ run_sim(sim;
 
 loop_counter = 0
 
-run_sim(sim;
+run(sim;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -147,7 +147,7 @@ end
 
 loop_counter = 0
 
-run_sim(sim;
+run(sim;
         output_dir=output_dir,
         pre_trial_func=pre_trial,
         scenario_func=other_loop_func,
@@ -168,7 +168,7 @@ end
 loop_counter = 0
 
 N = 10
-run_sim(sim;
+run(sim;
         trials = N,
         output_dir=output_dir,
         post_trial_func=post_trial)

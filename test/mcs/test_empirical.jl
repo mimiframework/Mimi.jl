@@ -64,13 +64,13 @@ scenario_args = [
     :num => collect(1:num_scenarios)
 ]
 
-function scenario_func(sim::Simulation{T}, tup::Tuple) where T <: AbstractSimulationData
+function scenario_func(sim_results::SimulationResults{T}, tup::Tuple) where T <: AbstractSimulationData
     nothing
 end
 
-function post_trial_func(sim::Simulation{T}, trialnum::Int, ntimesteps::Int, 
+function post_trial_func(sim_results::SimulationResults{T}, trialnum::Int, ntimesteps::Int, 
                          tup::Tuple)  where T <: AbstractSimulationData
-    m, = sim.models
+    m, = sim_results.models
     scenario_num, = tup
     results[scenario_num, trialnum] = m[:test, :p]
 end
@@ -78,20 +78,15 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2001)
 add_comp!(m, test)
-set_models!(mcs_test, m)
 
-generate_trials!(mcs_test, num_trials)
-
-set_models!(mcs_test, m)
-
-run_sim(mcs_test;
-    output_dir = output_dir,
+res = run(mcs_test, m, num_trials;
+    results_output_dir = output_dir,
     scenario_args = scenario_args,
     scenario_func = scenario_func, 
     post_trial_func = post_trial_func
     )
 
-for rv in values(mcs_test.rvdict)
+for rv in values(res.sim.rvdict)
     @test rv.dist isa Mimi.SampleStore
 end
 
@@ -101,14 +96,14 @@ end
 
 rm(output_dir, recursive = true)
 
-generate_trials!(mcs_test, num_trials)
-trial1 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
+res1 = run(mcs_test, m, num_trials)
+trial1 = copy(collect(values(res1.sim.rvdict))[1].dist.values)
 
-for rv in values(mcs_test.rvdict)
+for rv in values(res1.sim.rvdict)
     @test rv.dist isa Mimi.SampleStore
 end
 
-generate_trials!(mcs_test, num_trials)
-trial2 = copy(collect(values(mcs_test.rvdict))[1].dist.values)
+res2 = run(mcs_test, m, num_trials)
+trial2 = copy(collect(values(res2.sim.rvdict))[1].dist.values)
 
 @test trial1!=trial2

@@ -14,6 +14,7 @@ function Base.show(data::SobolData)
 end
 
 const SobolSimulation = Simulation{SobolData}
+const SobolResults = SimulationResults{SobolData}
 
 function _compute_N(sim::SobolSimulation)
     num_rvs = length(sim.rvdict)
@@ -49,16 +50,13 @@ function sample!(sim::SobolSimulation, samplesize::Int)
     end
 end
 
-function analyze(sim::SobolSimulation, model_output::AbstractArray{<:Number, N1}; N::Union{Nothing, Int}=nothing) where N1
-    if N !== nothing
-        sim.trials = _compute_trials(sim, N)
-    end
+function analyze(sim_results::SobolResults, model_output::AbstractArray{<:Number, N}) where N
 
-    if sim.trials == 0
-        error("Cannot analyze simulation with 0 trials (sim.trials == 0), either run generate_trials to set N, or pass N to analyze function as a keyword argument")
+    if sim_results.sim.trials == 0
+        error("Cannot analyze simulation with 0 trials.")
     end
     
-    payload = create_GSA_payload(sim)
+    payload = create_GSA_payload(sim_results.sim)
     return GlobalSensitivityAnalysis.analyze(payload, model_output)
 end
 

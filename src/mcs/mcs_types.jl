@@ -129,8 +129,6 @@ mutable struct Simulation{T}
     translist::Vector{TransformSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
-    models::Vector{Model}
-    results::Vector{Dict{Tuple, DataFrame}}
     data::T                         # data specific to a given sensitivity analysis method
     payload::Any                    # opaque (to Mimi) data the user wants access to in callbacks
 
@@ -149,13 +147,31 @@ mutable struct Simulation{T}
         names = (keys(self.rvdict)...,)
         types = [eltype(fld) for fld in values(self.rvdict)]
         self.nt_type = NamedTuple{names, Tuple{types...}}
+
+        self.data = data
+        self.payload = nothing
+
+        return self
+    end
+end
+
+"""
+    SimulationResults{T}
+    
+Holds all the data that defines simulation results.
+"""
+mutable struct SimulationResults{T}
+    sim::Simulation{T} where T <: AbstractSimulationData
+    models::Vector{Model}
+    results::Vector{Dict{Tuple, DataFrame}}
+
+    function SimulationResults{T}(sim::Simulation{T}) where T <: AbstractSimulationData
+        self = new()
+        self.sim = deepcopy(sim)
         
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{Model}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
-
-        self.data = data
-        self.payload = nothing
 
         return self
     end
