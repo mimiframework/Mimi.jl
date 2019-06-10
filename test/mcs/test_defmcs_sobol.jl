@@ -44,26 +44,22 @@ include("../../examples/tutorial/02-two-region-model/main.jl")
 m = model
 
 # Optionally, user functions can be called just before or after a trial is run
-function print_result(m::Model, sim::Simulation, trialnum::Int)
+function print_result(m::Model, sim_results::SimulationResults, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
 end
 
 output_dir = joinpath(tempdir(), "sim")
-generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv")) 
+res = run(sim, m, N; trials_output_filename=joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
 
 # Test that the proper number of trials were saved
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
-@test size(d)[1] == sim.trials+1 # extra row for column names
-
-# Run trials 1:sim.trials, and save results to the indicated directory
-set_models!(sim, m)
-run(sim, output_dir=output_dir)
+@test size(d)[1] == res.sim.trials+1 # extra row for column names
 
 # do some analysis
 E = CSVFiles.load(joinpath(output_dir, "E.csv")) |> DataFrame
-results = analyze(sim, E[1:60:end, 3])
+results = analyze(res, E[1:60:end, 3])
 
 function show_E_Region(year::Int; region = "Region1", bins=40)
     df = @from i in E begin
@@ -81,7 +77,7 @@ end
 #
 global loop_counter = 0
 
-function outer_loop_func(sim::Simulation, tup)
+function outer_loop_func(sim_results::SimulationResults, tup)
     global loop_counter
     loop_counter += 1
 
@@ -90,7 +86,7 @@ function outer_loop_func(sim::Simulation, tup)
     @debug "outer loop: scen:$scen, rate:$rate"
 end
 
-function inner_loop_func(sim::Simulation, tup)
+function inner_loop_func(sim_results::SimulationResults, tup)
     global loop_counter
     loop_counter += 1
 
@@ -101,8 +97,8 @@ end
 
 loop_counter = 0
 
-run(sim;
-        output_dir=output_dir,
+run(sim, m, N;
+        results_output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=outer_loop_func, 
@@ -112,64 +108,62 @@ run(sim;
 
 loop_counter = 0
 
-run(sim;
-        output_dir=output_dir,
+run(sim, m, N;
+        results_output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=inner_loop_func, 
         scenario_placement=Mimi.INNER)
 
-@test loop_counter == sim.trials * 6
+@test loop_counter == res.sim.trials * 6
 
-function other_loop_func(sim::Simulation, tup)
+function other_loop_func(sim_results::SimulationResults, tup)
     global loop_counter
     loop_counter += 10
 end
 
-function pre_trial(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+function pre_trial(sim_results::SimulationResults, trialnum::Int, ntimesteps::Int, tup::Tuple)
     global loop_counter
     loop_counter += 1
 end
 
 loop_counter = 0
 
-run(sim;
-        output_dir=output_dir,
+res = run(sim, m, N;
+        results_output_dir=output_dir,
         pre_trial_func=pre_trial,
         scenario_func=other_loop_func,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]])
 
-@test loop_counter == 6 * sim.trials + 60
+@test loop_counter == 6 * res.sim.trials + 60
 
 
-function post_trial(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
+function post_trial(sim_results::SimulationResults, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
     global loop_counter    
     loop_counter += 1
 
-    m = sim.models[1]
+    m = sim_results.models[1]
     # println("grosseconomy.share: $(m[:grosseconomy, :share])")
 end
 
 loop_counter = 0
 
 N = 10
-run(sim;
-        trials = N,
-        output_dir=output_dir,
+res = run(sim, m, N;
+        results_output_dir=output_dir,
         post_trial_func=post_trial)
 
-@test loop_counter == sim.trials
+@test loop_counter == res.sim.trials
 
 N = 1000
 
 # Test new values generated for Sobol sampling
+res1 = run(sim, m, N)
+trial1 = copy(res1.sim.rvdict[:name1].dist.values)
 
-generate_trials!(sim, N)
-trial1 = copy(sim.rvdict[:name1].dist.values)
-
-generate_trials!(sim, N)
-trial2 = copy(sim.rvdict[:name1].dist.values)
+res2 = run(sim, m, N)
+trial2 = copy(res2.sim.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 == trial2 # deterministic

@@ -497,7 +497,7 @@ function Base.run(sim::Simulation{T}, models::Union{Vector{Model}, Model}, sampl
                     output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
                 end
 
-                for m in ressim.models   # note that list of models may be changed in scenario_func
+                for m in sim_results.models   # note that list of models may be changed in scenario_func
                     @debug "Running model"
                     run(m, ntimesteps=ntimesteps)
                 end

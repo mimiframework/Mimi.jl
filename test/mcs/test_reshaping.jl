@@ -45,12 +45,7 @@ mcs = @defsim begin
 end
 
 output_dir = joinpath(tempdir(), "mcs")
+run(mcs, m, N; results_output_dir = output_dir, trials_output_filename = joinpath(output_dir, "trialdata.csv"))
 
-generate_trials!(mcs, N, filename=joinpath(output_dir, "trialdata.csv"))
-
-# Test that the proper number of trials were saved
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names
-
-set_models!(mcs, m)
-run(mcs, output_dir=output_dir)
