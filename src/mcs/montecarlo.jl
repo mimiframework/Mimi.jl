@@ -493,12 +493,12 @@ function run_sim(sim::Simulation{T};
                 _restore_sim_params!(sim, original_values)
 
                 counter += 1
-                ProgressMeter.update!(p, counter)                
-            end
-
-            if has_inner_scenario && has_output_dir
-                save_trial_results(sim, output_dir)
-                _reset_results!(sim)
+                ProgressMeter.update!(p, counter)  
+                
+                if has_inner_scenario && has_output_dir
+                    save_trial_results(sim, output_dir)
+                    _reset_results!(sim)
+                end              
             end
         end
 
