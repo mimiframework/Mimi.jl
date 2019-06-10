@@ -50,7 +50,7 @@ results = zeros(num_scenarios, num_trials)
 _values = collect(1:10)
 _probs = 0.1 * ones(10)
 
-mcs_test = @defsim begin
+sd = @defsim begin
     sampling(LHSData)
     p = EmpiricalDistribution(_values, _probs)
 end 
@@ -64,13 +64,13 @@ scenario_args = [
     :num => collect(1:num_scenarios)
 ]
 
-function scenario_func(sim_results::SimulationResults{T}, tup::Tuple) where T <: AbstractSimulationData
+function scenario_func(sim_inst::SimulationInstance{T}, tup::Tuple) where T <: AbstractSimulationData
     nothing
 end
 
-function post_trial_func(sim_results::SimulationResults{T}, trialnum::Int, ntimesteps::Int, 
+function post_trial_func(sim_inst::SimulationInstance{T}, trialnum::Int, ntimesteps::Int, 
                          tup::Tuple)  where T <: AbstractSimulationData
-    m, = sim_results.models
+    m, = sim_inst.models
     scenario_num, = tup
     results[scenario_num, trialnum] = m[:test, :p]
 end
@@ -79,14 +79,14 @@ m = Model()
 set_dimension!(m, :time, 2000:2001)
 add_comp!(m, test)
 
-res = run(mcs_test, m, num_trials;
+si = run(sd, m, num_trials;
     results_output_dir = output_dir,
     scenario_args = scenario_args,
     scenario_func = scenario_func, 
     post_trial_func = post_trial_func
     )
 
-for rv in values(res.sim.rvdict)
+for rv in values(si.sim_def.rvdict)
     @test rv.dist isa Mimi.SampleStore
 end
 
@@ -96,14 +96,14 @@ end
 
 rm(output_dir, recursive = true)
 
-res1 = run(mcs_test, m, num_trials)
-trial1 = copy(collect(values(res1.sim.rvdict))[1].dist.values)
+res1 = run(sd, m, num_trials)
+trial1 = copy(collect(values(res1.sim_def.rvdict))[1].dist.values)
 
-for rv in values(res1.sim.rvdict)
+for rv in values(res1.sim_def.rvdict)
     @test rv.dist isa Mimi.SampleStore
 end
 
-res2 = run(mcs_test, m, num_trials)
-trial2 = copy(collect(values(res2.sim.rvdict))[1].dist.values)
+res2 = run(sd, m, num_trials)
+trial2 = copy(collect(values(res2.sim_def.rvdict))[1].dist.values)
 
 @test trial1!=trial2

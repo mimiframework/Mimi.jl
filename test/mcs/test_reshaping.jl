@@ -17,7 +17,7 @@ m = create_model()
 
 N = 100
 
-mcs = @defsim begin
+sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -45,7 +45,7 @@ mcs = @defsim begin
 end
 
 output_dir = joinpath(tempdir(), "mcs")
-run(mcs, m, N; results_output_dir = output_dir, trials_output_filename = joinpath(output_dir, "trialdata.csv"))
+si = run(sd, m, N; results_output_dir = output_dir, trials_output_filename = joinpath(output_dir, "trialdata.csv"))
 
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names

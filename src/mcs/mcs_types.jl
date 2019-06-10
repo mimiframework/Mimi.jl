@@ -117,11 +117,11 @@ end
 abstract type AbstractSimulationData end
 
 """
-    Simulation
+    SimulationDef
     
 Holds all the data that defines a simulation.
 """
-mutable struct Simulation{T}
+mutable struct SimulationDef{T}
     trials::Int
     current_trial::Int
     current_data::Any               # holds data for current_trial when current_trial > 0
@@ -132,7 +132,7 @@ mutable struct Simulation{T}
     data::T                         # data specific to a given sensitivity analysis method
     payload::Any                    # opaque (to Mimi) data the user wants access to in callbacks
 
-    function Simulation{T}(rvlist::Vector, 
+    function SimulationDef{T}(rvlist::Vector, 
                            translist::Vector{TransformSpec}, 
                            savelist::Vector{Tuple{Symbol, Symbol}},
                            data::T) where T <: AbstractSimulationData
@@ -156,18 +156,18 @@ mutable struct Simulation{T}
 end
 
 """
-    SimulationResults{T}
+    SimulationInstance{T}
     
 Holds all the data that defines simulation results.
 """
-mutable struct SimulationResults{T}
-    sim::Simulation{T} where T <: AbstractSimulationData
+mutable struct SimulationInstance{T}
+    sim_def::SimulationDef{T} where T <: AbstractSimulationData
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
 
-    function SimulationResults{T}(sim::Simulation{T}) where T <: AbstractSimulationData
+    function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
-        self.sim = deepcopy(sim)
+        self.sim_def = deepcopy(sim_def)
         
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{Model}(undef, 0)
@@ -178,29 +178,29 @@ mutable struct SimulationResults{T}
 end
 
 """
-    set_payload!(sim::Simulation, payload) 
+    set_payload!(sim_def::SimulationDef, payload) 
 
-Attach a user's `payload` to the `Simulation` instance so it can be
+Attach a user's `payload` to the `SimulationDef` instance so it can be
 accessed in scenario and pre-/post-trial callback functions. The value
 is not used by Mimi in any way; it can be anything useful to the user.
 """
-set_payload!(sim::Simulation, payload) = (sim.payload = payload)
+set_payload!(sim_def::SimulationDef, payload) = (sim_def.payload = payload)
 
 """
-    payload(sim::Simulation)
+    payload(sim_def::SimulationDef)
 
 Return the `payload` value set by the user via `set_payload!()`.
 """
-payload(sim::Simulation) = sim.payload
+payload(sim_def::SimulationDef) = sim_def.payload
 
 struct MCSData <: AbstractSimulationData end
 
-const MonteCarloSimulation = Simulation{MCSData}
+const MonteCarloSimulationDef = SimulationDef{MCSData}
 
 struct SimIterator{NT, T}
-    sim::Simulation{T}
+    sim_def::SimulationDef{T}
 
-    function SimIterator{NT}(sim::Simulation{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
-        return new{NT, T}(sim)
+    function SimIterator{NT}(sim_def::SimulationDef{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
+        return new{NT, T}(sim_def)
     end
 end

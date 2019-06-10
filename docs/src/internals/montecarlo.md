@@ -2,17 +2,17 @@
 
 ## Overview
 
-Sensitivity Analysis support consists of two primary user-facing elements:
+Sensitivity Analysis support consists of the following primary user-facing elements:
 
 1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
-2. The `run` function, which runs a simulation, setting the model(s) on which a simulation can be run with `set_models!`, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
+2. The `run` function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run with `set_models!`, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
 
-These are described further below.
+These are described further below. We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
 
 ## The @defsim macro
 
-Sensitivity Analysis Simulations are defined using the macro `@defsim`, which does the following:
+Sensitivity Analysis SimulationDefs are defined using the macro `@defsim`, which does the following:
 
 * Defines random variables (RV) by assigning names to distributions, which can be any object that supports the following function:
   
@@ -45,7 +45,7 @@ Sensitivity Analysis Simulations are defined using the macro `@defsim`, which do
 
 * Defines desired rank correlations between pairs of random variables. Approximate rank correlation is achieved by re-ordering vectors of random draws as per Iman and Conover (1982).
 
-The `@defsim` macro returns a `Simulation{T}` instance, which contains all the definition information in a form that can be applied at run-time. The `T` in `Simulation{T}` is any type that your application would like to live inside the `Simulation` struct. We have implemented three types for `T <: AbstractSimulationData`:
+The `@defsim` macro returns a `SimulationDef{T}` instance, which contains all the definition information in a form that can be applied at run-time. The `T` in `SimulationDef{T}` is any type that your application would like to live inside the `SimulationDef` struct. We have implemented three types for `T <: AbstractSimulationData`:
 1. Simple random-sampling Monte Carlo Simulation (`MCSData`),
 2. Latin Hypercube Sampling (`LHSData`), and
 3. Sobol sampling and analysis (`SobolData`)
@@ -53,14 +53,14 @@ The `@defsim` macro returns a `Simulation{T}` instance, which contains all the d
 We also define type constants with friendlier names for these parameterized types:
 
 ```julia
-const MonteCarloSimulation = Simulation{MCSData}
+const MonteCarloSimulationDef = SimulationDef{MCSData}
 
-const LatinHypercubeSimulation = Simulation{LHSData}
+const LatinHypercubeSimulationDef = SimulationDef{LHSData}
 
-const SobolSimulation = Simulation{SobolData}
+const SobolSimulationDef = SimulationDef{SobolData}
 ```
 
-Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling. Note that in the current implementation, rank correlation between parameters is supported only for `LatinHypercubeSimulation`.
+Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling. Note that in the current implementation, rank correlation between parameters is supported only for `LatinHypercubeSimulationDef`.
 
 ## Assigning distributions
 
@@ -130,14 +130,14 @@ of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
 ## The run function
 
-In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationResults`, holding a mutated copy of the original `Simulation` with additional trial information as well as a list of references ot the models and a Dictionary of results. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a mutated copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and a Dictionary of results. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
 The full signature for the `run` is:
 
 ```
-function Base.run(sim::Simulation{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
+function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
                  ntimesteps::Int=typemax(Int), 
                  trials_output_filename::Union{Nothing, AbstractString}=nothing, 
                  results_output_dir::Union{Nothing, AbstractString}=nothing, 
@@ -149,7 +149,7 @@ function Base.run(sim::Simulation{T}, models::Union{Vector{Model}, Model}, sampl
                  results_in_memory::Bool=true) where T <: AbstractSimulationData
 ```
 
-Run the simulation `sim` for the `models` using `samplesize` samples.
+Run the simulation definition `sim_def` for the `models` using `samplesize` samples.
 
 Optionally run the `models` for `ntimesteps`, if specified, 
 else to the maximum defined time period. Note that trial data are applied to all the 
@@ -163,7 +163,7 @@ to false, then results will be cleared from memory and only stored in the
 If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
 just before or after (respectively) running a trial. The functions must have the signature:
 
-    fn(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    fn(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Tuple)
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
 of all scenario value vectors. In situations in which you want the simulation loop to run only
@@ -174,25 +174,25 @@ If provided, `scenario_args` must be a `Vector{Pair}`, where each `Pair` is a sy
 `Vector` of arbitrary values that will be meaningful to `scenario_func`, which must have
 the signature:
 
-    scenario_func(sim::Simulation, tup::Tuple)
+    scenario_func(sim_inst::SimulationInstance, tup::Tuple)
 
 By default, the scenario loop encloses the simulation loop, but the scenario loop can be
 placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 
-Returns the type `SimulationResults` that contains a copy of the original `Simulation`,
+Returns the type `SimulationInstance` that contains a copy of the original `SimulationDef`,
 along with mutated information about trials, in addition to the model list and 
 results information.
 
 ### The set_models! function
 
-The `run` function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationResults` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `Simulation` instance:
+The `run` function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationInstance` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `SimulationDef`:
 	
 ```
-set_models!(sim_results::SimulationResults, models::Vector{Model})
-set_models!(sim_results::SimulationResults, m::Model)
-set_models!(sim_results::SimulationResults, mm::MarginalModel)
+set_models!(sim_inst::SimulationInstance, models::Vector{Model})
+set_models!(sim_inst::SimulationInstance, m::Model)
+set_models!(sim_inst::SimulationInstance, mm::MarginalModel)
 ```
 
 ### The generate_trials! function
@@ -200,10 +200,10 @@ set_models!(sim_results::SimulationResults, mm::MarginalModel)
 The `generate_trials!` function is used to pre-generate data using the given `samplesize` and save all random variable values in the file `filename`. Its calling signature is:
 
 ```julia
-  generate_trials!(sim::Simulation, samplesize::Int; filename::Union{String, Nothing}=nothing)
+  generate_trials!(sim_def::SimulationDefinition, samplesize::Int; filename::Union{String, Nothing}=nothing)
 ```
 
-If the `sim` parameter has multiple scenarios and the `scenario_loop` placement is set to `OUTER`, this function must be called if the user wants to ensure the same trial data be used in each scenario. If this function is not called, new trial data will be generated for each scenario. 
+If the `sim_def` parameter has multiple scenarios and the `scenario_loop` placement is set to `OUTER`, this function must be called if the user wants to ensure the same trial data be used in each scenario. If this function is not called, new trial data will be generated for each scenario. 
 
 Also note that if the `filename` argument is used, all random variable draws are saved to the given filename. Internally, any `Distribution` instance is converted to a `SampleStore` and the values are subsequently returned in the order generated when `rand!` is called.
 
@@ -215,7 +215,7 @@ In many cases, scenarios (which we define as a choice of values from a discrete 
 
 Of course, the SA subsystem does not know what you want to do with these values, so the user must also provide a callback function in the `scenario_func` argument. This function must be defined with the signature:
 
-`function any_name_you_like(sim_results::SimulationResults, tup)`
+`function any_name_you_like(sim_inst::SimulationInstance, tup)`
 
 where `tup` is an element of the set of tuples produced by calling `Itertools.product()` on all the scenario arguments. In the example above, this would produce the following vector of tuples:
 
@@ -261,7 +261,7 @@ end
 
 ### Running Multiple Models
 
-In some simulations, a baseline model needs to be compared to one or more models that are perturbed parametrically or structurally (i.e., with different components or equations.) To support this, the `Simulation` type holds a vector of `Model` instances, and allows the caller to specify how many of these to run automatically for each trial. Note that regardless of how many models are run, the random variables are applied to all of the models associated with the simulation.
+In some simulations, a baseline model needs to be compared to one or more models that are perturbed parametrically or structurally (i.e., with different components or equations.) To support this, the `SimulationInstance` type holds a vector of `Model` instances, and allows the caller to specify how many of these to run automatically for each trial. Note that regardless of how many models are run, the random variables are applied to all of the models associated with the simulation.
 
 By default, all defined models are run. In some cases, you may want to run some of the models "manually" in the `pre_trial_func` or `post_trial_func`, which allow you to make arbitrary modifications to these additional models.
 
@@ -275,7 +275,7 @@ using Distributions
 
 N = 100
 
-sim = @defsim begin
+sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -308,7 +308,7 @@ include("../../examples/tutorial/02-two-region-model/main.jl")
 m = model
 
 # Optionally, user functions can be called just before or after a trial is run
-function print_result(m::Model, sim_results::SimulationResults, trialnum::Int)
+function print_result(m::Model, sim_inst::SimulationInstance, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
@@ -320,11 +320,11 @@ results_output_dir = joinpath(tempdir(), "sim")
 N = 100
 
 # Run trials and save trials results to the indicated directories
-res = run(sim, m, N; trials_output_filename=trials_output_filename, results_output_dir=results_output_dir)
+si = run(sd, m, N; trials_output_filename=trials_output_filename, results_output_dir=results_output_dir)
 ```
 
 ### Simulation Modification Functions
-A small set of unexported functions are available to modify an existing `Simulation`.  The functions include:
+A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
 * `deleteRV!`
 * `addRV!`
 * `replaceRV!`
