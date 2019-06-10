@@ -494,7 +494,7 @@ function Base.run(sim::Simulation{T}, models::Union{Vector{Model}, Model}, sampl
                     @debug "Calling inner scenario_func with $inner_tup"
                     scenario_func(sim_results, inner_tup)
 
-                    output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
+                    results_output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
                 end
 
                 for m in sim_results.models   # note that list of models may be changed in scenario_func
@@ -512,12 +512,12 @@ function Base.run(sim::Simulation{T}, models::Union{Vector{Model}, Model}, sampl
 
                 counter += 1
                 ProgressMeter.update!(p, counter)                
-            end
 
-            if has_inner_scenario && has_results_output_dir
-                save_trial_results(sim_results, results_output_dir)
-                if ! results_in_memory
-                    _reset_results!(sim_results)
+                if has_inner_scenario && has_results_output_dir
+                    save_trial_results(sim_results, results_output_dir)
+                    if ! results_in_memory
+                        _reset_results!(sim_results)
+                    end
                 end
             end
         end
