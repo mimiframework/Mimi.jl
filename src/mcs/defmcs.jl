@@ -165,7 +165,7 @@ macro defsim(expr)
         # TBD: need to generalize this to support other methods
         return :(Simulation{$simdatatype}(
                     [$(_rvs...)],
-                    [$(_transforms...)],  
+                    TransformSpec[$(_transforms...)],  
                     Tuple{Symbol, Symbol}[$(_saves...)],
                     $data))
     end
