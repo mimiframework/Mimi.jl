@@ -178,6 +178,15 @@ mutable struct SimulationInstance{T}
 end
 
 """
+    SimulationDef{T}() where T <: AbstractSimulationData
+
+Allow creation of an "empty" SimulationDef instance.
+"""
+function SimulationDef{T}() where T <: AbstractSimulationData
+    SimulationDef{T}([], TransformSpec[], Tuple{Symbol, Symbol}[], T())
+end
+
+"""
     set_payload!(sim_def::SimulationDef, payload) 
 
 Attach a user's `payload` to the `SimulationDef` instance so it can be
