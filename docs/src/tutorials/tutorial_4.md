@@ -254,7 +254,7 @@ base = construct_dice()
 marginal = construct_marginal_dice(year) 
 
 # Run
-si = run!(sd, [base, marginal], N; trials_output_filename = "ecs_sample.csv", post_trial_func = my_scc_calculation)
+si = run(sd, [base, marginal], N; trials_output_filename = "ecs_sample.csv", post_trial_func = my_scc_calculation)
 ```
 ## Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
