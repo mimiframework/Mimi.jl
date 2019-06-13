@@ -4,6 +4,7 @@ import TableTraits
 using Random
 using ProgressMeter
 using Serialization
+using CSVFiles
 using FileIO
 
 function print_nonempty(name, vector)
@@ -97,7 +98,7 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     return trial_df
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::String, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, streams::Dict{String, FileIO.Stream}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
     model_index = 1
@@ -109,15 +110,14 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, sc
                 # get sub_dir, which is different from output_dir if there are multiple models
                 if (length(sim_inst.results) > 1)
                     sub_dir = joinpath(output_dir, "model_$(model_index)")
-                    mkpath(sub_dir, mode=0o750) 
                 else
                     sub_dir = output_dir   
-                    trial_df_filtered = trial_df
                 end      
-                
+                mkpath(sub_dir, mode=0o750) 
+
                 # get filtered trial_df, which is different from trial_df if there are multiple scenarios
                 if scen_name !== nothing
-                    trial_df_filtered = filter(row -> row[:scen] .== scen_name, trial_df)
+                    trial_df_filtered = filter(row -> row[:scen] .== scen_name, trial_df)[:, 1:end-1] # remove scen field
                 else
                     trial_df_filtered = trial_df
                 end
@@ -131,16 +131,16 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, sc
 end
 
 """
-    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, IOStream})
+    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, FileIO.Stream})
 
 Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
 """
-function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
+function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, FileIO.Stream}) where T <: AbstractSimulationData
     filename = joinpath(output_dir, "$datum_name.csv")
     if haskey(streams, filename)
-        savestreaming(streams[filename], trial_df)
+        CSVFiles.savestreaming(streams[filename], trial_df)
     else
-        streams[filename] = savestreaming(filename, trial_df)
+        streams[filename] = CSVFiles.savestreaming(filename, trial_df)
     end
 end
 
@@ -502,7 +502,7 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
         _reset_rvs!(sim_inst.sim_def)
 
         # Create a Dictionary of streams
-        streams = Dict{String, IOStream}()
+        streams = Dict{String, FileIO.Stream}()
 
         try 
             for (i, trialnum) in enumerate(trials)

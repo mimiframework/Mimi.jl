@@ -96,14 +96,14 @@ end
 
 rm(output_dir, recursive = true)
 
-res1 = run(sd, m, num_trials)
-trial1 = copy(collect(values(res1.sim_def.rvdict))[1].dist.values)
+si1 = run(sd, m, num_trials)
+trial1 = copy(collect(values(si1.sim_def.rvdict))[1].dist.values)
 
-for rv in values(res1.sim_def.rvdict)
+for rv in values(si1.sim_def.rvdict)
     @test rv.dist isa Mimi.SampleStore
 end
 
-res2 = run(sd, m, num_trials)
-trial2 = copy(collect(values(res2.sim_def.rvdict))[1].dist.values)
+si2 = run(sd, m, num_trials)
+trial2 = copy(collect(values(si2.sim_def.rvdict))[1].dist.values)
 
 @test trial1!=trial2

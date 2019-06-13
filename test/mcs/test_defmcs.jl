@@ -44,7 +44,6 @@ sd = @defsim begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-
 # Optionally, user functions can be called just before or after a trial is run
 function print_result(m::Model, sim_inst::SimulationInstance, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
@@ -79,6 +78,15 @@ results_getindex2 = si[:grosseconomy, :K, model = 1] # Base.getindex
 
 @test results_getindex == results_mem
 @test results_getindex2 == results_mem
+
+# test that disk results equal in memory results
+results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
+results_disk[:,2] = Symbol.(results_disk[:,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 #
 # Test scenario loop capability
@@ -119,6 +127,17 @@ results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
 results_getindex = si[:grosseconomy, :K] # Base.getindex
 @test results_getindex == results_mem
 
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
+results_mem = results_mem |> @filter(_.scen == "high_0.03") |> DataFrame
+
+results_disk[:,2] = Symbol.(results_disk[:,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
 loop_counter = 0
 
 si = run(sd, m, N;
@@ -130,7 +149,6 @@ si = run(sd, m, N;
 
 @test loop_counter == N * 6
 
-
 function other_loop_func(sim_inst::SimulationInstance, tup)
     global loop_counter
     loop_counter += 10
@@ -140,6 +158,17 @@ function pre_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int,
     global loop_counter
     loop_counter += 1
 end
+
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)] |> @filter(_.scen == "high_0.03") |> DataFrame
+
+results_disk[:,2] = Symbol.(results_disk[:,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 loop_counter = 0
 
@@ -152,6 +181,16 @@ si = run(sd, m, N;
 
 @test loop_counter == 6 * N + 60
 
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)] |> @filter(_.scen == "high_0.03") |> DataFrame
+
+results_disk[:,2] = Symbol.(results_disk[:,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 function post_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
     global loop_counter    
@@ -169,6 +208,17 @@ si = run(sd, m, N;
         post_trial_func=post_trial)
 
 @test loop_counter == N
+
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)]
+
+results_disk[:,2] = Symbol.(results_disk[:,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 N = 1000
 

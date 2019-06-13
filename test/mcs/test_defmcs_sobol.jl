@@ -57,8 +57,16 @@ si = run(sd, m, N; trials_output_filename=joinpath(output_dir, "trialdata.csv"),
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == si.sim_def.trials+1 # extra row for column names
 
+# Check files saved to disk compared to data saved in memory
+results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)]
+
+results_disk[:,2] = Symbol.(results_disk[:,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
 # do some analysis
-E = CSVFiles.load(joinpath(output_dir, "E.csv")) |> DataFrame
+E = CSVFiles.load(joinpath(output_dir, "emissions_E.csv")) |> DataFrame
 results = analyze(si, E[1:60:end, 3])
 
 function show_E_Region(year::Int; region = "Region1", bins=40)
@@ -71,6 +79,10 @@ function show_E_Region(year::Int; region = "Region1", bins=40)
 
     df |> @vlplot(:bar, x={:E, bin=true}, y="count()")
 end
+
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 #
 # Test scenario loop capability
@@ -95,6 +107,9 @@ function inner_loop_func(sim_inst::SimulationInstance, tup)
     @debug "inner loop: scen:$scen, rate:$rate"
 end
 
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
 loop_counter = 0
 
 si = run(sd, m, N;
@@ -105,6 +120,9 @@ si = run(sd, m, N;
         scenario_placement=Mimi.OUTER)
  
 @test loop_counter == 6
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 loop_counter = 0
 
@@ -127,6 +145,9 @@ function pre_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int,
     loop_counter += 1
 end
 
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
 loop_counter = 0
 
 si = run(sd, m, N;
@@ -139,13 +160,16 @@ si = run(sd, m, N;
 @test loop_counter == 6 * si.sim_def.trials + 60
 
 
-function post_trial(sim_inst::SimulationResults, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
+function post_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
     global loop_counter    
     loop_counter += 1
 
     m = sim_inst.models[1]
     # println("grosseconomy.share: $(m[:grosseconomy, :share])")
 end
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 loop_counter = 0
 
@@ -155,6 +179,9 @@ si = run(sd, m, N;
         post_trial_func=post_trial)
 
 @test loop_counter == si.sim_def.trials
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 N = 1000
 
