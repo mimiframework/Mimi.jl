@@ -96,7 +96,7 @@ some of the models, the remainder of the runs can be handled using a `pre_trial_
 
  Finally, use `run` which runs a simulation, indicating the `sim_def`, the `models` is a model, marginal model, or list of models to be run by your `sim_def` simulation, and `samplesize` the number of samples to use.
  
-  In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a mutated copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and a Dictionary of results. Optionally, trial values and/or model results are saved to CSV files. Optionally, trial values and/or model results are saved to CSV files.  View the internals documentation for **critical and useful details on the full signature of this function**:
+  In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a mutated copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and a Dictionary of results. Optionally, trial values and/or model results are saved to CSV files. Optionally, trial values and/or model results are saved to CSV files.  Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. View the internals documentation for **critical and useful details on the full signature of this function**:
 
 ```
 function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
@@ -117,6 +117,9 @@ Here, we first employ `run` to obtain results:
 
 # Run 100 trials and save results to the indicated directories, one CSV file per RV for the results
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi")
+
+# Explore the results saved in-memory
+results = si[:grosseconomy, :K] # model index chosen defaults to 1
 ```
 
 and then again using our user-defined post-trial function as the `post_trial_func` parameter:
@@ -124,6 +127,9 @@ and then again using our user-defined post-trial function as the `post_trial_fun
 ```julia
 # Same thing but with a post-trial function
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi", post_trial_func=print_result)
+
+# Explore the results saved in-memory
+results = si[:grosseconomy, :K] # model index chosen defaults to 1
 ```
 ## Advanced Post-trial Functions
 

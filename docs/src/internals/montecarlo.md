@@ -130,7 +130,7 @@ of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
 ## The run function
 
-In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a mutated copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and a Dictionary of results. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a mutated copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
@@ -158,7 +158,12 @@ associated models even when running only a portion of them.
 If provided, the generated trials and results will be saved in the indicated 
 `trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set
 to false, then results will be cleared from memory and only stored in the
-`results_output_dir`.
+`results_output_dir`. After `run`, the results of a `SimulationInstance` can be accessed using
+the familiar `getindex` function with the following signature, which returns a `DataFrame`. 
+
+```
+Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+```
 
 If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
 just before or after (respectively) running a trial. The functions must have the signature:
@@ -267,7 +272,7 @@ By default, all defined models are run. In some cases, you may want to run some 
 
 **Example**
 
-The following example is available in `"Mimi.jl/test/mcs/test_defsim.jl"`.
+The following example is derived from `"Mimi.jl/test/mcs/test_defmcs.jl"`.
 
 ```julia
 using Mimi
@@ -321,8 +326,10 @@ N = 100
 
 # Run trials and save trials results to the indicated directories
 si = run(sd, m, N; trials_output_filename=trials_output_filename, results_output_dir=results_output_dir)
-```
 
+# take a look at the results
+results = si[:grosseconomy, :K] # model index chosen defaults to 1
+```
 ### Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
 * `deleteRV!`
