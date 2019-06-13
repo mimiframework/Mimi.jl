@@ -5,7 +5,6 @@ using Random
 using ProgressMeter
 using Serialization
 using FileIO
-using Query 
 
 function print_nonempty(name, vector)
     if length(vector) > 0
@@ -118,7 +117,7 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, sc
                 
                 # get filtered trial_df, which is different from trial_df if there are multiple scenarios
                 if scen_name !== nothing
-                    trial_df_filtered = trial_df |> @filter(_.scen == scen_name) |> DataFrame
+                    trial_df_filtered = filter(row -> row[:scen] .== scen_name, trial_df)
                 else
                     trial_df_filtered = trial_df
                 end
