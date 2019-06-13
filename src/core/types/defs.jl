@@ -114,6 +114,8 @@ end
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
 global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
+global const NamespaceElement = Union{ParameterDefReference, VariableDefReference, AbstractComponentDef}
+
 @class mutable CompositeComponentDef <: ComponentDef begin
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Binding}
@@ -122,6 +124,8 @@ global const ExportsDict = Dict{Symbol, AbstractDatumReference}
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
     external_params::Dict{Symbol, ModelParameter}               # TBD: make key (ComponentPath, Symbol)?
+
+    namespace::Dict{Symbol, NamespaceElement}
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}

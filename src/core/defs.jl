@@ -28,7 +28,6 @@ compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj
 
 compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.comps_dict[comp_name]
 
-
 has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
 
 compdefs(c::AbstractCompositeComponentDef) = values(c.comps_dict)
@@ -44,9 +43,6 @@ compmodule(obj::AbstractComponentDef) = compmodule(obj.comp_id)
 compname(obj::AbstractComponentDef)   = compname(obj.comp_id)
 
 compnames() = map(compname, compdefs())
-
-# Access a subcomponent as comp[:name]
-Base.getindex(obj::AbstractCompositeComponentDef, name::Symbol) = obj.comps_dict[name]
 
 """
      is_detached(obj::AbstractComponentDef)
@@ -129,6 +125,30 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
 
     epc_filter = x -> x.comp_path != comp_path
     filter!(epc_filter, ccd.external_param_conns)
+end
+
+#
+# Add [] indexing and key lookup to composites to access namespace
+#
+@delegate Base.haskey(comp::AbstractCompositeComponentDef, key::Symbol) => namespace
+@delegate Base.getindex(comp::AbstractCompositeComponentDef, key::Symbol) => namespace
+
+function Base.setindex!(comp::AbstractCompositeComponentDef, value::T, key::Symbol) where T <: NamespaceElement
+    # Allow replacement of existing values for a key only with items of the same type.
+    if haskey(comp, key)
+        elt_type = typeof(comp[key])
+        elt_type == T || error("Cannot replace item $key, type $elt_type, with object type $T in component $(comp.comp_path).")
+    end
+
+    comp.namespace[key] = value
+
+    # Also store in comps_dict, if value is a component
+    # TBD: drop comps_dict in favor of namespace for both purposes
+    if value isa AbstractComponentDef
+        comp.comps_dict[key] = value
+    end
+
+    return value
 end
 
 #
@@ -748,10 +768,6 @@ end
 # Model
 #
 
-function _append_comp!(obj::AbstractCompositeComponentDef, comp_name::Symbol, comp_def::AbstractComponentDef)
-   obj.comps_dict[comp_name] = comp_def
-end
-
 function _add_anonymous_dims!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     for (name, dim) in filter(pair -> pair[2] !== nothing, comp_def.dim_dict)
         # @info "Setting dimension $name to $dim"
@@ -760,7 +776,15 @@ function _add_anonymous_dims!(obj::AbstractCompositeComponentDef, comp_def::Abst
 end
 
 function comps_dict!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symbol, AbstractComponentDef})
-    obj.comps_dict = comps
+    for key in keys(obj.comps_dict)
+        delete!(obj.namespace, key)
+    end
+    empty!(obj.comps_dict)
+
+    for (key, value) in comps
+        obj[key] = value            # adds to both comps_dict and namespace
+    end
+    
     dirty!(obj)
 end
 
@@ -783,7 +807,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     comp_name = nameof(comp_def)
 
     if before === nothing && after === nothing
-        _append_comp!(obj, comp_name, comp_def)   # add it to the end
+        obj[comp_name] = comp_def   # add to comps_dict and to namespace
     else
         new_comps = OrderedDict{Symbol, AbstractComponentDef}()
 
