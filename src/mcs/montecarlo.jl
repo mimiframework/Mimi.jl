@@ -4,6 +4,7 @@ import TableTraits
 using Random
 using ProgressMeter
 using Serialization
+using FileIO
 
 function print_nonempty(name, vector)
     if length(vector) > 0
@@ -47,7 +48,8 @@ function Base.show(obj::T) where T <: AbstractSimulationData
     nothing
 end
 
-# Store results for a single parameter
+# Store results for a single parameter and return the dataframe for this particular
+# trial/scenario 
 function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
@@ -70,7 +72,12 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             results[datum_key] = results_df
         end
 
-        has_scen ? push!(results_df, [value, trialnum, scen_name]) : push!(results_df, [value, trialnum])
+        if has_scen 
+            trial_df = DataFrame(typeof(value) => value, :trialnum => trialnum, :scen => scen_name)
+        else
+            trial_df = DataFrame(typeof(value) => value, :trialnum => trialnum)
+        end
+        append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
     else
@@ -88,41 +95,35 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             results[datum_key] = trial_df
         end
     end
+
+    return trial_df
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}) where T <: AbstractSimulationData
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, results_output_dir::String, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
     for (m, results) in zip(sim_inst.models, sim_inst.results)
         for datum_key in savelist
-            _store_param_results(m, datum_key, trialnum, scen_name, results)
+            trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
+            if ! (results_output_dir === nothing)
+                datum_name = join(map(string, datum_key), "_")
+                save_trial_results(trial_df, datum_name, results_output_dir, streams)
+            end
         end
     end
 end
 
 """
-    save_trial_results(sim_inst::SimulationInstance, output_dir::String)
+    save_trial_results(trial_df::DataFrame, sim_inst::SimulationInstance, output_dir::String, streams::Dict{String, IOStream})
 
-Save the stored simulation results to files in the directory `output_dir`
+Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
 """
-function save_trial_results(sim_inst::SimulationInstance{T}, output_dir::AbstractString) where T <: AbstractSimulationData
-    multiple_results = (length(sim_inst.results) > 1)
-
-    mkpath(output_dir, mode=0o750)
-    
-    for (i, results) in enumerate(sim_inst.results)
-        if multiple_results
-            sub_dir = joinpath(output_dir, "model_$i")
-            mkpath(sub_dir, mode=0o750)
-        else
-            sub_dir = output_dir 
-        end
-
-        for datum_key in sim_inst.sim_def.savelist
-            (comp_name, datum_name) = datum_key
-            filename = joinpath(sub_dir, "$datum_name.csv")
-            save(filename, results[datum_key])
-        end
+function save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
+    filename = joinpath(output_dir, "$datum_name.csv")
+    if haskey(streams, filename)
+        savestreaming(streams[filename], trial_df)
+    else
+        streams[filename] = savestreaming(filename, trial_df)
     end
 end
 
@@ -403,7 +404,6 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
                  scenario_placement::ScenarioLoopPlacement=OUTER,
                  scenario_args=nothing,
                  results_in_memory::Bool=true) where T <: AbstractSimulationData
-
             
     # Quick check for results saving
     if (!results_in_memory) && (results_output_dir===nothing)
@@ -484,59 +484,56 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
         # Reset internal index to 1 for all stored parameters to reuse the data
         _reset_rvs!(sim_inst.sim_def)
 
-        for (i, trialnum) in enumerate(trials)
-            @debug "Running trial $trialnum"
+        # Create a Dictionary of streams
+        streams = Dict{String, IOStream}
 
-            for inner_tup in arg_tuples_inner
-                tup = has_inner_scenario ? inner_tup : outer_tup
+        try 
+            for (i, trialnum) in enumerate(trials)
+                @debug "Running trial $trialnum"
 
-                _perturb_params!(sim_inst, trialnum)
+                for inner_tup in arg_tuples_inner
+                    tup = has_inner_scenario ? inner_tup : outer_tup
 
-                if pre_trial_func !== nothing
-                    @debug "Calling pre_trial_func($trialnum, $tup)"
-                    pre_trial_func(sim_inst, trialnum, ntimesteps, tup)
-                end               
+                    _perturb_params!(sim_inst, trialnum)
 
-                if has_inner_scenario
-                    @debug "Calling inner scenario_func with $inner_tup"
-                    scenario_func(sim_inst, inner_tup)
+                    if pre_trial_func !== nothing
+                        @debug "Calling pre_trial_func($trialnum, $tup)"
+                        pre_trial_func(sim_inst, trialnum, ntimesteps, tup)
+                    end               
 
-                    results_output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
+                    if has_inner_scenario
+                        @debug "Calling inner scenario_func with $inner_tup"
+                        scenario_func(sim_inst, inner_tup)
 
-                    # we'll need a scenario name for the DataFrame
-                    scen_name = join(map(string, inner_tup), "_")
-                end
+                        results_output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
 
-                for m in sim_inst.models   # note that list of models may be changed in scenario_func
-                    @debug "Running model"
-                    run(m, ntimesteps=ntimesteps)
-                end
-                
-                if post_trial_func !== nothing
-                    @debug "Calling post_trial_func($trialnum, $tup)"
-                    post_trial_func(sim_inst, trialnum, ntimesteps, tup)
-                end
+                        # we'll need a scenario name for the DataFrame
+                        scen_name = join(map(string, inner_tup), "_")
+                    end
 
-                _store_trial_results(sim_inst, trialnum, scen_name)
-                _restore_sim_params!(sim_inst, original_values)
+                    for m in sim_inst.models   # note that list of models may be changed in scenario_func
+                        @debug "Running model"
+                        run(m, ntimesteps=ntimesteps)
+                    end
+                    
+                    if post_trial_func !== nothing
+                        @debug "Calling post_trial_func($trialnum, $tup)"
+                        post_trial_func(sim_inst, trialnum, ntimesteps, tup)
+                    end
 
-                counter += 1
-                ProgressMeter.update!(p, counter)                
+                    _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
+                    _restore_sim_params!(sim_inst, original_values)
 
-                if has_inner_scenario && has_results_output_dir
-                    save_trial_results(sim_inst, results_output_dir)
-                    if ! results_in_memory
+                    counter += 1
+                    ProgressMeter.update!(p, counter)                
+
+                    if has_results_output_dir && ! results_in_memory
                         _reset_results!(sim_inst)
                     end
                 end
             end
-        end
-
-        if ! has_inner_scenario && has_results_output_dir
-            save_trial_results(sim_inst, results_output_dir)
-            if ! results_in_memory
-                _reset_results!(sim_inst)
-            end
+        finally 
+            close.(values(streams))   # use broadcasting to close all stream 
         end
     end
 
