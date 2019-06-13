@@ -48,12 +48,13 @@ function Base.show(obj::T) where T <: AbstractSimulationData
 end
 
 # Store results for a single parameter
-function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
+function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
     dims = dimensions(m, comp_name, datum_name)
-            
+    has_scen = ! (scen_name === nothing)
+
     if length(dims) == 0        # scalar value
         value = m[comp_name, datum_name]
         # println("Scalar: $value")
@@ -61,16 +62,21 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
         if haskey(results, datum_key)
             results_df = results[datum_key]
         else
-            results_df = DataFrame([typeof(value), Int], [datum_name, :trialnum], 0)
+            if has_scen
+                results_df = DataFrame([typeof(value), Int, String], [datum_name, :trialnum, :scen], 0)
+            else
+                results_df = DataFrame([typeof(value), Int], [datum_name, :trialnum], 0)
+            end
             results[datum_key] = results_df
         end
 
-        push!(results_df, [value, trialnum])
+        has_scen ? push!(results_df, [value, trialnum, scen_name]) : push!(results_df, [value, trialnum])
         # println("results_df: $results_df")
 
     else
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[:trialnum] = trialnum
+        has_scen ? trial_df[:scen] = scen_name : nothing
         # println("size of trial_df: $(size(trial_df))")
 
         if haskey(results, datum_key)
@@ -84,12 +90,12 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     end
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int) where T <: AbstractSimulationData
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
     for (m, results) in zip(sim_inst.models, sim_inst.results)
         for datum_key in savelist
-            _store_param_results(m, datum_key, trialnum, results)
+            _store_param_results(m, datum_key, trialnum, scen_name, results)
         end
     end
 end
@@ -450,6 +456,7 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
         end
     else
         arg_tuples = arg_tuples_outer = arg_tuples_inner = (nothing,)
+        scen_name = nothing
     end
     
     # Set up progress bar
@@ -466,6 +473,9 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
 
             # we'll store the results of each in a subdir composed of tuple values
             results_output_dir = _compute_output_dir(orig_results_output_dir, outer_tup)
+
+            # we'll need a scenario name for the DataFrame
+            scen_name = join(map(string, outer_tup), "_")
         end
                 
         # Save the params to be perturbed so we can reset them after each trial
@@ -492,6 +502,9 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
                     scenario_func(sim_inst, inner_tup)
 
                     results_output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
+
+                    # we'll need a scenario name for the DataFrame
+                    scen_name = join(map(string, inner_tup), "_")
                 end
 
                 for m in sim_inst.models   # note that list of models may be changed in scenario_func
@@ -504,7 +517,7 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
                     post_trial_func(sim_inst, trialnum, ntimesteps, tup)
                 end
 
-                _store_trial_results(sim_inst, trialnum)
+                _store_trial_results(sim_inst, trialnum, scen_name)
                 _restore_sim_params!(sim_inst, original_values)
 
                 counter += 1

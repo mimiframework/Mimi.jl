@@ -72,6 +72,14 @@ function show_E_Global(year::Int; bins=40)
               xlabel="Emissions")
 end
 
+# test getindex
+results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
+results_getindex = si[:grosseconomy, :K] # Base.getindex
+results_getindex2 = si[:grosseconomy, :K, model = 1] # Base.getindex
+
+@test results_getindex == results_mem
+@test results_getindex2 == results_mem
+
 #
 # Test scenario loop capability
 #
@@ -106,6 +114,10 @@ si = run(sd, m, N;
  
 @test loop_counter == 6
 
+# test getindex with scenarios
+results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
+results_getindex = si[:grosseconomy, :K] # Base.getindex
+@test results_getindex == results_mem
 
 loop_counter = 0
 

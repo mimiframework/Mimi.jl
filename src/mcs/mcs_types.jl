@@ -213,3 +213,7 @@ struct SimIterator{NT, T}
         return new{NT, T}(sim_def)
     end
 end
+
+function Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+    return sim_inst.results[model][(comp_name, datum_name)]
+end
