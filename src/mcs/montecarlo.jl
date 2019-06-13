@@ -5,6 +5,7 @@ using Random
 using ProgressMeter
 using Serialization
 using FileIO
+using Query 
 
 function print_nonempty(name, vector)
     if length(vector) > 0
@@ -72,11 +73,9 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             results[datum_key] = results_df
         end
 
-        if has_scen 
-            trial_df = DataFrame(typeof(value) => value, :trialnum => trialnum, :scen => scen_name)
-        else
-            trial_df = DataFrame(typeof(value) => value, :trialnum => trialnum)
-        end
+        pairs = Any[typeof(value) => value, :trialnum => trialnum]
+        has_scen && push!(pairs, :scen => scen_name)
+        trial_df = DataFrame(pairs)
         append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
@@ -99,26 +98,45 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     return trial_df
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, results_output_dir::String, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::String, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
+    model_index = 1
     for (m, results) in zip(sim_inst.models, sim_inst.results)
         for datum_key in savelist
             trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
-            if ! (results_output_dir === nothing)
+            if output_dir !== nothing
+
+                # get sub_dir, which is different from output_dir if there are multiple models
+                if (length(sim_inst.results) > 1)
+                    sub_dir = joinpath(output_dir, "model_$(model_index)")
+                    mkpath(sub_dir, mode=0o750) 
+                else
+                    sub_dir = output_dir   
+                    trial_df_filtered = trial_df
+                end      
+                
+                # get filtered trial_df, which is different from trial_df if there are multiple scenarios
+                if scen_name !== nothing
+                    trial_df_filtered = trial_df |> @filter(_.scen == scen_name) |> DataFrame
+                else
+                    trial_df_filtered = trial_df
+                end
+
                 datum_name = join(map(string, datum_key), "_")
-                save_trial_results(trial_df, datum_name, results_output_dir, streams)
+                _save_trial_results(trial_df_filtered, datum_name, sub_dir, streams)
             end
         end
+        model_index += 1
     end
 end
 
 """
-    save_trial_results(trial_df::DataFrame, sim_inst::SimulationInstance, output_dir::String, streams::Dict{String, IOStream})
+    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, IOStream})
 
 Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
 """
-function save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
+function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, IOStream}) where T <: AbstractSimulationData
     filename = joinpath(output_dir, "$datum_name.csv")
     if haskey(streams, filename)
         savestreaming(streams[filename], trial_df)
@@ -485,7 +503,7 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
         _reset_rvs!(sim_inst.sim_def)
 
         # Create a Dictionary of streams
-        streams = Dict{String, IOStream}
+        streams = Dict{String, IOStream}()
 
         try 
             for (i, trialnum) in enumerate(trials)
