@@ -62,14 +62,17 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
         value = m[comp_name, datum_name]
         # println("Scalar: $value")
 
+
         if haskey(results, datum_key)
             results_df = results[datum_key]
-        else
+        else        
+            types = [typeof(value), Int]
+            names = [datum_name, :trialnum]
             if has_scen
-                results_df = DataFrame([typeof(value), Int, String], [datum_name, :trialnum, :scen], 0)
-            else
-                results_df = DataFrame([typeof(value), Int], [datum_name, :trialnum], 0)
+                push!(types, String)
+                push!(names, :scen)
             end
+            results_df = DataFrame(types, names, 0)
             results[datum_key] = results_df
         end
 
@@ -138,9 +141,9 @@ Save the stored simulation results in `trial_df` from trial `trialnum` to files 
 function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, FileIO.Stream}) where T <: AbstractSimulationData
     filename = joinpath(output_dir, "$datum_name.csv")
     if haskey(streams, filename)
-        CSVFiles.savestreaming(streams[filename], trial_df)
+        savestreaming(streams[filename], trial_df)
     else
-        streams[filename] = CSVFiles.savestreaming(filename, trial_df)
+        streams[filename] = savestreaming(filename, trial_df)
     end
 end
 
@@ -426,7 +429,7 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
     if (!results_in_memory) && (results_output_dir===nothing)
         error("The results_in_memory keyword arg is set to ($results_in_memory) and 
         results_output_dir keyword arg is set to ($results_output_dir), thus 
-        results will not be saved eitehr in memory or in a file.")
+        results will not be saved either in memory or in a file.")
     end
 
     # Initiate the SimulationInstance and set the models and trials for the copied 

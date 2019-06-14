@@ -107,9 +107,6 @@ function inner_loop_func(sim_inst::SimulationInstance, tup)
     @debug "inner loop: scen:$scen, rate:$rate"
 end
 
-# delete all created directories and files
-rm(output_dir, recursive = true)
-
 loop_counter = 0
 
 si = run(sd, m, N;
@@ -193,4 +190,3 @@ si2 = run(sd, m, N)
 trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
-@test trial1 == trial2 # deterministic
