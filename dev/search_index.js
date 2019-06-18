@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "Installation",
     "category": "section",
-    "text": "Mimi is an installable package. To install Mimi, first enter Pkg REPL mode by typing ], and then use the following:pkg> add MimiYou may then exit Pkg REPL mode with a single backpace. For more complete setup instructions, follow the Installation Guide."
+    "text": "Mimi is an installable package which requires the programming language julia to run. To install Mimi, first enter Pkg REPL mode by typing ], and then use the following script. You may then exit Pkg REPL mode with a single backpace.pkg> add MimiFor more complete setup instructions, follow the Installation Guide."
 },
 
 {
