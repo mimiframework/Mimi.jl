@@ -89,6 +89,29 @@ function _subcomp(args, kwargs)
     return SubComponent(cmodule, cname, alias, exports, bindings)
 end
 
+# Convert an expr like `a.b.c.d` to `[:a, :b, :c, :d]`
+function _parse_dotted_symbols(expr)
+    global Args = expr
+    syms = Symbol[]
+
+    ex = expr
+    while @capture(ex, left_.right_) && right isa Symbol
+        push!(syms, right)
+        ex = left
+    end
+
+    if ex isa Symbol
+        push!(syms, ex)
+    else
+        error("Expected Symbol or Symbol.Symbol..., got $expr")
+    end
+
+    syms = reverse(syms)
+    var_or_par = pop!(syms)
+    return ComponentPath(syms), var_or_par
+end
+
+
 """
     defcomposite(cc_name::Symbol, ex::Expr)
 
@@ -121,27 +144,99 @@ macro defcomposite(cc_name, ex)
     
     @capture(ex, elements__)
     comps = SubComponent[]
+    imports = []
+    conns = []
 
     for elt in elements
+        # @info "parsing $elt"; dump(elt)
+
         if @capture(elt, (component(args__; kwargs__) | component(args__)))
             push!(comps, _subcomp(args, kwargs))
+
+        # distinguish imports, e.g., :(EXP_VAR = CHILD_COMP1.COMP2.VAR3),
+        #    from connections, e.g., :(COMP1.PAR2 = COMP2.COMP5.VAR2)
+
+        # elseif elt.head == :tuple && length(elt.args) > 0 && @capture(elt.args[1], left_ = right_) && left isa Symbol
+        #     # Aliasing a local name to several parameters at once is possible using an expr like
+        #     # :(EXP_PAR1 = CHILD_COMP1.PAR2, CHILD_COMP2.PAR2, CHILD_COMP3.PAR5, CHILD_COMP3.PAR6)
+        #     # Note that this parses as a tuple expression with first element being `EXP_PAR1 = CHILD_COMP1`.
+        #     # Here we parse everything on the right side, at once using broadcasting and add the initial
+        #     # component (immediately after "=") to the list, and then store a Vector of param refs.
+        #     args = [right, elt.args[2:end]...]
+        #     vars_pars = _parse_dotted_symbols.(args)
+        #     @info "import as $left = $vars_pars"
+        #     push!(imports, (left, vars_pars))
+
+        elseif @capture(elt, left_ = right_)
+
+            if left isa Symbol # simple import case
+                # Save a singletons as a 1-element Vector for consistency with multiple linked params
+                var_par = right.head == :tuple ? _parse_dotted_symbols.(right.args) : [_parse_dotted_symbols(right)]
+                push!(imports, (left, var_par))
+                @info "import as $left = $var_par"
+                
+            # note that `comp_Symbol.name_Symbol` failed; bug in MacroTools?
+            elseif @capture(left, comp_.name_) && comp isa Symbol && name isa Symbol # simple connection case
+                src = _parse_dotted_symbols(right)
+                dst = _parse_dotted_symbols(left)
+                tup = (dst, src)
+                push!(conns, tup)
+                @info "connection: $dst = $src"
+
+            else
+                error("Unrecognized expression on left hand side of '=' in @defcomposite: $elt")
+            end
         else
             error("Unrecognized element in @defcomposite: $elt")
         end
     end
-
-    # module_name = nameof(__module__)
 
     # TBD: use fullname(__module__) to get "path" to module, as tuple of Symbols, e.g., (:Main, :ABC, :DEF)
     # TBD: use Base.moduleroot(__module__) to get the first in that sequence, if needed
     # TBD: parentmodule(m) gets the enclosing module (but for root modules returns self)
     # TBD: might need to replace the single symbol used for module name in ComponentId with Module path.
 
-    result = quote
-        cc_id = Mimi.ComponentId($__module__, $(QuoteNode(cc_name)))
-        global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
-        $cc_name
-    end
+    # @info "imports: $imports"
+    # @info "  $(length(imports)) elements"
+    # global IMP = imports
+
+    result = :(
+        let conns = $conns,
+            imports = $imports
+            cc_id = Mimi.ComponentId($__module__, $(QuoteNode(cc_name)))
+        
+            global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
+
+            for ((dst_path, dst_name), (src_path, src_name)) in conns
+                Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
+            end
+            
+            for (local_name, var_par_vec) in imports
+                refs = []
+
+                for (src_path, src_name) in var_par_vec
+                    dr = Mimi.DatumReference(src_name, $cc_name, src_path)
+                    var_par_ref = (Mimi.is_parameter(dr) ? Mimi.ParameterDefReference(dr) : Mimi.VariableDefReference(dr))
+                    push!(refs, var_par_ref)
+                end
+                
+                # we allow linking parameters, but not variables.
+                count = length(refs)
+                if count == 1 && refs[1] isa Mimi.VariableDefReference
+                    $cc_name[local_name] = refs[1]      # store single VariableDefReference; multiples not supported
+                elseif count > 1
+                    vars = filter(obj -> obj isa Mimi.VariableDefReference, refs)
+                    if length(vars) > 0
+                        error("Variables ($vars) must be aliased only individually.")
+                    else
+                        $cc_name[local_name] = Vector{Mimi.ParameterDefReference}(refs)  # fix type
+                    end
+                end
+            end
+
+            $cc_name
+        end
+    )
 
     # @info "defcomposite:\n$result"
     return esc(result)

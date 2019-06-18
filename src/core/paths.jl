@@ -21,13 +21,25 @@ end
     comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
-For leaf components, also sets the ComponentPath in all ParameterDefs and VariableDefs.
+For composites, also update the component paths for all internal connections.
+For leaf components, update the ComponentPath for ParameterDefs and VariableDefs.
 """
 function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     child.comp_path = path = ComponentPath(parent.comp_path, child.name)
 
     # recursively reset all comp_paths
     if is_composite(child)
+
+        conns = child.internal_param_conns
+        for (i, conn) in enumerate(conns)
+            src_path = ComponentPath(path, conn.src_comp_path)
+            dst_path = ComponentPath(path, conn.dst_comp_path)
+
+            # InternalParameterConnections are immutable, but the vector holding them is not
+            conns[i] = InternalParameterConnection(src_path, conn.src_var_name, dst_path, conn.dst_par_name,
+                                                   conn.ignoreunits, conn.backup; offset=conn.offset)
+        end
+
         for cd in compdefs(child)
             comp_path!(cd, child)
         end

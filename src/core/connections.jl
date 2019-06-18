@@ -324,7 +324,7 @@ function unconnected_params(md::ModelDef)
     connected = connected_params(md)
 
     _collect_unconnected_params(md, connected, unconnected)
-    return unconnected    
+    return unconnected
 end
 
 """

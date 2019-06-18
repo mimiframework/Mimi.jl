@@ -40,13 +40,16 @@ end
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
     dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
+    namespace::Dict{Symbol, Any}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
     is_uniform::Bool
 
     # Store a reference to the AbstractCompositeComponent that contains this comp def.
-    # That type is defined later, so we declare Any here.
-    parent::Union{Nothing, Any}
+    # That type is defined later, so we declare Any here. Parent is `nothing` for
+    # detached (i.e., "template") components and is set when added to a composite.
+    parent::Any
+    
 
     function ComponentDef(self::ComponentDef, comp_id::Nothing)
         error("Leaf ComponentDef objects must have a valid ComponentId name (not nothing)")
@@ -68,6 +71,7 @@ end
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}()
         self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
+        self.namespace = Dict{Symbol, Any}()
         self.first = self.last = nothing
         self.is_uniform = true
         self.parent = nothing
@@ -90,17 +94,6 @@ isuniform(obj::AbstractComponentDef) = obj.is_uniform
 
 Base.parent(obj::AbstractComponentDef) = obj.parent
 
-# Stores references to the name of a component variable or parameter
-# and the ComponentPath of the component in which it is defined
-@class DatumReference <: NamedObj begin
-    # name::Symbol is inherited from NamedObj
-    root::AbstractComponentDef
-    comp_path::ComponentPath
-end
-
-@class ParameterDefReference <: DatumReference
-@class VariableDefReference  <: DatumReference
-
 # Used by @defcomposite to communicate subcomponent information
 struct SubComponent <: MimiStruct
     module_name::Union{Nothing, Symbol}
@@ -110,11 +103,27 @@ struct SubComponent <: MimiStruct
     bindings::Vector{Pair{Symbol, Any}}
 end
 
+# Stores references to the name of a component variable or parameter
+# and the ComponentPath of the component in which it is defined
+@class DatumReference <: NamedObj begin
+    # name::Symbol is inherited from NamedObj
+    root::AbstractComponentDef
+    comp_path::ComponentPath
+end
+
+@class ParameterDefReference <: DatumReference
+
+@class VariableDefReference  <: DatumReference
+
+# "Upgrade" a DatumReference to one of the specific types
+ParameterDefReference(dr::DatumReference) = ParameterDefReference(dr.name, dr.root, dr.comp_path)
+VariableDefReference(dr::DatumReference)  = VariableDefReference(dr.name, dr.root, dr.comp_path)
+
 # Define type aliases to avoid repeating these in several places
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
 global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
-global const NamespaceElement = Union{ParameterDefReference, VariableDefReference, AbstractComponentDef}
+global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference, Vector{ParameterDefReference}}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     comps_dict::OrderedDict{Symbol, AbstractComponentDef}
@@ -124,8 +133,6 @@ global const NamespaceElement = Union{ParameterDefReference, VariableDefReferenc
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
     external_params::Dict{Symbol, ModelParameter}               # TBD: make key (ComponentPath, Symbol)?
-
-    namespace::Dict{Symbol, NamespaceElement}
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}

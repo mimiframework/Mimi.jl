@@ -68,9 +68,35 @@ function _check_for_known_element(name)
     end
 end
 
+# Add a variable to a ComponentDef. CompositeComponents have no vars of their own,
+# only references to vars in components contained within.
+function add_variable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
+    v = VariableDef(name, comp_def.comp_path, datatype, dimensions, description, unit)
+    comp_def[name] = v            # adds to namespace and checks for duplicate
+    comp_def.variables[name] = v
+    return v
+end
+
+# Add a variable to a ComponentDef referenced by ComponentId
+function add_variable(comp_id::ComponentId, name, datatype, dimensions, description, unit)
+    add_variable(compdef(comp_id), name, datatype, dimensions, description, unit)
+end
+
+function add_parameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
+    p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
+    comp_def[name] = p            # adds to namespace and checks for duplicate
+    comp_def.parameters[name] = p
+    dirty!(comp_def)
+    return p
+end
+
+function add_parameter(comp_id::ComponentId, name, datatype, dimensions, description, unit, default)
+    add_parameter(compdef(comp_id), name, datatype, dimensions, description, unit, default)
+end
+
 # Generates an expression to construct a Variable or Parameter
 function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit)
-    func_name = elt_type == :Parameter ? :addparameter : :addvariable
+    func_name = elt_type == :Parameter ? :add_parameter : :add_variable
     args = [datatype, dimensions, desc, unit]
     if elt_type == :Parameter
         push!(args, dflt)

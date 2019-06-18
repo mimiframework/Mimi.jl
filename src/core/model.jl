@@ -339,6 +339,14 @@ Similar to above but param_name appears in `path` after a colon delimiter.
 @delegate set_param!(m::Model, path::AbstractString, value, dims=nothing) => md
 
 """
+    set_param!(m::Model, param_name::Symbol, value, dims=nothing)
+
+Set the value of a parameter exposed in the ModelDef (m.md).
+"""
+@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
+
+
+"""
     run(m::Model)
 
 Run model `m` once.

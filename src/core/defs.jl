@@ -68,13 +68,9 @@ end
 dirty!(md::ModelDef) = (md.dirty = true)
 
 compname(dr::AbstractDatumReference) = dr.comp_path.names[end]
-#@delegate compmodule(dr::DatumReference) => comp_id
 
-is_variable(dr::AbstractDatumReference) = false
-is_parameter(dr::AbstractDatumReference) = false
-
-is_variable(dr::VariableDefReference)   = has_variable(find_comp(dr), nameof(dr))
-is_parameter(dr::ParameterDefReference) = has_parameter(find_comp(dr), nameof(dr))
+is_variable(dr::AbstractDatumReference)  = has_variable(find_comp(dr), nameof(dr))
+is_parameter(dr::AbstractDatumReference) = has_parameter(find_comp(dr), nameof(dr))
 
 number_type(md::ModelDef) = md.number_type
 
@@ -127,13 +123,32 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
     filter!(epc_filter, ccd.external_param_conns)
 end
 
-#
-# Add [] indexing and key lookup to composites to access namespace
-#
-@delegate Base.haskey(comp::AbstractCompositeComponentDef, key::Symbol) => namespace
-@delegate Base.getindex(comp::AbstractCompositeComponentDef, key::Symbol) => namespace
+@delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
 
-function Base.setindex!(comp::AbstractCompositeComponentDef, value::T, key::Symbol) where T <: NamespaceElement
+function Base.getindex(comp::AbstractComponentDef, key::Symbol)
+    value = comp.namespace[key]
+    
+    value isa AbstractComponentDef && return value
+    
+    # Variables can't be linked (not an array of values). 
+    # If there are linked params, all have the same value, use first.
+    # If not linked, params are still stored as vector of length 1.
+    ref = (value isa Vector ? value[1] : value)
+    
+    # follow reference to access value of parameter
+    obj = find_comp(ref.root, ref.comp_path)
+    obj === nothing && error("Failed to find referenced parameter: $ref")
+
+    return obj[ref.name]
+end
+
+
+function Base.setindex!(comp::AbstractComponentDef, value::T, key::Symbol) where T <: NamespaceElement
+    # For leaf components, setindex! can store only vars and vectors of pars
+    if comp isa ComponentDef && T isa AbstractComponentDef
+        error("Cannot store components in leaf component $(comp.comp_path)")
+    end
+
     # Allow replacement of existing values for a key only with items of the same type.
     if haskey(comp, key)
         elt_type = typeof(comp[key])
@@ -412,17 +427,6 @@ end
 # Callable on both ParameterDef and VariableDef
 dim_names(obj::AbstractDatumDef) = obj.dim_names
 
-function addparameter(comp_def::AbstractComponentDef, name, datatype, dimensions, description, unit, default)
-    p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
-    comp_def.parameters[name] = p
-    dirty!(comp_def)
-    return p
-end
-
-function addparameter(comp_id::ComponentId, name, datatype, dimensions, description, unit, default)
-    addparameter(compdef(comp_id), name, datatype, dimensions, description, unit, default)
-end
-
 """
     parameters(comp_def::ComponentDef)
 
@@ -552,6 +556,20 @@ and the param name (after the ":").
 function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
     comp_path, param_name = split_datum_path(obj, path)
     set_param!(obj, comp_path, param_name, value, dims)
+end
+
+"""
+    set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)
+
+Set the value of a parameter exposed in `obj` by following the ParameterDefReference. This
+method cannot be used on composites that are subcomponents of another composite.
+"""
+function set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)
+    if obj.parent !== nothing
+        error("Parameter setting is supported only for top-level composites. $(obj.comp_path) is a subcomponent.")
+    end
+    param_ref = obj[param_name]
+    set_param!(obj, param_ref.comp_path, param_ref.name, value, dims=dims)
 end
 
 """
@@ -714,35 +732,6 @@ end
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
     return dim_names(var)
-end
-
-
-# Add a variable to a ComponentDef. CompositeComponents have no vars of their own,
-# only references to vars in components contained within.
-function addvariable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
-    var_def = VariableDef(name, comp_def.comp_path, datatype, dimensions, description, unit)
-    comp_def.variables[name] = var_def
-    return var_def
-end
-
-#
-# TBD: this is clearly not used because there is no "variable" (other than the func) defined here
-#
-"""
-    addvariables(obj::CompositeComponentDef, exports::Vector{Pair{AbstractDatumReference, Symbol}})
-
-Add all exported variables to a CompositeComponentDef.
-"""
-function addvariables(obj::AbstractCompositeComponentDef, exports::Vector{Pair{AbstractDatumReference, Symbol}})
-    # TBD: this needs attention
-    for (dr, exp_name) in exports
-        addvariable(obj, variable(obj, nameof(variable)), exp_name)
-    end
-end
-
-# Add a variable to a ComponentDef referenced by ComponentId
-function addvariable(comp_id::ComponentId, name, datatype, dimensions, description, unit)
-    addvariable(compdef(comp_id), name, datatype, dimensions, description, unit)
 end
 
 #
