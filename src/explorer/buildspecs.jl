@@ -48,30 +48,25 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         
 end
 
-function _spec_for_sim_item(sim::Simulation, output_dir::Union{Nothing, String}, model_index::Int, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
+function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, item_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, interactive::Bool=true)
     
-    multiple_results = (length(sim.results) > 1)
+    multiple_results = (length(sim_inst.results) > 1)
 
     # get results
-    if isnothing(output_dir) # results stored in results.sim
-        key = (comp_name, item_name)
-        results = sim.results[model_index]
-        df = results[key]
-    else # results stored in external csv files
-        if multiple_results
-            sub_dir = joinpath(output_dir, "model_$model_index")
-        else
-            sub_dir = output_dir 
+    key = (comp_name, item_name)
+    df = (sim_inst.results[model_index])[key]
+    if scen_name !== nothing
+        if in(:scen, names(df)) 
+            error("The results for this simulation contain a scenario dimension, you must specify the scen_name keyword argument, which is currently set to $(scen_name)")
         end
-
-        filename = joinpath(sub_dir, "$item_name.csv")
-        df = CSVFiles.load(filename) |> DataFrame
+        filter!(row -> row.scen_name === scen_name, df)
     end
 
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
-    m = sim.models[model_index]
+    m = sim_inst.models[model_index]
     dims = dimensions(m, comp_name, item_name)
+    dffields = map(string, names(df))         # convert to string once before creating specs
 
     if length(dims) == 0 # histogram
         spec = createspec_histogram(name, df, dffields)
@@ -80,7 +75,6 @@ function _spec_for_sim_item(sim::Simulation, output_dir::Union{Nothing, String},
         return nothing
     else
         name = "$comp_name : $item_name"          
-        dffields = map(string, names(df))         # convert to string once before creating specs
 
         # check if there are too many dimensions to map and if so, error
         if length(dffields) > 4
@@ -121,9 +115,9 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     return menu_item
 end
 
-function _menu_item(sim::Simulation, datum_key::Tuple{Symbol, Symbol},)
+function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbol})
     (comp_name, item_name) = datum_key
-    dims = dimensions(sim.models[1], comp_name, item_name)
+    dims = dimensions(sim_inst.models[1], comp_name, item_name)
     if length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
         return nothing
@@ -155,11 +149,11 @@ function menu_item_list(model::Model)
 end
 
 # Create the list of variables and parameters
-function menu_item_list(sim::Simulation)
+function menu_item_list(sim_inst::SimulationInstance)
     all_menuitems = []
-    for datum_key in sim.savelist
+    for datum_key in sim_inst.sim_def.savelist
 
-        menu_item = _menu_item(sim, datum_key)
+        menu_item = _menu_item(sim_inst, datum_key)
         if menu_item !== nothing
             push!(all_menuitems, menu_item) 
         end

@@ -52,15 +52,15 @@ function explore(m::Model; title = "Electron")
 end
 
 """
-    explore(sim::Simulation; output_dir::Union{Nothing, String} = nothing, title="Electron", model_index = 1)
+    explore(sim_inst::SimulationInstance; title="Electron", model_index = 1, scen_name::Union{Nothing, String} = nothing)
 
-Produce a UI to explore the output distributions of the saved variables in Simulation
-`sim` for results of model `model_index`, which defaults to 1 in a Window with title `title`.
-If an `output_dir` is provided, results are stored there, otherwise it is assumed
-that results are held in results.sim and not in an output folder.
+Produce a UI to explore the output distributions of the saved variables in `SimulationInstance`
+`sim` for results of model `model_index` and scenario with the name `scen_name` in
+a Window with title `title`. The optional arguments default to a `model_index` of `1`, a `scen_name` of `nothing` 
+assuming there is no secenario dimension, and a window with title `Electron`. 
 
 """
-function explore(sim::Simulation; output_dir::Union{Nothing, String} = nothing, title="Electron", model_index = 1)
+function explore(sim_inst::SimulationInstance; title="Electron", model_index = 1, scen_name::Union{Nothing, String} = nothing)
 
     #start Electron app
     if app === nothing
@@ -77,7 +77,7 @@ function explore(sim::Simulation; output_dir::Union{Nothing, String} = nothing, 
      #set async block to process messages
      @async for msg in msgchannel(w)
 
-        spec = _spec_for_sim_item(sim, output_dir, model_index, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
+        spec = _spec_for_sim_item(sim_inst, Symbol(msg["comp_name"]), Symbol(msg["item_name"]), model_index = model_index, scen_name = scen_name)
         specJSON = JSON.json(spec)
 
         run(w, "display($specJSON)")
@@ -85,7 +85,7 @@ function explore(sim::Simulation; output_dir::Union{Nothing, String} = nothing, 
     end
 
      #refresh variable list
-     menulist = menu_item_list(sim)
+     menulist = menu_item_list(sim_inst)
      menulistJSON = JSON.json(menulist)
  
      result = run(w, "refresh($menulistJSON)")
@@ -114,15 +114,17 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
 end
 
 """
-    plot(sim::Simulation, comp_name::Symbol, datum_name::Symbol; output_dir::Union{Nothing, String} = nothing, model_index = 1)
+    plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; output_dir::Union{Nothing, String} = nothing, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
 
-Plot a specific `datum_name` that was one of the saved variables of Simulation `sim`
-for results of model `model_index`, which dfaults to 1. If an `output_dir` is provided, 
-results are stored there, otherwise it is assumed that results are held in results.sim and not in an output folder.
+Plot a specific `datum_name` that was one of the saved variables of `SimulationInstance` `sim_inst`
+for results of model `model_index`, which defaults to 1, in scenario `scen_name`, which
+defaults to `nothing` implying there is no scenario dimension. If an `output_dir` is provided, 
+results are stored there, otherwise it is assumed that results are held in results.sim and not 
+in an output folder.
 """
-function plot(sim::Simulation, comp_name::Symbol, datum_name::Symbol; output_dir::Union{Nothing, String} = nothing, model_index = 1)
+function plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
     
-    spec = Mimi._spec_for_sim_item(sim, output_dir, model_index, comp_name, datum_name, interactive = false)["VLspec"]
+    spec = Mimi._spec_for_sim_item(sim_inst, comp_name, datum_name; interactive = false, model_index = model_index, scen_name = scen_name)["VLspec"]
     if spec === nothing 
         error("Spec cannot be built.")
     end
