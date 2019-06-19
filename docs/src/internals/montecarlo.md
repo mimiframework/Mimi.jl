@@ -134,7 +134,7 @@ of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
 ## The run function
 
-In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a mutated copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
@@ -190,10 +190,9 @@ placed inside the simulation loop by specifying `scenario_placement=INNER`. When
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 
-Returns the type `SimulationInstance` that contains a copy of the original `SimulationDef`,
-along with mutated information about trials, in addition to the model list and 
-results information.
-
+Returns the type `SimulationInstance` that contains a copy of the original `SimulationDef` in addition to
+trials information (`trials`, `current_trial`, and `current_data`), the model list
+`models`, and results information in `results`.
 ### The set_models! function
 
 The `run` function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationInstance` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `SimulationDef`:
