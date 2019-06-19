@@ -165,8 +165,151 @@ macro defsim(expr)
         # TBD: need to generalize this to support other methods
         return :(Simulation{$simdatatype}(
                     [$(_rvs...)],
-                    [$(_transforms...)],  
+                    TransformSpec[$(_transforms...)],  
                     Tuple{Symbol, Symbol}[$(_saves...)],
                     $data))
     end
 end
+
+#
+# Simulation update methods
+#
+function _update_nt_type!(sim::Simulation{T}) where T <: AbstractSimulationData
+    names = (keys(sim.rvdict)...,)
+    types = [eltype(fld) for fld in values(sim.rvdict)]
+    sim.nt_type = NamedTuple{names, Tuple{types...}}
+    nothing
+end
+
+"""
+    deleteRV!(sim::Simulation, name::Symbol)
+
+Delete the random variable `name` from the Simulation `sim`.
+Transformations using this RV are deleted, and the Simulation's
+NamedTuple type is updated to reflect the dropped RV.
+"""
+function deleteRV!(sim::Simulation, name::Symbol)
+    deleteTransform!(sim, name)
+    delete!(sim.rvdict, name)
+    _update_nt_type!(sim)
+end
+
+"""
+    addRV!(sim::Simulation, rv::RandomVariable)
+
+Add random variable definition `rv` to Simulation `sim`. The 
+Simulation's NamedTuple type is updated to include the RV.
+"""
+function addRV!(sim::Simulation, rv::RandomVariable)
+    name = rv.name
+    haskey(sim.rvdict, name) && error("Simulation already has RV :$name. Use replaceRV! to replace it.")
+    sim.rvdict[name] = rv
+    _update_nt_type!(sim)
+end
+
+"""
+    addRV!(sim::Simulation, name::Symbol, dist::Distribution)
+
+Add random variable definition `rv` to Simulation `sim`. The 
+Simulation's NamedTuple type is updated to include the RV.
+"""
+addRV!(sim::Simulation, name::Symbol, dist::Distribution) = addRV!(sim, RandomVariable(name, dist))
+
+"""
+    replaceRV!(sim::Simulation, rv::RandomVariable)
+
+Replace the RV with the given `rv`s name in the Simulation Sim with
+`rv` and update the Simulation's NamedTuple type accordingly.
+"""
+function replaceRV!(sim::Simulation, rv::RandomVariable)
+    sim.rvdict[rv.name] = rv
+    _update_nt_type!(sim)
+end
+
+"""
+    replaceRV!(sim::Simulation, name::Symbol, dist::Distribution)
+
+Replace the with name `name` in the Simulation Sim with a new RV
+with `name` and distribution `dist`. Update the Simulation's NamedTuple
+type accordingly.
+"""
+replaceRV!(sim::Simulation, name::Symbol, dist::Distribution) = replaceRV!(sim, RandomVariable(name, dist))
+
+"""
+    deleteTransform!(sim::Simulation, name::Symbol)
+
+Delete all data transformations--i.e., replacement, addition or multiplication 
+of original data values with values drawn from the RV named `name`. Update the 
+Simulation's NamedTuple type accordingly.
+"""
+function deleteTransform!(sim::Simulation, name::Symbol)
+    pos = findall(t -> t.rvname == name, sim.translist)
+    deleteat!(sim.translist, pos)    
+    _update_nt_type!(sim)
+end
+
+"""
+    addTransform!(sim::Simulation, t::TransformSpec)
+
+Add the data transformation `t` to the Simulation `sim`, and update the
+Simulation's NamedTuple type. The TransformSpec `t` must refer to an 
+existing RV.
+"""
+function addTransform!(sim::Simulation, t::TransformSpec)
+    push!(sim.translist, t)
+    _update_nt_type!(sim)
+end
+
+"""
+    addTransform!(sim::Simulation, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+
+Create a new TransformSpec based on `paramname`, `op`, `rvname` and `dims` to the 
+Simulation `sim`, and update the Simulation's NamedTuple type. The symbol `rvname` must
+refer to an existing RV, and `paramname` must refer to an existing parameter. If `dims` are
+provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
+"""
+function addTransform!(sim::Simulation, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+    addTransform!(sim, TransformSpec(paramname, op, rvname, dims))
+end
+
+"""
+    deleteSave!(sim::Simulation, key::Tuple{Symbol, Symbol})
+
+Delete from Simulation `sim` a "save" instruction for the given `key`, comprising
+component `comp_name` and parameter or variable `datum_name`. This result will no 
+longer be saved to a CSV file at the end of the simulation.
+"""
+function deleteSave!(sim::Simulation, key::Tuple{Symbol, Symbol})
+    pos = findall(isequal(key), sim.savelist)
+    deleteat!(sim.savelist, pos)
+end
+
+"""
+    deleteSave!(sim::Simulation, comp_name::Symbol, datum_name::Symbol)
+
+Delete from Simulation `sim` a "save" instruction for component `comp_name` and parameter 
+or variable `datum_name`. This result will no longer be saved to a CSV file at the end
+of the simulation.
+"""
+deleteSave!(sim::Simulation, comp_name::Symbol, datum_name::Symbol) = deleteSave!(sim, (comp_name, datum_name))
+
+"""
+    addSave!(sim::Simulation, key::Tuple{Symbol, Symbol})
+
+Add to Simulation `sim` a "save" instruction for the given `key`, comprising
+component `comp_name` and parameter or variable `datum_name`. This result will
+be saved to a CSV file at the end of the simulation.
+"""
+function addSave!(sim::Simulation, key::Tuple{Symbol, Symbol})
+    deleteSave!(sim, key) 
+    push!(sim.savelist, key)
+    nothing
+end
+
+"""
+    addSave!(sim::Simulation, comp_name::Symbol, datum_name::Symbol)
+
+Add to Simulation `sim` a "save" instruction for component `comp_name` and parameter or
+variable `datum_name`. This result will be saved to a CSV file at the end of the simulation.    
+"""
+addSave!(sim::Simulation, comp_name::Symbol, datum_name::Symbol) = addSave!(sim, (comp_name, datum_name))

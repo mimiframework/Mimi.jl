@@ -5,7 +5,7 @@ using Random
 
 # N.B. See Mimi/WIP/load_empirical_dist.jl for helper functions.
 
-struct EmpiricalDistribution{T}
+struct EmpiricalDistribution{T} <: PseudoDistribution
     values::Vector{T}
     weights::ProbabilityWeights
     dist::Distribution

@@ -11,7 +11,6 @@ using Test
 using Mimi: reset_compdefs, modelinstance, compinstance, 
             get_var_value, OUTER, INNER, ReshapedDistribution
 
-reset_compdefs()
 include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
@@ -46,7 +45,6 @@ sim = @defsim begin
 end
 
 
-
 # Optionally, user functions can be called just before or after a trial is run
 function print_result(m::Model, sim::Simulation, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
@@ -65,7 +63,7 @@ d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 # Run trials 1:N, and save results to the indicated directory
 
 Mimi.set_models!(sim, m)
-run_sim(sim, N, output_dir=output_dir)
+run_sim(sim, output_dir=output_dir)
 
 # From MCS discussion 5/23/2018
 # generate_trials(sim, samples=load("foo.csv"))
@@ -115,7 +113,7 @@ end
 
 loop_counter = 0
 
-run_sim(sim, N;
+run_sim(sim;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -127,7 +125,7 @@ run_sim(sim, N;
 
 loop_counter = 0
 
-run_sim(sim, N;
+run_sim(sim;
         output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
@@ -149,7 +147,7 @@ end
 
 loop_counter = 0
 
-run_sim(sim, N;
+run_sim(sim;
         output_dir=output_dir,
         pre_trial_func=pre_trial,
         scenario_func=other_loop_func,
@@ -170,7 +168,8 @@ end
 loop_counter = 0
 
 N = 10
-run_sim(sim, N;
+run_sim(sim;
+        trials = N,
         output_dir=output_dir,
         post_trial_func=post_trial)
 
@@ -226,4 +225,3 @@ trial2 = copy(sim2.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
-

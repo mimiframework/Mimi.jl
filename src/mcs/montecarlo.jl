@@ -1,6 +1,6 @@
 using IterTools
-using IterableTables
-using TableTraits
+import IteratorInterfaceExtensions
+import TableTraits
 using Random
 using ProgressMeter
 using Serialization
@@ -95,6 +95,8 @@ Save the stored simulation results to files in the directory `output_dir`
 function save_trial_results(sim::Simulation{T}, output_dir::AbstractString) where T <: AbstractSimulationData
     multiple_results = (length(sim.results) > 1)
 
+    mkpath(output_dir, mode=0o750)
+    
     for (i, results) in enumerate(sim.results)
         if multiple_results
             sub_dir = joinpath(output_dir, "model_$i")
@@ -112,7 +114,7 @@ function save_trial_results(sim::Simulation{T}, output_dir::AbstractString) wher
 end
 
 function save_trial_inputs(sim::Simulation, filename::String)
-    mkpath(dirname(filename), mode=0o770)   # ensure that the specified path exists
+    mkpath(dirname(filename), mode=0o750)   # ensure that the specified path exists
     save(filename, sim)
     return nothing
 end
@@ -140,20 +142,19 @@ function get_trial(sim::Simulation, trialnum::Int)
 end
 
 """
-    generate_trials!(sim::Simulation{T}, samples::Int; filename::String="")
+    generate_trials!(sim::Simulation{T}, samples::Int; filename::Union{String, Nothing}=nothing)
 
 Generate trials for the given Simulation instance using the defined `samplesize.
 Call this before running the sim to pre-generate data to be used by all scenarios. 
 Also saves inputs if a filename is given.
 """
 function generate_trials!(sim::Simulation{T}, samplesize::Int;
-                          filename::String="") where T <: AbstractSimulationData
-
+                        filename::Union{String, Nothing}=nothing) where T <: AbstractSimulationData
     sample!(sim, samplesize)
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
     # open a file that can be written to for each trialnum/scenario set?
-    if filename != ""
+    if filename != nothing
         save_trial_inputs(sim, filename)
     end
 end
@@ -173,9 +174,12 @@ function Random.rand!(sim::Simulation{T}) where T <: AbstractSimulationData
     rvdict = sim.rvdict
     trials = sim.trials
 
-    for rv in sim.dist_rvs
-        values = rand(rv.dist, trials)
-        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values))
+    for rv in values(sim.rvdict)
+        # use underlying distribution, if known
+        orig_dist = (rv.dist isa SampleStore ? rv.dist.dist : rv.dist)
+        dist = (orig_dist === nothing ? rv.dist : orig_dist)
+        values = rand(dist, trials)
+        rvdict[rv.name] = RandomVariable(rv.name, SampleStore(values, orig_dist))
     end
 end
 
@@ -329,9 +333,9 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run_sim(sim::Simulation{T}, 
-            trials::Union{Int, Vector{Int}, AbstractRange{Int}},
-            models_to_run::Int=length(sim.models);
+    run_sim(sim::Simulation{T}; 
+            trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
+            models_to_run::Int=length(sim.models),
             ntimesteps::Int=typemax(Int), 
             output_dir::Union{Nothing, AbstractString}=nothing, 
             pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -340,7 +344,7 @@ end
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing)
 
-Run the indicated the first `trials`, which indicates the number of trials to run
+Optionally run the first indicated `trials`, which indicates the number of trials to run
 starting from the first one. The first `models_to_run` associated models are run 
 for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial
 data are applied to all the associated models even when running only a portion of them.   
@@ -366,9 +370,9 @@ placed inside the simulation loop by specifying `scenario_placement=INNER`. When
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 """
-function run_sim(sim::Simulation{T}, 
-                 trials::Union{Vector{Int}, AbstractRange{Int}},
-                 models_to_run::Int=length(sim.models);     # run all models by default
+function run_sim(sim::Simulation{T}; 
+                 trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
+                 models_to_run::Int=length(sim.models),     # run all models by default
                  ntimesteps::Int=typemax(Int), 
                  output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
@@ -388,7 +392,22 @@ function run_sim(sim::Simulation{T},
     end
     
     # TBD: address confusion over whether trials is a list of trialnums or just the number of trials
-    sim.trials = length(trials)
+
+    # Machinery to handle trials cases
+    if trials === nothing
+        # If trials is not set, assume it is 1:sim.trials.  
+        trials = 1:sim.trials
+    else
+
+        # Handle Int
+        if typeof(trials) <: Int
+            trials = 1:trials
+        end
+
+        # If the user input a trials arg, we must reset sim.trials to length(trials),
+        # otherwise sim.trials is already set from generate_trials
+        sim.trials = length(trials)
+    end
 
     # Save the original dir since we modify the output_dir to store scenario results
     orig_output_dir = output_dir
@@ -490,12 +509,6 @@ function run_sim(sim::Simulation{T},
     end
 end
 
-# Same as above, but takes a number of trials and converts this to `1:trials`.
-function run_sim(sim::Simulation{T}, trials::Int=sim.trials, 
-                 models_to_run::Int=length(sim.models); kwargs...) where T <: AbstractSimulationData
-    return run_sim(sim, 1:trials, models_to_run; kwargs...)
-end
-
 # Set models
 """ 
 	    set_models!(sim::Simulation{T}, models::Vector{Model})
@@ -540,10 +553,10 @@ function Base.iterate(sim::Simulation{T}, trialnum) where T <: AbstractSimulatio
     end
 end
 
-TableTraits.isiterable(sim::Simulation{T}) where T <: AbstractSimulationData = true
+IteratorInterfaceExtensions.isiterable(sim::Simulation{T}) where T <: AbstractSimulationData = true
 TableTraits.isiterabletable(sim::Simulation{T}) where T <: AbstractSimulationData = true
 
-IterableTables.getiterator(sim::Simulation) = SimIterator{sim.nt_type}(sim)
+IteratorInterfaceExtensions.getiterator(sim::Simulation) = SimIterator{sim.nt_type}(sim)
 
 column_names(sim::Simulation{T}) where T <: AbstractSimulationData = fieldnames(sim.nt_type)
 column_types(sim::Simulation{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim.rvdict)]
@@ -552,7 +565,7 @@ column_types(sim::Simulation{T}) where T <: AbstractSimulationData = [eltype(fld
 # Iteration support (which in turn supports the "save" method)
 #
 column_names(iter::SimIterator) = column_names(iter.sim)
-column_types(iter::SimIterator) = IterableTables.column_types(iter.sim)
+column_types(iter::SimIterator) = error("Not implemented") # Used to be `IterableTables.column_types(iter.sim)`
 
 function Base.iterate(iter::SimIterator)
     _reset_rvs!(iter.sim)

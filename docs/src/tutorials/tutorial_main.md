@@ -18,8 +18,6 @@ The following terminology is used throughout the documentation.
 
 2. **Modify an Existing Model**
 
-    _While the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon._
-
    [Tutorial 2: Modify an Existing Model](@ref) builds on Tutorial 1, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
 
 3. **Create a Model**
@@ -33,21 +31,19 @@ The following terminology is used throughout the documentation.
 
 ## Requirements and Initial Setup
 
-These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. You will also need to use [Github](https://github.com) and thus download [Git](https://git-scm.com/downloads).
+These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. 
 
 To use the following tutorials, follow the steps below.
 
-1. Download Git [here](https://git-scm.com/downloads).
+1. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.0.0 or later.
 
-2. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.0.0 or later.
-
-3. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode, and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.6.0 or later.
+2. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode, and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.6.0 or later.
 
 ```
 pkg> add Mimi
 ```
 
-4. To access the models in the [MimiRegistry](https://github.com/anthofflab/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
+4. To access the models in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git

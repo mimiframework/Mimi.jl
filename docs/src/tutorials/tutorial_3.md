@@ -8,7 +8,6 @@ Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
-- [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
@@ -82,7 +81,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 * If any variables of one component are parameters for another, [`connect_param!`](@ref) is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
 * Finally, the model can be run using the command `run(model_name)`.
 * To access model results, use `model_name[:component, :variable_name]`.
-* To observe model results in a graphical form , [`explore`](@ref) as either `explore(model_name)` to open the UI window, or use `explore(model_name, :component_name, :variable_name)` or `explore(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
+* To observe model results in a graphical form , [`explore`](@ref) as either `explore(model_name)` to open the UI window, or use `Mimi.plot(model_name, :component_name, :variable_name)` or `Mimi.plot(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
 
 ```julia
 
@@ -129,7 +128,7 @@ run(m)
 m[:emissions, :E]
 
 # Plot model results
-explore(m, :emissions, :E)
+Mimi.plot(m, :emissions, :E)
 
 # Observe all model result graphs in UI
 explore(m)

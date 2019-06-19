@@ -7,7 +7,8 @@ using MacroTools
 # Simplify delegation of calls to ::Model to internal ModelInstance or ModelDelegate objects.
 macro modelegate(ex)
     if @capture(ex, fname_(varname_::Model, args__) => rhs_)
-        result = esc(:($fname($varname::Model, $(args...)) = $fname($varname.$rhs, $(args...))))
+
+        result = esc(:($fname($varname::Model, $(args...)) = ($varname.$rhs === nothing ? error("This function is not callable on an model that has not been run because it requires a ModelInstance.") : $fname($varname.$rhs, $(args...)))))
         #println(result)
         return result
     end
@@ -317,12 +318,12 @@ function variable(m::Model, comp_name::Symbol, var_name::Symbol)
 end
 
 function variable_unit(m::Model, comp_name::Symbol, var_name::Symbol)
-    var = variable(m, comp_id, var_name)
+    var = variable(m, comp_name, var_name)
     return var.unit
 end
 
 function variable_dimensions(m::Model, comp_name::Symbol, var_name::Symbol)
-    var = variable(m, comp_id, var_name)
+    var = variable(m, comp_name, var_name)
     return var.dimensions
 end
 
@@ -398,4 +399,43 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int),
     run(m.mi, ntimesteps, dim_keys)
     nothing
 end
- 
+
+function _show(io::IO, obj::Model, which::Symbol)
+    println(io, "$(length(obj.md.comp_defs))-component Mimi.Model:")
+
+    md = obj.md
+    mi = obj.mi
+
+    # println(io, "  Module: $(md.module_name)")
+    
+    # println(io, "  Components:")
+    for comp in values(md.comp_defs)
+        println(io, "  $(comp.name)::$(comp.comp_id.module_name).$(comp.comp_id.comp_name)")
+    end
+    
+    if which == :full
+        println(io, "  Dimensions:")
+        for (k, v) in md.dimensions
+            println(io, "    $k => $v")
+        end
+
+        println(io, "  Internal Connections:")
+        for conn in md.internal_param_conns
+            println(io, "    $(conn)")
+        end
+
+        println(io, "  External Connections:")
+        for conn in md.external_param_conns
+            println(io, "    $(conn)")
+        end
+        
+        println(io, "  Backups: $(md.backups)")
+        println(io, "  Number type: $(md.number_type)")
+
+        println(io, "  Built: $(mi !== nothing)")    
+    end 
+end
+
+Base.show(io::IO, obj::Model) = _show(io, obj, :short)
+
+Base.show(io::IO, ::MIME"text/plain", obj::Model) = _show(io, obj, :short)

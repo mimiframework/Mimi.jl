@@ -1,18 +1,15 @@
 # Tutorial 2: Modify an Existing Model
 
-_While the instructions in this tutorial are informative, the code examples are based on Mimi DICE-2010 which is not currently publically available, so the use is currently limited.  This issue will be resolved soon._
-
-This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use DICE-2010, available on Github [here](https://github.com/anthofflab/mimi-dice-2010.jl).
+This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github [here](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
-- [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
-Futhermore, this tutorial uses the [DICE](https://github.com/anthofflab/mimi-dice-2010.jl) model as an example.  Downloading `DICE` uses similar steps to those described for `FUND` in Tutorial 1 Steps 1 and 2.
+Futhermore, this tutorial uses the [DICE](https://github.com/anthofflab/MimiDICE2010.jl) model as an example.  Downloading `DICE` uses similar steps to those described for `FUND` in Tutorial 1 Steps 1 and 2.
 
 ## Introduction
 

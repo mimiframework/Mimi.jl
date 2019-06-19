@@ -126,8 +126,8 @@ add_comp!(m, MyComp2; first=2000, last=2002)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_logs(
-    (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting MyComp2 component's first timestep to 2001"),
+    # (:warn, "Redefining dimension :time"),
+    # (:warn, "Resetting MyComp2 component's first timestep to 2001"),
     set_dimension!(m, :time, 2001:2003)
 )
 
@@ -158,8 +158,8 @@ add_comp!(m, MyComp2; first=2000, last=2020)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 @test_logs(
-    (:warn, "Redefining dimension :time"),
-    (:warn, "Resetting MyComp2 component's first timestep to 2005"),
+    # (:warn, "Redefining dimension :time"),
+    # (:warn, "Resetting MyComp2 component's first timestep to 2005"),
     set_dimension!(m, :time, [2005, 2020, 2050])
 )
 
@@ -187,7 +187,7 @@ set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 @test_logs(
-    (:warn, "Redefining dimension :time"),
+    # (:warn, "Redefining dimension :time"),
     # (:warn, "Resetting MyComp2 component's first timestep to 2005"),
     set_dimension!(m, :time, [2005, 2020, 2050])
 )
@@ -209,7 +209,10 @@ set_dimension!(m, :time, 2000:2002)     # length 3
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
-@test_logs (:warn, "Redefining dimension :time") set_dimension!(m, :time, 1999:2003)     # length 5
+@test_logs(
+    # (:warn, "Redefining dimension :time"), 
+    set_dimension!(m, :time, 1999:2003)     # length 5
+)
 
 @test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
 update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
@@ -248,7 +251,7 @@ update_param!(m, :z, 1)
 
 # Reset the time dimensions
 @test_logs(
-    (:warn, "Redefining dimension :time"),
+    # (:warn, "Redefining dimension :time"),
     # (:warn, "Resetting MyComp3 component's first timestep to 2005"),
     set_dimension!(m, :time, 2005:2007)
 )

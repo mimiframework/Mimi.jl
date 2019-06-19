@@ -357,7 +357,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
 
         comp_name   = comp_id.comp_name
         module_name = comp_id.module_name
-        comp_module = getfield(Main, module_name)
+        comp_module = get_module(module_name)
 
         # TBD: use FunctionWrapper here?
         function get_func(name)

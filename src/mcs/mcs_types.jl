@@ -1,6 +1,7 @@
-using IterableTables
 using Distributions
 using Statistics
+
+@enum ScenarioLoopPlacement OUTER INNER
 
 """
     RandomVariable{T}
@@ -25,17 +26,34 @@ Base.eltype(rv::RandomVariable) = eltype(rv.dist)
 
 distribution(rv::RandomVariable) = rv.dist
 
+abstract type PseudoDistribution end
 
-@enum ScenarioLoopPlacement OUTER INNER
+"""     ReshapedDistribution
+A pseudo-distribution that returns a reshaped array of values from the
+stored distribution and dimensions.
+
+Example:
+    rd = ReshapedDistribution([5, 5], Dirichlet(25,1))
+"""
+struct ReshapedDistribution <: PseudoDistribution
+    dims::Vector{Int}
+    dist::Distribution
+end
+
+function Base.rand(rd::ReshapedDistribution, draws::Int=1)
+    return [reshape(rand(rd.dist), rd.dims...) for i in 1:draws]
+end
+
 
 # SampleStore is a faux Distribution that implements base.rand() 
 # to yield stored values.
-mutable struct SampleStore{T}
-    values::Vector{T}   # generally Int or Float64
-    idx::Int            # index of next value to return
+mutable struct SampleStore{T} <: PseudoDistribution
+    values::Vector{T}       # generally Int or Float64
+    idx::Int                # index of next value to return
+    dist::Union{Nothing, Distribution, PseudoDistribution}  # original distribution, if any
 
-    function SampleStore(values::Vector{T}) where T
-        return new{T}(values, 1)
+    function SampleStore(values::Vector{T}, dist::Union{Nothing, Distribution, PseudoDistribution}=nothing) where T
+        return new{T}(values, 1, dist)
     end
 end
 
@@ -55,31 +73,13 @@ end
 # Probably shouldn't use correlation on values loaded from a file rather than 
 # from a proper distribution.
 function Statistics.quantile(ss::SampleStore{T}, probs::AbstractArray) where T
-    return quantile.(ss, probs)
+    return quantile(sort(ss.values), probs)
 end
 
+Base.length(ss::SampleStore{T}) where T = length(ss.values)
 
-"""     ReshapedDistribution
-A pseudo-distribution that returns a reshaped array of values from the
-stored distribution and dimensions.
-
-Example:
-    rd = ReshapedDistribution([5, 5], Dirichlet(25,1))
-"""
-struct ReshapedDistribution
-    dims::Vector{Int}
-    dist::Distribution
-end
-
-# function Base.rand(rd::ReshapedDistribution, draws::Int=1)
-#     values = rand(rd.dist, draws)
-#     dims = (draws == 1 ? rd.dims : [rd.dims..., draws])
-#     return reshape(values, dims...)
-# end
-
-function Base.rand(rd::ReshapedDistribution, draws::Int=1)
-    return [reshape(rand(rd.dist), rd.dims...) for i in 1:draws]
-end
+Base.iterate(ss::SampleStore{T}) where T = iterate(ss.values)
+Base.iterate(ss::SampleStore{T}, idx) where T = iterate(ss.values, idx)
 
 struct TransformSpec
     paramname::Symbol
@@ -128,11 +128,11 @@ mutable struct Simulation{T}
     rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
-    dist_rvs::Vector{RandomVariable}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
-    data::T
+    data::T                         # data specific to a given sensitivity analysis method
+    payload::Any                    # opaque (to Mimi) data the user wants access to in callbacks
 
     function Simulation{T}(rvlist::Vector, 
                            translist::Vector{TransformSpec}, 
@@ -145,7 +145,6 @@ mutable struct Simulation{T}
         self.rvdict = OrderedDict([rv.name => rv for rv in rvlist])
         self.translist = translist
         self.savelist = savelist
-        self.dist_rvs = [rv for rv in rvlist]
 
         names = (keys(self.rvdict)...,)
         types = [eltype(fld) for fld in values(self.rvdict)]
@@ -155,12 +154,37 @@ mutable struct Simulation{T}
         self.models = Vector{Model}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
 
-        # data specific to a given sensitivity analysis method
         self.data = data
+        self.payload = nothing
 
         return self
     end
 end
+
+"""
+    Simulation{T}() where T <: AbstractSimulationData
+
+Allow creation of an "empty" Simulation instance.
+"""
+function Simulation{T}() where T <: AbstractSimulationData
+    Simulation{T}([], TransformSpec[], Tuple{Symbol, Symbol}[], T())
+end
+
+"""
+    set_payload!(sim::Simulation, payload) 
+
+Attach a user's `payload` to the `Simulation` instance so it can be
+accessed in scenario and pre-/post-trial callback functions. The value
+is not used by Mimi in any way; it can be anything useful to the user.
+"""
+set_payload!(sim::Simulation, payload) = (sim.payload = payload)
+
+"""
+    payload(sim::Simulation)
+
+Return the `payload` value set by the user via `set_payload!()`.
+"""
+payload(sim::Simulation) = sim.payload
 
 struct MCSData <: AbstractSimulationData end
 

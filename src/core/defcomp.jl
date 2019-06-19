@@ -155,7 +155,13 @@ macro defcomp(comp_name, ex)
 
     for elt in elements
         @debug "elt: $elt"
-       
+
+        # handle doc strings, which appear as macro calls to 
+        if @capture(elt, @name_ doc_String expr_) && name isa GlobalRef && name.name == Symbol("@doc")
+            @debug "ignoring doc string: $doc"
+            elt = expr  # extract the expression; ignore the doc string
+        end
+
         if @capture(elt, function fname_(args__) body__ end)
             if fname == :run_timestep
                 body = elt.args[2].args  # replace captured body with this, which includes line numbers

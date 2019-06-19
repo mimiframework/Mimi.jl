@@ -6,7 +6,6 @@ Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
-- [Git](https://git-scm.com/downloads) and [Github](https://github.com)
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
@@ -49,8 +48,7 @@ getfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_p
 ```
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:
 ```
-include("src/fund.jl")
-using .Fund
+using MimiFUND
 m = getfund(nsteps = 100)
 run(m)
 ```
@@ -108,14 +106,14 @@ Alternatively, in order to view just one parameter or variable, call the functio
 ```julia
 using VegaLite
 run(m)
-p = explore(m, component1, parameter1)
+p = Mimi.plot(m, component1, parameter1)
 save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
 ```julia
 using VegaLite
-p = explore(m, :socioeconomic, :income)
+p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 ```
 

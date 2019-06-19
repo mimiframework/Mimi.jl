@@ -1,4 +1,11 @@
-compdef(comp_id::ComponentId) = getfield(getfield(Main, comp_id.module_name), comp_id.comp_name)
+# Try to locate a module object by its symbolic name
+get_module(name::Symbol) = (name == :Mimi ? Mimi : getfield(Mimi.Main, name))
+
+function compdef(comp_id::ComponentId)
+    comp_module = get_module(comp_id.module_name)
+    comp_def = getfield(comp_module, comp_id.comp_name)
+    return comp_def
+end
 
 compdefs(md::ModelDef) = values(md.comp_defs)
 
@@ -38,7 +45,8 @@ end
 
 Return the name of `def`.  Possible `NamedDef`s include `DatumDef`, and `ComponentDef`.
 """
-name(def::NamedDef) = def.name
+name(def::NamedDef) = def.name          # old definition; should deprecate this...
+Base.nameof(def::NamedDef) = def.name   # 'nameof' is the more julian name
 
 number_type(md::ModelDef) = md.number_type
 
@@ -186,14 +194,14 @@ function reset_run_periods!(md, first, last)
         last_per  = last_period(comp_def)
 
         if first_per !== nothing && first_per < first 
-            @warn "Resetting $(comp_def.name) component's first timestep to $first"
+            @debug "Resetting $(comp_def.name) component's first timestep to $first"
             changed = true
         else
             first = first_per
         end 
 
         if last_per !== nothing && last_per > last 
-            @warn "Resetting $(comp_def.name) component's last timestep to $last"
+            @debug "Resetting $(comp_def.name) component's last timestep to $last"
             changed = true
         else 
             last = last_per
@@ -217,7 +225,7 @@ set_dimension!(md::ModelDef, name::Symbol, keys::Union{Int, Vector, Tuple, Abstr
 function set_dimension!(md::ModelDef, name::Symbol, dim::Dimension)
     redefined = haskey(md, name)
     if redefined
-        @warn "Redefining dimension :$name"
+        @debug "Redefining dimension :$name"
     end
 
     if name == :time
@@ -669,7 +677,7 @@ function replace_comp!(md::ModelDef, comp_id::ComponentId, comp_name::Symbol=com
         for epc in external_param_conns(md, comp_name)
             param_name = epc.param_name
             if ! haskey(new_params, param_name)  # TODO: is this the behavior we want? don't error in this case? just (warn)?
-                @warn "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
+                @debug "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
                 push!(remove, epc)
             else
                 old_p = old_comp.parameters[param_name]
@@ -733,6 +741,8 @@ function copy_external_params(md::ModelDef)
 end
 
 Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter{T}(copy(obj.value))
+
+Base.copy(obj::ScalarModelParameter{T}) where T <: Union{Symbol, AbstractString} = ScalarModelParameter{T}(obj.value)
 
 Base.copy(obj::ArrayModelParameter{T})  where T = ArrayModelParameter{T}(copy(obj.values), obj.dimensions)
 
