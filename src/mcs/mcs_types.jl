@@ -122,9 +122,6 @@ abstract type AbstractSimulationData end
 Holds all the data that defines a simulation.
 """
 mutable struct SimulationDef{T}
-    trials::Int
-    current_trial::Int
-    current_data::Any               # holds data for current_trial when current_trial > 0
     rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
@@ -137,9 +134,6 @@ mutable struct SimulationDef{T}
                            savelist::Vector{Tuple{Symbol, Symbol}},
                            data::T) where T <: AbstractSimulationData
         self = new()
-        self.trials = 0
-        self.current_trial = 0
-        self.current_data = nothing
         self.rvdict = OrderedDict([rv.name => rv for rv in rvlist])
         self.translist = translist
         self.savelist = savelist
@@ -161,12 +155,18 @@ end
 Holds all the data that defines simulation results.
 """
 mutable struct SimulationInstance{T}
+    trials::Int
+    current_trial::Int
+    current_data::Any               # holds data for current_trial when current_trial > 0
     sim_def::SimulationDef{T} where T <: AbstractSimulationData
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
+        self.trials = 0
+        self.current_trial = 0
+        self.current_data = nothing
         self.sim_def = deepcopy(sim_def)
         
         # These are parallel arrays; each model has a corresponding results dict
@@ -205,12 +205,13 @@ payload(sim_def::SimulationDef) = sim_def.payload
 struct MCSData <: AbstractSimulationData end
 
 const MonteCarloSimulationDef = SimulationDef{MCSData}
+const MonteCarloSimulationInstance = SimulationInstance{MCSData}
 
 struct SimIterator{NT, T}
-    sim_def::SimulationDef{T}
+    sim_inst::SimulationInstance{T}
 
-    function SimIterator{NT}(sim_def::SimulationDef{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
-        return new{NT, T}(sim_def)
+    function SimIterator{NT}(sim_inst::SimulationInstance{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
+        return new{NT, T}(sim_inst)
     end
 end
 

@@ -12,7 +12,7 @@ These are described further below. We will refer separately to two types, `Simul
 
 ## The @defsim macro
 
-Sensitivity Analysis SimulationDefs are defined using the macro `@defsim`, which does the following:
+Sensitivity Analysis `SimulationDef`s are defined using the macro `@defsim`, which does the following:
 
 * Defines random variables (RV) by assigning names to distributions, which can be any object that supports the following function:
   
@@ -54,10 +54,14 @@ We also define type constants with friendlier names for these parameterized type
 
 ```julia
 const MonteCarloSimulationDef = SimulationDef{MCSData}
+const MonteCarloSimulationInstance = SimulationInstance{MCSData}
 
 const LatinHypercubeSimulationDef = SimulationDef{LHSData}
+const LatinHypercubeSimulationInstance = SimulationInstance{LHSData}
 
 const SobolSimulationDef = SimulationDef{SobolData}
+const SobolSimulationInstance = SimulationInstance{SobolData}
+
 ```
 
 Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling. Note that in the current implementation, rank correlation between parameters is supported only for `LatinHypercubeSimulationDef`.

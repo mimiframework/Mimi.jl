@@ -55,7 +55,7 @@ si = run(sd, m, N; trials_output_filename=joinpath(output_dir, "trialdata.csv"),
 
 # Test that the proper number of trials were saved
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
-@test size(d)[1] == si.sim_def.trials+1 # extra row for column names
+@test size(d)[1] == si.trials+1 # extra row for column names
 
 # Check files saved to disk compared to data saved in memory
 results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
@@ -130,7 +130,7 @@ si = run(sd, m, N;
         scenario_func=inner_loop_func, 
         scenario_placement=Mimi.INNER)
 
-@test loop_counter == si.sim_def.trials * 6
+@test loop_counter == si.trials * 6
 
 function other_loop_func(sim_inst::SimulationInstance, tup)
     global loop_counter
@@ -154,7 +154,7 @@ si = run(sd, m, N;
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]])
 
-@test loop_counter == 6 * si.sim_def.trials + 60
+@test loop_counter == 6 * si.trials + 60
 
 
 function post_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
@@ -175,7 +175,7 @@ si = run(sd, m, N;
         results_output_dir=output_dir,
         post_trial_func=post_trial)
 
-@test loop_counter == si.sim_def.trials
+@test loop_counter == si.trials
 
 # delete all created directories and files
 rm(output_dir, recursive = true)
