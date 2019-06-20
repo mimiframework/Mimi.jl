@@ -22,7 +22,6 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
         df = getdataframe(m, comp_name, item_name)
-
         dffields = map(string, names(df))         # convert to string once before creating specs
 
         # check if there are too many dimensions to map and if so, warn
@@ -31,6 +30,15 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
                
         # a 'time' field necessitates a line plot
         elseif "time" in dffields
+
+            # need to reorder the df to have 'time' as the first dimension
+            ti = findfirst(isequal("time"), dffields)
+            if ti != 1    
+                fields1, fields2 = dffields[1:ti-1], dffields[ti+1:end]
+                dffields = ["time", fields1..., fields2...]
+                df = df[:, [Symbol(name) for name in dffields]]
+            end
+
             if length(dffields) > 2
                 spec = createspec_multilineplot(name, df, dffields, interactive=interactive)
             else
@@ -180,12 +188,6 @@ function createspec_multilineplot(name, df, dffields; interactive::Bool=true)
 end
 
 function createspec_multilineplot_interactive(name, df, dffields)
-    ti = findfirst(isequal("time"), dffields)
-    if ti != 1    # need to reorder the df to have 'time' as the first dimension
-        fields1, fields2 = dffields[1:ti-1], dffields[ti+1:end]
-        dffields = ["time", fields1..., fields2...]
-        df = df[:, [Symbol(name) for name in dffields]]
-    end
     datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
