@@ -381,7 +381,8 @@ end
 
 # Create individual specs for exploring a Simulation
 function createspec_singletrumpet(name, df, dffields; interactive::Bool=true)
-    interactive ? createspec_singletrumpet_interactive(name, df, dffields) : createspec_singletrumpet_static(name, df, dffields)
+    df_reduced = trumpet_df_reduce(df) #reduce the dataframe down to only the data needed for max, min, and mean lines
+    interactive ? createspec_singletrumpet_interactive(name, df_reduced, dffields) : createspec_singletrumpet_static(name, df_reduced, dffields)
 end
 
 # https://vega.github.io/vega-lite/examples/layer_line_errorband_ci.html
@@ -637,4 +638,21 @@ function getbar(cols, dffields)
         end
     end
     return String(datasb)
+end
+
+function trumpet_df_reduce(df)
+    
+    col = names(df)[2]
+    groupby_keys = []
+    for i = 1:length(names(df))
+        i != 2 && push!(groupby_keys,  names(df)[i])
+    end
+
+    df_new = by(df, groupby_keys, value = col => minimum)
+    append!(df_new, by(df, groupby_keys, value = col => maximum))
+    append!(df_new, by(df, groupby_keys, value = col => mean))
+    rename!(df_new, :value => col)
+
+    reorder_cols = [groupby_keys[1], col, groupby_keys[2:end]...]
+    return df_new[reorder_cols]
 end

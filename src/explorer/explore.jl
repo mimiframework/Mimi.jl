@@ -77,7 +77,7 @@ function explore(sim_inst::SimulationInstance; title="Electron", model_index = 1
      #set async block to process messages
      @async for msg in msgchannel(w)
 
-        spec = _spec_for_sim_item(sim_inst, Symbol(msg["comp_name"]), Symbol(msg["item_name"]), model_index = model_index, scen_name = scen_name)
+        spec = _spec_for_sim_item(sim_inst, Symbol(msg["comp_name"]), Symbol(msg["item_name"]); model_index = model_index, scen_name = scen_name)
         specJSON = JSON.json(spec)
 
         run(w, "display($specJSON)")
@@ -105,7 +105,7 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
         error("A model must be run before it can be plotted")
     end
     
-    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=r)["VLspec"]
+    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=false)["VLspec"]
     if spec === nothing
         error("Spec cannot be built.")  
     end      
@@ -114,7 +114,7 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
 end
 
 """
-    plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; output_dir::Union{Nothing, String} = nothing, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
+    plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
 
 Plot a specific `datum_name` that was one of the saved variables of `SimulationInstance` `sim_inst`
 for results of model `model_index`, which defaults to 1, in scenario `scen_name`, which

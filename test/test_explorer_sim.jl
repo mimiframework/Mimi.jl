@@ -16,7 +16,7 @@ m = construct_MyModel()
 
 N = 100
 
-sim = @defsim begin
+sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -43,9 +43,7 @@ sim = @defsim begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, )
 end
 
-output_dir = joinpath(tempdir(), "sim")
-generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv"))
-Mimi.set_models!(sim, m)
+si = run(sd, m, N)
 
 ## 1. Full Specs for VegaLite
 # TODO: createspec_singletrumpet, createspec_singletrumpet_static, 
@@ -55,25 +53,12 @@ Mimi.set_models!(sim, m)
 
 ## 2. Explore
 
-run_sim(sim)
-w = explore(sim, title="Testing Window")
-@test typeof(w) == Electron.Window
-close(w)
-
-run_sim(sim, output_dir=output_dir)
-w = explore(sim, output_dir=output_dir, title="Testing Window")
+w = explore(si, title="Testing Window")
 @test typeof(w) == Electron.Window
 close(w)
 
 ## 3. Plots
 
 # single trumpet plot
-run_sim(sim)
-p = Mimi.plot(sim, :emissions, :E_Global)
+p = Mimi.plot(si, :emissions, :E_Global)
 @test typeof(p) == VegaLite.VLSpec{:plot}
-
-run_sim(sim, output_dir=output_dir)
-p = Mimi.plot(sim, :emissions, :E_Global, output_dir=output_dir)
-@test typeof(p) == VegaLite.VLSpec{:plot}
-
-
