@@ -127,28 +127,28 @@ end
 
 function Base.getindex(comp::AbstractComponentDef, key::Symbol)
     value = comp.namespace[key]
-    
-    value isa AbstractComponentDef && return value
-    
-    # Variables can't be linked (not an array of values). 
-    # If there are linked params, all have the same value, use first.
-    # If not linked, params are still stored as vector of length 1.
-    ref = (value isa Vector ? value[1] : value)
-    
-    # follow reference to access value of parameter
-    obj = find_comp(ref.root, ref.comp_path)
-    obj === nothing && error("Failed to find referenced parameter: $ref")
+    return value
 
-    return obj[ref.name]
+    # value isa AbstractComponentDef && return value
+    
+    # # Variables can't be linked (not an array of values). 
+    # # If there are linked params, all have the same value, use first.
+    # # If not linked, params are still stored as vector of length 1.
+    # ref = (value isa Vector ? value[1] : value)
+    
+    # # follow reference to access value of parameter
+    # obj = find_comp(ref.root, ref.comp_path)
+    # obj === nothing && error("Failed to find referenced parameter: $ref")
+
+    # return obj[ref.name]
 end
 
-
-function Base.setindex!(comp::AbstractComponentDef, value::T, key::Symbol) where T <: NamespaceElement
-    # For leaf components, setindex! can store only vars and vectors of pars
-    if comp isa ComponentDef && T isa AbstractComponentDef
-        error("Cannot store components in leaf component $(comp.comp_path)")
-    end
-
+function _save_to_namespace(comp::AbstractComponentDef, 
+                            key::Symbol, value::Union{NamespaceElement, ParameterDefReference})
+    # convert single param def ref to a vector of one for consistency
+    value = (value isa ParameterDefReference ? [value] : value)
+    T = typeof(value)
+    
     # Allow replacement of existing values for a key only with items of the same type.
     if haskey(comp, key)
         elt_type = typeof(comp[key])
@@ -156,7 +156,22 @@ function Base.setindex!(comp::AbstractComponentDef, value::T, key::Symbol) where
     end
 
     comp.namespace[key] = value
+end
 
+# Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
+function Base.setindex!(comp::ComponentDef, value::AbstractDatumDef, key::Symbol)
+    ref = datum_reference(comp, value.name)
+    _save_to_namespace(comp, key, ref)
+    return value
+end
+
+function Base.setindex!(comp::AbstractCompositeComponentDef, ref::ParameterDefReference, key::Symbol)
+    _save_to_namespace(comp, key, ref)
+end
+
+function Base.setindex!(comp::AbstractCompositeComponentDef, value::NamespaceElement, key::Symbol)
+    _save_to_namespace(comp, key, value)
+    
     # Also store in comps_dict, if value is a component
     # TBD: drop comps_dict in favor of namespace for both purposes
     if value isa AbstractComponentDef
@@ -905,7 +920,7 @@ Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
-                   exports=nothing,
+                   exports=nothing,  # TBD: deprecated
                    first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
@@ -919,32 +934,34 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         error("Cannot set first or last period when adding a composite component: $(comp_def.comp_id)")
     end
 
+    #
+    # deprecated
+    #
     # If not specified, export all var/pars. Caller can pass empty list to export nothing.
     # TBD: actually, might work better to export nothing unless declared as such.
-    if exports === nothing
-        exports = []
-        # exports = [variable_names(comp_def)..., parameter_names(comp_def)...]
-    end
+    # if exports === nothing
+    #     exports = []
+    # end
 
-    for item in exports
-        if item isa Pair
-            (name, export_name) = item
-        elseif item isa Symbol
-            name = export_name = item
-        else
-            error("Exports argument to add_comp! must be pair or symbol, got: $item")
-        end
+    # for item in exports
+    #     if item isa Pair
+    #         (name, export_name) = item
+    #     elseif item isa Symbol
+    #         name = export_name = item
+    #     else
+    #         error("Exports argument to add_comp! must be pair or symbol, got: $item")
+    #     end
 
-        # TBD: should this just add to obj.variables / obj.parameters dicts?
-        # Those dicts hold ParameterDef / VariableDef, which we want to reference, not
-        # duplicate when building instances. One approach would be for the build step
-        # to create a dict on objectid(x) to store/find the generated var/param.
-        if haskey(obj.exports, export_name)
-            error("Exports may not include a duplicate name ($export_name)")
-        end
+    #     # TBD: should this just add to obj.variables / obj.parameters dicts?
+    #     # Those dicts hold ParameterDef / VariableDef, which we want to reference, not
+    #     # duplicate when building instances. One approach would be for the build step
+    #     # to create a dict on objectid(x) to store/find the generated var/param.
+    #     if haskey(obj.exports, export_name)
+    #         error("Exports may not include a duplicate name ($export_name)")
+    #     end
 
-        obj.exports[export_name] = _find_var_par(obj, comp_def, comp_name, name)
-    end
+    #     obj.exports[export_name] = _find_var_par(obj, comp_def, comp_name, name)
+    # end
 
     # Check if component being added already exists
     if has_comp(obj, comp_name)
@@ -992,6 +1009,10 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             end
         end
     end
+
+    # Handle special case of adding to a ModelDef, which isn't done with @defcomposite,
+    # which calls import_params after adding all components and explicit imports.
+    obj isa AbstractModelDef && import_params(obj)
 
     # Return the comp since it's a copy of what was passed in
     return comp_def

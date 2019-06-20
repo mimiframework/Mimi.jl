@@ -85,6 +85,7 @@ end
     end
 end
 
+ns(obj::AbstractComponentDef) = obj.namespace
 comp_id(obj::AbstractComponentDef) = obj.comp_id
 pathof(obj::AbstractComponentDef) = obj.comp_path
 dim_dict(obj::AbstractComponentDef) = obj.dim_dict
@@ -115,9 +116,28 @@ end
 
 @class VariableDefReference  <: DatumReference
 
-# "Upgrade" a DatumReference to one of the specific types
-ParameterDefReference(dr::DatumReference) = ParameterDefReference(dr.name, dr.root, dr.comp_path)
-VariableDefReference(dr::DatumReference)  = VariableDefReference(dr.name, dr.root, dr.comp_path)
+function datum_reference(comp::ComponentDef, datum_name::Symbol)
+    root = get_root(comp)
+    
+    # @info "compid: $(comp.comp_id)"
+    # @info "datum_reference: comp path: $(printable(comp.comp_path)) parent: $(printable(comp.parent))"
+
+    if has_variable(comp, datum_name)
+        var = comp.variables[datum_name]
+        path = @or(var.comp_path, ComponentPath(comp.name))
+        # @info "   var path: $path)"
+        return VariableDefReference(datum_name, root, path)
+    end
+    
+    if has_parameter(comp, datum_name)
+        par = comp.parameters[datum_name]
+        path = @or(par.comp_path, ComponentPath(comp.name))
+        # @info "   par path: $path)"
+        return ParameterDefReference(datum_name, root, path)
+    end
+
+    error("Component $(comp.comp_id) does not have a data item named :$datum_name")
+end
 
 # Define type aliases to avoid repeating these in several places
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}

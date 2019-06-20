@@ -153,11 +153,14 @@ function show(io::IO, obj::AbstractMimiType)
 end
 
 function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
-    # Don't print parent or root since these create circular references
     print(io, nameof(typeof(obj)), " id:", objectid(obj))
 
     fields = fieldnames(typeof(obj))
 
+    # skip the 'namespace' field since it's redundant
+    fields = [f for f in fields if f != :namespace]
+
+    # Don't print parent or root since these create circular references
     for field in (:parent, :root)
         pos = findfirst(x -> x == field, fields)
         if pos !== nothing
@@ -171,6 +174,18 @@ function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
 
     io = indent(io)
     _show_fields(io, obj, fields)
+
+    if obj isa AbstractComponentDef
+        # print an abbreviated namespace
+        print(io, "\n")
+        print_indented(io, "namespace:")
+        io = indent(io)
+        for (name, item) in obj.namespace
+            print(io, "\n")
+            print_indented(io, name, ": ")
+            show(io, typeof(item))
+        end
+    end
 end
 
 function show(io::IO, obj::ModelInstance)

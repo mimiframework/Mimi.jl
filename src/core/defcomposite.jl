@@ -111,6 +111,37 @@ function _parse_dotted_symbols(expr)
     return ComponentPath(syms), var_or_par
 end
 
+function _ns_params(comp::AbstractComponentDef)
+    filter(pair -> pair.second isa Vector{ParameterDefReference}, comp.namespace)
+end
+
+function import_params(comp::AbstractCompositeComponentDef)
+    # nothing to do if there are no sub-components
+    length(comp.comps_dict) == 0 && return
+
+    # grab the already-imported items from the namespace; create a reverse-lookup map
+    d = Dict()
+    for (local_name, param_refs) in _ns_params(comp)
+        for ref in param_refs
+            d[(ref.comp_path, ref.name)] = local_name
+        end
+    end
+
+    @info "import_params: reverse lookup: $d"
+
+    # Iterate over all sub-components and import all params not already referenced (usually renamed)
+    for (comp_name, sub_comp) in comp.comps_dict
+        path = sub_comp.comp_path
+        @info "  path: $path"
+        for (local_name, param_refs) in _ns_params(sub_comp)
+            for ref in param_refs
+                if ! haskey(d, (ref.comp_path, ref.name))
+                    comp[local_name] = ref   # import it
+                end
+            end
+        end
+    end
+end
 
 """
     defcomposite(cc_name::Symbol, ex::Expr)
@@ -211,10 +242,10 @@ macro defcomposite(cc_name, ex)
                 Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
             end
             
-            for (local_name, var_par_vec) in imports
+            for (local_name, item) in imports
                 refs = []
 
-                for (src_path, src_name) in var_par_vec
+                for (src_path, src_name) in item
                     dr = Mimi.DatumReference(src_name, $cc_name, src_path)
                     var_par_ref = (Mimi.is_parameter(dr) ? Mimi.ParameterDefReference(dr) : Mimi.VariableDefReference(dr))
                     push!(refs, var_par_ref)
@@ -224,15 +255,19 @@ macro defcomposite(cc_name, ex)
                 count = length(refs)
                 if count == 1 && refs[1] isa Mimi.VariableDefReference
                     $cc_name[local_name] = refs[1]      # store single VariableDefReference; multiples not supported
-                elseif count > 1
-                    vars = filter(obj -> obj isa Mimi.VariableDefReference, refs)
-                    if length(vars) > 0
-                        error("Variables ($vars) must be aliased only individually.")
-                    else
-                        $cc_name[local_name] = Vector{Mimi.ParameterDefReference}(refs)  # fix type
+                else
+                    if count > 1
+                        vars = filter(obj -> obj isa Mimi.VariableDefReference, refs)
+                        if length(vars) > 0
+                            error("Variables ($vars) must be aliased only individually.")
+                        end
                     end
+
+                    $cc_name[local_name] = Vector{Mimi.ParameterDefReference}(refs)  # tweak array type
                 end
             end
+
+            Mimi.import_params($cc_name)
 
             $cc_name
         end

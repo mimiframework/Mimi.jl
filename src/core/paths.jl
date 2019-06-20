@@ -21,11 +21,24 @@ end
     comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
-For composites, also update the component paths for all internal connections.
+For composites, also update the component paths for all internal connections, and
+for all DatumReferences in the namespace.
 For leaf components, update the ComponentPath for ParameterDefs and VariableDefs.
 """
 function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     child.comp_path = path = ComponentPath(parent.comp_path, child.name)
+
+    # First, fix up child's namespace objs. We later recurse down the hierarchy.
+    ns = child.namespace
+    root = get_root(parent)    
+
+    for (name, ref) in ns
+        if ref isa AbstractDatumReference
+            T = typeof(ref)
+            ns[name] = new_ref = T(ref.name, root, path)
+            @info "old ref: $ref, new: $new_ref"
+        end
+    end
 
     # recursively reset all comp_paths
     if is_composite(child)

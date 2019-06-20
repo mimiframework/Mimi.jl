@@ -37,8 +37,9 @@ set_dimension!(m, :time, 2005:2020)
     component(Comp1)
     component(Comp2)
 
-    # foo1 = Comp1.foo        # import
-    # foo2 = Comp2.foo        # import
+    # imports
+    bar = Comp1.par_1_1
+    foo2 = Comp2.foo
 
     # linked imports
     foo = Comp1.foo, Comp2.foo
@@ -63,6 +64,6 @@ end # module
 
 m = TestDefComposite.m
 A = TestDefComposite.A
-
+md = m.md
 
 nothing
