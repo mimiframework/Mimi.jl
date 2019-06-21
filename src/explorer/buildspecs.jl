@@ -85,7 +85,7 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
             if length(dffields) > 3
                 spec =createspec_multitrumpet(name, df, dffields; interactive = interactive)
             else
-                spec = createspec_singletrumpet(name, df, dffields; interactive = interactive)
+                spec = createspec_trumpet(name, df, dffields; interactive = interactive)
             end
         #otherwise we are dealing with layered histograms
         else
@@ -380,15 +380,15 @@ function createspec_singlevalue(name)
 end
 
 # Create individual specs for exploring a Simulation
-function createspec_singletrumpet(name, df, dffields; interactive::Bool=true)
-    df_reduced = trumpet_df_reduce(df) #reduce the dataframe down to only the data needed for max, min, and mean lines
-    interactive ? createspec_singletrumpet_interactive(name, df_reduced, dffields) : createspec_singletrumpet_static(name, df_reduced, dffields)
+function createspec_trumpet(name, df, dffields; interactive::Bool=true)
+    df_reduced = trumpet_df_reduce(df, :trumpet) #reduce the dataframe down to only the data needed for max, min, and mean lines
+    interactive ? createspec_trumpet_interactive(name, df_reduced, dffields) : createspec_trumpet_static(name, df_reduced, dffields)
 end
 
 # https://vega.github.io/vega-lite/examples/layer_line_errorband_ci.html
-function createspec_singletrumpet_static(name, df, dffields)
+function createspec_trumpet_static(name, df, dffields)
 
-    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
+    datapart = getdatapart(df, dffields, :trumpet) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -441,9 +441,9 @@ function createspec_singletrumpet_static(name, df, dffields)
     return spec
 end
 
-function createspec_singletrumpet_interactive(name, df, dffields)
+function createspec_trumpet_interactive(name, df, dffields)
 
-    datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
+    datapart = getdatapart(df, dffields, :trumpet) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
@@ -546,18 +546,171 @@ function createspec_singletrumpet_interactive(name, df, dffields)
 end
 
 function createspec_multitrumpet(name, df, dffields; interactive::Bool = true)
+    df_reduced = trumpet_df_reduce(df, :multitrumpet) #reduce the dataframe down to only the data needed for max, min, and mean lines
     interactive ? createspec_multitrumpet_interactive(name, df, dffields) : createspec_multitrumpet_static(name, df, dffields)
-
 end
 
 function createspec_multitrumpet_interactive(name, df, dffields)
-    # TODO
-    return nothing
+    datapart = getdatapart(df, dffields, :multitrumpet) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "facet" => Dict("row" => Dict("field" => dffields[2], "type" => "nominal")),
+            "spec" => Dict(
+                "vconcat" => [
+                    Dict(
+                        "width" => _plot_width,
+                        "height" => _plot_height,
+                        "encoding" => Dict(
+                            "x"     => Dict(
+                                "field" => dffields[1], 
+                                "type" => "temporal", 
+                                "timeUnit" => "utcyear", 
+                                "scale" => Dict("domain" => Dict("selection" => "brush"))
+                            )
+                        ),
+                        "layer" => [
+                            Dict(
+                                "mark" => "line",
+                                "encoding" => Dict(
+                                    "y" => Dict(
+                                        "aggregate" => "mean", 
+                                        "field" => dffields[3],
+                                        "type" => "quantitative"
+                                    )
+                                )
+                            ),
+                            Dict(
+                                "mark" => "area",
+                                "encoding" => Dict(
+                                    "y" => Dict(
+                                        "aggregate" => "max", 
+                                        "field" => dffields[3],
+                                        "type" => "quantitative",
+                                        "title" => "$(dffields[3])"
+                                    ),
+                                    "y2" => Dict(
+                                        "aggregate" => "min", 
+                                        "field" => dffields[3],
+                                    ),
+                                    "opacity" => Dict(
+                                        "value" => 0.5
+                                    )
+                                )
+                            )
+            
+                        ]
+                    ),
+                    Dict(
+                        "width" => _plot_width,
+                        "height" => _slider_height,
+                        "encoding" => Dict(
+                            "x"     => Dict(
+                                "field" => dffields[1], 
+                                "type" => "temporal", 
+                                "timeUnit" => "utcyear", 
+                            )
+                        ),
+
+                        "layer" => [
+                            Dict(
+                                "mark" => "line",
+                                "encoding" => Dict(
+                                    "y" => Dict(
+                                        "aggregate" => "mean", 
+                                        "field" => dffields[2],
+                                        "type" => "quantitative"
+                                    )
+                                )
+                            ),
+                            Dict(
+                                "mark" => "area",
+                                "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                                "encoding" => Dict(
+                                    "y" => Dict(
+                                        "aggregate" => "max", 
+                                        "field" => dffields[3],
+                                        "type" => "quantitative",
+                                        "title" => "$(dffields[3])"
+                                    ),
+                                    "y2" => Dict(
+                                        "aggregate" => "min", 
+                                        "field" => dffields[3],
+                                    ),
+                                    "opacity" => Dict(
+                                        "value" => 0.5
+                                    )
+                                )
+                            )
+            
+                        ]
+                    )
+                ]
+            )
+        )
+    )
+    return spec
 end
 
 function createspec_multitrumpet_static(name, df, dffields)
-    # TODO
-    return nothing
+    datapart = getdatapart(df, dffields, :multitrumpet) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data" => Dict("values" => datapart),
+            "facet" => Dict("row" => Dict("field" => dffields[2], "type" => "nominal")),
+            "spec" => Dict(
+                "encoding" => Dict(
+                    "x"     => Dict(
+                        "field" => dffields[1], 
+                        "type" => "temporal", 
+                        "timeUnit" => "utcyear", 
+                    )
+                ),
+                "layer" => [
+                    Dict(
+                        "mark" => "line",
+                        "encoding" => Dict(
+                            "y" => Dict(
+                                "aggregate" => "mean", 
+                                "field" => dffields[3],
+                                "type" => "quantitative"
+                            )
+                        )
+                    ),
+                    Dict(
+                        "mark" => "area",
+                        "encoding" => Dict(
+                            "y" => Dict(
+                                "aggregate" => "max", 
+                                "field" => dffields[3],
+                                "type" => "quantitative",
+                                "title" => "$(dffields[3])"
+                            ),
+                            "y2" => Dict(
+                                "aggregate" => "min", 
+                                "field" => dffields[3],
+                            ),
+                            "opacity" => Dict(
+                                "value" => 0.5
+                            )
+                        )
+                    )
+
+                ]
+            )
+        ),
+        "width"  => _plot_width,
+        "height" => _plot_height
+    )
+    return spec
 end
 
 function createspec_histogram(name, df, dffields)
@@ -577,7 +730,10 @@ function getdatapart(df, dffields, plottype::Symbol)
     append!(sb, "[");
 
     # loop over rows and create a dictionary for each row
-    if plottype == :multiline
+    if plottype == :multitrumpet
+        cols = (df[1], df[2], df[3], df[4])
+        datastring = getmultitrumpet(cols, dffields)
+    elseif plottype == :multiline || plottype == :trumpet
         cols = (df[1], df[2], df[3])
         datastring = getmultiline(cols, dffields)
     elseif plottype == :line
@@ -602,6 +758,25 @@ function getmultiline(cols, dffields)
         append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
             * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
             * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
+        
+        if i != numrows
+            append!(datasb, ",")
+        end  
+    end
+    return String(datasb)
+end
+
+function getmultitrumpet(cols, dffields)
+    datasb = StringBuilder()
+    numrows = length(cols[1])
+    for i = 1:numrows
+
+        append!(datasb, "{
+            \"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) * "\",
+            \"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",
+            \"" * dffields[3] * "\":\"" * string(cols[3][i]) * "\",
+            \"" * dffields[4] * "\":\"" * string(cols[4][i]) * "\",
+            }")
         
         if i != numrows
             append!(datasb, ",")
@@ -640,12 +815,18 @@ function getbar(cols, dffields)
     return String(datasb)
 end
 
-function trumpet_df_reduce(df)
+function trumpet_df_reduce(df, plottype::Symbol)
     
-    col = names(df)[2]
+    if plottype == :trumpet
+        col_index = 2
+    else
+        col_index = 3
+    end
+
+    col = names(df)[col_index]
     groupby_keys = []
     for i = 1:length(names(df))
-        i != 2 && push!(groupby_keys,  names(df)[i])
+        i != col_index && push!(groupby_keys,  names(df)[i])
     end
 
     df_new = by(df, groupby_keys, value = col => minimum)
@@ -653,6 +834,11 @@ function trumpet_df_reduce(df)
     append!(df_new, by(df, groupby_keys, value = col => mean))
     rename!(df_new, :value => col)
 
-    reorder_cols = [groupby_keys[1], col, groupby_keys[2:end]...]
+    if plottype == :trumpet
+        reorder_cols = [groupby_keys[1], col, groupby_keys[2:end]...]
+    else
+        reorder_cols = [groupby_keys[1:2]..., col, groupby_keys[3:end]...]
+    end
+
     return df_new[reorder_cols]
 end

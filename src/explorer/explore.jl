@@ -77,10 +77,18 @@ function explore(sim_inst::SimulationInstance; title="Electron", model_index = 1
      #set async block to process messages
      @async for msg in msgchannel(w)
 
+        comp_name = Symbol(msg["comp_name"])
+        item_name = Symbol(msg["item_name"])
+        println("$(comp_name) $(item_name) was clicked!")
+
         spec = _spec_for_sim_item(sim_inst, Symbol(msg["comp_name"]), Symbol(msg["item_name"]); model_index = model_index, scen_name = scen_name)
         specJSON = JSON.json(spec)
 
         run(w, "display($specJSON)")
+
+        comp_name = Symbol(msg["comp_name"])
+        item_name = Symbol(msg["item_name"])
+        println("$(comp_name) $(item_name) was displayed!")
 
     end
 

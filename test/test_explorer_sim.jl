@@ -40,7 +40,7 @@ sd = @defsim begin
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, )
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
 si = run(sd, m, N)
@@ -59,6 +59,10 @@ close(w)
 
 ## 3. Plots
 
-# single trumpet plot
+# trumpet plot
 p = Mimi.plot(si, :emissions, :E_Global)
+@test typeof(p) == VegaLite.VLSpec{:plot}
+
+# mulitrumpet plot
+p = Mimi.plot(si, :emissions, :E)
 @test typeof(p) == VegaLite.VLSpec{:plot}
