@@ -367,10 +367,12 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
             value = convert(Array{dtype, num_dims}, value)
         end
 
-        if comp_param_dims[1] == :time
+        ti = get_time_index_position(md, comp_name, param_name)
+
+        if ti != nothing   # there is a time dimension
             T = eltype(value)
 
-            if num_dims == 0
+            if num_dims == 0    
                 values = value
             else
                 # Want to use the first from the comp_def if it has it, if not use ModelDef
@@ -378,12 +380,12 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
 
                 if isuniform(md)
                     _, stepsize = first_and_step(md)
-                    values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims}(value)
+                    values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims, ti}(value)
                 else
                     times = time_labels(md)  
                     #use the first from the comp_def 
                     first_index = findfirst(isequal(first), times)                
-                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
+                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
                 end 
             end
         else
@@ -748,12 +750,12 @@ function Base.copy(obj::TimestepVector{T_ts, T}) where {T_ts, T}
     return TimestepVector{T_ts, T}(copy(obj.data))
 end
 
-function Base.copy(obj::TimestepMatrix{T_ts, T}) where {T_ts, T}
-    return TimestepMatrix{T_ts, T}(copy(obj.data))
+function Base.copy(obj::TimestepMatrix{T_ts, T, ti}) where {T_ts, T, ti}
+    return TimestepMatrix{T_ts, T, ti}(copy(obj.data))
 end
 
-function Base.copy(obj::TimestepArray{T_ts, T, N}) where {T_ts, T, N}
-    return TimestepArray{T_ts, T, N}(copy(obj.data))
+function Base.copy(obj::TimestepArray{T_ts, T, N, ti}) where {T_ts, T, N, ti}
+    return TimestepArray{T_ts, T, N, ti}(copy(obj.data))
 end
 
 """
