@@ -9,6 +9,8 @@ using VegaLite
 
 using Test
 
+using CSVFiles: load
+
 N = 100
 
 sd = @defsim begin
