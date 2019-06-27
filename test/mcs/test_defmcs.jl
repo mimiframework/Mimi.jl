@@ -11,7 +11,7 @@ using Test
 using Mimi: reset_compdefs, modelinstance, compinstance, 
             get_var_value, OUTER, INNER, ReshapedDistribution
 
-include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
+include("test-model-2/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
 
@@ -41,7 +41,7 @@ sd = @defsim begin
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, grosseconomy.share_var, grosseconomy.k0_var)
 end
 
 # Optionally, user functions can be called just before or after a trial is run

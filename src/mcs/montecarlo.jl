@@ -54,14 +54,6 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
-
-    if datum_name == :k0_var
-        println("Storing trial number $trialnum datum_key $datum_key")
-        println("before fcn:")
-        println("param k0 = $(m[:grosseconomy, :k0])")
-        println("var k0_var = $(m[:grosseconomy, :k0_var])")
-    end
-
     dims = dimensions(m, comp_name, datum_name)
     has_scen = ! (scen_name === nothing)
 
@@ -102,13 +94,6 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             # println("Setting results[$datum_key] = trial_df $(size(trial_df))")
             results[datum_key] = trial_df
         end
-    end
-
-    if datum_name == :k0_var
-        println("after fcn:")
-        println("param k0 = $(m[:grosseconomy, :k0])")
-        println("var k0_var = $(m[:grosseconomy, :k0_var])")
-        println("")
     end
 
     return trial_df
