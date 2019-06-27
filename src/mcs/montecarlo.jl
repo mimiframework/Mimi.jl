@@ -76,7 +76,6 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
 
         trial_df = DataFrame(datum_name => value, :trialnum => trialnum)
         has_scen ? trial_df[:scen] = scen_name : nothing
-
         append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
@@ -609,7 +608,7 @@ end
 IteratorInterfaceExtensions.isiterable(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = true
 TableTraits.isiterabletable(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = true
 
-IteratorInterfaceExtensions.getiterator(sim_inst::SimulationInstance) = SimIterator{sim_inst.sim_def.nt_type}(sim_inst)
+IteratorInterfaceExtensions.getiterator(sim_inst::SimulationInstance{T}) where T = SimIterator{sim_inst.sim_def.nt_type, T}(sim_inst)
 
 column_names(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = fieldnames(sim_def.nt_type)
 column_types(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim_def.rvdict)]

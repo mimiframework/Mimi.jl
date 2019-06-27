@@ -102,7 +102,7 @@ years = Tuple(2000:1:2003)
 #3a.  test constructor (with both matching years 
 # and mismatched years)
 
-y = TimestepMatrix{FixedTimestep{2000, 1}, Int}(a[:,1:2])
+y = TimestepMatrix{FixedTimestep{2000, 1}, Int, 1}(a[:,1:2])
 
 #3b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
@@ -135,7 +135,7 @@ y[:,:] = 11
 @test all([y[1,j] == 11 for j in 1:2])    
 
 #3c.  interval wider than 1
-z = TimestepMatrix{FixedTimestep{2000, 2}, Int}(a[:,3:4])
+z = TimestepMatrix{FixedTimestep{2000, 2}, Int, 1}(a[:,3:4])
 t = FixedTimestep{1980, 2, 3000}(11)
 
 @test z[t,1] == 9
@@ -151,7 +151,7 @@ t2 = next_timestep(t)
 #------------------------------------------------------------------------------
 
 years = Tuple([2000:5:2005; 2015:10:2025])
-y = TimestepMatrix{VariableTimestep{years}, Int}(a[:,1:2])
+y = TimestepMatrix{VariableTimestep{years}, Int, 1}(a[:,1:2])
 
 #4a.  test hasvalue, getindex, setindex!, and lastindex (with both matching years and
 # mismatched years)
@@ -192,9 +192,9 @@ x_years = Tuple(2000:5:2015) #fixed
 y_years = Tuple([2000:5:2005; 2015:10:2025]) #variable
 
 x_vec = TimestepVector{FixedTimestep{2000, 5}, Int}(a[:,3]) 
-x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int}(a[:,1:2])
+x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int, 1}(a[:,1:2])
 y_vec = TimestepVector{VariableTimestep{y_years}, Int}(a[:,3]) 
-y_mat = TimestepMatrix{VariableTimestep{y_years}, Int}(a[:,1:2])
+y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(a[:,1:2])
 
 @test first_period(x_vec) == first_period(x_mat) == x_years[1] 
 @test first_period(y_vec) == first_period(y_mat) == y_years[1]
@@ -249,5 +249,56 @@ set_param!(m, :first, :par, 1:length(years))
 x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10}, Float64}(zeros(10))
 x[:] .= 10
 @test all(x.data .== 10)
+
+#------------------------------------------------------------------------------
+# 7. Test TimestepArrays with time not as the first dimension
+#------------------------------------------------------------------------------
+
+@defcomp gdp begin
+    growth = Parameter(index=[regions, foo, time, 2])   # test that time is not first but not last
+    gdp = Variable(index=[regions, foo, time, 2])
+    gdp0 = Parameter(index=[regions, foo, 2])
+
+    pgrowth = Parameter(index=[regions, 3, time])       # test time as last
+    pop = Variable(index=[regions, 3, time])
+
+    mat = Parameter(index=[regions, time])              # test time as last for a matrix
+    mat2 = Variable(index=[regions, time])
+
+    function run_timestep(p, v, d, ts)
+        if is_first(ts)
+            v.gdp[:, :, ts, :] = (1 .+ p.growth[:, :, ts, :]) .* p.gdp0
+            v.pop[:, :, ts] = zeros(2, 3)
+        else
+            v.gdp[:, :, ts, :] = (1 .+ p.growth[:, :, ts, :]) .* v.gdp[:, :, ts-1, :]
+            v.pop[:, :, ts] = v.pop[:, :, ts-1] .+ p.pgrowth[:, :, ts]
+        end
+        v.mat2[:, ts] = p.mat[:, ts]
+    end
+end
+
+time_index = 2000:2100
+regions = ["OECD","non-OECD"]
+nsteps=length(time_index)
+
+m = Model()
+set_dimension!(m, :time, time_index)
+set_dimension!(m, :regions, regions)
+set_dimension!(m, :foo, 3)
+add_comp!(m, gdp)
+set_param!(m, :gdp, :gdp0, [3; 7] .* ones(length(regions), 3, 2))
+set_param!(m, :gdp, :growth, [0.02; 0.03] .* ones(length(regions), 3, nsteps, 2))
+set_leftover_params!(m, Dict{String, Any}([
+    "pgrowth" => ones(length(regions), 3, nsteps),
+    "mat" => rand(length(regions), nsteps)
+]))
+run(m)
+explore(m)
+
+@test size(m[:gdp, :gdp]) == (length(regions), 3, length(time_index), 2)
+
+@test all(!ismissing, m[:gdp, :gdp])
+@test all(!ismissing, m[:gdp, :pop])
+@test all(!ismissing, m[:gdp, :mat2])
 
 end #module

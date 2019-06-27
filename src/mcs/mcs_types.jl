@@ -210,7 +210,7 @@ const MonteCarloSimulationInstance = SimulationInstance{MCSData}
 struct SimIterator{NT, T}
     sim_inst::SimulationInstance{T}
 
-    function SimIterator{NT}(sim_inst::SimulationInstance{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
+    function SimIterator{NT, T}(sim_inst::SimulationInstance{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
         return new{NT, T}(sim_inst)
     end
 end

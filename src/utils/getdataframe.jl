@@ -24,7 +24,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
         error("Cannot create a dataframe for a scalar parameter :$item_name")
     end
 
-    data = mi[comp_name, item_name]
+    data = deepcopy(mi[comp_name, item_name])
 
     if num_dims == 1
         dim1name = dims[1]

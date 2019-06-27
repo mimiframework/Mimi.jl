@@ -149,8 +149,8 @@ set_dimension!(m, :time, 2000:2009)
 vector = ones(5)
 matrix = ones(3,2)
 
-t_vector= get_timestep_array(m.md, Float64, 1, vector)
-t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
+t_vector= get_timestep_array(m.md, Float64, 1, 1, vector)
+t_matrix = get_timestep_array(m.md, Float64, 2, 1, matrix)
 
 @test typeof(t_vector) <: TimestepVector
 @test typeof(t_matrix) <: TimestepMatrix
@@ -162,8 +162,8 @@ t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
     set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
 )
 
-t_vector= get_timestep_array(m.md, Float64, 1, vector)
-t_matrix = get_timestep_array(m.md, Float64, 2, matrix)
+t_vector= get_timestep_array(m.md, Float64, 1, 1, vector)
+t_matrix = get_timestep_array(m.md, Float64, 2, 2, matrix)
 
 @test typeof(t_vector) <: TimestepVector
 @test typeof(t_matrix) <: TimestepMatrix
