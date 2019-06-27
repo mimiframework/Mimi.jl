@@ -54,6 +54,12 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
+
+    println("Storing trial number $trialnum datum_key $datum_key")
+    println("param k0 = $(m[:grosseconomy, :k0])")
+    println("var k0_var = $(m[:grosseconomy, :k0_var])")
+    println("")
+
     dims = dimensions(m, comp_name, datum_name)
     has_scen = ! (scen_name === nothing)
 
@@ -75,9 +81,8 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             results[datum_key] = results_df
         end
 
-        pairs = Any[typeof(value) => value, :trialnum => trialnum]
-        has_scen && push!(pairs, :scen => scen_name)
-        trial_df = DataFrame(pairs)
+        trial_df = DataFrame(datum_name => value, :trialnum => trialnum)
+        has_scen ? trial_df[:scen] = scen_name : nothing
         append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
