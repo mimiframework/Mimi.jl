@@ -54,13 +54,12 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
-    dims = dimensions(m, comp_name, datum_name)
+    dims = Mimi.dimensions(m, comp_name, datum_name)
     has_scen = ! (scen_name === nothing)
 
     if length(dims) == 0        # scalar value
         value = m[comp_name, datum_name]
         # println("Scalar: $value")
-
 
         if haskey(results, datum_key)
             results_df = results[datum_key]
@@ -75,13 +74,14 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             results[datum_key] = results_df
         end
 
-        pairs = Any[typeof(value) => value, :trialnum => trialnum]
-        has_scen && push!(pairs, :scen => scen_name)
-        trial_df = DataFrame(pairs)
+        trial_df = DataFrame(datum_name => value, :trialnum => trialnum)
+        has_scen ? trial_df[:scen] = scen_name : nothing
+
         append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
     else
+        println("getting dataframe for $(comp_name) $(datum_name)")
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[:trialnum] = trialnum
         has_scen ? trial_df[:scen] = scen_name : nothing

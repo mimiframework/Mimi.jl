@@ -60,7 +60,7 @@ a Window with title `title`. The optional arguments default to a `model_index` o
 assuming there is no secenario dimension, and a window with title `Electron`. 
 
 """
-function explore(sim_inst::SimulationInstance; title="Electron", model_index = 1, scen_name::Union{Nothing, String} = nothing)
+function explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
 
     #start Electron app
     if app === nothing
@@ -71,24 +71,16 @@ function explore(sim_inst::SimulationInstance; title="Electron", model_index = 1
     mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\" => "/")
 
     #window options
-    windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
+    windowopts = Dict("title" => title, "width" => 1100, "height" => 700)
     w = Window(app, URI(joinpath(@__PATH__, "assets", "main.html")), options = windowopts)
 
      #set async block to process messages
      @async for msg in msgchannel(w)
 
-        comp_name = Symbol(msg["comp_name"])
-        item_name = Symbol(msg["item_name"])
-        println("$(comp_name) $(item_name) was clicked!")
-
-        spec = _spec_for_sim_item(sim_inst, Symbol(msg["comp_name"]), Symbol(msg["item_name"]); model_index = model_index, scen_name = scen_name)
+        spec = Mimi._spec_for_sim_item(sim_inst, Symbol(msg["comp_name"]), Symbol(msg["item_name"]); model_index = model_index, scen_name = scen_name)
         specJSON = JSON.json(spec)
 
-        run(w, "display($specJSON)")
-
-        comp_name = Symbol(msg["comp_name"])
-        item_name = Symbol(msg["item_name"])
-        println("$(comp_name) $(item_name) was displayed!")
+        run(w, "display($specJSON)") 
 
     end
 
@@ -103,17 +95,19 @@ function explore(sim_inst::SimulationInstance; title="Electron", model_index = 1
 end
 
 """
-    plot(m::Model, comp_name::Symbol, datum_name::Symbol)
+    plot(m::Model, comp_name::Symbol, datum_name::Symbol; interactive = false)
 
-Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`.
+Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`. If the 
+Bool `interactive` option is set to `true`, the plot will be interactive which will 
+limit saving options.
 """
-function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
+function plot(m::Model, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false)
 
     if m.mi === nothing
         error("A model must be run before it can be plotted")
     end
     
-    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=false)["VLspec"]
+    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=interactive)["VLspec"]
     if spec === nothing
         error("Spec cannot be built.")  
     end      
@@ -122,7 +116,7 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol)
 end
 
 """
-    plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
+    plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
 
 Plot a specific `datum_name` that was one of the saved variables of `SimulationInstance` `sim_inst`
 for results of model `model_index`, which defaults to 1, in scenario `scen_name`, which
@@ -130,9 +124,9 @@ defaults to `nothing` implying there is no scenario dimension. If an `output_dir
 results are stored there, otherwise it is assumed that results are held in results.sim and not 
 in an output folder.
 """
-function plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
+function plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
     
-    spec = Mimi._spec_for_sim_item(sim_inst, comp_name, datum_name; interactive = false, model_index = model_index, scen_name = scen_name)["VLspec"]
+    spec = Mimi._spec_for_sim_item(sim_inst, comp_name, datum_name; interactive = interactive, model_index = model_index, scen_name = scen_name)["VLspec"]
     if spec === nothing 
         error("Spec cannot be built.")
     end

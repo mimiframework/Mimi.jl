@@ -1,16 +1,15 @@
-cd("/Users/lisarennels/.julia/dev/Mimi/test/")
-
 using Mimi
-using Test
-using DataFrames
-using VegaLite
-using Electron
 using Distributions
 using Query
+using DataFrames
+using IterTools
+using DelimitedFiles
 using CSVFiles
 
-# Get the example
-include("../examples/tutorial/02-two-region-model/two-region-model.jl")
+using Test
+
+# Get the example for the trumpet plots
+include("test-model-2/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
 
@@ -40,33 +39,7 @@ sd = @defsim begin
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, grosseconomy.share_var, grosseconomy.k0_var, emissions.E, emissions.E_Global)
 end
 
 si = run(sd, m, N)
-
-## 1. Full Specs for VegaLite
-# TODO: createspec_singletrumpet, createspec_singletrumpet_static, 
-# createspec_singletrumpet_interactive, createspec_multitrumpet, 
-# createspec_multitrumpet_interactive, createspec_multitrumpet_static, 
-# createspec_histogram, createspec_multihistogram
-
-## 2. Explore
-
-w = explore(si, title="Testing Window")
-@test typeof(w) == Electron.Window
-close(w)
-
-## 3. Plots
-
-# trumpet plot
-p = Mimi.plot(si, :emissions, :E_Global)
-@test typeof(p) == VegaLite.VLSpec{:plot}
-p = Mimi.plot(si, :emissions, :E_Global; interactive = true)
-@test typeof(p) == VegaLite.VLSpec{:plot}
-
-# mulitrumpet plot
-p = Mimi.plot(si, :emissions, :E)
-@test typeof(p) == VegaLite.VLSpec{:plot}
-p = Mimi.plot(si, :emissions, :E; interactive = true);
-@test typeof(p) == VegaLite.VLSpec{:plot}

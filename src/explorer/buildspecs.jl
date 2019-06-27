@@ -71,7 +71,7 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
     if length(dims) == 0 # histogram
         spec = createspec_histogram(name, df, dffields)
     elseif length(dims) > 2
-        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
         name = "$comp_name : $item_name"          
@@ -105,7 +105,7 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
         value = m[comp_name, item_name]
         name = "$comp_name : $item_name = $value"
     elseif length(dims) > 2
-        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
@@ -179,13 +179,13 @@ function createspec_lineplot_interactive(name, df, dffields)
         "name"  => name,
         "type" => "line",
         "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
-                    "transform" => [Dict("filter" => Dict("selection" => "brush"))],
+                    # "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "width" => _plot_width,
                     "height" => _plot_height,
                     "mark" => Dict("type" => "line", "point" => true),
@@ -194,7 +194,8 @@ function createspec_lineplot_interactive(name, df, dffields)
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "utcyear", 
-                            "axis" => Dict("title"=> "")
+                            "axis" => Dict("title"=> ""),
+                            "scale" => Dict("domain" => Dict("selection" => "brush"))
                         ),             
                         "y" => Dict(
                             "field" => dffields[2], 
@@ -232,7 +233,7 @@ function createspec_lineplot_static(name, df, dffields)
         "name"  => name,
         "type" => "line",
         "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
@@ -264,20 +265,21 @@ function createspec_multilineplot_interactive(name, df, dffields)
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"  => Dict("values" => datapart),
             "vconcat" => [
                 Dict(
-                    "transform" => [Dict("filter" => Dict("selection" => "brush"))],
+                    # "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "mark" => Dict("type" => "line", "point" => true),
                     "encoding" => Dict(
                         "x"     => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "utcyear", 
-                            "axis" => Dict("title"=> "")
+                            "axis" => Dict("title"=> ""),
+                            "scale" => Dict("domain" => Dict("selection" => "brush"))
                             ),                
                         "y"     => Dict(
                             "field" => dffields[3], 
@@ -320,7 +322,7 @@ function createspec_multilineplot_static(name, df, dffields)
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"  => Dict("values" => datapart),
@@ -352,7 +354,7 @@ function createspec_barplot(name, df, dffields)
         "name"  => name,
         "type" => "bar",
         "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v2.0.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
@@ -559,98 +561,81 @@ function createspec_multitrumpet_interactive(name, df, dffields)
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data"=> Dict("values" => datapart),
-            "facet" => Dict("row" => Dict("field" => dffields[2], "type" => "nominal")),
-            "spec" => Dict(
-                "vconcat" => [
-                    Dict(
-                        "width" => _plot_width,
-                        "height" => _plot_height,
-                        "encoding" => Dict(
-                            "x"     => Dict(
-                                "field" => dffields[1], 
-                                "type" => "temporal", 
-                                "timeUnit" => "utcyear", 
-                                "scale" => Dict("domain" => Dict("selection" => "brush"))
-                            )
-                        ),
-                        "layer" => [
-                            Dict(
-                                "mark" => "line",
-                                "encoding" => Dict(
-                                    "y" => Dict(
-                                        "aggregate" => "mean", 
-                                        "field" => dffields[3],
-                                        "type" => "quantitative"
-                                    )
-                                )
-                            ),
-                            Dict(
-                                "mark" => "area",
-                                "encoding" => Dict(
-                                    "y" => Dict(
-                                        "aggregate" => "max", 
-                                        "field" => dffields[3],
-                                        "type" => "quantitative",
-                                        "title" => "$(dffields[3])"
-                                    ),
-                                    "y2" => Dict(
-                                        "aggregate" => "min", 
-                                        "field" => dffields[3],
-                                    ),
-                                    "opacity" => Dict(
-                                        "value" => 0.5
-                                    )
-                                )
-                            )
+            "vconcat" => [
             
-                        ]
+            # summary graphic of all mean lines
+            Dict(
+                "mark" => "line",
+                "width"  => _plot_width,
+                "height" => _slider_height,
+                "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                "encoding" => Dict(
+                    "x" => Dict(
+                        "field" => dffields[1], 
+                        "type" => "temporal",
+                        "timeUnit" => "utcyear"
                     ),
-                    Dict(
-                        "width" => _plot_width,
-                        "height" => _slider_height,
-                        "encoding" => Dict(
-                            "x"     => Dict(
-                                "field" => dffields[1], 
-                                "type" => "temporal", 
-                                "timeUnit" => "utcyear", 
-                            )
-                        ),
+                    "y" => Dict(
+                        "aggregate" => "mean",
+                        "field" => dffields[3],
+                        "type" => "quantitative",
+                        "title" => "Mean $(dffields[3])"
+                    ),
+                    "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                    "scale" => Dict("scheme" => "category20"))
+                )
+            ),
 
-                        "layer" => [
-                            Dict(
-                                "mark" => "line",
-                                "encoding" => Dict(
-                                    "y" => Dict(
-                                        "aggregate" => "mean", 
-                                        "field" => dffields[2],
-                                        "type" => "quantitative"
-                                    )
+            # faceted rows
+            Dict(
+                "facet" => Dict("row" => Dict("field" => dffields[2], "type" => "nominal")),
+                "spec" => Dict(
+                        Dict(
+                            "width" => _plot_width,
+                            "height" => _plot_height / 2,
+                            "encoding" => Dict(
+                                "x"     => Dict(
+                                    "field" => dffields[1], 
+                                    "type" => "temporal", 
+                                    "timeUnit" => "utcyear", 
+                                    "scale" => Dict("domain" => Dict("selection" => "brush"))
                                 )
                             ),
-                            Dict(
-                                "mark" => "area",
-                                "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
-                                "encoding" => Dict(
-                                    "y" => Dict(
-                                        "aggregate" => "max", 
-                                        "field" => dffields[3],
-                                        "type" => "quantitative",
-                                        "title" => "$(dffields[3])"
-                                    ),
-                                    "y2" => Dict(
-                                        "aggregate" => "min", 
-                                        "field" => dffields[3],
-                                    ),
-                                    "opacity" => Dict(
-                                        "value" => 0.5
+                            "layer" => [
+                                Dict(
+                                    "mark" => "line",
+                                    "encoding" => Dict(
+                                        "y" => Dict(
+                                            "aggregate" => "mean", 
+                                            "field" => dffields[3],
+                                            "type" => "quantitative"
+                                        )
+                                    )
+                                ),
+                                Dict(
+                                    "mark" => "area",
+                                    "encoding" => Dict(
+                                        "y" => Dict(
+                                            "aggregate" => "max", 
+                                            "field" => dffields[3],
+                                            "type" => "quantitative",
+                                            "title" => "Mean $(dffields[3]) with Max/Min"
+                                        ),
+                                        "y2" => Dict(
+                                            "aggregate" => "min", 
+                                            "field" => dffields[3],
+                                        ),
+                                        "opacity" => Dict(
+                                            "value" => 0.5
+                                        )
                                     )
                                 )
-                            )
-            
-                        ]
-                    )
-                ]
+                
+                            ]
+                        )
+                )
             )
+            ]  
         )
     )
     return spec
@@ -665,50 +650,76 @@ function createspec_multitrumpet_static(name, df, dffields)
             "description" => "plot for a specific component variable pair",
             "title" => name,
             "data" => Dict("values" => datapart),
-            "facet" => Dict("row" => Dict("field" => dffields[2], "type" => "nominal")),
-            "spec" => Dict(
+            "vconcat" => [
+
+            # summary graphic of all mean lines
+            Dict(
+                "width"  => _plot_width,
+                "height" => _slider_height,
+                "mark" => "line",
                 "encoding" => Dict(
-                    "x"     => Dict(
+                    "x" => Dict(
                         "field" => dffields[1], 
-                        "type" => "temporal", 
-                        "timeUnit" => "utcyear", 
-                    )
-                ),
-                "layer" => [
-                    Dict(
-                        "mark" => "line",
-                        "encoding" => Dict(
-                            "y" => Dict(
-                                "aggregate" => "mean", 
-                                "field" => dffields[3],
-                                "type" => "quantitative"
-                            )
+                        "type" => "temporal",
+                        "timeUnit" => "utcyear"
+                    ),
+                    "y" => Dict(
+                        "aggregate" => "mean",
+                        "field" => dffields[3],
+                        "type" => "quantitative",
+                        "title" => "Mean $(dffields[3])"
+                    ),
+                    "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                    "scale" => Dict("scheme" => "category20"))
+                )
+            ),
+            # faceted rows
+            Dict(
+                "facet" => Dict("row" => Dict("field" => dffields[2], "type" => "nominal")),
+                "spec" => Dict(
+                    "width"  => _plot_width,
+                    "height" => _plot_height / 2,
+                    "encoding" => Dict(
+                        "x"     => Dict(
+                            "field" => dffields[1], 
+                            "type" => "temporal", 
+                            "timeUnit" => "utcyear" 
                         )
                     ),
-                    Dict(
-                        "mark" => "area",
-                        "encoding" => Dict(
-                            "y" => Dict(
-                                "aggregate" => "max", 
-                                "field" => dffields[3],
-                                "type" => "quantitative",
-                                "title" => "$(dffields[3])"
-                            ),
-                            "y2" => Dict(
-                                "aggregate" => "min", 
-                                "field" => dffields[3],
-                            ),
-                            "opacity" => Dict(
-                                "value" => 0.5
+                    "layer" => [
+                        Dict(
+                            "mark" => "line",
+                            "encoding" => Dict(
+                                "y" => Dict(
+                                    "aggregate" => "mean", 
+                                    "field" => dffields[3],
+                                    "type" => "quantitative"
+                                )
+                            )
+                        ),
+                        Dict(
+                            "mark" => "area",
+                            "encoding" => Dict(
+                                "y" => Dict(
+                                    "aggregate" => "max", 
+                                    "field" => dffields[3],
+                                    "type" => "quantitative",
+                                    "title" => "Mean $(dffields[3]) with Min/Max"
+                                ),
+                                "y2" => Dict(
+                                    "aggregate" => "min", 
+                                    "field" => dffields[3],
+                                ),
+                                "opacity" => Dict(
+                                    "value" => 0.5
+                                )
                             )
                         )
-                    )
-
-                ]
+                    ]
+                )
             )
-        ),
-        "width"  => _plot_width,
-        "height" => _plot_height
+            ]
+        )
     )
     return spec
 end
@@ -775,8 +786,7 @@ function getmultitrumpet(cols, dffields)
             \"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) * "\",
             \"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",
             \"" * dffields[3] * "\":\"" * string(cols[3][i]) * "\",
-            \"" * dffields[4] * "\":\"" * string(cols[4][i]) * "\",
-            }")
+            \"" * dffields[4] * "\":\"" * string(cols[4][i]) * "\"}")
         
         if i != numrows
             append!(datasb, ",")
