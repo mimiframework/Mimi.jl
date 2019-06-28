@@ -1,5 +1,3 @@
-cd("/Users/lisarennels/.julia/dev/Mimi/test/")
-
 using Mimi
 using Test
 using DataFrames
@@ -10,7 +8,7 @@ using Query
 using CSVFiles
 
 # Get the example
-include("../examples/tutorial/02-two-region-model/two-region-model.jl")
+include("mcs/test-model-2/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
 
@@ -40,7 +38,7 @@ sd = @defsim begin
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, grosseconomy.share_var, grosseconomy.depk_var, emissions.E, emissions.E_Global)
 end
 
 si = run(sd, m, N)
@@ -69,4 +67,16 @@ p = Mimi.plot(si, :emissions, :E_Global; interactive = true)
 p = Mimi.plot(si, :emissions, :E)
 @test typeof(p) == VegaLite.VLSpec{:plot}
 p = Mimi.plot(si, :emissions, :E; interactive = true);
+@test typeof(p) == VegaLite.VLSpec{:plot}
+
+# histogram plot
+p = Mimi.plot(si, :grosseconomy, :share_var)
+@test typeof(p) == VegaLite.VLSpec{:plot}
+p = Mimi.plot(si, :grosseconomy, :share_var; interactive = true); # currently just calls static version
+@test typeof(p) == VegaLite.VLSpec{:plot}
+
+# multihistogram plot
+p = Mimi.plot(si, :grosseconomy, :depk_var)
+@test typeof(p) == VegaLite.VLSpec{:plot}
+p = Mimi.plot(si, :grosseconomy, :depk_var; interactive = true); 
 @test typeof(p) == VegaLite.VLSpec{:plot}

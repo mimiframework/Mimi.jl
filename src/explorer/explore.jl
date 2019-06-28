@@ -107,12 +107,11 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol; interactive::Bool
         error("A model must be run before it can be plotted")
     end
     
-    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=interactive)["VLspec"]
-    if spec === nothing
-        error("Spec cannot be built.")  
-    end      
+    spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=interactive)
+    spec === nothing ? error("Spec cannot be built.") : VLspec = spec["VLspec"]
 
-    return VegaLite.VLSpec{:plot}(spec)
+    return VegaLite.VLSpec{:plot}(VLspec)
+
 end
 
 """
@@ -126,10 +125,8 @@ in an output folder.
 """
 function plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
     
-    spec = Mimi._spec_for_sim_item(sim_inst, comp_name, datum_name; interactive = interactive, model_index = model_index, scen_name = scen_name)["VLspec"]
-    if spec === nothing 
-        error("Spec cannot be built.")
-    end
+    spec = Mimi._spec_for_sim_item(sim_inst, comp_name, datum_name; interactive = interactive, model_index = model_index, scen_name = scen_name)
+    spec === nothing ? error("Spec cannot be built.") : VLspec = spec["VLspec"]
 
-    return VegaLite.VLSpec{:plot}(spec)
+    return VegaLite.VLSpec{:plot}(VLspec)
 end

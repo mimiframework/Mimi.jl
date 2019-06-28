@@ -2,12 +2,11 @@
 using Dates
 using CSVFiles
 
-function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dimensions(m, comp_name, item_name)
-    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
-end
+##
+## 1. Generate the VegaLite spec for a variable or parameter
+##
 
-# Generate the VegaLite spec for a variable or parameter
+# Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
     dims = dimensions(m, comp_name, item_name)
 
@@ -76,13 +75,14 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
     dims = dimensions(m, comp_name, item_name)
     dffields = map(string, names(df))         # convert to string once before creating specs
 
+    name = "$comp_name : $item_name"          
+
     if length(dims) == 0 # histogram
-        spec = createspec_histogram(name, df, dffields)
+        spec = createspec_histogram(name, df, dffields; interactive = interactive)
     elseif length(dims) > 2
-        @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
+        @warn("$name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
-        name = "$comp_name : $item_name"          
 
         # check if there are too many dimensions to map and if so, error
         if length(dffields) > 4
@@ -97,7 +97,7 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
             end
         #otherwise we are dealing with layered histograms
         else
-            spec = createspec_multihistogram(name, df, dffields)
+            spec = createspec_multihistogram(name, df, dffields; interactive = interactive)
         end
     end
     
@@ -105,7 +105,39 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         
 end
 
-# Create menu item
+# Create the list of variables and parameters
+function menu_item_list(model::Model)
+    all_menuitems = []
+
+    for comp_name in map(name, compdefs(model)) 
+        items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
+
+        for item_name in items
+            menu_item = _menu_item(model, comp_name, item_name)
+            if menu_item !== nothing
+                push!(all_menuitems, menu_item) 
+            end
+        end
+    end
+
+    # Return sorted list so that the UI list of items will be in alphabetical order 
+    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+end
+
+function menu_item_list(sim_inst::SimulationInstance)
+    all_menuitems = []
+    for datum_key in sim_inst.sim_def.savelist
+
+        menu_item = _menu_item(sim_inst, datum_key)
+        if menu_item !== nothing
+            push!(all_menuitems, menu_item) 
+        end
+    end
+
+    # Return sorted list so that the UI list of items will be in alphabetical order 
+    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+end
+
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dimensions(m, comp_name, item_name)
 
@@ -137,46 +169,11 @@ function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbo
     return menu_item
 end
 
-# Create the list of variables and parameters
-function menu_item_list(model::Model)
-    all_menuitems = []
+##
+## 2. Create individual specs 
+##
 
-    for comp_name in map(name, compdefs(model)) 
-        items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
-
-        for item_name in items
-            menu_item = _menu_item(model, comp_name, item_name)
-            if menu_item !== nothing
-                push!(all_menuitems, menu_item) 
-            end
-        end
-    end
-
-    # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(all_menuitems, by = x -> lowercase(x["name"]))
-end
-
-# Create the list of variables and parameters
-function menu_item_list(sim_inst::SimulationInstance)
-    all_menuitems = []
-    for datum_key in sim_inst.sim_def.savelist
-
-        menu_item = _menu_item(sim_inst, datum_key)
-        if menu_item !== nothing
-            push!(all_menuitems, menu_item) 
-        end
-    end
-
-    # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(all_menuitems, by = x -> lowercase(x["name"]))
-end
-
-# So we can control these in one place...
-global const _plot_width  = 450
-global const _plot_height = 410
-global const _slider_height = 90
-
-# Create individual specs for exploring a model
+# Specs for explore(m::Model)
 function createspec_lineplot(name, df, dffields; interactive::Bool=true)
     interactive ? createspec_lineplot_interactive(name, df, dffields) : createspec_lineplot_static(name, df, dffields)
 end
@@ -207,7 +204,7 @@ function createspec_lineplot_interactive(name, df, dffields)
                         ),             
                         "y" => Dict(
                             "field" => dffields[2], 
-                            "type" => "quantitative",
+                            "type" => "quantitative"
                         )
                     )
                 ), Dict(
@@ -235,7 +232,6 @@ function createspec_lineplot_interactive(name, df, dffields)
     return spec
 end
 
-
 function createspec_lineplot_static(name, df, dffields)
     datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
     spec = Dict(
@@ -251,15 +247,15 @@ function createspec_lineplot_static(name, df, dffields)
                 "x" => Dict(
                     "field" => dffields[1], 
                     "type" => "temporal", 
-                    "timeUnit" => "utcyear", 
+                    "timeUnit" => "utcyear"
                 ),             
                 "y" => Dict(
                     "field" => dffields[2], 
-                    "type" => "quantitative",
+                    "type" => "quantitative"
                 )
             ),
             "width" => _plot_width,
-            "height" => _plot_height,
+            "height" => _plot_height
         )
     )
     return spec
@@ -292,10 +288,10 @@ function createspec_multilineplot_interactive(name, df, dffields)
                             ),                
                         "y"     => Dict(
                             "field" => dffields[3], 
-                            "type" => "quantitative",
+                            "type" => "quantitative"
                             ),
                         "color" => Dict("field" => dffields[2], "type" => "nominal", 
-                            "scale" => Dict("scheme" => "category20")),
+                            "scale" => Dict("scheme" => "category20"))
                     ),
                     "width"  => _plot_width,
                     "height" => _plot_height
@@ -341,14 +337,14 @@ function createspec_multilineplot_static(name, df, dffields)
                 "x"     => Dict(
                     "field" => dffields[1], 
                     "type" => "temporal", 
-                    "timeUnit" => "utcyear", 
+                    "timeUnit" => "utcyear"
                     ),                
                 "y"     => Dict(
                     "field" => dffields[3], 
-                    "type" => "quantitative",
+                    "type" => "quantitative"
                     ),
                 "color" => Dict("field" => dffields[2], "type" => "nominal", 
-                    "scale" => Dict("scheme" => "category20")),
+                    "scale" => Dict("scheme" => "category20"))
             ),
             "width"  => _plot_width,
             "height" => _plot_height
@@ -390,7 +386,8 @@ function createspec_singlevalue(name)
     return spec
 end
 
-# Create individual specs for exploring a Simulation
+# Specs for explore(sim_inst::SimulationInstance)
+
 function createspec_trumpet(name, df, dffields; interactive::Bool=true)
     df_reduced = trumpet_df_reduce(df, :trumpet) #reduce the dataframe down to only the data needed for max, min, and mean lines
     interactive ? createspec_trumpet_interactive(name, df_reduced, dffields) : createspec_trumpet_static(name, df_reduced, dffields)
@@ -436,7 +433,7 @@ function createspec_trumpet_static(name, df, dffields)
                         ),
                         "y2" => Dict(
                             "aggregate" => "min", 
-                            "field" => dffields[2],
+                            "field" => dffields[2]
                         ),
                         "opacity" => Dict(
                             "value" => 0.5
@@ -496,7 +493,7 @@ function createspec_trumpet_interactive(name, df, dffields)
                                 ),
                                 "y2" => Dict(
                                     "aggregate" => "min", 
-                                    "field" => dffields[2],
+                                    "field" => dffields[2]
                                 ),
                                 "opacity" => Dict(
                                     "value" => 0.5
@@ -513,7 +510,7 @@ function createspec_trumpet_interactive(name, df, dffields)
                         "x"     => Dict(
                             "field" => dffields[1], 
                             "type" => "temporal", 
-                            "timeUnit" => "utcyear", 
+                            "timeUnit" => "utcyear"
                         )
                     ),
 
@@ -540,7 +537,7 @@ function createspec_trumpet_interactive(name, df, dffields)
                                 ),
                                 "y2" => Dict(
                                     "aggregate" => "min", 
-                                    "field" => dffields[2],
+                                    "field" => dffields[2]
                                 ),
                                 "opacity" => Dict(
                                     "value" => 0.5
@@ -608,7 +605,9 @@ function createspec_multitrumpet_interactive(name, df, dffields)
                                     "type" => "temporal", 
                                     "timeUnit" => "utcyear", 
                                     "scale" => Dict("domain" => Dict("selection" => "brush"))
-                                )
+                                ),
+                                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                                "scale" => Dict("scheme" => "category20"))
                             ),
                             "layer" => [
                                 Dict(
@@ -618,7 +617,9 @@ function createspec_multitrumpet_interactive(name, df, dffields)
                                             "aggregate" => "mean", 
                                             "field" => dffields[3],
                                             "type" => "quantitative"
-                                        )
+                                        ),
+                                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                                        "scale" => Dict("scheme" => "category20"))
                                     )
                                 ),
                                 Dict(
@@ -632,14 +633,15 @@ function createspec_multitrumpet_interactive(name, df, dffields)
                                         ),
                                         "y2" => Dict(
                                             "aggregate" => "min", 
-                                            "field" => dffields[3],
+                                            "field" => dffields[3]
                                         ),
                                         "opacity" => Dict(
                                             "value" => 0.5
-                                        )
+                                        ),
+                                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                                        "scale" => Dict("scheme" => "category20"))
                                     )
-                                )
-                
+                                )   
                             ]
                         )
                 )
@@ -693,7 +695,9 @@ function createspec_multitrumpet_static(name, df, dffields)
                             "field" => dffields[1], 
                             "type" => "temporal", 
                             "timeUnit" => "utcyear" 
-                        )
+                        ),
+                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                        "scale" => Dict("scheme" => "category20"))
                     ),
                     "layer" => [
                         Dict(
@@ -703,7 +707,9 @@ function createspec_multitrumpet_static(name, df, dffields)
                                     "aggregate" => "mean", 
                                     "field" => dffields[3],
                                     "type" => "quantitative"
-                                )
+                                ),
+                                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                                "scale" => Dict("scheme" => "category20"))
                             )
                         ),
                         Dict(
@@ -717,11 +723,13 @@ function createspec_multitrumpet_static(name, df, dffields)
                                 ),
                                 "y2" => Dict(
                                     "aggregate" => "min", 
-                                    "field" => dffields[3],
+                                    "field" => dffields[3]
                                 ),
                                 "opacity" => Dict(
                                     "value" => 0.5
-                                )
+                                ),
+                                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                                "scale" => Dict("scheme" => "category20"))
                             )
                         )
                     ]
@@ -733,35 +741,216 @@ function createspec_multitrumpet_static(name, df, dffields)
     return spec
 end
 
-function createspec_histogram(name, df, dffields)
-    # TODO
-    return nothing
+function createspec_histogram(name, df, dffields; interactive::Bool = true)
+    interactive ? createspec_histogram_interactive(name, df, dffields) : createspec_histogram_static(name, df, dffields)
 end
 
-function createspec_multihistogram(name, df, dffields)
-    # TODO
-    return nothing
+function createspec_histogram_static(name, df, dffields)
+    datapart = getdatapart(df, dffields, :histogram) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "type" => "histogram",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => Dict("type" => "bar"),
+            "encoding" => Dict(
+                "x" => Dict(
+                    "field" => dffields[1], 
+                    "type" => "quantitative", 
+                    "bin" => true
+                ),             
+                "y" => Dict(
+                    "aggregate" => "count",
+                    "type" => "quantitative",
+                    "title" => "count"
+                )
+            ),
+            "width" => _plot_width,
+            "height" => _plot_height
+        )
+    )
+    return spec
 end
 
-# Helper functions to get JSONtext of the data
+function createspec_histogram_interactive(name, df, dffields) # for now the same as static version
+    createspec_histogram_static(name, df, dffields)    
+end
+
+function createspec_multihistogram(name, df, dffields; interactive::Bool = true)
+    interactive ? createspec_multihistogram_interactive(name, df, dffields) : createspec_multihistogram_static(name, df, dffields)
+end
+
+function createspec_multihistogram_static(name, df, dffields)
+    datapart = getdatapart(df, dffields, :multihistogram) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"  => Dict("values" => datapart),
+            "vconcat" => [
+                # layered histogram of all
+                Dict(
+                    "mark" => Dict("type" => "bar"),
+                    "width"  => _plot_width,
+                    "height" => _slider_height,
+                    "encoding" => Dict(
+                        "x"     => Dict(
+                            "field" => dffields[2], 
+                            "type" => "quantitative", 
+                            "bin" => true
+                            ),                
+                        "y"     => Dict(
+                            "field" => dffields[3], 
+                            "aggregate" => "count",
+                            "type" => "quantitative",
+                            "stack" => nothing
+                            ),
+                        "color" => Dict("field" => dffields[1], "type" => "nominal", 
+                            "scale" => Dict("scheme" => "category20")),
+                        "opacity" => Dict("value" => 0.7)
+                    )
+                ),
+
+                # faceted rows
+                Dict(
+                    "facet" => Dict("row" => Dict("field" => dffields[1], "type" => "nominal")),
+                    "spec" => Dict(
+                        Dict(
+                            "mark" => Dict("type" => "bar"),
+                            "width"  => _plot_width,
+                            "height" => _plot_height / 2,
+                            "encoding" => Dict(
+                                "x"     => Dict(
+                                    "field" => dffields[2], 
+                                    "type" => "quantitative", 
+                                    "bin" => true, 
+                                    ),                
+                                "y"     => Dict(
+                                    "field" => dffields[3], 
+                                    "aggregate" => "count",
+                                    "type" => "quantitative",
+                                    "stack" => true
+                                    ),
+                                "color" => Dict("field" => dffields[1], "type" => "nominal", 
+                                "scale" => Dict("scheme" => "category20"))
+                            )
+                        )
+                    )
+                )
+            ]
+        )
+    )
+    return spec
+end
+
+function createspec_multihistogram_interactive(name, df, dffields)
+    datapart = getdatapart(df, dffields, :multihistogram) #returns JSONtext type 
+    spec = Dict(
+        "name"  => name,
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"  => Dict("values" => datapart),
+            "vconcat" => [
+
+                # layered histogram of all
+                Dict(
+                    "mark" => Dict("type" => "bar"),
+                    "width"  => _plot_width,
+                    "height" => _slider_height,
+                    "selection" => Dict("brush" => Dict("type" => "interval", "encodings" => ["x"])),
+                    "encoding" => Dict(
+                        "x"     => Dict(
+                            "field" => dffields[2], 
+                            "type" => "quantitative", 
+                            "bin" => Dict("maxbins" => 15)
+                        ),                
+                        "y"     => Dict(
+                            "field" => dffields[3], 
+                            "aggregate" => "count",
+                            "type" => "quantitative",
+                            "stack" => nothing      
+                        ), 
+                        "color" => Dict("field" => dffields[1], "type" => "nominal", 
+                            "scale" => Dict("scheme" => "category20")),
+                        "opacity" => Dict("value" => 0.7)
+                    )
+                ),
+
+                # faceted rows
+                Dict(
+                    "facet" => Dict("row" => Dict("field" => dffields[1], "type" => "nominal")),
+                    "spec" => Dict(
+                        Dict(
+                            "mark" => Dict("type" => "bar"),
+                            "width"  => _plot_width,
+                            "height" => _plot_height / 2,
+                            "encoding" => Dict(
+                                "x"     => Dict(
+                                    "field" => dffields[2], 
+                                    "type" => "quantitative", 
+                                    "bin" => Dict("maxbins" => 15),
+                                    "scale" => Dict("domain" => Dict("selection" => "brush"))
+                                    ),                
+                                "y"     => Dict(
+                                    "field" => dffields[3], 
+                                    "aggregate" => "count",
+                                    "type" => "quantitative"
+                                    ),
+                                "color" => Dict("field" => dffields[1], "type" => "nominal", 
+                                "scale" => Dict("scheme" => "category20"))
+                            )
+                        )
+                    )
+                )
+            ]
+        )
+    )
+    return spec
+end
+
+# Plot constants
+global const _plot_width  = 450
+global const _plot_height = 410
+global const _slider_height = 90
+
+##
+## Helper functions
+##
+
+# Various functions to get the JSONtext of the data
 function getdatapart(df, dffields, plottype::Symbol)
 
+    # start the main string
     sb = StringBuilder()
     append!(sb, "[");
 
+    # get the specific string for this type of data
+    datasb = StringBuilder()
+    numrows = length(df[1]);
+
     # loop over rows and create a dictionary for each row
-    if plottype == :multitrumpet
+    if plottype == :multitrumpet #4D with 3 indices
         cols = (df[1], df[2], df[3], df[4])
-        datastring = getmultitrumpet(cols, dffields)
-    elseif plottype == :multiline || plottype == :trumpet
+        datastring = getdatapart_4d(cols, dffields, numrows, datasb)
+    elseif plottype == :multiline || plottype == :trumpet #3D with 2 indices, one of which is time
         cols = (df[1], df[2], df[3])
-        datastring = getmultiline(cols, dffields)
-    elseif plottype == :line
+        datastring = getdatapart_3d_time(cols, dffields, numrows, datasb)
+    elseif plottype == :multihistogram #3D with 2 indices, none of which is time
+        cols = (df[1], df[2], df[3])
+        datastring = getdatapart_3d(cols, dffields, numrows, datasb)
+    elseif plottype == :line  #2D with 1 index, one of which is time
         cols = (df[1], df[2])
-        datastring = getline(cols, dffields)
-    else
+        datastring = getdatapart_2d_time(cols, dffields, numrows, datasb)
+    else # :bar and :histogram
         cols = (df[1], df[2])
-        datastring = getbar(cols, dffields)
+        datastring = getdatapart_2d(cols, dffields, numrows, datasb)
     end
 
     append!(sb, datastring * "]");
@@ -770,25 +959,7 @@ function getdatapart(df, dffields, plottype::Symbol)
     return JSON.JSONText(datapart)
 end
 
-function getmultiline(cols, dffields)
-    datasb = StringBuilder()
-    numrows = length(cols[1])
-    for i = 1:numrows
-
-        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
-            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
-            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
-        
-        if i != numrows
-            append!(datasb, ",")
-        end  
-    end
-    return String(datasb)
-end
-
-function getmultitrumpet(cols, dffields)
-    datasb = StringBuilder()
-    numrows = length(cols[1])
+function getdatapart_4d(cols, dffields, numrows, datasb)
     for i = 1:numrows
 
         append!(datasb, "{
@@ -804,9 +975,35 @@ function getmultitrumpet(cols, dffields)
     return String(datasb)
 end
 
-function getline(cols, dffields)
-    datasb = StringBuilder()
-    numrows = length(cols[1])
+function getdatapart_3d_time(cols, dffields, numrows, datasb)
+    for i = 1:numrows
+
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
+            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
+            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
+        
+        if i != numrows
+            append!(datasb, ",")
+        end  
+    end
+    return String(datasb)
+end
+
+function getdatapart_3d(cols, dffields, numrows, datasb)
+    for i = 1:numrows
+
+        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(cols[1][i])
+            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
+            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
+        
+        if i != numrows
+            append!(datasb, ",")
+        end  
+    end
+    return String(datasb)
+end
+
+function getdatapart_2d_time(cols, dffields, numrows, datasb)
     for i = 1:numrows
         append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) 
             * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\"}") 
@@ -819,9 +1016,7 @@ function getline(cols, dffields)
     return String(datasb)
 end
 
-function getbar(cols, dffields)
-    datasb = StringBuilder()
-    numrows = length(cols[1])
+function getdatapart_2d(cols, dffields, numrows, datasb)
     for i = 1:numrows
 
         append!(datasb, "{\"" * dffields[1] * "\":\"" * string(cols[1][i]) *
@@ -832,6 +1027,12 @@ function getbar(cols, dffields)
         end
     end
     return String(datasb)
+end
+
+# Other helper functions
+function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dimensions(m, comp_name, item_name)
+    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
 end
 
 function trumpet_df_reduce(df, plottype::Symbol)

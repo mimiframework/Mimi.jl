@@ -3,7 +3,7 @@
 
     YGROSS  = Variable(index=[time, regions])   #Gross output
     K       = Variable(index=[time, regions])   #Capital
-    k0_var  = Variable(index=[regions])         #dummy output for testing of layered histograms
+    depk_var  = Variable(index=[regions])         #dummy output for testing of layered histograms
     share_var = Variable()                      #dummy output for testing of histogram
 
     l       = Parameter(index=[time, regions])  #Labor
@@ -20,7 +20,7 @@
         for r in d.regions
             if is_first(t)
                 v.K[t,r] = p.k0[r]
-                v.k0_var[r] = p.k0[r]
+                v.depk_var[r] = p.depk[r]
                 v.share_var = p.share
             else
                 v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
