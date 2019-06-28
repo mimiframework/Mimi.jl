@@ -802,7 +802,7 @@ function createspec_multihistogram_static(name, df, dffields)
                         "x"     => Dict(
                             "field" => dffields[2], 
                             "type" => "quantitative", 
-                            "bin" => true
+                            "bin" => Dict("maxbins" => 15)
                             ),                
                         "y"     => Dict(
                             "field" => dffields[3], 
@@ -828,7 +828,7 @@ function createspec_multihistogram_static(name, df, dffields)
                                 "x"     => Dict(
                                     "field" => dffields[2], 
                                     "type" => "quantitative", 
-                                    "bin" => true, 
+                                    "bin" => Dict("maxbins" => 15)
                                     ),                
                                 "y"     => Dict(
                                     "field" => dffields[3], 
