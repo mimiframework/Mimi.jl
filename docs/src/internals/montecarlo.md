@@ -336,7 +336,7 @@ results = si[:grosseconomy, :K] # model index chosen defaults to 1
 
 ## Plotting and the Explorer UI
 
-As described in the [User Guide](@ref), Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI and `Mimi.plot` function. These functions not only work for `Model`s, but for `SimulationInstance`s as well. These functions will **only** work if you have saved your simulation results in memory (ie. did not set the `run` keyword argument `results_in_memory` to `true`), but methods to handle results saved only to disk are coming soon!
+As described in the [User Guide](@ref), Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI and `Mimi.plot` function. These functions not only work for `Model`s, but for `SimulationInstance`s as well. 
 
 In order to invoke the explorer UI and explore all of the saved variables from the `save` list of a `SimulationInstance`, simply call the function `explore` with the simulation as the required argument as shown below.  This will produce a new browser window containing a selectable list of variables, each of which produces a graphic.
  
@@ -347,9 +347,9 @@ explore(sim_inst)
 
 There are several optional keyword arguments for the `explore` method, as shown by the full function signature:
 ```julia
-explore(sim_inst::SimulationInstance; title="Electron", model_index = 1, scen_name::Union{Nothing, String} = nothing)
+explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
-The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to `run` you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument.
+The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to `run` you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument. Finally, if you have saved the results of your simulation to disk and cleared them from memory using `run`'s `results_in_memory` keyword argument flag set to `false`, you **must** provide a `results_output_dir` which indicates the parent folder for all outputs and potential subdirectories, identical to that passed to `run`.
 
 ![Explorer Simulation Example](figs/explorer_sim_example.png)
 
@@ -364,7 +364,7 @@ save("figure.svg", p)
 
 Note the function signature below, which has the same keyword arguments and requirements as the aforementioned `explore` method, save for `title`.
 ```julia
-plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
+plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
 
 ![Plot Simulation Example](figs/plot_sim_example.png)

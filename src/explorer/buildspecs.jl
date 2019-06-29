@@ -55,30 +55,18 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         
 end
 
-function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, item_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, interactive::Bool=true)
-    
-    multiple_results = (length(sim_inst.results) > 1)
-
-    # get results
-    key = (comp_name, item_name)
-    df = (sim_inst.results[model_index])[key]
-    if scen_name !== nothing
-        if in(:scen, names(df)) 
-            error("The results for this simulation contain a scenario dimension, you must specify the scen_name keyword argument, which is currently set to $(scen_name)")
-        end
-        filter!(row -> row.scen_name === scen_name, df)
-    end
+function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, item_name::Symbol, results::DataFrame; model_index::Int = 1, interactive::Bool=true)
 
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
     m = sim_inst.models[model_index]
     dims = dimensions(m, comp_name, item_name)
-    dffields = map(string, names(df))         # convert to string once before creating specs
+    dffields = map(string, names(results))         # convert to string once before creating specs
 
     name = "$comp_name : $item_name"          
 
     if length(dims) == 0 # histogram
-        spec = createspec_histogram(name, df, dffields; interactive = interactive)
+        spec = createspec_histogram(name, results, dffields; interactive = interactive)
     elseif length(dims) > 2
         @warn("$name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
@@ -91,13 +79,13 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         # a 'time' field necessitates a trumpet plot
         elseif dffields[1] == "time"
             if length(dffields) > 3
-                spec =createspec_multitrumpet(name, df, dffields; interactive = interactive)
+                spec =createspec_multitrumpet(name, results, dffields; interactive = interactive)
             else
-                spec = createspec_trumpet(name, df, dffields; interactive = interactive)
+                spec = createspec_trumpet(name, results, dffields; interactive = interactive)
             end
         #otherwise we are dealing with layered histograms
         else
-            spec = createspec_multihistogram(name, df, dffields; interactive = interactive)
+            spec = createspec_multihistogram(name,results, dffields; interactive = interactive)
         end
     end
     
@@ -186,7 +174,7 @@ function createspec_lineplot_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => name,
+            "title" => "$name (use bottom plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
@@ -272,7 +260,7 @@ function createspec_multilineplot_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => name,
+            "title" => "$name (use bottom plot for interactive selection)",
             "data"  => Dict("values" => datapart),
             "vconcat" => [
                 Dict(
@@ -457,7 +445,7 @@ function createspec_trumpet_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => name,
+            "title" => "$name (use bottom plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
@@ -565,7 +553,7 @@ function createspec_multitrumpet_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => name,
+            "title" => "$name (use top plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
             
@@ -855,7 +843,7 @@ function createspec_multihistogram_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => name,
+            "title" => "$name (use top plot for interactive selection)",
             "data"  => Dict("values" => datapart),
             "vconcat" => [
 
