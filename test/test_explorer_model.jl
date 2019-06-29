@@ -7,7 +7,7 @@ using Electron
 import Mimi: 
     dataframe_or_scalar, createspec_singlevalue, 
     createspec_lineplot, createspec_multilineplot, createspec_barplot,
-    getmultiline, getline, getbar, _spec_for_item, menu_item_list, explore, 
+    _spec_for_item, menu_item_list, explore, 
     getdataframe, reset_compdefs
 
 reset_compdefs()
@@ -49,7 +49,6 @@ run(m)
 @test typeof(dataframe_or_scalar(m, :MyComp, :d)) == Float64
 
 #2.  JSON strings for the spec "values" key
-# TODO:  getmultiline, getline, getbar, getdatapart
 
 #3.  full specs for VegaLite
 #TODO:  createspec_singlevalue, createspec_multilineplot, 
