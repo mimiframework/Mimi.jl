@@ -333,7 +333,43 @@ si = run(sd, m, N; trials_output_filename=trials_output_filename, results_output
 # take a look at the results
 results = si[:grosseconomy, :K] # model index chosen defaults to 1
 ```
-### Simulation Modification Functions
+
+## Plotting and the Explorer UI
+
+As described in the [User Guide](@ref), Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI and `Mimi.plot` function. These functions not only work for `Model`s, but for `SimulationInstance`s as well. These functions will **only** work if you have saved your simulation results in memory (ie. did not set the `run` keyword argument `results_in_memory` to `true`), but methods to handle results saved only to disk are coming soon!
+
+In order to invoke the explorer UI and explore all of the saved variables from the `save` list of a `SimulationInstance`, simply call the function `explore` with the simulation as the required argument as shown below.  This will produce a new browser window containing a selectable list of variables, each of which produces a graphic.
+ 
+```julia
+run(sim_inst)
+explore(sim_inst)
+```
+
+There are several optional keyword arguments for the `explore` method, as shown by the full function signature:
+```julia
+explore(sim_inst::SimulationInstance; title="Electron", model_index = 1, scen_name::Union{Nothing, String} = nothing)
+```
+The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to `run` you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument.
+
+![Explorer Simulation Example](figs/explorer_sim_example.png)
+
+Alternatively, in order to view just one variable, call the (unexported) function `Mimi.plot` as below to return a plot object and automatically display the plot in a viewer, assuming `Mimi.plot` is the last command executed.  Note that `plot` is not exported in order to avoid namespace conflicts, but a user may import it if desired. This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved in many typical file formats such as  [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
+
+```julia
+using VegaLite
+run(sim_inst)
+p = Mimi.plot(sim_inst, :component1, :parameter1)
+save("figure.svg", p)
+```
+
+Note the function signature below, which has the same keyword arguments and requirements as the aforementioned `explore` method, save for `title`.
+```julia
+plot(sim::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
+```
+
+![Plot Simulation Example](figs/plot_sim_example.png)
+
+## Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
 * `deleteRV!`
 * `addRV!`

@@ -760,7 +760,7 @@ function createspec_histogram_static(name, df, dffields)
                 "x" => Dict(
                     "field" => dffields[1], 
                     "type" => "quantitative", 
-                    "bin" => true
+                    "bin" => Dict("maxbins" => 15)
                 ),             
                 "y" => Dict(
                     "aggregate" => "count",
