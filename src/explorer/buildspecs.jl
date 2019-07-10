@@ -17,7 +17,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         name = "$comp_name : $item_name = $value"
         spec = createspec_singlevalue(name)
     elseif length(dims) > 2
-        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
+        @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
         name = "$comp_name : $item_name"          
