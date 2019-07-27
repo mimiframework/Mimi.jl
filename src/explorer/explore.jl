@@ -1,5 +1,4 @@
 ## Mimi UI
-using VegaLite
 
 global app = nothing
 
@@ -48,11 +47,5 @@ Plot a specific `datum_name` (a `variable` or `parameter`) of Model `m`.
 """
 
 function explore(m::Model, comp_name::Symbol, datum_name::Symbol)
-
-    if m.mi == nothing
-        error("A model must be run before it can be plotted")
-    end
-    
-    spec = Mimi._spec_for_item(m, comp_name, datum_name)["VLspec"]
-    VegaLite.VLSpec{:plot}(spec)
+    error("This function is disabled in the macfix branch.")
 end

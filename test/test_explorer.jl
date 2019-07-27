@@ -1,7 +1,6 @@
 using Mimi
 using Base.Test
 using DataFrames
-using VegaLite
 
 import Mimi: 
     dataframe_or_scalar, createspec_singlevalue, 
@@ -65,9 +64,6 @@ w = explore(m, title = "Testing Window")
 
 #5.  explore(m::Model, comp_name::Symbol, datum_name::Symbol; 
 #       dim_name::Union{Void, Symbol} = nothing)
-
-p = explore(m, :MyComp, :a)
-@test typeof(p) == VegaLite.VLSpec{:plot}
 
 #6.  errors and warnings
 @defcomp MyComp2 begin
