@@ -43,7 +43,7 @@ c2 = compdef(test_model, :ch4forcing2)
 @test c1 == ch4forcing1
 @test_throws KeyError compdef(test_model, :missingcomp)
 
-@test c2.comp_id.module_name == :TestMetaInfo_VariableTimestep
+@test c2.comp_id.module_name == Main.TestMetaInfo_VariableTimestep
 @test c2.comp_id.comp_name == :ch4forcing1
 @test c2.name == :ch4forcing2
 

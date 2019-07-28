@@ -164,7 +164,7 @@ end
 # whose value is an instance of this type, e.g.
 # const global adder = ComponentId(module_name, comp_name) 
 struct ComponentId
-    module_name::Symbol
+    module_name::Module
     comp_name::Symbol
 end
 
@@ -357,7 +357,7 @@ mutable struct ComponentInstance{TV <: ComponentInstanceVariables, TP <: Compone
 
         comp_name   = comp_id.comp_name
         module_name = comp_id.module_name
-        comp_module = get_module(module_name)
+        comp_module = module_name
 
         # TBD: use FunctionWrapper here?
         function get_func(name)

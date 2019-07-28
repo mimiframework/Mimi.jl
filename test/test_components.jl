@@ -86,7 +86,7 @@ comps = collect(compdefs(my_model))
 @test [compkeys(my_model.md)...] == [:testcomp1, :testcomp2, :testcomp3]
 @test hascomp(my_model.md, :testcomp1) == true && hascomp(my_model.md, :testcomp4) == false
 
-@test compmodule(testcomp3) == :TestComponents
+@test compmodule(testcomp3) == Main.TestComponents
 @test compname(testcomp3) == :testcomp3
 
 @test numcomponents(my_model) == 3

@@ -140,7 +140,7 @@ macro defcomp(comp_name, ex)
     # @__MODULE__ is evaluated when the expanded macro is interpreted
     result = :(
         let current_module = @__MODULE__,
-            comp_id = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name))),
+            comp_id = Mimi.ComponentId(current_module, $(QuoteNode(comp_name))),
             comp = Mimi.ComponentDef(comp_id)
 
             global $comp_name = comp
@@ -294,7 +294,7 @@ macro defmodel(model_name, ex)
                          component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
 
             # set local copy of comp_mod_name to the stated or default component module
-            expr = (comp_mod_name === nothing ? :(comp_mod_name = nameof(calling_module)) : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
+            expr = (comp_mod_name === nothing ? :(comp_mod_name = calling_module) : :(comp_mod_name = comp_mod_name))
             addexpr(expr)
 
             name = (alias === nothing ? comp_name : alias)
