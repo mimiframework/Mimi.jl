@@ -109,14 +109,14 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         for i in 1:size(data)[1]
             indexes[1] = i
             subdf = _df_helper(m, comp_name, item_name, dims[2:end], data[indexes...])
-            subdf[dims[1]] = keys1[i]
+            subdf[!, dims[1]] .= keys1[i]
 
             if i == 1
                 # add required columns in the first iteration
                 df_names = names(df)
                 for name in names(subdf)
                     if ! (name in df_names)
-                        df[name] = []
+                        df[!, name] = []
                     end
                 end
             end
@@ -147,7 +147,7 @@ function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)
             error("Can't create DataFrame from items with different dimensions ($comp_name1.$item_name1: $dims vs $comp_name.$item_name: $next_dims)")
         end
         result = getdataframe(m, comp_name, item_name)
-        df = hcat(df, result[[item_name]])      # [[xx]] retrieves a 1 column DataFrame
+        df = hcat(df, result[!, [item_name]])      # [[xx]] retrieves a 1 column DataFrame
     end
 
     return df
