@@ -15,7 +15,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     # Create a new df if one was not passed in
     df = df === nothing ? DataFrame() : df
 
-    if haskey(df, item_name)
+    if hasproperty(df, item_name)
         error("An item named $item_name already exists in this DataFrame")
     end
 
@@ -29,7 +29,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     if num_dims == 1
         dim1name = dims[1]
         dim1 = dimension(md, dim1name)
-        df[dim1name] = collect(keys(dim1))
+        df[!, dim1name] = collect(keys(dim1))
         # @info "dim: $dim1name size(df): $(size(df))"
 
         # df[item_name] = data
@@ -44,9 +44,9 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
                                 data[1:(last-first+1)], # ignore padding after these values
                                 repeat([missing], inner=length(dim1) - last))
             # @info "len shifted: $(length(shifted_data))"
-            df[item_name] = shifted_data
+            df[!, item_name] = shifted_data
         else
-            df[item_name] = data
+            df[!, item_name] = data
         end
     else
         df = _df_helper(m, comp_name, item_name, dims, data)
@@ -72,8 +72,8 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         keys2 = collect(keys(dim2))
         len_dim2 = length(dim2)
 
-        df[dim1name] = repeat(keys1, inner = [len_dim2])
-        df[dim2name] = repeat(keys2, outer = [len_dim1])
+        df[!, dim1name] = repeat(keys1, inner = [len_dim2])
+        df[!, dim2name] = repeat(keys2, outer = [len_dim1])
 
         if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
             ci = compinstance(m.mi, comp_name)
@@ -86,7 +86,7 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
             data = vcat(top, data, bottom)
         end
 
-        df[item_name] = cat([vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
+        df[!, item_name] = cat([vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
     else
 
         # shift the data to be padded with missings if this data is shorter than the model
@@ -109,14 +109,14 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         for i in 1:size(data)[1]
             indexes[1] = i
             subdf = _df_helper(m, comp_name, item_name, dims[2:end], data[indexes...])
-            subdf[dims[1]] = keys1[i]
+            subdf[!, dims[1]] .= keys1[i]
 
             if i == 1
                 # add required columns in the first iteration
                 df_names = names(df)
                 for name in names(subdf)
                     if ! (name in df_names)
-                        df[name] = []
+                        df[!, name] = []
                     end
                 end
             end
@@ -147,7 +147,7 @@ function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)
             error("Can't create DataFrame from items with different dimensions ($comp_name1.$item_name1: $dims vs $comp_name.$item_name: $next_dims)")
         end
         result = getdataframe(m, comp_name, item_name)
-        df = hcat(df, result[[item_name]])      # [[xx]] retrieves a 1 column DataFrame
+        df = hcat(df, result[!, [item_name]])      # [[xx]] retrieves a 1 column DataFrame
     end
 
     return df
