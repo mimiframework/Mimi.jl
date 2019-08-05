@@ -11,7 +11,7 @@ my_model = Model()
 
 # Try running model with no components
 @test length(compdefs(my_model)) == 0
-@test numcomponents(my_model) == 0
+@test length(my_model) == 0
 @test_throws ErrorException run(my_model)
 
 # Now add several components to the module
@@ -85,9 +85,9 @@ comps = collect(compdefs(my_model))
 @test compmodule(testcomp3) == :TestComponents
 @test compname(testcomp3) == :testcomp3
 
-@test numcomponents(my_model) == 3
+@test length(my_model) == 3
 add_comp!(my_model, testcomp3, :testcomp3_v2)
-@test numcomponents(my_model) == 4
+@test length(my_model) == 4
 
 
 #------------------------------------------------------------------------------

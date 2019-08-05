@@ -1,3 +1,21 @@
+"""
+    istype(T::DataType)
+
+Return an anonymous func that can be used to filter a dict by data type of values.
+Example: `filter(istype(AbstractComponentDef), obj.namespace)`
+"""
+istype(T::DataType) = (pair -> pair.second isa T)
+
+# Namespace filter functions; these return dicts of values for the given type. 
+# N.B. only composites hold comps in the namespace.
+components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
+
+var_refs(obj::AbstractComponentDef)   = filter(istype(VariableDefReference), obj.namespace)
+param_refs(obj::AbstractComponentDef) = filter(istype(Vector{ParameterDefReference}), obj.namespace)
+
+Base.length(obj::AbstractComponentDef) = 0   # no sub-components
+Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
+
 function find_module(path::NTuple{N, Symbol} where N)
     m = Main
     for name in path
@@ -26,12 +44,12 @@ compdef(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
 
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
 
-compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.comps_dict[comp_name]
+compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.namespace[comp_name]
 
-has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.comps_dict, comp_name)
+has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.namespace, comp_name)
 
-compdefs(c::AbstractCompositeComponentDef) = values(c.comps_dict)
-compkeys(c::AbstractCompositeComponentDef) = keys(c.comps_dict)
+compdefs(c::AbstractCompositeComponentDef) = values(components(c))
+compkeys(c::AbstractCompositeComponentDef) = keys(components(c))
 
 # Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
 compdefs(c::ComponentDef) = []
@@ -87,10 +105,6 @@ last_period(root::AbstractCompositeComponentDef,  comp::AbstractComponentDef) = 
 find_first_period(comp_def::AbstractComponentDef) = @or(first_period(comp_def), first_period(get_root(comp_def)))
 find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), last_period(get_root(comp_def)))
 
-# TBD: should be numcomps()
-numcomponents(obj::AbstractComponentDef) = 0   # no sub-components
-numcomponents(obj::AbstractCompositeComponentDef) = length(obj.comps_dict)
-
 """
     delete!(obj::AbstractCompositeComponentDef, component::Symbol)
 
@@ -102,17 +116,19 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
     end
 
     comp_def = compdef(ccd, comp_name)
-    delete!(ccd.comps_dict, comp_name)
+    delete!(ccd.namespace, comp_name)
 
     # Remove references to the deleted comp
+    # TBD: make this work off namespace instead
     comp_path = comp_def.comp_path
     exports = ccd.exports
 
-    for (key, dr) in exports
-        if dr.comp_path == comp_path
-            delete!(exports, key)
-        end
-    end
+    # deprecated
+    # for (key, dr) in exports
+    #     if dr.comp_path == comp_path
+    #         delete!(exports, key)
+    #     end
+    # end
 
     # TBD: find and delete external_params associated with deleted component? Currently no record of this.
 
@@ -143,15 +159,11 @@ function Base.getindex(comp::AbstractComponentDef, key::Symbol)
     # return obj[ref.name]
 end
 
-function _save_to_namespace(comp::AbstractComponentDef, 
-                            key::Symbol, value::Union{NamespaceElement, ParameterDefReference})
-    # convert single param def ref to a vector of one for consistency
-    value = (value isa ParameterDefReference ? [value] : value)
-    T = typeof(value)
-    
+function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)    
     # Allow replacement of existing values for a key only with items of the same type.
     if haskey(comp, key)
         elt_type = typeof(comp[key])
+        T = typeof(value)
         elt_type == T || error("Cannot replace item $key, type $elt_type, with object type $T in component $(comp.comp_path).")
     end
 
@@ -165,48 +177,19 @@ function Base.setindex!(comp::ComponentDef, value::AbstractDatumDef, key::Symbol
     return value
 end
 
-function Base.setindex!(comp::AbstractCompositeComponentDef, ref::ParameterDefReference, key::Symbol)
-    _save_to_namespace(comp, key, ref)
-end
 
 function Base.setindex!(comp::AbstractCompositeComponentDef, value::NamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
-    
-    # Also store in comps_dict, if value is a component
-    # TBD: drop comps_dict in favor of namespace for both purposes
-    if value isa AbstractComponentDef
-        comp.comps_dict[key] = value
-    end
+end
 
-    return value
+# Handle case of single ParameterDefReference by converting to 1-element array
+function Base.setindex!(comp::AbstractCompositeComponentDef, ref::ParameterDefReference, key::Symbol)
+    setindex!(comp, [ref], key)
 end
 
 #
 # Dimensions
 #
-
-function add_dimension!(comp::AbstractComponentDef, name)
-    # generally, we add dimension name with nothing instead of a Dimension instance,
-    # but in the case of an Int name, we create the "anonymous" dimension on the fly.
-    dim = (name isa Int) ? Dimension(name) : nothing
-    comp.dim_dict[Symbol(name)] = dim                         # TBD: test this
-end
-
-# Note that this operates on the registered comp, not one added to a composite
-add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
-
-function dim_names(ccd::AbstractCompositeComponentDef)
-    dims = OrderedSet{Symbol}()             # use a set to eliminate duplicates
-    for cd in compdefs(ccd)
-        union!(dims, keys(dim_dict(cd)))    # TBD: test this
-    end
-
-    return collect(dims)
-end
-
-dim_names(comp_def::AbstractComponentDef, datum_name::Symbol) = dim_names(datumdef(comp_def, datum_name))
-
-dim_count(def::AbstractDatumDef) = length(dim_names(def))
 
 step_size(values::Vector{Int}) = (length(values) > 1 ? values[2] - values[1] : 1)
 
@@ -259,34 +242,6 @@ function datum_size(obj::AbstractCompositeComponentDef, comp_def::ComponentDef, 
     end
     return datum_size
 end
-
-########
-# Should these all be defined for leaf ComponentDefs? What is the time (or other) dimension for
-# a leaf component? Is time always determined from ModelDef? What about other dimensions that may
-# be defined differently in a component?
-########
-
-# Symbols are added to the dim_dict in @defcomp (with value of nothing), but are set later using set_dimension!
-has_dim(obj::AbstractCompositeComponentDef, name::Symbol) = (haskey(obj.dim_dict, name) && obj.dim_dict[name] !== nothing)
-
-isuniform(obj::AbstractCompositeComponentDef) = obj.is_uniform
-
-set_uniform!(obj::AbstractCompositeComponentDef, value::Bool) = (obj.is_uniform = value)
-
-dimension(obj::AbstractCompositeComponentDef, name::Symbol) = obj.dim_dict[name]
-
-dim_names(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [dimension(obj, dim) for dim in dims]
-
-dim_count_dict(obj::AbstractCompositeComponentDef) = Dict([name => length(value) for (name, value) in dim_dict(obj)])
-
-# deprecated?
-#dim_key_dict(obj::AbstractCompositeComponentDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(obj)])
-
-dim_counts(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(obj, dims)]
-dim_count(obj::AbstractCompositeComponentDef, name::Symbol) = length(dimension(obj, name))
-
-dim_keys(obj::AbstractCompositeComponentDef, name::Symbol)   = collect(keys(dimension(obj, name)))
-dim_values(obj::AbstractCompositeComponentDef, name::Symbol) = collect(values(dimension(obj, name)))
 
 """
     _check_run_period(obj::AbstractComponentDef, first, last)
@@ -347,60 +302,15 @@ function _set_run_period!(obj::AbstractComponentDef, first, last)
     nothing
 end
 
-"""
-    set_dimension!(ccd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
-
-Set the values of `ccd` dimension `name` to integers 1 through `count`, if `keys` is
-an integer; or to the values in the vector or range if `keys` is either of those types.
-"""
-function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
-    redefined = has_dim(ccd, name)
-    # if redefined
-    #     @warn "Redefining dimension :$name"
-    # end
-
-    dim = Dimension(keys)
-
-    if name == :time
-        _set_run_period!(ccd, keys[1], keys[end])
-        propagate_time(ccd, dim)
-        set_uniform!(ccd, isuniform(keys))
-    end
-
-    return set_dimension!(ccd, name, dim)
-end
-
-function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
-    dirty!(obj)
-    obj.dim_dict[name] = dim
-
-    if name == :time
-        for subcomp in compdefs(obj)
-            set_dimension!(subcomp, :time, dim)
-        end
-    end
-    return dim
-end
-
 # helper functions used to determine if the provided time values are
 # a uniform range.
 
-function all_equal(values)
-    return all(map(val -> val == values[1], values[2:end]))
-end
+all_equal(values) = all(map(val -> val == values[1], values[2:end]))
 
-function isuniform(values)
-   if length(values) == 0
-        return false
-   else
-        return all_equal(diff(collect(values)))
-   end
-end
+isuniform(values) = (length(values) == 0 ? false : all_equal(diff(collect(values))))
 
 # needed when time dimension is defined using a single integer
-function isuniform(values::Int)
-    return true
-end
+isuniform(values::Int) = true
 
 #
 # Data references
@@ -449,6 +359,7 @@ Return a list of the parameter definitions for `comp_def`.
 """
 parameters(obj::AbstractComponentDef) = values(obj.parameters)
 
+# TBD: deprecated
 function parameters(ccd::AbstractCompositeComponentDef; reset::Bool=false)
     pars = ccd.parameters
     
@@ -481,19 +392,21 @@ parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Sym
 parameter(dr::ParameterDefReference) = parameter(compdef(dr), nameof(dr))
 
 function _parameter(obj::AbstractComponentDef, name::Symbol)
-    try
+    if haskey(obj.parameters, name)
         return obj.parameters[name]
-    catch
-        error("Parameter $name was not found in component $(nameof(obj))")
     end
+
+    error("Parameter $name was not found in component $(nameof(obj))")
 end
 
 parameter(obj::ComponentDef, name::Symbol) = _parameter(obj, name)
 
+# TBD: modify to use namespace
 function parameter(obj::AbstractCompositeComponentDef, name::Symbol)
-    if ! is_exported(obj, name)
-        error("Parameter $name is not exported by composite component $(obj.comp_path)")
+    if ! haskey(obj.namespace, name)
+        error("Item $name is not present in composite component $(obj.comp_path)")
     end
+
     _parameter(obj, name)
 end
 
@@ -697,12 +610,12 @@ end
 variable(obj::ComponentDef, name::Symbol) = _variable(obj, name)
 
 function variable(obj::AbstractCompositeComponentDef, name::Symbol)
-    # TBD test this can be dropped if we maintain vars/pars dynamically
     _collect_data_refs(obj)  
     
-    if ! is_exported(obj, name)
-        error("Variable $name is not exported by composite component $(obj.comp_path)")
-    end
+    if ! haskey(obj.namespace, name)
+        error("Item $name is not present in composite component $(obj.comp_path)")
+    end    
+
     _variable(obj, name)
 end
 
@@ -734,14 +647,14 @@ function variable_unit(obj::AbstractCompositeComponentDef, comp_path::ComponentP
     return var.unit
 end
 
-function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
-    var = variable(obj, comp_path, var_name)
-    return dim_names(var)
-end
-
 function variable_unit(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
     return var.unit
+end
+
+function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
+    var = variable(obj, comp_path, var_name)
+    return dim_names(var)
 end
 
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
@@ -779,14 +692,14 @@ function _add_anonymous_dims!(obj::AbstractCompositeComponentDef, comp_def::Abst
     end
 end
 
-function comps_dict!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symbol, AbstractComponentDef})
-    for key in keys(obj.comps_dict)
-        delete!(obj.namespace, key)
+function _set_comps!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symbol, AbstractComponentDef})
+    for key in keys(components(obj))
+        delete!(obj, key)
     end
-    empty!(obj.comps_dict)
 
+    # add comps to namespace
     for (key, value) in comps
-        obj[key] = value            # adds to both comps_dict and namespace
+        obj[key] = value
     end
     
     dirty!(obj)
@@ -811,7 +724,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     comp_name = nameof(comp_def)
 
     if before === nothing && after === nothing
-        obj[comp_name] = comp_def   # add to comps_dict and to namespace
+        obj[comp_name] = comp_def   # add to namespace
     else
         new_comps = OrderedDict{Symbol, AbstractComponentDef}()
 
@@ -820,7 +733,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
                 error("Component to add before ($before) does not exist")
             end
 
-            for (k, v) in obj.comps_dict
+            for (k, v) in components(obj)
                 if k == before
                     new_comps[comp_name] = comp_def
                 end
@@ -832,7 +745,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
                 error("Component to add before ($before) does not exist")
             end
 
-            for (k, v) in obj.comps_dict
+            for (k, v) in components(obj)
                 new_comps[k] = v
                 if k == after
                     new_comps[comp_name] = comp_def
@@ -840,7 +753,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
             end
         end
 
-        comps_dict!(obj, new_comps)
+        _set_comps!(obj, new_comps)
     end
 
     comp_path!(comp_def, obj)
@@ -870,6 +783,7 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
 
     # @info "comp path: $path, datum_name: $datum_name"
 
+    # TBD: should be obviated by namespace
     if is_composite(comp_def)
         # find and cache locally exported vars & pars
         variables(comp_def)
@@ -934,39 +848,8 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         error("Cannot set first or last period when adding a composite component: $(comp_def.comp_id)")
     end
 
-    #
-    # deprecated
-    #
-    # If not specified, export all var/pars. Caller can pass empty list to export nothing.
-    # TBD: actually, might work better to export nothing unless declared as such.
-    # if exports === nothing
-    #     exports = []
-    # end
-
-    # for item in exports
-    #     if item isa Pair
-    #         (name, export_name) = item
-    #     elseif item isa Symbol
-    #         name = export_name = item
-    #     else
-    #         error("Exports argument to add_comp! must be pair or symbol, got: $item")
-    #     end
-
-    #     # TBD: should this just add to obj.variables / obj.parameters dicts?
-    #     # Those dicts hold ParameterDef / VariableDef, which we want to reference, not
-    #     # duplicate when building instances. One approach would be for the build step
-    #     # to create a dict on objectid(x) to store/find the generated var/param.
-    #     if haskey(obj.exports, export_name)
-    #         error("Exports may not include a duplicate name ($export_name)")
-    #     end
-
-    #     obj.exports[export_name] = _find_var_par(obj, comp_def, comp_name, name)
-    # end
-
     # Check if component being added already exists
-    if has_comp(obj, comp_name)
-        error("Cannot add two components of the same name ($comp_name)")
-    end
+    has_comp(obj, comp_name) && error("Cannot add two components of the same name ($comp_name)")
 
     # check time constraints if the time dimension has been set
     if has_dim(obj, :time)
@@ -1134,8 +1017,8 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         end
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
-        # Delete the old component from comps_dict, leaving the existing parameter connections
-        delete!(obj.comps_dict, comp_name)
+        # Delete the old component from composite, leaving the existing parameter connections
+        delete!(obj.namespace, comp_name)
     else
         # Delete the old component and all its internal and external parameter connections
         delete!(obj, comp_name)

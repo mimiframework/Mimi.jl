@@ -218,7 +218,6 @@ end
 
 function _build(md::ModelDef)
     # @info "_build(md)"
-    # _propagate_exports(md)
     add_connector_comps(md)
     
     # check if all parameters are set

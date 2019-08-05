@@ -175,7 +175,7 @@ Return an iterator on the components in a model's model instance.
 
 @delegate compdef(m::Model, comp_name::Symbol) => md
 
-@delegate numcomponents(m::Model) => md
+@delegate Base.length(m::Model) => md
 
 @delegate first_and_step(m::Model) => md
 
@@ -353,7 +353,7 @@ Run model `m` once.
 """
 function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
                   dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
-    if numcomponents(m) == 0
+    if length(m) == 0
         error("Cannot run a model with no components.")
     end
 

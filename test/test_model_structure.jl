@@ -65,7 +65,7 @@ connect_param!(m, :C => :parC, :B => :varB)
 
 @test_throws ErrorException add_comp!(m, C, after=:A, before=:B)
 
-@test numcomponents(m.md) == 3
+@test length(m.md) == 3
 
 @test length(internal_param_conns(m)) == 2
 c = compdef(m, :C)

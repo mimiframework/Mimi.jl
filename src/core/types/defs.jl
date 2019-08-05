@@ -40,7 +40,7 @@ end
     variables::OrderedDict{Symbol, VariableDef}
     parameters::OrderedDict{Symbol, ParameterDef}
     dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
-    namespace::Dict{Symbol, Any}
+    namespace::OrderedDict{Symbol, Any}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
     is_uniform::Bool
@@ -71,7 +71,7 @@ end
         self.variables  = OrderedDict{Symbol, VariableDef}()
         self.parameters = OrderedDict{Symbol, ParameterDef}()
         self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
-        self.namespace = Dict{Symbol, Any}()
+        self.namespace = OrderedDict{Symbol, Any}()
         self.first = self.last = nothing
         self.is_uniform = true
         self.parent = nothing
@@ -146,7 +146,7 @@ global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference, Vector{ParameterDefReference}}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
-    comps_dict::OrderedDict{Symbol, AbstractComponentDef}
+    #comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Binding}
     exports::ExportsDict
 
@@ -169,7 +169,7 @@ global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference
         ComponentDef(self, comp_id) # call superclass' initializer
 
         self.comp_path = ComponentPath(self.name)
-        self.comps_dict = OrderedDict{Symbol, AbstractComponentDef}()
+        # self.comps_dict = OrderedDict{Symbol, AbstractComponentDef}()
         self.bindings = Vector{Binding}()
         self.exports  = ExportsDict()
         self.internal_param_conns = Vector{InternalParameterConnection}()

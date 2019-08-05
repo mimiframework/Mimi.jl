@@ -215,7 +215,7 @@ function _show(io::IO, obj::Model, which::Symbol)
     println(io, "  Module: $(md.comp_id.module_path)")
     
     println(io, "  Components:")
-    for comp in values(md.comps_dict)
+    for comp in values(components(md))
         println(io, "    $(comp.comp_id)")
     end
     

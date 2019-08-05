@@ -111,18 +111,14 @@ function _parse_dotted_symbols(expr)
     return ComponentPath(syms), var_or_par
 end
 
-function _ns_params(comp::AbstractComponentDef)
-    filter(pair -> pair.second isa Vector{ParameterDefReference}, comp.namespace)
-end
-
 function import_params(comp::AbstractCompositeComponentDef)
     # nothing to do if there are no sub-components
-    length(comp.comps_dict) == 0 && return
+    length(comp) == 0 && return
 
     # grab the already-imported items from the namespace; create a reverse-lookup map
     d = Dict()
-    for (local_name, param_refs) in _ns_params(comp)
-        for ref in param_refs
+    for (local_name, prefs) in param_refs(comp)
+        for ref in prefs
             d[(ref.comp_path, ref.name)] = local_name
         end
     end
@@ -130,11 +126,11 @@ function import_params(comp::AbstractCompositeComponentDef)
     @info "import_params: reverse lookup: $d"
 
     # Iterate over all sub-components and import all params not already referenced (usually renamed)
-    for (comp_name, sub_comp) in comp.comps_dict
+    for (comp_name, sub_comp) in components(comp)
         path = sub_comp.comp_path
         @info "  path: $path"
-        for (local_name, param_refs) in _ns_params(sub_comp)
-            for ref in param_refs
+        for (local_name, prefs) in param_refs(sub_comp)
+            for ref in prefs
                 if ! haskey(d, (ref.comp_path, ref.name))
                     comp[local_name] = ref   # import it
                 end
