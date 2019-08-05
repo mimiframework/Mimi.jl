@@ -313,7 +313,7 @@ version = "0.6.4"
 
 [[Mimi]]
 deps = ["CSVFiles", "Compose", "DataFrames", "DataStructures", "Dates", "DelimitedFiles", "Distributions", "Electron", "FileIO", "FilePaths", "GlobalSensitivityAnalysis", "GraphPlot", "IterTools", "IteratorInterfaceExtensions", "JSON", "LightGraphs", "LinearAlgebra", "Logging", "MacroTools", "MetaGraphs", "NamedArrays", "Pkg", "ProgressMeter", "Random", "Serialization", "Statistics", "StatsBase", "StringBuilders", "TableTraits", "VegaLite"]
-path = "..\\.."
+path = "../.."
 uuid = "e4e893b0-ee5e-52ea-8111-44b3bdec128c"
 version = "0.9.2-DEV"
 
