@@ -171,16 +171,17 @@ function connect_param!(obj::AbstractCompositeComponentDef,
         if dim_count == 0
             values = backup
         else
+            ti = get_time_index_position(dst_param)
             
             if isuniform(obj)
                 # use the first from the comp_def not the ModelDef
                 stepsize = step_size(obj)
-                values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count}(backup)
+                values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count, ti}(backup)
             else
                 times = time_labels(obj)
                 # use the first from the comp_def 
                 first_index = findfirst(isequal(first), times) 
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count}(backup)
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count, ti}(backup)
             end
             
         end
@@ -404,10 +405,11 @@ end
 function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, 
                              value::Union{AbstractArray, AbstractRange, Tuple}; 
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    if param_dims[1] == :time   
+    ti = get_time_index_position(param_dims)
+    if ti != nothing
         value = convert(Array{number_type(obj)}, value)
         num_dims = length(param_dims)
-        values = get_timestep_array(obj, eltype(value), num_dims, value)      
+        values = get_timestep_array(obj, eltype(value), num_dims, ti, value)      
     else
         values = value
     end
@@ -545,7 +547,8 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
         if param.values isa TimestepArray 
             T = eltype(value)
             N = length(size(value))
-            new_timestep_array = get_timestep_array(obj, T, N, value)
+            ti = get_time_index_position(param)
+            new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
 
         elseif raise_error

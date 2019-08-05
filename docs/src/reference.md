@@ -30,8 +30,7 @@ parameters
 parameter_names
 parameter_dimensions
 plot_comp_graph
-replace_comp! 
-replaceRV!
+replace_comp!
 run_sim
 set_dimension! 
 set_leftover_params! 

@@ -12,6 +12,9 @@ using Test
     @info("test_main_variabletimestep.jl")
     include("test_main_variabletimestep.jl")
 
+    @info("test_broadcast.jl")
+    include("test_broadcast.jl")
+
     @info("test_metainfo.jl")
     include("test_metainfo.jl")
 

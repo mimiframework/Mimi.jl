@@ -159,11 +159,11 @@ run1 = run_my_model()
 
 expanded_get_dataframe = getdataframe(run1, :grosseconomy =>(:YGROSS, :K))
 curr_get_dataframe = getdataframe(run1, :grosseconomy, :YGROSS)
-@test(expanded_get_dataframe[3] == curr_get_dataframe[3])
+@test(expanded_get_dataframe[!, 3] == curr_get_dataframe[!, 3])
 
 expanded_get_dataframe = getdataframe(run1, :grosseconomy => :YGROSS, :emissions => :E)
 curr_get_dataframe = getdataframe(run1, :emissions, :E)
-@test(expanded_get_dataframe[4] == curr_get_dataframe[3])
+@test(expanded_get_dataframe[!, 4] == curr_get_dataframe[!, 3])
 
 
 #################
@@ -191,7 +191,7 @@ run(my_model)
 
 #Regular getdataframe
 dataframe = getdataframe(my_model, :testcomp1 => :var1)
-@test(dataframe[2] == par)
+@test(dataframe[!, 2] == par)
 
 #Test trying to getdataframe from component that does not exist
 @test_throws ErrorException getdataframe(my_model, :testcomp1 => :var2)

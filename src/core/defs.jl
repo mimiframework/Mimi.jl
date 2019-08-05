@@ -541,10 +541,12 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             value = convert(Array{dtype, num_dims}, value)
         end
 
-        if comp_param_dims[1] == :time
+        ti = get_time_index_position(md, comp_name, param_name)
+
+        if ti != nothing   # there is a time dimension
             T = eltype(value)
 
-            if num_dims == 0
+            if num_dims == 0    
                 values = value
             else
                 # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
@@ -553,12 +555,12 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
 
                 if isuniform(obj)
                     stepsize = step_size(obj)
-                    values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims}(value)
+                    values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims, ti}(value)
                 else
                     times = time_labels(obj)
                     #use the first from the comp_def
                     first_index = findfirst(isequal(first), times)
-                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims}(value)
+                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
                 end
             end
         else

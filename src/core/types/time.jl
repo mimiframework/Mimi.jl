@@ -34,14 +34,14 @@ mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
     end
 end
 
-mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N} <: MimiStruct
+mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti} <: MimiStruct
 	data::Array{T, N}
 
-    function TimestepArray{T_TS, T, N}(d::Array{T, N}) where {T_TS, T, N}
+    function TimestepArray{T_TS, T, N, ti}(d::Array{T, N}) where {T_TS, T, N, ti}
 		return new(d)
 	end
 
-    function TimestepArray{T_TS, T, N}(lengths::Int...) where {T_TS, T, N}
+    function TimestepArray{T_TS, T, N, ti}(lengths::Int...) where {T_TS, T, N, ti}
 		return new(Array{T, N}(undef, lengths...))
 	end
 end
@@ -49,5 +49,5 @@ end
 # Since these are the most common cases, we define methods (in time.jl)
 # specific to these type aliases, avoiding some of the inefficiencies
 # associated with an arbitrary number of dimensions.
-const TimestepMatrix{T_TS, T} = TimestepArray{T_TS, T, 2}
-const TimestepVector{T_TS, T} = TimestepArray{T_TS, T, 1}
+const TimestepMatrix{T_TS, T, ti} = TimestepArray{T_TS, T, 2, ti}
+const TimestepVector{T_TS, T} = TimestepArray{T_TS, T, 1, 1}

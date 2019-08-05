@@ -12,6 +12,8 @@ The following terminology is used throughout the documentation.
 
 ## Available Tutorials
 
+_Additional AERE Workshop Tutorials: The Mimi developement team recently participated in the 2019 Association of Environmental and Resource Economists (AERE) summer conference during the pre-conference workshop on Advances in Integrated Assessment Models. This included both a presentation and a hands-on session demonstrating various use cases for Mimi. The Github repository [here](https://github.com/davidanthoff/teaching-2019-aere-workshop) contains a) all slides from the workshop and b) all the code from the hands on sessions, which may be of interest to Mimi users. Importantly note that the linked code represents as a snapwhot of Mimi at the time of the workshop, and **will not** be updated to reflect new changes._
+
 1. **Run an Existing Model**
 
    [Tutorial 1: Run an Existing Model](@ref) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
@@ -43,7 +45,7 @@ To use the following tutorials, follow the steps below.
 pkg> add Mimi
 ```
 
-4. To access the models in the [MimiRegistry](https://github.com/anthofflab/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
+4. To access the models in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git

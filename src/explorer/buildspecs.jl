@@ -22,15 +22,23 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
         df = getdataframe(m, comp_name, item_name)
-
         dffields = map(string, names(df))         # convert to string once before creating specs
 
         # check if there are too many dimensions to map and if so, warn
         if length(dffields) > 3
             error()
-                
-        # a 'time' field necessitates a line plot  
-        elseif dffields[1] == "time"
+               
+        # a 'time' field necessitates a line plot
+        elseif "time" in dffields
+
+            # need to reorder the df to have 'time' as the first dimension
+            ti = findfirst(isequal("time"), dffields)
+            if ti != 1    
+                fields1, fields2 = dffields[1:ti-1], dffields[ti+1:end]
+                dffields = ["time", fields1..., fields2...]
+                df = df[:, [Symbol(name) for name in dffields]]
+            end
+
             if length(dffields) > 2
                 spec = createspec_multilineplot(name, df, dffields, interactive=interactive)
             else
@@ -144,6 +152,7 @@ function createspec_lineplot_interactive(name, df, dffields)
     )
     return spec
 end
+
 
 function createspec_lineplot_static(name, df, dffields)
     datapart = getdatapart(df, dffields, :line) #returns JSONtext type 
@@ -305,13 +314,13 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     # loop over rows and create a dictionary for each row
     if plottype == :multiline
-        cols = (df[1], df[2], df[3])
+        cols = (df[!, 1], df[!, 2], df[!, 3])
         datastring = getmultiline(cols, dffields)
     elseif plottype == :line
-        cols = (df[1], df[2])
+        cols = (df[!, 1], df[!, 2])
         datastring = getline(cols, dffields)
     else
-        cols = (df[1], df[2])
+        cols = (df[!, 1], df[!, 2])
         datastring = getbar(cols, dffields)
     end
 

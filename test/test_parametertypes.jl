@@ -78,7 +78,7 @@ extpars = external_params(m)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
 @test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, arrtype}
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
@@ -101,7 +101,7 @@ update_param!(m, :d, 5) # should work, will convert to float
 update_param!(m, :e, [4,5,6,7])
 
 @test length(extpars) == 8
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{arrtype, 1}
 

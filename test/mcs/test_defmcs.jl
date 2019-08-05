@@ -73,7 +73,7 @@ function show_E_Global(year::Int; bins=40)
              @select i
              @collect DataFrame
         end
-    histogram(df[:E_Global], bins=bins, 
+    histogram(df.E_Global, bins=bins, 
               title="Distribution of global emissions in $year",
               xlabel="Emissions")
 end
