@@ -75,13 +75,14 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
         end
 
         trial_df = DataFrame(datum_name => value, :trialnum => trialnum)
-        has_scen ? trial_df[:scen] = scen_name : nothing
+        has_scen ? trial_df[!, :scen] .= scen_name : nothing
         append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
     else
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[!, :trialnum] .= trialnum
+        has_scen ? trial_df[!, :scen] .= scen_name : nothing
         # println("size of trial_df: $(size(trial_df))")
 
         if haskey(results, datum_key)

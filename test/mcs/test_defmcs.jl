@@ -133,7 +133,7 @@ results_getindex = si[:grosseconomy, :K] # Base.getindex
 results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
 results_mem = results_mem |> @filter(_.scen == "high_0.03") |> DataFrame
 
-results_disk[:,2] = Symbol.(results_disk[:,2])
+results_disk[!,2] = Symbol.(results_disk[!,2])
 @test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
 @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
@@ -165,7 +165,7 @@ end
 results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
 results_mem = si.results[1][(:grosseconomy, :K)] |> @filter(_.scen == "high_0.03") |> DataFrame
 
-results_disk[:,2] = Symbol.(results_disk[:,2])
+results_disk[!,2] = Symbol.(results_disk[!,2])
 @test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
 @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
@@ -187,7 +187,7 @@ si = run(sd, m, N;
 results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
 results_mem = si.results[1][(:grosseconomy, :K)] |> @filter(_.scen == "high_0.03") |> DataFrame
 
-results_disk[:,2] = Symbol.(results_disk[:,2])
+results_disk[!,2] = Symbol.(results_disk[!,2])
 @test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
 @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
@@ -215,7 +215,7 @@ si = run(sd, m, N;
 results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
 results_mem = si.results[1][(:grosseconomy, :K)]
 
-results_disk[:,2] = Symbol.(results_disk[:,2])
+results_disk[!,2] = Symbol.(results_disk[!,2])
 @test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
 @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
