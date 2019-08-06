@@ -314,13 +314,13 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     # loop over rows and create a dictionary for each row
     if plottype == :multiline
-        cols = (df[1], df[2], df[3])
+        cols = (df[!, 1], df[!, 2], df[!, 3])
         datastring = getmultiline(cols, dffields)
     elseif plottype == :line
-        cols = (df[1], df[2])
+        cols = (df[!, 1], df[!, 2])
         datastring = getline(cols, dffields)
     else
-        cols = (df[1], df[2])
+        cols = (df[!, 1], df[!, 2])
         datastring = getbar(cols, dffields)
     end
 

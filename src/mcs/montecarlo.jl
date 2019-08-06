@@ -82,8 +82,7 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
 
     else
         trial_df = getdataframe(m, comp_name, datum_name)
-        trial_df[:trialnum] = trialnum
-        has_scen ? trial_df[:scen] = scen_name : nothing
+        trial_df[!, :trialnum] .= trialnum
         # println("size of trial_df: $(size(trial_df))")
 
         if haskey(results, datum_key)
