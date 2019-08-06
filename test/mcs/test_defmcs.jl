@@ -83,7 +83,7 @@ results_getindex2 = si[:grosseconomy, :K, model = 1] # Base.getindex
 
 # test that disk results equal in memory results
 results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
-results_disk[:,2] = Symbol.(results_disk[:,2])
+results_disk[!,2] = Symbol.(results_disk[!,2])
 @test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
 @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 

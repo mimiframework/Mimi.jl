@@ -921,7 +921,7 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     # get the specific string for this type of data
     datasb = StringBuilder()
-    numrows = length(df[1]);
+    numrows = length(df[!, 1]);
 
     # loop over rows and create a dictionary for each row
     if plottype == :multitrumpet #4D with 3 indices
@@ -1048,5 +1048,5 @@ function trumpet_df_reduce(df, plottype::Symbol)
         reorder_cols = [groupby_keys[1:2]..., col, groupby_keys[3:end]...]
     end
 
-    return df_new[reorder_cols]
+    return df_new[:, reorder_cols]
 end
