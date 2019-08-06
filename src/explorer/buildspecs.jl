@@ -925,19 +925,19 @@ function getdatapart(df, dffields, plottype::Symbol)
 
     # loop over rows and create a dictionary for each row
     if plottype == :multitrumpet #4D with 3 indices
-        cols = (df[1], df[2], df[3], df[4])
+        cols = (df[!, 1], df[!, 2], df[!, 3], df[!, 4])
         datastring = getdatapart_4d(cols, dffields, numrows, datasb)
     elseif plottype == :multiline || plottype == :trumpet #3D with 2 indices, one of which is time
-        cols = (df[1], df[2], df[3])
+        cols = (df[!, 1], df[!, 2], df[!, 3])
         datastring = getdatapart_3d_time(cols, dffields, numrows, datasb)
     elseif plottype == :multihistogram #3D with 2 indices, none of which is time
-        cols = (df[1], df[2], df[3])
+        cols = (df[!, 1], df[!, 2], df[!, 3])
         datastring = getdatapart_3d(cols, dffields, numrows, datasb)
     elseif plottype == :line  #2D with 1 index, one of which is time
-        cols = (df[1], df[2])
+        cols = (df[!, 1], df[!, 2])
         datastring = getdatapart_2d_time(cols, dffields, numrows, datasb)
     else # :bar and :histogram
-        cols = (df[1], df[2])
+        cols = (df[!, 1], df[!, 2])
         datastring = getdatapart_2d(cols, dffields, numrows, datasb)
     end
 
