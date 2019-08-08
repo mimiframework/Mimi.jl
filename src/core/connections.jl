@@ -596,7 +596,7 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
         internal_conns  = filter(x -> x.dst_comp_path == comp_path, conns)
         need_conn_comps = filter(x -> x.backup !== nothing, internal_conns)
 
-        # println("Need connectors comps: $need_conn_comps")
+        isempty(need_conn_comps) || @info "Need connectors comps: $need_conn_comps"
 
         for (i, conn) in enumerate(need_conn_comps)
             add_backup!(obj, conn.backup)

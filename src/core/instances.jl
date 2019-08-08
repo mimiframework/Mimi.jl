@@ -12,7 +12,7 @@ modeldef(mi::ModelInstance) = mi.md
 """
     add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
 
-Add the (leaf or composite) component `ci` to a composite's list of components, and add 
+Add the (leaf or composite) component `ci` to a composite's list of components, and add
 the `first` and `last` of `mi` to the ends of the composite's `firsts` and `lasts` lists.
 """
 function add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
@@ -80,7 +80,7 @@ comp_paths(obj::AbstractComponentInstanceData) = getfield(obj, :comp_paths)
 Return the value of parameter `name` in (leaf or composite) component `ci`.
 """
 function get_param_value(ci::AbstractComponentInstance, name::Symbol)
-    try 
+    try
         return getproperty(ci.parameters, name)
     catch err
         if isa(err, KeyError)
@@ -157,9 +157,9 @@ function Base.getindex(mi::ModelInstance, names::NTuple{N, Symbol}) where N
     return obj
 end
 
-Base.getindex(mi::ModelInstance, comp_path::ComponentPath) = Base.getindex(mi, comp_path.names)
+Base.getindex(mi::ModelInstance, comp_path::ComponentPath) = getindex(mi, comp_path.names)
 
-Base.getindex(mi::ModelInstance, path_str::AbstractString) = Base.getindex(mi, ComponentPath(mi.md, path_str))
+Base.getindex(mi::ModelInstance, path_str::AbstractString) = getindex(mi, ComponentPath(mi.md, path_str))
 
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
     if ! has_comp(obj, comp_name)
@@ -170,13 +170,13 @@ end
 
 function _get_datum(ci::AbstractComponentInstance, datum_name::Symbol)
     vars = variables(ci)
-    
+
     if datum_name in names(vars)
         which = vars
     else
         pars = parameters(ci)
         if datum_name in names(pars)
-            which = pars          
+            which = pars
         else
             error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
         end
@@ -187,7 +187,9 @@ function _get_datum(ci::AbstractComponentInstance, datum_name::Symbol)
     return value isa TimestepArray ? value.data : value
 end
 
-Base.getindex(mi::ModelInstance, key, datum::Symbol) = _get_datum(mi[key], datum)
+function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)
+    _get_datum(mi[key], datum)
+end
 
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
     ci = obj[comp_name]
@@ -211,7 +213,7 @@ function reset_variables(ci::AbstractComponentInstance)
         if (T <: AbstractArray || T <: TimestepArray) && eltype(value) <: AbstractFloat
             fill!(value, NaN)
 
-        elseif T <: AbstractFloat || (T <: ScalarModelParameter && T.parameters[1] <: AbstractFloat)            
+        elseif T <: AbstractFloat || (T <: ScalarModelParameter && T.parameters[1] <: AbstractFloat)
             setproperty!(vars, name, NaN)
 
         elseif (T <: ScalarModelParameter)    # integer or bool
@@ -263,7 +265,7 @@ function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dim
     return nothing
 end
 
-function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
+function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
 
     if (ncomps = length(components(mi))) == 0
@@ -282,7 +284,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     # recursively initializes all components
     init(mi, dim_val_dict)
-    
+
     clock = Clock(time_keys)
     while ! finished(clock)
         run_timestep(mi, clock, dim_val_dict)

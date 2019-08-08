@@ -30,13 +30,13 @@ function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeCompon
 
     # First, fix up child's namespace objs. We later recurse down the hierarchy.
     ns = child.namespace
-    root = get_root(parent)    
+    root = get_root(parent)
 
     for (name, ref) in ns
         if ref isa AbstractDatumReference
             T = typeof(ref)
             ns[name] = new_ref = T(ref.name, root, path)
-            @info "old ref: $ref, new: $new_ref"
+            #@info "old ref: $ref, new: $new_ref"
         end
     end
 
@@ -107,10 +107,10 @@ function find_comp(obj::AbstractCompositeComponentDef, path::ComponentPath)
     if is_abspath(path)
         path = rel_path(obj.comp_path, path)
         # @info "abspath converted to relpath is $path"
-        
+
     elseif (child = find_comp(obj, head(path))) !== nothing
         # @info "path is unchanged: $path"
-        
+
 
     elseif nameof(obj) == head(path)
         # @info "nameof(obj) == head(path); path: $(printable(path))"

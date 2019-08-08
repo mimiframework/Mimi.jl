@@ -93,7 +93,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
 
         # @info "ComponentInstance evaluating $(comp_id.module_name)"
         module_name = comp_id.module_name
-        comp_module = getfield(Main, module_name)
+        comp_module = module_name == :Mimi ? Mimi : getfield(Main, module_name)
 
         # The try/catch allows components with no run_timestep function (as in some of our test cases)
         # CompositeComponentInstances use a standard method that just loops over inner components.
@@ -155,36 +155,42 @@ function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
     vdict = Dict([:types => [], :names => [], :values => [], :paths => []])
     pdict = Dict([:types => [], :names => [], :values => [], :paths => []])
 
-    root = get_root(comp_def)   # to find comp_defs by path
+    # TBD: may not need this for composites after all
+    
+    # comps_dict = Dict([comp.comp_name => comp for comp in comps])
 
-    comps_dict = Dict([comp.comp_name => comp for comp in comps])
+    # for (name, item) in comp_def.namespace
+    #     # Skip component references
+    #     item isa AbstractComponentDef && continue
 
-    for (export_name, dr) in comp_def.exports
-        datum_comp = find_comp(dr)
-        datum_name = nameof(dr)
-        ci = comps_dict[nameof(datum_comp)]
+    #     # if ! item isa VariableDefReference
+    #     #     item =
 
-        datum = (is_parameter(dr) ? ci.parameters : ci.variables)
-        d = (is_parameter(dr) ? pdict : vdict)
+    #     datum_comp = find_comp(dr)
+    #     datum_name = nameof(dr)
+    #     ci = comps_dict[nameof(datum_comp)]
 
-        # Find the position of the desired field in the named tuple
-        # so we can extract it's datatype.
-        pos = findfirst(isequal(datum_name), names(datum))
-        datatypes = types(datum)
-        dtype = datatypes[pos]
-        value = getproperty(datum, datum_name)
-        
-        push!(d[:names],  export_name)
-        push!(d[:types],  dtype)
-        push!(d[:values], value)
-        push!(d[:paths],  dr.comp_path)
-    end
+    #     datum = (is_parameter(dr) ? ci.parameters : ci.variables)
+    #     d = (is_parameter(dr) ? pdict : vdict)
 
-    vars = ComponentInstanceVariables(Vector{Symbol}(vdict[:names]), Vector{DataType}(vdict[:types]), 
+    #     # Find the position of the desired field in the named tuple
+    #     # so we can extract it's datatype.
+    #     pos = findfirst(isequal(datum_name), names(datum))
+    #     datatypes = types(datum)
+    #     dtype = datatypes[pos]
+    #     value = getproperty(datum, datum_name)
+
+    #     push!(d[:names],  export_name)
+    #     push!(d[:types],  dtype)
+    #     push!(d[:values], value)
+    #     push!(d[:paths],  dr.comp_path)
+    # end
+
+    vars = ComponentInstanceVariables(Vector{Symbol}(vdict[:names]), Vector{DataType}(vdict[:types]),
                                       Vector{Any}(vdict[:values]), Vector{ComponentPath}(vdict[:paths]))
 
-    pars = ComponentInstanceParameters(Vector{Symbol}(pdict[:names]), Vector{DataType}(pdict[:types]), 
-                                       Vector{Any}(pdict[:values]), Vector{ComponentPath}(pdict[:paths]))                                      
+    pars = ComponentInstanceParameters(Vector{Symbol}(pdict[:names]), Vector{DataType}(pdict[:types]),
+                                       Vector{Any}(pdict[:values]), Vector{ComponentPath}(pdict[:paths]))
     return vars, pars
 end
 
@@ -214,8 +220,14 @@ end
                                         comp_def::AbstractCompositeComponentDef,
                                         time_bounds::Tuple{Int,Int},
                                         name::Symbol=nameof(comp_def))
-        (vars, pars) = _comp_instance_vars_pars(comp_def, comps)
+
+        # TBD: eliminate type params or just hardcode empty ones here rather than calling _comp_instance_vars_pars
+        vars = ComponentInstanceVariables(Symbol[], DataType[], Any[], ComponentPath[])
+        pars = ComponentInstanceParameters(Symbol[], DataType[], Any[], ComponentPath[])
+        # (vars, pars) = _comp_instance_vars_pars(comp_def, comps)
+        
         self = new{typeof(vars), typeof(pars)}()
+
         CompositeComponentInstance(self, comps, comp_def, vars, pars, time_bounds, name)
     end
 end

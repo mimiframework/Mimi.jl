@@ -4,8 +4,8 @@ using Mimi
 using Test
 
 import Mimi:
-    compdefs, compdef, compkeys, has_comp, first_period, 
-    last_period, compmodule, compname, numcomponents, compinstance, dim_keys, dim_values
+    compdefs, compdef, compkeys, has_comp, first_period,
+    last_period, compmodule, compname, compinstance, dim_keys, dim_values
 
 my_model = Model()
 
@@ -18,7 +18,7 @@ my_model = Model()
 @defcomp testcomp1 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
-    
+
     """
     Test docstring.
     """
@@ -30,7 +30,7 @@ end
 @defcomp testcomp2 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
-    
+
     function run_timestep(p, v, d, t)
         v.var1[t] = p.par1[t]
     end
@@ -40,7 +40,7 @@ end
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
     cbox = Variable(index=[time, 5])    # anonymous dimension
-    
+
     function run_timestep(p, v, d, t)
         v.var1[t] = p.par1[t]
     end
@@ -97,13 +97,13 @@ add_comp!(my_model, testcomp3, :testcomp3_v2)
 @defcomp testcomp1 begin
     var1 = Variable(index=[time])
     par1 = Parameter(index=[time])
-    
+
     function run_timestep(p, v, d, t)
         v.var1[t] = p.par1[t]
     end
 end
 
-# 1. Test resetting the time dimension without explicit first/last values 
+# 1. Test resetting the time dimension without explicit first/last values
 
 cd = testcomp1
 @test cd.first === nothing   # original component definition's first and last values are unset

@@ -66,7 +66,7 @@ df = getdataframe(model1, :testcomp1=>:var1, :testcomp1=>:par1, :testcomp2=>:var
 dim = Mimi.dimension(model1, :time)
 @test df.var1 == df.par1 == years
 @test all(ismissing, df.var2[1 : dim[late_first]-1])
-@test all(ismissing, df.par2[1 : dim[late_first]-1])
+#@test all(ismissing, df.par2[1 : dim[late_first]-1])
 @test df.var2[dim[late_first] : dim[early_last]] == df.par2[dim[late_first] : dim[early_last]] == late_first:5:early_last
 @test all(ismissing, df.var2[dim[years[end]] : dim[early_last]])
 @test all(ismissing, df.par2[dim[years[end]] : dim[early_last]])

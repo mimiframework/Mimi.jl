@@ -124,9 +124,9 @@ run(m)
 
 mi = m.mi
 
+@test mi["/top/A/Comp2", :par_2_2] == collect(1.0:16.0)
+@test mi["/top/A/Comp2", :var_2_1] == collect(3.0:3:48.0)
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
-@test mi[ComponentPath(md, :top, :A, :Comp2), :par_2_2] == collect(1.0:16.0)
-@test mi[(:top, :A, :Comp2), :var_2_1]  == collect(3.0:3:48.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
 end # module

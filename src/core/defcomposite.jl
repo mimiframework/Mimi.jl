@@ -19,7 +19,7 @@ function _collect_exports(exprs)
             push!(exports, name => @or(expname, name))
         else
             error("Elements of exports list must Symbols or Pair{Symbol, Symbol}, got $expr")
-        end 
+        end
     end
 
     # @info "returning $exports"
@@ -38,7 +38,7 @@ function _collect_bindings(exprs)
             push!(bindings, name => val)
         else
             error("Elements of bindings list must Pair{Symbol, Symbol} or Pair{Symbol, Number or Array of Number} got $expr")
-        end 
+        end
     end
 
     # @info "returning $bindings"
@@ -123,12 +123,12 @@ function import_params(comp::AbstractCompositeComponentDef)
         end
     end
 
-    @info "import_params: reverse lookup: $d"
+    #@info "import_params: reverse lookup: $d"
 
     # Iterate over all sub-components and import all params not already referenced (usually renamed)
     for (comp_name, sub_comp) in components(comp)
         path = sub_comp.comp_path
-        @info "  path: $path"
+        #@info "  path: $path"
         for (local_name, prefs) in param_refs(sub_comp)
             for ref in prefs
                 if ! haskey(d, (ref.comp_path, ref.name))
@@ -151,7 +151,7 @@ calling signature for `component()` processed herein is:
               bindings=[list Pair{Symbol, Symbol or Number or Array of Numbers}])
 
 In this macro, the vector of symbols to export is expressed without the `:`, e.g.,
-`exports=[var_1, var_2 => export_name, param_1])`. The names must be variable or 
+`exports=[var_1, var_2 => export_name, param_1])`. The names must be variable or
 parameter names exported to the composite component being added by its sub-components.
 
 Bindings are expressed as a vector of `Pair` objects, where the first element of the
@@ -168,7 +168,7 @@ associated method on each.
 """
 macro defcomposite(cc_name, ex)
     # @info "defining composite $cc_name in module $(fullname(__module__))"
-    
+
     @capture(ex, elements__)
     comps = SubComponent[]
     imports = []
@@ -201,7 +201,7 @@ macro defcomposite(cc_name, ex)
                 var_par = right.head == :tuple ? _parse_dotted_symbols.(right.args) : [_parse_dotted_symbols(right)]
                 push!(imports, (left, var_par))
                 @info "import as $left = $var_par"
-                
+
             # note that `comp_Symbol.name_Symbol` failed; bug in MacroTools?
             elseif @capture(left, comp_.name_) && comp isa Symbol && name isa Symbol # simple connection case
                 src = _parse_dotted_symbols(right)
@@ -231,13 +231,13 @@ macro defcomposite(cc_name, ex)
         let conns = $conns,
             imports = $imports
             cc_id = Mimi.ComponentId($__module__, $(QuoteNode(cc_name)))
-        
+
             global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
 
             for ((dst_path, dst_name), (src_path, src_name)) in conns
                 Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
             end
-            
+
             for (local_name, item) in imports
                 refs = []
 
@@ -246,7 +246,7 @@ macro defcomposite(cc_name, ex)
                     var_par_ref = (Mimi.is_parameter(dr) ? Mimi.ParameterDefReference(dr) : Mimi.VariableDefReference(dr))
                     push!(refs, var_par_ref)
                 end
-                
+
                 # we allow linking parameters, but not variables.
                 count = length(refs)
                 if count == 1 && refs[1] isa Mimi.VariableDefReference

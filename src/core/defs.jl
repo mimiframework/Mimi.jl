@@ -44,12 +44,11 @@ compdef(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
 
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
 
-compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = obj.namespace[comp_name]
+compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = components(obj)[comp_name]
 
-has_comp(c::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(c.namespace, comp_name)
-
-compdefs(c::AbstractCompositeComponentDef) = values(components(c))
-compkeys(c::AbstractCompositeComponentDef) = keys(components(c))
+has_comp(obj::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(components(obj), comp_name)
+compdefs(obj::AbstractCompositeComponentDef) = values(components(obj))
+compkeys(obj::AbstractCompositeComponentDef) = keys(components(obj))
 
 # Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
 compdefs(c::ComponentDef) = []
@@ -121,7 +120,7 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
     # Remove references to the deleted comp
     # TBD: make this work off namespace instead
     comp_path = comp_def.comp_path
-    exports = ccd.exports
+    # exports = ccd.exports
 
     # deprecated
     # for (key, dr) in exports
@@ -173,6 +172,7 @@ end
 # Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
 function Base.setindex!(comp::ComponentDef, value::AbstractDatumDef, key::Symbol)
     ref = datum_reference(comp, value.name)
+    ref = value isa ParameterDef ? [ref] : ref
     _save_to_namespace(comp, key, ref)
     return value
 end
@@ -183,8 +183,8 @@ function Base.setindex!(comp::AbstractCompositeComponentDef, value::NamespaceEle
 end
 
 # Handle case of single ParameterDefReference by converting to 1-element array
-function Base.setindex!(comp::AbstractCompositeComponentDef, ref::ParameterDefReference, key::Symbol)
-    setindex!(comp, [ref], key)
+function Base.setindex!(comp::AbstractComponentDef, ref::ParameterDefReference, key::Symbol)
+    _save_to_namespace(comp, key, [ref])
 end
 
 #
@@ -401,7 +401,6 @@ end
 
 parameter(obj::ComponentDef, name::Symbol) = _parameter(obj, name)
 
-# TBD: modify to use namespace
 function parameter(obj::AbstractCompositeComponentDef, name::Symbol)
     if ! haskey(obj.namespace, name)
         error("Item $name is not present in composite component $(obj.comp_path)")
@@ -541,7 +540,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             value = convert(Array{dtype, num_dims}, value)
         end
 
-        ti = get_time_index_position(md, comp_name, param_name)
+        ti = get_time_index_position(obj, comp_name, param_name)
 
         if ti != nothing   # there is a time dimension
             T = eltype(value)
@@ -575,7 +574,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
     end
 
     # connect_param! calls dirty! so we don't have to
-    # @info "Calling connect_param!($(printable(obj === nothing ? nothing : obj.comp_id))"
+    # @info "Calling connect_param!($(printable(obj === nothing ? nothing : obj.comp_id)), $comp_name, $param_name)"
     connect_param!(obj, comp_name, param_name, param_name)
     nothing
 end

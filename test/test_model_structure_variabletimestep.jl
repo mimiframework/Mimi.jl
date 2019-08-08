@@ -5,15 +5,15 @@ module TestModelStructure_VariableTimestep
 using Test
 using Mimi
 
-import Mimi: 
+import Mimi:
     connect_param!, unconnected_params, set_dimension!, has_comp,
-    numcomponents, get_connections, internal_param_conns, dim_count, 
+    get_connections, internal_param_conns, dim_count, 
     dim_names, compdef, getproperty, setproperty!, dimension, compdefs
 
 @defcomp A begin
     varA::Int = Variable(index=[time])
     parA::Int = Parameter()
-    
+
     function run_timestep(p, v, d, t)
         v.varA[t] = p.parA
     end
@@ -48,7 +48,7 @@ m = Model()
 set_dimension!(m, :time, years)
 
 # first and last are now disabled
-# @test_throws ErrorException add_comp!(m, A, last = 2210) 
+# @test_throws ErrorException add_comp!(m, A, last = 2210)
 # @test_throws ErrorException add_comp!(m, A, first = 2010)
 
 @test_logs(

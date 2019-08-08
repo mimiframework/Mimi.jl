@@ -47,7 +47,6 @@ macro defmodel(model_name, ex)
     @capture(ex, elements__)
 
     # @__MODULE__ is evaluated in calling module when macro is interpreted
-    # TBD: simplify using __module__ ?
     result = :(
         let calling_module = @__MODULE__, comp_mod_name = nothing
             global $model_name = Model()

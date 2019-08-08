@@ -11,7 +11,7 @@ function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     if num_dims == 0
         T = ScalarModelParameter{dtype}
 
-    elseif ti == nothing     # there's no time dimension
+    elseif ti === nothing     # there's no time dimension
         T = Array{dtype, num_dims}
     
     else   
@@ -81,20 +81,22 @@ function _combine_exported_vars(comp_def::AbstractCompositeComponentDef, var_dic
     names  = Symbol[]
     values = Any[]
 
-    for (name, dr) in comp_def.exports
-        root = dr.root === nothing ? nothing : dr.root.comp_id
-        # @info "dr.root: $(printable(root)), comp_path: $(printable(dr.comp_path))"
-        if is_variable(dr)
-            obj = var_dict[dr.comp_path]
-            value = getproperty(obj, nameof(dr))
-            push!(names, name)
-            push!(values, value)
-        end
-    end
+    # for (name, dr) in comp_def.exports
+    #     root = dr.root === nothing ? nothing : dr.root.comp_id
+    #     # @info "dr.root: $(printable(root)), comp_path: $(printable(dr.comp_path))"
+    #     if is_variable(dr)
+    #         obj = var_dict[dr.comp_path]
+    #         value = getproperty(obj, nameof(dr))
+    #         push!(names, name)
+    #         push!(values, value)
+    #     end
+    # end
 
     types = DataType[typeof(val) for val in values]
     paths = repeat(Any[comp_def.comp_path], length(names))
-    return ComponentInstanceVariables(names, types, values, paths)
+    ci_vars = ComponentInstanceVariables(names, types, values, paths)
+    # @info "ci_vars: $ci_vars"]
+    return ci_vars
 end
 
 function _combine_exported_pars(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
@@ -103,13 +105,13 @@ function _combine_exported_pars(comp_def::AbstractCompositeComponentDef, par_dic
 
     # @info "_combine_exported_pars: $(comp_def.exports)"
 
-    for (name, dr) in comp_def.exports
-        if is_parameter(dr)
-            value = par_dict[(dr.comp_path, dr.name)]
-            push!(names, name)
-            push!(values, value)
-        end
-    end
+    # for (name, dr) in comp_def.exports
+    #     if is_parameter(dr)
+    #         value = par_dict[(dr.comp_path, dr.name)]
+    #         push!(names, name)
+    #         push!(values, value)
+    #     end
+    # end
 
     paths = repeat(Any[comp_def.comp_path], length(names))
     types = DataType[typeof(val) for val in values]

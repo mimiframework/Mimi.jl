@@ -148,7 +148,7 @@ global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference
 @class mutable CompositeComponentDef <: ComponentDef begin
     #comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Binding}
-    exports::ExportsDict
+    # exports::ExportsDict
 
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
@@ -170,8 +170,8 @@ global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference
 
         self.comp_path = ComponentPath(self.name)
         # self.comps_dict = OrderedDict{Symbol, AbstractComponentDef}()
+        # self.exports  = ExportsDict()
         self.bindings = Vector{Binding}()
-        self.exports  = ExportsDict()
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.external_param_conns = Vector{ExternalParameterConnection}()
         self.external_params = Dict{Symbol, ModelParameter}()
@@ -208,8 +208,9 @@ external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_co
 
 external_params(obj::AbstractCompositeComponentDef) = obj.external_params
 
-exported_names(obj::AbstractCompositeComponentDef) = keys(obj.exports)
-is_exported(obj::AbstractCompositeComponentDef, name::Symbol) = haskey(obj.exports, name)
+# deprecated
+# exported_names(obj::AbstractCompositeComponentDef) = keys(obj.exports)
+# is_exported(obj::AbstractCompositeComponentDef, name::Symbol) = haskey(obj.exports, name)
 
 add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
