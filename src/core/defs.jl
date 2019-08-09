@@ -10,8 +10,8 @@ istype(T::DataType) = (pair -> pair.second isa T)
 # N.B. only composites hold comps in the namespace.
 components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
 
-var_refs(obj::AbstractComponentDef)   = filter(istype(VariableDefReference), obj.namespace)
-param_refs(obj::AbstractComponentDef) = filter(istype(Vector{ParameterDefReference}), obj.namespace)
+var_refs(obj::AbstractComponentDef)   = filter(istype(VariableDefReference),  obj.namespace)
+param_refs(obj::AbstractComponentDef) = filter(istype(ParameterDefReference), obj.namespace)
 
 Base.length(obj::AbstractComponentDef) = 0   # no sub-components
 Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
@@ -172,19 +172,12 @@ end
 # Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
 function Base.setindex!(comp::ComponentDef, value::AbstractDatumDef, key::Symbol)
     ref = datum_reference(comp, value.name)
-    ref = value isa ParameterDef ? [ref] : ref
     _save_to_namespace(comp, key, ref)
     return value
 end
 
-
 function Base.setindex!(comp::AbstractCompositeComponentDef, value::NamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
-end
-
-# Handle case of single ParameterDefReference by converting to 1-element array
-function Base.setindex!(comp::AbstractComponentDef, ref::ParameterDefReference, key::Symbol)
-    _save_to_namespace(comp, key, [ref])
 end
 
 #

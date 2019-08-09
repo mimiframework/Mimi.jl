@@ -143,7 +143,7 @@ end
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
 global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
-global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference, Vector{ParameterDefReference}}
+global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference, ParameterDefReference}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     #comps_dict::OrderedDict{Symbol, AbstractComponentDef}

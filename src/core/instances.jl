@@ -75,7 +75,7 @@ end
 comp_paths(obj::AbstractComponentInstanceData) = getfield(obj, :comp_paths)
 
 """
-    get_param_value(ci::ComponentInstance, name::Symbol)
+    get_param_value(ci::AbstractComponentInstance, name::Symbol)
 
 Return the value of parameter `name` in (leaf or composite) component `ci`.
 """
@@ -92,7 +92,7 @@ function get_param_value(ci::AbstractComponentInstance, name::Symbol)
 end
 
 """
-    get_var_value(ci::ComponentInstance, name::Symbol)
+    get_var_value(ci::AbstractComponentInstance, name::Symbol)
 
 Return the value of variable `name` in component `ci`.
 """

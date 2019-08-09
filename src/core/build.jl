@@ -193,7 +193,7 @@ function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::
     _combine_exported_pars(comp_def, par_dict)
 end
 
-# Return a built leaf or composite ComponentInstance
+# Return a built leaf or composite LeafComponentInstance
 function _build(comp_def::ComponentDef, 
                 var_dict::Dict{ComponentPath, Any},
                 par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
@@ -205,7 +205,7 @@ function _build(comp_def::ComponentDef,
     pars = _instantiate_params(comp_def, par_dict)
     vars = var_dict[comp_def.comp_path]
 
-    return ComponentInstance(comp_def, vars, pars, time_bounds)
+    return LeafComponentInstance(comp_def, vars, pars, time_bounds)
 end
 
 function _build(comp_def::AbstractCompositeComponentDef, 

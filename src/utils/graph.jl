@@ -48,11 +48,9 @@ function _filter_connections(conns::Vector{InternalParameterConnection}, comp_pa
     return collect(Iterators.filter(f, conns))
 end
 
-function get_connections(m::Model, ci::ComponentInstance, which::Symbol)
-    if is_leaf(ci)
-        return get_connections(m, pathof(ci), which)
-    end
+get_connections(m::Model, ci::LeafComponentInstance, which::Symbol) = get_connections(m, pathof(ci), which)
 
+function get_connections(m::Model, cci::CompositeComponentInstance, which::Symbol)
     conns = []
     for ci in components(cci)
         append!(conns, get_connections(m, pathof(ci), which))
