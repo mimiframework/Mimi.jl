@@ -98,7 +98,7 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
 
     if name == :time
         _set_run_period!(ccd, keys[1], keys[end])
-        propagate_time(ccd, dim)
+        propagate_time!(ccd, dim)
         set_uniform!(ccd, isuniform(keys))
     end
 

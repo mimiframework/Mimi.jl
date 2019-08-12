@@ -234,14 +234,14 @@ macro defcomposite(cc_name, ex)
                 Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
             end
 
-            function _store_in_ns(refs)
+            function _store_in_ns(refs, local_name)
                 isempty(refs) && return
                 
                 if length(refs) == 1
                     $cc_name[local_name] = refs[1]
                 else
                     # We will eventually allow linking parameters, but not variables. For now, neither.
-                    error("Variables and parameters must be aliased only individually.")
+                    error("Variables and parameters may only be aliased individually: $refs")
                 end
             end
 
@@ -262,8 +262,8 @@ macro defcomposite(cc_name, ex)
                     end
                 end
 
-                _store_in_ns(var_refs)
-                _store_in_ns(par_refs)
+                _store_in_ns(var_refs, local_name)
+                _store_in_ns(par_refs, local_name)
             end
 
             Mimi.import_params($cc_name)

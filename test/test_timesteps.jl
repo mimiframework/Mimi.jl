@@ -223,6 +223,7 @@ add_comp!(m3, Bar2)
 
 set_param!(m3, :Foo, :inputF, 5.)
 connect_param!(m3, :Bar2, :inputB, :Foo, :output, zeros(length(years)))
+
 run(m3)
 
 @test length(m3[:Foo, :output]) == 11

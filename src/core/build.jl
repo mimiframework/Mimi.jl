@@ -13,8 +13,8 @@ function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
 
     elseif ti === nothing     # there's no time dimension
         T = Array{dtype, num_dims}
-    
-    else   
+
+    else
         if isuniform(md)
             first, stepsize = first_and_step(md)
             first === nothing && @warn "_instance_datatype: first === nothing"
@@ -34,23 +34,23 @@ function _instantiate_datum(md::ModelDef, def::AbstractDatumDef)
     dtype = _instance_datatype(md, def)
     dims = dim_names(def)
     num_dims = length(dims)
-    
+
     # Scalar datum
     if num_dims == 0
         value = dtype(0)
-      
+
     # Array datum, with :time dimension
-    elseif dims[1] == :time 
+    elseif dims[1] == :time
 
         if num_dims == 1
             value = dtype(dim_count(md, :time))
-        else 
+        else
             counts = dim_counts(md, Vector{Symbol}(dims))
             value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)
         end
 
     # Array datum, without :time dimension
-    else 
+    else
         # TBD: Handle unnamed indices properly
         counts = dim_counts(md, Vector{Symbol}(dims))
         value = dtype <: AbstractArray ? dtype(undef, counts...) : dtype(counts...)
@@ -62,7 +62,7 @@ end
 """
     _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
-Instantiate a component `comp_def` in the model `md` and its variables (but not its 
+Instantiate a component `comp_def` in the model `md` and its variables (but not its
 parameters). Return the resulting ComponentInstanceVariables.
 """
 function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
@@ -132,28 +132,28 @@ end
 function _instantiate_vars(comp_def::AbstractCompositeComponentDef, md::ModelDef, var_dict::Dict{ComponentPath, Any})
     comp_path = comp_def.comp_path
     # @info "_instantiate_vars composite $comp_path"
-    
+
     for cd in compdefs(comp_def)
         _instantiate_vars(cd, md, var_dict)
-    end    
-    var_dict[comp_path] = _combine_exported_vars(comp_def, var_dict)            
+    end
+    var_dict[comp_path] = _combine_exported_vars(comp_def, var_dict)
 end
 
 # Do nothing if called on a leaf component
 _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
 
 # Recursively collect all parameters with connections to allocated storage for variables
-function _collect_params(comp_def::AbstractCompositeComponentDef, 
-                         var_dict::Dict{ComponentPath, Any}, 
+function _collect_params(comp_def::AbstractCompositeComponentDef,
+                         var_dict::Dict{ComponentPath, Any},
                          par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     # depth-first search of composites
     for cd in compdefs(comp_def)
         _collect_params(cd, var_dict, par_dict)
-    end        
+    end
 
     # @info "Collecting params for $(comp_def.comp_id)"
 
-    # Iterate over connections to create parameters, referencing storage in vars   
+    # Iterate over connections to create parameters, referencing storage in vars
     for ipc in internal_param_conns(comp_def)
         src_vars = var_dict[ipc.src_comp_path]
         var_value_obj = get_property_obj(src_vars, ipc.src_var_name)
@@ -194,7 +194,7 @@ function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::
 end
 
 # Return a built leaf or composite LeafComponentInstance
-function _build(comp_def::ComponentDef, 
+function _build(comp_def::ComponentDef,
                 var_dict::Dict{ComponentPath, Any},
                 par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
                 time_bounds::Tuple{Int, Int})
@@ -208,30 +208,30 @@ function _build(comp_def::ComponentDef,
     return LeafComponentInstance(comp_def, vars, pars, time_bounds)
 end
 
-function _build(comp_def::AbstractCompositeComponentDef, 
-                var_dict::Dict{ComponentPath, Any}, 
+function _build(comp_def::AbstractCompositeComponentDef,
+                var_dict::Dict{ComponentPath, Any},
                 par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
                 time_bounds::Tuple{Int, Int})
     # @info "_build composite $(comp_def.comp_id)"
     # @info "  var_dict $(var_dict)"
     # @info "  par_dict $(par_dict)"
-    
+
     comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]
     return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
 
 function _build(md::ModelDef)
     # @info "_build(md)"
-    add_connector_comps(md)
-    
+    add_connector_comps!(md)
+
     # check if all parameters are set
     not_set = unconnected_params(md)
-    # @info "not_set: $not_set"
+
     if ! isempty(not_set)
         params = join(not_set, "\n  ")
         error("Cannot build model; the following parameters are not set:\n  $params")
     end
-    
+
     var_dict = Dict{ComponentPath, Any}()                 # collect all var defs and
     par_dict = Dict{Tuple{ComponentPath, Symbol}, Any}()  # store par values as we go
 
@@ -244,7 +244,7 @@ function _build(md::ModelDef)
     t = dimension(md, :time)
     time_bounds = (firstindex(t), lastindex(t))
 
-    propagate_time(md, t)
+    propagate_time!(md, t)
 
     ci = _build(md, var_dict, par_dict, time_bounds)
     mi = ModelInstance(ci, md)
@@ -253,7 +253,8 @@ end
 
 function build(m::Model)
     # Reference a copy in the ModelInstance to avoid changes underfoot
-    m.mi = _build(deepcopy(m.md))
+    md = deepcopy(m.md)
+    m.mi = _build(md)
     m.md.dirty = false
     return nothing
 end
@@ -261,7 +262,7 @@ end
 """
     create_marginal_model(base::Model, delta::Float64=1.0)
 
-Create a `MarginalModel` where `base` is the baseline model and `delta` is the 
+Create a `MarginalModel` where `base` is the baseline model and `delta` is the
 difference used to create the `marginal` model.  Return the resulting `MarginaModel`
 which shares the internal `ModelDef` between the `base` and `marginal`.
 """

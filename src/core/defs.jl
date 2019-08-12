@@ -107,7 +107,7 @@ find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), la
 """
     delete!(obj::AbstractCompositeComponentDef, component::Symbol)
 
-Delete a `component` by name from a model definition `m`.
+Delete a `component` by name from composite `ccd`.
 """
 function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
     if ! has_comp(ccd, comp_name)
@@ -118,16 +118,7 @@ function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
     delete!(ccd.namespace, comp_name)
 
     # Remove references to the deleted comp
-    # TBD: make this work off namespace instead
     comp_path = comp_def.comp_path
-    # exports = ccd.exports
-
-    # deprecated
-    # for (key, dr) in exports
-    #     if dr.comp_path == comp_path
-    #         delete!(exports, key)
-    #     end
-    # end
 
     # TBD: find and delete external_params associated with deleted component? Currently no record of this.
 
@@ -688,7 +679,7 @@ end
 
 function _set_comps!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symbol, AbstractComponentDef})
     for key in keys(components(obj))
-        delete!(obj, key)
+        delete!(obj.namespace, key)     # delete only from namespace, keeping connections
     end
 
     # add comps to namespace
@@ -796,18 +787,18 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
 end
 
 """
-    propagate_time(obj::AbstractComponentDef, t::Dimension)
+    propagate_time!(obj::AbstractComponentDef, t::Dimension)
 
 Propagate a time dimension down through the comp def tree.
 """
-function propagate_time(obj::AbstractComponentDef, t::Dimension)
+function propagate_time!(obj::AbstractComponentDef, t::Dimension)
     set_dimension!(obj, :time, t)
     
     obj.first = firstindex(t)
     obj.last  = lastindex(t)
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        propagate_time(c, t)
+        propagate_time!(c, t)
     end
 end
 
@@ -864,7 +855,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
             error("Cannot specify both 'before' and 'after' parameters")
         end
 
-        propagate_time(comp_def, dimension(obj, :time))
+        propagate_time!(comp_def, dimension(obj, :time))
     end
 
     # Copy the original so we don't step on other uses of this comp
@@ -1011,7 +1002,7 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         end
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
-        # Delete the old component from composite, leaving the existing parameter connections
+        # Delete the old component from composite's namespace only, leaving parameter connections
         delete!(obj.namespace, comp_name)
     else
         # Delete the old component and all its internal and external parameter connections

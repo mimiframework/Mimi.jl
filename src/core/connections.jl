@@ -25,7 +25,6 @@ Remove any parameter connections for a given parameter `param_name` in a given c
 `comp_def` which must be a direct subcomponent of composite `obj`.
 """
 function disconnect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol)
-    # @info "disconnect_param! calling compdef($(printable(obj.comp_id)), $comp_name) (comp_path: $(printable(obj.comp_path)))"
     comp = compdef(obj, comp_name)
     comp === nothing && error("Did not find $comp_name in composite $(printable(obj.comp_path))")
     disconnect_param!(obj, comp, param_name)
@@ -140,9 +139,6 @@ function connect_param!(obj::AbstractCompositeComponentDef,
     dst_comp_def = compdef(obj, dst_comp_path)
     src_comp_def = compdef(obj, src_comp_path)
 
-    # @info "src_comp_def calling compdef($(obj.comp_id), $src_comp_path)"
-    # src_comp_def === nothing && @info "src_comp_def === nothing"
-
     if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
         if isa(backup, NamedArray)
@@ -162,7 +158,7 @@ function connect_param!(obj::AbstractCompositeComponentDef,
         dst_dims  = dim_names(dst_param)
 
         backup = convert(Array{Union{Missing, number_type(obj)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        first = first_period(obj, dst_comp_def)        
+        first = first_period(obj, dst_comp_def)    
 
         T = eltype(backup)
         
@@ -176,7 +172,8 @@ function connect_param!(obj::AbstractCompositeComponentDef,
             if isuniform(obj)
                 # use the first from the comp_def not the ModelDef
                 stepsize = step_size(obj)
-                values = TimestepArray{FixedTimestep{first, stepsize}, T, dim_count, ti}(backup)
+                last = last_period(obj, dst_comp_def) 
+                values = TimestepArray{FixedTimestep{first, stepsize, last}, T, dim_count, ti}(backup)
             else
                 times = time_labels(obj)
                 # use the first from the comp_def 
@@ -214,7 +211,6 @@ Try calling:
         error("Units of $src_comp_path:$src_var_name do not match $dst_comp_path:$dst_par_name.")
     end
 
-    # @info "connect($src_comp_path:$src_var_name => $dst_comp_path:$dst_par_name)"
     conn = InternalParameterConnection(src_comp_path, src_var_name, dst_comp_path, dst_par_name, ignoreunits, backup_param_name, offset=offset)
     add_internal_param_conn!(obj, conn)
 
@@ -305,7 +301,10 @@ Thus, only the leaf (non-composite) variant of this method actually collects unc
 function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
     comp_path = obj.comp_path
     params = map(x->(comp_path, x), parameter_names(obj))
-    append!(unconnected, setdiff(params, connected))
+    diffs = setdiff(params, connected)
+    if ! isempty(diffs)
+        append!(unconnected, diffs)
+    end
 end
 
 function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connected::ParamVector, unconnected::ParamVector)
@@ -426,7 +425,6 @@ Add a one dimensional time-indexed array parameter indicated by `name` and
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::TimestepVector, dims)
-    # @info "1. set_external_array_param!: name=$name value=$value dims=$dims, setting dims to [:time]"
     param = ArrayModelParameter(value, [:time])  # must be :time
     set_external_param!(obj, name, param)
 end
@@ -440,7 +438,6 @@ Add a multi-dimensional time-indexed array parameter `name` with value
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::TimestepArray, dims)
-    # @info "2. set_external_array_param!: name=$name value=$value dims=$dims"
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)
 end
@@ -453,7 +450,6 @@ Add an array type parameter `name` with value `value` and `dims` dimensions to t
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef, 
                                    name::Symbol, value::AbstractArray, dims)
-    # @info "3. set_external_array_param!: name=$name value=$value dims=$dims"
     numtype = Union{Missing, number_type(obj)}
 
     if !(typeof(value) <: Array{numtype} || (value isa AbstractArray && eltype(value) <: numtype))
@@ -585,7 +581,7 @@ function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; up
     nothing
 end
 
-function add_connector_comps(obj::AbstractCompositeComponentDef)
+function add_connector_comps!(obj::AbstractCompositeComponentDef)
     conns = internal_param_conns(obj)
 
     for comp_def in compdefs(obj)
@@ -596,7 +592,7 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
         internal_conns  = filter(x -> x.dst_comp_path == comp_path, conns)
         need_conn_comps = filter(x -> x.backup !== nothing, internal_conns)
 
-        isempty(need_conn_comps) || @info "Need connectors comps: $need_conn_comps"
+        # isempty(need_conn_comps) || @info "Need connectors comps: $need_conn_comps"
 
         for (i, conn) in enumerate(need_conn_comps)
             add_backup!(obj, conn.backup)
@@ -612,7 +608,6 @@ function add_connector_comps(obj::AbstractCompositeComponentDef)
             conn_comp_name = connector_comp_name(i) # generate a new name
 
             # Add the connector component before the user-defined component that required it
-            # @info "add_connector_comps: add_comp!(obj, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)"
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             conn_path = conn_comp.comp_path
            

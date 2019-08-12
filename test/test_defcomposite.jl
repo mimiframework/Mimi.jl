@@ -42,7 +42,10 @@ set_dimension!(m, :time, 2005:2020)
     foo2 = Comp2.foo
 
     # linked imports
-    foo = Comp1.foo, Comp2.foo
+    # foo = Comp1.foo, Comp2.foo
+
+    foo1 = Comp1.foo
+    foo2 = Comp2.foo
 
     # connections
     Comp1.par_1_1 = Comp2.var_2_1

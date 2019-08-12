@@ -148,7 +148,7 @@ function show(io::IO, obj::AbstractMimiType)
         print(io, "($(obj.name))")
         fields = deleteat!([fields...], pos)
     end
-    
+
     _show_fields(indent(io), obj, fields)
 end
 
@@ -213,15 +213,15 @@ function _show(io::IO, obj::Model, which::Symbol)
     mi = obj.mi
 
     println(io, "  Module: $(md.comp_id.module_path)")
-    
+
     println(io, "  Components:")
     for comp in values(components(md))
         println(io, "    $(comp.comp_id)")
     end
-    
+
     if which == :full
         println(io, "  Dimensions:")
-        for (k, v) in md.dimensions
+        for (k, v) in md.dim_dict
             println(io, "    $k => $v")
         end
 
@@ -234,11 +234,11 @@ function _show(io::IO, obj::Model, which::Symbol)
         for conn in md.external_param_conns
             println(io, "    $(conn)")
         end
-        
+
         println(io, "  Backups: $(md.backups)")
         println(io, "  Number type: $(md.number_type)")
     end
-    println(io, "  Built: $(mi !== nothing)")    
+    println(io, "  Built: $(mi !== nothing)")
 end
 
 Base.show(io::IO, obj::Model) = _show(io, obj, :full)

@@ -30,7 +30,7 @@ is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 @delegate connected_params(m::Model) => md
 @delegate unconnected_params(m::Model) => md
 
-@delegate add_connector_comps(m::Model) => md
+@delegate add_connector_comps!(m::Model) => md
 
 """
     connect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, src_comp_path::ComponentPath,
