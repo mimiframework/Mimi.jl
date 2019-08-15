@@ -299,8 +299,7 @@ connections are made to the "original" component, not to a composite that export
 Thus, only the leaf (non-composite) variant of this method actually collects unconnected params.
 """
 function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
-    comp_path = obj.comp_path
-    params = map(x->(comp_path, x), parameter_names(obj))
+    params = [(obj.comp_path, x) for x in parameter_names(obj)]
     diffs = setdiff(params, connected)
     if ! isempty(diffs)
         append!(unconnected, diffs)

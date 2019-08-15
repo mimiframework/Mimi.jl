@@ -37,8 +37,6 @@ end
 @class mutable ComponentDef <: NamedObj begin
     comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
     comp_path::Union{Nothing, ComponentPath}
-    variables::OrderedDict{Symbol, VariableDef}
-    parameters::OrderedDict{Symbol, ParameterDef}
     dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
     namespace::OrderedDict{Symbol, Any}
     first::Union{Nothing, Int}
@@ -68,8 +66,7 @@ end
 
         self.comp_id = comp_id
         self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
-        self.variables  = OrderedDict{Symbol, VariableDef}()
-        self.parameters = OrderedDict{Symbol, ParameterDef}()
+
         self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.namespace = OrderedDict{Symbol, Any}()
         self.first = self.last = nothing
@@ -116,34 +113,14 @@ end
 
 @class VariableDefReference  <: DatumReference
 
-function datum_reference(comp::ComponentDef, datum_name::Symbol)
-    root = get_root(comp)
-    
-    # @info "compid: $(comp.comp_id)"
-    # @info "datum_reference: comp path: $(printable(comp.comp_path)) parent: $(printable(comp.parent))"
-
-    if has_variable(comp, datum_name)
-        var = comp.variables[datum_name]
-        path = @or(var.comp_path, ComponentPath(comp.name))
-        # @info "   var path: $path)"
-        return VariableDefReference(datum_name, root, path)
-    end
-    
-    if has_parameter(comp, datum_name)
-        par = comp.parameters[datum_name]
-        path = @or(par.comp_path, ComponentPath(comp.name))
-        # @info "   par path: $path)"
-        return ParameterDefReference(datum_name, root, path)
-    end
-
-    error("Component $(comp.comp_id) does not have a data item named :$datum_name")
-end
-
 # Define type aliases to avoid repeating these in several places
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
 global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
-global const NamespaceElement = Union{AbstractComponentDef, VariableDefReference, ParameterDefReference}
+# Define which types can appear in the namespace dict for leaf and composite compdefs
+global const LeafNamespaceElement      = Union{VariableDef, ParameterDef}
+global const CompositeNamespaceElement = Union{AbstractComponentDef, VariableDefReference, ParameterDefReference}
+global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     #comps_dict::OrderedDict{Symbol, AbstractComponentDef}
@@ -190,29 +167,19 @@ function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Ve
         # @info "subcomp $c: module_name: $(printable(c.module_name)), calling module: $(nameof(calling_module))"
         comp_name = @or(c.module_name, nameof(calling_module))
         subcomp_id = ComponentId(comp_name, c.comp_name)
-        # @info "subcomp_id: $subcomp_id"
         subcomp = compdef(subcomp_id, module_obj=(c.module_name === nothing ? calling_module : nothing))
-
-        # x = printable(subcomp === nothing ? nothing : subcomp_id)
-        # y = printable(composite === nothing ? nothing : comp_id)
-        # @info "CompositeComponentDef calling add_comp!($y, $x)"
-
         add_comp!(composite, subcomp, @or(c.alias, c.comp_name), exports=c.exports)
     end
     return composite
 end
+
+add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
 # TBD: Recursively compute the lists on demand?
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
 external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
 
 external_params(obj::AbstractCompositeComponentDef) = obj.external_params
-
-# deprecated
-# exported_names(obj::AbstractCompositeComponentDef) = keys(obj.exports)
-# is_exported(obj::AbstractCompositeComponentDef, name::Symbol) = haskey(obj.exports, name)
-
-add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
 is_leaf(c::AbstractComponentDef) = true
 is_leaf(c::AbstractCompositeComponentDef) = false

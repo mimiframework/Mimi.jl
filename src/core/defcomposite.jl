@@ -117,7 +117,7 @@ function import_params(comp::AbstractCompositeComponentDef)
 
     # grab the already-imported items from the namespace; create a reverse-lookup map
     d = Dict()
-    for (local_name, ref) in param_refs(comp)
+    for (local_name, ref) in param_dict(comp)
         d[(ref.comp_path, ref.name)] = local_name
     end
 
@@ -127,7 +127,8 @@ function import_params(comp::AbstractCompositeComponentDef)
     for (comp_name, sub_comp) in components(comp)
         path = sub_comp.comp_path
         #@info "  path: $path"
-        for (local_name, ref) in param_refs(sub_comp)
+        for (local_name, param) in param_dict(sub_comp)
+            ref = (param isa DatumReference ? ref : datum_reference(sub_comp, nameof(param)))
             if ! haskey(d, (ref.comp_path, ref.name))
                 comp[local_name] = ref   # import it
             end

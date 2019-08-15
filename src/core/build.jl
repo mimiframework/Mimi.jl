@@ -81,17 +81,6 @@ function _combine_exported_vars(comp_def::AbstractCompositeComponentDef, var_dic
     names  = Symbol[]
     values = Any[]
 
-    # for (name, dr) in comp_def.exports
-    #     root = dr.root === nothing ? nothing : dr.root.comp_id
-    #     # @info "dr.root: $(printable(root)), comp_path: $(printable(dr.comp_path))"
-    #     if is_variable(dr)
-    #         obj = var_dict[dr.comp_path]
-    #         value = getproperty(obj, nameof(dr))
-    #         push!(names, name)
-    #         push!(values, value)
-    #     end
-    # end
-
     types = DataType[typeof(val) for val in values]
     paths = repeat(Any[comp_def.comp_path], length(names))
     ci_vars = ComponentInstanceVariables(names, types, values, paths)
@@ -102,17 +91,6 @@ end
 function _combine_exported_pars(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     names  = Symbol[]
     values = Any[]
-
-    # @info "_combine_exported_pars: $(comp_def.exports)"
-
-    # for (name, dr) in comp_def.exports
-    #     if is_parameter(dr)
-    #         value = par_dict[(dr.comp_path, dr.name)]
-    #         push!(names, name)
-    #         push!(values, value)
-    #     end
-    # end
-
     paths = repeat(Any[comp_def.comp_path], length(names))
     types = DataType[typeof(val) for val in values]
     return ComponentInstanceParameters(names, types, values, paths)

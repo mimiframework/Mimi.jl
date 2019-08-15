@@ -98,8 +98,9 @@ Return the value of variable `name` in component `ci`.
 """
 function get_var_value(ci::AbstractComponentInstance, name::Symbol)
     try
-        # println("Getting $name from $(ci.variables)")
-        return getproperty(ci.variables, name)
+        vars = ci.variables
+        # @info ("Getting $name from $vars")
+        return getproperty(vars, name)
     catch err
         if isa(err, KeyError)
             error("Component $(ci.comp_id) has no variable named $name")
@@ -234,7 +235,7 @@ function init(ci::AbstractComponentInstance, dims::DimValueDict)
     reset_variables(ci)
 
     if ci.init != nothing
-        ci.init(ci.parameters, ci.variables, dims)
+        ci.init(parameters(ci), variables(ci), dims)
     end
     return nothing
 end
@@ -250,7 +251,7 @@ _runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(cl
 
 function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueDict)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
-        ci.run_timestep(ci.parameters, ci.variables, dims, clock.ts)
+        ci.run_timestep(parameters(ci), variables(ci), dims, clock.ts)
     end
 
     return nothing

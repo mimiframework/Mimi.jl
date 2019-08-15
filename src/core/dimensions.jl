@@ -73,9 +73,6 @@ dim_names(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [dimension
 
 dim_count_dict(obj::AbstractCompositeComponentDef) = Dict([name => length(value) for (name, value) in dim_dict(obj)])
 
-# deprecated?
-#dim_key_dict(obj::AbstractCompositeComponentDef) = Dict([name => collect(keys(dim)) for (name, dim) in dimensions(obj)])
-
 dim_counts(obj::AbstractCompositeComponentDef, dims::Vector{Symbol}) = [length(dim) for dim in dim_names(obj, dims)]
 dim_count(obj::AbstractCompositeComponentDef, name::Symbol) = length(dimension(obj, name))
 

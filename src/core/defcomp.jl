@@ -72,7 +72,6 @@ end
 # only references to vars in components contained within.
 function add_variable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
     v = VariableDef(name, comp_def.comp_path, datatype, dimensions, description, unit)
-    comp_def.variables[name] = v
     comp_def[name] = v            # adds to namespace and checks for duplicate
     return v
 end
@@ -84,7 +83,6 @@ end
 
 function add_parameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
     p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
-    comp_def.parameters[name] = p
     comp_def[name] = p            # adds to namespace and checks for duplicate
     dirty!(comp_def)
     return p

@@ -1,18 +1,3 @@
-"""
-    istype(T::DataType)
-
-Return an anonymous func that can be used to filter a dict by data type of values.
-Example: `filter(istype(AbstractComponentDef), obj.namespace)`
-"""
-istype(T::DataType) = (pair -> pair.second isa T)
-
-# Namespace filter functions; these return dicts of values for the given type. 
-# N.B. only composites hold comps in the namespace.
-components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
-
-var_refs(obj::AbstractComponentDef)   = filter(istype(VariableDefReference),  obj.namespace)
-param_refs(obj::AbstractComponentDef) = filter(istype(ParameterDefReference), obj.namespace)
-
 Base.length(obj::AbstractComponentDef) = 0   # no sub-components
 Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
 
@@ -131,22 +116,58 @@ end
 
 @delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
 
-function Base.getindex(comp::AbstractComponentDef, key::Symbol)
-    value = comp.namespace[key]
-    return value
+Base.getindex(comp::AbstractComponentDef, key::Symbol) = comp.namespace[key]
 
-    # value isa AbstractComponentDef && return value
-    
-    # # Variables can't be linked (not an array of values). 
-    # # If there are linked params, all have the same value, use first.
-    # # If not linked, params are still stored as vector of length 1.
-    # ref = (value isa Vector ? value[1] : value)
-    
-    # # follow reference to access value of parameter
-    # obj = find_comp(ref.root, ref.comp_path)
-    # obj === nothing && error("Failed to find referenced parameter: $ref")
+#
+# Component namespaces
+#
+"""
+    istype(T::DataType)
 
-    # return obj[ref.name]
+Return an anonymous func that can be used to filter a dict by data type of values.
+Example: `filter(istype(AbstractComponentDef), obj.namespace)`
+"""
+istype(T::DataType) = (pair -> pair.second isa T)
+
+# Namespace filter functions return dicts of values for the given type. 
+# N.B. only composites hold comps in the namespace.
+components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
+
+param_dict(obj::ComponentDef) = filter(istype(ParameterDef), obj.namespace)
+param_dict(obj::AbstractCompositeComponentDef) = filter(istype(ParameterDefReference), obj.namespace)
+
+var_dict(obj::ComponentDef) = filter(istype(VariableDef), obj.namespace)
+var_dict(obj::AbstractCompositeComponentDef) = filter(istype(VariableDefReference), obj.namespace)
+
+"""
+    parameters(comp_def::AbstractComponentDef)
+
+Return an iterator of the parameter definitions (or references) for `comp_def`.
+"""
+parameters(obj::AbstractComponentDef) = values(param_dict(obj))
+
+
+"""
+    variables(comp_def::AbstractComponentDef)
+
+Return an iterator of the variable definitions (or references) for `comp_def`.
+"""
+variables(obj::ComponentDef)  = values(filter(istype(VariableDef), obj.namespace))
+variables(obj::AbstractCompositeComponentDef) = values(filter(istype(VariableDefReference), obj.namespace))
+
+variables(comp_id::ComponentId)  = variables(compdef(comp_id))
+parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
+
+# Return true if the component namespace has an item `name` that isa `T`
+function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
+    return haskey(comp_def.namespace, name) && comp_def.namespace[name] isa T
+end
+
+function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
+    haskey(obj.namespace, name) || error("Item :$name was not found in component $(obj.comp_path)")
+    item = obj[name]
+    item isa T || error(":$name in component $(obj.comp_path) is a $(typeof(item)); expected type $T")
+    return item
 end
 
 function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)    
@@ -162,12 +183,29 @@ end
 
 # Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
 function Base.setindex!(comp::ComponentDef, value::AbstractDatumDef, key::Symbol)
-    ref = datum_reference(comp, value.name)
-    _save_to_namespace(comp, key, ref)
-    return value
+    _save_to_namespace(comp, key, value)
 end
 
-function Base.setindex!(comp::AbstractCompositeComponentDef, value::NamespaceElement, key::Symbol)
+"""
+    datum_reference(comp::ComponentDef, datum_name::Symbol)
+
+Create a reference to the given datum, which must already exist.
+"""
+function datum_reference(comp::ComponentDef, datum_name::Symbol)  
+    obj = _ns_get(comp, datum_name, AbstractDatumDef)
+    path = @or(obj.comp_path, ComponentPath(comp.name))
+    ref_type = obj isa ParameterDef ? ParameterDefReference : VariableDefReference
+    return ref_type(datum_name, get_root(comp), path)
+end
+
+"""
+    datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol)
+
+Create a reference to the given datum, which itself must be a DatumReference.
+"""
+datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol) = _ns_get(comp, datum_name, AbstractDatumReference)
+
+function Base.setindex!(comp::AbstractCompositeComponentDef, value::CompositeNamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
 end
 
@@ -297,69 +335,11 @@ isuniform(values) = (length(values) == 0 ? false : all_equal(diff(collect(values
 isuniform(values::Int) = true
 
 #
-# Data references
-#
-
-function _store_datum_ref(ccd::AbstractCompositeComponentDef, dr::ParameterDefReference, name::Symbol)
-    ccd.parameters[name] = parameter(dr)
-end
-
-function _store_datum_ref(ccd::AbstractCompositeComponentDef, dr::VariableDefReference, name::Symbol)
-    ccd.variables[name] = variable(dr)
-end
-
-# Define this no-op for leaf components, to simplify coding
-_collect_data_refs(cd::ComponentDef; reset::Bool=false) = nothing
-
-function _collect_data_refs(ccd::AbstractCompositeComponentDef; reset::Bool=false)
-    if reset
-        empty!(ccd.variables)
-        empty!(ccd.parameters)
-    end
-
-    for (name, dr) in ccd.exports
-        _store_datum_ref(ccd, dr, name)
-    end
-
-    # recurse down composite tree
-    for obj in compdefs(ccd)
-        _collect_data_refs(obj, reset=reset)
-    end
-
-    nothing
-end
-
-#
 # Parameters
 #
 
 # Callable on both ParameterDef and VariableDef
 dim_names(obj::AbstractDatumDef) = obj.dim_names
-
-"""
-    parameters(comp_def::ComponentDef)
-
-Return a list of the parameter definitions for `comp_def`.
-"""
-parameters(obj::AbstractComponentDef) = values(obj.parameters)
-
-# TBD: deprecated
-function parameters(ccd::AbstractCompositeComponentDef; reset::Bool=false)
-    pars = ccd.parameters
-    
-    if reset || (ccd isa ModelDef && dirty(ccd)) || length(pars) == 0
-        _collect_data_refs(ccd; reset=reset)
-    end
-    
-    return values(pars)
-end
-
-"""
-    parameters(comp_id::ComponentId)
-
-Return a list of the parameter definitions for `comp_id`.
-"""
-parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
 
 """
     parameter_names(md::ModelDef, comp_name::Symbol)
@@ -368,40 +348,27 @@ Return a list of all parameter names for a given component `comp_name` in a mode
 """
 parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, comp_name))
 
-#parameter_names(comp_def::ComponentDef) = [nameof(param) for param in parameters(comp_def)]
-parameter_names(comp_def::AbstractComponentDef) = collect(keys(comp_def.parameters))
+parameter_names(comp_def::AbstractComponentDef) = collect(keys(param_dict(comp_def)))
+
+parameter(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, ParameterDef)
+
+parameter(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, ParameterDefReference)
 
 parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
 
 parameter(dr::ParameterDefReference) = parameter(compdef(dr), nameof(dr))
 
-function _parameter(obj::AbstractComponentDef, name::Symbol)
-    if haskey(obj.parameters, name)
-        return obj.parameters[name]
-    end
+has_parameter(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, ParameterDef)
 
-    error("Parameter $name was not found in component $(nameof(obj))")
-end
-
-parameter(obj::ComponentDef, name::Symbol) = _parameter(obj, name)
-
-function parameter(obj::AbstractCompositeComponentDef, name::Symbol)
-    if ! haskey(obj.namespace, name)
-        error("Item $name is not present in composite component $(obj.comp_path)")
-    end
-
-    _parameter(obj, name)
-end
-
-has_parameter(comp_def::AbstractComponentDef, name::Symbol) = haskey(comp_def.parameters, name)
+has_parameter(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, ParameterDefReference)
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
-    param = _parameter(obj, param_name)
+    param = parameter(obj, param_name)
     return param.unit
 end
 
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
-    param = _parameter(obj, param_name)
+    param = parameter(obj, param_name)
     return dim_names(param)
 end
 
@@ -566,43 +533,9 @@ end
 #
 # Variables
 #
+variable(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, VariableDef)
 
-# Leaf components
-variables(comp_def::AbstractComponentDef) = values(comp_def.variables)
-
-# Composite components
-# TBD: if we maintain vars/pars dynamically, this can be dropped
-function variables(ccd::AbstractCompositeComponentDef; reset::Bool=false)
-    vars = ccd.variables
-
-    if reset || (ccd isa ModelDef && dirty(ccd)) || length(vars) == 0
-        _collect_data_refs(ccd; reset=reset)
-    end
-
-    return values(vars)
-end
-
-variables(comp_id::ComponentId) = variables(compdef(comp_id))
-
-function _variable(obj::AbstractComponentDef, name::Symbol)
-    try
-        return obj.variables[name]
-    catch
-        error("Variable $name was not found in component $(nameof(obj))")
-    end
-end
-
-variable(obj::ComponentDef, name::Symbol) = _variable(obj, name)
-
-function variable(obj::AbstractCompositeComponentDef, name::Symbol)
-    _collect_data_refs(obj)  
-    
-    if ! haskey(obj.namespace, name)
-        error("Item $name is not present in composite component $(obj.comp_path)")
-    end    
-
-    _variable(obj, name)
-end
+variable(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, VariableDefReference)
 
 variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), var_name)
 
@@ -615,7 +548,11 @@ end
 
 variable(dr::VariableDefReference) = variable(compdef(dr), nameof(dr))
 
-has_variable(comp_def::AbstractComponentDef, name::Symbol) = haskey(comp_def.variables, name)
+
+
+has_variable(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDef)
+
+has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDefReference)
 
 """
     variable_names(md::AbstractCompositeComponentDef, comp_name::Symbol)
@@ -769,11 +706,11 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
     # @info "comp path: $path, datum_name: $datum_name"
 
     # TBD: should be obviated by namespace
-    if is_composite(comp_def)
-        # find and cache locally exported vars & pars
-        variables(comp_def)
-        parameters(comp_def)
-    end
+    # if is_composite(comp_def)
+    #     # find and cache locally exported vars & pars
+    #     variables(comp_def)
+    #     parameters(comp_def)
+    # end
 
     if has_variable(comp_def, datum_name)
         return VariableDefReference(datum_name, root, path)
@@ -805,21 +742,16 @@ end
 """
     add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
               comp_name::Symbol=comp_def.comp_id.comp_name;
-              exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
+              first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component
 is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note that
 a copy of `comp_def` is created and inserted into the composite under the given `comp_name`.
-The `exports` arg identifies which vars/pars to make visible to the next higher composite level, and with
-what names. If `nothing`, everything is exported. The first element of a pair indicates the symbol to export
-from comp_def to the composite, the second element allows this var/par to have a new name in the composite.
-A symbol alone means to use the name unchanged, i.e., [:X, :Y] implies [:X => :X, :Y => :Y]
 
 Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
-                   exports=nothing,  # TBD: deprecated
                    first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
 
@@ -878,7 +810,7 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         end
     end
 
-    # Handle special case of adding to a ModelDef, which isn't done with @defcomposite,
+    # Handle special case of adding to a ModelDef (which isn't done with @defcomposite)
     # which calls import_params after adding all components and explicit imports.
     obj isa AbstractModelDef && import_params(obj)
 
@@ -888,7 +820,7 @@ end
 
 """
     add_comp!(obj::CompositeComponentDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name,
-        exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
+        first=nothing, last=nothing, before=nothing, after=nothing)
 
 Add the component indicated by `comp_id` to the composite component indicated by `obj`. The component
 is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the
@@ -898,12 +830,11 @@ Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                    comp_name::Symbol=comp_id.comp_name;
-                   exports=nothing,
                    first::NothingInt=nothing, last::NothingInt=nothing,
                    before::NothingSymbol=nothing, after::NothingSymbol=nothing)
     # println("Adding component $comp_id as :$comp_name")
     add_comp!(obj, compdef(comp_id), comp_name,
-              exports=exports, first=first, last=last, before=before, after=after)
+              first=first, last=last, before=before, after=after)
 end
 
 """
@@ -966,9 +897,9 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
 
         # Check incoming parameters
         incoming_params = map(ipc -> ipc.dst_par_name, internal_param_conns(obj, comp_name))
-        old_params = filter(pair -> pair.first in incoming_params, old_comp.parameters)
-        new_params = new_comp.parameters
-        if !_compare_datum(new_params, old_params)
+        old_params = filter(pair -> pair.first in incoming_params, param_dict(old_comp))
+        new_params = param_dict(new_comp)
+        if ! _compare_datum(new_params, old_params)
             error("Cannot replace and reconnect; new component does not contain the necessary parameters.")
         end
 
@@ -976,8 +907,8 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         _get_name(obj, name) = nameof(compdef(obj, :first))
         outgoing_vars = map(ipc -> ipc.src_var_name,
                             filter(ipc -> nameof(compdef(obj, ipc.src_comp_path)) == comp_name, internal_param_conns(obj)))
-        old_vars = filter(pair -> pair.first in outgoing_vars, old_comp.variables)
-        new_vars = new_comp.variables
+        old_vars = filter(pair -> pair.first in outgoing_vars, var_dict(old_comp))
+        new_vars = var_dict(new_comp)
         if !_compare_datum(new_vars, old_vars)
             error("Cannot replace and reconnect; new component does not contain the necessary variables.")
         end
@@ -990,7 +921,7 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                 @debug "Removing external parameter connection from component $comp_name; parameter $param_name no longer exists in component."
                 push!(remove, epc)
             else
-                old_p = old_comp.parameters[param_name]
+                old_p = parameter(old_comp, param_name)
                 new_p = new_params[param_name]
                 if new_p.dim_names != old_p.dim_names
                     error("Cannot replace and reconnect; parameter $param_name in new component has different dimensions.")
