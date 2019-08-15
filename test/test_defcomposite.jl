@@ -5,9 +5,6 @@ using Mimi
 using MacroTools
 
 import Mimi: ComponentPath, build
-    # ComponentId, , DatumReference, ComponentDef, AbstractComponentDef, CompositeComponentDef,
-    # Binding, ExportsDict, ModelDef, build, time_labels, compdef, find_comp
-
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -61,7 +58,7 @@ set_param!(a, :Comp1, :foo, 10)
 set_param!(a, :Comp2, :foo, 4)      # TBD: why does this overwrite the 10 above??
 
 build(m)
-#run(m)
+run(m)
 
 end # module
 

@@ -240,8 +240,8 @@ end
 
 model6 = Model()
 set_dimension!(model6, :time, years)
-add_comp!(model6, foo, :Long; exports=[:var => :long_var])
-add_comp!(model6, foo, :Short; exports=[:var => :short_var]) #, first=late_start)
+add_comp!(model6, foo, :Long; rename=[:var => :long_foo])
+add_comp!(model6, foo, :Short; rename=[:var => :short_foo]) #, first=late_start)
 connect_param!(model6, :Short => :par, :Long => :var)
 set_param!(model6, :Long, :par, years)
 

@@ -4,36 +4,6 @@
 using MacroTools
 
 """
-Target looks like this:
-
-# Test the calls the macro will produce
-let calling_module = @__MODULE__
-    global m = Model()
-
-    ccname = :testcomp
-    ccid  = ComponentId(calling_module, ccname)
-    comps = AbstractComponentDef[compdef(Comp1), compdef(Comp2), compdef(Comp3)]
-    
-    # TBD: need to implement this to create connections and default value
-    bindings = Binding[
-        DatumReference(:par_1_1, Comp1) => 5,                                 # bind Comp1.par_1_1 to constant value of 5
-        DatumReference(:par_2_2, Comp2) => DatumReference(:var_1_1, Comp1),   # connect target Comp2.par_2_1 to source Comp1.var_1_1
-        DatumReference(:par_3_1, Comp3) => DatumReference(:var_2_1, Comp2)]
-
-    exports = [
-        DatumReference(:par_1_1, Comp1) => :c1p1,        # i.e., export Comp1.par_1_1 as :c1p1
-        DatumReference(:par_2_2, Comp2) => :c2p2,
-        DatumReference(:var_3_1, Comp3) => :c3v1]
-
-    m.md = md = ModelDef()
-    CompositeComponentDef(md, ccid, comps, bindings, exports)
-                                
-    set_dimension!(m, :time, 2005:2020)
-    nothing
-end
-"""
-
-"""
     defmodel(model_name::Symbol, ex::Expr)
 
 Define a Mimi model. The following types of expressions are supported:

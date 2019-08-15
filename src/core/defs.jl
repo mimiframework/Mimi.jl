@@ -636,9 +636,9 @@ end
 # Recursively ascend the component tree structure to find the root node
 get_root(node::AbstractComponentDef) = (node.parent === nothing ? node : get_root(node.parent))
 
-const NothingInt    = Union{Nothing, Int}
-const NothingSymbol = Union{Nothing, Symbol}
-const ExportList    = Vector{Union{Symbol, Pair{Symbol, Symbol}}}
+const NothingInt      = Union{Nothing, Int}
+const NothingSymbol   = Union{Nothing, Symbol}
+const NothingPairList = Union{Nothing, Vector{Pair{Symbol, Symbol}}}
 
 function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef;
                        before::NothingSymbol=nothing, after::NothingSymbol=nothing)
@@ -741,19 +741,21 @@ end
 
 """
     add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-              comp_name::Symbol=comp_def.comp_id.comp_name;
+              comp_name::Symbol=comp_def.comp_id.comp_name; rename=nothing,
               first=nothing, last=nothing, before=nothing, after=nothing)
 
-Add the component indicated by `comp_def` to the composite components indicated by `obj`. The component
-is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note that
-a copy of `comp_def` is created and inserted into the composite under the given `comp_name`.
+Add the component `comp_def` to the composite component indicated by `obj`. The component is 
+added at the end of the list unless one of the keywords `before` or `after` is specified.
+Note that a copy of `comp_id` is made in the composite and assigned the give name. The optional
+argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 
 Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
                    first::NothingInt=nothing, last::NothingInt=nothing,
-                   before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+                   before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+                   rename::NothingPairList=nothing)
 
     if first !== nothing || last !== nothing
         @warn "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."
@@ -820,21 +822,23 @@ end
 
 """
     add_comp!(obj::CompositeComponentDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name,
-        first=nothing, last=nothing, before=nothing, after=nothing)
+        first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
 
-Add the component indicated by `comp_id` to the composite component indicated by `obj`. The component
-is added at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the
-`comp_name` differs from that in the `comp_def`, a copy of `comp_def` is made and assigned the new name.
+Add the component indicated by `comp_id` to the composite component indicated by `obj`. The 
+component is added at the end of the list unless one of the keywords `before` or `after` is 
+specified. Note that a copy of `comp_id` is made in the composite and assigned the give name. 
+The optional argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 
 Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
                    comp_name::Symbol=comp_id.comp_name;
                    first::NothingInt=nothing, last::NothingInt=nothing,
-                   before::NothingSymbol=nothing, after::NothingSymbol=nothing)
+                   before::NothingSymbol=nothing, after::NothingSymbol=nothing,
+                   rename::NothingPairList=nothing)
     # println("Adding component $comp_id as :$comp_name")
     add_comp!(obj, compdef(comp_id), comp_name,
-              first=first, last=last, before=before, after=after)
+              first=first, last=last, before=before, after=after, rename=rename)
 end
 
 """

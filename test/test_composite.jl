@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi:
     ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef, CompositeComponentDef,
-    Binding, ExportsDict, ModelDef, build, time_labels, compdef, find_comp
+    Binding, ModelDef, build, time_labels, compdef, find_comp
 
 
 @defcomp Comp1 begin
@@ -55,20 +55,31 @@ m = Model()
 set_dimension!(m, :time, 2005:2020)
 
 @defcomposite A begin
-    component(Comp1; exports=[foo => foo1])
-    component(Comp2, exports=[foo => foo2])
+    component(Comp1)
+    component(Comp2)
+
+    foo1 = Comp1.foo
+    foo2 = Comp2.foo
 end
 
 @defcomposite B begin
-    component(Comp3, exports=[foo => foo3]) # bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
-    component(Comp4, exports=[foo => foo4])
+    component(Comp3) # bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
+    component(Comp4)
+
+    foo3 = Comp3.foo
+    foo4 = Comp4.foo
 end
 
 @defcomposite top begin
-    component(A; exports=[foo1 => fooA1, foo2 => fooA2])
+    component(A)
+
+    fooA1 = A.foo1
+    fooA2 = A.foo2
 
     # TBD: component B isn't getting added to mi
-    component(B; exports=[foo3, foo4])
+    component(B)
+    foo3 = B.foo3
+    foo4 = B.foo4
 end
 
 # We have created the following composite structure:

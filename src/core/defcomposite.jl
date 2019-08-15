@@ -6,26 +6,6 @@ _arg_type(arg_tup) = arg_tup[2]
 _arg_slurp(arg_tup) = arg_tup[3]
 _arg_default(arg_tup) = arg_tup[4]
 
-function _collect_exports(exprs)
-    # each item in exprs is either a single symbol, or an expression mapping
-    # one symbol to another, e.g., [:foo, :bar, :(:baz => :my_baz)]. We peel
-    # out the symbols to create a list of pairs.
-    exports = []
-    # @info "_collect_exports: $exprs"
-
-    for expr in exprs
-        if (@capture(expr, name_ => expname_) || @capture(expr, name_)) &&
-            (name isa Symbol && (expname === nothing || expname isa Symbol))
-            push!(exports, name => @or(expname, name))
-        else
-            error("Elements of exports list must Symbols or Pair{Symbol, Symbol}, got $expr")
-        end
-    end
-
-    # @info "returning $exports"
-    return exports
-end
-
 const NumericArray = Array{T, N} where {T <: Number, N}
 
 function _collect_bindings(exprs)
@@ -69,7 +49,7 @@ function _subcomp(args, kwargs)
         error("Component name must be a Module.name expression or a symbol, got $arg1")
     end
 
-    valid_kws = (:exports, :bindings)    # valid keyword args to the component() psuedo-function
+    valid_kws = (:bindings,)    # valid keyword args to the component() psuedo-function
     kw = Dict([key => [] for key in valid_kws])
 
     for (arg_name, arg_type, slurp, default) in kwarg_tups
@@ -84,9 +64,8 @@ function _subcomp(args, kwargs)
         end
     end
 
-    exports  = _collect_exports(kw[:exports])
     bindings = _collect_bindings(kw[:bindings])
-    return SubComponent(cmodule, cname, alias, exports, bindings)
+    return SubComponent(cmodule, cname, alias, bindings)
 end
 
 # Convert an expr like `a.b.c.d` to `[:a, :b, :c, :d]`
@@ -144,12 +123,7 @@ are all variations on `component(...)`, which adds a component to the composite.
 calling signature for `component()` processed herein is:
 
     component(comp_name, local_name;
-              exports=[list of symbols or Pair{Symbol,Symbol}],
               bindings=[list Pair{Symbol, Symbol or Number or Array of Numbers}])
-
-In this macro, the vector of symbols to export is expressed without the `:`, e.g.,
-`exports=[var_1, var_2 => export_name, param_1])`. The names must be variable or
-parameter names exported to the composite component being added by its sub-components.
 
 Bindings are expressed as a vector of `Pair` objects, where the first element of the
 pair is the name (again, without the `:` prefix) representing a parameter in the component

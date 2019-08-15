@@ -119,12 +119,12 @@ model definition.
 
 """
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
-              exports=nothing, first=nothing, last=nothing, before=nothing, after=nothing)
+              first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
 
 Add the component indicated by `comp_id` to the model indicated by `m`. The component is added 
-at the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. If the 
-`comp_name` differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the 
-new name.
+at the end of the list unless one of the keywords `before` or `after` is specified. Note
+that a copy of `comp_id` is made in the composite and assigned the give name. The optional
+argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 
 Note: `first` and `last` keywords are currently disabled.
 """
@@ -133,6 +133,17 @@ function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.com
     return ComponentReference(m.md, comp_name)
 end
 
+"""
+    add_comp!(m::Model, comp_def::AbstractComponentDef; comp_name::Symbol=comp_id.comp_name;
+              first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
+
+Add the component `comp_def` to the model indicated by `m`. The component is added at
+the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note
+that a copy of `comp_id` is made in the composite and assigned the give name. The optional
+argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+
+Note: `first` and `last` keywords are currently disabled.
+"""
 function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end

@@ -97,7 +97,6 @@ struct SubComponent <: MimiStruct
     module_name::Union{Nothing, Symbol}
     comp_name::Symbol
     alias::Union{Nothing, Symbol}
-    exports::Vector{Union{Symbol, Pair{Symbol, Symbol}}}
     bindings::Vector{Pair{Symbol, Any}}
 end
 
@@ -115,7 +114,6 @@ end
 
 # Define type aliases to avoid repeating these in several places
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
-global const ExportsDict = Dict{Symbol, AbstractDatumReference}
 
 # Define which types can appear in the namespace dict for leaf and composite compdefs
 global const LeafNamespaceElement      = Union{VariableDef, ParameterDef}
@@ -123,9 +121,7 @@ global const CompositeNamespaceElement = Union{AbstractComponentDef, VariableDef
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
-    #comps_dict::OrderedDict{Symbol, AbstractComponentDef}
     bindings::Vector{Binding}
-    # exports::ExportsDict
 
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
@@ -146,8 +142,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
         ComponentDef(self, comp_id) # call superclass' initializer
 
         self.comp_path = ComponentPath(self.name)
-        # self.comps_dict = OrderedDict{Symbol, AbstractComponentDef}()
-        # self.exports  = ExportsDict()
         self.bindings = Vector{Binding}()
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.external_param_conns = Vector{ExternalParameterConnection}()
@@ -168,7 +162,7 @@ function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Ve
         comp_name = @or(c.module_name, nameof(calling_module))
         subcomp_id = ComponentId(comp_name, c.comp_name)
         subcomp = compdef(subcomp_id, module_obj=(c.module_name === nothing ? calling_module : nothing))
-        add_comp!(composite, subcomp, @or(c.alias, c.comp_name), exports=c.exports)
+        add_comp!(composite, subcomp, @or(c.alias, c.comp_name))
     end
     return composite
 end
