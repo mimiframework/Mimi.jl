@@ -60,6 +60,12 @@ set_dimension!(m, :time, 2005:2020)
 
     foo1 = Comp1.foo
     foo2 = Comp2.foo
+
+    # Should accomplish the same as calling 
+    #   connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
+    # after the `@defcomposite top ...`
+    Comp2.par_2_1 = Comp1.var_1_1
+    Comp2.par_2_2 = Comp1.var_1_1
 end
 
 @defcomposite B begin
@@ -97,8 +103,14 @@ md = m.md
 
 @test find_comp(md, :top) == top_comp
 
+#
+# Test various ways to access sub-components
+#
 c1 = find_comp(md, ComponentPath(:top, :A, :Comp1))
 @test c1.comp_id == Comp1.comp_id
+
+c2 = md[:top][:A][:Comp2]
+@test c2.comp_id == Comp2.comp_id
 
 c3 = find_comp(md, "/top/B/Comp3")
 @test c3.comp_id == Comp3.comp_id
@@ -114,12 +126,13 @@ set_param!(m, "/top/B/Comp4:foo", 20)
 
 set_param!(m, "/top/A/Comp1", :par_1_1, collect(1:length(time_labels(md))))
 
-connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
-connect_param!(m, "/top/A/Comp2:par_2_2", "/top/A/Comp1:var_1_1")
+# connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
+# connect_param!(m, "/top/A/Comp2:par_2_2", "/top/A/Comp1:var_1_1")
 connect_param!(m, "/top/B/Comp3:par_3_1", "/top/A/Comp2:var_2_1")
 connect_param!(m, "/top/B/Comp4:par_4_1", "/top/B/Comp3:var_3_1")
 
 build(m)
+
 run(m)
 
 #
@@ -135,17 +148,19 @@ run(m)
 
 mi = m.mi
 
+@test mi[:top][:A][:Comp2, :par_2_2] == collect(1.0:16.0)
 @test mi["/top/A/Comp2", :par_2_2] == collect(1.0:16.0)
+
 @test mi["/top/A/Comp2", :var_2_1] == collect(3.0:3:48.0)
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
 end # module
 
-# m = TestComposite.m
-# md = m.md
-# top   = Mimi.find_comp(md, :top)
-# A     = Mimi.find_comp(top, :A)
-# comp1 = Mimi.find_comp(A, :Comp1)
+m = TestComposite.m
+md = m.md
+top   = Mimi.find_comp(md, :top)
+A     = Mimi.find_comp(top, :A)
+comp1 = Mimi.find_comp(A, :Comp1)
 
 nothing

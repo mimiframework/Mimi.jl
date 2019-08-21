@@ -82,37 +82,13 @@ function _parse_dotted_symbols(expr)
     if ex isa Symbol
         push!(syms, ex)
     else
-        error("Expected Symbol or Symbol.Symbol..., got $expr")
+        # @warn "Expected Symbol or Symbol.Symbol..., got $expr"
+        return nothing
     end
 
     syms = reverse(syms)
     var_or_par = pop!(syms)
     return ComponentPath(syms), var_or_par
-end
-
-function import_params(comp::AbstractCompositeComponentDef)
-    # nothing to do if there are no sub-components
-    length(comp) == 0 && return
-
-    # grab the already-imported items from the namespace; create a reverse-lookup map
-    d = Dict()
-    for (local_name, ref) in param_dict(comp)
-        d[(ref.comp_path, ref.name)] = local_name
-    end
-
-    #@info "import_params: reverse lookup: $d"
-
-    # Iterate over all sub-components and import all params not already referenced (usually renamed)
-    for (comp_name, sub_comp) in components(comp)
-        path = sub_comp.comp_path
-        #@info "  path: $path"
-        for (local_name, param) in param_dict(sub_comp)
-            ref = (param isa DatumReference ? ref : datum_reference(sub_comp, nameof(param)))
-            if ! haskey(d, (ref.comp_path, ref.name))
-                comp[local_name] = ref   # import it
-            end
-        end
-    end
 end
 
 """
@@ -171,15 +147,18 @@ macro defcomposite(cc_name, ex)
                 # Save a singletons as a 1-element Vector for consistency with multiple linked params
                 var_par = right.head == :tuple ? _parse_dotted_symbols.(right.args) : [_parse_dotted_symbols(right)]
                 push!(imports, (left, var_par))
-                @info "import as $left = $var_par"
+                # @info "import as $left = $var_par"
 
             # note that `comp_Symbol.name_Symbol` failed; bug in MacroTools?
-            elseif @capture(left, comp_.name_) && comp isa Symbol && name isa Symbol # simple connection case
-                src = _parse_dotted_symbols(right)
+            elseif @capture(left, comp_.name_) # simple connection case                
                 dst = _parse_dotted_symbols(left)
-                tup = (dst, src)
-                push!(conns, tup)
-                @info "connection: $dst = $src"
+                dst === nothing && error("Expected dot-delimited sequence of symbols, got $left")
+
+                src = _parse_dotted_symbols(right)
+                src === nothing && error("Expected dot-delimited sequence of symbols, got $right")
+
+                push!(conns, (dst, src))
+                # @info "connection: $dst = $src"
 
             else
                 error("Unrecognized expression on left hand side of '=' in @defcomposite: $elt")
@@ -205,9 +184,7 @@ macro defcomposite(cc_name, ex)
 
             global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
 
-            for ((dst_path, dst_name), (src_path, src_name)) in conns
-                Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
-            end
+            # @info "Defining composite $cc_id"
 
             function _store_in_ns(refs, local_name)
                 isempty(refs) && return
@@ -241,7 +218,13 @@ macro defcomposite(cc_name, ex)
                 _store_in_ns(par_refs, local_name)
             end
 
-            Mimi.import_params($cc_name)
+            # Mimi.import_params!($cc_name)
+
+            for ((dst_path, dst_name), (src_path, src_name)) in conns
+                # @info "connect_param!($(nameof($cc_name)), $dst_path, :$dst_name, $src_path, :$src_name)"
+                Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
+            end
+
             $cc_name
         end
     )

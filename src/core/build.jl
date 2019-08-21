@@ -230,6 +230,10 @@ function _build(md::ModelDef)
 end
 
 function build(m::Model)
+    # fix paths and propagate imports
+    fix_comp_paths!(m.md)
+    import_params!(m.md)
+
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
     m.mi = _build(md)

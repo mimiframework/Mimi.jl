@@ -44,7 +44,7 @@ struct ComponentPath <: MimiStruct
 end
 
 ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
-ComponentPath(names::Vararg{Symbol}) = ComponentPath(names)
+ComponentPath(names::Vararg{Symbol}) = ComponentPath(Tuple(names))
 
 ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath(path.names..., name)
 

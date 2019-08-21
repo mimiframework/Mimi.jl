@@ -116,8 +116,8 @@ end
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
 
 # Define which types can appear in the namespace dict for leaf and composite compdefs
-global const LeafNamespaceElement      = Union{VariableDef, ParameterDef}
-global const CompositeNamespaceElement = Union{AbstractComponentDef, VariableDefReference, ParameterDefReference}
+global const LeafNamespaceElement      = AbstractDatumDef
+global const CompositeNamespaceElement = Union{AbstractComponentDef, AbstractDatumReference}
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin

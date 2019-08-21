@@ -181,11 +181,6 @@ function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::Name
     comp.namespace[key] = value
 end
 
-# Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
-function Base.setindex!(comp::ComponentDef, value::AbstractDatumDef, key::Symbol)
-    _save_to_namespace(comp, key, value)
-end
-
 """
     datum_reference(comp::ComponentDef, datum_name::Symbol)
 
@@ -206,6 +201,11 @@ Create a reference to the given datum, which itself must be a DatumReference.
 datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol) = _ns_get(comp, datum_name, AbstractDatumReference)
 
 function Base.setindex!(comp::AbstractCompositeComponentDef, value::CompositeNamespaceElement, key::Symbol)
+    _save_to_namespace(comp, key, value)
+end
+
+# Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
+function Base.setindex!(comp::ComponentDef, value::LeafNamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
 end
 
@@ -627,9 +627,10 @@ function _set_comps!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symb
     dirty!(obj)
 end
 
-# Save a back-pointer to the container object
+# Save a back-pointer to the container object and set the comp_path
 function parent!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     child.parent = parent
+    child.comp_path = ComponentPath(parent, child.name)
     nothing
 end
 
@@ -678,7 +679,6 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
         _set_comps!(obj, new_comps)
     end
 
-    comp_path!(comp_def, obj)
     # @info "parent obj comp_path: $(printable(obj.comp_path))"
     # @info "inserted comp's path: $(comp_def.comp_path)"
     dirty!(obj)
@@ -702,15 +702,6 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
     root = get_root(parent)
 
     root === nothing && error("Component $(parent.comp_id) does not have a root")
-
-    # @info "comp path: $path, datum_name: $datum_name"
-
-    # TBD: should be obviated by namespace
-    # if is_composite(comp_def)
-    #     # find and cache locally exported vars & pars
-    #     variables(comp_def)
-    #     parameters(comp_def)
-    # end
 
     if has_variable(comp_def, datum_name)
         return VariableDefReference(datum_name, root, path)
@@ -736,6 +727,41 @@ function propagate_time!(obj::AbstractComponentDef, t::Dimension)
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
         propagate_time!(c, t)
+    end
+end
+
+"""
+    import_params!(comp::AbstractComponentDef) 
+
+Recursively (depth-first) import parameters from leaf comps to composites, and from
+sub-composites to their parents. N.B. this is done in _build() after calling 
+fix_comp_paths!().
+"""
+function import_params!(comp::AbstractComponentDef)    
+    # nothing to do if there are no sub-components
+    length(comp) == 0 && return
+
+    sub_comps = values(components(comp))
+
+    for sub_comp in sub_comps
+        import_params!(sub_comp)
+    end
+
+    # grab any items imported in @defcomposite; create a reverse-lookup map
+    d = Dict()
+    for (local_name, ref) in param_dict(comp)
+        d[(ref.comp_path, ref.name)] = local_name
+    end
+
+    # import any unreferenced (and usually renamed locally) parameters
+    for sub_comp in sub_comps
+        # N.B. param_dict() returns dict of either params (for leafs) or param refs (from composite)
+        for (local_name, param) in param_dict(sub_comp)
+            ref = (param isa AbstractDatumReference ? param : datum_reference(sub_comp, nameof(param)))
+            if ! haskey(d, (ref.comp_path, ref.name))
+                comp[local_name] = ref   # add the reference to the local namespace
+            end
+        end
     end
 end
 
@@ -806,15 +832,10 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
         for param in parameters(comp_def)
             if param.default !== nothing
                 x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
-                # @info "add_comp! calling set_param!($x, $comp_name, $(nameof(param)), $(param.default))"
                 set_param!(obj, comp_name, nameof(param), param.default)
             end
         end
     end
-
-    # Handle special case of adding to a ModelDef (which isn't done with @defcomposite)
-    # which calls import_params after adding all components and explicit imports.
-    obj isa AbstractModelDef && import_params(obj)
 
     # Return the comp since it's a copy of what was passed in
     return comp_def

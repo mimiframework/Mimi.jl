@@ -17,17 +17,22 @@ function Base.string(path::ComponentPath)
     return is_abspath(path) ? string("/", s) : s
 end
 
+Base.joinpath(p1::ComponentPath, p2::ComponentPath) = is_abspath(p2) ? p2 : ComponentPath(p1.names..., p2.names...)
+Base.joinpath(p1::ComponentPath, other...) = joinpath(joinpath(p1, other[1]), other[2:end]...)
+
 """
-    comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
+    _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
 For composites, also update the component paths for all internal connections, and
-for all DatumReferences in the namespace.
-For leaf components, update the ComponentPath for ParameterDefs and VariableDefs.
+for all DatumReferences in the namespace. For leaf components, also update the 
+ComponentPath for ParameterDefs and VariableDefs.
 """
-function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
-    child.comp_path = path = ComponentPath(parent.comp_path, child.name)
-
+function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
+    parent_path = parent.comp_path
+    child.comp_path = child_path = ComponentPath(parent_path, child.name)
+    # @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
+    
     # First, fix up child's namespace objs. We later recurse down the hierarchy.
     ns = child.namespace
     root = get_root(parent)
@@ -35,31 +40,58 @@ function comp_path!(child::AbstractComponentDef, parent::AbstractCompositeCompon
     for (name, ref) in ns
         if ref isa AbstractDatumReference
             T = typeof(ref)
-            ns[name] = new_ref = T(ref.name, root, path)
+            ns[name] = new_ref = T(ref.name, root, child_path)
             #@info "old ref: $ref, new: $new_ref"
         end
     end
 
-    # recursively reset all comp_paths
+    # recursively reset all comp_paths to their abspath equivalent
     if is_composite(child)
 
+        # Fix internal param conns
         conns = child.internal_param_conns
         for (i, conn) in enumerate(conns)
-            src_path = ComponentPath(path, conn.src_comp_path)
-            dst_path = ComponentPath(path, conn.dst_comp_path)
+            src_path = ComponentPath(child_path, conn.src_comp_path)
+            dst_path = ComponentPath(child_path, conn.dst_comp_path)
+
+            # @info "Resetting IPC src in $child_path from $(conn.src_comp_path) to $src_path"
+            # @info "Resetting IPC dst in $child_path from $(conn.dst_comp_path) to $dst_path"
 
             # InternalParameterConnections are immutable, but the vector holding them is not
             conns[i] = InternalParameterConnection(src_path, conn.src_var_name, dst_path, conn.dst_par_name,
                                                    conn.ignoreunits, conn.backup; offset=conn.offset)
         end
 
+        # Fix external param conns
+        conns = child.external_param_conns
+        for (i, conn) in enumerate(conns)
+            path = ComponentPath(parent_path, conn.comp_path)
+            # @info "Resetting EPC $child_path from $(conn.comp_path) to $path"
+
+            conns[i] = ExternalParameterConnection(path, conn.param_name, conn.external_param)
+        end
+
         for cd in compdefs(child)
-            comp_path!(cd, child)
+            _fix_comp_path!(cd, child)
         end
     else
         for datum in [variables(child)..., parameters(child)...]
-            datum.comp_path = path
+            datum.comp_path = child_path
         end
+    end
+end
+
+"""
+    fix_comp_paths!(md::AbstractModelDef)
+
+Recursively set the ComponentPaths in a tree below a ModelDef to the absolute path equivalent.
+This includes updating the component paths for all internal/external connections, and all
+DatumReferences in the namespace. For leaf components, we also update the ComponentPath for 
+ParameterDefs and VariableDefs.
+"""
+function fix_comp_paths!(md::AbstractModelDef)
+    for child in compdefs(md)
+        _fix_comp_path!(child, md)
     end
 end
 
@@ -152,6 +184,8 @@ function rel_path(ancestor_path::ComponentPath, descendant_path::ComponentPath)
     return ComponentPath(d_names[a_len+1:end])
 end
 
+rel_path(obj::AbstractComponentDef, descendant_path::ComponentPath) = rel_path(obj.comp_path, descendant_path)
+
 """
 Return whether component `descendant` is within the composite structure of `ancestor` or
 any of its descendants. If the comp_paths check out, the node is located within the
@@ -160,7 +194,7 @@ structure to ensure that the component is really where it says it is. (Trust but
 function is_descendant(ancestor::AbstractCompositeComponentDef, descendant::AbstractComponentDef)
     a_path = ancestor.comp_path
     d_path = descendant.comp_path
-    if (relpath = rel_path(a_path, d_path)) === nothing
+    if d_path === nothing || (relpath = rel_path(a_path, d_path)) === nothing
         return false
     end
 

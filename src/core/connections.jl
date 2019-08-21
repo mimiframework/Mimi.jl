@@ -8,13 +8,17 @@ Remove any parameter connections for a given parameter `param_name` in a given c
 `comp_def` which must be a direct subcomponent of composite `obj`.
 """
 function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, param_name::Symbol)
+    # If the path isn't set yet, we look for a comp in the eventual location
+    path = @or(comp_def.comp_path, ComponentPath(obj, comp_def.name))
+
+    # @info "disconnect_param!($(obj.comp_path), $path, :$param_name)"
+
     if is_descendant(obj, comp_def) === nothing
-        error("Cannot disconnect a component ($comp_def.comp_path) that is not within the given composite ($(obj.comp_path))")
+        error("Cannot disconnect a component ($path) that is not within the given composite ($(obj.comp_path))")
     end
 
-    path = comp_def.comp_path    
-    filter!(x -> !(x.dst_comp_path == path && x.dst_par_name == param_name), internal_param_conns(obj))
-    filter!(x -> !(x.comp_path == path && x.param_name == param_name), external_param_conns(obj))
+    filter!(x -> !(x.dst_comp_path == path && x.dst_par_name == param_name), obj.internal_param_conns)
+    filter!(x -> !(x.comp_path == path && x.param_name == param_name),       obj.external_param_conns)
     dirty!(obj)
 end
 
@@ -98,15 +102,15 @@ the external parameter `ext_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
     comp_def = compdef(obj, comp_name)
-    comp_path = comp_def.comp_path
     ext_param = external_param(obj, ext_param_name)
 
     if ext_param isa ArrayModelParameter
         _check_labels(obj, comp_def, param_name, ext_param)
     end
 
-    disconnect_param!(obj, comp_name, param_name)    # calls dirty!()
+    disconnect_param!(obj, comp_def, param_name)    # calls dirty!()
 
+    comp_path = @or(comp_def.comp_path, ComponentPath(obj.comp_path, comp_def.name))
     conn = ExternalParameterConnection(comp_path, param_name, ext_param_name)
     add_external_param_conn!(obj, conn)
 
@@ -138,6 +142,9 @@ function connect_param!(obj::AbstractCompositeComponentDef,
 
     dst_comp_def = compdef(obj, dst_comp_path)
     src_comp_def = compdef(obj, src_comp_path)
+
+    # @info "dst_comp_def: $dst_comp_def"
+    # @info "src_comp_def: $src_comp_def"
 
     if backup !== nothing
         # If value is a NamedArray, we can check if the labels match
@@ -287,6 +294,12 @@ function _collect_connected_params(obj::AbstractCompositeComponentDef, connected
     append!(connected, union(ext_set_params, int_set_params))
 end
 
+"""
+    connected_params(md::ModelDef)
+
+Recursively search the component tree to find connected parameters in leaf components.
+Return a vector of tuples of the form `(path::ComponentPath, param_name::Symbol)`.
+"""
 function connected_params(md::ModelDef)
     connected = ParamVector()
     _collect_connected_params(md, connected)
@@ -301,9 +314,7 @@ Thus, only the leaf (non-composite) variant of this method actually collects unc
 function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
     params = [(obj.comp_path, x) for x in parameter_names(obj)]
     diffs = setdiff(params, connected)
-    if ! isempty(diffs)
-        append!(unconnected, diffs)
-    end
+    append!(unconnected, diffs)
 end
 
 function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connected::ParamVector, unconnected::ParamVector)
@@ -360,6 +371,11 @@ function internal_param_conns(obj::AbstractCompositeComponentDef, comp_name::Sym
     return internal_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
+function add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
+    push!(obj.internal_param_conns, conn)
+    dirty!(obj)
+end
+
 # Find external param conns for a given comp
 function external_param_conns(obj::AbstractCompositeComponentDef, comp_path::ComponentPath)
     return filter(x -> x.comp_path == comp_path, external_param_conns(obj))
@@ -377,20 +393,15 @@ function external_param(obj::AbstractCompositeComponentDef, name::Symbol; missin
     error("$name not found in external parameter list")
 end
 
-function add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
-    push!(obj.internal_param_conns, conn)
-    dirty!(obj)
-end
-
 function add_external_param_conn!(obj::AbstractCompositeComponentDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
     dirty!(obj)
 end
 
 function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::ModelParameter)
-    if haskey(obj.external_params, name)
-        @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
-    end
+    # if haskey(obj.external_params, name)
+    #     @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
+    # end
     obj.external_params[name] = value
     dirty!(obj)
 end

@@ -152,7 +152,7 @@ function show(io::IO, obj::AbstractMimiType)
     _show_fields(indent(io), obj, fields)
 end
 
-function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
+function show(io::IO, obj::AbstractComponentDef)
     print(io, nameof(typeof(obj)), " id:", objectid(obj))
 
     fields = fieldnames(typeof(obj))
@@ -186,6 +186,10 @@ function show(io::IO, obj::Union{AbstractComponentDef, AbstractDatumReference})
             show(io, typeof(item))
         end
     end
+end
+
+function show(io::IO, obj::AbstractDatumReference)
+    print(io, nameof(typeof(obj)), "(name=:$(obj.name) path=$(obj.comp_path))")
 end
 
 function show(io::IO, obj::ModelInstance)
