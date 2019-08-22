@@ -46,7 +46,6 @@ value(param::ScalarModelParameter) = param.value
 dim_names(obj::ArrayModelParameter) = obj.dim_names
 dim_names(obj::ScalarModelParameter) = []
 
-
 abstract type AbstractConnection <: MimiStruct end
 
 struct InternalParameterConnection <: AbstractConnection

@@ -59,8 +59,13 @@ macro defmodel(model_name, ex)
         elseif @capture(elt, index[idx_name_] = rhs_)
             expr = :(Mimi.set_dimension!($model_name, $(QuoteNode(idx_name)), $rhs))
 
-        elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(Mimi.set_param!($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
+        # elseif @capture(elt, comp_name_.param_name_ = rhs_)
+        #     expr = :(Mimi.set_param!($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
+
+        elseif @capture(elt, lhs_ = rhs_) && @capture(lhs, comp_.name_)
+            (path, param_name) = parse_dotted_symbols(lhs)
+            expr = :(Mimi.set_param!($model_name, $path, $(QuoteNode(param_name)), $rhs))
+            # @info "expr: $expr"
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.

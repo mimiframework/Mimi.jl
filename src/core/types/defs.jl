@@ -112,6 +112,16 @@ end
 
 @class VariableDefReference  <: DatumReference
 
+function _dereference(ref::AbstractDatumReference)
+    comp = find_comp(ref)
+    return comp[ref.name]
+end
+
+# Might not be useful
+# convert(::Type{VariableDef},  ref::VariableDefReference)  = _dereference(ref)
+# convert(::Type{ParameterDef}, ref::ParameterDefReference) = _dereference(ref)
+
+
 # Define type aliases to avoid repeating these in several places
 global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
 

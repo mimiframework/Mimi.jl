@@ -483,7 +483,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
         if dtype <: AbstractArray
             value = convert(dtype, value)
         else
-            #check that number of dimensions matches
+            # check that number of dimensions matches
             value_dims = length(size(value))
             if num_dims != value_dims
                 error("Mismatched data size for a set parameter call: dimension :$param_name in $(comp_name) has $num_dims dimensions; indicated value has $value_dims dimensions.")
@@ -508,7 +508,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
                     values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims, ti}(value)
                 else
                     times = time_labels(obj)
-                    #use the first from the comp_def
+                    # use the first from the comp_def
                     first_index = findfirst(isequal(first), times)
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
                 end

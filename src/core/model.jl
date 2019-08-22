@@ -356,6 +356,8 @@ Set the value of a parameter exposed in the ModelDef (m.md).
 """
 @delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
 
+@delegate set_param!(m::Model, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing) => md
+
 
 """
     run(m::Model)

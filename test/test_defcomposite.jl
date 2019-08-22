@@ -4,7 +4,7 @@ using Test
 using Mimi
 using MacroTools
 
-import Mimi: ComponentPath, build
+import Mimi: ComponentPath, build, @defmodel
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -27,9 +27,6 @@ end
     end
 end
 
-m = Model()
-set_dimension!(m, :time, 2005:2020)
-
 @defcomposite A begin
     component(Comp1)
     component(Comp2)
@@ -45,15 +42,28 @@ set_dimension!(m, :time, 2005:2020)
     foo2 = Comp2.foo
 
     # connections
-    Comp1.par_1_1 = Comp2.var_2_1
     Comp2.par_2_1 = Comp1.var_1_1   
     Comp2.par_2_2 = Comp1.var_1_1
 end
 
+
+# doesn't work currently
+# @defmodel m begin
+#     index[time] = 2005:2020
+#     component(A)
+
+#     A.foo1 = 10
+#     A.foo2 = 4
+# end
+
+m = Model()
+years = 2005:2020
+set_dimension!(m, :time, years)
 add_comp!(m, A)
 
-a = m.md[:A]
+set_param!(m, "/A/Comp1", :par_1_1, 2:2:2*length(years))
 
+a = m.md[:A]
 set_param!(a, :Comp1, :foo, 10)
 set_param!(a, :Comp2, :foo, 4)      # TBD: why does this overwrite the 10 above??
 

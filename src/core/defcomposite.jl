@@ -69,7 +69,7 @@ function _subcomp(args, kwargs)
 end
 
 # Convert an expr like `a.b.c.d` to `[:a, :b, :c, :d]`
-function _parse_dotted_symbols(expr)
+function parse_dotted_symbols(expr)
     global Args = expr
     syms = Symbol[]
 
@@ -137,7 +137,7 @@ macro defcomposite(cc_name, ex)
         #     # Here we parse everything on the right side, at once using broadcasting and add the initial
         #     # component (immediately after "=") to the list, and then store a Vector of param refs.
         #     args = [right, elt.args[2:end]...]
-        #     vars_pars = _parse_dotted_symbols.(args)
+        #     vars_pars = parse_dotted_symbols.(args)
         #     @info "import as $left = $vars_pars"
         #     push!(imports, (left, vars_pars))
 
@@ -145,16 +145,16 @@ macro defcomposite(cc_name, ex)
 
             if left isa Symbol # simple import case
                 # Save a singletons as a 1-element Vector for consistency with multiple linked params
-                var_par = right.head == :tuple ? _parse_dotted_symbols.(right.args) : [_parse_dotted_symbols(right)]
+                var_par = right.head == :tuple ? parse_dotted_symbols.(right.args) : [parse_dotted_symbols(right)]
                 push!(imports, (left, var_par))
                 # @info "import as $left = $var_par"
 
             # note that `comp_Symbol.name_Symbol` failed; bug in MacroTools?
             elseif @capture(left, comp_.name_) # simple connection case                
-                dst = _parse_dotted_symbols(left)
+                dst = parse_dotted_symbols(left)
                 dst === nothing && error("Expected dot-delimited sequence of symbols, got $left")
 
-                src = _parse_dotted_symbols(right)
+                src = parse_dotted_symbols(right)
                 src === nothing && error("Expected dot-delimited sequence of symbols, got $right")
 
                 push!(conns, (dst, src))
