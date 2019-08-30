@@ -99,7 +99,7 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
     return trial_df
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, streams::Dict{String, FileIO.Stream}) where T <: AbstractSimulationData
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
     model_index = 1
@@ -132,14 +132,14 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, sc
 end
 
 """
-    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, FileIO.Stream})
+    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
 
 Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
 """
-function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, FileIO.Stream}) where T <: AbstractSimulationData
+function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
     filename = joinpath(output_dir, "$datum_name.csv")
     if haskey(streams, filename)
-        savestreaming(streams[filename], trial_df)
+        write(streams[filename], trial_df)
     else
         streams[filename] = savestreaming(filename, trial_df)
     end
@@ -507,7 +507,7 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
         _reset_rvs!(sim_inst.sim_def)
 
         # Create a Dictionary of streams
-        streams = Dict{String, FileIO.Stream}()
+        streams = Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}()
 
         try 
             for (i, trialnum) in enumerate(trials)
