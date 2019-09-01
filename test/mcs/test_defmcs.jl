@@ -43,7 +43,7 @@ sd = @defsim begin
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, grosseconomy.share_var, grosseconomy.k0_var)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, grosseconomy.share_var, grosseconomy.depk_var)
 end
 
 # Optionally, user functions can be called just before or after a trial is run

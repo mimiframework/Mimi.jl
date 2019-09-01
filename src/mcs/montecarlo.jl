@@ -61,7 +61,6 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
         value = m[comp_name, datum_name]
         # println("Scalar: $value")
 
-
         if haskey(results, datum_key)
             results_df = results[datum_key]
         else        

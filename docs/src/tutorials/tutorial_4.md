@@ -131,6 +131,36 @@ si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_outp
 # Explore the results saved in-memory
 results = si[:grosseconomy, :K] # model index chosen defaults to 1
 ```
+
+### Step 5. Explore and Plot Results
+
+As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
+
+To view your results in an interactive application viewer, simply call:
+
+```julia
+explore(si)
+```
+
+If desired, you may also include a `title` for your application window. If more than one model was run in your Simulation, indicate which model you would like to explore with the `model` keyword argument, which defaults to 1. Finally, if your model leverages different scenarios, you **must** indicate the `scenario_name`.
+
+```julia
+explore(si; title = "MyWindow", model = 1) # we do not indicate scen_name here since we have no scenarios
+```
+
+To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions)`Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore`, save for `title`, and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
+
+```julia
+using VegaLite
+Mimi.plot(si, :grosseconomy, :K)
+```
+To save your figure, use the `save` function to save typical file formats such as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
+
+```julia
+p = Mimi.plot(si, :grosseconomy, :K)
+save("MyFigure.png", p)
+```
+
 ## Advanced Post-trial Functions
 
 While the model above employed a fairly simple `post_trial_func` that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run.

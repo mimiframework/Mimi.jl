@@ -5,10 +5,8 @@ using VegaLite
 using Electron
 
 import Mimi: 
-    dataframe_or_scalar, createspec_singlevalue, 
-    createspec_lineplot, createspec_multilineplot, createspec_barplot,
-    getmultiline, getline, getbar, _spec_for_item, menu_item_list, explore, 
-    getdataframe, reset_compdefs
+    dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, 
+    reset_compdefs, dimensions
 
 reset_compdefs()
 
@@ -48,28 +46,35 @@ run(m)
 @test typeof(dataframe_or_scalar(m, :MyComp, :a)) == DataFrame
 @test typeof(dataframe_or_scalar(m, :MyComp, :d)) == Float64
 
-#2.  JSON strings for the spec "values" key
-# TODO:  getmultiline, getline, getbar, getdatapart
-
-#3.  full specs for VegaLit
-
-#TODO:  createspec_singlevalue, createspec_multilineplot, 
-#createspec_lineplot, createspec_barplot, _spec_for_item
+#2.  Specs and menu
+items = [:a, :b, :c, :d, :e, :f, :x]
+for item in items
+    static_spec = _spec_for_item(m, :MyComp, item; interactive = false)
+    interactive_spec = _spec_for_item(m, :MyComp, item)
+    if length(dimensions(m, :MyComp, item)) == 0
+        name =  string(:MyComp, " : ", item, " = ", m[:MyComp, item])
+    else
+        name = string(:MyComp, " : ", item)
+    end
+    @test static_spec["name"] == interactive_spec["name"] == name
+end
 
 s = menu_item_list(m)
 @test typeof(s) == Array{Any, 1}
 @test length(s) == 7
 
-#4.  explore(m::Model, title = "Electron")
+#3.  explore(m::Model, title = "Electron")
 w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
 close(w)
 
-#5.  Mim.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
+#4.  Mim.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
 #       dim_name::Union{Nothing, Symbol} = nothing)
-
-p = Mimi.plot(m, :MyComp, :a)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+items = [:a, :b, :c, :d, :e, :f, :x]
+for item in items
+    p = Mimi.plot(m, :MyComp, item)
+    @test typeof(p) == VegaLite.VLSpec{:plot}
+end
 
 #6.  errors and warnings
 @defcomp MyComp2 begin
@@ -94,6 +99,6 @@ set_param!(m2, :MyComp2, :a, ones(101, 3, 4))
 
 run(m2)
 
-#spec creation for MyComp.a should fail and error, haven't handled case of > 3 dims yet
-# TODO Reenable
-# @test_warn "has >2 graphing dims" explore(m2)
+#spec creation for MyComp.a should warn because over 2 indexed dimensions
+@test_logs (:warn, "MyComp2.a has > 2 indexed dimensions, not yet implemented in explorer") explore(m2)
+@test_logs (:warn, "MyComp2.a has > 2 indexed dimensions, not yet implemented in explorer") _spec_for_item(m2, :MyComp2, :a)
