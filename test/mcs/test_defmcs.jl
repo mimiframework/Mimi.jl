@@ -11,13 +11,15 @@ using Test
 using Mimi: reset_compdefs, modelinstance, compinstance, 
             get_var_value, OUTER, INNER, ReshapedDistribution
 
-include("../../examples/tutorial/02-two-region-model/two-region-model.jl")
+using CSVFiles: load
+
+include("test-model-2/two-region-model.jl")
 using .MyModel
 m = construct_MyModel()
 
 N = 100
 
-sim = @defsim begin
+sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -41,12 +43,11 @@ sim = @defsim begin
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, grosseconomy.share_var, grosseconomy.k0_var)
 end
 
-
 # Optionally, user functions can be called just before or after a trial is run
-function print_result(m::Model, sim::Simulation, trialnum::Int)
+function print_result(m::Model, sim_inst::SimulationInstance, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
@@ -54,27 +55,12 @@ end
 
 output_dir = joinpath(tempdir(), "sim")
 
-generate_trials!(sim, N, filename=joinpath(output_dir, "trialdata.csv"))
+# Run trials 
+si = run(sd, m, N; trials_output_filename = joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
 
 # Test that the proper number of trials were saved
 d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
 @test size(d)[1] == N+1 # extra row for column names
-
-# Run trials 1:N, and save results to the indicated directory
-
-Mimi.set_models!(sim, m)
-run_sim(sim, output_dir=output_dir)
-
-# From MCS discussion 5/23/2018
-# generate_trials(sim, samples=load("foo.csv"))
-#
-# run_sim(sim, [:foo=>m1,:bar=>m2], output_vars=[:foo=>[:grosseconomy=>[:bar,:bar2,:bar3], :comp2=>:var2], :bar=>[]], N, output_dir="/tmp/Mimi")
-# run_sim(sim, m1, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
-# run_sim(mm, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
-# run_sim(sim, sim, mm, output_vars=[:grosseconomy=>:asf, :foo=>:bar], N, output_dir="/tmp/Mimi")
-# run_sim(sim, m, output_vars=[(:base,:compname,:varname), (:)], N, output_dir="/tmp/Mimi")
-
-# run_sim(sim, m, N, post_trial_func=print_result, output_dir="/tmp/Mimi")
 
 function show_E_Global(year::Int; bins=40)
     df = @from i in E_Global begin
@@ -87,12 +73,29 @@ function show_E_Global(year::Int; bins=40)
               xlabel="Emissions")
 end
 
+# test getindex
+results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
+results_getindex = si[:grosseconomy, :K] # Base.getindex
+results_getindex2 = si[:grosseconomy, :K, model = 1] # Base.getindex
+
+@test results_getindex == results_mem
+@test results_getindex2 == results_mem
+
+# test that disk results equal in memory results
+results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
+results_disk[!,2] = Symbol.(results_disk[!,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
 #
 # Test scenario loop capability
 #
 global loop_counter = 0
 
-function outer_loop_func(sim::Simulation, tup)
+function outer_loop_func(sim_inst::SimulationInstance, tup)
     global loop_counter
     loop_counter += 1
 
@@ -101,7 +104,7 @@ function outer_loop_func(sim::Simulation, tup)
     @debug "outer loop: scen:$scen, rate:$rate"
 end
 
-function inner_loop_func(sim::Simulation, tup)
+function inner_loop_func(sim_inst::SimulationInstance, tup)
     global loop_counter
     loop_counter += 1
 
@@ -110,11 +113,10 @@ function inner_loop_func(sim::Simulation, tup)
     @debug "inner loop: scen:$scen, rate:$rate"
 end
 
-
 loop_counter = 0
 
-run_sim(sim;
-        output_dir=output_dir,
+si = run(sd, m, N;
+        results_output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=outer_loop_func, 
@@ -122,11 +124,26 @@ run_sim(sim;
  
 @test loop_counter == 6
 
+# test getindex with scenarios
+results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
+results_getindex = si[:grosseconomy, :K] # Base.getindex
+@test results_getindex == results_mem
+
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
+results_mem = results_mem |> @filter(_.scen == "high_0.03") |> DataFrame
+
+results_disk[!,2] = Symbol.(results_disk[!,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
 
 loop_counter = 0
 
-run_sim(sim;
-        output_dir=output_dir,
+si = run(sd, m, N;
+        results_output_dir=output_dir,
         scenario_args=[:scen => [:low, :high],
                        :rate => [0.015, 0.03, 0.05]],
         scenario_func=inner_loop_func, 
@@ -134,21 +151,31 @@ run_sim(sim;
 
 @test loop_counter == N * 6
 
-
-function other_loop_func(sim::Simulation, tup)
+function other_loop_func(sim_inst::SimulationInstance, tup)
     global loop_counter
     loop_counter += 10
 end
 
-function pre_trial(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+function pre_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Tuple)
     global loop_counter
     loop_counter += 1
 end
 
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)] |> @filter(_.scen == "high_0.03") |> DataFrame
+
+results_disk[!,2] = Symbol.(results_disk[!,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
 loop_counter = 0
 
-run_sim(sim;
-        output_dir=output_dir,
+si = run(sd, m, N;
+        results_output_dir=output_dir,
         pre_trial_func=pre_trial,
         scenario_func=other_loop_func,
         scenario_args=[:scen => [:low, :high],
@@ -156,41 +183,60 @@ run_sim(sim;
 
 @test loop_counter == 6 * N + 60
 
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)] |> @filter(_.scen == "high_0.03") |> DataFrame
 
-function post_trial(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
+results_disk[!,2] = Symbol.(results_disk[!,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
+function post_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
     global loop_counter    
     loop_counter += 1
 
-    m = sim.models[1]
+    m = sim_inst.models[1]
     # println("grosseconomy.share: $(m[:grosseconomy, :share])")
 end
 
 loop_counter = 0
 
 N = 10
-run_sim(sim;
-        trials = N,
-        output_dir=output_dir,
+si = run(sd, m, N;
+        results_output_dir=output_dir,
         post_trial_func=post_trial)
 
 @test loop_counter == N
 
+# test in memory results compared to disk saved results
+results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
+results_mem = si.results[1][(:grosseconomy, :K)]
+
+results_disk[!,2] = Symbol.(results_disk[!,2])
+@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
+@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+
+# delete all created directories and files
+rm(output_dir, recursive = true)
+
 N = 1000
 
 # Test new values generated for LHS sampling
+si1 = run(sd, m, N)
+trial1 = copy(si1.sim_def.rvdict[:name1].dist.values)
 
-generate_trials!(sim, N)
-trial1 = copy(sim.rvdict[:name1].dist.values)
-
-generate_trials!(sim, N)
-trial2 = copy(sim.rvdict[:name1].dist.values)
+si2 = run(sd, m, N)
+trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
 
 
 # Same as sim above, but MCSData (default sampling), so we exclude correlation definitions
-sim2 = @defsim begin
+sd2 = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -216,12 +262,11 @@ sim2 = @defsim begin
 end
 
 # Test new values generated for RANDOM sampling
+si1 = run(sd2, m, N)
+trial1 = copy(si1.sim_def.rvdict[:name1].dist.values)
 
-generate_trials!(sim2, N)
-trial1 = copy(sim2.rvdict[:name1].dist.values)
-
-generate_trials!(sim2, N)
-trial2 = copy(sim2.rvdict[:name1].dist.values)
+si2 = run(sd2, m, N)
+trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2

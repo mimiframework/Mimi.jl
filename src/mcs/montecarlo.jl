@@ -4,6 +4,8 @@ import TableTraits
 using Random
 using ProgressMeter
 using Serialization
+using CSVFiles
+using FileIO
 
 function print_nonempty(name, vector)
     if length(vector) > 0
@@ -14,56 +16,74 @@ function print_nonempty(name, vector)
     end
 end
 
-function Base.show(io::IO, sim::Simulation{T}) where T <: AbstractSimulationData
-    println("Simulation{$T}")
-    
-    println("  trials: $(sim.trials)")
-    println("  current_trial: $(sim.current_trial)")
-    
-    sim.current_trial > 0 && println("  current_data: $(sim.current_data)")
+function Base.show(io::IO, sim_def::SimulationDef{T}) where T <: AbstractSimulationData
+    println("SimulationDef{$T}")
     
     println("  rvdict:")
-    for (key, value) in sim.rvdict
+    for (key, value) in sim_def.rvdict
         println("    $key: $(typeof(value))")
     end
 
-    print_nonempty("translist", sim.translist)
-    print_nonempty("savelist",  sim.savelist)
-    println("  nt_type: $(sim.nt_type)")
-    println("  $(length(sim.models)) models")
-    println("  $(length(sim.results)) results dicts")
+    print_nonempty("translist", sim_def.translist)
+    print_nonempty("savelist",  sim_def.savelist)
+    println("  nt_type: $(sim_def.nt_type)")
 
-    Base.show(io, sim.data)  # note: data::T
+    Base.show(io, sim_def.data)  # note: data::T
+end
+
+function Base.show(io::IO, sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+    println("SimulationInstance{$T}")
+    
+    Base.show(io, sim_inst.sim_def)
+
+    println("  trials: $(sim_inst.trials)")
+    println("  current_trial: $(sim_inst.current_trial)")
+    sim_inst.current_trial > 0 && println("  current_data: $(sim_inst.current_data)")
+
+    println("  $(length(sim_inst.models)) models")
+    println("  $(length(sim_inst.results)) results dicts")    
 end
 
 function Base.show(obj::T) where T <: AbstractSimulationData
     nothing
 end
 
-# Store results for a single parameter
-function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, results::Dict{Tuple, DataFrame})
+# Store results for a single parameter and return the dataframe for this particular
+# trial/scenario 
+function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
     dims = dimensions(m, comp_name, datum_name)
-            
+    has_scen = ! (scen_name === nothing)
+
     if length(dims) == 0        # scalar value
         value = m[comp_name, datum_name]
         # println("Scalar: $value")
 
+
         if haskey(results, datum_key)
             results_df = results[datum_key]
-        else
-            results_df = DataFrame([typeof(value), Int], [datum_name, :trialnum], 0)
+        else        
+            types = [typeof(value), Int]
+            names = [datum_name, :trialnum]
+            if has_scen
+                push!(types, String)
+                push!(names, :scen)
+            end
+            results_df = DataFrame(types, names, 0)
             results[datum_key] = results_df
         end
 
-        push!(results_df, [value, trialnum])
+        trial_df = DataFrame(datum_name => value, :trialnum => trialnum)
+        has_scen ? trial_df[!, :scen] .= scen_name : nothing
+        append!(results_df, trial_df) 
         # println("results_df: $results_df")
 
     else
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[!, :trialnum] .= trialnum
+        has_scen ? trial_df[!, :scen] .= scen_name : nothing
         # println("size of trial_df: $(size(trial_df))")
 
         if haskey(results, datum_key)
@@ -75,53 +95,65 @@ function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialn
             results[datum_key] = trial_df
         end
     end
+
+    return trial_df
 end
 
-function _store_trial_results(sim::Simulation{T}, trialnum::Int) where T <: AbstractSimulationData
-    savelist = sim.savelist
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+    savelist = sim_inst.sim_def.savelist
 
-    for (m, results) in zip(sim.models, sim.results)
+    model_index = 1
+    for (m, results) in zip(sim_inst.models, sim_inst.results)
         for datum_key in savelist
-            _store_param_results(m, datum_key, trialnum, results)
+            trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
+            if output_dir !== nothing
+
+                # get sub_dir, which is different from output_dir if there are multiple models
+                if (length(sim_inst.results) > 1)
+                    sub_dir = joinpath(output_dir, "model_$(model_index)")
+                else
+                    sub_dir = output_dir   
+                end      
+                mkpath(sub_dir, mode=0o750) 
+
+                # get filtered trial_df, which is different from trial_df if there are multiple scenarios
+                if scen_name !== nothing
+                    trial_df_filtered = filter(row -> row[:scen] .== scen_name, trial_df)[:, 1:end-1] # remove scen field
+                else
+                    trial_df_filtered = trial_df
+                end
+
+                datum_name = join(map(string, datum_key), "_")
+                _save_trial_results(trial_df_filtered, datum_name, sub_dir, streams)
+            end
         end
+        model_index += 1
     end
 end
 
 """
-    save_trial_results(sim::Simulation, output_dir::String)
+    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
 
-Save the stored simulation results to files in the directory `output_dir`
+Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
 """
-function save_trial_results(sim::Simulation{T}, output_dir::AbstractString) where T <: AbstractSimulationData
-    multiple_results = (length(sim.results) > 1)
-
-    mkpath(output_dir, mode=0o750)
-    
-    for (i, results) in enumerate(sim.results)
-        if multiple_results
-            sub_dir = joinpath(output_dir, "model_$i")
-            mkpath(sub_dir, mode=0o750)
-        else
-            sub_dir = output_dir 
-        end
-
-        for datum_key in sim.savelist
-            (comp_name, datum_name) = datum_key
-            filename = joinpath(sub_dir, "$datum_name.csv")
-            save(filename, results[datum_key])
-        end
+function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+    filename = joinpath(output_dir, "$datum_name.csv")
+    if haskey(streams, filename)
+        write(streams[filename], trial_df)
+    else
+        streams[filename] = savestreaming(filename, trial_df)
     end
 end
 
-function save_trial_inputs(sim::Simulation, filename::String)
+function save_trial_inputs(sim_inst::SimulationInstance, filename::String)
     mkpath(dirname(filename), mode=0o750)   # ensure that the specified path exists
-    save(filename, sim)
+    save(filename, sim_inst)
     return nothing
 end
 
 # TBD: Modify lhs() to return an array of SampleStore{T} instances?
 """
-    get_trial(sim::Simulation, trialnum::Int)
+    get_trial(sim_inst::SimulationInstance, trialnum::Int)
 
 Return a NamedTuple with the data for next trial. Note that the `trialnum`
 parameter is used only to support a 1-deep data cache that allows this
@@ -129,52 +161,56 @@ function to be called successively with the same `trialnum` to retrieve
 the same NamedTuple. If `trialnum` does not match the current trial number,
 the argument is ignored.
 """
-function get_trial(sim::Simulation, trialnum::Int)
-    if sim.current_trial == trialnum
-        return sim.current_data
+function get_trial(sim_inst::SimulationInstance, trialnum::Int)
+
+    if sim_inst.current_trial == trialnum
+        return sim_inst.current_data
     end
 
-    vals = [rand(rv.dist) for rv in values(sim.rvdict)]
-    sim.current_data = sim.nt_type((vals...,))
-    sim.current_trial = trialnum
+    sim_def = sim_inst.sim_def
+
+    vals = [rand(rv.dist) for rv in values(sim_def.rvdict)]
+    sim_inst.current_data = sim_def.nt_type((vals...,))
+    sim_inst.current_trial = trialnum
     
-    return sim.current_data
+    return sim_inst.current_data
 end
 
 """
-    generate_trials!(sim::Simulation{T}, samples::Int; filename::Union{String, Nothing}=nothing)
+    generate_trials!(sim_inst::SimulationInstance{T}, samples::Int; filename::Union{String, Nothing}=nothing)
 
-Generate trials for the given Simulation instance using the defined `samplesize.
+Generate trials for the given `SimulationInstance` using the defined `samplesize.
 Call this before running the sim to pre-generate data to be used by all scenarios. 
 Also saves inputs if a filename is given.
 """
-function generate_trials!(sim::Simulation{T}, samplesize::Int;
+function generate_trials!(sim_inst::SimulationInstance{T}, samplesize::Int;
                         filename::Union{String, Nothing}=nothing) where T <: AbstractSimulationData
-    sample!(sim, samplesize)
+    sample!(sim_inst, samplesize)
 
     # TBD: If user asks for trial data to be saved, generate it up-front, or 
     # open a file that can be written to for each trialnum/scenario set?
     if filename != nothing
-        save_trial_inputs(sim, filename)
+        save_trial_inputs(sim_inst, filename)
     end
 end
 
-function sample!(sim::MonteCarloSimulation, samplesize::Int)
-    sim.trials = samplesize
-    rand!(sim)
+function sample!(sim_inst::MonteCarloSimulationInstance, samplesize::Int)
+    sim_inst.trials = samplesize
+    rand!(sim_inst)
 end
 
 """
-    Random.rand!(sim::Simulation{T})
+    Random.rand!(sim_inst::SimulationInstance{T})
 
 Replace all RVs originally of type Distribution with SampleStores with 
 values drawn from that original distribution.
 """
-function Random.rand!(sim::Simulation{T}) where T <: AbstractSimulationData
-    rvdict = sim.rvdict
-    trials = sim.trials
+function Random.rand!(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+    sim_def = sim_inst.sim_def
+    rvdict = sim_def.rvdict
+    trials = sim_inst.trials
 
-    for rv in values(sim.rvdict)
+    for rv in values(sim_def.rvdict)
         # use underlying distribution, if known
         orig_dist = (rv.dist isa SampleStore ? rv.dist.dist : rv.dist)
         dist = (orig_dist === nothing ? rv.dist : orig_dist)
@@ -184,27 +220,27 @@ function Random.rand!(sim::Simulation{T}) where T <: AbstractSimulationData
 end
 
 """
-    _copy_sim_params(sim::Simulation{T})
+    _copy_sim_params(sim_inst::SimulationInstance{T})
 
 Copy the parameters that are perturbed so we can restore them after each trial. This
 is necessary when we are applying distributions by adding or multiplying original values.
 """
-function _copy_sim_params(sim::Simulation{T}) where T <: AbstractSimulationData
-    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(sim.models))
+function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(sim_inst.models))
 
-    for (i, m) in enumerate(sim.models)
+    for (i, m) in enumerate(sim_inst.models)
         md = m.mi.md
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim.translist)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim_inst.sim_def.translist)
     end
 
     return param_vec
 end
 
-function _restore_sim_params!(sim::Simulation{T}, 
+function _restore_sim_params!(sim_inst::SimulationInstance{T}, 
                               param_vec::Vector{Dict{Symbol, ModelParameter}}) where T <: AbstractSimulationData
-    for (m, params) in zip(sim.models, param_vec)
+    for (m, params) in zip(sim_inst.models, param_vec)
         md = m.mi.md
-        for trans in sim.translist
+        for trans in sim_inst.sim_def.translist
             name = trans.paramname
             param = params[name]
             _restore_param!(param, name, md, trans)
@@ -285,21 +321,21 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
 end
 
 """
-    _perturb_params!(sim::Simulation{T}, trialnum::Int)
+    _perturb_params!(sim_inst::SimulationInstance{T}, trialnum::Int)
 
-Modify the stochastic parameters for all models in `sim`, using the 
+Modify the stochastic parameters for all models in `sim_inst`, using the 
 values drawn for trial `trialnum`.
 """
-function _perturb_params!(sim::Simulation{T}, trialnum::Int) where T <: AbstractSimulationData
-    if trialnum > sim.trials
-        error("Attempted to run trial $trialnum, but only $(sim.trials) trials are defined")
+function _perturb_params!(sim_inst::SimulationInstance{T}, trialnum::Int) where T <: AbstractSimulationData
+    if trialnum > sim_inst.trials
+        error("Attempted to run trial $trialnum, but only $(sim_inst.trials) trials are defined")
     end
 
-    trialdata = get_trial(sim, trialnum)
+    trialdata = get_trial(sim_inst, trialnum)
 
-    for m in sim.models
+    for m in sim_inst.models
         md = m.mi.md
-        for trans in sim.translist        
+        for trans in sim_inst.sim_def.translist        
             param = external_param(md, trans.paramname)
             rvalue = getfield(trialdata, trans.rvname)
             _perturb_param!(param, md, trans, rvalue)
@@ -308,8 +344,8 @@ function _perturb_params!(sim::Simulation{T}, trialnum::Int) where T <: Abstract
     return nothing
 end
 
-function _reset_rvs!(sim::Simulation{T}) where T <: AbstractSimulationData
-    for rv in values(sim.rvdict)
+function _reset_rvs!(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
+    for rv in values(sim_def.rvdict)
         if rv.dist isa SampleStore
             reset(rv.dist)
         end
@@ -317,12 +353,12 @@ function _reset_rvs!(sim::Simulation{T}) where T <: AbstractSimulationData
 end
 
 """
-    _reset_results!(sim::Simulation{T})
+    _reset_results!(sim_inst::SimulationInstance{T})
 
 Reset all simulation results storage to a vector of empty dicts
 """
-function _reset_results!(sim::Simulation{T}) where T <: AbstractSimulationData
-    sim.results = [Dict{Tuple, DataFrame}() for m in sim.models]
+function _reset_results!(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+    sim_inst.results = [Dict{Tuple, DataFrame}() for m in sim_inst.models]
 end
 
 # Append a string representation of the tuple args to the given directory name
@@ -333,26 +369,32 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run_sim(sim::Simulation{T}; 
-            trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
-            models_to_run::Int=length(sim.models),
+    run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int; 
             ntimesteps::Int=typemax(Int), 
-            output_dir::Union{Nothing, AbstractString}=nothing, 
+            trials_output_filename::Union{Nothing, AbstractString}=nothing, 
+            results_output_dir::Union{Nothing, AbstractString}=nothing, 
             pre_trial_func::Union{Nothing, Function}=nothing, 
             post_trial_func::Union{Nothing, Function}=nothing,
             scenario_func::Union{Nothing, Function}=nothing,
             scenario_placement::ScenarioLoopPlacement=OUTER,
-            scenario_args=nothing)
+            scenario_args=nothing,
+            results_in_memory::Bool=true)
 
-Optionally run the first indicated `trials`, which indicates the number of trials to run
-starting from the first one. The first `models_to_run` associated models are run 
-for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial
-data are applied to all the associated models even when running only a portion of them.   
-    
+Run the simulation definition `sim_def` for the `models` using `samplesize` samples.
+
+Optionally run the `models` for `ntimesteps`, if specified, 
+else to the maximum defined time period. Note that trial data are applied to all the 
+associated models even when running only a portion of them.   
+
+If provided, the generated trials and results will be saved in the indicated 
+`trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set
+to false, then results will be cleared from memory and only stored in the
+`results_output_dir`.
+
 If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
 just before or after (respectively) running a trial. The functions must have the signature:
 
-    fn(sim::Simulation, trialnum::Int, ntimesteps::Int, tup::Tuple)
+    fn(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Tuple)
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
 of all scenario value vectors. In situations in which you want the simulation loop to run only
@@ -363,57 +405,58 @@ If provided, `scenario_args` must be a `Vector{Pair}`, where each `Pair` is a sy
 `Vector` of arbitrary values that will be meaningful to `scenario_func`, which must have
 the signature:
 
-    scenario_func(sim::Simulation, tup::Tuple)
+    scenario_func(sim_inst::SimulationInstance, tup::Tuple)
 
 By default, the scenario loop encloses the simulation loop, but the scenario loop can be
 placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER` 
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
+
+Returns the type `SimulationInstance` that contains a copy of the original `SimulationDef`,
+along with mutated information about trials, in addition to the model list and 
+results information.
 """
-function run_sim(sim::Simulation{T}; 
-                 trials::Union{Nothing, Int, Vector{Int}, AbstractRange{Int}}=nothing,
-                 models_to_run::Int=length(sim.models),     # run all models by default
+function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
                  ntimesteps::Int=typemax(Int), 
-                 output_dir::Union{Nothing, AbstractString}=nothing, 
+                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
+                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
                  pre_trial_func::Union{Nothing, Function}=nothing, 
                  post_trial_func::Union{Nothing, Function}=nothing,
                  scenario_func::Union{Nothing, Function}=nothing,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
-                 scenario_args=nothing) where T <: AbstractSimulationData
-
-    if (scenario_func === nothing) != (scenario_args === nothing)
-        error("run_sim: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
+                 scenario_args=nothing,
+                 results_in_memory::Bool=true) where T <: AbstractSimulationData
+            
+    # Quick check for results saving
+    if (!results_in_memory) && (results_output_dir===nothing)
+        error("The results_in_memory keyword arg is set to ($results_in_memory) and 
+        results_output_dir keyword arg is set to ($results_output_dir), thus 
+        results will not be saved either in memory or in a file.")
     end
 
-    for m in sim.models
+    # Initiate the SimulationInstance and set the models and trials for the copied 
+    # sim held within sim_inst
+    sim_inst = SimulationInstance{typeof(sim_def.data)}(sim_def)
+    set_models!(sim_inst, models)
+    generate_trials!(sim_inst, samplesize; filename=trials_output_filename)
+
+    if (scenario_func === nothing) != (scenario_args === nothing)
+        error("run: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
+    end
+
+    for m in sim_inst.models
         if m.mi === nothing
             build(m)
         end
     end
     
-    # TBD: address confusion over whether trials is a list of trialnums or just the number of trials
-
-    # Machinery to handle trials cases
-    if trials === nothing
-        # If trials is not set, assume it is 1:sim.trials.  
-        trials = 1:sim.trials
-    else
-
-        # Handle Int
-        if typeof(trials) <: Int
-            trials = 1:trials
-        end
-
-        # If the user input a trials arg, we must reset sim.trials to length(trials),
-        # otherwise sim.trials is already set from generate_trials
-        sim.trials = length(trials)
-    end
+    trials = 1:sim_inst.trials
 
     # Save the original dir since we modify the output_dir to store scenario results
-    orig_output_dir = output_dir
+    orig_results_output_dir = results_output_dir
 
     # booleans vars to simplify the repeated tests in the loop below
-    has_output_dir     = (orig_output_dir !== nothing)
+    has_results_output_dir     = (orig_results_output_dir !== nothing)
     has_scenario_func  = (scenario_func !== nothing)
     has_outer_scenario = (has_scenario_func && scenario_placement == OUTER)
     has_inner_scenario = (has_scenario_func && scenario_placement == INNER)
@@ -435,6 +478,7 @@ function run_sim(sim::Simulation{T};
         end
     else
         arg_tuples = arg_tuples_outer = arg_tuples_inner = (nothing,)
+        scen_name = nothing
     end
     
     # Set up progress bar
@@ -447,140 +491,152 @@ function run_sim(sim::Simulation{T};
     for outer_tup in arg_tuples_outer
         if has_outer_scenario
             @debug "Calling outer scenario_func with $outer_tup"
-            scenario_func(sim, outer_tup)
+            scenario_func(sim_inst, outer_tup)
 
             # we'll store the results of each in a subdir composed of tuple values
-            output_dir = _compute_output_dir(orig_output_dir, outer_tup)
+            results_output_dir = _compute_output_dir(orig_results_output_dir, outer_tup)
+
+            # we'll need a scenario name for the DataFrame
+            scen_name = join(map(string, outer_tup), "_")
         end
                 
         # Save the params to be perturbed so we can reset them after each trial
-        original_values = _copy_sim_params(sim)        
+        original_values = _copy_sim_params(sim_inst)        
         
         # Reset internal index to 1 for all stored parameters to reuse the data
-        _reset_rvs!(sim)
+        _reset_rvs!(sim_inst.sim_def)
 
-        for (i, trialnum) in enumerate(trials)
-            @debug "Running trial $trialnum"
+        # Create a Dictionary of streams
+        streams = Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}()
 
-            for inner_tup in arg_tuples_inner
-                tup = has_inner_scenario ? inner_tup : outer_tup
+        try 
+            for (i, trialnum) in enumerate(trials)
+                @debug "Running trial $trialnum"
 
-                _perturb_params!(sim, trialnum)
+                for inner_tup in arg_tuples_inner
+                    tup = has_inner_scenario ? inner_tup : outer_tup
 
-                if pre_trial_func !== nothing
-                    @debug "Calling pre_trial_func($trialnum, $tup)"
-                    pre_trial_func(sim, trialnum, ntimesteps, tup)
-                end               
+                    _perturb_params!(sim_inst, trialnum)
 
-                if has_inner_scenario
-                    @debug "Calling inner scenario_func with $inner_tup"
-                    scenario_func(sim, inner_tup)
+                    if pre_trial_func !== nothing
+                        @debug "Calling pre_trial_func($trialnum, $tup)"
+                        pre_trial_func(sim_inst, trialnum, ntimesteps, tup)
+                    end               
 
-                    output_dir = _compute_output_dir(orig_output_dir, inner_tup)
+                    if has_inner_scenario
+                        @debug "Calling inner scenario_func with $inner_tup"
+                        scenario_func(sim_inst, inner_tup)
+
+                        results_output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
+
+                        # we'll need a scenario name for the DataFrame
+                        scen_name = join(map(string, inner_tup), "_")
+                    end
+
+                    for m in sim_inst.models   # note that list of models may be changed in scenario_func
+                        @debug "Running model"
+                        run(m, ntimesteps=ntimesteps)
+                    end
+                    
+                    if post_trial_func !== nothing
+                        @debug "Calling post_trial_func($trialnum, $tup)"
+                        post_trial_func(sim_inst, trialnum, ntimesteps, tup)
+                    end
+
+                    _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
+                    _restore_sim_params!(sim_inst, original_values)
+
+                    counter += 1
+                    ProgressMeter.update!(p, counter)                
+
+                    if has_results_output_dir && ! results_in_memory
+                        _reset_results!(sim_inst)
+                    end
                 end
-
-                for m in sim.models[1:models_to_run]    # note that list of models may be changed in scenario_func
-                    @debug "Running model"
-                    run(m, ntimesteps=ntimesteps)
-                end
-                
-                if post_trial_func !== nothing
-                    @debug "Calling post_trial_func($trialnum, $tup)"
-                    post_trial_func(sim, trialnum, ntimesteps, tup)
-                end
-
-                _store_trial_results(sim, trialnum)
-                _restore_sim_params!(sim, original_values)
-
-                counter += 1
-                ProgressMeter.update!(p, counter)                
             end
-
-            if has_inner_scenario && has_output_dir
-                save_trial_results(sim, output_dir)
-                _reset_results!(sim)
-            end
-        end
-
-        if ! has_inner_scenario && has_output_dir
-            save_trial_results(sim, output_dir)
-            _reset_results!(sim)
+        finally 
+            close.(values(streams))   # use broadcasting to close all stream 
         end
     end
+
+    return sim_inst
 end
 
 # Set models
 """ 
-	    set_models!(sim::Simulation{T}, models::Vector{Model})
+	    set_models!(sim_inst::SimulationInstance{T}, models::Vector{Model})
 	
-	Set the `models` to be used by the `sim` Simulation. 
+	Set the `models` to be used by the SimulationDef held by `sim_inst`. 
 """
-function set_models!(sim::Simulation{T}, models::Vector{Model}) where T <: AbstractSimulationData
-    sim.models = models
-    _reset_results!(sim)    # sets results vector to same length
+function set_models!(sim_inst::SimulationInstance{T}, models::Vector{Model}) where T <: AbstractSimulationData
+    sim_inst.models = models
+    _reset_results!(sim_inst)    # sets results vector to same length
 end
 
 # Convenience methods for single model and MarginalModel
 """ 
-set_models!(sim::Simulation{T}, m::Model)
+set_models!(sim_inst::SimulationInstance{T}, m::Model)
 	
-    Set the model `m` to be used by the `sim` Simulation.
+    Set the model `m` to be used by the Simulatoin held by `sim_inst`.
 """
-set_models!(sim::Simulation{T}, m::Model)  where T <: AbstractSimulationData = set_models!(sim, [m])
+set_models!(sim_inst::SimulationInstance{T}, m::Model)  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
 
 """ 
-set_models!(sim::Simulation{T}, mm::MarginalModel)
+set_models!(sim::SimulationInstance{T}, mm::MarginalModel)
 
-    Set the models to be used by the `sim` Simulation to be `mm.base` and `mm.marginal`
+    Set the models to be used by the SimulationDef held by `sim_inst` to be `mm.base` and `mm.marginal`
 	which make up the MarginalModel `mm`. 
 """
-set_models!(sim::Simulation{T}, mm::MarginalModel) where T <: AbstractSimulationData = set_models!(sim, [mm.base, mm.marginal])
+set_models!(sim_inst::SimulationInstance{T}, mm::MarginalModel) where T <: AbstractSimulationData = set_models!(sim_inst, [mm.base, mm.marginal])
 
 #
-# Iterator functions for Simulation directly, and for use as an IterableTable.
+# Iterator functions for Simulation instance directly, and for use as an IterableTable.
 #
-function Base.iterate(sim::Simulation{T}) where T <: AbstractSimulationData
-    _reset_rvs!(sim)
+function Base.iterate(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+    _reset_rvs!(sim_inst.sim_def)
     trialnum = 1
-    return get_trial(sim, trialnum), trialnum + 1
+    return get_trial(sim_inst, trialnum), trialnum + 1
 end
 
-function Base.iterate(sim::Simulation{T}, trialnum) where T <: AbstractSimulationData
-    if trialnum > sim.trials
+function Base.iterate(sim_inst::SimulationInstance{T}, trialnum) where T <: AbstractSimulationData
+    if trialnum > sim_inst.trials
         return nothing
     else
-        return get_trial(sim, trialnum), trialnum + 1
+        return get_trial(sim_inst, trialnum), trialnum + 1
     end
 end
 
-IteratorInterfaceExtensions.isiterable(sim::Simulation{T}) where T <: AbstractSimulationData = true
-TableTraits.isiterabletable(sim::Simulation{T}) where T <: AbstractSimulationData = true
+IteratorInterfaceExtensions.isiterable(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = true
+TableTraits.isiterabletable(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = true
 
-IteratorInterfaceExtensions.getiterator(sim::Simulation) = SimIterator{sim.nt_type}(sim)
+IteratorInterfaceExtensions.getiterator(sim_inst::SimulationInstance{T}) where T = SimIterator{sim_inst.sim_def.nt_type, T}(sim_inst)
 
-column_names(sim::Simulation{T}) where T <: AbstractSimulationData = fieldnames(sim.nt_type)
-column_types(sim::Simulation{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim.rvdict)]
+column_names(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = fieldnames(sim_def.nt_type)
+column_types(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim_def.rvdict)]
+
+column_names(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = column_names(sim_inst.sim_def)
+column_types(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = column_types(sim_inst.sim_def)
 
 #
 # Iteration support (which in turn supports the "save" method)
 #
-column_names(iter::SimIterator) = column_names(iter.sim)
-column_types(iter::SimIterator) = error("Not implemented") # Used to be `IterableTables.column_types(iter.sim)`
+column_names(iter::SimIterator) = column_names(iter.sim_inst)
+column_types(iter::SimIterator) = error("Not implemented") # Used to be `IterableTables.column_types(iter.sim_def)`
 
 function Base.iterate(iter::SimIterator)
-    _reset_rvs!(iter.sim)
+    _reset_rvs!(iter.sim_inst.sim_def)
     idx = 1
-    return get_trial(iter.sim, idx), idx + 1
+    return get_trial(iter.sim_inst, idx), idx + 1
 end
 
 function Base.iterate(iter::SimIterator, idx)
-    if idx > iter.sim.trials
+    if idx > iter.sim_inst.trials
         return nothing
     else
-        return get_trial(iter.sim, idx), idx + 1
+        return get_trial(iter.sim_inst, idx), idx + 1
     end
 end
 
-Base.length(iter::SimIterator) = iter.sim.trials
+Base.length(iter::SimIterator) = iter.sim_inst.trials
 
 Base.eltype(::Type{SimIterator{NT, T}}) where {NT, T} = NT

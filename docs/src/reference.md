@@ -13,7 +13,6 @@ dim_keys
 dim_key_dict
 disconnect_param!
 explore
-generate_trials!
 getdataframe
 gettime
 get_param_value
@@ -30,11 +29,9 @@ parameters
 parameter_names
 parameter_dimensions
 plot_comp_graph
-replace_comp!
-run_sim
+replace_comp! 
 set_dimension! 
 set_leftover_params! 
-set_models!
 set_param! 
 variables  
 variable_dimensions
