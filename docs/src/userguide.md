@@ -136,7 +136,7 @@ getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variable
 
 ## Plotting and the Explorer UI
 
-Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function described below.
+Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI and `Mimi.plot` function, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the `plot_comp_graph` function described below.
 
 In order to view a DAG representing the component ordering and relationships, use the `plot_comp_graph` function to view a plot and optionally save it to a file.
 
@@ -162,13 +162,17 @@ Alternatively, in order to view just one parameter or variable, call the (unexpo
 ```julia
 using VegaLite
 run(mymodel)
-p = Mimi.plot(mymodel, component1, parameter1)
+p = Mimi.plot(mymodel, :component1, :parameter1)
 save("figure.svg", p)
 ```
 
+![Plot Model Example](figs/plot_model_example.png)
+
+These two functions, `explore` and `plot` also have methods applicable to the sensitivity analysis support described in the next section. Details can be found in the linked [internals documentation](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) as well as [Tutorial 4: Sensitivity Analysis (SA) Support](@ref).
+
 ## Sensitivity Analysis (SA) Support
 
-Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. The best current documentation on the SA API is the internals documentation [here](internals/montecarlo.md), which provides a working, although informal, description of the SA support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Sensitivity Analysis (SA) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. The best current documentation on the SA API is the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the SA support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Sensitivity Analysis (SA) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Advanced Topics
 

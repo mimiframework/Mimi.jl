@@ -46,14 +46,17 @@
     float: left;
     padding: 0px 12px;
     border: 1px solid #ccc;
-    width: 65%;
+    width: 60%;
     border-left: none;
     height: 100%;
+    overflow-y: scroll;
 }
 
 .graphic {
+    float: right;
     border: 1px solid #ccc;
     background-color: #FFFFFF;
-    width: 100%;
+    width: 60%;
     height: 100%;
+    overflow-y: scroll;
 }

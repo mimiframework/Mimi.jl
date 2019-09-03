@@ -60,12 +60,12 @@ run(model1)
 # Regular getdataframe
 df = getdataframe(model1, :testcomp1=>:var1, :testcomp1=>:par1, :testcomp2=>:var2, :testcomp2=>:par2)
 dim = Mimi.dimension(model1, :time)
-@test df[:var1] == df[:par1] == years
-@test all(ismissing, df[:var2][1 : dim[late_first]-1])
-@test all(ismissing, df[:par2][1 : dim[late_first]-1])
-@test df[:var2][dim[late_first] : dim[early_last]] == df[:par2][dim[late_first] : dim[early_last]] == late_first:5:early_last
-@test all(ismissing, df[:var2][dim[years[end]] : dim[early_last]])
-@test all(ismissing, df[:par2][dim[years[end]] : dim[early_last]])
+@test df.var1 == df.par1 == years
+@test all(ismissing, df.var2[1 : dim[late_first]-1])
+@test all(ismissing, df.par2[1 : dim[late_first]-1])
+@test df.var2[dim[late_first] : dim[early_last]] == df.par2[dim[late_first] : dim[early_last]] == late_first:5:early_last
+@test all(ismissing, df.var2[dim[years[end]] : dim[early_last]])
+@test all(ismissing, df.par2[dim[years[end]] : dim[early_last]])
 
 # Test trying to load an item into an existing dataframe where that item key already exists
 @test_throws ErrorException _load_dataframe(model1, :testcomp1, :var1, df)
@@ -123,7 +123,7 @@ df3 = getdataframe(model3, :testcomp3=>:par3)
 @test size(df3) == (length(rates)*length(regions)*length(years), 4)
 
 # Test that times outside the component's time span are padded with `missing` values
-@test all(ismissing, df3[:par3][1 : (length(rates)*length(regions)*(dim[late_first]-1))])
-@test all(ismissing, df3[:par3][end - (length(rates)*length(regions)*(dim[end]-dim[early_last]))+1: end])
+@test all(ismissing, df3.par3[1 : (length(rates)*length(regions)*(dim[late_first]-1))])
+@test all(ismissing, df3.par3[end - (length(rates)*length(regions)*(dim[end]-dim[early_last]))+1: end])
 
 end #module
