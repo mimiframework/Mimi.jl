@@ -368,7 +368,7 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int; 
+    run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model, MarginalModel}, samplesize::Int; 
             ntimesteps::Int=typemax(Int), 
             trials_output_filename::Union{Nothing, AbstractString}=nothing, 
             results_output_dir::Union{Nothing, AbstractString}=nothing, 
