@@ -201,6 +201,7 @@ set_payload!(sim_def::SimulationDef, payload) = (sim_def.payload = payload)
 Return the `payload` value set by the user via `set_payload!()`.
 """
 payload(sim_def::SimulationDef) = sim_def.payload
+payload(sim_inst::SimulationInstance) = sim_inst.sim_def.payload
 
 struct MCSData <: AbstractSimulationData end
 
