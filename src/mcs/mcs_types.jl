@@ -169,7 +169,7 @@ mutable struct SimulationInstance{T}
         self.current_trial = 0
         self.current_data = nothing
         self.sim_def = deepcopy(sim_def)
-        self.payload = self.sim_def.payload
+        self.payload = copy(self.sim_def.payload)
 
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{Model}(undef, 0)
