@@ -206,7 +206,7 @@ Return the `payload` value set by the user via `set_payload!()`.
 payload(sim_def::SimulationDef) = sim_def.payload
 
 """
-    payload(sim_def::SimulationInstance)
+    payload(sim_inst::SimulationInstance)
 
 Return the copy of the `payload` value stored in the `SimulationInstance` set by the user via `set_payload!()`.
 """
