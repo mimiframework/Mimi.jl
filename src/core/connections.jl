@@ -340,7 +340,7 @@ function set_external_array_param!(md::ModelDef, name::Symbol, value::AbstractAr
     if !(typeof(value) <: Array{numtype})
         numtype = number_type(md)
         # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(undef, value)
+        value = Array{numtype}(value)
     end
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(md, name, param)
