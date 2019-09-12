@@ -319,11 +319,9 @@ version = "0.9.3-DEV"
 
 [[MimiFUND]]
 deps = ["Dates", "DelimitedFiles", "Distributions", "Mimi", "StatsBase"]
-git-tree-sha1 = "c85a400e6908cf1eb3cf2bc69301718f7e248dc3"
-repo-rev = "master"
-repo-url = "https://github.com/fund-model/MimiFUND.jl.git"
+git-tree-sha1 = "1b25e13b45c148b348a51e01c515c757f9dc13f9"
 uuid = "b3ba11de-429f-11e9-29f7-cb478ab96e7c"
-version = "3.11.6-DEV"
+version = "3.11.5"
 
 [[MimiRICE2010]]
 deps = ["ExcelReaders", "Mimi"]
