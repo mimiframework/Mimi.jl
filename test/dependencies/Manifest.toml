@@ -294,10 +294,10 @@ deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MbedTLS]]
-deps = ["BinaryProvider", "Dates", "Distributed", "Libdl", "Random", "Sockets", "Test"]
-git-tree-sha1 = "2d94286a9c2f52c63a16146bb86fd6cdfbf677c6"
+deps = ["BinaryProvider", "Dates", "Libdl", "Random", "Sockets"]
+git-tree-sha1 = "85f5947b53c8cfd53ccfa3f4abae31faa22c2181"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "0.6.8"
+version = "0.7.0"
 
 [[Measures]]
 deps = ["Test"]
@@ -319,19 +319,15 @@ version = "0.9.3-DEV"
 
 [[MimiFUND]]
 deps = ["Dates", "DelimitedFiles", "Distributions", "Mimi", "StatsBase"]
-git-tree-sha1 = "c85a400e6908cf1eb3cf2bc69301718f7e248dc3"
-repo-rev = "master"
-repo-url = "https://github.com/fund-model/MimiFUND.jl.git"
+git-tree-sha1 = "1b25e13b45c148b348a51e01c515c757f9dc13f9"
 uuid = "b3ba11de-429f-11e9-29f7-cb478ab96e7c"
-version = "3.11.6-DEV"
+version = "3.11.5"
 
 [[MimiRICE2010]]
 deps = ["ExcelReaders", "Mimi"]
-git-tree-sha1 = "ee60602a5cd82ef92ae110b8a53e5306bc23bc5d"
-repo-rev = "dc359f9350b2cfde51574e29070b9b8b162de1ec"
-repo-url = "https://github.com/anthofflab/MimiRICE2010.jl.git"
+git-tree-sha1 = "5616f8b99a51456a7e58de32bceabdbb848c3c9f"
 uuid = "54b9761e-41d9-11e9-3151-3dc5fec6a45b"
-version = "2.0.3+"
+version = "2.0.3"
 
 [[Missings]]
 git-tree-sha1 = "29858ce6c8ae629cf2d733bffa329619a1c843d0"
@@ -510,7 +506,7 @@ uuid = "db12335b-fddc-5e1b-b0ee-42071d21ae50"
 version = "0.2.0"
 
 [[SuiteSparse]]
-deps = ["Libdl", "LinearAlgebra", "SparseArrays"]
+deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
 uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[TableShowUtils]]
