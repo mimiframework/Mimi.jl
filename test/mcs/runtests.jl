@@ -14,4 +14,7 @@ using Test
 
     @info("test_reshaping.jl")
     include("test_reshaping.jl")    
+
+    @info("test_payload.jl")
+    include("test_payload.jl")
 end

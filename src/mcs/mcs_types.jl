@@ -161,6 +161,7 @@ mutable struct SimulationInstance{T}
     sim_def::SimulationDef{T} where T <: AbstractSimulationData
     models::Vector{Model}
     results::Vector{Dict{Tuple, DataFrame}}
+    payload::Any
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
@@ -168,7 +169,8 @@ mutable struct SimulationInstance{T}
         self.current_trial = 0
         self.current_data = nothing
         self.sim_def = deepcopy(sim_def)
-        
+        self.payload = deepcopy(self.sim_def.payload)
+
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{Model}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
@@ -189,7 +191,8 @@ end
 """
     set_payload!(sim_def::SimulationDef, payload) 
 
-Attach a user's `payload` to the `SimulationDef` instance so it can be
+Attach a user's `payload` to the `SimulationDef`. A copy of the payload object
+will be stored in the `SimulationInstance` at run time so it can be
 accessed in scenario and pre-/post-trial callback functions. The value
 is not used by Mimi in any way; it can be anything useful to the user.
 """
@@ -201,6 +204,13 @@ set_payload!(sim_def::SimulationDef, payload) = (sim_def.payload = payload)
 Return the `payload` value set by the user via `set_payload!()`.
 """
 payload(sim_def::SimulationDef) = sim_def.payload
+
+"""
+    payload(sim_inst::SimulationInstance)
+
+Return the copy of the `payload` value stored in the `SimulationInstance` set by the user via `set_payload!()`.
+"""
+payload(sim_inst::SimulationInstance) = sim_inst.payload
 
 struct MCSData <: AbstractSimulationData end
 
