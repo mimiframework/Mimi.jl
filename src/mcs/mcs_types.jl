@@ -159,7 +159,7 @@ mutable struct SimulationInstance{T}
     current_trial::Int
     current_data::Any               # holds data for current_trial when current_trial > 0
     sim_def::SimulationDef{T} where T <: AbstractSimulationData
-    models::Vector{Model}
+    models::Vector{Union{Model, MarginalModel}}
     results::Vector{Dict{Tuple, DataFrame}}
     payload::Any
 
@@ -172,7 +172,7 @@ mutable struct SimulationInstance{T}
         self.payload = deepcopy(self.sim_def.payload)
 
         # These are parallel arrays; each model has a corresponding results dict
-        self.models = Vector{Model}(undef, 0)
+        self.models = Vector{Union{Model, MarginalModel}}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
 
         return self
