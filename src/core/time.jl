@@ -239,6 +239,20 @@ function Base.getindex(v::TimestepVector{VariableTimestep{D_TIMES}, T}, ts::Vari
 	_missing_data_check(data)
 end
 
+function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP, LAST}, T}, ts::Timestep) where {T, FIRST, STEP, LAST} 
+
+	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, [first:step:last...]))
+	t === nothing ? error("cannot get data for year $(ts.value), time is not in the list of time values "): data = v.data[t]
+	_missing_data_check(data)
+end
+
+function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, ts::Timestep) where {T, TIMES}
+	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, TIMES))
+	t === nothing ? error("cannot get data for year $(ts.value), time is not in the list of time values "): data = v.data[t]
+	data = v.data[t]
+	_missing_data_check(data)
+end
+
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 

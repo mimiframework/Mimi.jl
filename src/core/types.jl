@@ -22,6 +22,15 @@ struct VariableTimestep{TIMES} <: AbstractTimestep
     end
 end
 
+struct Timestep <: AbstractTimestep
+    value::Int
+    offset_in_timesteps::Int
+
+    function Timestep(v::Int, offset_in_timesteps::Int=0)
+        return new(v, offset_in_timesteps)
+    end
+end
+
 mutable struct Clock{T <: AbstractTimestep}
 	ts::T
 
