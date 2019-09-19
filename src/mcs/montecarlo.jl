@@ -225,14 +225,23 @@ Copy the parameters that are perturbed so we can restore them after each trial. 
 is necessary when we are applying distributions by adding or multiplying original values.
 """
 function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
-    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(sim_inst.models))
 
-    for (i, m) in enumerate(sim_inst.models)
-        # If it's a MarginalModel, need to save a separate param_vec for the base and marginal models
-        mds = m isa MarginalModel ? [m.base.mi.md, m.marginal.mi.md] : [m.mi.md]
-        for md in mds
-            param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim_inst.sim_def.translist)
+    # If there is a MarginalModel, need to copy the params for both the base and marginal modeldefs separately
+    flat_model_list = [] 
+    for m in sim_inst.models
+        if m isa MarginalModel
+            push!(flat_model_list, m.base)
+            push!(flat_model_list, m.marginal)
+        else
+            push!(flat_model_list, m)
         end
+    end
+
+    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(flat_model_list))
+
+    for (i, m) in enumerate(flat_model_list)
+        md = m.mi.md
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim_inst.sim_def.translist)
     end
 
     return param_vec
