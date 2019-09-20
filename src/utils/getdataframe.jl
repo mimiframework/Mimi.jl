@@ -1,14 +1,14 @@
 using DataFrames
 
 """
-    _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol), df::Union{Nothing,DataFrame}=nothing)
+    _load_dataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, item_name::Symbol), df::Union{Nothing,DataFrame}=nothing)
 
 Load a DataFrame from the variable or parameter `item_name` in component `comp_name`. If `df` is
 nothing, a new DataFrame is allocated. Returns the populated DataFrame.
 """
-function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Union{Nothing,DataFrame}=nothing)
-    mi = m.mi
-    md = mi.md
+function _load_dataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, item_name::Symbol, df::Union{Nothing,DataFrame}=nothing)
+    md = m isa MarginalModel ? m.base.md : m.md
+    mi = m isa MarginalModel ? m.base.mi : m.mi
 
     dims = dimensions(m, comp_name, item_name)
 
@@ -24,7 +24,7 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
         error("Cannot create a dataframe for a scalar parameter :$item_name")
     end
 
-    data = deepcopy(mi[comp_name, item_name])
+    data = deepcopy(m[comp_name, item_name])
 
     if num_dims == 1
         dim1name = dims[1]
@@ -55,8 +55,9 @@ function _load_dataframe(m::Model, comp_name::Symbol, item_name::Symbol, df::Uni
     return df
 end
 
-function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector{Symbol}, data::AbstractArray)
-    md = m.md
+function _df_helper(m::Union{Model, MarginalModel}, comp_name::Symbol, item_name::Symbol, dims::Vector{Symbol}, data::AbstractArray)
+    md = m isa MarginalModel ? m.base.md : m.md
+    mi = m isa MarginalModel ? m.base.mi : m.mi
     num_dims = length(dims)
 
     dim1name = dims[1]
@@ -76,7 +77,7 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
         df[!, dim2name] = repeat(keys2, outer = [len_dim1])
 
         if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
-            ci = compinstance(m.mi, comp_name)
+            ci = compinstance(mi, comp_name)
             t = dimension(m, :time)
             first = t[ci.first]
             last  = t[ci.last]
@@ -91,7 +92,7 @@ function _df_helper(m::Model, comp_name::Symbol, item_name::Symbol, dims::Vector
 
         # shift the data to be padded with missings if this data is shorter than the model
         if dim1name == :time && size(data)[1] != len_dim1 #length(time_labels(md))
-            ci = compinstance(m.mi, comp_name)
+            ci = compinstance(mi, comp_name)
             t = dimension(m, :time)
             first = t[ci.first]
             last  = t[ci.last]
@@ -129,14 +130,14 @@ end
 
 
 """
-    getdataframe(m::Model, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)
+    getdataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)
 
 Return a DataFrame with values for the given variables or parameters of model `m`
 indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
 If more than one pair is provided, all must refer to items with the same
 dimensions, which are used to join the respective item values.
 """
-function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)  
+function getdataframe(m::Union{Model, MarginalModel}, pairs::Pair{Symbol, Symbol}...)  
     (comp_name1, item_name1) = pairs[1]
     dims = dimensions(m, comp_name1, item_name1)
     df = getdataframe(m, comp_name1, item_name1)
@@ -154,27 +155,27 @@ function getdataframe(m::Model, pairs::Pair{Symbol, Symbol}...)
 end
 
 """
-    getdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}})
+    getdataframe(m::Union{Model, MarginalModel}, pair::Pair{Symbol, NTuple{N, Symbol}})
 
 Return a DataFrame with values for the given variables or parameters 
 indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
 If more than one pair is provided, all must refer to items with the same
 dimensions, which are used to join the respective item values.
 """
-function getdataframe(m::Model, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
+function getdataframe(m::Union{Model, MarginalModel}, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
     comp_name = pair.first
     expanded = [comp_name => param_name for param_name in pair.second]
     return getdataframe(m, expanded...)
 end
 
 """
-    getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
+    getdataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, item_name::Symbol)
 
 Return the values for variable or parameter `item_name` in `comp_name` of 
 model `m` as a DataFrame.
 """
-function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
-    if m.mi === nothing
+function getdataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, item_name::Symbol)
+    if (m isa MarginalModel && (m.base.mi === nothing || m.marginal.mi === nothing)) || (m isa Model && m.mi === nothing)
         error("Cannot get DataFrame: model has not been built yet.")
     end
 

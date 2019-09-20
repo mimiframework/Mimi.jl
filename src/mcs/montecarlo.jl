@@ -50,7 +50,7 @@ end
 
 # Store results for a single parameter and return the dataframe for this particular
 # trial/scenario 
-function _store_param_results(m::Model, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
+function _store_param_results(m::Union{Model, MarginalModel}, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
@@ -225,9 +225,21 @@ Copy the parameters that are perturbed so we can restore them after each trial. 
 is necessary when we are applying distributions by adding or multiplying original values.
 """
 function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
-    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(sim_inst.models))
 
-    for (i, m) in enumerate(sim_inst.models)
+    # If there is a MarginalModel, need to copy the params for both the base and marginal modeldefs separately
+    flat_model_list = [] 
+    for m in sim_inst.models
+        if m isa MarginalModel
+            push!(flat_model_list, m.base)
+            push!(flat_model_list, m.marginal)
+        else
+            push!(flat_model_list, m)
+        end
+    end
+
+    param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(flat_model_list))
+
+    for (i, m) in enumerate(flat_model_list)
         md = m.mi.md
         param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim_inst.sim_def.translist)
     end
@@ -237,7 +249,18 @@ end
 
 function _restore_sim_params!(sim_inst::SimulationInstance{T}, 
                               param_vec::Vector{Dict{Symbol, ModelParameter}}) where T <: AbstractSimulationData
-    for (m, params) in zip(sim_inst.models, param_vec)
+    # Need to flatten the list of models so that if there is a MarginalModel,
+    #   both its base and marginal models will have their separate params restored
+    flat_model_list = [] 
+    for m in sim_inst.models
+        if m isa MarginalModel
+            push!(flat_model_list, m.base)
+            push!(flat_model_list, m.marginal)
+        else
+            push!(flat_model_list, m)
+        end
+    end
+    for (m, params) in zip(flat_model_list, param_vec)
         md = m.mi.md
         for trans in sim_inst.sim_def.translist
             name = trans.paramname
@@ -333,11 +356,14 @@ function _perturb_params!(sim_inst::SimulationInstance{T}, trialnum::Int) where 
     trialdata = get_trial(sim_inst, trialnum)
 
     for m in sim_inst.models
-        md = m.mi.md
-        for trans in sim_inst.sim_def.translist        
-            param = external_param(md, trans.paramname)
-            rvalue = getfield(trialdata, trans.rvname)
-            _perturb_param!(param, md, trans, rvalue)
+        # If it's a MarginalModel, need to perturb the params in both the base and marginal modeldefs
+        mds = m isa MarginalModel ? [m.base.mi.md, m.marginal.mi.md] : [m.mi.md]
+        for md in mds
+            for trans in sim_inst.sim_def.translist        
+                param = external_param(md, trans.paramname)
+                rvalue = getfield(trialdata, trans.rvname)
+                _perturb_param!(param, md, trans, rvalue)
+            end
         end
     end
     return nothing
@@ -368,7 +394,9 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model, MarginalModel}, samplesize::Int; 
+    run(sim_def::SimulationDef{T}, 
+            models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}, Model, MarginalModel}, 
+            samplesize::Int; 
             ntimesteps::Int=typemax(Int), 
             trials_output_filename::Union{Nothing, AbstractString}=nothing, 
             results_output_dir::Union{Nothing, AbstractString}=nothing, 
@@ -415,16 +443,23 @@ Returns the type `SimulationInstance` that contains a copy of the original `Simu
 along with mutated information about trials, in addition to the model list and 
 results information.
 """
-function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
-                 ntimesteps::Int=typemax(Int), 
-                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
-                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
-                 pre_trial_func::Union{Nothing, Function}=nothing, 
-                 post_trial_func::Union{Nothing, Function}=nothing,
-                 scenario_func::Union{Nothing, Function}=nothing,
-                 scenario_placement::ScenarioLoopPlacement=OUTER,
-                 scenario_args=nothing,
-                 results_in_memory::Bool=true) where T <: AbstractSimulationData
+function Base.run(sim_def::SimulationDef{T}, 
+                models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Any}, Model, MarginalModel}, 
+                samplesize::Int;
+                ntimesteps::Int=typemax(Int), 
+                trials_output_filename::Union{Nothing, AbstractString}=nothing, 
+                results_output_dir::Union{Nothing, AbstractString}=nothing, 
+                pre_trial_func::Union{Nothing, Function}=nothing, 
+                post_trial_func::Union{Nothing, Function}=nothing,
+                scenario_func::Union{Nothing, Function}=nothing,
+                scenario_placement::ScenarioLoopPlacement=OUTER,
+                scenario_args=nothing,
+                results_in_memory::Bool=true) where T <: AbstractSimulationData
+
+    # If the provided models list has both a Model and a MarginalModel, it will be a Vector{Any}, and needs to be converted
+    if models isa Vector{Any}
+        models = convert(Vector{Union{Model, MarginalModel}}, models)
+    end
             
     # Quick check for results saving
     if (!results_in_memory) && (results_output_dir===nothing)
@@ -444,7 +479,11 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
     end
 
     for m in sim_inst.models
-        if m.mi === nothing
+        if m isa MarginalModel
+            if m.base.mi === nothing || m.marginal.mi === nothing
+                build(m)
+            end
+        elseif m.mi === nothing
             build(m)
         end
     end
@@ -563,30 +602,23 @@ end
 
 # Set models
 """ 
-	    set_models!(sim_inst::SimulationInstance{T}, models::Vector{Model})
+	    set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}})
 	
 	Set the `models` to be used by the SimulationDef held by `sim_inst`. 
 """
-function set_models!(sim_inst::SimulationInstance{T}, models::Vector{Model}) where T <: AbstractSimulationData
+function set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}}) where T <: AbstractSimulationData
     sim_inst.models = models
     _reset_results!(sim_inst)    # sets results vector to same length
 end
 
 # Convenience methods for single model and MarginalModel
 """ 
-set_models!(sim_inst::SimulationInstance{T}, m::Model)
+set_models!(sim_inst::SimulationInstance{T}, m::Union{Model, MarginalModel})
 	
     Set the model `m` to be used by the Simulatoin held by `sim_inst`.
 """
-set_models!(sim_inst::SimulationInstance{T}, m::Model)  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
+set_models!(sim_inst::SimulationInstance{T}, m::Union{Model, MarginalModel})  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
 
-""" 
-set_models!(sim::SimulationInstance{T}, mm::MarginalModel)
-
-    Set the models to be used by the SimulationDef held by `sim_inst` to be `mm.base` and `mm.marginal`
-	which make up the MarginalModel `mm`. 
-"""
-set_models!(sim_inst::SimulationInstance{T}, mm::MarginalModel) where T <: AbstractSimulationData = set_models!(sim_inst, [mm.base, mm.marginal])
 
 #
 # Iterator functions for Simulation instance directly, and for use as an IterableTable.
