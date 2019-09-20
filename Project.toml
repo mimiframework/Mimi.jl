@@ -1,6 +1,6 @@
 name = "Mimi"
 uuid = "e4e893b0-ee5e-52ea-8111-44b3bdec128c"
-version = "0.9.3-DEV"
+version = "0.9.4"
 
 [deps]
 CSVFiles = "5d742f6a-9f54-50ce-8119-2520741973ca"
@@ -35,7 +35,7 @@ VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"
 IteratorInterfaceExtensions = "82899510-4779-5014-852e-03e436cf321d"
 
 [compat]
-GraphPlot = "0.3"
+GraphPlot = "0.3, 0.4"
 julia = "1"
 IteratorInterfaceExtensions = "^0.1.1, ^1"
 TableTraits = "^0.4.1, ^1"
