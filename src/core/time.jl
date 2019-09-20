@@ -203,6 +203,20 @@ function _missing_data_check(data)
 	end
 end 
 
+# Helper functions for Timestep type
+function _get_time_value_position_(times::Array, ts::Timestep)
+	t = findfirst(isequal.(ts.value, times))
+	if t === nothing
+		error("cannot use Timestep with value $(ts.value), value is not in the TimestepArray")
+	end
+	
+	t_offset = t + ts.offset_in_timesteps
+	if t_offset > length(times) 
+		error("cannot get offset of $(ts.offset_in_timesteps) from $(ts.value), offset is after the end of the TimestepArray")
+	end
+	return t_offset
+end
+
 # Helper macro used by connector 
 macro allow_missing(expr)
 	let e = gensym("e")
@@ -248,19 +262,13 @@ function Base.getindex(v::TimestepVector{VariableTimestep{D_TIMES}, T}, ts::Vari
 end
 
 function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP, LAST}, T}, ts::Timestep) where {T, FIRST, STEP, LAST} 
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, [FIRST:STEP:LAST...]))
-	if t === nothing
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
 	data = v.data[t]
 	_missing_data_check(data)
 end
 
 function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, ts::Timestep) where {T, TIMES}
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, TIMES))
-	if t === nothing
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_(TIMES, ts)
 	data = v.data[t]
 	_missing_data_check(data)
 end
@@ -360,39 +368,25 @@ function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, idx
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T, 1}, ts::Timestep, idx::AnyIndex) where {T, FIRST, STEP, LAST} 
-	
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, [FIRST:STEP:LAST...]))
-	if t === nothing
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
 	data = mat.data[t, idx]
 	_missing_data_check(data)
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 1}, ts::Timestep, idx::AnyIndex) where {T, TIMES}
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, TIMES))
-	if t === nothing 
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_(TIMES, ts)
 	data = mat.data[t, idx]
 	_missing_data_check(data)
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T, 2}, idx::AnyIndex, ts::Timestep) where {T, FIRST, STEP, LAST} 
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, [FIRST:STEP:LAST...]))
-	if t === nothing
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
 	data = mat.data[idx, t]
 	_missing_data_check(data)
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 2}, idx::AnyIndex, ts::Timestep) where {T, TIMES}
-	
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, TIMES))
-	if t === nothing 
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_(TIMES, ts)
 	data = mat.data[idx, t]
 	_missing_data_check(data)
 end
@@ -515,19 +509,13 @@ end
 
 function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, idxs::Union{Timestep, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, [FIRST:STEP:LAST...]))
-	if t === nothing
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
 	return arr.data[idxs1..., t, idxs2...]
 end
 
 function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{Timestep, AnyIndex}...) where {T, N, ti, TIMES}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
-	t = findfirst(isequal.(ts.value + ts.offset_in_timesteps, TIMES))
-	if t === nothing 
-		error("cannot get data for year $(ts.value + ts.offset_in_timesteps), time is not in the list of time values ")
-	end
+	t = _get_time_value_position_(TIMES, ts)
 	return arr.data[idxs1..., t, idxs2...]
 end
 
