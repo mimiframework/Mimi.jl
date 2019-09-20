@@ -190,3 +190,8 @@ function Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
     run(mm.base, ntimesteps=ntimesteps)
     run(mm.marginal, ntimesteps=ntimesteps)
 end
+
+function build(mm::MarginalModel)
+    build(mm.base)
+    build(mm.marginal)
+end

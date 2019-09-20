@@ -243,6 +243,7 @@ Return the dimension names for the variable or parameter `datum_name`
 in the given component `comp_name` in model `m`.
 """
 dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(m, comp_name), datum_name)
+dimensions(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(mm.base, comp_name), datum_name)
 
 @modelegate dimension(m::Model, dim_name::Symbol) => md
 

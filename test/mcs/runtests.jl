@@ -17,4 +17,7 @@ using Test
 
     @info("test_payload.jl")
     include("test_payload.jl")
+
+    @info("test_marginalmodel.jl")
+    include("test_marginalmodel.jl")
 end
