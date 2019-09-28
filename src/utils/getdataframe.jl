@@ -128,14 +128,14 @@ end
 
 
 """
-    getdataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)
+    getdataframe(m::AbstractModel, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)
 
 Return a DataFrame with values for the given variables or parameters of model `m`
 indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
 If more than one pair is provided, all must refer to items with the same
 dimensions, which are used to join the respective item values.
 """
-function getdataframe(m::Union{Model, MarginalModel}, pairs::Pair{Symbol, Symbol}...)  
+function getdataframe(m::AbstractModel, pairs::Pair{Symbol, Symbol}...)  
     (comp_name1, item_name1) = pairs[1]
     dims = dim_names(m, comp_name1, item_name1)
     df = getdataframe(m, comp_name1, item_name1)
@@ -153,26 +153,26 @@ function getdataframe(m::Union{Model, MarginalModel}, pairs::Pair{Symbol, Symbol
 end
 
 """
-    getdataframe(m::Union{Model, MarginalModel}, pair::Pair{Symbol, NTuple{N, Symbol}})
+    getdataframe(m::AbstractModel, pair::Pair{Symbol, NTuple{N, Symbol}})
 
 Return a DataFrame with values for the given variables or parameters 
 indicated by `pairs`, where each pair is of the form `comp_name => item_name`.
 If more than one pair is provided, all must refer to items with the same
 dimensions, which are used to join the respective item values.
 """
-function getdataframe(m::Union{Model, MarginalModel}, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
+function getdataframe(m::AbstractModel, pair::Pair{Symbol, NTuple{N, Symbol}}) where N
     comp_name = pair.first
     expanded = [comp_name => param_name for param_name in pair.second]
     return getdataframe(m, expanded...)
 end
 
 """
-    getdataframe(m::Union{Model, MarginalModel}, comp_name::Symbol, item_name::Symbol)
+    getdataframe(m::AbstractModel, comp_name::Symbol, item_name::Symbol)
 
 Return the values for variable or parameter `item_name` in `comp_name` of 
 model `m` as a DataFrame.
 """
-function getdataframe(m::Model, comp_name::Symbol, item_name::Symbol)
+function getdataframe(m::AbstractModel, comp_name::Symbol, item_name::Symbol)
     if ! is_built(m)
         error("Cannot get DataFrame: model has not been built yet.")
     end

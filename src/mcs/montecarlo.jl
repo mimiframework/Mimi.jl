@@ -50,7 +50,7 @@ end
 
 # Store results for a single parameter and return the dataframe for this particular
 # trial/scenario 
-function _store_param_results(m::Union{Model, MarginalModel}, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
+function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
@@ -395,7 +395,7 @@ end
 
 """
     run(sim_def::SimulationDef{T}, 
-            models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}, Model, MarginalModel}, 
+            models::Union{Vector{M <: AbstractModel}, AbstractModel}, 
             samplesize::Int; 
             ntimesteps::Int=typemax(Int), 
             trials_output_filename::Union{Nothing, AbstractString}=nothing, 
@@ -444,7 +444,7 @@ along with mutated information about trials, in addition to the model list and
 results information.
 """
 function Base.run(sim_def::SimulationDef{T}, 
-                models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Any}, Model, MarginalModel}, 
+                models::Union{Vector{M}, AbstractModel}, 
                 samplesize::Int;
                 ntimesteps::Int=typemax(Int), 
                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
@@ -454,15 +454,15 @@ function Base.run(sim_def::SimulationDef{T},
                 scenario_func::Union{Nothing, Function}=nothing,
                 scenario_placement::ScenarioLoopPlacement=OUTER,
                 scenario_args=nothing,
-                results_in_memory::Bool=true) where T <: AbstractSimulationData
+                results_in_memory::Bool=true) where {T <: AbstractSimulationData, M <: AbstractModel}
 
     # If the provided models list has both a Model and a MarginalModel, it will be a Vector{Any}, and needs to be converted
     if models isa Vector{Any}
-        models = convert(Vector{Union{Model, MarginalModel}}, models)
+        models = convert(Vector{AbstractModel}, models)
     end
             
     # Quick check for results saving
-    if (!results_in_memory) && (results_output_dir===nothing)
+    if (!results_in_memory) && (results_output_dir === nothing)
         error("The results_in_memory keyword arg is set to ($results_in_memory) and 
         results_output_dir keyword arg is set to ($results_output_dir), thus 
         results will not be saved either in memory or in a file.")
@@ -596,22 +596,22 @@ end
 
 # Set models
 """ 
-	    set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}})
+	    set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{M <: AbstractModel}})
 	
 	Set the `models` to be used by the SimulationDef held by `sim_inst`. 
 """
-function set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}}) where T <: AbstractSimulationData
+function set_models!(sim_inst::SimulationInstance{T}, models::Vector{M}) where {T <: AbstractSimulationData, M <: AbstractModel}
     sim_inst.models = models
     _reset_results!(sim_inst)    # sets results vector to same length
 end
 
 # Convenience methods for single model and MarginalModel
 """ 
-set_models!(sim_inst::SimulationInstance{T}, m::Union{Model, MarginalModel})
+set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)
 	
     Set the model `m` to be used by the Simulatoin held by `sim_inst`.
 """
-set_models!(sim_inst::SimulationInstance{T}, m::Union{Model, MarginalModel})  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
+set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
 
 
 #
