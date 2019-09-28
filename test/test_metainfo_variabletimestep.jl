@@ -38,7 +38,7 @@ end
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
-@test compmodule(c2) == :TestMetaInfo_VariableTimestep
+@test compmodule(c2) == TestMetaInfo_VariableTimestep
 
 # TBD: old tests; might still work
 @test c1.comp_id == ch4forcing1.comp_id

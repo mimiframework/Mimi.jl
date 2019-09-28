@@ -36,7 +36,7 @@ end
 end
 
 c0 = ch4forcing1
-@test compmodule(c0) == :TestMetaInfo
+@test compmodule(c0) == TestMetaInfo
 @test compname(c0) == :ch4forcing1
 @test nameof(c0) == :ch4forcing1
 

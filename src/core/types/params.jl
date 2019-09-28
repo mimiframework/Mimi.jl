@@ -43,6 +43,9 @@ ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(va
 value(param::ArrayModelParameter)  = param.values
 value(param::ScalarModelParameter) = param.value
 
+Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter(obj.value)
+Base.copy(obj::ArrayModelParameter{T}) where T = ArrayModelParameter(obj.values, obj.dim_names)
+
 dim_names(obj::ArrayModelParameter) = obj.dim_names
 dim_names(obj::ScalarModelParameter) = []
 
