@@ -159,7 +159,8 @@ function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 2}, id
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 2}, idx::AnyIndex, ts::VariableTimestep{TIMES}) where {T, TIMES}
-	data = mat.data[ts.t, idx, ts.t]
+	# WAS THIS: data = mat.data[ts.t, idx, ts.t]
+	data = mat.data[idx, ts.t]
 	_missing_data_check(data)
 end
 

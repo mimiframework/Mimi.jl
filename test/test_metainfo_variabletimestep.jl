@@ -40,9 +40,14 @@ c2 = compdef(test_model, :ch4forcing2)
 
 @test compmodule(c2) == :TestMetaInfo_VariableTimestep
 
+# TBD: old tests; might still work
 @test c1.comp_id == ch4forcing1.comp_id
 @test c2.comp_id == ch4forcing1.comp_id
 @test_throws KeyError compdef(test_model, :missingcomp)
+
+@test compmodule(c2) == Main.TestMetaInfo_VariableTimestep
+@test compname(c2) == :ch4forcing1
+@test c2.name == :ch4forcing2
 
 vars = Mimi.variable_names(c2)
 @test length(vars) == 3

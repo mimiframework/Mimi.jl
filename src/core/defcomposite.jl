@@ -25,7 +25,7 @@ function _collect_bindings(exprs)
     return bindings
 end
 
-function _subcomp(args, kwargs)
+function _subcomp(calling_module, args, kwargs)
     # splitarg produces a tuple for each arg of the form (arg_name, arg_type, slurp, default)
     arg_tups = map(splitarg, args)
 
@@ -65,7 +65,8 @@ function _subcomp(args, kwargs)
     end
 
     bindings = _collect_bindings(kw[:bindings])
-    return SubComponent(cmodule, cname, alias, bindings)
+    module_obj = (cmodule === nothing ? calling_module : getfield(calling_module, cmodule))
+    return SubComponent(module_obj, cname, alias, bindings)
 end
 
 # Convert an expr like `a.b.c.d` to `[:a, :b, :c, :d]`
@@ -120,12 +121,15 @@ macro defcomposite(cc_name, ex)
     comps = SubComponent[]
     imports = []
     conns = []
+    
+    calling_module = __module__
+    # @info "defcomposite calling module: $calling_module"
 
     for elt in elements
         # @info "parsing $elt"; dump(elt)
 
         if @capture(elt, (component(args__; kwargs__) | component(args__)))
-            push!(comps, _subcomp(args, kwargs))
+            push!(comps, _subcomp(calling_module, args, kwargs))
 
         # distinguish imports, e.g., :(EXP_VAR = CHILD_COMP1.COMP2.VAR3),
         #    from connections, e.g., :(COMP1.PAR2 = COMP2.COMP5.VAR2)
@@ -179,8 +183,9 @@ macro defcomposite(cc_name, ex)
 
     result = :(
         let conns = $conns,
-            imports = $imports
-            cc_id = Mimi.ComponentId($__module__, $(QuoteNode(cc_name)))
+            imports = $imports,
+            
+            cc_id = Mimi.ComponentId($calling_module, $(QuoteNode(cc_name)))
 
             global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
 

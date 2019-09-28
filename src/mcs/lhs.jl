@@ -26,16 +26,17 @@ mutable struct LHSData <: AbstractSimulationData
     end
 end
 
-const LatinHypercubeSimulation = Simulation{LHSData}
+const LatinHypercubeSimulationDef = SimulationDef{LHSData}
+const LatinHypercubeSimulationInstance = SimulationInstance{LHSData}
 
 function Base.show(data::LHSData)
     Mimi.print_nonempty("corrlist", data.corrlist)
 end
 
-function sample!(sim::LatinHypercubeSimulation, samplesize::Int)
-    sim.trials = samplesize
-    corrmatrix = correlation_matrix(sim)
-    lhs!(sim, corrmatrix=corrmatrix)
+function sample!(sim_inst::LatinHypercubeSimulationInstance, samplesize::Int)
+    sim_inst.trials = samplesize
+    corrmatrix = correlation_matrix(sim_inst.sim_def)
+    lhs!(sim_inst, corrmatrix=corrmatrix)
 end
 
 """
@@ -163,19 +164,19 @@ function lhs(rvlist::Vector{RandomVariable}, trials::Int;
     return asDataFrame ? DataFrame(samples, map(rv->rv.name, rvlist)) : samples
 end
 
-function lhs(sim::LatinHypercubeSimulation; 
+function lhs(sim_inst::LatinHypercubeSimulationInstance; 
              corrmatrix::Union{Matrix{Float64},Nothing}=nothing,
              asDataFrame::Bool=true)
-    rvlist = collect(values(sim.rvdict))
-    lhs(rvlist, sim.trials, corrmatrix=corrmatrix, asDataFrame=asDataFrame)
+    rvlist = collect(values(sim_inst.sim_def.rvdict))
+    lhs(rvlist, sim_inst.trials, corrmatrix=corrmatrix, asDataFrame=asDataFrame)
 end
 
-function lhs!(sim::LatinHypercubeSimulation; corrmatrix::Union{Matrix{Float64},Nothing}=nothing)
+function lhs!(sim_inst::LatinHypercubeSimulationInstance; corrmatrix::Union{Matrix{Float64},Nothing}=nothing)
     # TBD: verify that any correlated values are actual distributions, not stored vectors?
 
-    rvdict = sim.rvdict
+    rvdict = sim_inst.sim_def.rvdict
 
-    samples = lhs(sim, corrmatrix=corrmatrix, asDataFrame=false)
+    samples = lhs(sim_inst, corrmatrix=corrmatrix, asDataFrame=false)
 
     for (i, rv) in enumerate(values(rvdict))
         name = rv.name
@@ -199,11 +200,11 @@ trials: the number of trials to generate for each parameter
 function lhs_amend!(df::DataFrame, rvlist::Vector{RandomVariable}, trials::Int, 
                     simtype::T) where T <: AbstractSimulationData
     for rv in rvlist
-        if T == LatinHypercubeSimulation
+        if T == LHSData
             values = quantile.(rv.dist, _get_percentiles(trials))  # extract values from the RV for these percentiles
             shuffle!(values)                                       # randomize the stratified samples
         
-        elseif T == MonteCarloSimulation
+        elseif T == MCSData
             values = rv.dist.rand(trials)
         end
 
@@ -213,21 +214,21 @@ function lhs_amend!(df::DataFrame, rvlist::Vector{RandomVariable}, trials::Int,
 end
 
 """
-    correlation_matrix(sim::LatinHypercubeSimulation)
+    correlation_matrix(sim_def::LatinHypercubeSimulationDef)
 
 Return a Matrix holding the correlations between random variables
-as indicated in the Simulation, or nothing if no correlations
+as indicated in the SimulationDef, or nothing if no correlations
 have been defined.
 
 TBD: if needed, compute correlation matrix only for correlated
      RVs, leaving all uncorrelated RVs alone.
 """
-function correlation_matrix(sim::LatinHypercubeSimulation)
-    if length(sim.data.corrlist) == 0
+function correlation_matrix(sim_def::LatinHypercubeSimulationDef)
+    if length(sim_def.data.corrlist) == 0
         return nothing
     end
 
-    rvdict = sim.rvdict
+    rvdict = sim_def.rvdict
 
     # create a mapping of names to RV position in list
     names = Dict([(rv.name, i) for (i, rv) in enumerate(values(rvdict))])
@@ -235,7 +236,7 @@ function correlation_matrix(sim::LatinHypercubeSimulation)
     count = length(rvdict)
     corrmatrix = Matrix(1.0I, count, count)
 
-    for corr in sim.data.corrlist
+    for corr in sim_def.data.corrlist
         n1 = corr[1]
         n2 = corr[2]
 

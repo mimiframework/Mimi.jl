@@ -291,7 +291,8 @@ set_leftover_params!(m, Dict{String, Any}([
     "mat" => rand(length(regions), nsteps)
 ]))
 run(m)
-explore(m)
+w = explore(m)
+close(w)
 
 @test size(m[:gdp, :gdp]) == (length(regions), 3, length(time_index), 2)
 

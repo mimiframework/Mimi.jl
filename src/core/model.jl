@@ -16,6 +16,8 @@ modelinstance_def(m::Model) = modeldef(modelinstance(m))
 
 is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 
+is_built(mm::MarginalModel) = (is_built(mm.base) && is_build(mm.marginal))
+
 @delegate compinstance(m::Model, name::Symbol) => mi
 @delegate has_comp(m::Model, name::Symbol) => md
 
@@ -220,6 +222,11 @@ Return the dimension names for the variable or parameter `datum_name`
 in the given component `comp_name` in model `m`.
 """
 dim_names(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(compdef(m, comp_name), datum_name)
+dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
+
+# TBD: Deprecated
+dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(m, comp_name, datum_name)
+dimensions(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
 
 @delegate dimension(m::Model, dim_name::Symbol) => md
 

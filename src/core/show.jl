@@ -115,7 +115,7 @@ function _show_datum_def(io::IO, obj::AbstractDatumDef)
 end
 
 function show(io::IO, obj::ComponentId)
-    print(io, "ComponentId($(obj.module_name).$(obj.comp_name))")
+    print(io, "ComponentId($(obj.module_obj).$(obj.comp_name))")
     nothing
 end
 
@@ -216,7 +216,7 @@ function _show(io::IO, obj::Model, which::Symbol)
     md = obj.md
     mi = obj.mi
 
-    println(io, "  Module: $(md.comp_id.module_path)")
+    println(io, "  Module: $(md.comp_id.module_obj)")
 
     println(io, "  Components:")
     for comp in values(components(md))

@@ -50,7 +50,8 @@ c2 = compdef(test_model, :ch4forcing2)
 @test variable_names(c1) == variable_names(c0)
 @test_throws KeyError compdef(test_model, :missingcomp)
 
-@test compmodule(c2) == :TestMetaInfo
+@test compmodule(c2) == Main.TestMetaInfo
+#@test compmodule(c2) == :TestMetaInfo
 @test compname(c2) == :ch4forcing1
 @test nameof(c2) == :ch4forcing2
 

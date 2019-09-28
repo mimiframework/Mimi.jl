@@ -82,7 +82,7 @@ comps = collect(compdefs(my_model))
 @test has_comp(my_model.md, :testcomp1) == true
 @test has_comp(my_model.md, :testcomp4) == false
 
-@test compmodule(testcomp3) == :TestComponents
+@test compmodule(testcomp3) == Main.TestComponents
 @test compname(testcomp3) == :testcomp3
 
 @test length(my_model) == 3

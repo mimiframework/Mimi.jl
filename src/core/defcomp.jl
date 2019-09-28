@@ -148,7 +148,7 @@ macro defcomp(comp_name, ex)
     @capture(ex, elements__)
     @debug "Component $comp_name"
 
-    # Allow explicit definition of module to define component in
+    # TBD: Allow explicit definition of module to define component in
     if @capture(comp_name, module_name_.cmpname_)       # e.g., Mimi.adder
         comp_name = cmpname
     end
@@ -156,8 +156,8 @@ macro defcomp(comp_name, ex)
     # We'll return a block of expressions that will define the component.
     # N.B. @__MODULE__ is evaluated when the expanded macro is interpreted.
     result = :(
-        let current_module = @__MODULE__,
-            comp_id = Mimi.ComponentId(nameof(current_module), $(QuoteNode(comp_name))),
+        let calling_module = @__MODULE__,
+            comp_id = Mimi.ComponentId(calling_module, $(QuoteNode(comp_name))),
             comp = Mimi.ComponentDef(comp_id)
 
             global $comp_name = comp

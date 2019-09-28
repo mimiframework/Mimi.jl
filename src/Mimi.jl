@@ -25,7 +25,6 @@ export
     disconnect_param!,
     explore,
     getdataframe, 
-    generate_trials!,
     gettime,
     get_param_value,
     get_var_value,
@@ -42,10 +41,8 @@ export
     parameter_names,
     plot_comp_graph,
     replace_comp!, 
-    run_sim,
     set_dimension!, 
     set_leftover_params!, 
-    set_models!,
     set_param!, 
     update_param!,
     update_params!,
@@ -74,8 +71,8 @@ include("core/order.jl")
 include("core/paths.jl")
 include("core/show.jl")
 
+include("mcs/mcs.jl") # need mcs types for explorer
 include("explorer/explore.jl")
-include("mcs/mcs.jl")
 include("utils/getdataframe.jl")
 include("utils/graph.jl")
 include("utils/lint_helper.jl")

@@ -94,7 +94,7 @@ Base.parent(obj::AbstractComponentDef) = obj.parent
 
 # Used by @defcomposite to communicate subcomponent information
 struct SubComponent <: MimiStruct
-    module_name::Union{Nothing, Symbol}
+    module_obj::Union{Nothing, Module}
     comp_name::Symbol
     alias::Union{Nothing, Symbol}
     bindings::Vector{Pair{Symbol, Any}}
@@ -168,10 +168,10 @@ function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Ve
     composite = CompositeComponentDef(comp_id)
 
     for c in subcomps
-        # @info "subcomp $c: module_name: $(printable(c.module_name)), calling module: $(nameof(calling_module))"
-        comp_name = @or(c.module_name, nameof(calling_module))
-        subcomp_id = ComponentId(comp_name, c.comp_name)
-        subcomp = compdef(subcomp_id, module_obj=(c.module_name === nothing ? calling_module : nothing))
+        # @info "subcomp $c: module: $(printable(c.module_obj)), calling module: $(nameof(calling_module))"
+        comp_module = @or(c.module_obj, calling_module)
+        subcomp_id = ComponentId(comp_module, c.comp_name)
+        subcomp = compdef(subcomp_id)
         add_comp!(composite, subcomp, @or(c.alias, c.comp_name))
     end
     return composite

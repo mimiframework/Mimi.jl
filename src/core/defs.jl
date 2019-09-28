@@ -1,27 +1,34 @@
 Base.length(obj::AbstractComponentDef) = 0   # no sub-components
 Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
 
-function find_module(path::NTuple{N, Symbol} where N)
-    m = Main
-    for name in path
-        try
-            m = getfield(m, name)
-        catch
-            error("Module name $name was not found in module $m")
-        end
-    end
-    return m
+function compdef(comp_id::ComponentId)
+    # @info "compdef: mod=$(comp_id.module_obj) name=$(comp_id.comp_name)"
+    return getfield(comp_id.module_obj, comp_id.comp_name)
 end
 
-function compdef(comp_id::ComponentId; module_obj::Union{Nothing, Module}=nothing)
-    if module_obj === nothing
-        name = comp_id.module_name
-        path = @or(comp_id.module_path, (:Main, comp_id.module_name))        
-        module_obj = find_module(path)
-    end
+# Deprecated
+# function find_module(path::NTuple{N, Symbol} where N)
+#     m = Main
+#     for name in path
+#         try
+#             m = getfield(m, name)
+#         catch
+#             error("Module name $name was not found in module $m")
+#         end
+#     end
+#     return m
+# end
 
-    return getfield(module_obj, comp_id.comp_name)
-end
+# Deprecated
+# function compdef(comp_id::ComponentId; module_obj::Union{Nothing, Module}=nothing)
+#     if module_obj === nothing
+#         name = comp_id.module_name
+#         path = @or(comp_id.module_path, (:Main, comp_id.module_name))        
+#         module_obj = find_module(path)
+#     end
+
+#     return getfield(module_obj, comp_id.comp_name)
+# end
 
 compdef(cr::ComponentReference) = find_comp(cr)
 
@@ -38,7 +45,7 @@ compkeys(obj::AbstractCompositeComponentDef) = keys(components(obj))
 # Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
 compdefs(c::ComponentDef) = []
 
-compmodule(comp_id::ComponentId) = comp_id.module_name
+compmodule(comp_id::ComponentId) = comp_id.module_obj
 compname(comp_id::ComponentId)   = comp_id.comp_name
 
 compmodule(obj::AbstractComponentDef) = compmodule(obj.comp_id)

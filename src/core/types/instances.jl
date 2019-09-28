@@ -114,9 +114,11 @@ end
         self.variables = vars
         self.parameters = pars
 
-        # @info "LeafComponentInstance evaluating $(self.comp_id.module_name)"
-        module_name = self.comp_id.module_name
-        comp_module = module_name == :Mimi ? Mimi : getfield(Main, module_name)
+        # @info "LeafComponentInstance evaluating $(self.comp_id.module_obj)"
+        # Deprecated
+        # module_name = self.comp_id.module_obj
+        # comp_module = module_name == :Mimi ? Mimi : getfield(Main, module_name)
+        comp_module = compmodule(self)
 
         # The try/catch allows components with no run_timestep function (as in some of our test cases)
         # CompositeComponentInstances use a standard method that just loops over inner components.

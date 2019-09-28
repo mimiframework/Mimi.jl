@@ -464,7 +464,7 @@ function set_external_array_param!(obj::AbstractCompositeComponentDef,
 
     if !(typeof(value) <: Array{numtype} || (value isa AbstractArray && eltype(value) <: numtype))
         # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(undef, value)
+        value = Array{numtype}(value)
     end
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)

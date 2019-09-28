@@ -18,7 +18,7 @@ macro defmodel(model_name, ex)
 
     # @__MODULE__ is evaluated in calling module when macro is interpreted
     result = :(
-        let calling_module = @__MODULE__, comp_mod_name = nothing
+        let calling_module = @__MODULE__, comp_mod_name = nothing, comp_mod_obj = nothing
             global $model_name = Model()
         end
     )
@@ -36,12 +36,13 @@ macro defmodel(model_name, ex)
                          component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
 
             # set local copy of comp_mod_name to the stated or default component module
-            expr = (comp_mod_name === nothing ? :(comp_mod_name = nameof(calling_module)) 
-                                              : :(comp_mod_name = $(QuoteNode(comp_mod_name))))
+            expr = (comp_mod_name === nothing ? :(comp_mod_obj = calling_module) # nameof(calling_module)) 
+                                              # TBD: This may still not be right:
+                                              : :(comp_mod_obj = getfield(calling_module, $(QuoteNode(comp_mod_name)))))
             addexpr(expr)
 
             name = (alias === nothing ? comp_name : alias)
-            expr = :(add_comp!($model_name, Mimi.ComponentId(comp_mod_name, $(QuoteNode(comp_name))), $(QuoteNode(name))))
+            expr = :(add_comp!($model_name, Mimi.ComponentId(comp_mod_obj, $(QuoteNode(comp_name))), $(QuoteNode(name))))
 
 
         # TBD: extend comp.var syntax to allow module name, e.g., FUND.economy.ygross

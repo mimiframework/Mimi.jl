@@ -117,31 +117,23 @@ end
 abstract type AbstractSimulationData end
 
 """
-    Simulation
+    SimulationDef
     
 Holds all the data that defines a simulation.
 """
-mutable struct Simulation{T}
-    trials::Int
-    current_trial::Int
-    current_data::Any               # holds data for current_trial when current_trial > 0
+mutable struct SimulationDef{T}
     rvdict::OrderedDict{Symbol, RandomVariable}
     translist::Vector{TransformSpec}
     savelist::Vector{Tuple{Symbol, Symbol}}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
-    models::Vector{Model}
-    results::Vector{Dict{Tuple, DataFrame}}
     data::T                         # data specific to a given sensitivity analysis method
     payload::Any                    # opaque (to Mimi) data the user wants access to in callbacks
 
-    function Simulation{T}(rvlist::Vector, 
+    function SimulationDef{T}(rvlist::Vector, 
                            translist::Vector{TransformSpec}, 
                            savelist::Vector{Tuple{Symbol, Symbol}},
                            data::T) where T <: AbstractSimulationData
         self = new()
-        self.trials = 0
-        self.current_trial = 0
-        self.current_data = nothing
         self.rvdict = OrderedDict([rv.name => rv for rv in rvlist])
         self.translist = translist
         self.savelist = savelist
@@ -149,10 +141,6 @@ mutable struct Simulation{T}
         names = (keys(self.rvdict)...,)
         types = [eltype(fld) for fld in values(self.rvdict)]
         self.nt_type = NamedTuple{names, Tuple{types...}}
-        
-        # These are parallel arrays; each model has a corresponding results dict
-        self.models = Vector{Model}(undef, 0)
-        self.results = [Dict{Tuple, DataFrame}()]
 
         self.data = data
         self.payload = nothing
@@ -162,38 +150,81 @@ mutable struct Simulation{T}
 end
 
 """
-    Simulation{T}() where T <: AbstractSimulationData
-
-Allow creation of an "empty" Simulation instance.
+    SimulationInstance{T}
+    
+Holds all the data that defines simulation results.
 """
-function Simulation{T}() where T <: AbstractSimulationData
-    Simulation{T}([], TransformSpec[], Tuple{Symbol, Symbol}[], T())
+mutable struct SimulationInstance{T}
+    trials::Int
+    current_trial::Int
+    current_data::Any               # holds data for current_trial when current_trial > 0
+    sim_def::SimulationDef{T} where T <: AbstractSimulationData
+    models::Vector{Union{Model, MarginalModel}}
+    results::Vector{Dict{Tuple, DataFrame}}
+    payload::Any
+
+    function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
+        self = new()
+        self.trials = 0
+        self.current_trial = 0
+        self.current_data = nothing
+        self.sim_def = deepcopy(sim_def)
+        self.payload = deepcopy(self.sim_def.payload)
+
+        # These are parallel arrays; each model has a corresponding results dict
+        self.models = Vector{Union{Model, MarginalModel}}(undef, 0)
+        self.results = [Dict{Tuple, DataFrame}()]
+
+        return self
+    end
 end
 
 """
-    set_payload!(sim::Simulation, payload) 
+    SimulationDef{T}() where T <: AbstractSimulationData
 
-Attach a user's `payload` to the `Simulation` instance so it can be
+Allow creation of an "empty" SimulationDef instance.
+"""
+function SimulationDef{T}() where T <: AbstractSimulationData
+    SimulationDef{T}([], TransformSpec[], Tuple{Symbol, Symbol}[], T())
+end
+
+"""
+    set_payload!(sim_def::SimulationDef, payload) 
+
+Attach a user's `payload` to the `SimulationDef`. A copy of the payload object
+will be stored in the `SimulationInstance` at run time so it can be
 accessed in scenario and pre-/post-trial callback functions. The value
 is not used by Mimi in any way; it can be anything useful to the user.
 """
-set_payload!(sim::Simulation, payload) = (sim.payload = payload)
+set_payload!(sim_def::SimulationDef, payload) = (sim_def.payload = payload)
 
 """
-    payload(sim::Simulation)
+    payload(sim_def::SimulationDef)
 
 Return the `payload` value set by the user via `set_payload!()`.
 """
-payload(sim::Simulation) = sim.payload
+payload(sim_def::SimulationDef) = sim_def.payload
+
+"""
+    payload(sim_inst::SimulationInstance)
+
+Return the copy of the `payload` value stored in the `SimulationInstance` set by the user via `set_payload!()`.
+"""
+payload(sim_inst::SimulationInstance) = sim_inst.payload
 
 struct MCSData <: AbstractSimulationData end
 
-const MonteCarloSimulation = Simulation{MCSData}
+const MonteCarloSimulationDef = SimulationDef{MCSData}
+const MonteCarloSimulationInstance = SimulationInstance{MCSData}
 
 struct SimIterator{NT, T}
-    sim::Simulation{T}
+    sim_inst::SimulationInstance{T}
 
-    function SimIterator{NT}(sim::Simulation{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
-        return new{NT, T}(sim)
+    function SimIterator{NT, T}(sim_inst::SimulationInstance{T}) where {NT <: NamedTuple, T <: AbstractSimulationData}
+        return new{NT, T}(sim_inst)
     end
+end
+
+function Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+    return sim_inst.results[model][(comp_name, datum_name)]
 end

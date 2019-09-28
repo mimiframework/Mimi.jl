@@ -87,8 +87,11 @@ using Test
     @info("test_connectorcomp.jl")
     include("test_connectorcomp.jl")
 
-    @info("test_explorer.jl")
-    include("test_explorer.jl")
+    @info("test_explorer_model.jl")
+    include("test_explorer_model.jl")
+
+    @info("test_explorer_sim.jl")
+    include("test_explorer_sim.jl")
 
     @info("test_plotting.jl")
     include("test_plotting.jl")

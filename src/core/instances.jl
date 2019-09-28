@@ -9,6 +9,9 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 """
 modeldef(mi::ModelInstance) = mi.md
 
+compmodule(obj::AbstractComponentInstance) = compmodule(obj.comp_id)
+compname(obj::AbstractComponentInstance)   = compname(obj.comp_id)
+
 """
     add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
 
