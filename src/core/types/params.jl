@@ -73,3 +73,8 @@ struct ExternalParameterConnection  <: AbstractConnection
     param_name::Symbol      # name of the parameter in the component
     external_param::Symbol  # name of the parameter stored in external_params
 end
+
+# Converts symbol to component path
+function ExternalParameterConnection(comp_name::Symbol, param_name::Symbol, external_param::Symbol)
+    return ExternalParameterConnection(ComponentPath(comp_name), param_name, external_param)
+end
