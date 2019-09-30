@@ -95,16 +95,18 @@ function _check_labels(obj::AbstractCompositeComponentDef,
 end
 
 """
-    connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+    connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol;
+                   check_labels::Bool=true)
 
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
 the external parameter `ext_param_name`. 
 """
-function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol;
+                        check_labels::Bool=true)
     comp_def = compdef(obj, comp_name)
     ext_param = external_param(obj, ext_param_name)
 
-    if ext_param isa ArrayModelParameter
+    if ext_param isa ArrayModelParameter && check_labels
         _check_labels(obj, comp_def, param_name, ext_param)
     end
 
@@ -349,6 +351,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
         comp_def = compdef(md, comp_path)
         comp_name = nameof(comp_def)
 
+        # @info "set_leftover_params: comp_name=$comp_name, param=$param_name"
         # check whether we need to set the external parameter
         if external_param(md, param_name, missing_ok=true) === nothing
             value = parameters[string(param_name)]
