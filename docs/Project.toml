@@ -1,5 +1,9 @@
 [deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Mimi = "e4e893b0-ee5e-52ea-8111-44b3bdec128c"
 
 [compat]
+Distributions = "0.21"
 Documenter = "~0.21"
+Mimi = "0.9.3"

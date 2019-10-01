@@ -2,15 +2,8 @@
 
 ```@meta
 DocTestSeup =
-    using Pkg
-    Pkg.add("Mimi")
-    Pkg.add("DelimitedFiles")
-    Pkg.add("Distributions")
-
     using Mimi
-    using DelimitedFiles
     using Distributions
-
 end
 ```
 ## What's up with the name?
@@ -25,8 +18,8 @@ polynomial can be represented as a multivariate Normal distribution,
 with a variance-covariance matrix.  To use this, define the parameter
 in the component with a vector type, like here:
 
-```jldoctest
-@defcomp example begin
+```jldoctest; output = false
+@defcomp MyComp begin
     cubiccoeff::Vector{Float64} = Parameter()
 end
  
@@ -34,17 +27,37 @@ end
 ```
 
 Then in the model construction, set the parameter with a multivariate
-distribution (here the parameters are loaded from a CSV file):
-```
-cubicparams = readdlm("../data/cubicparams.csv", ',')
-set_param!(m, :example, :cubiccoeff, MvNormal(squeeze(cubicparams[1,:], 1), cubicparams[2:4,:]))
+distribution:
+
+```jldoctest; output = false; setup = @defcomp MyComp begin cubiccoeff::Vector{Float64} = Parameter() end
+# First line: linear, quadratic, cubic
+# Lines 2-4: covariance matrix
+cubicparams = [
+    [-3.233303      1.911123    -0.1018884];
+    [ 1.9678593    -0.57211657   0.04413228];
+    [-0.57211657    0.17500949  -0.01388863];
+    [ 0.04413228   -0.01388863   0.00111965]
+]
+
+m = Model()
+set_dimension!(m, :time, collect(2015:5:2110))
+add_comp!(m, MyComp)
+
+set_param!(m, :MyComp, :cubiccoeff, MvNormal(cubicparams[1,:], cubicparams[2:4,:]))
+
+# output
 ```
 
-Here, `../data/cubicparams.csv` is a parameter definition file that looks something like this:
+Note that we could also load the data fom a file with:
+
+```julia
+cubicparams = readdlm("../data/cubicparams.csv", ',')
 ```
+where `../data/cubicparams.csv` would be a parameter definition file that looks something like this:
+```julia 
 # Example estimated polynomial parameter
 # First line: linear, quadratic, cubic
-# Lines 2-5: covariance matrix
+# Lines 2-4: covariance matrix
 -3.233303,1.911123,-.1018884
 1.9678593,-.57211657,.04413228
 -.57211657,.17500949,-.01388863
@@ -54,13 +67,29 @@ Here, `../data/cubicparams.csv` is a parameter definition file that looks someth
 ## How do I use component references?
 
 Component references allow you to write cleaner model code when connecting components.  The `add_comp!` function returns a reference to the component that you just added:
-```
-mycomponent = add_comp!(model, MyComponent)
+
+```jldoctest; output = false; setup = @defcomp MyComp begin cubiccoeff::Vector{Float64} = Parameter() end
+m = Model()
+set_dimension!(m, :time, collect(2015:5:2110))
+
+mycomponent = add_comp!(m, MyComp)
+
+# output
+Mimi.ComponentReference(1-component Mimi.Model:
+  MyComp::Main.MyComp
+, :MyComp)
 ```
 
 If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
-```
-mycomponent = ComponentReference(model, :MyComponent)
+```jldoctest; setup = @defcomp MyComp begin cubiccoeff::Vector{Float64} = Parameter() end; m = Model(); set_dimension!(m, :time, collect(2015:5:2110)); add_comp!(m, MyComp)
+
+mycomponent = Mimi.ComponentReference(m, :MyComp)
+
+#output 
+Mimi.ComponentReference(1-component Mimi.Model:
+  MyComp::Main.MyComp
+, :MyComp)
+
 ```
 
 You can use this component reference in place of the `set_param!` and `connect_param!` calls.
