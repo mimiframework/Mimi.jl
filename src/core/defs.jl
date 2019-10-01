@@ -371,7 +371,7 @@ has_parameter(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(c
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
-    return param.unit
+    return unit(param)
 end
 
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
@@ -573,13 +573,18 @@ variable_names(comp_def::AbstractComponentDef) = [nameof(var) for var in variabl
 
 function variable_unit(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
-    return var.unit
+    return unit(var)
 end
 
 function variable_unit(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
-    return var.unit
+    return unit(var)
 end
+
+# Smooth over difference between VariableDef and VariableDefReference
+unit(obj::AbstractDatumDef) = obj.unit
+unit(obj::VariableDefReference)  = variable(obj).unit
+unit(obj::ParameterDefReference) = parameter(obj).unit
 
 function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
