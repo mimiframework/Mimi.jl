@@ -1,9 +1,11 @@
 using Mimi
 using Test
+using Documenter
 
 # reduce the chatter during testing
 Mimi.set_defcomp_verbosity(false)
 
+# run tests
 @testset "Mimi" begin
 
     @info("test_main.jl")
@@ -102,3 +104,6 @@ Mimi.set_defcomp_verbosity(false)
         run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)
     end
 end
+
+# run doctests
+doctest(Mimi)
