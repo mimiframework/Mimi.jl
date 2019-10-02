@@ -1,7 +1,7 @@
 # Frequently asked questions
 
 ```@meta
-DocTestSeup =
+DocTestSeup = quote
     using Mimi
     using Distributions
 end
@@ -18,7 +18,7 @@ polynomial can be represented as a multivariate Normal distribution,
 with a variance-covariance matrix.  To use this, define the parameter
 in the component with a vector type, like here:
 
-```jldoctest; output = false
+```jldoctest faq1; output = false
 @defcomp MyComp begin
     cubiccoeff::Vector{Float64} = Parameter()
 end
@@ -26,10 +26,16 @@ end
  # output
 ```
 
-Then in the model construction, set the parameter with a multivariate
+Then construct a model and set the parameter with a multivariate
 distribution:
 
-```jldoctest; output = false; setup = @defcomp MyComp begin cubiccoeff::Vector{Float64} = Parameter() end
+```jldoctest faq1; output = false
+
+# construct a model and add the component
+m = Model()
+set_dimension!(m, :time, collect(2015:5:2110))
+add_comp!(m, MyComp)
+
 # First line: linear, quadratic, cubic
 # Lines 2-4: covariance matrix
 cubicparams = [
@@ -38,10 +44,6 @@ cubicparams = [
     [-0.57211657    0.17500949  -0.01388863];
     [ 0.04413228   -0.01388863   0.00111965]
 ]
-
-m = Model()
-set_dimension!(m, :time, collect(2015:5:2110))
-add_comp!(m, MyComp)
 
 set_param!(m, :MyComp, :cubiccoeff, MvNormal(cubicparams[1,:], cubicparams[2:4,:]))
 
@@ -68,11 +70,16 @@ where `../data/cubicparams.csv` would be a parameter definition file that looks 
 
 Component references allow you to write cleaner model code when connecting components.  The `add_comp!` function returns a reference to the component that you just added:
 
-```jldoctest; output = false; setup = @defcomp MyComp begin cubiccoeff::Vector{Float64} = Parameter() end
+```jldoctest faq2; output = false
+# create a component
+@defcomp MyComp begin
+    # empty
+end
+
+# construct a model and add the component
 m = Model()
 set_dimension!(m, :time, collect(2015:5:2110))
-
-mycomponent = add_comp!(m, MyComp)
+add_comp!(m, MyComp)
 
 # output
 Mimi.ComponentReference(1-component Mimi.Model:
@@ -81,15 +88,13 @@ Mimi.ComponentReference(1-component Mimi.Model:
 ```
 
 If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
-```jldoctest; setup = @defcomp MyComp begin cubiccoeff::Vector{Float64} = Parameter() end; m = Model(); set_dimension!(m, :time, collect(2015:5:2110)); add_comp!(m, MyComp)
-
+```jldoctest; faq2
 mycomponent = Mimi.ComponentReference(m, :MyComp)
 
-#output 
+# output 
 Mimi.ComponentReference(1-component Mimi.Model:
   MyComp::Main.MyComp
 , :MyComp)
-
 ```
 
 You can use this component reference in place of the `set_param!` and `connect_param!` calls.
