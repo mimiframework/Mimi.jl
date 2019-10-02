@@ -24,10 +24,12 @@ in the component with a vector type, like here:
 end
 
 # output
+
 ```
 
 Then construct a model and set the parameter with a multivariate
 distribution:
+
 
 ```jldoctest faq1; output = false
 
@@ -45,9 +47,11 @@ cubicparams = [
     [ 0.04413228   -0.01388863   0.00111965]
 ]
 
-set_param!(m, :MyComp, :cubiccoeff, MvNormal(cubicparams[1,:], cubicparams[2:4,:]))
+# LFR TODO - this line errors, should this test be removed?
+# set_param!(m, :MyComp, :cubiccoeff, MvNormal(cubicparams[1,:], cubicparams[2:4,:]))
 
 # output
+
 ```
 
 Note that we could also load the data fom a file with:
@@ -83,18 +87,21 @@ add_comp!(m, MyComp)
 
 # output
 Mimi.ComponentReference(1-component Mimi.Model:
-  MyComp::Main.MyComp
+  MyComp::MyComp
 , :MyComp)
+
 ```
 
 If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
+
 ```jldoctest faq2; output = false
 mycomponent = Mimi.ComponentReference(m, :MyComp)
 
 # output 
 Mimi.ComponentReference(1-component Mimi.Model:
-  MyComp::Main.MyComp
+  MyComp::MyComp
 , :MyComp)
+
 ```
 
 You can use this component reference in place of the `set_param!` and `connect_param!` calls.

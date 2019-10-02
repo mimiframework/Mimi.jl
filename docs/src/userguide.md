@@ -51,6 +51,7 @@ We define a component in the following way:
 end
 
 # output 
+
 ```
 
 The `run_timestep` function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`, which represents which timestep the model is at.
@@ -69,6 +70,7 @@ set_dimension!(m, :time, 1850:2200)
 set_dimension!(m, :regions, ["USA", "EU", "LATAM"])
 
 # output
+
 ```
 
 *A Note on Time Indexes:* It is important to note that the values used for the time index are the *start times* of the timesteps.  If the range or array of time values has a uniform timestep length, the model will run *through* the last year of the range with a last timestep period length consistent with the other timesteps.  If the time values are provided as an array with non-uniform timestep lengths, the model will run *through* the last year in the array with a last timestep period length *assumed to be one*. 
