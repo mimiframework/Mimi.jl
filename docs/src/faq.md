@@ -1,7 +1,7 @@
 # Frequently asked questions
 
 ```@meta
-DocTestSeup = quote
+DocTestSetup = quote
     using Mimi
     using Distributions
 end
