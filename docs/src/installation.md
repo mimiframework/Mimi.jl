@@ -1,7 +1,7 @@
 # Installation Guide
 
 ```@meta
-DocTestSeup = quote
+DocTestSetup = quote
     using Mimi
 end
 ```

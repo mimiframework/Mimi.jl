@@ -22,8 +22,8 @@ in the component with a vector type, like here:
 @defcomp MyComp begin
     cubiccoeff::Vector{Float64} = Parameter()
 end
- 
- # output
+
+# output
 ```
 
 Then construct a model and set the parameter with a multivariate
@@ -88,7 +88,7 @@ Mimi.ComponentReference(1-component Mimi.Model:
 ```
 
 If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
-```jldoctest; faq2
+```jldoctest faq2; output = false
 mycomponent = Mimi.ComponentReference(m, :MyComp)
 
 # output 
