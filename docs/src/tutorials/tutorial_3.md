@@ -1,5 +1,11 @@
 # Tutorial 3: Create a Model
 
+```@meta
+DocTestSetup = quote
+    using Mimi
+end
+```
+
 This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model. 
 
 While we will walk through the code step by step below, the full code for implementation is also available in the `examples/tutorial` folder in the [Mimi](https://github.com/mimiframework/Mimi.jl) github repository.
@@ -22,7 +28,11 @@ There are two main steps to creating a component, both within the  `@defcomp` ma
 
 Starting with the economy component, each variable and parameter is listed. If either variables or parameters have a time-dimension, that must be set with `(index=[time])`.
 
-```julia
+Next, the `run_timestep` function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
+
+It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
+
+```jldoctest tutorial3; output = false
 using Mimi
 
 @defcomp grosseconomy begin
@@ -35,13 +45,6 @@ using Mimi
 	k0	= Parameter()			# Initial level of capital
 	share	= Parameter()			# Capital share
 
-```
-
-Next, the `run_timestep` function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
-
-It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
-
-```julia
 	function run_timestep(p, v, d, t)
 		# Define an equation for K
 		if is_first(t)
@@ -55,11 +58,14 @@ It is important to note that `t` below is an `AbstractTimestep`, and the specifi
 		v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)
 	end
 end
+
+# output
+
 ```
 
 Next, the component for greenhouse gas emissions must be created.  Although the steps are the same as for the `grosseconomy` component, there is one minor difference. While `YGROSS` was a variable in the `grosseconomy` component, it now enters the `emissions` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
 
-```julia
+```jldoctest tutorial3; output = false
 @defcomp emissions begin
 	E 	= Variable(index=[time])	# Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	# Emissions output ratio
@@ -71,6 +77,9 @@ Next, the component for greenhouse gas emissions must be created.  Although the 
 		v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
 	end
 end
+
+# output
+
 ```
 
 We can now use Mimi to construct a model that binds the `grosseconomy` and `emissions` components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.
@@ -83,7 +92,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 * To access model results, use `model_name[:component, :variable_name]`.
 * To observe model results in a graphical form , [`explore`](@ref) as either `explore(model_name)` to open the UI window, or use `Mimi.plot(model_name, :component_name, :variable_name)` or `Mimi.plot(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
 
-```julia
+```jldoctest tutorial3; output = false
 
 using Mimi
 
@@ -113,13 +122,17 @@ function construct_model()
 
 end #end function
 
+# output
+
+construct_model (generic function with 1 method)
+
 ```
 
 Note that as an alternative to using many of the `set_param!` calls above, one may use the `default` keyword argument in `@defcomp` when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
 
 Now we can run the model and examine the results:
 
-```julia
+```jldoctest tutorial3; output = false
 # Run model
 m = construct_model()
 run(m)
@@ -127,13 +140,37 @@ run(m)
 # Check model results
 m[:emissions, :E]
 
+# output
+
+20-element Array{Union{Missing, Float64},1}:
+  4211.090591062387
+ 15079.467021779814
+ 23922.34250656177 
+ 30255.835991903466
+ 35175.69763623216 
+ 39293.007327689294
+ 42947.659714791596
+ 46344.92375399115 
+ 49617.22023134532 
+ 52854.33568269569 
+ 56119.657629233516
+ 59459.60027273144 
+ 62909.41007665139 
+ 66496.902005524   
+ 70244.9426237597  
+ 74173.13994450058 
+ 78299.0143500136  
+ 82638.82192356508 
+ 87208.1411195294  
+ 92022.29655492865 
+```
+Finally we can visualize the results:
+```julia
 # Plot model results
-Mimi.plot(m, :emissions, :E)
+Mimi.plot(m, :emissions, :E);
 
 # Observe all model result graphs in UI
 explore(m)
-
-
 ```
 
 ## Constructing A Multi-Region Model
@@ -150,110 +187,119 @@ To create a three-regional model, we will again start by constructing the grosse
 
 As this model is also more complex and spread across several files, we will also take this as a chance to introduce the custom of using [Modules](https://docs.julialang.org/en/v1/manual/modules/index.html) to package Mimi models, as shown below.
 
-```julia
+```jldoctest tutorial3; output = false
 using Mimi
-
 @defcomp grosseconomy begin
-	regions = Index()	#Note that a regional index is defined here
+    regions = Index()                           #Note that a regional index is defined here
 
-	YGROSS	= Variable(index=[time, regions])	# Gross output
-	K 	= Variable(index=[time, regions])	# Capital
-	l 	= Parameter(index=[time, regions])	# Labor
-	tfp	= Parameter(index=[time, regions])	# Total factor productivity
-	s 	= Parameter(index=[time, regions])	# Savings rate
-	depk	= Parameter(index=[regions])	# Depreciation rate on capital - Note that it only has a region index
-	k0	= Parameter(index=[regions])	# Initial level of capital
-	share	= Parameter()	# Capital share
+    YGROSS  = Variable(index=[time, regions])   #Gross output
+    K       = Variable(index=[time, regions])   #Capital
+    l       = Parameter(index=[time, regions])  #Labor
+    tfp     = Parameter(index=[time, regions])  #Total factor productivity
+    s       = Parameter(index=[time, regions])  #Savings rate
+    depk    = Parameter(index=[regions])        #Depreciation rate on capital - Note that it only has a region index
+    k0      = Parameter(index=[regions])        #Initial level of capital
+    share   = Parameter()                       #Capital share
 
-	function run_timestep(p, v, d, t)
-		
-		# Note that the regional dimension is used below and parameters and 
-		variables are indexed by 'r'
+    function run_timestep(p, v, d, t)
+    # Note that the regional dimension is defined in d and parameters and variables are indexed by 'r'
 
-		# Define an equation for K
-		for r in d.regions
-			if is_first(t)
-				v.K[t,r] = p.k0[r]
-			else
-				v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
-			end
-		end
+        # Define an equation for K
+        for r in d.regions
+            if is_first(t)
+                v.K[t,r] = p.k0[r]
+            else
+                v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
+            end
+        end
 
-		# Define an equation for YGROSS
-		for r in d.regions
-			v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
-		end
-	end
+        # Define an equation for YGROSS
+        for r in d.regions
+            v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
+        end
+    end
 end
+
+# output
+
 ```
 
 Save this component as **`gross_economy.jl`**
 
-```julia
+```jldoctest tutorial3; output = false
 using Mimi	#Make sure to call Mimi again
 
 @defcomp emissions begin
-	regions	=	Index()	# The regions index must be specified for each component
+    regions     = Index()                           # The regions index must be specified for each component
 
-	E		= Variable(index=[time, regions])	# Total greenhouse gas emissions
-	E_Global		= Variable(index=[time])		# Global emissions (sum of regional emissions)
-	sigma		= Parameter(index=[time, regions])	# Emissions output ratio
-	YGROSS		= Parameter(index=[time, regions])	# Gross output - Note that YGROSS is now a parameter
+    E           = Variable(index=[time, regions])   # Total greenhouse gas emissions
+    E_Global    = Variable(index=[time])            # Global emissions (sum of regional emissions)
+    sigma       = Parameter(index=[time, regions])  # Emissions output ratio
+    YGROSS      = Parameter(index=[time, regions])  # Gross output - Note that YGROSS is now a parameter
 
-	function run_timestep(p, v, d, t)
+    # function init(p, v, d)
+    # end
+    
+    function run_timestep(p, v, d, t)
+        # Define an equation for E
+        for r in d.regions
+            v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
+        end
 
-		# Define an eqation for E
-		for r in d.regions
-			v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
-		end
+        # Define an equation for E_Global
+        for r in d.regions
+            v.E_Global[t] = sum(v.E[t,:])
+        end
+    end
 
-		# Define an equation for E_Global
-		for r in d.regions
-			v.E_Global[t] = sum(v.E[t,:])
-		end
-	end
 end
+
+# output
+
 ```
 
 Save this component as **`emissions.jl`**
 
 Let's create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.
 
-```julia
-l = Array(Float64,20,3)
+```jldoctest tutorial3; output = false
+l = Array{Float64}(undef, 20, 3)
 for t in 1:20
-	l[t,1] = (1. + 0.015)^t *2000
-	l[t,2] = (1. + 0.02)^t * 1250
-	l[t,3] = (1. + 0.03)^t * 1700
+    l[t,1] = (1. + 0.015)^t *2000
+    l[t,2] = (1. + 0.02)^t * 1250
+    l[t,3] = (1. + 0.03)^t * 1700
 end
 
-tfp = Array(Float64,20,3)
+tfp = Array{Float64}(undef, 20, 3)
 for t in 1:20
-	tfp[t,1] = (1 + 0.06)^t * 3.2
-	tfp[t,2] = (1 + 0.03)^t * 1.8
-	tfp[t,3] = (1 + 0.05)^t * 2.5
+    tfp[t,1] = (1 + 0.06)^t * 3.2
+    tfp[t,2] = (1 + 0.03)^t * 1.8
+    tfp[t,3] = (1 + 0.05)^t * 2.5
 end
 
-s = Array(Float64,20,3)
+s = Array{Float64}(undef, 20, 3)
 for t in 1:20
-	s[t,1] = 0.21
-	s[t,2] = 0.15
-	s[t,3] = 0.28
+    s[t,1] = 0.21
+    s[t,2] = 0.15
+    s[t,3] = 0.28
 end
 
 depk = [0.11, 0.135 ,0.15]
-k0 	 = [50.5, 22., 33.5]
+k0   = [50.5, 22., 33.5]
 
-sigma = Array(Float64,20,3)
+sigma = Array{Float64}(undef, 20, 3)
 for t in 1:20
-	sigma[t,1] = (1. - 0.05)^t * 0.58
-	sigma[t,2] = (1. - 0.04)^t * 0.5
-	sigma[t,3] = (1. - 0.045)^t * 0.6
+    sigma[t,1] = (1. - 0.05)^t * 0.58
+    sigma[t,2] = (1. - 0.04)^t * 0.5
+    sigma[t,3] = (1. - 0.045)^t * 0.6
 end
+
+# output
+
 ```
 Save this file as **`region_parameters.jl`**
 
-The final step is to create a module.
+The final step is to create a module:
 
 ```julia
 module MyModel
@@ -265,7 +311,8 @@ include("gross_economy.jl")
 include("emissions.jl")
 
 export construct_MyModel
-
+```
+```jldoctest tutorial3; output = false
 function construct_MyModel()
 
 	m = Model()
@@ -287,13 +334,18 @@ function construct_MyModel()
 	set_param!(m, :emissions, :sigma, sigma)
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
-	return m
+    return m
+end
 
-end #function
+# output
 
-end #end module
+construct_MyModel (generic function with 1 method)
 
 ```
+```julia
+end #module
+``` 
+
 Save this file as **`MyModel.jl`**
 
 We can now run the model and evaluate the results.
@@ -303,13 +355,44 @@ using Mimi
 
 include("MyModel.jl")
 using .MyModel
+```
+```jldoctest tutorial3; output = false
 m = construct_MyModel()
 run(m)
 
 # Check results
 m[:emissions, :E_Global]
 
+# output
+
+20-element Array{Union{Missing, Float64},1}:
+  2392.079742190377
+  7740.882236708259
+ 11842.440651248193
+ 14629.668992409268
+ 16686.547618646313
+ 18338.39368484932 
+ 19763.668705801665
+ 21066.519405994735
+ 22310.85541553882 
+ 23537.444423151617
+ 24773.181203244094
+ 26036.421133213866
+ 27340.180766955593
+ 28694.115410299266
+ 30105.7665949292  
+ 31581.36120424167 
+ 33126.32978664035 
+ 34745.64653516074 
+ 36444.054899836294
+ 38226.21934898662 
+```
+```julia
 # Observe model result graphs
 explore(m)
 
+```
+
+```@meta
+DocTestSetup = nothing
 ```
