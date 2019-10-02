@@ -86,6 +86,7 @@ set_dimension!(m, :time, collect(2015:5:2110))
 add_comp!(m, MyComp)
 
 # output
+
 Mimi.ComponentReference(1-component Mimi.Model:
   MyComp::MyComp
 , :MyComp)
@@ -97,7 +98,8 @@ If you want to get a reference to a component after the `add_comp!` call has bee
 ```jldoctest faq2; output = false
 mycomponent = Mimi.ComponentReference(m, :MyComp)
 
-# output 
+# output
+
 Mimi.ComponentReference(1-component Mimi.Model:
   MyComp::MyComp
 , :MyComp)

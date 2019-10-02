@@ -50,7 +50,7 @@ We define a component in the following way:
   end
 end
 
-# output 
+# output
 
 ```
 
