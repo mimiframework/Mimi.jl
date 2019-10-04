@@ -4,11 +4,9 @@ using Test
 using Mimi
 
 import Mimi: 
-    reset_compdefs, reset_variables, @defmodel, 
+    reset_variables, @defmodel, 
     variable, variable_names, external_param, build, 
-    compdef, compdefs, dimensions, dimension, compinstance
-
-reset_compdefs()
+    compdef, compdefs, dimension, compinstance
 
 @defcomp foo1 begin
     index1 = Index()

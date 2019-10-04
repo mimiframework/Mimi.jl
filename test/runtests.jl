@@ -1,13 +1,13 @@
 using Mimi
 using Test
 
-# reduce the chatter during testing
-Mimi.set_defcomp_verbosity(false)
-
 @testset "Mimi" begin
 
     @info("test_main.jl")
     include("test_main.jl")
+
+    @info("test_composite.jl")
+    include("test_composite.jl")
 
     @info("test_main_variabletimestep.jl")
     include("test_main_variabletimestep.jl")

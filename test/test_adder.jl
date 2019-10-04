@@ -3,11 +3,6 @@ module TestAdder
 using Mimi
 using Test
 
-import Mimi:
-    reset_compdefs
-
-reset_compdefs()
-
 ############################################
 # adder component without a different name #
 ############################################

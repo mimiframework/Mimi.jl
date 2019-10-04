@@ -5,13 +5,10 @@ module TestModelStructure
 using Test
 using Mimi
 
-import Mimi: 
-    connect_param!, unconnected_params, set_dimension!, 
-    reset_compdefs, numcomponents, get_connections, internal_param_conns, dim_count, 
-    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, 
-    dimensions, compdefs
-
-reset_compdefs()
+import Mimi:
+    connect_param!, unconnected_params, set_dimension!,  build,
+    get_connections, internal_param_conns, dim_count,  dim_names,
+    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
 
 @defcomp A begin
     varA::Int = Variable(index=[time])
@@ -45,8 +42,9 @@ end
 
 m = Model()
 
+# TBD: This is not necessarily an error with composites.
 # make sure you can't add a component before setting time dimension
-@test_throws ErrorException add_comp!(m, A)
+# @test_throws ErrorException add_comp!(m, A)
 
 set_dimension!(m, :time, 2015:5:2100)
 
@@ -59,19 +57,22 @@ connect_param!(m, :A, :parA, :C, :varC)
 
 unconn = unconnected_params(m)
 @test length(unconn) == 1
-@test unconn[1] == (:C, :parC)
+
+c = compdef(m, :C)
+@test unconn[1] == (c.comp_path, :parC)
 
 connect_param!(m, :C => :parC, :B => :varB)
 
 @test_throws ErrorException add_comp!(m, C, after=:A, before=:B)
 
-@test numcomponents(m.md) == 3
+@test length(m.md) == 3
 
 @test length(internal_param_conns(m)) == 2
-@test get_connections(m, :A, :incoming)[1].src_comp_name == :C
+c = compdef(m, :C)
+@test get_connections(m, :A, :incoming)[1].src_comp_path == c.comp_path
 
 @test length(get_connections(m, :B, :incoming)) == 0
-@test get_connections(m, :B, :outgoing)[1].dst_comp_name == :C
+@test get_connections(m, :B, :outgoing)[1].dst_comp_path == c.comp_path
 
 @test length(get_connections(m, :A, :all)) == 1
 
@@ -108,17 +109,17 @@ time = dimension(m, :time)
 a = collect(keys(time))
 @test all([a[i] == 2010 + 5*i for i in 1:18])
 
-@test dimensions(m, :A, :varA)[1] == :time
-@test length(dimensions(m, :A, :parA)) == 0
+@test dim_names(m, :A, :varA)[1] == :time
+@test length(dim_names(m, :A, :parA)) == 0
 
 ################################
 #  tests for delete! function  #
 ################################
 
 @test_throws ErrorException delete!(m, :D)
-@test length(m.md.internal_param_conns) == 2
+@test length(internal_param_conns(m.md)) == 2
 delete!(m, :A)
-@test length(m.md.internal_param_conns) == 1
+@test length(internal_param_conns(m.md)) == 1
 @test !(:A in compdefs(m))
 @test length(compdefs(m)) == 2
 
@@ -132,7 +133,7 @@ delete!(m, :A)
 end
 
 add_comp!(m, D)
-@test_throws ErrorException Mimi.build(m)
+@test_throws ErrorException build(m)
 
 ##########################################
 #   Test init function                   #
@@ -167,12 +168,7 @@ run(m)
 @test m[:E, :varE] == 10
 
 # run for just one timestep, so init sets the value here
-# This results in 2 warnings, so we test for both.
-@test_logs(
-    # (:warn, "Redefining dimension :time"),
-    # (:warn, "Resetting E component's last timestep to 2015"),
-    set_dimension!(m, :time, [2015])
-)
+set_dimension!(m, :time, [2015])
 
 run(m)
 @test m[:E, :varE] == 1
