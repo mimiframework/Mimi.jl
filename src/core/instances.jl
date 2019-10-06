@@ -9,39 +9,26 @@ Return the `ModelDef` contained by ModelInstance `mi`.
 """
 modeldef(mi::ModelInstance) = mi.md
 
-compinstance(mi::ModelInstance, name::Symbol) = mi.components[name]
-
-compdef(ci::ComponentInstance) = compdef(ci.comp_id)
-
-"""
-    name(ci::ComponentInstance)
-
-Return the name of the component `ci`.
-"""
-name(ci::ComponentInstance) = ci.comp_name
+compmodule(obj::AbstractComponentInstance) = compmodule(obj.comp_id)
+compname(obj::AbstractComponentInstance)   = compname(obj.comp_id)
 
 """
-    components(mi::ModelInstance)
+    add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
 
-Return an iterator on the components in model instance `mi`.
+Add the (leaf or composite) component `ci` to a composite's list of components, and add
+the `first` and `last` of `mi` to the ends of the composite's `firsts` and `lasts` lists.
 """
-components(mi::ModelInstance) = values(mi.components)
+function add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
+    obj.comps_dict[nameof(ci)] = ci
 
-"""
-    add_comp!(mi::ModelInstance, ci::ComponentInstance)
-
-Add the component `ci` to the `ModelInstance` `mi`'s list of components, and add
-the `first` and `last` of `mi` to the ends of the `firsts` and `lasts` lists of 
-`mi`, respectively.
-"""
-function add_comp!(mi::ModelInstance, ci::ComponentInstance) 
-    mi.components[name(ci)] = ci
-
-    push!(mi.firsts, ci.first)
-    push!(mi.lasts, ci.last)
+    # push!(obj.firsts, first_period(ci))         # TBD: perhaps this should be set when time is set?
+    # push!(obj.lasts,  last_period(ci))
+    nothing
 end
 
+#
 # Setting/getting parameter and variable values
+#
 
 # Get the object stored for the given variable, not the value of the variable.
 # This is used in the model building process to connect internal parameters.
@@ -88,13 +75,15 @@ end
     end
 end
 
-"""
-    get_param_value(ci::ComponentInstance, name::Symbol)
+comp_paths(obj::AbstractComponentInstanceData) = getfield(obj, :comp_paths)
 
-Return the value of parameter `name` in component `ci`.
 """
-function get_param_value(ci::ComponentInstance, name::Symbol)
-    try 
+    get_param_value(ci::AbstractComponentInstance, name::Symbol)
+
+Return the value of parameter `name` in (leaf or composite) component `ci`.
+"""
+function get_param_value(ci::AbstractComponentInstance, name::Symbol)
+    try
         return getproperty(ci.parameters, name)
     catch err
         if isa(err, KeyError)
@@ -106,14 +95,15 @@ function get_param_value(ci::ComponentInstance, name::Symbol)
 end
 
 """
-    get_var_value(ci::ComponentInstance, name::Symbol)
+    get_var_value(ci::AbstractComponentInstance, name::Symbol)
 
 Return the value of variable `name` in component `ci`.
 """
-function get_var_value(ci::ComponentInstance, name::Symbol)
+function get_var_value(ci::AbstractComponentInstance, name::Symbol)
     try
-        # println("Getting $name from $(ci.variables)")
-        return getproperty(ci.variables, name)
+        vars = ci.variables
+        # @info ("Getting $name from $vars")
+        return getproperty(vars, name)
     catch err
         if isa(err, KeyError)
             error("Component $(ci.comp_id) has no variable named $name")
@@ -123,58 +113,77 @@ function get_var_value(ci::ComponentInstance, name::Symbol)
     end
 end
 
-set_param_value(ci::ComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
+set_param_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
 
-set_var_value(ci::ComponentInstance, name::Symbol, value)  = setproperty!(ci.variables, name, value)
-
-# Allow values to be obtained from either parameter type using one method name.
-value(param::ScalarModelParameter) = param.value
-
-value(param::ArrayModelParameter)  = param.values
-
-dimensions(obj::ArrayModelParameter) = obj.dimensions
-
-dimensions(obj::ScalarModelParameter) = []
+set_var_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.variables, name, value)
 
 """
-    variables(mi::ModelInstance, comp_name::Symbol)
+    variables(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
 
-Return the `ComponentInstanceVariables` for `comp_name` in ModelInstance 'mi'.
+Return the `ComponentInstanceVariables` for `comp_name` in CompositeComponentInstance `obj`.
 """
-variables(mi::ModelInstance, comp_name::Symbol) = variables(compinstance(mi, comp_name))
+variables(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = variables(compinstance(obj, comp_name))
 
-variables(ci::ComponentInstance) = ci.variables
-
-"""
-    parameters(mi::ModelInstance, comp_name::Symbol)
-
-Return the `ComponentInstanceParameters` for `comp_name` in ModelInstance 'mi'.
-"""
-parameters(mi::ModelInstance, comp_name::Symbol) = parameters(compinstance(mi, comp_name))
-
-"""
-    parameters(ci::ComponentInstance)
-
-Return an iterable over the parameters in `ci`.
-"""
-parameters(ci::ComponentInstance) = ci.parameters
+variables(obj::AbstractComponentInstance) = obj.variables
 
 
-function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
-    if !(comp_name in keys(mi.components))
-        error("Component :$comp_name does not exist in current model")
+function variables(m::Model)
+    if ! is_built(m)
+        error("Must build model to access variable instances. Use variables(modeldef(m)) to get variable definitions.")
     end
-    
-    comp_inst = compinstance(mi, comp_name)
-    vars = comp_inst.variables
-    pars = comp_inst.parameters
+    return variables(modelinstance(m))
+end
+
+"""
+    parameters(obj::AbstractComponentInstance, comp_name::Symbol)
+
+Return the `ComponentInstanceParameters` for `comp_name` in CompositeComponentInstance `obj`.
+"""
+parameters(obj::AbstractCompositeComponentInstance, comp_name::Symbol) = parameters(compinstance(obj, comp_name))
+
+parameters(obj::AbstractComponentInstance) = obj.parameters
+
+function Base.getindex(mi::ModelInstance, names::NTuple{N, Symbol}) where N
+    obj = mi
+
+    # skip past first element if same as root node
+    if length(names) > 0 && head(obj.comp_path) == names[1]
+        names = names[2:end]
+    end
+
+    for name in names
+        if has_comp(obj, name)
+            obj = obj[name]
+        else
+            error("Component $(obj.comp_path) does not have sub-component :$name")
+        end
+    end
+    return obj
+end
+
+Base.getindex(mi::ModelInstance, comp_path::ComponentPath) = getindex(mi, comp_path.names)
+
+Base.getindex(mi::ModelInstance, path_str::AbstractString) = getindex(mi, ComponentPath(mi.md, path_str))
+
+function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol)
+    if ! has_comp(obj, comp_name)
+        error("Component :$comp_name does not exist in the given composite")
+    end
+    return compinstance(obj, comp_name)
+end
+
+function _get_datum(ci::AbstractComponentInstance, datum_name::Symbol)
+    vars = variables(ci)
 
     if datum_name in names(vars)
         which = vars
-    elseif datum_name in names(pars)
-        which = pars
     else
-        error("$datum_name is not a parameter or a variable in component $comp_name.")
+        pars = parameters(ci)
+        if datum_name in names(pars)
+            which = pars
+        else
+            error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
+        end
     end
 
     value = getproperty(which, datum_name)
@@ -182,45 +191,24 @@ function Base.getindex(mi::ModelInstance, comp_name::Symbol, datum_name::Symbol)
     return value isa TimestepArray ? value.data : value
 end
 
+function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)
+    _get_datum(mi[key], datum)
+end
+
+function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
+    ci = obj[comp_name]
+    return _get_datum(ci, datum)
+end
+
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
 
 Return the size of index `dim_name` in model instance `mi`.
 """
-dim_count(mi::ModelInstance, dim_name::Symbol) = dim_count(mi.md, dim_name)
+@delegate dim_count(mi::ModelInstance, dim_name::Symbol) => md
 
-"""
-    dim_key_dict(mi::ModelInstance)
-
-Return a dict of dimension keys for all dimensions in model instance `mi`.
-"""
-dim_key_dict(mi::ModelInstance) = dim_key_dict(mi.md)
-
-"""
-    dim_keys(mi::ModelInstance, dim_name::Symbol)
-    
-Return keys for dimension `dim_name` in model instance `mi`.
-"""
-dim_keys(mi::ModelInstance, dim_name::Symbol) = dim_keys(mi.md, dim_name)
-
-dim_value_dict(mi::ModelInstance) = dim_value_dict(mi.md)
-
-function make_clock(mi::ModelInstance, ntimesteps, time_keys::Vector{Int})
-    last  = time_keys[min(length(time_keys), ntimesteps)]
-
-    if isuniform(time_keys)
-        first, stepsize = first_and_step(time_keys)
-        return Clock{FixedTimestep}(first, stepsize, last)
-
-    else
-        last_index = findfirst(isequal(last), time_keys)
-        times = (time_keys[1:last_index]...,)
-        return Clock{VariableTimestep}(times)
-    end
-end
-
-function reset_variables(ci::ComponentInstance)
-    # println("reset_variables($(ci.comp_id))")
+function reset_variables(ci::AbstractComponentInstance)
+    # @info "reset_variables($(ci.comp_id))"
     vars = ci.variables
 
     for (name, T) in zip(names(vars), types(vars))
@@ -229,7 +217,7 @@ function reset_variables(ci::ComponentInstance)
         if (T <: AbstractArray || T <: TimestepArray) && eltype(value) <: AbstractFloat
             fill!(value, NaN)
 
-        elseif T <: AbstractFloat || (T <: ScalarModelParameter && T.parameters[1] <: AbstractFloat)            
+        elseif T <: AbstractFloat || (T <: ScalarModelParameter && T.parameters[1] <: AbstractFloat)
             setproperty!(vars, name, NaN)
 
         elseif (T <: ScalarModelParameter)    # integer or bool
@@ -238,78 +226,74 @@ function reset_variables(ci::ComponentInstance)
     end
 end
 
-function init(mi::ModelInstance)
-    for ci in components(mi)
-        init(ci)
+function reset_variables(obj::AbstractCompositeComponentInstance)
+    for ci in components(obj)
+        reset_variables(ci)
     end
+    return nothing
 end
 
-function init(ci::ComponentInstance)
+function init(ci::AbstractComponentInstance, dims::DimValueDict)
+    # @info "init($(ci.comp_id))"
     reset_variables(ci)
-    if ci.init !== nothing
-        ci.init(ci.parameters, ci.variables, DimDict(ci.dim_dict))
+
+    if ci.init != nothing
+        ci.init(parameters(ci), variables(ci), dims)
     end
+    return nothing
 end
 
-function run_timestep(ci::ComponentInstance, clock::Clock)
-    if ci.run_timestep === nothing
-        return
+function init(obj::AbstractCompositeComponentInstance, dims::DimValueDict)
+    for ci in components(obj)
+        init(ci, dims)
     end
-
-    pars = ci.parameters
-    vars = ci.variables
-    dims = ci.dim_dict
-    t = clock.ts
-
-    ci.run_timestep(pars, vars, DimDict(dims), t)
-    advance(clock)
-    nothing
+    return nothing
 end
 
-function _run_components(mi::ModelInstance, clock::Clock,
-                         firsts::Vector{Int}, lasts::Vector{Int}, comp_clocks::Vector{Clock{T}}) where {T <: AbstractTimestep}
-    comp_instances = components(mi)
-    tups = collect(zip(comp_instances, firsts, lasts, comp_clocks))
-    
-    while ! finished(clock)
-        for (ci, first, last, comp_clock) in tups
-            if first <= gettime(clock) <= last
-                run_timestep(ci, comp_clock)
-            end
+_runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
+
+function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueDict)
+    if ci.run_timestep !== nothing && _runnable(ci, clock)
+        ci.run_timestep(parameters(ci), variables(ci), dims, clock.ts)
+    end
+
+    return nothing
+end
+
+function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::DimValueDict)
+    if _runnable(cci, clock)
+        for ci in components(cci)
+            run_timestep(ci, clock, dims)
         end
-        advance(clock)
     end
-    nothing
+    return nothing
 end
 
-function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int), 
+function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
-    if length(mi.components) == 0
+
+    if (ncomps = length(components(mi))) == 0
         error("Cannot run the model: no components have been created.")
     end
 
-    t::Vector{Int} = dimkeys === nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
-    
-    firsts = mi.firsts
-    lasts = mi.lasts
+    time_keys::Vector{Int} = dimkeys === nothing ? dim_keys(mi.md, :time) : dimkeys[:time]
 
-    if isuniform(t)
-        _, stepsize = first_and_step(t)
-        comp_clocks = [Clock{FixedTimestep}(first, stepsize, last) for (first, last) in zip(firsts, lasts)]
-    else
-        comp_clocks = Array{Clock{VariableTimestep}}(undef, length(firsts))
-        for i = 1:length(firsts)
-            first_index = findfirst(isequal(firsts[i]), t)
-            last_index  = findfirst(isequal(lasts[i]), t)
-            times = (t[first_index:last_index]...,)
-            comp_clocks[i] = Clock{VariableTimestep}(times)
-        end
+    # truncate time_keys if caller so desires
+    if ntimesteps < length(time_keys)
+        time_keys = time_keys[1:ntimesteps]
     end
 
-    clock = make_clock(mi, ntimesteps, t)
+    # TBD: Pass this, but substitute t from above?
+    dim_val_dict = DimValueDict(dim_dict(mi.md))
 
-    init(mi)    # call module's (or fallback) init function
+    # recursively initializes all components
+    init(mi, dim_val_dict)
 
-    _run_components(mi, clock, firsts, lasts, comp_clocks)
+    clock = Clock(time_keys)
+    while ! finished(clock)
+        run_timestep(mi, clock, dim_val_dict)
+        advance(clock)
+    end
+
     nothing
 end

@@ -4,17 +4,6 @@
 #
 using MacroTools
 
-# Simplify delegation of calls to ::Model to internal ModelInstance or ModelDelegate objects.
-macro modelegate(ex)
-    if @capture(ex, fname_(varname_::Model, args__) => rhs_)
-
-        result = esc(:($fname($varname::Model, $(args...)) = ($varname.$rhs === nothing ? error("This function is not callable on an model that has not been run because it requires a ModelInstance.") : $fname($varname.$rhs, $(args...)))))
-        #println(result)
-        return result
-    end
-    error("Calls to @modelegate must be of the form 'func(m::Model, args...) => X', where X is either mi or md'. Expression was: $ex")
-end
-
 """
     modeldef(m)
 
@@ -23,49 +12,56 @@ Return the `ModelDef` contained by Model `m`.
 modeldef(m::Model) = m.md
 
 modelinstance(m::Model) = m.mi
+modelinstance_def(m::Model) = modeldef(modelinstance(m))
 
-@modelegate compinstance(m::Model, name::Symbol) => mi
+is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 
-@modelegate number_type(m::Model) => md
+is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.marginal))
 
-@modelegate external_param_conns(m::Model) => md
+@delegate compinstance(m::Model, name::Symbol) => mi
+@delegate has_comp(m::Model, name::Symbol) => md
 
-@modelegate internal_param_conns(m::Model) => md
+@delegate number_type(m::Model) => md
 
-@modelegate external_params(m::Model) => md
+@delegate internal_param_conns(m::Model) => md
+@delegate external_param_conns(m::Model) => md
 
-@modelegate external_param(m::Model, name::Symbol) => md
+@delegate external_params(m::Model) => md
+@delegate external_param(m::Model, name::Symbol; missing_ok=false) => md
 
-@modelegate connected_params(m::Model, comp_name::Symbol) => md
+@delegate connected_params(m::Model) => md
+@delegate unconnected_params(m::Model) => md
 
-@modelegate unconnected_params(m::Model) => md
-
-@modelegate add_connector_comps(m::Model) => md
-
-# Forget any previously built model instance (i.e., after changing the model def).
-# This should be called by all functions that modify the Model's underlying ModelDef.
-function decache(m::Model)
-    m.mi = nothing
-end
+@delegate add_connector_comps!(m::Model) => md
 
 """
-    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, 
+    connect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, src_comp_path::ComponentPath,
         src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
-Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `md`
-to a variable `src_var_name` in another component `src_comp_name` of the same model
+Bind the parameter `dst_par_name` of one component `dst_comp_path` of model `md`
+to a variable `src_var_name` in another component `src_comp_path` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
+between the destination and the source ie. the value would be `1` if the destination
 component parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
-                           src_comp_name::Symbol, src_var_name::Symbol, 
-                           backup::Union{Nothing, Array}=nothing; 
-                           ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(m.md, dst_comp_name, dst_par_name, src_comp_name, src_var_name, backup; 
-                      ignoreunits=ignoreunits, offset=offset)
-end
+@delegate connect_param!(m::Model,
+                         dst_comp_path::ComponentPath, dst_par_name::Symbol,
+                         src_comp_path::ComponentPath, src_var_name::Symbol,
+                         backup::Union{Nothing, Array}=nothing;
+                         ignoreunits::Bool=false, offset::Int=0) => md
+
+@delegate connect_param!(m::Model,
+                         dst_comp_name::Symbol, dst_par_name::Symbol,
+                         src_comp_name::Symbol, src_var_name::Symbol,
+                         backup::Union{Nothing, Array}=nothing;
+                         ignoreunits::Bool=false, offset::Int=0) => md
+
+@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
+
+@delegate connect_param!(m::Model, dst::AbstractString, src::AbstractString, backup::Union{Nothing, Array}=nothing; 
+                         ignoreunits::Bool=false, offset::Int=0) => md
+
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -74,98 +70,84 @@ Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
+between the destination and the source ie. the value would be `1` if the destination
 component parameter should only be calculated for the second timestep and beyond.
 
 """
-function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-                           backup::Union{Nothing, Array}=nothing; 
+function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
+                           backup::Union{Nothing, Array}=nothing;
                            ignoreunits::Bool=false, offset::Int=0)
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
-"""
-    disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
+@delegate disconnect_param!(m::Model, comp_path::ComponentPath, param_name::Symbol) => md
+@delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-Remove any parameter connections for a given parameter `param_name` in a given component
-`comp_name` of model `m`.
-"""
-function disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
-    disconnect_param!(m.md, comp_name, param_name)
-    decache(m)
-end
+@delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
-function set_external_param!(m::Model, name::Symbol, value::ModelParameter)
-    set_external_param!(m.md, name, value)
-    decache(m)
-end
+@delegate set_external_param!(m::Model, name::Symbol, value::Number;
+                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
-function set_external_param!(m::Model, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    set_external_param!(m.md, name, value; param_dims = param_dims)
-    decache(m)
-end
+@delegate set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple};
+                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
-function set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    set_external_param!(m.md, name, value; param_dims = param_dims)
-end
+@delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
 
-function add_internal_param_conn(m::Model, conn::InternalParameterConnection)
-    add_internal_param_conn(m.md, conn)
-    decache(m)
-end
-
+# @delegate doesn't handle the 'where T' currently. This is the only instance of it for now...
 function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     set_leftover_params!(m.md, parameters)
-    decache(m)
 end
 
 """
     update_param!(m::Model, name::Symbol, value; update_timesteps = false)
 
-Update the `value` of an external model parameter in model `m`, referenced by 
-`name`. Optional boolean argument `update_timesteps` with default value `false` 
-indicates whether to update the time keys associated with the parameter values 
+Update the `value` of an external model parameter in model `m`, referenced by
+`name`. Optional boolean argument `update_timesteps` with default value `false`
+indicates whether to update the time keys associated with the parameter values
 to match the model's time index.
 """
-function update_param!(m::Model, name::Symbol, value; update_timesteps = false)
-    update_param!(m.md, name, value, update_timesteps = update_timesteps)
-    decache(m)
-end
+@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = false) => md
 
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
 
-For each (k, v) in the provided `parameters` dictionary, `update_param!`` 
-is called to update the external parameter by name k to value v, with optional 
+For each (k, v) in the provided `parameters` dictionary, `update_param!``
+is called to update the external parameter by name k to value v, with optional
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the 
+symbol matching the name of an external parameter that already exists in the
 model definition.
 """
-function update_params!(m::Model, parameters::Dict; update_timesteps = false)
-    update_params!(m.md, parameters; update_timesteps = update_timesteps)
-    decache(m)
-end
+@delegate update_params!(m::Model, parameters::Dict; update_timesteps = false) => md
 
 """
     add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
-        first=nothing, last=nothing, before=nothing, after=nothing)
+              first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
 
-Add the component indicated by `comp_id` to the model indicated by `m`. The component is added at the end of 
-the list unless one of the keywords, `first`, `last`, `before`, `after`. If the `comp_name`
-differs from that in the `comp_id`, a copy of `comp_id` is made and assigned the new name.
+Add the component indicated by `comp_id` to the model indicated by `m`. The component is added 
+at the end of the list unless one of the keywords `before` or `after` is specified. Note
+that a copy of `comp_id` is made in the composite and assigned the give name. The optional
+argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+
+Note: `first` and `last` keywords are currently disabled.
 """
-function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                      first=nothing, last=nothing, before=nothing, after=nothing)
-    add_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after)
-    decache(m)
-    return ComponentReference(m, comp_name)
+function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
+    comp_def = add_comp!(m.md, comp_id, comp_name; kwargs...)
+    return ComponentReference(m.md, comp_name)
 end
 
-function add_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
-                      first=nothing, last=nothing, before=nothing, after=nothing)
-    add_comp!(m.md, comp_def, comp_name; first=first, last=last, before=before, after=after)
-    decache(m)
-    return ComponentReference(m, comp_name)
+"""
+    add_comp!(m::Model, comp_def::AbstractComponentDef; comp_name::Symbol=comp_id.comp_name;
+              first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
+
+Add the component `comp_def` to the model indicated by `m`. The component is added at
+the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note
+that a copy of `comp_id` is made in the composite and assigned the give name. The optional
+argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+
+Note: `first` and `last` keywords are currently disabled.
+"""
+function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+    return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
 """
@@ -173,50 +155,47 @@ end
         first::NothingSymbol=nothing, last::NothingSymbol=nothing,
         before::NothingSymbol=nothing, after::NothingSymbol=nothing,
         reconnect::Bool=true)
-        
+
 Replace the component with name `comp_name` in model `m` with the component
-`comp_id` using the same name.  The component is added in the same position as 
+`comp_id` using the same name.  The component is added in the same position as
 the old component, unless one of the keywords `before` or `after` is specified.
-The component is added with the same first and last values, unless the keywords 
-`first` or `last` are specified. Optional boolean argument `reconnect` with 
-default value `true` indicates whether the existing parameter connections 
-should be maintained in the new component.  
+The component is added with the same first and last values, unless the keywords
+`first` or `last` are specified. Optional boolean argument `reconnect` with
+default value `true` indicates whether the existing parameter connections
+should be maintained in the new component.
+
+Note: `first` and `last` keywords are currently disabled.
 """
-function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
-                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                           reconnect::Bool=true)
-    replace_comp!(m.md, comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
-    decache(m)
-    return ComponentReference(m, comp_name)
+function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
+    comp_def = replace_comp!(m.md, comp_id, comp_name; kwargs...)
+    return ComponentReference(m.md, comp_name)
 end
 
-function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name;
-                           first::NothingSymbol=nothing, last::NothingSymbol=nothing,
-                           before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                           reconnect::Bool=true)
-    replace_comp!(m, comp_def.comp_id, comp_name; first=first, last=last, before=before, after=after, reconnect=reconnect)
+function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+    return replace_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
+
+@delegate ComponentReference(m::Model, name::Symbol) => md
 
 """
     components(m::Model)
 
-Return an iterator on the components in model `m`.
+Return an iterator on the components in a model's model instance.
 """
-@modelegate components(m::Model) => mi
+@delegate components(m::Model) => mi
 
-@modelegate compdefs(m::Model) => md
+@delegate compdefs(m::Model) => md
 
-@modelegate compdef(m::Model, comp_name::Symbol) => md
+@delegate compdef(m::Model, comp_name::Symbol) => md
 
-@modelegate numcomponents(m::Model) => md
+@delegate Base.length(m::Model) => md
 
-@modelegate first_and_step(m::Model) => md
+@delegate first_and_step(m::Model) => md
 
-@modelegate time_labels(m::Model) => md
+@delegate time_labels(m::Model) => md
 
 # Return the number of timesteps a given component in a model will run for.
-@modelegate getspan(m::Model, comp_name::Symbol) => md
+@delegate getspan(m::Model, comp_name::Symbol) => md
 
 """
     datumdef(comp_def::ComponentDef, item::Symbol)
@@ -224,11 +203,11 @@ Return an iterator on the components in model `m`.
 Return a DatumDef for `item` in the given component `comp_def`.
 """
 function datumdef(comp_def::ComponentDef, item::Symbol)
-    if haskey(comp_def.variables, item)
-        return comp_def.variables[item]
+    if has_variable(comp_def, item)
+        return variable(comp_def, item)
 
-    elseif haskey(comp_def.parameters, item)
-        return comp_def.parameters[item]
+    elseif has_parameter(comp_def, item)
+        return parameter(comp_def, item)
     else
         error("Cannot access data item; :$item is not a variable or a parameter in component $(comp_def.comp_id).")
     end
@@ -237,70 +216,71 @@ end
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
 """
-    dimensions(m::Model, comp_name::Symbol, datum_name::Symbol)
+    dim_names(m::Model, comp_name::Symbol, datum_name::Symbol)
 
 Return the dimension names for the variable or parameter `datum_name`
 in the given component `comp_name` in model `m`.
 """
-dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(m, comp_name), datum_name)
-dimensions(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dimensions(compdef(mm.base, comp_name), datum_name)
+dim_names(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(compdef(m, comp_name), datum_name)
+dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
 
-@modelegate dimension(m::Model, dim_name::Symbol) => md
+# TBD: Deprecated
+dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(m, comp_name, datum_name)
+dimensions(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
+
+@delegate dimension(m::Model, dim_name::Symbol) => md
 
 # Allow access of the form my_model[:grosseconomy, :tfp]
-@modelegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
+@delegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
 """
     dim_count(m::Model, dim_name::Symbol)
-    
+
 Return the size of index `dim_name` in model `m`.
 """
-@modelegate dim_count(m::Model, dim_name::Symbol) => md
-@modelegate dim_counts(m::Model, dims::Vector{Symbol}) => md
-@modelegate dim_count_dict(m::Model) => md
+@delegate dim_count(m::Model, dim_name::Symbol) => md
+@delegate dim_counts(m::Model, dims::Vector{Symbol}) => md
+@delegate dim_count_dict(m::Model) => md
 
 """
     dim_keys(m::Model, dim_name::Symbol)
-    
+
 Return keys for dimension `dim-name` in model `m`.
 """
-@modelegate dim_keys(m::Model, dim_name::Symbol) => md
+@delegate dim_keys(m::Model, dim_name::Symbol) => md
 """
     dim_key_dict(m::Model)
-    
+
 Return a dict of dimension keys for all dimensions in model `m`.
 """
-@modelegate dim_key_dict(m::Model) => md
+@delegate dim_key_dict(m::Model) => md
 """
     dim_values(m::Model, name::Symbol)
-    
+
 Return values for dimension `name` in Model `m`.
 """
-@modelegate dim_values(m::Model, name::Symbol) => md
+@delegate dim_values(m::Model, name::Symbol) => md
 """
     dim_value_dict(m::Model)
-    
+
 Return a dictionary of the values of all dimensions in Model `m`.
 """
-@modelegate dim_value_dict(m::Model) => md
+@delegate dim_value_dict(m::Model) => md
 """
     set_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})
 
 Set the values of `m` dimension `name` to integers 1 through `count`, if `keys`` is
 an integer; or to the values in the vector or range if `keys`` is either of those types.
 """
-function set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
-    set_dimension!(m.md, name, keys)
-    decache(m)
-end
+@delegate set_dimension!(m::Model, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange}) => md
 
-@modelegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
+@delegate check_parameter_dimensions(m::Model, value::AbstractArray, dims::Vector, name::Symbol) => md
 
-@modelegate parameter_names(m::Model, comp_name::Symbol) => md
+@delegate parameter_names(m::Model, comp_name::Symbol) => md
 
-@modelegate parameter_dimensions(m::Model, comp_name::Symbol, param_name::Symbol) => md
+@delegate parameter_dimensions(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-@modelegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
+@delegate parameter_unit(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
 parameter(m::Model, comp_def::ComponentDef, param_name::Symbol) = parameter(comp_def, param_name)
 
@@ -313,130 +293,96 @@ Return a list of the parameter definitions for `comp_name` in model `m`.
 """
 parameters(m::Model, comp_name::Symbol) = parameters(compdef(m, comp_name))
 
-function variable(m::Model, comp_name::Symbol, var_name::Symbol)
-    comp_def = compdef(m, comp_name)
-    return comp_def.variables[var_name]
-end
+variable(m::Model, comp_name::Symbol, var_name::Symbol) = variable(compdef(m, comp_name), var_name)
 
-function variable_unit(m::Model, comp_name::Symbol, var_name::Symbol)
-    var = variable(m, comp_name, var_name)
-    return var.unit
-end
+@delegate variable_unit(m::Model, comp_path::ComponentPath, var_name::Symbol) => md
 
-function variable_dimensions(m::Model, comp_name::Symbol, var_name::Symbol)
-    var = variable(m, comp_name, var_name)
-    return var.dimensions
-end
+@delegate variable_dimensions(m::Model, comp_path::ComponentPath, var_name::Symbol) => md
 
 """
     variables(m::Model, comp_name::Symbol)
 
-Return a list of the variable definitions for `comp_name` in model `m`.
+Return an iterator on the variable definitions for `comp_name` in model `m`.
 """
 variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 
-@modelegate variable_names(m::Model, comp_name::Symbol) => md
+@delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
     set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 
-Add a one or two dimensional (optionally, time-indexed) array parameter `name` 
+Add a one or two dimensional (optionally, time-indexed) array parameter `name`
 with value `value` to the model `m`.
 """
-function set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
-    set_external_array_param!(m.md, name, value, dims)
-    decache(m)
-end
+@delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
 
 """
     set_external_scalar_param!(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter `name` with value `value` to the model `m`.
 """
-function set_external_scalar_param!(m::Model, name::Symbol, value::Any)
-    set_external_scalar_param!(m.md, name, value)
-    decache(m)
-end
+@delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """
-    delete!(m::ModelDef, component::Symbol
+    delete!(m::Model, component::Symbol
 
 Delete a `component`` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
 """
-function Base.delete!(m::Model, comp_name::Symbol)
-    delete!(m.md, comp_name)
-    decache(m)
-end
+@delegate Base.delete!(m::Model, comp_name::Symbol) => md
 
 """
     set_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)
 
-Set the parameter of a component `comp_name` in a model `m` to a given `value`. 
-The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' 
-is a list of the dimension names of the provided data, and will be used to check 
+Set the parameter of a component `comp_name` in a model `m` to a given `value`.
+The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims'
+is a list of the dimension names of the provided data, and will be used to check
 that they match the model's index labels.
 """
-function set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    set_param!(m.md, comp_name, param_name, value, dims)    
-    decache(m)
-end
+@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
+
+"""
+    set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
+
+Set a parameter for a component with the given relative path (as a string), in which "/x" means the
+component with name `:x` beneath `m.md`. If the path does not begin with "/", it is treated as
+relative to `m.md`, which at the top of the hierarchy, produces the same result as starting with "/".
+"""
+@delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
+
+"""
+    set_param!(m::Model, path::AbstractString, value, dims=nothing)
+
+Similar to above but param_name appears in `path` after a colon delimiter.
+"""
+@delegate set_param!(m::Model, path::AbstractString, value, dims=nothing) => md
+
+"""
+    set_param!(m::Model, param_name::Symbol, value, dims=nothing)
+
+Set the value of a parameter exposed in the ModelDef (m.md).
+"""
+@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
+
+@delegate set_param!(m::Model, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing) => md
+
 
 """
     run(m::Model)
 
 Run model `m` once.
 """
-function Base.run(m::Model; ntimesteps::Int=typemax(Int), 
+function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
                   dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
-    if numcomponents(m) == 0
+    if length(m) == 0
         error("Cannot run a model with no components.")
     end
 
-    if m.mi === nothing
+    if (rebuild || ! is_built(m))
         build(m)
     end
 
     # println("Running model...")
-    run(m.mi, ntimesteps, dim_keys)
+    mi = modelinstance(m)
+    run(mi, ntimesteps, dim_keys)
     nothing
 end
-
-function _show(io::IO, obj::Model, which::Symbol)
-    println(io, "$(length(obj.md.comp_defs))-component Mimi.Model:")
-
-    md = obj.md
-    mi = obj.mi
-
-    # println(io, "  Module: $(md.module_name)")
-    
-    # println(io, "  Components:")
-    for comp in values(md.comp_defs)
-        println(io, "  $(comp.name)::$(comp.comp_id.module_name).$(comp.comp_id.comp_name)")
-    end
-    
-    if which == :full
-        println(io, "  Dimensions:")
-        for (k, v) in md.dimensions
-            println(io, "    $k => $v")
-        end
-
-        println(io, "  Internal Connections:")
-        for conn in md.internal_param_conns
-            println(io, "    $(conn)")
-        end
-
-        println(io, "  External Connections:")
-        for conn in md.external_param_conns
-            println(io, "    $(conn)")
-        end
-        
-        println(io, "  Backups: $(md.backups)")
-        println(io, "  Number type: $(md.number_type)")
-
-        println(io, "  Built: $(mi !== nothing)")    
-    end 
-end
-
-Base.show(io::IO, obj::Model) = _show(io, obj, :short)
-
-Base.show(io::IO, ::MIME"text/plain", obj::Model) = _show(io, obj, :short)

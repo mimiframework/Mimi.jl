@@ -4,11 +4,6 @@ using Mimi
 using NamedArrays
 using Test
 
-import Mimi:
-    reset_compdefs
-
-reset_compdefs()
-
 ############################################
 #    BASIC TEST - use NamedArrays (1/3)    #
 ############################################

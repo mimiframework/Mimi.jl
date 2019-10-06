@@ -3,11 +3,6 @@ module TestMarginalModels
 using Mimi
 using Test
 
-import Mimi:
-    reset_compdefs
-
-reset_compdefs()
-
 @defcomp compA begin
     varA = Variable(index=[time])
     parA = Parameter(index=[time])

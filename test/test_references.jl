@@ -4,9 +4,7 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_compdefs, getproperty, @defmodel
-
-reset_compdefs()
+    getproperty, @defmodel
 
 @defcomp Foo begin
     input = Parameter()
@@ -28,7 +26,7 @@ end
 
 
 @defmodel m begin
-    index[time] = [1]
+    index[time] = [1, 2]
     component(Foo)
     component(Bar)
 

@@ -2,13 +2,18 @@
 using Dates
 using CSVFiles
 
+function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dim_names(m, comp_name, item_name)
+    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
+end
+
 ##
 ## 1. Generate the VegaLite spec for a variable or parameter
 ##
 
 # Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
 
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
@@ -60,7 +65,7 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
     m = sim_inst.models[model_index]
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
     dffields = map(string, names(results))         # convert to string once before creating specs
 
     name = "$comp_name : $item_name"          
@@ -97,7 +102,7 @@ end
 function menu_item_list(model::Model)
     all_menuitems = []
 
-    for comp_name in map(name, compdefs(model)) 
+    for comp_name in map(nameof, compdefs(model)) 
         items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
 
         for item_name in items
@@ -127,7 +132,7 @@ function menu_item_list(sim_inst::SimulationInstance)
 end
 
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dimensions(m, comp_name, item_name)
+    dims = dim_names(m, comp_name, item_name)
 
     if length(dims) == 0
         value = m[comp_name, item_name]
@@ -145,7 +150,7 @@ end
 
 function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbol})
     (comp_name, item_name) = datum_key
-    dims = dimensions(sim_inst.models[1], comp_name, item_name)
+    dims = dim_names(sim_inst.models[1], comp_name, item_name)
     if length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
         return nothing
@@ -1015,12 +1020,6 @@ function getdatapart_2d(cols, dffields, numrows, datasb)
         end
     end
     return String(datasb)
-end
-
-# Other helper functions
-function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dimensions(m, comp_name, item_name)
-    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
 end
 
 function trumpet_df_reduce(df, plottype::Symbol)

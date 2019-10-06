@@ -4,9 +4,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    compdef, reset_compdefs, first_period, last_period
-
-reset_compdefs()
+    compdef, compname, compmodule, first_period, last_period, variable_names
 
 @defcomp ch4forcing1 begin
     c_N2Oconcentration = Parameter(index=[time],unit="ppbv")
@@ -37,15 +35,25 @@ end
     component(ch4forcing1, ch4forcing2) # add another one with a different name
 end
 
+c0 = ch4forcing1
+@test compmodule(c0) == TestMetaInfo
+@test compname(c0) == :ch4forcing1
+@test nameof(c0) == :ch4forcing1
+
+# These are deepcopies of c0 that are added to test_model
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)
 
-@test c1 == compdef(test_model, :ch4forcing1)
+@test c1.comp_id == ch4forcing1.comp_id
 @test_throws KeyError compdef(test_model, :missingcomp)
 
-@test c2.comp_id.module_name == Main.TestMetaInfo
-@test c2.comp_id.comp_name == :ch4forcing1
-@test c2.name == :ch4forcing2
+@test variable_names(c1) == variable_names(c0)
+@test_throws KeyError compdef(test_model, :missingcomp)
+
+@test compmodule(c2) == Main.TestMetaInfo
+#@test compmodule(c2) == :TestMetaInfo
+@test compname(c2) == :ch4forcing1
+@test nameof(c2) == :ch4forcing2
 
 vars = Mimi.variable_names(c2)
 @test length(vars) == 3

@@ -6,10 +6,8 @@ using Test
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
     TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty, Clock, time_index, get_timestep_array, reset_compdefs, 
+    gettime, getproperty, Clock, time_index, get_timestep_array,
     is_timestep, is_time
-
-reset_compdefs()
 
 #------------------------------------------------------------------------------
 #  Test basic timestep functions and Base functions for Fixed Timestep 
@@ -68,7 +66,10 @@ t3 = VariableTimestep{years}(42)
 
 t4 = next_timestep(t3)
 @test is_timestep(t4, 43)
-@test is_time(t4, 2106) #note here that this comes back to an assumption made in variable timesteps that we may assume the next step is 1 year
+
+# note here that this comes back to an assumption made in variable 
+# timesteps that we may assume the next step is 1 year
+@test is_time(t4, 2106) 
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 
@@ -108,11 +109,12 @@ first_foo = 2005
 m = Model()
 set_dimension!(m, :time, years)
 
+# first and last disabled
 # test that you can only add components with first/last within model's time index range
-@test_throws ErrorException add_comp!(m, Foo; first=1900)
-@test_throws ErrorException add_comp!(m, Foo; last=2100)
+# @test_throws ErrorException add_comp!(m, Foo; first=1900)
+# @test_throws ErrorException add_comp!(m, Foo; last=2100)
 
-foo = add_comp!(m, Foo; first=first_foo) # offset for foo
+foo = add_comp!(m, Foo) # DISABLED: first=first_foo) # offset for foo
 bar = add_comp!(m, Bar)
 
 set_param!(m, :Foo, :inputF, 5.)
@@ -123,9 +125,10 @@ run(m)
 @test length(m[:Foo, :output]) == length(years)
 @test length(m[:Bar, :output]) == length(years)
 
-dim = Mimi.Dimension(years)
-foo_output = m[:Foo, :output][dim[first_foo]:dim[years[end]]]
-for i in 1:6
+yr_dim = Mimi.Dimension(years)
+idxs = yr_dim[first_foo]:yr_dim[years[end]]
+foo_output = m[:Foo, :output]
+for i in idxs
     @test foo_output[i] == 5+i
 end
 
@@ -149,20 +152,17 @@ set_dimension!(m, :time, 2000:2009)
 vector = ones(5)
 matrix = ones(3,2)
 
-t_vector= get_timestep_array(m.md, Float64, 1, 1, vector)
+t_vector = get_timestep_array(m.md, Float64, 1, 1, vector)
 t_matrix = get_timestep_array(m.md, Float64, 2, 1, matrix)
 
 @test typeof(t_vector) <: TimestepVector
 @test typeof(t_matrix) <: TimestepMatrix
 
 
-#try with variable timestep
-@test_logs(
-    # (:warn, "Redefining dimension :time"),
-    set_dimension!(m, :time, [2000:1:2004; 2005:2:2016])
-)
+# try with variable timestep
+set_dimension!(m, :time, [2000:1:2004; 2005:2:2009])
 
-t_vector= get_timestep_array(m.md, Float64, 1, 1, vector)
+t_vector = get_timestep_array(m.md, Float64, 1, 1, vector)
 t_matrix = get_timestep_array(m.md, Float64, 2, 2, matrix)
 
 @test typeof(t_vector) <: TimestepVector
@@ -185,7 +185,7 @@ end
 m2 = Model()
 set_dimension!(m2, :time, years)
 bar = add_comp!(m2, Bar)
-foo2 = add_comp!(m2, Foo2, first=first_foo)
+foo2 = add_comp!(m2, Foo2) # , first=first_foo)
 
 set_param!(m2, :Bar, :inputB, collect(1:length(years)))
 
@@ -195,7 +195,7 @@ connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
-foo_output2 = m2[:Foo2, :output][dim[first_foo]:dim[years[end]]]
+foo_output2 = m2[:Foo2, :output][yr_dim[first_foo]:yr_dim[years[end]]]
 for i in 1:6
     @test foo_output2[i] == (i+5)^2
 end
@@ -218,11 +218,12 @@ years = 2000:2010
 m3 = Model()
 
 set_dimension!(m3, :time, years)
-add_comp!(m3, Foo, first=2005)
+add_comp!(m3, Foo) #, first=2005)
 add_comp!(m3, Bar2)
 
 set_param!(m3, :Foo, :inputF, 5.)
 connect_param!(m3, :Bar2, :inputB, :Foo, :output, zeros(length(years)))
+
 run(m3)
 
 @test length(m3[:Foo, :output]) == 11

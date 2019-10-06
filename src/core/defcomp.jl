@@ -3,20 +3,13 @@
 #
 using MacroTools
 
-global defcomp_verbosity = false
-
-function set_defcomp_verbosity(value::Bool)
-    global defcomp_verbosity = value
-    nothing
-end
-
-# Store a list of built-in components so we can suppress messages about creating them
-# TBD: and (later) suppress their return in the list of components at the user level.
+# Store a list of built-in components so we can suppress messages about creating them.
+# TBD: suppress returning these in the list of components at the user level.
 const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
 
 is_builtin(comp_name) = comp_name in built_in_comps
 
-function _generate_run_func(comp_name, args, body)
+function _generate_run_func(comp_name, module_name, args, body)
     if length(args) != 4
         error("Can't generate run_timestep; requires 4 arguments but got $args")
     end
@@ -25,13 +18,13 @@ function _generate_run_func(comp_name, args, body)
 
     # Generate unique function name for each component so we can store a function pointer.
     # (Methods requiring dispatch cannot be invoked directly. Could use FunctionWrapper here...)
-    func_name = Symbol("run_timestep_$comp_name")
+    func_name = Symbol("run_timestep_$(module_name)_$(comp_name)")
 
     # Needs "global" so function is defined outside the "let" statement
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
                                      $(v)::Mimi.ComponentInstanceVariables, 
-                                     $(d)::Mimi.DimDict, 
+                                     $(d)::Mimi.DimValueDict, 
                                      $(t)::T) where {T <: Mimi.AbstractTimestep}
             $(body...)
             return nothing
@@ -40,7 +33,7 @@ function _generate_run_func(comp_name, args, body)
     return func
 end
 
-function _generate_init_func(comp_name, args, body)
+function _generate_init_func(comp_name, module_name, args, body)
 
     if length(args) != 3
         error("Can't generate init function; requires 3 arguments but got $args")
@@ -49,12 +42,12 @@ function _generate_init_func(comp_name, args, body)
     # add types to the parameters  
     (p, v, d) = args
 
-    func_name = Symbol("init_$comp_name")
+    func_name = Symbol("init_$(module_name)_$(comp_name)")
 
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
                                      $(v)::Mimi.ComponentInstanceVariables, 
-                                     $(d)::Mimi.DimDict)
+                                     $(d)::Mimi.DimValueDict)
             $(body...)
             return nothing
         end
@@ -75,9 +68,33 @@ function _check_for_known_element(name)
     end
 end
 
+# Add a variable to a ComponentDef. CompositeComponents have no vars of their own,
+# only references to vars in components contained within.
+function add_variable(comp_def::ComponentDef, name, datatype, dimensions, description, unit)
+    v = VariableDef(name, comp_def.comp_path, datatype, dimensions, description, unit)
+    comp_def[name] = v            # adds to namespace and checks for duplicate
+    return v
+end
+
+# Add a variable to a ComponentDef referenced by ComponentId
+function add_variable(comp_id::ComponentId, name, datatype, dimensions, description, unit)
+    add_variable(compdef(comp_id), name, datatype, dimensions, description, unit)
+end
+
+function add_parameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
+    p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
+    comp_def[name] = p            # adds to namespace and checks for duplicate
+    dirty!(comp_def)
+    return p
+end
+
+function add_parameter(comp_id::ComponentId, name, datatype, dimensions, description, unit, default)
+    add_parameter(compdef(comp_id), name, datatype, dimensions, description, unit, default)
+end
+
 # Generates an expression to construct a Variable or Parameter
 function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc, unit)
-    func_name = elt_type == :Parameter ? :addparameter : :addvariable
+    func_name = elt_type == :Parameter ? :add_parameter : :add_variable
     args = [datatype, dimensions, desc, unit]
     if elt_type == :Parameter
         push!(args, dflt)
@@ -131,16 +148,16 @@ macro defcomp(comp_name, ex)
     @capture(ex, elements__)
     @debug "Component $comp_name"
 
-    # Allow explicit definition of module to define component in
+    # TBD: Allow explicit definition of module to define component in
     if @capture(comp_name, module_name_.cmpname_)       # e.g., Mimi.adder
         comp_name = cmpname
     end
 
     # We'll return a block of expressions that will define the component.
-    # @__MODULE__ is evaluated when the expanded macro is interpreted
+    # N.B. @__MODULE__ is evaluated when the expanded macro is interpreted.
     result = :(
-        let current_module = @__MODULE__,
-            comp_id = Mimi.ComponentId(current_module, $(QuoteNode(comp_name))),
+        let calling_module = @__MODULE__,
+            comp_id = Mimi.ComponentId(calling_module, $(QuoteNode(comp_name))),
             comp = Mimi.ComponentDef(comp_id)
 
             global $comp_name = comp
@@ -165,11 +182,11 @@ macro defcomp(comp_name, ex)
         if @capture(elt, function fname_(args__) body__ end)
             if fname == :run_timestep
                 body = elt.args[2].args  # replace captured body with this, which includes line numbers
-                expr = _generate_run_func(comp_name, args, body)
+                expr = _generate_run_func(comp_name, nameof(__module__), args, body)
 
             elseif fname == :init
                 body = elt.args[2].args  # as above
-                expr = _generate_init_func(comp_name, args, body)
+                expr = _generate_init_func(comp_name, nameof(__module__), args, body)
             else
                 error("@defcomp can contain only these functions: init(p, v, d) and run_timestep(p, v, d, t)")
             end
@@ -249,7 +266,7 @@ macro defcomp(comp_name, ex)
                 end
             end
 
-            vartype = (vartype === nothing ? Number : Base.eval(Main, vartype))
+            vartype = (vartype === nothing ? Number : Main.eval(vartype))
             addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
 
         else
@@ -258,76 +275,5 @@ macro defcomp(comp_name, ex)
     end
 
     addexpr(:(nothing))         # reduces noise
-    return esc(result)
-end
-
-"""
-    defmodel(model_name::Symbol, ex::Expr)
-
-Define a Mimi model. The following types of expressions are supported:
-
-1. `component(name)`                            # add comp to model
-2. `dst_component.name = ex::Expr`              # provide a value for a parameter
-3. `src_component.name => dst_component.name`   # connect a variable to a parameter
-4. `index[name] = iterable-of-values`           # define values for an index
-"""
-macro defmodel(model_name, ex)
-    @capture(ex, elements__)
-
-    # @__MODULE__ is evaluated in calling module when macro is interpreted
-    result = :(
-        let calling_module = @__MODULE__, comp_mod_name = nothing
-            global $model_name = Model()
-        end
-    )
-    
-    # helper function used in loop below
-    function addexpr(expr)
-        let_block = result.args[end].args
-        push!(let_block, expr)
-    end
-
-    for elt in elements
-        offset = 0
-
-        if @capture(elt, component(comp_mod_name_name_.comp_name_)    | component(comp_name_) |
-                         component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
-
-            # set local copy of comp_mod_name to the stated or default component module
-            expr = (comp_mod_name === nothing ? :(comp_mod_name = calling_module) : :(comp_mod_name = comp_mod_name))
-            addexpr(expr)
-
-            name = (alias === nothing ? comp_name : alias)
-            expr = :(add_comp!($model_name, Mimi.ComponentId(comp_mod_name, $(QuoteNode(comp_name))), $(QuoteNode(name))))
-
-        # TBD: extend comp.var syntax to allow module name, e.g., FUND.economy.ygross
-        elseif (@capture(elt, src_comp_.src_name_[arg_] => dst_comp_.dst_name_) ||
-                @capture(elt, src_comp_.src_name_ => dst_comp_.dst_name_))
-            if (arg !== nothing && (! @capture(arg, t - offset_) || offset <= 0))
-                error("Subscripted connection source must have subscript [t - x] where x is an integer > 0")
-            end
-
-            expr = :(Mimi.connect_param!($model_name,
-                                         $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
-                                         $(QuoteNode(src_comp)), $(QuoteNode(src_name)), 
-                                         offset=$offset))
-
-        elseif @capture(elt, index[idx_name_] = rhs_)
-            expr = :(Mimi.set_dimension!($model_name, $(QuoteNode(idx_name)), $rhs))
-
-        elseif @capture(elt, comp_name_.param_name_ = rhs_)
-            expr = :(Mimi.set_param!($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
-
-        else
-            # Pass through anything else to allow the user to define intermediate vars, etc.
-            println("Passing through: $elt")
-            expr = elt
-        end
-
-        addexpr(expr)
-    end
-
-    # addexpr(:($model_name))     # return this or nothing?
-    addexpr(:(nothing))
     return esc(result)
 end

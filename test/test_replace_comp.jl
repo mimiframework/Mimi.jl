@@ -3,9 +3,7 @@ module TestReplaceComp
 using Test
 using Mimi
 import Mimi:
-    reset_compdefs
-
-reset_compdefs()
+    compdefs, compname, compdef, comp_id, external_param_conns, external_params
 
 @defcomp X begin    
     x = Parameter(index = [time])
@@ -43,15 +41,13 @@ end
     y = Variable()                          # different variable dimensions
 end
 
-
-
 # 1. Test scenario where the replacement works
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
 set_param!(m, :X, :x, zeros(6))
-replace_comp!(m, X_repl, :X)            # Successfully replaced by X_repl
+replace_comp!(m, X_repl, :X)            # Replace X with X_repl
 run(m)
 @test length(components(m)) == 1        # Only one component exists in the model
 @test m[:X, :y] == 2 * ones(6)          # Successfully ran the run_timestep function from X_repl
@@ -66,7 +62,8 @@ add_comp!(m, X, :second)
 connect_param!(m, :second => :x, :first => :y)              # Make an internal connection with a parameter with a time dimension
 @test_throws ErrorException replace_comp!(m, bad1, :second) # Cannot make reconnections because :x in bad1 has different dimensions 
 replace_comp!(m, bad1, :second, reconnect = false)          # Can replace without reconnecting
-@test m.md.comp_defs[:second].comp_id.comp_name == :bad1    # Successfully replaced
+second = compdef(m, :second)
+@test second.comp_id.comp_name == :bad1                     # Successfully replaced
 
 
 # 3. Test bad internal outgoing variable
@@ -78,7 +75,8 @@ add_comp!(m, X, :second)
 connect_param!(m, :second => :x, :first => :y)              # Make an internal connection from a variable with a time dimension
 @test_throws ErrorException replace_comp!(m, bad2, :first)  # Cannot make reconnections because bad2 does not have a variable :y
 replace_comp!(m, bad2, :first, reconnect = false)           # Can replace without reconnecting
-@test m.md.comp_defs[:first].comp_id.comp_name == :bad2     # Successfully replaced
+first = compdef(m, :first)
+@test first.comp_id.comp_name == :bad2                      # Successfully replaced
 
 
 # 4. Test bad external parameter name
@@ -94,9 +92,9 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
     replace_comp!(m, bad3, :X)
 )
 
-@test m.md.comp_defs[:X].comp_id.comp_name == :bad3 # The replacement was still successful
-@test length(m.md.external_param_conns) == 0        # The external paramter connection was removed
-@test length(m.md.external_params) == 1             # The external parameter still exists
+@test compname(compdef(m, :X)) == :bad3            # The replacement was still successful
+@test length(external_param_conns(m)) == 0         # The external parameter connection was removed
+@test length(external_params(m)) == 1              # The external parameter still exists
 
 
 # 5. Test bad external parameter dimensions
@@ -125,17 +123,19 @@ add_comp!(m, X)
 @test_throws ErrorException replace_comp!(m, X_repl, :Z)    # Component Z does not exist in the model, cannot be replaced
 
 
-# 8. Test original postion placement functionality
+# 8. Test original position placement functionality
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X, :c1)    
 add_comp!(m, X, :c2)
 add_comp!(m, X, :c3)
-replace_comp!(m, X_repl, :c3)   # test replacing the last component
-@test collect(values(m.md.comp_defs))[3].comp_id.comp_name == :X_repl
+
+replace_comp!(m, X_repl, :c3)        # test replacing the last component
+@test compdef(m, :c3).comp_id == X_repl.comp_id
+
 replace_comp!(m, X_repl, :c2)        # test replacing not the last one
-@test collect(values(m.md.comp_defs))[2].comp_id.comp_name == :X_repl
+@test compdef(m, :c2).comp_id == X_repl.comp_id
 
 
 end # module

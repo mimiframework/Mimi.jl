@@ -5,9 +5,7 @@ using Test
 
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, Clock, timestep, time_index, 
-    advance, reset_compdefs
-
-reset_compdefs()
+    advance
 
 t_f = FixedTimestep{1850, 10, 3000}(1)
 c_f = Clock{FixedTimestep}(1850, 10, 3000)
