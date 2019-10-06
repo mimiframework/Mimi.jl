@@ -11,7 +11,7 @@ This tutorial walks through the steps to download, run, and view the output of a
 Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
@@ -56,7 +56,7 @@ Note that these steps should be relatively consistent across models, where a rep
 
 In this case, the function `get_model` has the signature
 ```julia
-MimiFUND.get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
+get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:
 ```julia
@@ -90,7 +90,6 @@ m[:socioeconomic, :income][100]
 # output
 
 20980.834204000927
-
 ```
 
 You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
@@ -118,7 +117,6 @@ getdataframe(m, :socioeconomic=>:income)[1:5,:] # first five rows
 │ 3   │ 1950  │ WEU     │ 1913.32  │
 │ 4   │ 1950  │ JPK     │ 616.022  │
 │ 5   │ 1950  │ ANZ     │ 119.058  │
-
 ```
 
 ### Step 4. Access Results: Plots and Graphs

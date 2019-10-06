@@ -1,11 +1,18 @@
 # Tutorial 4: Sensitivity Analysis (SA) Support
 
+```@meta
+DocTestSetup = quote
+    using Mimi
+    using Distributions
+end
+```
+
 This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
 
 Working through the following tutorial will require:
 
-- [Julia v1.0.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl) 
+- [Julia v1.1.0](https://julialang.org/downloads/) or higher
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
@@ -37,7 +44,7 @@ The `@defsim` macro, which defines random variables (RVs) which are assigned dis
 simple random sampling being the default. Other options include Latin Hypercube Sampling, and Sobol
 Sampling.
 
-```julia
+```jldoctest tutorial4; output = false
 sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
@@ -72,19 +79,28 @@ sd = @defsim begin
     # assignment of RVs, above.
     save(grosseconomy.K, grosseconomy.YGROSS, 
          emissions.E, emissions.E_Global)
-end
+end;
+
+# output
+
+LHSData(Tuple{Symbol,Symbol,Float64}[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
+
 ```
 
 ### Step 3. Optional User-Defined Functions
 Next, create the user-defined `print_result` function, which can be called as a post-trial function by `run`.
 
- ```julia
+ ```jldoctest tutorial4; output = false
 # Optional user functions can be called just before or after a trial is run
 function print_result(m::Model, sim_inst::SimulationInstance, trialnum::Int)
     ci = Mimi.compinstance(m.mi, :emissions)
     value = Mimi.get_variable_value(ci, :E_Global)
     println("$(ci.comp_id).E_Global: $value")
 end
+
+# output
+
+print_result (generic function with 1 method)
 ```
 
 where `tup` is a tuple of scenario arguments representing one element in the cross-product
@@ -246,45 +262,59 @@ Case: We want to do an SCC calculation across a base and marginal model of `Mimi
 
 The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sim_def`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 
-```julia
+```jldoctest tutorial4; output = false
 using Mimi
 using MimiDICE2010
+using Distributions
 
-# define your trial number
+# define your trial number and discount rates
 N = 1000000 
+discount_rates = [0.3, 0.5, 0.7]
 
 # define your simulation (defaults to Monte Carlo sampling)
 sd = @defsim begin
-    t2xco2 = MyDistribution()
+    t2xco2 = Truncated(Gamma(6.47815626,0.547629469), 1.0, Inf) # a dummy distribution
 end
+
+# output
+
+MCSData()
 ```
 
 Next, we prepare our post-trial calculations by setting up a `scc_results` array to hold the results.  We then define a `post_trial_function` called `my_scc_calculation` which will calculate the SCC for that run.
 
-```julia
+```jldoctest tutorial4; output = false
 scc_results = zeros(N, length(discount_rates))
 
 function my_scc_calculation(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Tuple)
-    base, marginal = sim_inst.models
+    base = sim_inst.models[1]
+    marginal = sim_inst.models[2]
     base_damages = base[:neteconomy, :DAMAGES]
     marg_damages = marginal[:neteconomy, :DAMAGES]
     for (i, df) in enumerate(dfs)
         scc_results[trialnum, i] = sum(df .* (marg_damages .- base_damages))
     end
 end
+
+# output
+
+my_scc_calculation (generic function with 1 method)
 ```
 
 Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation.
 
 ```julia
 # Build the base model
-base = construct_dice()
+base = MimiDICE2010.get_model()
 
-#Build the marginal model, which here involves a dummy function `construct_marginal_dice()` that you will need to write
-marginal = construct_marginal_dice(year) 
+#Build the marginal model
+mm = MimiDICE2010.get_marginal_model(m, year = 2015)
 
 # Run
-si = run(sd, [base, marginal], N; trials_output_filename = "ecs_sample.csv", post_trial_func = my_scc_calculation)
+si = run(sd, [mm.base, mm.marginal], N; trials_output_filename = "ecs_sample.csv", post_trial_func = my_scc_calculation)
+
+# output
+
 ```
 ## Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
@@ -297,3 +327,7 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `addSave!`
 * `set_payload!`
 * `payload`
+
+```@meta
+DocTestSetup = nothing
+```

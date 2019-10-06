@@ -33,13 +33,13 @@ _Additional AERE Workshop Tutorials: The Mimi developement team recently partici
 
 ## Requirements and Initial Setup
 
-These tutorials require [Julia v1.0.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. 
+These tutorials require [Julia v1.1.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. 
 
 To use the following tutorials, follow the steps below.
 
-1. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.0.0 or later.
+1. Download the latest version of Julia [here](https://julialang.org/downloads/), making sure that your downloaded version is v1.1.0 or later.
 
-2. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode, and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.6.0 or later.
+2. Open a Julia REPL, and enter `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode, and then type `add Mimi` to install the latest tagged version of Mimi, which must be version 0.9.4 or later.
 
 ```
 pkg> add Mimi
@@ -53,10 +53,10 @@ pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 
 You only need to run this command once on a computer. 
 
-From there you will be add any of the registered packages, such as MimiRICE2010.jl by running the following command at the julia package REPL:
+From there you will be add any of the registered packages, such as MimiDICE2010.jl by running the following command at the julia package REPL:
 
 ```julia
-pkg> add MimiRICE2010
+pkg> add MimiDICE2010
 ```
 
 5. We also recommend that you frequently update your packages and requirements using the `update` command, which can be abbreviated `up`:

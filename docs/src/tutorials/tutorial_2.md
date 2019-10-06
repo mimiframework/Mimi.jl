@@ -1,11 +1,17 @@
 # Tutorial 2: Modify an Existing Model
 
+```@meta
+DocTestSetup = quote
+    using Mimi
+end
+```
+
 This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github [here](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
@@ -53,17 +59,20 @@ You have now successfully downloaded DICE to your local machine.
 
 The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  Now run DICE using the provided API for the package:
 
-```
+```jldoctest tutorial2; output = false
 using MimiDICE2010
-m = construct_dice()
+m = MimiDICE2010.get_model()
 run(m)
+
+# output
+
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` or `construct_ModelX` which returns a version of the model, and can allow for model customization within the call.
+Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `construct_dice` has the signature
+In this case, the function `MimiDICE2010.get_model()` has the signature
 ``` 
-construct_dice(params=nothing)
+get_model(params=nothing)
 ```
 Thus there are no required arguments, although the user can input `params`, a dictionary definining the parameters of the model. 
 
@@ -71,19 +80,25 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
 
-```julia
+```jldoctest tutorial2; output = false
 update_param!(m, :fco22x, 3.000)
 run(m)
+
+# output
+
 ```
 
 A more complex example may a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself.  DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
 
 First you upate the `time` dimension of the model as follows:
-```julia
+```jldoctest tutorial2; output = false
 const ts = 10
 const years = collect(2000:ts:2500)
 nyears = length(years)
 set_dimension!(m, :time, years)
+
+# output
+
 ```
 
 Next, create a dictionary `params` with one entry (k, v) per external parameter by name k to value v. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
@@ -99,7 +114,7 @@ params[:S]          = repeat([0.23], nyears)
 
 Now you simply update the parameters listen in `params` and re-run the model with
 
-```
+```julia
 update_params!(m, params, update_timesteps=true)
 run(m)
 ```
@@ -119,3 +134,7 @@ If you wish to modify the component structure we recommend you also look into th
 ## Component and Structural Modifications: DICE Example
 
  This example is in progress and will be built out soon.
+
+```@meta
+DocTestSetup = nothing
+```
