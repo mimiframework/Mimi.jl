@@ -1,5 +1,11 @@
 # Tutorial 1: Run an Existing Model
 
+```@meta
+DocTestSetup = quote
+    using Mimi
+end
+```
+
 This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
 
 Working through the following tutorial will require:
@@ -30,34 +36,43 @@ In order to run FUND, you will need to have the packages `Distributions` and `St
 
 Now open a julia REPL and type 
 
-```
+```jldoctest tutorial1; output = false
 using MimiFUND
-```
-to access the public API to FUND, which currently includes the function `getfund`, a function that returns a version of fund allowing for different user specifications.  
+
+# output
 
 ```
-m = getfund()
+to access the public API to FUND, which currently includes the function `MimiFUND.get_model` (which can also be called with the exported and identical function `getfund`). This function returns a version of fund allowing for different user specifications.  
+
+```jldoctest tutorial1; output = false
+m = MimiFUND.get_model()
 run(m)
+
+# output
+
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` or `construct_ModelX` which returns a version of the model, and can allow for model customization within the call.
+Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `getfund` has the signature
-``` 
-getfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
+In this case, the function `get_model` has the signature
+```julia
+MimiFUND.get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:
-```
+```julia
 using MimiFUND
-m = getfund(nsteps = 100)
+m = MimiFUND.get_model(nsteps = 100)
 run(m)
 ```
 ### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
 Start off by importing the Mimi package to your space with 
-```
+```jldoctest tutorial1; output = false
 using Mimi
+
+# output
+
 ```
 
 First of all, you may use the `getindex` syntax as follows:
@@ -68,9 +83,14 @@ m[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
 Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component using the code below:
-```
+```jldoctest tutorial1; output = false
 m[:socioeconomic, :income] 
 m[:socioeconomic, :income][100] 
+
+# output
+
+20980.834204000927
+
 ```
 
 You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
@@ -83,8 +103,22 @@ getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from
 ```
 
 Try doing this for the `income` variable of the `socioeconomic` component using:
-```
+```jldoctest tutorial1; output = false
 getdataframe(m, :socioeconomic=>:income) # request one variable from one component
+getdataframe(m, :socioeconomic=>:income)[1:5,:] # first five rows
+
+# output
+
+5×3 DataFrames.DataFrame
+│ Row │ time  │ regions │ income   │
+│     │ Int64 │ String  │ Float64⍰ │
+├─────┼───────┼─────────┼──────────┤
+│ 1   │ 1950  │ USA     │ 1643.9   │
+│ 2   │ 1950  │ CAN     │ 84.8225  │
+│ 3   │ 1950  │ WEU     │ 1913.32  │
+│ 4   │ 1950  │ JPK     │ 616.022  │
+│ 5   │ 1950  │ ANZ     │ 119.058  │
+
 ```
 
 ### Step 4. Access Results: Plots and Graphs
@@ -98,7 +132,7 @@ Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega
 If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
-```
+```julia
 explore(m, title = "My Window")
 ```
 Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
@@ -127,3 +161,7 @@ plot_comp_graph(m, "MyFilePath.png")
 ### Step 4. Tutorial 2
 
 Next, feel free to move on to the second tutorial, which will go into depth on how to **modify** an existing model such as FUND!
+
+```@meta
+DocTestSetup = nothing
+```
