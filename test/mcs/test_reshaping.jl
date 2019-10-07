@@ -7,10 +7,8 @@ using DelimitedFiles
 
 using Test
 
-using Mimi: reset_compdefs, modelinstance, compinstance, 
-            get_var_value, OUTER, INNER, ReshapedDistribution
+using Mimi: modelinstance, compinstance, get_var_value, OUTER, INNER, ReshapedDistribution
 
-reset_compdefs()
 include("test-model/test-model.jl")
 using .TestModel
 m = create_model()

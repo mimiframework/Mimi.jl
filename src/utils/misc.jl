@@ -34,17 +34,13 @@ function interpolate(oldvalues::Vector{T}, ts::Int=10) where T <: Union{Float64,
     return newvalues
 end
 
-# MacroTools has a "prettify", so we have to import to "extend"
-# even though our function is unrelated. This seems unfortunate.
-import MacroTools.prettify
-
 """
-    MacroTools.prettify(s::String)
+    pretty_string(s::String)
     
 Accepts a camelcase or snakecase string, and makes it human-readable
 e.g. camelCase -> Camel Case; snake_case -> Snake Case
 """
-function MacroTools.prettify(s::String)
+function pretty_string(s::String)
     s = replace(s, r"_" => s" ")
     s = replace(s, r"([a-z])([A-Z])" =>  s"\1 \2")
     s = replace(s, r"([A-Z]+)([A-Z])" => s"\1 \2")        # handle case of consecutive caps by splitting last from rest
@@ -60,4 +56,21 @@ function MacroTools.prettify(s::String)
     return join(s_arr, " ")
 end
 
-prettify(s::Symbol) = prettify(string(s))
+pretty_string(s::Symbol) = pretty_string(string(s))
+
+"""
+    load_comps(dirname::String="./components")
+
+Call include() on all the files in the indicated directory `dirname`.
+This avoids having modelers create a long list of include()
+statements. Just put all the components in a directory.
+"""
+function load_comps(dirname::String="./components")
+    files = readdir(dirname)
+    for file in files
+        if endswith(file, ".jl")
+            pathname = joinpath(dirname, file)
+            include(pathname)
+        end
+    end
+end

@@ -50,11 +50,11 @@ end
 
 # Store results for a single parameter and return the dataframe for this particular
 # trial/scenario 
-function _store_param_results(m::Union{Model, MarginalModel}, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
+function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
-    dims = dimensions(m, comp_name, datum_name)
+    dims = dim_names(m, comp_name, datum_name)
     has_scen = ! (scen_name === nothing)
 
     if length(dims) == 0        # scalar value
@@ -240,7 +240,7 @@ function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSi
     param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(flat_model_list))
 
     for (i, m) in enumerate(flat_model_list)
-        md = m.mi.md
+        md = modelinstance_def(m)
         param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim_inst.sim_def.translist)
     end
 
@@ -284,7 +284,7 @@ function _restore_param!(param::ArrayModelParameter{T}, name::Symbol, md::ModelD
 end
 
 function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::TransformSpec) where T
-    pdims = dimensions(param)   # returns [] for scalar parameters
+    pdims = dim_names(param)   # returns [] for scalar parameters
     num_pdims = length(pdims)
 
     tdims  = trans.dims
@@ -388,14 +388,18 @@ end
 
 # Append a string representation of the tuple args to the given directory name
 function _compute_output_dir(orig_output_dir, tup)
-    output_dir = (orig_output_dir === nothing) ? nothing : joinpath(orig_output_dir, join(map(string, tup), "_"))
-    mkpath(output_dir, mode=0o750)
+    if orig_output_dir === nothing
+        output_dir = nothing
+    else
+        output_dir = joinpath(orig_output_dir, join(map(string, tup), "_"))
+        mkpath(output_dir, mode=0o750)
+    end
     return output_dir
 end
 
 """
     run(sim_def::SimulationDef{T}, 
-            models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}, Model, MarginalModel}, 
+            models::Union{Vector{M <: AbstractModel}, AbstractModel}, 
             samplesize::Int; 
             ntimesteps::Int=typemax(Int), 
             trials_output_filename::Union{Nothing, AbstractString}=nothing, 
@@ -444,7 +448,7 @@ along with mutated information about trials, in addition to the model list and
 results information.
 """
 function Base.run(sim_def::SimulationDef{T}, 
-                models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Any}, Model, MarginalModel}, 
+                models::Union{Vector{M}, AbstractModel}, 
                 samplesize::Int;
                 ntimesteps::Int=typemax(Int), 
                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
@@ -454,15 +458,15 @@ function Base.run(sim_def::SimulationDef{T},
                 scenario_func::Union{Nothing, Function}=nothing,
                 scenario_placement::ScenarioLoopPlacement=OUTER,
                 scenario_args=nothing,
-                results_in_memory::Bool=true) where T <: AbstractSimulationData
+                results_in_memory::Bool=true) where {T <: AbstractSimulationData, M <: AbstractModel}
 
     # If the provided models list has both a Model and a MarginalModel, it will be a Vector{Any}, and needs to be converted
     if models isa Vector{Any}
-        models = convert(Vector{Union{Model, MarginalModel}}, models)
+        models = convert(Vector{AbstractModel}, models)
     end
             
     # Quick check for results saving
-    if (!results_in_memory) && (results_output_dir===nothing)
+    if (!results_in_memory) && (results_output_dir === nothing)
         error("The results_in_memory keyword arg is set to ($results_in_memory) and 
         results_output_dir keyword arg is set to ($results_output_dir), thus 
         results will not be saved either in memory or in a file.")
@@ -479,13 +483,7 @@ function Base.run(sim_def::SimulationDef{T},
     end
 
     for m in sim_inst.models
-        if m isa MarginalModel
-            if m.base.mi === nothing || m.marginal.mi === nothing
-                build(m)
-            end
-        elseif m.mi === nothing
-            build(m)
-        end
+        is_built(m) || build(m)
     end
     
     trials = 1:sim_inst.trials
@@ -602,22 +600,22 @@ end
 
 # Set models
 """ 
-	    set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}})
+	    set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{M <: AbstractModel}})
 	
 	Set the `models` to be used by the SimulationDef held by `sim_inst`. 
 """
-function set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{Model}, Vector{MarginalModel}, Vector{Union{Model, MarginalModel}}}) where T <: AbstractSimulationData
+function set_models!(sim_inst::SimulationInstance{T}, models::Vector{M}) where {T <: AbstractSimulationData, M <: AbstractModel}
     sim_inst.models = models
     _reset_results!(sim_inst)    # sets results vector to same length
 end
 
 # Convenience methods for single model and MarginalModel
 """ 
-set_models!(sim_inst::SimulationInstance{T}, m::Union{Model, MarginalModel})
+set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)
 	
     Set the model `m` to be used by the Simulatoin held by `sim_inst`.
 """
-set_models!(sim_inst::SimulationInstance{T}, m::Union{Model, MarginalModel})  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
+set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
 
 
 #

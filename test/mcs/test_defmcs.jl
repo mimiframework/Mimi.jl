@@ -8,8 +8,7 @@ using CSVFiles
 
 using Test
 
-using Mimi: reset_compdefs, modelinstance, compinstance, 
-            get_var_value, OUTER, INNER, ReshapedDistribution
+using Mimi: modelinstance, compinstance, get_var_value, OUTER, INNER, ReshapedDistribution
 
 using CSVFiles: load
 

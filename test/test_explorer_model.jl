@@ -5,10 +5,7 @@ using VegaLite
 using Electron
 
 import Mimi: 
-    dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, 
-    reset_compdefs, dimensions
-
-reset_compdefs()
+    dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, dimensions
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])

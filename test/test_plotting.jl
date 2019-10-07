@@ -3,10 +3,7 @@ module TestPlotting
 using Mimi
 using Test
 
-import Mimi: 
-    reset_compdefs
-
-reset_compdefs()
+using Mimi: plot_comp_graph
 
 @defcomp LongComponent begin
     x = Parameter(index=[time])
@@ -31,8 +28,8 @@ m = Model()
 set_dimension!(m, :time, 2000:3000)
 nsteps = Mimi.dim_count(m.md, :time)
 
-add_comp!(m, ShortComponent; first=2100)
-add_comp!(m, LongComponent; first=2000)
+add_comp!(m, ShortComponent) #; first=2100)
+add_comp!(m, LongComponent) #; first=2000)
 
 set_param!(m, :ShortComponent, :a, 2.)
 set_param!(m, :LongComponent, :y, 1.)
