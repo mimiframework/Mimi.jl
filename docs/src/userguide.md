@@ -71,6 +71,7 @@ set_dimension!(m, :regions, ["USA", "EU", "LATAM"])
 
 # output
 
+["USA", "EU", "LATAM"]
 ```
 
 *A Note on Time Indexes:* It is important to note that the values used for the time index are the *start times* of the timesteps.  If the range or array of time values has a uniform timestep length, the model will run *through* the last year of the range with a last timestep period length consistent with the other timesteps.  If the time values are provided as an array with non-uniform timestep lengths, the model will run *through* the last year in the array with a last timestep period length *assumed to be one*. 

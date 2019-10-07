@@ -3,6 +3,7 @@
 ```@meta
 DocTestSetup = quote
     using Mimi
+    using MimiFUND
 end
 ```
 
