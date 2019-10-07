@@ -3,7 +3,6 @@
 ```@meta
 DocTestSetup = quote
     using Mimi
-    using Distributions
 end
 ```
 ## What's up with the name?
@@ -24,26 +23,22 @@ end
 m = Model()
 set_dimension!(m, :time, collect(2015:5:2110))
 add_comp!(m, MyComp)
+typeof(MyComp) # note the type is a Mimi Component Definition
 
 # output
 
-Mimi.ComponentReference(1-component Mimi.Model:
-  MyComp::MyComp
-, :MyComp)
-
+Mimi.ComponentDef
 ```
 
 If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
 
 ```jldoctest faq1; output = false
 mycomponent = Mimi.ComponentReference(m, :MyComp)
+typeof(mycomponent) # note the type is a Mimi Component Reference
 
 # output
 
-Mimi.ComponentReference(1-component Mimi.Model:
-  MyComp::MyComp
-, :MyComp)
-
+Mimi.ComponentReference
 ```
 
 You can use this component reference in place of the `set_param!` and `connect_param!` calls.

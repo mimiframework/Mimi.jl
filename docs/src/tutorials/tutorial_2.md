@@ -3,6 +3,7 @@
 ```@meta
 DocTestSetup = quote
     using Mimi
+    using MimiDICE2010
 end
 ```
 
@@ -99,6 +100,7 @@ set_dimension!(m, :time, years)
 
 # output
 
+[2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090  …  2400, 2410, 2420, 2430, 2440, 2450, 2460, 2470, 2480, 2490, 2500]
 ```
 
 Next, create a dictionary `params` with one entry (k, v) per external parameter by name k to value v. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:

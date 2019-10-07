@@ -13,7 +13,7 @@ While we will walk through the code step by step below, the full code for implem
 Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
