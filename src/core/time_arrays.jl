@@ -29,9 +29,9 @@ end
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
 
 # Helper function for getindex; throws a MissingException if data is missing, otherwise returns data
-function _missing_data_check(data)
+function _missing_data_check(data, t)
 	if data === missing
-		throw(MissingException("Cannot get index; data is missing. You may have tried to access a value that has not yet been computed."))
+		throw(MissingException("Cannot get index; data is missing. You may have tried to access a value in timestep $t that has not yet been computed."))
 	else
 		return data
 	end
@@ -61,24 +61,24 @@ end
 
 function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, FIRST, STEP, LAST}
 	data = v.data[ts.t]
-	_missing_data_check(data)
+	_missing_data_check(data, ts.t)
 end
 
 function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, ts::VariableTimestep{TIMES}) where {T, TIMES}
 	data = v.data[ts.t]
-	_missing_data_check(data)
+	_missing_data_check(data, ts.t)
 end
 
 function Base.getindex(v::TimestepVector{FixedTimestep{D_FIRST, STEP}, T}, ts::FixedTimestep{T_FIRST, STEP, LAST}) where {T, D_FIRST, T_FIRST, STEP, LAST}
 	t = Int(ts.t + (T_FIRST - D_FIRST) / STEP)
 	data = v.data[t]
-	_missing_data_check(data)
+	_missing_data_check(data, t)
 end
 
 function Base.getindex(v::TimestepVector{VariableTimestep{D_TIMES}, T}, ts::VariableTimestep{T_TIMES}) where {T, D_TIMES, T_TIMES}
 	t = ts.t + findfirst(isequal(T_TIMES[1]), D_TIMES) - 1
 	data = v.data[t]
-	_missing_data_check(data)
+	_missing_data_check(data, t)
 end
 
 # int indexing version supports old-style components and internal functions, not
@@ -133,47 +133,47 @@ Base.lastindex(v::TimestepVector) = length(v)
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 1}, ts::FixedTimestep{FIRST, STEP, LAST}, idx::AnyIndex) where {T, FIRST, STEP, LAST}
 	data = mat.data[ts.t, idx]
-	_missing_data_check(data)
+	_missing_data_check(data, ts.t)
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 1}, ts::VariableTimestep{TIMES}, idx::AnyIndex) where {T, TIMES}
 	data = mat.data[ts.t, idx]
-	_missing_data_check(data)
+	_missing_data_check(data, ts.t)
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{D_FIRST, STEP}, T, 1}, ts::FixedTimestep{T_FIRST, STEP, LAST}, idx::AnyIndex) where {T, D_FIRST, T_FIRST, STEP, LAST}
 	t = Int(ts.t + (T_FIRST - D_FIRST) / STEP)
 	data = mat.data[t, idx]
-	_missing_data_check(data)
+	_missing_data_check(data, t)
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 1}, ts::VariableTimestep{T_TIMES}, idx::AnyIndex) where {T, D_TIMES, T_TIMES}
 	t = ts.t + findfirst(isequal(T_TIMES[1]), D_TIMES) - 1
 	data = mat.data[t, idx]
-	_missing_data_check(data)
+	_missing_data_check(data, t)
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 2}, idx::AnyIndex, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, FIRST, STEP, LAST}
 	data = mat.data[idx, ts.t]
-	_missing_data_check(data)
+	_missing_data_check(data, ts.t)
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 2}, idx::AnyIndex, ts::VariableTimestep{TIMES}) where {T, TIMES}
 	# WAS THIS: data = mat.data[ts.t, idx, ts.t]
 	data = mat.data[idx, ts.t]
-	_missing_data_check(data)
+	_missing_data_check(data, ts.t)
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{D_FIRST, STEP}, T, 2}, idx::AnyIndex, ts::FixedTimestep{T_FIRST, STEP, LAST}) where {T, D_FIRST, T_FIRST, STEP, LAST}
 	t = Int(ts.t + (T_FIRST - D_FIRST) / STEP)
-	data = mat.data[idx, ts.t]
-	_missing_data_check(data)
+	data = mat.data[idx, t]
+	_missing_data_check(data, t)
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, idx::AnyIndex, ts::VariableTimestep{T_TIMES}) where {T, D_TIMES, T_TIMES}
 	t = ts.t + findfirst(isequal(T_TIMES[1]), D_TIMES) - 1
-	data = mat.data[idx, ts.t]
-	_missing_data_check(data)
+	data = mat.data[idx, t]
+	_missing_data_check(data, t)
 end
 
 
