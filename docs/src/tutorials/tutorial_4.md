@@ -4,10 +4,12 @@
 DocTestSetup = quote
     using Mimi
     using Distributions
+    include("../../../examples/tutorial/02-two-region-model/main.jl")
+    m = model 
 end
 ```
 
-This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
+This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
 
 Working through the following tutorial will require:
 
@@ -16,7 +18,7 @@ Working through the following tutorial will require:
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
-Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1, and then return to continue with this tutorial. Note that FUND is only requred for the second example in this tutorial. 
+Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running FUND, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1 and then return to continue with this tutorial. Note that FUND is only required for the second example in this tutorial. 
 
 ## The API
 
@@ -26,7 +28,7 @@ These are described further below. We will refer separately to two types, `Simul
 
 ## Two-Region Model Example
 
-This section will walk through the simple example provided in `"Mimi.jl/test/sim/test_defsim.jl"`.
+This section will walk through a simple example of how to define a simulation, run the simulation for a given model, and access the outputs.
 
 ### Step 1. Setup
 First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
@@ -40,9 +42,11 @@ m = model # defined by 2-region model
 ```
 
 ### Step 2. Define Random Variables
-The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, is the first step in the process. It also selects the sampling method, with
-simple random sampling being the default. Other options include Latin Hypercube Sampling, and Sobol
-Sampling.
+The `@defsim` macro is the first step in the process, and returns a SimulationDefinition. The following syntax allows users to define random variables (RVs) as distributions, 
+and associate model parameters with the defined random variables.
+
+The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. 
+Other options include Latin Hypercube sampling and Sobol sampling.
 
 ```jldoctest tutorial4; output = false
 sd = @defsim begin
@@ -84,71 +88,24 @@ end;
 # output
 
 LHSData(Tuple{Symbol,Symbol,Float64}[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
-
 ```
 
-### Step 3. Optional User-Defined Functions
-Next, create the user-defined `print_result` function, which can be called as a post-trial function by `run`.
+### Step 3. Run Simulation
 
- ```jldoctest tutorial4; output = false
-# Optional user functions can be called just before or after a trial is run
-function print_result(m::Model, sim_inst::SimulationInstance, trialnum::Int)
-    ci = Mimi.compinstance(m.mi, :emissions)
-    value = Mimi.get_variable_value(ci, :E_Global)
-    println("$(ci.comp_id).E_Global: $value")
-end
-
-# output
-
-print_result (generic function with 1 method)
-```
-
-where `tup` is a tuple of scenario arguments representing one element in the cross-product
-of all scenario value vectors. In situations in which you want the SA loop to run only
-some of the models, the remainder of the runs can be handled using a `pre_trial_func` or
-`post_trial_func`.
-
-### Step 4. Run Simulation
-
- Finally, use `run` which runs a simulation, indicating the `sim_def`, the `models` is a model, marginal model, or list of models to be run by your `sim_def` simulation, and `samplesize` the number of samples to use.
- 
-  In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list`models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Optionally, trial values and/or model results are saved to CSV files.  Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. View the internals documentation for **critical and useful details on the full signature of this function**:
-
-```
-function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
-                 ntimesteps::Int=typemax(Int), 
-                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
-                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
-                 pre_trial_func::Union{Nothing, Function}=nothing, 
-                 post_trial_func::Union{Nothing, Function}=nothing,
-                 scenario_func::Union{Nothing, Function}=nothing,
-                 scenario_placement::ScenarioLoopPlacement=OUTER,
-                 scenario_args=nothing,
-                 results_in_memory::Bool=true) where T <: AbstractSimulationData
-```
+Next, use the `run` function to run the simulation for the specified SimulationDefinition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the `run` function**.
 
 Here, we first employ `run` to obtain results:
 
-```julia
+```jldoctest tutorial4; output = false
 
-# Run 100 trials and save results to the indicated directories, one CSV file per RV for the results
+# Run 100 trials, and optionally save results to the indicated directories
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi")
 
 # Explore the results saved in-memory
-results = si[:grosseconomy, :K] # model index chosen defaults to 1
+results = si[:grosseconomy, :K]
 ```
 
-and then again using our user-defined post-trial function as the `post_trial_func` parameter:
-
-```julia
-# Same thing but with a post-trial function
-si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi", post_trial_func=print_result)
-
-# Explore the results saved in-memory
-results = si[:grosseconomy, :K] # model index chosen defaults to 1
-```
-
-### Step 5. Explore and Plot Results
+### Step 4. Explore and Plot Results
 
 As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
 
@@ -177,9 +134,24 @@ p = Mimi.plot(si, :grosseconomy, :K)
 save("MyFigure.png", p)
 ```
 
-## Advanced Post-trial Functions
+## Advanced Features
 
-While the model above employed a fairly simple `post_trial_func` that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run.  This can be especially usefu, for example,for calculating net present value of damages or the social cost of carbon (SCC) for each run.
+While the model above employed a fairly simple `post_trial_func` that printed out results, the post-trial functions can be used for more complex calculations that need to be made for each simulation run. This can be especially useful, for example, for calculating net present value of damages or the social cost of carbon (SCC) for each run.
+
+In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function returns a `SimulationInstance`, holding a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list`models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Optionally, trial values and/or model results are saved to CSV files.  Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. View the internals documentation for **critical and useful details on the full signature of this function**:
+
+```
+function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
+                 ntimesteps::Int=typemax(Int), 
+                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
+                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
+                 pre_trial_func::Union{Nothing, Function}=nothing, 
+                 post_trial_func::Union{Nothing, Function}=nothing,
+                 scenario_func::Union{Nothing, Function}=nothing,
+                 scenario_placement::ScenarioLoopPlacement=OUTER,
+                 scenario_args=nothing,
+                 results_in_memory::Bool=true) where T <: AbstractSimulationData
+```
 
 ### NPV of Damages
 
@@ -267,8 +239,8 @@ using Mimi
 using MimiDICE2010
 using Distributions
 
-# define your trial number and discount rates
-N = 1000000 
+# define your number of trials and discount rates
+N = 1000
 discount_rates = [0.3, 0.5, 0.7]
 
 # define your simulation (defaults to Monte Carlo sampling)
