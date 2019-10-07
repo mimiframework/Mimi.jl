@@ -288,12 +288,12 @@ si = run(sd, [base, marginal], N; trials_output_filename = "ecs_sample.csv", pos
 ```
 ## Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
-* `deleteRV!`
-* `addRV!`
-* `replaceRV!`
-* `deleteTransform!`
-* `addTransform!`
-* `deleteSave!`
-* `addSave!`
+* `delete_RV!`
+* `add_RV!`
+* `replace_RV!`
+* `delete_transform!`
+* `add_transform!`
+* `delete_save!`
+* `add_save!`
 * `set_payload!`
 * `payload`
