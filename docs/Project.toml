@@ -8,7 +8,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 Distributions = "0.21"
-Documenter = "~0.21"
+Documenter = "0.23"
 Mimi = "0.9.3"
 MimiDICE2010 = "0.1"
 MimiFUND = "3.11"

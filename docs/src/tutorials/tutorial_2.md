@@ -1,12 +1,5 @@
 # Tutorial 2: Modify an Existing Model
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-    using MimiDICE2010
-end
-```
-
 This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github [here](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:
@@ -79,7 +72,16 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 ### Step 3. Altering Parameters
 
-In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
+In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
+
+```jldoctest tutorial2; output = false
+using Mimi
+
+# output
+
+```
+
+For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
 
 ```jldoctest tutorial2; output = false
 update_param!(m, :fco22x, 3.000)
@@ -136,7 +138,3 @@ If you wish to modify the component structure we recommend you also look into th
 ## Component and Structural Modifications: DICE Example
 
  This example is in progress and will be built out soon.
-
-```@meta
-DocTestSetup = nothing
-```

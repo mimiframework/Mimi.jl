@@ -179,7 +179,6 @@ end
 
 add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
-# TBD: Recursively compute the lists on demand?
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
 external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
 

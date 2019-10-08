@@ -26,19 +26,12 @@ const AbstractMimiType = Union{MimiStruct, AbstractMimiClass}
 # To identify components, @defcomp creates a variable with the name of
 # the component whose value is an instance of this type.
 struct ComponentId <: MimiStruct
-    # Deprecated
-    # module_path::Union{Nothing, NTuple{N, Symbol} where N}
-    # module_name::Symbol
-
     module_obj::Union{Nothing, Module}
     comp_name::Symbol
 end
 
 # Modules cannot be deepcopied, thus the override
 Base.deepcopy_internal(x::ComponentId, dict::IdDict) = ComponentId(x.module_obj, x.comp_name)
-
-# Deprecated
-# ComponentId(module_name::Symbol, comp_name::Symbol) = ComponentId(nothing, module_name, nothing, comp_name)
 
 # ComponentPath identifies the path through multiple composites to a leaf comp.
 struct ComponentPath <: MimiStruct

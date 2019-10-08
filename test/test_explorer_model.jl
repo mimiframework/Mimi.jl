@@ -5,7 +5,7 @@ using VegaLite
 using Electron
 
 import Mimi: 
-    dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, dimensions
+    dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, dim_names
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
@@ -48,7 +48,7 @@ items = [:a, :b, :c, :d, :e, :f, :x]
 for item in items
     static_spec = _spec_for_item(m, :MyComp, item; interactive = false)
     interactive_spec = _spec_for_item(m, :MyComp, item)
-    if length(dimensions(m, :MyComp, item)) == 0
+    if length(dim_names(m, :MyComp, item)) == 0
         name =  string(:MyComp, " : ", item, " = ", m[:MyComp, item])
     else
         name = string(:MyComp, " : ", item)

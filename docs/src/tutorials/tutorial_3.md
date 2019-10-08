@@ -1,11 +1,5 @@
 # Tutorial 3: Create a Model
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-end
-```
-
 This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model. 
 
 While we will walk through the code step by step below, the full code for implementation is also available in the `examples/tutorial` folder in the [Mimi](https://github.com/mimiframework/Mimi.jl) github repository.
@@ -33,7 +27,7 @@ Next, the `run_timestep` function must be defined along with the various equatio
 It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
 
 ```jldoctest tutorial3; output = false
-using Mimi
+using Mimi # start by importing the Mimi package to your space
 
 @defcomp grosseconomy begin
 	YGROSS	= Variable(index=[time])	# Gross output
@@ -391,8 +385,4 @@ m[:emissions, :E_Global]
 # Observe model result graphs
 explore(m)
 
-```
-
-```@meta
-DocTestSetup = nothing
 ```
