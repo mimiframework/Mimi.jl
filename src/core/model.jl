@@ -224,10 +224,6 @@ in the given component `comp_name` in model `m`.
 dim_names(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(compdef(m, comp_name), datum_name)
 dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
 
-# TBD: Deprecated
-dimensions(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(m, comp_name, datum_name)
-dimensions(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
-
 @delegate dimension(m::Model, dim_name::Symbol) => md
 
 # Allow access of the form my_model[:grosseconomy, :tfp]
