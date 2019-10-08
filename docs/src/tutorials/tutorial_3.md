@@ -31,13 +31,13 @@ using Mimi # start by importing the Mimi package to your space
 
 @defcomp grosseconomy begin
 	YGROSS	= Variable(index=[time])	# Gross output
-	K	= Variable(index=[time])	# Capital
-	l	= Parameter(index=[time])	# Labor
-	tfp	= Parameter(index=[time])	# Total factor productivity
-	s	= Parameter(index=[time])	# Savings rate
-	depk	= Parameter()			# Depreciation rate on capital - Note that it has no time index
-	k0	= Parameter()			# Initial level of capital
-	share	= Parameter()			# Capital share
+	K	    = Variable(index=[time])	# Capital
+	l	    = Parameter(index=[time])	# Labor
+	tfp	    = Parameter(index=[time])	# Total factor productivity
+	s	    = Parameter(index=[time])	# Savings rate
+	depk	= Parameter()			    # Depreciation rate on capital - Note that it has no time index
+	k0	    = Parameter()			    # Initial level of capital
+	share	= Parameter()			    # Capital share
 
 	function run_timestep(p, v, d, t)
 		# Define an equation for K
@@ -61,7 +61,7 @@ Next, the component for greenhouse gas emissions must be created.  Although the 
 
 ```jldoctest tutorial3; output = false
 @defcomp emissions begin
-	E 	= Variable(index=[time])	# Total greenhouse gas emissions
+	E 	    = Variable(index=[time])	# Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	# Emissions output ratio
 	YGROSS	= Parameter(index=[time])	# Gross output - Note that YGROSS is now a parameter
 
