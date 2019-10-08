@@ -33,7 +33,6 @@ export
     is_last,
     is_time,
     is_timestep,
-    load_comps,
     modeldef,
     name,
     parameters, 
