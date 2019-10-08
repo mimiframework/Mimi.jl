@@ -6,7 +6,6 @@ DocTestSetup = quote
     using MimiFUND
     using MimiDICE2010
     using Distributions
-    include("../../../examples/tutorial/02-two-region-model/main.jl")
     m = model 
 end
 ```
