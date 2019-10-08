@@ -172,11 +172,6 @@ macro defcomposite(cc_name, ex)
         end
     end
 
-    # TBD: use fullname(__module__) to get "path" to module, as tuple of Symbols, e.g., (:Main, :ABC, :DEF)
-    # TBD: use Base.moduleroot(__module__) to get the first in that sequence, if needed
-    # TBD: parentmodule(m) gets the enclosing module (but for root modules returns self)
-    # TBD: might need to replace the single symbol used for module name in ComponentId with Module path.
-
     # @info "imports: $imports"
     # @info "  $(length(imports)) elements"
     # global IMP = imports
