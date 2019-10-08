@@ -103,6 +103,3 @@ using Documenter
         run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)
     end
 end
-
-# run doctests
-doctest(Mimi)
