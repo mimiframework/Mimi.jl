@@ -57,20 +57,3 @@ function pretty_string(s::String)
 end
 
 pretty_string(s::Symbol) = pretty_string(string(s))
-
-"""
-    load_comps(dirname::String="./components")
-
-Call include() on all the files in the indicated directory `dirname`.
-This avoids having modelers create a long list of include()
-statements. Just put all the components in a directory.
-"""
-function load_comps(dirname::String="./components")
-    files = readdir(dirname)
-    for file in files
-        if endswith(file, ".jl")
-            pathname = joinpath(dirname, file)
-            include(pathname)
-        end
-    end
-end
