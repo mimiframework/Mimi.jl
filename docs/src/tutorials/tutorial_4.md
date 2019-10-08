@@ -24,10 +24,16 @@ This section will walk through the simple example provided in `"Mimi.jl/test/sim
 ### Step 1. Setup
 First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
 
-```julia
-cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory
+```jldoctest tutorial4; output = false
+using Mimi
 using Distributions
 
+# output
+
+```
+
+```julia
+cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory
 include("examples/tutorial/02-two-region-model/main.jl")
 m = model # defined by 2-region model
 ```

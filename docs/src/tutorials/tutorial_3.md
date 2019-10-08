@@ -27,7 +27,7 @@ Next, the `run_timestep` function must be defined along with the various equatio
 It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
 
 ```jldoctest tutorial3; output = false
-using Mimi
+using Mimi # start by importing the Mimi package to your space
 
 @defcomp grosseconomy begin
 	YGROSS	= Variable(index=[time])	# Gross output

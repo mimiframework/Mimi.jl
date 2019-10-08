@@ -25,6 +25,8 @@ The user must define a `run_timestep` function for each component.
 We define a component in the following way:
 
 ```jldoctest; output = false
+using Mimi
+
 @defcomp MyComponentName begin
   regions = Index()
 
@@ -59,6 +61,8 @@ To access the data in a parameter or to assign a value to a variable, you must u
 The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers.  If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
 
 ```jldoctest; output = false
+using Mimi
+
 m = Model()
 set_dimension!(m, :time, 1850:2200)
 set_dimension!(m, :regions, ["USA", "EU", "LATAM"])

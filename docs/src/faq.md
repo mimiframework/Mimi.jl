@@ -9,6 +9,8 @@ The name is probably an acronym for "Modular Integrated Modeling Interface", but
 Component references allow you to write cleaner model code when connecting components.  The `add_comp!` function returns a reference to the component that you just added:
 
 ```jldoctest faq1; output = false
+using Mimi
+
 # create a component
 @defcomp MyComp begin
     # empty
