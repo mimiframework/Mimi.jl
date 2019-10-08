@@ -14,6 +14,10 @@ end
 # Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
     dims = dim_names(m, comp_name, item_name)
+    if length(dims) > 2
+        # Drop references to singleton dimensions
+        dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
+    end
 
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
@@ -29,12 +33,8 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         df = getdataframe(m, comp_name, item_name)
         dffields = map(string, names(df))         # convert to string once before creating specs
 
-        # check if there are too many dimensions to map and if so, error
-        if length(dffields) > 3
-            error()
-               
         # a 'time' field necessitates a line plot
-        elseif "time" in dffields
+        if "time" in dffields
 
             # need to reorder the df to have 'time' as the first dimension
             ti = findfirst(isequal("time"), dffields)
@@ -45,7 +45,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
             end
 
             if length(dffields) > 2
-                spec = createspec_multilineplot(name, df, dffields, interactive=interactive)
+                spec = createspec_multilineplot(name, df, dffields, dims, interactive=interactive)
             else
                 spec = createspec_lineplot(name, df, dffields, interactive=interactive)
             end
@@ -66,6 +66,11 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
     # and dataframe fields
     m = sim_inst.models[model_index]
     dims = dim_names(m, comp_name, item_name)
+    if length(dims) > 2
+        # Drop references to singleton dimensions
+        dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
+    end
+                    
     dffields = map(string, names(results))         # convert to string once before creating specs
 
     name = "$comp_name : $item_name"          
@@ -133,6 +138,10 @@ end
 
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     dims = dim_names(m, comp_name, item_name)
+    if length(dims) > 2
+        # Drop references to singleton dimensions
+        dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
+    end
 
     if length(dims) == 0
         value = m[comp_name, item_name]
@@ -151,6 +160,11 @@ end
 function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbol})
     (comp_name, item_name) = datum_key
     dims = dim_names(sim_inst.models[1], comp_name, item_name)
+    if length(dims) > 2
+        # Drop references to singleton dimensions
+        dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
+    end
+
     if length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
         return nothing
@@ -254,11 +268,12 @@ function createspec_lineplot_static(name, df, dffields)
     return spec
 end
 
-function createspec_multilineplot(name, df, dffields; interactive::Bool=true)
-    interactive ? createspec_multilineplot_interactive(name, df, dffields) : createspec_multilineplot_static(name, df, dffields)
+function createspec_multilineplot(name, df, dffields, multidims; interactive::Bool=true)
+    strmultidims = [String(dim) for dim in multidims]
+    interactive ? createspec_multilineplot_interactive(name, df, dffields, strmultidims) : createspec_multilineplot_static(name, df, dffields, strmultidims)
 end
 
-function createspec_multilineplot_interactive(name, df, dffields)
+function createspec_multilineplot_interactive(name, df, dffields, strmultidims)
     datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
@@ -283,7 +298,8 @@ function createspec_multilineplot_interactive(name, df, dffields)
                             "field" => dffields[3], 
                             "type" => "quantitative"
                             ),
-                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                        "color" => Dict("field" => strmultidims[findfirst(strmultidims .!= "time")],
+                                        "type" => "nominal", 
                             "scale" => Dict("scheme" => "category20"))
                     ),
                     "width"  => _plot_width,
@@ -304,7 +320,8 @@ function createspec_multilineplot_interactive(name, df, dffields)
                             "type" => "quantitative",
                             "axis" => Dict("tickCount" => 3, "grid" => false)
                         ),
-                        "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                        "color" => Dict("field" => strmultidims[findfirst(strmultidims .!= "time")],
+                                        "type" => "nominal", 
                             "scale" => Dict("scheme" => "category20")
                         )
                     )
@@ -315,7 +332,7 @@ function createspec_multilineplot_interactive(name, df, dffields)
     return spec
 end
 
-function createspec_multilineplot_static(name, df, dffields)
+function createspec_multilineplot_static(name, df, dffields, strmultidims)
     datapart = getdatapart(df, dffields, :multiline) #returns JSONtext type 
     spec = Dict(
         "name"  => name,
@@ -336,7 +353,7 @@ function createspec_multilineplot_static(name, df, dffields)
                     "field" => dffields[3], 
                     "type" => "quantitative"
                     ),
-                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                "color" => Dict("field" => strmultidims[findfirst(strmultidims .!= "time")], "type" => "nominal", 
                     "scale" => Dict("scheme" => "category20"))
             ),
             "width"  => _plot_width,
