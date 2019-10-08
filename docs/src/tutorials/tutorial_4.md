@@ -1,6 +1,6 @@
 # Tutorial 4: Sensitivity Analysis (SA) Support
 
-This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the multi-region Mimi model built in the second half of Tutorial 3, and also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
+This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:
 
@@ -15,7 +15,7 @@ Futhermore, if you are not yet comfortable with downloading (only needs to be do
 
 The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
-These are described further below. We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
+We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
 
 ## Multi-Region Model Example
 
@@ -170,7 +170,7 @@ Mimi.Model
 The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions, 
 and associate model parameters with the defined random variables.
 
-There are two ways of assigning random variables to model parameters in the @defsim macro. Notice that both of the following syntaxes are used in the following example.
+There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example.
 
 The first is the following:
 ```julia
@@ -191,8 +191,9 @@ using Mimi
 using Distributions 
 
 sd = @defsim begin
-    # Define random variables. The rv() is only required when defining
-    # correlations or sharing an RV across parameters.
+    # Define random variables. The rv() is only required when defining correlations 
+    # or sharing an RV across parameters. Otherwise, you can use the shortcut syntax
+    # to assign a distribution to a parameter name.
     rv(name1) = Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
@@ -283,9 +284,9 @@ save("MyFigure.png", p)
 
 This example will discuss the more advanced SA capabilities of post-trial functions and payload objects.
 
-Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `marginal` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
+Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `marginal` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
 
-The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sim_def`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
+The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sd`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 
 ```jldoctest tutorial4; output = false
 using Mimi
@@ -306,7 +307,7 @@ MCSData()
 ```
 
 ### Payload object
-SimulationDefs can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
+Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
 
 ```jldoctest tutorial4; output = false
 # Choose what year to calculate the SCC for
@@ -322,7 +323,8 @@ discount_factors = [[zeros(year_idx - 1)... [(1/(1 + r))^((t-year_idx)*10) for t
 scc_results = zeros(N, length(discount_rates))  
 
 # Set the payload object in the simulation definition
-Mimi.set_payload!(sd, (discount_factors, scc_results))  # In this case, the payload object is a tuple which holds both both arrays
+my_payload_object = (discount_factors, scc_results) # In this case, the payload object is a tuple which holds both both arrays
+Mimi.set_payload!(sd, my_payload_object)  
 nothing
 
 # output
@@ -333,10 +335,9 @@ nothing
 
 In the simple multi-region simulation example, the only values that were saved during each trial of the simulation were values of variables calculated internally by the model. Sometimes, a user may need to perform other calculations before or after each trial is run. For example, the SCC is calculated using two models, so this calculation needs to happen in a post-trial function, as shown below.
 
-Here we define a `post_trial_function` called `my_scc_calculation` which will calculate the SCC for each trial of the simulation. Notice that this function retrieves and uses the payload object that was previously stored in the Simulation definition.
+Here we define a `post_trial_function` called `my_scc_calculation` which will calculate the SCC for each trial of the simulation. Notice that this function retrieves and uses the payload object that was previously stored in the `SimulationDef`.
 
 ```jldoctest tutorial4; output = false
-
 function my_scc_calculation(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Nothing)
     mm = sim_inst.models[1] 
     discount_factors, scc_results = Mimi.payload(sim_inst)  # Unpack the payload object
@@ -354,7 +355,7 @@ my_scc_calculation (generic function with 1 method)
 
 ### Run the simulation
 
-Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation.
+Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
 
 ```jldoctest tutorial4; output = false
 # Build the marginal model
