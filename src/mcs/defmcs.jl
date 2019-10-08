@@ -162,7 +162,6 @@ macro defsim(expr)
         # call constructor on given args
         data = :($simdatatype(; $(_sim_args)...))
 
-        # TBD: need to generalize this to support other methods
         return :(SimulationDef{$simdatatype}(
                     [$(_rvs...)],
                     TransformSpec[$(_transforms...)],  
