@@ -1,14 +1,5 @@
 # Tutorial 4: Sensitivity Analysis (SA) Support
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-    using MimiFUND
-    using MimiDICE2010
-    using Distributions
-end
-```
-
 This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund), 
 
 Working through the following tutorial will require:
@@ -329,7 +320,3 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `add_save!`
 * `set_payload!`
 * `payload`
-
-```@meta
-DocTestSetup = nothing
-```

@@ -1,12 +1,5 @@
 # Tutorial 1: Run an Existing Model
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-    using MimiFUND
-end
-```
-
 This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
 
 Working through the following tutorial will require:
@@ -160,7 +153,3 @@ plot_comp_graph(m, "MyFilePath.png")
 ### Step 4. Tutorial 2
 
 Next, feel free to move on to the second tutorial, which will go into depth on how to **modify** an existing model such as FUND!
-
-```@meta
-DocTestSetup = nothing
-```

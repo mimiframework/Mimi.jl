@@ -1,11 +1,5 @@
 # User Guide
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-end
-```
-
 ## Overview
 
 See the Tutorials for in-depth examples of Mimi's functionality.
@@ -293,8 +287,4 @@ If defined for a specific component, this function will run **before** the times
     end
 
 end
-```
-
-```@meta
-DocTestSetup = nothing
 ```

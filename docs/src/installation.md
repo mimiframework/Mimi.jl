@@ -1,11 +1,5 @@
 # Installation Guide
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-end
-```
-
 This guide will briefly explain how to install julia and Mimi.
 
 ## Installing julia
@@ -51,7 +45,3 @@ The best way to get started with Mimi is to work through the **Tutorials**.
 The [Mimi](https://github.com/mimiframework/Mimi.jl) github repository also has links to various models that are based on Mimi, and looking through their code can be instructive.
 
 Finally, when in doubt, ask your question in the [Mimi Framework forum](https://forum.mimiframework.org) or post an [Issue](https://github.com/mimiframework/Mimi.jl/issues) to the Github repository if you have a specific request for the development team.   Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
-
-```@meta
-DocTestSetup = nothing
-```

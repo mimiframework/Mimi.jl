@@ -1,11 +1,5 @@
 # Tutorial 3: Create a Model
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-end
-```
-
 This tutorial walks through the steps to create a new model, first a one-region model and then a more complex two-region model. 
 
 While we will walk through the code step by step below, the full code for implementation is also available in the `examples/tutorial` folder in the [Mimi](https://github.com/mimiframework/Mimi.jl) github repository.
@@ -391,8 +385,4 @@ m[:emissions, :E_Global]
 # Observe model result graphs
 explore(m)
 
-```
-
-```@meta
-DocTestSetup = nothing
 ```

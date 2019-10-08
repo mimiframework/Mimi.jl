@@ -1,12 +1,5 @@
 # Tutorial 2: Modify an Existing Model
 
-```@meta
-DocTestSetup = quote
-    using Mimi
-    using MimiDICE2010
-end
-```
-
 This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github [here](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:
@@ -136,7 +129,3 @@ If you wish to modify the component structure we recommend you also look into th
 ## Component and Structural Modifications: DICE Example
 
  This example is in progress and will be built out soon.
-
-```@meta
-DocTestSetup = nothing
-```
