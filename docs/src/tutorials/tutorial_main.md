@@ -12,8 +12,6 @@ The following terminology is used throughout the documentation.
 
 ## Available Tutorials
 
-_Additional AERE Workshop Tutorials: The Mimi developement team recently participated in the 2019 Association of Environmental and Resource Economists (AERE) summer conference during the pre-conference workshop on Advances in Integrated Assessment Models. This included both a presentation and a hands-on session demonstrating various use cases for Mimi. The Github repository [here](https://github.com/davidanthoff/teaching-2019-aere-workshop) contains a) all slides from the workshop and b) all the code from the hands on sessions, which may be of interest to Mimi users. Importantly note that the linked code represents as a snapwhot of Mimi at the time of the workshop, and **will not** be updated to reflect new changes._
-
 1. **Run an Existing Model**
 
    [Tutorial 1: Run an Existing Model](@ref) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
@@ -31,9 +29,11 @@ _Additional AERE Workshop Tutorials: The Mimi developement team recently partici
    [Tutorial 4: Sensitivity Analysis (SA) Support](@ref) explores Mimi's Sensitivity Analysis support, using both the simple 2-Region tutorial model and [FUND](http://www.fund-model.org) examples.
 
 
+_Additional AERE Workshop Tutorials: The Mimi developement team recently participated in the 2019 Association of Environmental and Resource Economists (AERE) summer conference during the pre-conference workshop on Advances in Integrated Assessment Models. This included both a presentation and a hands-on session demonstrating various use cases for Mimi. The Github repository [here](https://github.com/davidanthoff/teaching-2019-aere-workshop) contains a) all slides from the workshop and b) all the code from the hands on sessions, which may be of interest to Mimi users. Importantly note that the linked code represents as a snapshot of Mimi at the time of the workshop, and **will not** be updated to reflect new changes._
+
 ## Requirements and Initial Setup
 
-These tutorials require [Julia v1.1.0](https://julialang.org/downloads/) and [Mimi v0.6.0](https://github.com/mimiframework/Mimi.jl), or later. 
+These tutorials require [Julia v1.1.0](https://julialang.org/downloads/) and [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl), or later. 
 
 To use the following tutorials, follow the steps below.
 
