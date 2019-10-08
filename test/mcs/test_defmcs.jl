@@ -12,7 +12,7 @@ using Mimi: modelinstance, compinstance, get_var_value, OUTER, INNER, ReshapedDi
 
 using CSVFiles: load
 
-include("test-model-2/two-region-model.jl")
+include("test-model-2/multi-region-model.jl")
 using .MyModel
 m = construct_MyModel()
 

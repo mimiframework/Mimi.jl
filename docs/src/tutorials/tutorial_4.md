@@ -1,6 +1,6 @@
 # Tutorial 4: Sensitivity Analysis (SA) Support
 
-This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi two-region model provided in the Mimi repository at `examples/tutorial/02-two-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
+This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the Mimi multi-region model provided in the Mimi repository at `examples/tutorial/02-multi-region-model`, and then build out to examine its use on [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
 
 Working through the following tutorial will require:
 
@@ -17,12 +17,12 @@ The best current documentation on the SA API is the internals documentation [her
 
 These are described further below. We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
 
-## Two-Region Model Example
+## Multi-Region Model Example
 
 This section will walk through a simple example of how to define a simulation, run the simulation for a given model, and access the outputs.
 
 ### Step 1. Setup
-First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the two-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
+First, set up for the tutorial as follows with the necessary packages and `main.jl` script for the multi-region example.  You should have `Mimi` installed by now, and if you do not have `Distributions`, take a moment to add that package using by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
 
 ```jldoctest tutorial4; output = false
 using Mimi
@@ -34,7 +34,7 @@ using Distributions
 
 ```julia
 cd(<Mimi-directory-path>) # Mimi-directory-path is a placeholder for the string describing the path of the Mimi directory
-include("examples/tutorial/02-two-region-model/main.jl")
+include("examples/tutorial/02-multi-region-model/main.jl")
 m = model # defined by 2-region model
 ```
 

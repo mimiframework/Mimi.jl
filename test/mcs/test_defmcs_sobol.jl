@@ -40,7 +40,7 @@ sd = @defsim begin
     save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
 end
 
-include("../../examples/tutorial/02-two-region-model/main.jl")
+include("../../examples/tutorial/02-multi-region-model/main.jl")
 
 m = model
 

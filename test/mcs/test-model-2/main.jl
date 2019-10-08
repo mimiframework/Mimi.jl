@@ -1,6 +1,6 @@
 using Mimi
 
-include("two-region-model.jl")
+include("multi-region-model.jl")
 using .MyModel
 model = construct_MyModel()
 
