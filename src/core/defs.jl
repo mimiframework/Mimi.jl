@@ -6,30 +6,6 @@ function compdef(comp_id::ComponentId)
     return getfield(comp_id.module_obj, comp_id.comp_name)
 end
 
-# Deprecated
-# function find_module(path::NTuple{N, Symbol} where N)
-#     m = Main
-#     for name in path
-#         try
-#             m = getfield(m, name)
-#         catch
-#             error("Module name $name was not found in module $m")
-#         end
-#     end
-#     return m
-# end
-
-# Deprecated
-# function compdef(comp_id::ComponentId; module_obj::Union{Nothing, Module}=nothing)
-#     if module_obj === nothing
-#         name = comp_id.module_name
-#         path = @or(comp_id.module_path, (:Main, comp_id.module_name))        
-#         module_obj = find_module(path)
-#     end
-
-#     return getfield(module_obj, comp_id.comp_name)
-# end
-
 compdef(cr::ComponentReference) = find_comp(cr)
 
 compdef(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
