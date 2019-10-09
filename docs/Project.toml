@@ -5,6 +5,7 @@ Mimi = "e4e893b0-ee5e-52ea-8111-44b3bdec128c"
 MimiDICE2010 = "4f2c5d70-42a7-11e9-1de8-c370bd984083"
 MimiFUND = "b3ba11de-429f-11e9-29f7-cb478ab96e7c"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"
 
 [compat]
 Distributions = "0.21"
@@ -13,3 +14,4 @@ Mimi = "0.9.3"
 MimiDICE2010 = "0.1"
 MimiFUND = "3.11"
 StatsBase = "0.32"
+VegaLite = "0.7"

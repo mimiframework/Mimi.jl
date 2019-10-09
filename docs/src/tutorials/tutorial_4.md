@@ -235,10 +235,14 @@ Next, use the `run` function to run the simulation for the specified simulation 
 
 In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
-```jldoctest tutorial4; output = false
+```julia
 # Run 100 trials, and optionally save results to the indicated directories
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4")
+```
 
+We can then take a look at the results saved in memory 
+
+```jldoctest tutorial4; output = false, setup = :(si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4"))
 # Explore the results saved in-memory by indexing into the returned SimulationInstance.
 # Values are save from each trial for each variable or parameter specified by the call to "save()" at the end of the @defsim block.
 K_results = si[:grosseconomy, :K]
@@ -250,34 +254,46 @@ size(E_results) == (6000, 4)   # These results are DataFrames, with one value fo
 
 true
 ```
-
-
 ### Step 4. Explore and Plot Results
 
 As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
 
 To view your results in an interactive application viewer, simply call:
 
-```julia
+```jldoctest tutorial4; output = false, filter = r".*"
 explore(si)
+
+# output
+
 ```
 
 If desired, you may also include a `title` for your application window. If more than one model was run in your Simulation, indicate which model you would like to explore with the `model` keyword argument, which defaults to 1. Finally, if your model leverages different scenarios, you **must** indicate the `scenario_name`.
 
-```julia
-explore(si; title = "MyWindow", model = 1) # we do not indicate scen_name here since we have no scenarios
+```jldoctest tutorial4; output = false, filter = r".*"
+explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name here since we have no scenarios
+
+# output
+
 ```
 
 To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
 
-```julia
+```jldoctest tutorial4; output = false, filter = r".*"
 Mimi.plot(si, :grosseconomy, :K)
+
+# output
+
 ```
 To save your figure, use the `save` function to save typical file formats such as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
 
-```julia
+```jldoctest tutorial4; output = false, filter = r".*"
 p = Mimi.plot(si, :grosseconomy, :K)
 save("MyFigure.png", p)
+
+# output
+
+WARN Layer's shared color channel is overriden
+WARN Layer's shared color channel is overriden
 ```
 
 ## Advanced Features - Social Cost of Carbon (SCC) Example
@@ -309,7 +325,7 @@ MCSData()
 ### Payload object
 Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial4; output = false, filter = r".*"
 # Choose what year to calculate the SCC for
 scc_year = 2015
 year_idx = findfirst(isequal(scc_year), MimiDICE2010.model_years)
@@ -325,7 +341,6 @@ scc_results = zeros(N, length(discount_rates))
 # Set the payload object in the simulation definition
 my_payload_object = (discount_factors, scc_results) # In this case, the payload object is a tuple which holds both both arrays
 Mimi.set_payload!(sd, my_payload_object)  
-nothing
 
 # output
 
@@ -357,7 +372,7 @@ my_scc_calculation (generic function with 1 method)
 
 Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial4; output = false, 
 # Build the marginal model
 mm = MimiDICE2010.get_marginal_model(year = scc_year)   # The additional emissions pulse will be added in the specified year
 
@@ -389,7 +404,7 @@ A small set of unexported functions are available to modify an existing `Simulat
 
 View the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of this function**:
 
-```
+```julia
 function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
                  ntimesteps::Int=typemax(Int), 
                  trials_output_filename::Union{Nothing, AbstractString}=nothing, 

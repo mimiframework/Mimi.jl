@@ -36,7 +36,7 @@ using MimiFUND
 # output
 
 ```
-to access the public API to FUND, which currently includes the function `MimiFUND.get_model` (which can also be called with the exported and identical function `getfund`). This function returns a version of fund allowing for different user specifications.  
+to access the public API to FUND, which currently includes the function `MimiFUND.get_model` (which can also be called with the exported and identical function `getfund`). This function returns a version of fund allowing for different user specifications. Here we will first get the model, and then use the `run` function to run it.
 
 ```jldoctest tutorial1; output = false
 m = MimiFUND.get_model()
@@ -92,17 +92,16 @@ You may also get data in the form of a dataframe, which will display the corresp
 getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
 getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
 getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
-
 ```
 
 Try doing this for the `income` variable of the `socioeconomic` component using:
 ```jldoctest tutorial1; output = false
 getdataframe(m, :socioeconomic=>:income) # request one variable from one component
-getdataframe(m, :socioeconomic=>:income)[1:5,:] # first five rows
+getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in first year (1950)
 
 # output
 
-5×3 DataFrames.DataFrame
+16×3 DataFrames.DataFrame
 │ Row │ time  │ regions │ income   │
 │     │ Int64 │ String  │ Float64⍰ │
 ├─────┼───────┼─────────┼──────────┤
@@ -111,6 +110,17 @@ getdataframe(m, :socioeconomic=>:income)[1:5,:] # first five rows
 │ 3   │ 1950  │ WEU     │ 1913.32  │
 │ 4   │ 1950  │ JPK     │ 616.022  │
 │ 5   │ 1950  │ ANZ     │ 119.058  │
+│ 6   │ 1950  │ EEU     │ 87.9192  │
+│ 7   │ 1950  │ FSU     │ 167.309  │
+│ 8   │ 1950  │ MDE     │ 76.065   │
+│ 9   │ 1950  │ CAM     │ 40.5139  │
+│ 10  │ 1950  │ LAM     │ 193.139  │
+│ 11  │ 1950  │ SAS     │ 57.9714  │
+│ 12  │ 1950  │ SEA     │ 25.6943  │
+│ 13  │ 1950  │ CHI     │ 18.8014  │
+│ 14  │ 1950  │ MAF     │ 13.4482  │
+│ 15  │ 1950  │ SSA     │ 94.686   │
+│ 16  │ 1950  │ SIS     │ 6.82114  │
 ```
 
 ### Step 4. Access Results: Plots and Graphs
@@ -124,23 +134,26 @@ Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega
 If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
-```julia
+```jldoctest tutorial1; output = false, filter = r".*"
 explore(m, title = "My Window")
+
+# output
+
 ```
 Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
 
 ```julia
-using VegaLite
-run(m)
-p = Mimi.plot(m, component1, parameter1)
+p = Mimi.plot(m, :mycomponent, :myvariable)
 save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
-```julia
-using VegaLite
+```jldoctest tutorial1; output = false, filter = r".*"
 p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
+
+# output
+
 ```
 
 #### Component Graph
