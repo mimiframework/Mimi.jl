@@ -134,7 +134,7 @@ Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega
 If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
-```jldoctest tutorial1; output = false, filter = r".*"
+```jldoctest tutorial1; output = false, filter = r".*"s
 explore(m, title = "My Window")
 
 # output
@@ -148,7 +148,7 @@ save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
-```jldoctest tutorial1; output = false, filter = r".*"
+```jldoctest tutorial1; output = false, filter = r".*"s
 p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 

@@ -235,24 +235,17 @@ Next, use the `run` function to run the simulation for the specified simulation 
 
 In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
-```julia
+``````jldoctest tutorial4; output = false, filter = r".*"s
 # Run 100 trials, and optionally save results to the indicated directories
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4")
-```
 
-We can then take a look at the results saved in memory 
-
-```jldoctest tutorial4; output = false, setup = :(si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4"))
 # Explore the results saved in-memory by indexing into the returned SimulationInstance.
 # Values are save from each trial for each variable or parameter specified by the call to "save()" at the end of the @defsim block.
 K_results = si[:grosseconomy, :K]
 E_results = si[:emissions, :E]
 
-size(E_results) == (6000, 4)   # These results are DataFrames, with one value for each trial for each region and year
-
 # output
 
-true
 ```
 ### Step 4. Explore and Plot Results
 
@@ -260,7 +253,7 @@ As described in the internals documentation [here](https://github.com/mimiframew
 
 To view your results in an interactive application viewer, simply call:
 
-```jldoctest tutorial4; output = false, filter = r".*"
+```jldoctest tutorial4; output = false, filter = r".*"s
 explore(si)
 
 # output
@@ -269,7 +262,7 @@ explore(si)
 
 If desired, you may also include a `title` for your application window. If more than one model was run in your Simulation, indicate which model you would like to explore with the `model` keyword argument, which defaults to 1. Finally, if your model leverages different scenarios, you **must** indicate the `scenario_name`.
 
-```jldoctest tutorial4; output = false, filter = r".*"
+```jldoctest tutorial4; output = false, filter = r".*"s
 explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name here since we have no scenarios
 
 # output
@@ -278,7 +271,7 @@ explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name 
 
 To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
 
-```jldoctest tutorial4; output = false, filter = r".*"
+```jldoctest tutorial4; output = false, filter = r".*"s
 Mimi.plot(si, :grosseconomy, :K)
 
 # output
@@ -286,7 +279,7 @@ Mimi.plot(si, :grosseconomy, :K)
 ```
 To save your figure, use the `save` function to save typical file formats such as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
 
-```jldoctest tutorial4; output = false, filter = r".*"
+```jldoctest tutorial4; output = false, filter = r".*"s
 p = Mimi.plot(si, :grosseconomy, :K)
 save("MyFigure.png", p)
 
@@ -325,7 +318,7 @@ MCSData()
 ### Payload object
 Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
 
-```jldoctest tutorial4; output = false, filter = r".*"
+```jldoctest tutorial4; output = false, filter = r".*"s
 # Choose what year to calculate the SCC for
 scc_year = 2015
 year_idx = findfirst(isequal(scc_year), MimiDICE2010.model_years)
@@ -372,7 +365,7 @@ my_scc_calculation (generic function with 1 method)
 
 Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
 
-```jldoctest tutorial4; output = false, 
+```jldoctest tutorial4; output = false, filter = r".*"s
 # Build the marginal model
 mm = MimiDICE2010.get_marginal_model(year = scc_year)   # The additional emissions pulse will be added in the specified year
 
@@ -381,11 +374,9 @@ si = run(sd, mm, N; trials_output_filename = "ecs_sample.csv", post_trial_func =
 
 # View the scc_results by retrieving them from the payload object
 scc_results = Mimi.payload(si)[2]   # Recall that the SCC array was the second of two arrays we stored in the payload tuple
-size(scc_results) == (N, 3)
 
 # output
 
-true
 ```
 
 ### Simulation Modification Functions

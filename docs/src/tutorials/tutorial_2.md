@@ -44,7 +44,7 @@ pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
 You simply need to add the DICE2010 model with 
-```
+```julia
 add MimiDICE2010
 ```
 You have now successfully downloaded DICE to your local machine.
@@ -53,7 +53,7 @@ You have now successfully downloaded DICE to your local machine.
 
 The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  Now run DICE using the provided API for the package:
 
-```jldoctest tutorial2; output = false
+```jldoctest tutorial2; output = false, filter = r".*"s
 using MimiDICE2010
 m = MimiDICE2010.get_model()
 run(m)
@@ -65,7 +65,7 @@ run(m)
 Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
 In this case, the function `MimiDICE2010.get_model()` has the signature
-``` 
+```julia
 get_model(params=nothing)
 ```
 Thus there are no required arguments, although the user can input `params`, a dictionary definining the parameters of the model. 

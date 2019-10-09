@@ -159,7 +159,7 @@ m[:emissions, :E]
  92022.29655492865 
 ```
 Finally we can visualize the results:
-```jldoctest tutorial3; output = false, filter = r".*"
+```jldoctest tutorial3; output = false, filter = r".*"s
 using VegaLite
 
 # Plot model results
@@ -188,6 +188,7 @@ As this model is also more complex and spread across several files, we will also
 
 ```jldoctest tutorial3; output = false
 using Mimi
+
 @defcomp grosseconomy begin
     regions = Index()                           #Note that a regional index is defined here
 
@@ -225,7 +226,7 @@ end
 
 Save this component as **`gross_economy.jl`**
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial3; output = false, filter = r".*"s
 using Mimi	#Make sure to call Mimi again
 
 @defcomp emissions begin
@@ -386,7 +387,7 @@ m[:emissions, :E_Global]
  36444.054899836294
  38226.21934898662 
 ```
-```jldoctest tutorial3; output = false, filter = r".*"
+```jldoctest tutorial3; output = false, filter = r".*"s
 # Observe model result graphs
 explore(m)
 
