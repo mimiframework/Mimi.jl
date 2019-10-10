@@ -11,24 +11,22 @@ If you have not yet prepared these, go back to the main tutorial page and follow
 
 ### Step 1. Download FUND
 
-The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry.  Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models
+The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-You simply need to add the FUND model with 
-```
-add MimiFUND
+You simply need to add the FUND model in the Pkg REPL with:
+```julia
+pkg> add MimiFUND
 ```
 
 ### Step 2. Run FUND
 
-The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  
+The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).  
 
-In order to run FUND, you will need to have the packages `Distributions` and `StatsBase` installed, and if not do so by entering [Pkg mode](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) by typing `]`, and then `add StatsBase` and `add Distributions`.  
-
-Now open a julia REPL and type 
+Now open a julia REPL and type the following command to load the MimiFUND package into the current environment: 
 
 ```jldoctest tutorial1; output = false
 using MimiFUND
@@ -36,7 +34,7 @@ using MimiFUND
 # output
 
 ```
-to access the public API to FUND, which currently includes the function `MimiFUND.get_model` (which can also be called with the exported and identical function `getfund`). This function returns a version of fund allowing for different user specifications. Here we will first get the model, and then use the `run` function to run it.
+Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
 
 ```jldoctest tutorial1; output = false
 m = MimiFUND.get_model()
@@ -48,16 +46,17 @@ run(m)
 
 Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `get_model` has the signature
+In the MimiFUND package, the function `get_model` has the signature
 ```julia
 get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
-Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:
-```julia
+Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to run only the first 200 timesteps, you may use:
+```jldoctest tutorial1; output = false
 using MimiFUND
-m = MimiFUND.get_model(nsteps = 100)
+m = MimiFUND.get_model(nsteps = 200)
 run(m)
 ```
+
 ### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
@@ -76,7 +75,7 @@ m[:ComponentName, :VariableName] # returns the whole array of values
 m[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
-Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component using the code below:
+Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component of FUND using the code below:
 ```jldoctest tutorial1; output = false
 m[:socioeconomic, :income] 
 m[:socioeconomic, :income][100] 
