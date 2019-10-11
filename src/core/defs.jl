@@ -350,6 +350,12 @@ function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     return unit(param)
 end
 
+"""
+    parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
+
+Returns the names of the dimensions of parameter `param_name`.
+"""
+
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
     return dim_names(param)
@@ -567,6 +573,11 @@ function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::Comp
     return dim_names(var)
 end
 
+"""
+    function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
+
+Returns the names of the dimensions of variable `name`.
+"""
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
     return dim_names(var)

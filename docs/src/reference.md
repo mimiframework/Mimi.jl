@@ -22,9 +22,7 @@ is_first
 is_last
 is_time
 is_timestep
-load_comps
 modeldef
-name
 parameters
 parameter_names
 parameter_dimensions
