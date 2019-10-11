@@ -355,7 +355,6 @@ end
 
 Returns the names of the dimensions of parameter `param_name`.
 """
-
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
     return dim_names(param)

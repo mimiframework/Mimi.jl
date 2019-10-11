@@ -2,6 +2,8 @@ using Documenter, Mimi
 
 DocMeta.setdocmeta!(Mimi, :DocTestSetup, :(using Mimi; using Distributions; using MimiDICE2010; using MimiFUND); recursive=true)
 
+doctest(Mimi)
+
 makedocs(
     modules = [Mimi],
 	sitename = "Mimi.jl",
