@@ -51,7 +51,7 @@ In the MimiFUND package, the function `get_model` has the signature
 get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to run only the first 200 timesteps, you may use:
-```jldoctest tutorial1; output = false, filter = r".*"s
+```jldoctest tutorial1; output = false
 using MimiFUND
 m = MimiFUND.get_model(nsteps = 200)
 run(m)
