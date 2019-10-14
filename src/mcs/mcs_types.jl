@@ -228,3 +228,7 @@ end
 function getdataframe(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
     return sim_inst.results[model][(comp_name, datum_name)]
 end
+
+function getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+    Error("getindex method for `SimulationInstance` has been replaced with getdataframe function for consistency of return type, please use getdataframe instead")
+end
