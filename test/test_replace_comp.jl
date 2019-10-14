@@ -3,15 +3,15 @@ module TestReplaceComp
 using Test
 using Mimi
 import Mimi:
-    compdefs, compname, compdef, comp_id, external_param_conns, external_params
+    compdefs, compname, compdef, components, comp_id, external_param_conns, external_params
 
-@defcomp X begin    
+@defcomp X begin
     x = Parameter(index = [time])
     y = Variable(index = [time])
     function run_timestep(p, v, d, t)
         v.y[t] = 1
     end
-end 
+end
 
 @defcomp X_repl begin
     x = Parameter(index = [time])
@@ -60,7 +60,7 @@ set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X, :first)                                     # Add two components
 add_comp!(m, X, :second)
 connect_param!(m, :second => :x, :first => :y)              # Make an internal connection with a parameter with a time dimension
-@test_throws ErrorException replace_comp!(m, bad1, :second) # Cannot make reconnections because :x in bad1 has different dimensions 
+@test_throws ErrorException replace_comp!(m, bad1, :second) # Cannot make reconnections because :x in bad1 has different dimensions
 replace_comp!(m, bad1, :second, reconnect = false)          # Can replace without reconnecting
 second = compdef(m, :second)
 @test second.comp_id.comp_name == :bad1                     # Successfully replaced
@@ -88,7 +88,7 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs(
-    # (:warn, r".*parameter x no longer exists in component.*"), 
+    # (:warn, r".*parameter x no longer exists in component.*"),
     replace_comp!(m, bad3, :X)
 )
 
@@ -127,7 +127,7 @@ add_comp!(m, X)
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)
-add_comp!(m, X, :c1)    
+add_comp!(m, X, :c1)
 add_comp!(m, X, :c2)
 add_comp!(m, X, :c3)
 
