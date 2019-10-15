@@ -95,10 +95,7 @@ set_dimension!(m, :time, 2000:2100)
 # First and last have been disabled...
 #@test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    foo2_ref = add_comp!(m, foo2; first = 2005, last = 2095)
-)
+foo2_ref = add_comp!(m, foo2)
 
 foo2_ref = ComponentReference(m, :foo2)
 my_foo2 = compdef(foo2_ref)

@@ -15,15 +15,11 @@ compname(obj::AbstractComponentInstance)   = compname(obj.comp_id)
 """
     add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
 
-Add the (leaf or composite) component `ci` to a composite's list of components, and add
-the `first` and `last` of `mi` to the ends of the composite's `firsts` and `lasts` lists.
+Add the (leaf or composite) component `ci` to a composite's list of components.
 """
 function add_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)
     obj.comps_dict[nameof(ci)] = ci
-
-    # push!(obj.firsts, first_period(ci))         # TBD: perhaps this should be set when time is set?
-    # push!(obj.lasts,  last_period(ci))
-    nothing
+    return nothing
 end
 
 #

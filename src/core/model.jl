@@ -120,15 +120,17 @@ model definition.
 @delegate update_params!(m::Model, parameters::Dict; update_timesteps = false) => md
 
 """
-    add_comp!(m::Model, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name;
-              first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
+    add_comp!(
+        m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing, 
+        rename::NothingPairList=nothing
+    )
 
 Add the component indicated by `comp_id` to the model indicated by `m`. The component is added 
 at the end of the list unless one of the keywords `before` or `after` is specified. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
-
-Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = add_comp!(m.md, comp_id, comp_name; kwargs...)
@@ -136,25 +138,29 @@ function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.com
 end
 
 """
-    add_comp!(m::Model, comp_def::AbstractComponentDef; comp_name::Symbol=comp_id.comp_name;
-              first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
+    add_comp!(
+        m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing, 
+        rename::NothingPairList=nothing
+    )
 
 Add the component `comp_def` to the model indicated by `m`. The component is added at
 the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
-
-Note: `first` and `last` keywords are currently disabled.
 """
 function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
 """
-    replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        first::NothingSymbol=nothing, last::NothingSymbol=nothing,
-        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-        reconnect::Bool=true)
+    replace_comp!(
+        m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing, 
+        reconnect::Bool=true
+    )
 
 Replace the component with name `comp_name` in model `m` with the component
 `comp_id` using the same name.  The component is added in the same position as
@@ -163,8 +169,6 @@ The component is added with the same first and last values, unless the keywords
 `first` or `last` are specified. Optional boolean argument `reconnect` with
 default value `true` indicates whether the existing parameter connections
 should be maintained in the new component.
-
-Note: `first` and `last` keywords are currently disabled.
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = replace_comp!(m.md, comp_id, comp_name; kwargs...)

@@ -754,55 +754,39 @@ function import_params!(comp::AbstractComponentDef)
 end
 
 """
-    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-              comp_name::Symbol=comp_def.comp_id.comp_name; rename=nothing,
-              first=nothing, last=nothing, before=nothing, after=nothing)
+    add_comp!(
+        obj::AbstractCompositeComponentDef, 
+        comp_def::AbstractComponentDef,
+        comp_name::Symbol=comp_def.comp_id.comp_name; 
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing,
+        rename::NothingPairList=nothing
+    )
 
 Add the component `comp_def` to the composite component indicated by `obj`. The component is 
 added at the end of the list unless one of the keywords `before` or `after` is specified.
 Note that a copy of `comp_id` is made in the composite and assigned the give name. The optional
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
-
-Note: `first` and `last` keywords are currently disabled.
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                   comp_name::Symbol=comp_def.comp_id.comp_name;
-                   first::NothingInt=nothing, last::NothingInt=nothing,
-                   before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                   rename::NothingPairList=nothing)
-
-    if first !== nothing || last !== nothing
-        @warn "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."
-        first = last = nothing
-    end
-
-    # When adding composites to another composite, we disallow setting first and last periods.
-    if is_composite(comp_def) && (first !== nothing || last !== nothing)
-        error("Cannot set first or last period when adding a composite component: $(comp_def.comp_id)")
-    end
+function add_comp!(
+    obj::AbstractCompositeComponentDef, 
+    comp_def::AbstractComponentDef,
+    comp_name::Symbol=comp_def.comp_id.comp_name;
+    before::NothingSymbol=nothing, 
+    after::NothingSymbol=nothing,
+    rename::NothingPairList=nothing
+)
 
     # Check if component being added already exists
     has_comp(obj, comp_name) && error("Cannot add two components of the same name ($comp_name)")
 
+    if before !== nothing && after !== nothing
+        error("Cannot specify both 'before' and 'after' parameters")
+    end
+
     # check time constraints if the time dimension has been set
     if has_dim(obj, :time)
         # error("Cannot add component to composite without first setting time dimension.")
-
-        # check that first and last are within the model's time index range
-        time_index = time_labels(obj)
-
-        if first !== nothing && first < time_index[1]
-            error("Cannot add component $comp_name with first time before first of model's time index range.")
-        end
-
-        if last !== nothing && last > time_index[end]
-            error("Cannot add component $comp_name with last time after end of model's time index range.")
-        end
-
-        if before !== nothing && after !== nothing
-            error("Cannot specify both 'before' and 'after' parameters")
-        end
-
         propagate_time!(comp_def, dimension(obj, :time))
     end
 
@@ -811,7 +795,6 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     comp_def.name = comp_name
     parent!(comp_def, obj)
 
-    _set_run_period!(comp_def, first, last)
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 
@@ -830,31 +813,41 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
 end
 
 """
-    add_comp!(obj::CompositeComponentDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name,
-        first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
+    add_comp!(
+        obj::AbstractCompositeComponentDef, 
+        comp_id::ComponentId,
+        comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing,
+        rename::NothingPairList=nothing
+    )
 
 Add the component indicated by `comp_id` to the composite component indicated by `obj`. The 
 component is added at the end of the list unless one of the keywords `before` or `after` is 
 specified. Note that a copy of `comp_id` is made in the composite and assigned the give name. 
 The optional argument `rename` can be a list of pairs indicating `original_name => imported_name`.
-
-Note: `first` and `last` keywords are currently disabled.
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
-                   comp_name::Symbol=comp_id.comp_name;
-                   first::NothingInt=nothing, last::NothingInt=nothing,
-                   before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                   rename::NothingPairList=nothing)
+function add_comp!(
+    obj::AbstractCompositeComponentDef, 
+    comp_id::ComponentId,
+    comp_name::Symbol=comp_id.comp_name;
+    before::NothingSymbol=nothing, 
+    after::NothingSymbol=nothing,
+    rename::NothingPairList=nothing
+)
     # println("Adding component $comp_id as :$comp_name")
-    add_comp!(obj, compdef(comp_id), comp_name,
-              first=first, last=last, before=before, after=after, rename=rename)
+    add_comp!(obj, compdef(comp_id), comp_name, before=before, after=after, rename=rename)
 end
 
 """
-    replace_comp!(obj::CompositeComponentDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        first::NothingInt=nothing, last::NothingInt=nothing,
-        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-        reconnect::Bool=true)
+    replace_comp!(
+        obj::AbstractCompositeComponentDef, 
+        comp_id::ComponentId,
+        comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing,
+        reconnect::Bool=true
+    )
 
 Replace the component with name `comp_name` in composite component definition `obj` with the
 component `comp_id` using the same name. The component is added in the same position as the
@@ -862,19 +855,15 @@ old component, unless one of the keywords `before` or `after` is specified. The 
 added with the same first and last values, unless the keywords `first` or `last` are specified.
 Optional boolean argument `reconnect` with default value `true` indicates whether the existing
 parameter connections should be maintained in the new component. Returns the added comp def.
-
-Note: `first` and `last` keywords are currently disabled.
 """
-function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
-                       comp_name::Symbol=comp_id.comp_name;
-                       first::NothingInt=nothing, last::NothingInt=nothing,
-                       before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                       reconnect::Bool=true)
-
-    if first !== nothing || last !== nothing
-        @warn "replace_comp!: Keyword arguments 'first' and 'last' are currently disabled."
-        first = last = nothing
-    end
+function replace_comp!(
+    obj::AbstractCompositeComponentDef, 
+    comp_id::ComponentId,
+    comp_name::Symbol=comp_id.comp_name;
+    before::NothingSymbol=nothing, 
+    after::NothingSymbol=nothing,
+    reconnect::Bool=true
+)
 
     if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
@@ -894,10 +883,8 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         end
     end
 
-    # Get original first and last if new run period not specified
+    # Get the component definition of the component that is being replaced
     old_comp = compdef(obj, comp_name)
-    first = first === nothing ? old_comp.first : first
-    last  = last  === nothing ? old_comp.last  : last
 
     if reconnect
         new_comp = compdef(comp_id)
@@ -954,5 +941,5 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     end
 
     # Re-add
-    return add_comp!(obj, comp_id, comp_name; before=before, after=after) # first=first, last=last, 
+    return add_comp!(obj, comp_id, comp_name; before=before, after=after)
 end
