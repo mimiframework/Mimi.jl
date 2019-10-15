@@ -3,7 +3,7 @@ module TestConnectorComp
 using Mimi
 using Test
 
-import Mimi: compdef, compdefs
+import Mimi: compdef, compdefs, components
 
 @defcomp Long begin
     x = Parameter(index=[time])
@@ -14,7 +14,7 @@ late_start = 2005
 @defcomp Short begin
     a = Parameter()
     b = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, t)
         if gettime(t) >= late_start
             v.b[t] = p.a * t.t
@@ -27,7 +27,7 @@ year_dim = Mimi.Dimension(years)
 
 
 #------------------------------------------------------------------------------
-#  1. Use the connect_param! method with backup data (ConnectorComp gets added 
+#  1. Use the connect_param! method with backup data (ConnectorComp gets added
 #       under the hood during build)
 #------------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ x = model1[:Long, :x]
 # Test the dataframe size
 b = getdataframe(model1, :Short, :b)
 @test size(b) == (length(years), 2)
- 
+
 #------------------------------------------------------------------------------
 #  2. Test with a short component that ends early (and test Variable timesteps)
 #------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ connect_param!(model2, :Long, :x, :Short, :b, zeros(length(years_variable)))
 
 run(model2)
 
-@test length(components(model2.mi)) == 3    
+@test length(components(model2.mi)) == 3
 @test length(compdefs(model2.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model2[:Short, :b]
@@ -100,8 +100,8 @@ x = model2[:Long, :x]
 # @test all(iszero, x[dim_variable[early_last]+1 : end])
 
 # # Test the values are right after the late start
-# @test b[1 : dim_variable[early_last]] == 
-#     x[1 : dim_variable[early_last]] == 
+# @test b[1 : dim_variable[early_last]] ==
+#     x[1 : dim_variable[early_last]] ==
 #     [2 * i for i in 1:dim_variable[early_last]]
 
 
@@ -120,7 +120,7 @@ end
 
     a = Parameter(index=[regions])
     b = Variable(index=[time, regions])
-    
+
     function run_timestep(p, v, d, ts)
         for r in d.regions
             v.b[ts, r] = ts.t + p.a[r]
@@ -140,7 +140,7 @@ connect_param!(model3, :Long_multi, :x, :Short_multi, :b, zeros(length(years), l
 
 run(model3)
 
-@test length(components(model3.mi)) == 3    
+@test length(components(model3.mi)) == 3
 @test length(compdefs(model3.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model3[:Short_multi, :b]
@@ -180,7 +180,7 @@ connect_param!(model4, :Long_multi=>:x, :Short_multi=>:b, zeros(length(years), l
 
 run(model4)
 
-@test length(components(model4.mi)) == 3    
+@test length(components(model4.mi)) == 3
 @test length(compdefs(model4.md)) == 2      # The ConnectorComp shows up in the model instance but not the model definition
 
 b = model4[:Short_multi, :b]
@@ -226,7 +226,7 @@ set_param!(model5, :Short, :a, 2)
 
 
 #------------------------------------------------------------------------------
-#  6. Test connecting Short component to Long component (does not add a 
+#  6. Test connecting Short component to Long component (does not add a
 #       connector component)
 #------------------------------------------------------------------------------
 
@@ -252,7 +252,7 @@ run(model6)
 short_par = model6[:Short, :par]
 short_var = model6[:Short, :var]
 
-@test short_par == years    # The parameter has values instead of `missing` for years when this component doesn't run, 
+@test short_par == years    # The parameter has values instead of `missing` for years when this component doesn't run,
                             # because they are coming from the longer component that did run
 
 # @test all(ismissing, short_var[1:year_dim[late_start]-1])

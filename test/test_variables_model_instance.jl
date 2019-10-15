@@ -4,9 +4,9 @@ using Mimi
 using Test
 
 import Mimi:
-    variable_names, compinstance, get_var_value, get_param_value, 
-    set_param_value, set_var_value, dim_count, compdef,
-    LeafComponentInstance, AbstractComponentInstance, ComponentDef, TimestepArray, 
+    variable_names, compinstance, get_var_value, get_param_value,
+    set_param_value, set_var_value, dim_count, compdef, components, parameters, variables,
+    LeafComponentInstance, AbstractComponentInstance, ComponentDef, TimestepArray,
     ComponentInstanceParameters, ComponentInstanceVariables
 
 my_model = Model()
@@ -15,7 +15,7 @@ my_model = Model()
     var1 = Variable(index=[time])
     var2 = Variable(index=[time])
     par1 = Parameter(index=[time])
-    
+
     function run_timestep(p, v, d, t)
         v.var1[t] = p.par1[t]
     end
