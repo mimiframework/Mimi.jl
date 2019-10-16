@@ -22,6 +22,15 @@ struct VariableTimestep{TIMES} <: AbstractTimestep
     end
 end
 
+struct TimestepValue{T}
+    value::T
+    offset::Int
+end
+  
+struct TimestepIndex
+    index::Int
+end
+
 mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
 	ts::T
 

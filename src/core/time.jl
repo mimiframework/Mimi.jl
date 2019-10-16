@@ -106,6 +106,14 @@ function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 	return VariableTimestep{TIMES}(ts.t - val)
 end
 
+function Base.:-(ts::TimestepValue, val::Int) 
+	return TimestepValue(ts.value, ts.offset - val)
+end
+
+function Base.:-(ts::TimestepIndex, val::Int) 
+	return TimestepIndex(ts.index - val)
+end
+
 function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
 	if finished(ts)
 		error("Cannot get next timestep, this is last timestep.")
@@ -123,6 +131,14 @@ function Base.:+(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 		error("Cannot get requested timestep, exceeds last timestep.")		
 	end
 	new_ts = VariableTimestep{TIMES}(ts.t + val)
+end
+
+function Base.:+(ts::TimestepValue, val::Int) 
+	return TimestepValue(ts.value, ts.offset + val)
+end
+
+function Base.:+(ts::TimestepIndex, val::Int) 
+	return TimestepIndex(ts.index + val)
 end
 
 #
