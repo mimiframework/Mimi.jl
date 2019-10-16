@@ -81,6 +81,24 @@ function Base.getindex(v::TimestepVector{VariableTimestep{D_TIMES}, T}, ts::Vari
 	_missing_data_check(data, t)
 end
 
+function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP, LAST}, T}, ts::TimestepValue) where {T, FIRST, STEP, LAST} 
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
+	data = v.data[t]
+	_missing_data_check(data)
+end
+
+function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, ts::TimestepValue) where {T, TIMES}
+	t = _get_time_value_position_(TIMES, ts)
+	data = v.data[t]
+	_missing_data_check(data)
+end
+
+function Base.getindex(v::TimestepVector, ts::TimestepIndex) 
+	t = ts.index
+	length(v.data) < t ? error("TimestepIndex index $t extends beyond end of TimestepArray") : data = v.data[t]
+	_missing_data_check(data)
+end
+
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
@@ -176,6 +194,41 @@ function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, idx
 	_missing_data_check(data, t)
 end
 
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T, 1}, ts::TimestepValue, idx::AnyIndex) where {T, FIRST, STEP, LAST} 
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
+	data = mat.data[t, idx]
+	_missing_data_check(data)
+end
+
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 1}, ts::TimestepValue, idx::AnyIndex) where {T, TIMES}
+	t = _get_time_value_position_(TIMES, ts)
+	data = mat.data[t, idx]
+	_missing_data_check(data)
+end
+
+function Base.getindex(mat::TimestepMatrix, ts::TimestepIndex, idx::AnyIndex)
+	t = ts.index
+	size(mat.data, 1) < t ? error("TimestepIndex index $t extends beyond end of first dim of TimestepMatrix") : data = mat.data[t, idx]
+	_missing_data_check(data)
+end
+
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T, 2}, idx::AnyIndex, ts::TimestepValue) where {T, FIRST, STEP, LAST} 
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
+	data = mat.data[idx, t]
+	_missing_data_check(data)
+end
+
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 2}, idx::AnyIndex, ts::TimestepValue) where {T, TIMES}
+	t = _get_time_value_position_(TIMES, ts)
+	data = mat.data[idx, t]
+	_missing_data_check(data)
+end
+
+function Base.getindex(mat::TimestepMatrix, idx::AnyIndex, ts::TimestepIndex)
+	t = ts.t
+	size(mat.data, 2) < t ? error("TimestepIndex index $t extends beyond end of second dim of TimestepMatrix") : data = mat.data[idx, t]
+	_missing_data_check(data)
+end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 1}, val, ts::FixedTimestep{FIRST, STEP, LAST}, idx::AnyIndex) where {T, FIRST, STEP, LAST}
 	setindex!(mat.data, val, ts.t, idx)
@@ -292,6 +345,24 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti}, 
 	return arr.data[idxs1..., t, idxs2...]
 end
 
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, idxs::Union{TimestepValue, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = _get_time_value_position_([FIRST:STEP:LAST...], ts)
+	return arr.data[idxs1..., t, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{TimestepValue, AnyIndex}...) where {T, N, ti, TIMES}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = _get_time_value_position_(TIMES, ts)
+	return arr.data[idxs1..., t, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{AbstractTimestep, T, N, ti}, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.t
+	return arr.data[idxs1..., t, idxs2...]
+end
+
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::Union{FixedTimestep{FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	setindex!(arr.data, val, idxs1..., ts.t, idxs2...)
@@ -382,4 +453,18 @@ function hasvalue(arr::TimestepArray{VariableTimestep{D_FIRST}, T, N, ti},
 	idxs::Int...) where {T, N, ti, D_FIRST, T_FIRST}
 
 	return D_FIRST[1] <= gettime(ts) <= last_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
+end
+
+# Helper functions for TimestepValue type
+function _get_time_value_position_(times::Array, ts::TimestepValue)
+	t = findfirst(isequal.(ts.value, times))
+	if t === nothing
+		error("cannot use TimestepValue with value $(ts.value), value is not in the TimestepArray")
+	end
+
+	t_offset = t + ts.offset
+	if t_offset > length(times) 
+		error("cannot get TimestepValue offset of $(ts.offset) from value $(ts.value), offset is after the end of the TimestepArray")
+	end
+	return t_offset
 end
