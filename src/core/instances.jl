@@ -283,13 +283,14 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
         time_keys = time_keys[1:ntimesteps]
     end
 
-    # TBD: Pass this, but substitute t from above?
-    dim_val_dict = DimValueDict(dim_dict(mi.md))
+    clock = Clock(time_keys)
+
+    # Get the dimensions dictionary
+    dim_val_dict = DimValueDict(dim_dict(mi.md), clock)
 
     # recursively initializes all components
     init(mi, dim_val_dict)
 
-    clock = Clock(time_keys)
     while ! finished(clock)
         run_timestep(mi, clock, dim_val_dict)
         advance(clock)
