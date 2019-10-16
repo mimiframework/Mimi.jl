@@ -56,8 +56,7 @@ struct DimValueDict <: MimiStruct
     dict::Dict{Symbol, Union{Vector{Int}, Vector{AbstractTimestep}}}
 
     function DimValueDict(dim_dict::AbstractDict, clock::Clock)
-        vector_of_timesteps = collect(clock)
-        d = Dict([name => (name == :time ? vector_of_timesteps : collect(values(dim))) for (name, dim) in dim_dict])
+        d = Dict([name => (name == :time ? collect(clock) : collect(values(dim))) for (name, dim) in dim_dict])
         new(d)
     end
 end
