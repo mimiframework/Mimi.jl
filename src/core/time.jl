@@ -177,7 +177,7 @@ function Base.collect(c::Clock)
 	c = deepcopy(c)
 	timesteps = AbstractTimestep[]
 	while !finished(c)
-		push!(timesteps, c.ts)
+		push!(timesteps, timestep(c))
 		advance(c)
 	end
 	return timesteps
