@@ -26,7 +26,7 @@ struct TimestepValue{T}
     value::T
     offset::Int
 
-    function TimestepValue(v::T; offset::Int = 0)
+    function TimestepValue(v::T; offset::Int = 0) where T
         return new{T}(v, offset)
     end
 end
