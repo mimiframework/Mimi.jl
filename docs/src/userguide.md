@@ -186,8 +186,8 @@ In the `run_timestep` functions which the user defines, it may be useful to use 
 is_first(t) # returns true or false, true if t is the first timestep to be run
 is_last(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
-is_time(t, s) # Return true or false, true if the current time (year) for t is y
-is_timestep(t, y) # rReturn true or false, true if t timestep is step s.
+is_time(t, y) # Return true or false, true if the current time (year) for t is y
+is_timestep(t, s) # Return true or false, true if t timestep is step s.
 ```
 
 The API details for AbstractTimestep object `t` are as follows:

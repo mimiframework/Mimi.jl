@@ -34,6 +34,20 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 #1b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
+# TimestepValue and TimestepIndex Indexing
+@test x[TimestepIndex(1)] == 9
+@test x[TimestepIndex(1) + 1] == 10
+@test x[TimestepIndex(4)] == 12
+@test_throws ErrorException x[TimestepIndex(5)]
+
+# TODO_LFR - these all fail with no method found ...
+@test x[TimestepValue(2000)] == 9
+@test x[TimestepValue(2000, 1)] == 10
+@test x[TimestepValue(2000) + 1] == 10
+@test_throws ErrorException x[TimestepValue(2005)]
+@test_throws ErrorException x[TimestepValue(2004)+1]
+
+# AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
 
 @test hasvalue(x, t)
@@ -53,8 +67,9 @@ t3 = FixedTimestep{2000, 1, 2003}(1)
 x[t3] = 100
 @test x[t3] == 100
 
+# Deprecated Int Indexing
 x[1] = 101
-@test x[1] == 101
+@test x[1] == 101 # TODO_LFR: test for warning
 
 
 #------------------------------------------------------------------------------
@@ -67,6 +82,22 @@ x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 #2a.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
+# TimestepValue and TimestepIndex Indexing
+@test x[TimestepIndex(1)] == 9
+@test x[TimestepIndex(1) + 1] == 10
+@test x[TimestepIndex(4)] == 12
+@test_throws ErrorException x[TimestepIndex(5)]
+
+# TODO_LFR - these all fail with no method found ...
+@test x[TimestepValue(2000)] == 9
+@test x[TimestepValue(2000, 1)] == 10
+@test x[TimestepValue(2015)] == 11
+@test x[TimestepValue(2015, 1)] == 12
+@test x[TimestepValue(2000) + 1] == 10
+@test_throws ErrorException x[TimestepValue(2014)]
+@test_throws ErrorException x[TimestepValue(2025)+1]
+
+# AbstractTimestep Indexing
 y2 = Tuple([2005:5:2010; 2015:10:3000])
 t = VariableTimestep{y2}()
 
@@ -88,8 +119,9 @@ t3 = VariableTimestep{years}()
 x[t3] = 100
 @test x[t3] == 100
 
+# Deprecated Int Indexing
 x[1] = 101
-@test x[1] == 101
+@test x[1] == 101 # TODO_LFR: test for warning
 
 
 #------------------------------------------------------------------------------
@@ -129,8 +161,8 @@ y[t3, 1] = 10
 @test y[t3,1] == 10
 
 y[:,:] = 11
-@test all([y[i,1] == 11 for i in 1:4])
-@test all([y[1,j] == 11 for j in 1:2])    
+@test all([y[i,1] == 11 for i in 1:4]) # TODO_LFR: test for warning
+@test all([y[1,j] == 11 for j in 1:2]) # TODO_LFR: test for warning 
 
 #3c.  interval wider than 1
 z = TimestepMatrix{FixedTimestep{2000, 2}, Int, 1}(a[:,3:4])
@@ -178,8 +210,8 @@ y[t3, 1] = 10
 @test y[t3,1] == 10
 
 y[:,:] = 11
-@test all([y[i,1] == 11 for i in 1:4])
-@test all([y[1,j] == 11 for j in 1:2])    
+@test all([y[i,1] == 11 for i in 1:4]) # TODO_LFR: test for warning
+@test all([y[1,j] == 11 for j in 1:2]) # TODO_LFR: test for warning
 
 
 #------------------------------------------------------------------------------

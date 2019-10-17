@@ -32,7 +32,9 @@ plot_comp_graph
 replace_comp! 
 set_dimension! 
 set_leftover_params! 
-set_param! 
+set_param!
+TimestepIndex
+TimestepValue
 variables  
 variable_dimensions
 variable_names
