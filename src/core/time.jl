@@ -107,7 +107,7 @@ function Base.:-(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 end
 
 function Base.:-(ts::TimestepValue, val::Int) 
-	return TimestepValue(ts.value, ts.offset - val)
+	return TimestepValue(ts.value; offset = ts.offset - val)
 end
 
 function Base.:-(ts::TimestepIndex, val::Int) 
@@ -134,7 +134,7 @@ function Base.:+(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
 end
 
 function Base.:+(ts::TimestepValue, val::Int) 
-	return TimestepValue(ts.value, ts.offset + val)
+	return TimestepValue(ts.value; offset = ts.offset + val)
 end
 
 function Base.:+(ts::TimestepIndex, val::Int) 

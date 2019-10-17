@@ -4,7 +4,7 @@ using Mimi
 using Test
 
 import Mimi:
-    FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, next_timestep, hasvalue, 
+    FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, TimestepArray, next_timestep, hasvalue, 
     isuniform, first_period, last_period, first_and_step
 
 a = collect(reshape(1:16,4,4))
@@ -40,9 +40,8 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 @test x[TimestepIndex(4)] == 12
 @test_throws ErrorException x[TimestepIndex(5)]
 
-# TODO_LFR - these all fail with no method found ...
 @test x[TimestepValue(2000)] == 9
-@test x[TimestepValue(2000, 1)] == 10
+@test x[TimestepValue(2000; offset = 1)] == 10
 @test x[TimestepValue(2000) + 1] == 10
 @test_throws ErrorException x[TimestepValue(2005)]
 @test_throws ErrorException x[TimestepValue(2004)+1]
@@ -88,11 +87,10 @@ x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 @test x[TimestepIndex(4)] == 12
 @test_throws ErrorException x[TimestepIndex(5)]
 
-# TODO_LFR - these all fail with no method found ...
 @test x[TimestepValue(2000)] == 9
-@test x[TimestepValue(2000, 1)] == 10
+@test x[TimestepValue(2000; offset = 1)] == 10
 @test x[TimestepValue(2015)] == 11
-@test x[TimestepValue(2015, 1)] == 12
+@test x[TimestepValue(2015; offset = 1)] == 12
 @test x[TimestepValue(2000) + 1] == 10
 @test_throws ErrorException x[TimestepValue(2014)]
 @test_throws ErrorException x[TimestepValue(2025)+1]
@@ -134,9 +132,25 @@ years = Tuple(2000:1:2003)
 
 y = TimestepMatrix{FixedTimestep{2000, 1}, Int, 1}(a[:,1:2])
 
+# TimestepValue and TimestepIndex Indexing
+@test y[TimestepIndex(1), 1] == 1
+@test y[TimestepIndex(1), 2] == 5
+@test y[TimestepIndex(1) + 1, 1] == 2
+@test y[TimestepIndex(4), 2] == 8
+@test_throws ErrorException y[TimestepIndex(5), 2]
+
+@test y[TimestepValue(2000), 1] == 1
+@test y[TimestepValue(2000), 2] == 5
+@test y[TimestepValue(2001), :] == [2,6]
+@test y[TimestepValue(2000; offset = 1), 1] == 2
+@test y[TimestepValue(2000) + 1, 1] == 2
+@test_throws ErrorException y[TimestepValue(2005), 1]
+@test_throws ErrorException y[TimestepValue(2004)+1, 1]
+
 #3b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
+# AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
 
 @test hasvalue(y, t, 1) 
@@ -160,6 +174,7 @@ t3 = FixedTimestep{2000, 1, 2005}(1)
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
+# Deprecated Int Indexing
 y[:,:] = 11
 @test all([y[i,1] == 11 for i in 1:4]) # TODO_LFR: test for warning
 @test all([y[1,j] == 11 for j in 1:2]) # TODO_LFR: test for warning 
@@ -186,6 +201,23 @@ y = TimestepMatrix{VariableTimestep{years}, Int, 1}(a[:,1:2])
 #4a.  test hasvalue, getindex, setindex!, and lastindex (with both matching years and
 # mismatched years)
 
+# TimestepValue and TimestepIndex Indexing
+@test y[TimestepIndex(1), 1] == 1
+@test y[TimestepIndex(1), 2] == 5
+@test y[TimestepIndex(1) + 1, 1] == 2
+@test y[TimestepIndex(4), 2] == 8
+@test_throws ErrorException y[TimestepIndex(5), 2]
+
+@test y[TimestepValue(2000), 1] == 1
+@test y[TimestepValue(2000), 2] == 5
+@test y[TimestepValue(2000; offset = 1), 1] == 2
+@test y[TimestepValue(2000) + 1, 1] == 2
+@test y[TimestepValue(2015), 1] == 3
+@test y[TimestepValue(2015) + 1, 2] == 8
+@test_throws ErrorException y[TimestepValue(2006), 1]
+@test_throws ErrorException y[TimestepValue(2025)+1, 1]
+
+# AbstractTimestep Indexing
 t = VariableTimestep{Tuple([2005:5:2010; 2015:10:3000])}()
 
 @test hasvalue(y, t, 1) 
@@ -209,15 +241,37 @@ t3 = VariableTimestep{years}()
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
+# Deprecated Integer Indexing
 y[:,:] = 11
 @test all([y[i,1] == 11 for i in 1:4]) # TODO_LFR: test for warning
 @test all([y[1,j] == 11 for j in 1:2]) # TODO_LFR: test for warning
-
 
 #------------------------------------------------------------------------------
 # 5. Test TimestepArray methods 
 #------------------------------------------------------------------------------
 
+# 3 dimensional array
+years = Tuple([2000:5:2005; 2015:10:2025])
+data = collect(reshape(1:64, 4, 4, 4))
+arr_fixed = TimestepArray{FixedTimestep{2000, 5}, Int, 3, 1}(data)
+arr_variable = TimestepArray{VariableTimestep{years}, Int, 3, 1}(data)
+
+@test arr_fixed[TimestepValue(2000), 1, 1] == 1
+@test arr_fixed[TimestepValue(2010), 3, 3] == 43
+@test arr_variable[TimestepValue(2000), 1, 1] == 1
+@test arr_variable[TimestepValue(2015), 3, 3] == 43
+
+@test arr_fixed[TimestepIndex(1), 1, 1] == 1
+@test arr_fixed[TimestepIndex(3), 3, 3] == 43
+@test arr_variable[TimestepIndex(1), 1, 1] == 1
+@test arr_variable[TimestepIndex(3), 3, 3] == 43
+
+@test_throws ErrorException arr_fixed[TimestepValue(2000)]
+@test_throws ErrorException arr_variable[TimestepValue(2000)]
+@test_throws ErrorException arr_fixed[TimestepIndex(1)]
+@test_throws ErrorException arr_variable[TimestepIndex(1)]
+
+# other methods
 x_years = Tuple(2000:5:2015) #fixed
 y_years = Tuple([2000:5:2005; 2015:10:2025]) #variable
 
@@ -245,7 +299,6 @@ fill!(x, 2)
 fill!(y, 2)
 @test x.data == fill(2, (4))
 @test y.data == fill(2, (4, 2))
-
 
 #------------------------------------------------------------------------------
 # 6. Test that getindex for TimestepArrays doesn't allow access to `missing`
