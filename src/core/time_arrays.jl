@@ -55,9 +55,14 @@ function _single_index_check(data, idxs)
 	end
 end
 
-# Helper function for getindex and setindex; throws an error if one indexes into a TimestepArray with an integer
-function _throw_int_index_warning()
-	@warn("Indexing into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
+# Helper function for getindex; throws an error if one indexes into a TimestepArray with an integer
+function _throw_int_getindex_warning()
+	@warn("Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
+end
+
+# Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
+function _throw_int_setindex_warning()
+	@warn("Indexing with setindex into a TimestepArray with Integer(s) is deprecated")
 end
 
 # Helper macro used by connector
@@ -160,23 +165,23 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-# deprecated
 function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::AnyIndex) where {T, FIRST, STEP}
-	_throw_int_index_warning()
+	_throw_int_getindex_warning()
 	return v.data[i]
 end
 
-#deprecated
 function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::AnyIndex) where {T, TIMES}
-	_throw_int_index_warning()
+	_throw_int_getindex_warning()
 	return v.data[i]
 end
 
 function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex) where {T, Start, STEP}
+	_throw_int_setindex_warning()
 	setindex!(v.data, val, i)
 end
 
 function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex) where {T, TIMES}
+	_throw_int_setindex_warning()
 	setindex!(v.data, val, i)
 end
 
@@ -314,31 +319,33 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-# deprecated
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP, ti}
-	_throw_int_index_warning()
+	_throw_int_getindex_warning()
 	return mat.data[idx1, idx2]
 end
 
-# deprecated
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES, ti}
-	_throw_int_index_warning()
+	_throw_int_getindex_warning()
 	return mat.data[idx1, idx2]
 end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::Int, idx2::Int) where {T, FIRST, STEP, ti}
+	_throw_int_setindex_warning()
 	setindex!(mat.data, val, idx1, idx2)
 end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP, ti}
+	_throw_int_setindex_warning()
 	mat.data[idx1, idx2] .= val
 end
 
 function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::Int, idx2::Int) where {T, TIMES, ti}
+	_throw_int_setindex_warning()
 	setindex!(mat.data, val, idx1, idx2)
 end
 
 function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES, ti}
+	_throw_int_setindex_warning()
 	mat.data[idx1, idx2] .= val
 end
 
@@ -450,23 +457,23 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API; first index is Int or Range, rather than a Timestep
 
-# deprecated
 function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, FIRST, STEP}
-	_throw_int_index_warning()
+	_throw_int_getindex_warning()
 	return arr.data[idx1, idx2, idxs...]
 end
 
-# deprecated
 function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, TIMES}
-	_throw_int_index_warning()
+	_throw_int_getindex_warning()
 	return arr.data[idx1, idx2, idxs...]
 end
 
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, FIRST, STEP}
+	_throw_int_setindex_warning()
 	setindex!(arr.data, val, idx1, idx2, idxs...)
 end
 
 function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, TIMES}
+	_throw_int_setindex_warning()
 	setindex!(arr.data, val, idx1, idx2, idxs...)
 end
 

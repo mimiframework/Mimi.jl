@@ -7,6 +7,9 @@ import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, TimestepArray, next_timestep, hasvalue, 
     isuniform, first_period, last_period, first_and_step
 
+# general variables
+getindex_warn_msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
+setindex_warn_msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated"
 a = collect(reshape(1:16,4,4))
 
 ## quick check of isuniform
@@ -66,9 +69,9 @@ t3 = FixedTimestep{2000, 1, 2003}(1)
 x[t3] = 100
 @test x[t3] == 100
 
-# Deprecated Int Indexing
-x[1] = 101
-@test x[1] == 101 # TODO_LFR: test for warning
+# Deprecated setindex and getindex method
+@test_logs (:warn, setindex_warn_msg) (x[1] = 101)
+@test_logs (:warn, getindex_warn_msg) x[1] == 101
 
 
 #------------------------------------------------------------------------------
@@ -118,9 +121,8 @@ x[t3] = 100
 @test x[t3] == 100
 
 # Deprecated Int Indexing
-x[1] = 101
-@test x[1] == 101 # TODO_LFR: test for warning
-
+@test_logs (:warn, setindex_warn_msg) (x[1] = 101)
+@test_logs (:warn, getindex_warn_msg) x[1] == 101
 
 #------------------------------------------------------------------------------
 # 3. Test TimestepMatrix - Fixed Timestep 
@@ -175,9 +177,14 @@ y[t3, 1] = 10
 @test y[t3,1] == 10
 
 # Deprecated Int Indexing
-y[:,:] = 11
-@test all([y[i,1] == 11 for i in 1:4]) # TODO_LFR: test for warning
-@test all([y[1,j] == 11 for j in 1:2]) # TODO_LFR: test for warning 
+@test_logs (:warn, setindex_warn_msg) y[:,:] = 11
+for i = 1:4
+    @test_logs (:warn, getindex_warn_msg) y[i,1] == 11 
+end
+for j = 1:2
+    @test_logs (:warn, getindex_warn_msg) y[1,j] == 11
+end
+
 
 #3c.  interval wider than 1
 z = TimestepMatrix{FixedTimestep{2000, 2}, Int, 1}(a[:,3:4])
@@ -241,10 +248,14 @@ t3 = VariableTimestep{years}()
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
-# Deprecated Integer Indexing
-y[:,:] = 11
-@test all([y[i,1] == 11 for i in 1:4]) # TODO_LFR: test for warning
-@test all([y[1,j] == 11 for j in 1:2]) # TODO_LFR: test for warning
+# Deprecated Int Indexing
+@test_logs (:warn, setindex_warn_msg) y[:,:] = 11
+for i = 1:4
+    @test_logs (:warn, getindex_warn_msg) y[i,1] == 11 
+end
+for j = 1:2
+    @test_logs (:warn, getindex_warn_msg) y[1,j] == 11
+end
 
 #------------------------------------------------------------------------------
 # 5. Test TimestepArray methods 
