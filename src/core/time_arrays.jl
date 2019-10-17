@@ -37,6 +37,13 @@ function _missing_data_check(data, t)
 	end
 end
 
+# Helper function for getindex; throws an error if the TimestepIndex index is out of range of the TimestepArray
+function _index_bounds_check(data, dim, t)
+	if size(data, dim) < t
+		error("TimestepIndex index $t extends beyond bounds of TimestepArray dimension $dim")
+	end
+end
+
 # Helper macro used by connector
 macro allow_missing(expr)
 	let e = gensym("e")
@@ -115,7 +122,8 @@ end
 
 function Base.getindex(v::TimestepVector, ts::TimestepIndex) 
 	t = ts.index
-	length(v.data) < t ? error("TimestepIndex index $t extends beyond end of TimestepArray") : data = v.data[t]
+	_index_bounds_check(v.data, 1, t)
+	data = v.data[t]
 	_missing_data_check(data, t)
 end
 
@@ -229,7 +237,8 @@ end
 
 function Base.getindex(mat::TimestepMatrix, ts::TimestepIndex, idx::AnyIndex)
 	t = ts.index
-	size(mat.data, 1) < t ? error("TimestepIndex index $t extends beyond end of first dim of TimestepMatrix") : data = mat.data[t, idx]
+	_index_bounds_check(mat.data, 1, t)
+	data = mat.data[t, idx]
 	_missing_data_check(data, t)
 end
 
@@ -247,7 +256,8 @@ end
 
 function Base.getindex(mat::TimestepMatrix, idx::AnyIndex, ts::TimestepIndex)
 	t = ts.t
-	size(mat.data, 2) < t ? error("TimestepIndex index $t extends beyond end of second dim of TimestepMatrix") : data = mat.data[idx, t]
+	_index_bounds_check(mat.data, 2, t)
+	data = mat.data[idx, t]
 	_missing_data_check(data, t)
 end
 
@@ -385,7 +395,8 @@ end
 function Base.getindex(arr::TimestepArray{AbstractTimestep, T, N, ti}, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = ts.t
-	size(arr.data, ti) < t ? error("TimestepIndex index $t extends beyond end of first dim of TimestepMatrix") : return arr.data[idxs1..., t, idxs2...]
+	_index_bounds_check(arr.data, ti, t)
+	return arr.data[idxs1..., t, idxs2...]
 end
 
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::Union{FixedTimestep{FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
