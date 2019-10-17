@@ -58,11 +58,7 @@ In an effort to standardize the function naming protocol within Mimi, and to str
 
 Changes to various optional keyword arguments:
 
-- `add_comp!`:  Previously the optional keyword arguments `start` and `stop` could be used to specify times for components that do not run for the full length of the model. These arguments are now `first` and `last` respectively.
-
-```julia
-add_comp!(mymodel, ComponentC; first=2010, last=2100)
-```
+- `add_comp!`:  Through Mimi v0.9.4, the optional keyword arguments `first` and `last` could be used to specify times for components that do not run for the full length of the model, like this: `add_comp!(mymodel, ComponentC; first=2010, last=2100)`. This functionality is currently disabled, and all components must run for the full length of the model's time dimension. This functionality may be re-implemented in a later version of Mimi.
 
 ## Running a Model
 
