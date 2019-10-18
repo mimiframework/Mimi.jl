@@ -72,7 +72,7 @@ include("core/order.jl")
 include("core/paths.jl")
 include("core/show.jl")
 
-include("mcs/mcs.jl") # need mcs types for explorer
+include("mcs/mcs.jl") # need mcs types for explorer and utils
 include("explorer/explore.jl")
 include("utils/getdataframe.jl")
 include("utils/graph.jl")

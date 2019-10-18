@@ -121,7 +121,7 @@ macro defcomposite(cc_name, ex)
     comps = SubComponent[]
     imports = []
     conns = []
-    
+
     calling_module = __module__
     # @info "defcomposite calling module: $calling_module"
 
@@ -154,7 +154,7 @@ macro defcomposite(cc_name, ex)
                 # @info "import as $left = $var_par"
 
             # note that `comp_Symbol.name_Symbol` failed; bug in MacroTools?
-            elseif @capture(left, comp_.name_) # simple connection case                
+            elseif @capture(left, comp_.name_) # simple connection case
                 dst = parse_dotted_symbols(left)
                 dst === nothing && error("Expected dot-delimited sequence of symbols, got $left")
 
@@ -179,7 +179,7 @@ macro defcomposite(cc_name, ex)
     result = :(
         let conns = $conns,
             imports = $imports,
-            
+
             cc_id = Mimi.ComponentId($calling_module, $(QuoteNode(cc_name)))
 
             global $cc_name = Mimi.CompositeComponentDef(cc_id, $(QuoteNode(cc_name)), $comps, $__module__)
@@ -188,7 +188,7 @@ macro defcomposite(cc_name, ex)
 
             function _store_in_ns(refs, local_name)
                 isempty(refs) && return
-                
+
                 if length(refs) == 1
                     $cc_name[local_name] = refs[1]
                 else
@@ -218,12 +218,13 @@ macro defcomposite(cc_name, ex)
                 _store_in_ns(par_refs, local_name)
             end
 
-            # Mimi.import_params!($cc_name)
-
             for ((dst_path, dst_name), (src_path, src_name)) in conns
                 # @info "connect_param!($(nameof($cc_name)), $dst_path, :$dst_name, $src_path, :$src_name)"
                 Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
             end
+
+            # propagates unconnected parameters
+            Mimi.propagate_params!($cc_name)
 
             $cc_name
         end
