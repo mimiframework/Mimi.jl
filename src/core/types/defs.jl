@@ -15,8 +15,8 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
-# TBD: old definition; should deprecate this...
-name(obj::AbstractNamedObj) = obj.name
+# Deprecate old definition in favor of standard name
+@deprecate name(obj::AbstractNamedObj) nameof(obj)
 
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
@@ -47,7 +47,7 @@ end
     # That type is defined later, so we declare Any here. Parent is `nothing` for
     # detached (i.e., "template") components and is set when added to a composite.
     parent::Any
-    
+
 
     function ComponentDef(self::ComponentDef, comp_id::Nothing)
         error("Leaf ComponentDef objects must have a valid ComponentId name (not nothing)")
@@ -162,7 +162,7 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
 end
 
 # Used by @defcomposite
-function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Vector{SubComponent}, 
+function CompositeComponentDef(comp_id::ComponentId, alias::Symbol, subcomps::Vector{SubComponent},
                                calling_module::Module)
     # @info "CompositeComponentDef($comp_id, $alias, $subcomps)"
     composite = CompositeComponentDef(comp_id)
