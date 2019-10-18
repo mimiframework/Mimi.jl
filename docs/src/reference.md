@@ -21,9 +21,7 @@ is_first
 is_last
 is_time
 is_timestep
-load_comps
 modeldef
-name
 parameter_names
 parameter_dimensions
 plot_comp_graph
