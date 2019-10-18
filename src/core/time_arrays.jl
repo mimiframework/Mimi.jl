@@ -62,7 +62,7 @@ end
 
 # Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_setindex_warning()
-	@warn("Indexing with setindex into a TimestepArray with Integer(s) is deprecated")
+	@warn("Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]")
 end
 
 # Helper macro used by connector
