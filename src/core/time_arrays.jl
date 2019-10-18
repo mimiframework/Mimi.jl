@@ -162,6 +162,10 @@ function Base.setindex!(v::TimestepVector{VariableTimestep{D_TIMES}, T}, val, ts
 	setindex!(v.data, val, t)
 end
 
+function Base.setindex!(v::TimestepVector, val, ts::TimestepIndex)
+	setindex!(v.data, val, ts.index)
+end
+
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
@@ -316,6 +320,14 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, va
 	setindex!(mat.data, val, idx, t)
 end
 
+function Base.setindex!(mat::TimestepMatrix, val, idx::AnyIndex, ts::TimestepIndex)
+	setindex!(mat.data, val, idx, ts.index)
+end
+
+function Base.setindex!(mat::TimestepMatrix, val, ts::TimestepIndex, idx::AnyIndex)
+	setindex!(mat.data, val, ts.index, idx)
+end
+
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
@@ -451,6 +463,18 @@ end
 function Base.setindex!(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti}, val, idxs::Union{VariableTimestep{T_TIMES}, AnyIndex}...) where {T, N, ti, D_TIMES, T_TIMES}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = ts.t + findfirst(isequal(T_FIRST[1]), T_TIMES) - 1
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, FIRST, STEP}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.index
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, TIMES}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.index
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 

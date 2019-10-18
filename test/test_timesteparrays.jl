@@ -49,6 +49,9 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 @test_throws ErrorException x[TimestepValue(2005)]
 @test_throws ErrorException x[TimestepValue(2004)+1]
 
+x[TimestepIndex(1)] = 100
+@test x[TimestepIndex(1)] == 100
+
 # AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
 
@@ -89,6 +92,10 @@ x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 @test x[TimestepIndex(1) + 1] == 10
 @test x[TimestepIndex(4)] == 12
 @test_throws ErrorException x[TimestepIndex(5)]
+
+x[TimestepIndex(1)] = 100
+@test x[TimestepIndex(1)] == 100
+x[TimestepIndex(1)] = 1 # reset
 
 @test x[TimestepValue(2000)] == 9
 @test x[TimestepValue(2000; offset = 1)] == 10
@@ -140,6 +147,10 @@ y = TimestepMatrix{FixedTimestep{2000, 1}, Int, 1}(a[:,1:2])
 @test y[TimestepIndex(1) + 1, 1] == 2
 @test y[TimestepIndex(4), 2] == 8
 @test_throws ErrorException y[TimestepIndex(5), 2]
+
+y[TimestepIndex(1), 1] = 100
+@test y[TimestepIndex(1), 1] == 100
+y[TimestepIndex(1), 1] = 1 # reset
 
 @test y[TimestepValue(2000), 1] == 1
 @test y[TimestepValue(2000), 2] == 5
@@ -215,6 +226,10 @@ y = TimestepMatrix{VariableTimestep{years}, Int, 1}(a[:,1:2])
 @test y[TimestepIndex(4), 2] == 8
 @test_throws ErrorException y[TimestepIndex(5), 2]
 
+y[TimestepIndex(1), 1] = 101
+@test y[TimestepIndex(1), 1] == 101
+y[TimestepIndex(1), 1] == 101 # reset
+
 @test y[TimestepValue(2000), 1] == 1
 @test y[TimestepValue(2000), 2] == 5
 @test y[TimestepValue(2000; offset = 1), 1] == 2
@@ -281,6 +296,13 @@ arr_variable = TimestepArray{VariableTimestep{years}, Int, 3, 1}(data)
 @test_throws ErrorException arr_variable[TimestepValue(2000)]
 @test_throws ErrorException arr_fixed[TimestepIndex(1)]
 @test_throws ErrorException arr_variable[TimestepIndex(1)]
+
+arr_fixed[TimestepIndex(1), 1, 1] = 101
+arr_variable[TimestepIndex(1), 1, 1] = 101
+@test arr_fixed[TimestepIndex(1), 1, 1] == 101
+@test arr_variable[TimestepIndex(1), 1, 1] == 101
+arr_fixed[TimestepIndex(1), 1, 1] == 101 # reset
+arr_variable[TimestepIndex(1), 1, 1] == 101 # reset
 
 # other methods
 x_years = Tuple(2000:5:2015) #fixed
