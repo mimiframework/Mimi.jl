@@ -350,6 +350,12 @@ function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     return unit(param)
 end
 
+"""
+    parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
+
+Return the names of the dimensions of parameter `param_name` exposed in the composite 
+component definition indicated by`obj`.
+"""
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
     return dim_names(param)
@@ -359,6 +365,12 @@ function parameter_unit(obj::AbstractComponentDef, comp_name::Symbol, param_name
     return parameter_unit(compdef(obj, comp_name), param_name)
 end
 
+"""
+    parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
+
+Return the names of the dimensions of parameter `param_name` in component `comp_name`,
+which is exposed in composite component definition indicated by`obj`.
+"""
 function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
@@ -562,11 +574,23 @@ unit(obj::AbstractDatumDef) = obj.unit
 unit(obj::VariableDefReference)  = variable(obj).unit
 unit(obj::ParameterDefReference) = parameter(obj).unit
 
+"""
+    variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
+
+Return the names of the dimensions of variable `var_name` exposed in the composite 
+component definition indicated by`obj` along the component path `comp_path`.
+"""
 function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
     return dim_names(var)
 end
 
+"""
+    variable_dimensions(obj::AbstractComponentDef, name::Symbol)
+
+Return the names of the dimensions of variable `name` exposed in the composite 
+component definition indicated by`obj`.
+"""
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
     return dim_names(var)
