@@ -225,6 +225,10 @@ struct SimIterator{NT, T}
     end
 end
 
-function Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+function getdataframe(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
     return sim_inst.results[model][(comp_name, datum_name)]
+end
+
+function Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+    error("getindex method for `SimulationInstance` has been replaced with getdataframe function for consistency of return type, please use getdataframe instead")
 end
