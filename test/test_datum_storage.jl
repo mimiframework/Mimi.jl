@@ -40,10 +40,7 @@ nregions = length(regions)
 
 m = Model()
 set_dimension!(m, :time, years)
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m, foo, first=comp_first, last=comp_last)
-)
+add_comp!(m, foo)
 
 run(m)
 v = m[:foo, :v]
@@ -82,10 +79,7 @@ end
 set_dimension!(m2, :time, years)
 set_dimension!(m2, :region, regions)
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m2, baz, first=comp_first, last=comp_last)
-)
+add_comp!(m2, baz)
 
 run(m2)
 v2 = m2[:baz, :v]
@@ -122,10 +116,7 @@ set_dimension!(m, :time, years_variable)
     end
 end
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m, foo2, first=foo2_first, last=foo2_last)
-)
+add_comp!(m, foo2)
 
 run(m)
 v = m[:foo2, :v]

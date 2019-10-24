@@ -154,11 +154,7 @@ run(m)
 
 m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
-
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m, MyComp2; first=2000, last=2020)
-)
+add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, [2005, 2020, 2050])
