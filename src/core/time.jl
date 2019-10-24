@@ -173,7 +173,7 @@ function Base.reset(c::Clock)
 	nothing
 end
 
-function Base.collect(c::Clock)
+function timesteps(c::Clock)
 	c = deepcopy(c)
 	timesteps = AbstractTimestep[]
 	while !finished(c)
