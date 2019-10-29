@@ -143,10 +143,7 @@ ci = compinstance(m, :C) # Get the component instance
 m = Model()
 set_dimension!(m, :time, 2000:2100)
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m, testcomp1, :C; first=2010, last=2090)  # Give explicit first and last values for the component
-)
+add_comp!(m, testcomp1, :C)
 
 cd = compdef(m.md, :C)      # Get the component definition in the model
 
