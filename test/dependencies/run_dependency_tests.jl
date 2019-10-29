@@ -11,10 +11,9 @@ for (pkg_url, pkg_rev, pkg_name) in packages_to_test
         Pkg.activate(folder)
 
         Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..", "..")))
+        Pkg.add(PackageSpec(url=pkg_url, rev=pkg_rev))
         Base.CoreLogging.with_logger(null) do
-            Pkg.add(PackageSpec(url=pkg_url, rev=pkg_rev))
+            Pkg.test(pkg_name)
         end
-
-        Pkg.test(pkg_name)
     end
 end
