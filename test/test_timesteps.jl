@@ -73,7 +73,18 @@ t4 = next_timestep(t3)
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 
+#------------------------------------------------------------------------------
+#  Test some basic functions for TimestepIndex and TimestepValue
+#------------------------------------------------------------------------------
+start = 1
+stop = 10
+step = 2
 
+@test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex.([start:stop...])
+@test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex(start):1:TimestepIndex(stop)
+@test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex(start):TimestepIndex(1):TimestepIndex(stop)
+@test TimestepIndex(start):step:TimestepIndex(stop) == TimestepIndex.([start:step:stop...])
+@test TimestepIndex(start):TimestepIndex(step):TimestepIndex(stop) == TimestepIndex.([start:step:stop...])
 #------------------------------------------------------------------------------
 #  Test a model with components with different offsets  
 #------------------------------------------------------------------------------
