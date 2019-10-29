@@ -43,15 +43,19 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 @test x[TimestepIndex(4)] == 12
 @test_throws ErrorException x[TimestepIndex(5)]
 
+x[TimestepIndex(1)] = 100
+@test x[TimestepIndex(1)] == 100
+x[TimestepIndex(1)] = 9 # reset for later tests
+
 @test x[TimestepValue(2000)] == 9
 @test x[TimestepValue(2000; offset = 1)] == 10
 @test x[TimestepValue(2000) + 1] == 10
 @test_throws ErrorException x[TimestepValue(2005)]
 @test_throws ErrorException x[TimestepValue(2004)+1]
 
-x[TimestepIndex(1)] = 100
-@test x[TimestepIndex(1)] == 100
-x[TimestepIndex(1)] = 9 # reset for later tests
+x[TimestepValue(2000)] = 101
+@test x[TimestepValue(2000)] == 101
+x[TimestepValue(2000)] = 9 # reset for later tests
 
 # AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
@@ -76,7 +80,6 @@ x[t3] = 100
 # Deprecated setindex and getindex method
 @test_logs (:warn, setindex_warn_msg) (x[1] = 101)
 @test_logs (:warn, getindex_warn_msg) x[1] == 101
-
 
 #------------------------------------------------------------------------------
 # 2. Test TimestepVector - Variable Timestep 
@@ -105,6 +108,10 @@ x[TimestepIndex(1)] = 9 # reset
 @test x[TimestepValue(2000) + 1] == 10
 @test_throws ErrorException x[TimestepValue(2014)]
 @test_throws ErrorException x[TimestepValue(2025)+1]
+
+x[TimestepValue(2015)] = 100
+@test x[TimestepValue(2015)] == 100
+x[TimestepValue(2015)] = 11 # reset
 
 # AbstractTimestep Indexing
 y2 = Tuple([2005:5:2010; 2015:10:3000])
@@ -160,6 +167,10 @@ y[TimestepIndex(1), 1] = 1 # reset
 @test y[TimestepValue(2000) + 1, 1] == 2
 @test_throws ErrorException y[TimestepValue(2005), 1]
 @test_throws ErrorException y[TimestepValue(2004)+1, 1]
+
+y[TimestepValue(2000), 1] = 101
+@test y[TimestepValue(2000), 1] == 101
+y[TimestepValue(2000), 1] = 1 # reset
 
 #3b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
@@ -240,6 +251,10 @@ y[TimestepIndex(1), 1] = 1 # reset
 @test_throws ErrorException y[TimestepValue(2006), 1]
 @test_throws ErrorException y[TimestepValue(2025)+1, 1]
 
+y[TimestepValue(2015), 1] = 100
+@test y[TimestepValue(2015), 1] == 100
+y[TimestepValue(2015), 1] = 3 # reset
+
 # AbstractTimestep Indexing
 t = VariableTimestep{Tuple([2005:5:2010; 2015:10:3000])}()
 
@@ -283,20 +298,10 @@ data = collect(reshape(1:64, 4, 4, 4))
 arr_fixed = TimestepArray{FixedTimestep{2000, 5}, Int, 3, 1}(data)
 arr_variable = TimestepArray{VariableTimestep{years}, Int, 3, 1}(data)
 
-@test arr_fixed[TimestepValue(2000), 1, 1] == 1
-@test arr_fixed[TimestepValue(2010), 3, 3] == 43
-@test arr_variable[TimestepValue(2000), 1, 1] == 1
-@test arr_variable[TimestepValue(2015), 3, 3] == 43
-
 @test arr_fixed[TimestepIndex(1), 1, 1] == 1
 @test arr_fixed[TimestepIndex(3), 3, 3] == 43
 @test arr_variable[TimestepIndex(1), 1, 1] == 1
 @test arr_variable[TimestepIndex(3), 3, 3] == 43
-
-@test_throws ErrorException arr_fixed[TimestepValue(2000)]
-@test_throws ErrorException arr_variable[TimestepValue(2000)]
-@test_throws ErrorException arr_fixed[TimestepIndex(1)]
-@test_throws ErrorException arr_variable[TimestepIndex(1)]
 
 arr_fixed[TimestepIndex(1), 1, 1] = 101
 arr_variable[TimestepIndex(1), 1, 1] = 101
@@ -304,6 +309,24 @@ arr_variable[TimestepIndex(1), 1, 1] = 101
 @test arr_variable[TimestepIndex(1), 1, 1] == 101
 arr_fixed[TimestepIndex(1), 1, 1] = 1 # reset
 arr_variable[TimestepIndex(1), 1, 1] = 1 # reset
+
+@test_throws ErrorException arr_fixed[TimestepIndex(1)]
+@test_throws ErrorException arr_variable[TimestepIndex(1)]
+
+@test arr_fixed[TimestepValue(2000), 1, 1] == 1
+@test arr_fixed[TimestepValue(2010), 3, 3] == 43
+@test arr_variable[TimestepValue(2000), 1, 1] == 1
+@test arr_variable[TimestepValue(2015), 3, 3] == 43
+
+arr_fixed[TimestepValue(2000), 1, 1] = 101
+arr_variable[TimestepValue(2000), 1, 1] = 101
+@test arr_fixed[TimestepValue(2000), 1, 1] == 101
+@test arr_variable[TimestepValue(2000), 1, 1] == 101
+arr_fixed[TimestepValue(2000), 1, 1] = 1 # reset
+arr_variable[TimestepValue(2000), 1, 1] = 1 # reset
+
+@test_throws ErrorException arr_fixed[TimestepValue(2000)]
+@test_throws ErrorException arr_variable[TimestepValue(2000)]
 
 # other methods
 x_years = Tuple(2000:5:2015) #fixed

@@ -162,6 +162,17 @@ function Base.setindex!(v::TimestepVector{VariableTimestep{D_TIMES}, T}, val, ts
 	setindex!(v.data, val, t)
 end
 
+function Base.setindex!(v::TimestepVector{FixedTimestep{FIRST, STEP}, T_data}, val, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, T_time}
+	LAST = FIRST + ((length(v.data)-1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(v.data, val, t)
+end
+
+function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T_data}, val, ts::TimestepValue{T_time}) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(v.data, val, t)
+end
+
 function Base.setindex!(v::TimestepVector, val, ts::TimestepIndex)
 	setindex!(v.data, val, ts.index)
 end
@@ -320,6 +331,28 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, va
 	setindex!(mat.data, val, idx, t)
 end
 
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T_data, 1}, val, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, FIRST, STEP, T_time}
+	LAST = FIRST + ((size(mat.data, 1) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(mat.data, val, t, idx)
+end
+
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 1}, val, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(mat.data, val, t, idx)
+end
+
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T_data, 2}, val, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, T_time}
+	LAST = FIRST + ((size(mat.data, 1) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(mat.data, val, idx, t)
+end
+
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 2}, val, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(mat.data, val, idx, t)
+end
+
 function Base.setindex!(mat::TimestepMatrix, val, idx::AnyIndex, ts::TimestepIndex)
 	setindex!(mat.data, val, idx, ts.index)
 end
@@ -463,6 +496,21 @@ end
 function Base.setindex!(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti}, val, idxs::Union{VariableTimestep{T_TIMES}, AnyIndex}...) where {T, N, ti, D_TIMES, T_TIMES}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	t = ts.t + findfirst(isequal(T_FIRST[1]), T_TIMES) - 1
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, val, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_time}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((size(arr.data, ti) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, val, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, TIMES, T_time}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = _get_time_value_position(TIMES, ts)
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
