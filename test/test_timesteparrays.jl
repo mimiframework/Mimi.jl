@@ -9,7 +9,7 @@ import Mimi:
 
 # general variables
 getindex_warn_msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
-setindex_warn_msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated"
+setindex_warn_msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]"
 a = collect(reshape(1:16,4,4))
 
 ## quick check of isuniform
@@ -51,6 +51,7 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 
 x[TimestepIndex(1)] = 100
 @test x[TimestepIndex(1)] == 100
+x[TimestepIndex(1)] = 9 # reset for later tests
 
 # AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
@@ -95,7 +96,7 @@ x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 
 x[TimestepIndex(1)] = 100
 @test x[TimestepIndex(1)] == 100
-x[TimestepIndex(1)] = 1 # reset
+x[TimestepIndex(1)] = 9 # reset
 
 @test x[TimestepValue(2000)] == 9
 @test x[TimestepValue(2000; offset = 1)] == 10
@@ -228,7 +229,7 @@ y = TimestepMatrix{VariableTimestep{years}, Int, 1}(a[:,1:2])
 
 y[TimestepIndex(1), 1] = 101
 @test y[TimestepIndex(1), 1] == 101
-y[TimestepIndex(1), 1] == 101 # reset
+y[TimestepIndex(1), 1] = 1 # reset
 
 @test y[TimestepValue(2000), 1] == 1
 @test y[TimestepValue(2000), 2] == 5
@@ -301,8 +302,8 @@ arr_fixed[TimestepIndex(1), 1, 1] = 101
 arr_variable[TimestepIndex(1), 1, 1] = 101
 @test arr_fixed[TimestepIndex(1), 1, 1] == 101
 @test arr_variable[TimestepIndex(1), 1, 1] == 101
-arr_fixed[TimestepIndex(1), 1, 1] == 101 # reset
-arr_variable[TimestepIndex(1), 1, 1] == 101 # reset
+arr_fixed[TimestepIndex(1), 1, 1] = 1 # reset
+arr_variable[TimestepIndex(1), 1, 1] = 1 # reset
 
 # other methods
 x_years = Tuple(2000:5:2015) #fixed
