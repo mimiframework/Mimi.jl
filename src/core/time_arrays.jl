@@ -55,14 +55,22 @@ function _single_index_check(data, idxs)
 	end
 end
 
-# Helper function for getindex; throws an error if one indexes into a TimestepArray with an integer
+# Helper functions for getindex and setindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_getindex_warning()
 	@warn("Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
+	_print_stacktrace()
 end
 
-# Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_setindex_warning()
 	@warn("Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]")
+	_print_stacktrace()
+end
+
+function _print_stacktrace()
+	println("Stacktrace for warning as follows:")
+	for line in stacktrace()
+		println("    $line")
+	end
 end
 
 # Helper macro used by connector
