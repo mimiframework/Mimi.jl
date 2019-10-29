@@ -199,15 +199,17 @@ t3 = FixedTimestep{2000, 1, 2005}(1)
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
-# Deprecated Int Indexing
-@test_logs (:warn, setindex_warn_msg) y[:,:] = 11
+# Colon indexing 
+y[:,:] = 11
+@test y[:,:] == fill(11,4,2)
+
+# Deprecated Int Indexing 
 for i = 1:4
     @test_logs (:warn, getindex_warn_msg) y[i,1] == 11 
 end
 for j = 1:2
     @test_logs (:warn, getindex_warn_msg) y[1,j] == 11
 end
-
 
 #3c.  interval wider than 1
 z = TimestepMatrix{FixedTimestep{2000, 2}, Int, 1}(a[:,3:4])
@@ -279,8 +281,11 @@ t3 = VariableTimestep{years}()
 y[t3, 1] = 10
 @test y[t3,1] == 10
 
+# Colon indexing 
+y[:,:] = 11
+@test y[:,:] == fill(11,4,2)
+
 # Deprecated Int Indexing
-@test_logs (:warn, setindex_warn_msg) y[:,:] = 11
 for i = 1:4
     @test_logs (:warn, getindex_warn_msg) y[i,1] == 11 
 end

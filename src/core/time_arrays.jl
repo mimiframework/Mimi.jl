@@ -187,6 +187,24 @@ function Base.setindex!(v::TimestepVector, val, ts::TimestepIndex)
 	setindex!(v.data, val, ts.index)
 end
 
+# Colon support
+
+function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::Colon) where {T, FIRST, STEP}
+	return v.data[i]
+end
+
+function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::Colon) where {T, TIMES}
+	return v.data[i]
+end
+
+function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::Colon) where {T, Start, STEP}
+	setindex!(v.data, val, i)
+end
+
+function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::Colon) where {T, TIMES}
+	setindex!(v.data, val, i)
+end
+
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
@@ -369,6 +387,24 @@ end
 
 function Base.setindex!(mat::TimestepMatrix, val, ts::TimestepIndex, idx::AnyIndex)
 	setindex!(mat.data, val, ts.index, idx)
+end
+
+# Colon support
+
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, idx1::Colon, idx2::Colon) where {T, FIRST, STEP, ti}
+	return mat.data[idx1, idx2]
+end
+
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, idx1::Colon, idx2::Colon) where {T, TIMES, ti}
+	return mat.data[idx1, idx2]
+end
+
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::Colon, idx2::Colon) where {T, FIRST, STEP, ti}
+	mat.data[idx1, idx2] .= val
+end
+
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::Colon, idx2::Colon) where {T, TIMES, ti}
+	mat.data[idx1, idx2] .= val
 end
 
 # int indexing version supports old-style components and internal functions, not
@@ -559,6 +595,24 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, v
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	ts_idxs = _get_ts_indices(ts_array)
 	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
+end
+
+# Colon support
+
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idx1::Colon, idx2::Colon, idxs::Colon...) where {T, N, ti, FIRST, STEP}
+	return arr.data[idx1, idx2, idxs...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idx1::Colon, idx2::Colon, idxs::Colon...) where {T, N, ti, TIMES}
+	return arr.data[idx1, idx2, idxs...]
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idx1::Colon, idx2::Colon, idxs::Colon...) where {T, N, ti, FIRST, STEP}
+	setindex!(arr.data, val, idx1, idx2, idxs...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idx1::Colon, idx2::Colon, idxs::Colon...) where {T, N, ti, TIMES}
+	setindex!(arr.data, val, idx1, idx2, idxs...)
 end
 
 # int indexing version supports old-style components and internal functions, not
