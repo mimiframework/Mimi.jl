@@ -277,6 +277,8 @@ data = collect(reshape(1:64, 4, 4, 4))
 arr_fixed = TimestepArray{FixedTimestep{2000, 5}, Int, 3, 1}(data)
 arr_variable = TimestepArray{VariableTimestep{years}, Int, 3, 1}(data)
 
+# Indexing with TimestepIndex
+
 @test arr_fixed[TimestepIndex(1), 1, 1] == 1
 @test arr_fixed[TimestepIndex(3), 3, 3] == 43
 @test arr_variable[TimestepIndex(1), 1, 1] == 1
@@ -292,6 +294,13 @@ arr_variable[TimestepIndex(1), 1, 1] = 1 # reset
 @test_throws ErrorException arr_fixed[TimestepIndex(1)]
 @test_throws ErrorException arr_variable[TimestepIndex(1)]
 
+# Indexing with Array{TimestepIndex, N} (TODO_LFR)
+
+@test arr_fixed[TimestepIndex.([1,3]), 1, 1] == [1, 3]
+@test arr_variable[TimestepIndex.([2,4]), 1, 1] == [2,4]
+
+# Indexing with TimestepValue
+
 @test arr_fixed[TimestepValue(2000), 1, 1] == 1
 @test arr_fixed[TimestepValue(2010), 3, 3] == 43
 @test arr_variable[TimestepValue(2000), 1, 1] == 1
@@ -306,6 +315,11 @@ arr_variable[TimestepValue(2000), 1, 1] = 1 # reset
 
 @test_throws ErrorException arr_fixed[TimestepValue(2000)]
 @test_throws ErrorException arr_variable[TimestepValue(2000)]
+
+# Indexing with Array{TimestepValue, N} (TODO_LFR)
+
+@test arr_fixed[TimestepValue.([2000, 2010]), 1, 1] == [1, 3]
+@test arr_variable[TimestepValue.([2000, 2005, 2025]), 1, 1] == [1, 2,4]
 
 # other methods
 x_years = Tuple(2000:5:2015) #fixed

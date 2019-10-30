@@ -104,6 +104,15 @@ function _get_ts_indices(ts_array::Array{TimestepIndex, 1})
     return [ts.index for ts in ts_array]
 end
 
+function _get_ts_indices(ts_array::Array{TimestepValue{T}, 1}, times::Union{Tuple, Array}) where T
+	len = length(ts_array)
+	ts_idxs = Array{Int,1}(undef, len)
+    for i = 1:len
+        ts_idxs[i] = _get_time_value_position(times, ts_array[i])
+    end
+	return ts_idxs
+end
+
 #
 # b. TimestepVector
 #
@@ -582,6 +591,19 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, id
 	return arr.data[idxs1..., ts_idxs, idxs2...]
 end
 
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_time, N, ti}, idxs::Union{Array{TimestepValue{T_data},1}, AnyIndex}...) where {T_time, N, ti, FIRST, STEP, T_data}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((length(arr.data)-1) * STEP)
+	ts_idxs = _get_ts_indices(ts_array, [FIRST:STEP:LAST...])
+	return arr.data[idxs1..., ts_idxs, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, idxs::Union{Array{TimestepValue{T_times},1}, AnyIndex}...) where {T_data, N, ti, TIMES, T_times}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	ts_idxs = _get_ts_indices(ts_array, TIMES)
+	return arr.data[idxs1..., ts_idxs, idxs2...]
+end
+
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, vals, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {T, N, ti, FIRST, STEP}
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	ts_idxs = _get_ts_indices(ts_array)
@@ -591,6 +613,19 @@ end
 function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, vals, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {T, N, ti, TIMES}
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	ts_idxs = _get_ts_indices(ts_array)
+	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, vals, idxs::Union{Array{TimestepValue{T_times},1}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_times}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((length(arr.data)-1) * STEP)
+	ts_idxs = _get_ts_indices(ts_array, [FIRST:STEP:LAST...])
+	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, vals, idxs::Union{Array{TimestepValue{T_times},1}, AnyIndex}...) where {T_data, N, ti, TIMES, T_times}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	ts_idxs = _get_ts_indices(ts_array, TIMES)
 	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
 end
 
