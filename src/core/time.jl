@@ -120,7 +120,7 @@ function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, S
 	elseif gettime(ts) + val > LAST + 1
 		error("Cannot get requested timestep, exceeds last timestep.")		
 	end
-	new_ts = FixedTimestep{FIRST, STEP, LAST}(ts.t + val)
+	return FixedTimestep{FIRST, STEP, LAST}(ts.t + val)
 end
 
 function Base.:+(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
