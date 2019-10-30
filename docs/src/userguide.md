@@ -225,11 +225,10 @@ v.A[t] = p.c + p.d[TimestepIndex(1)]
 ```julia
 v.A[t] = p.c + p.d[TimestepValue(2000)]
 ```
-Both `TimestepIndex` and `TimestepArray` have methods to support addition and subtraction of integers.  Note that the addition or subtraction is relative to the definition of the `time` dimension, so while `TimestepIndex(1) + 1 == TimestepIndex(2)`, `TimestepValue(2000) + 1` could be equivalent to `TimestepValue(2001)` **if** 2001 is the next year in the time dimension, or `TimestepValue(2005)` if the array has a step size of 5. Hence additing or subtracting is relative to the definition of the `time` dimension. You may also use shorthand to create arrays of `TimestepIndex` using Colon syntax to return an array of `TimestepIndex`s.
+Both `TimestepIndex` and `TimestepArray` have methods to support addition and subtraction of integers.  Note that the addition or subtraction is relative to the definition of the `time` dimension, so while `TimestepIndex(1) + 1 == TimestepIndex(2)`, `TimestepValue(2000) + 1` could be equivalent to `TimestepValue(2001)` **if** 2001 is the next year in the time dimension, or `TimestepValue(2005)` if the array has a step size of 5. Hence additing or subtracting is relative to the definition of the `time` dimension. You may also use shorthand to create arrays of `TimestepIndex` or `TimestepArray` using Colon syntax.
 ```julia
 TimestepIndex(1):TimestepIndex(10) # implicit step size of 1
-TimestepIndex(1):2:TimestepIndex(10) # step of type Int
-TimestepIndex(1):TimestepIndex(2):TimestepIndex(10) # step of type TimestepIndex
+TimestepIndex(1):2:TimestepIndex(10) # explicit step of type Int 
 ```
 
 ### Parameter connections between different length components

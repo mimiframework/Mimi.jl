@@ -82,9 +82,7 @@ step = 2
 
 @test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex.([start:stop...])
 @test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex(start):1:TimestepIndex(stop)
-@test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex(start):TimestepIndex(1):TimestepIndex(stop)
 @test TimestepIndex(start):step:TimestepIndex(stop) == TimestepIndex.([start:step:stop...])
-@test TimestepIndex(start):TimestepIndex(step):TimestepIndex(stop) == TimestepIndex.([start:step:stop...])
 #------------------------------------------------------------------------------
 #  Test a model with components with different offsets  
 #------------------------------------------------------------------------------
