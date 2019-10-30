@@ -55,12 +55,13 @@ function _single_index_check(data, idxs)
 	end
 end
 
-# Helper functions for getindex and setindex; throws an error if one indexes into a TimestepArray with an integer
+# Helper functionfor getindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_getindex_depwarning()
 	msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
 	Base.depwarn("$msg, $(stacktrace())", :getindex)
 end
 
+# Helper function for setindex; throws an deprecation warning if one indexes into a TimestepArray with an integer
 function _throw_int_setindex_depwarning()
 	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]"
 	Base.depwarn("$msg, $(stacktrace())", :setindex)
@@ -105,12 +106,7 @@ function _get_ts_indices(ts_array::Array{TimestepIndex, 1})
 end
 
 function _get_ts_indices(ts_array::Array{TimestepValue{T}, 1}, times::Union{Tuple, Array}) where T
-	len = length(ts_array)
-	ts_idxs = Array{Int,1}(undef, len)
-    for i = 1:len
-        ts_idxs[i] = _get_time_value_position(times, ts_array[i])
-    end
-	return ts_idxs
+	return [_get_time_value_position(times, ts) for ts in ts_array]
 end
 
 #
@@ -579,13 +575,7 @@ end
 
 # Indexing with arrays of TimestepIndexes or TimestepValues
 
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {T, N, ti, FIRST, STEP}
-	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
-	ts_idxs = _get_ts_indices(ts_array)
-	return arr.data[idxs1..., ts_idxs, idxs2...]
-end
-
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {T, N, ti, TIMES}
+function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	ts_idxs = _get_ts_indices(ts_array)
 	return arr.data[idxs1..., ts_idxs, idxs2...]
@@ -604,13 +594,7 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti
 	return arr.data[idxs1..., ts_idxs, idxs2...]
 end
 
-function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, vals, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {T, N, ti, FIRST, STEP}
-	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
-	ts_idxs = _get_ts_indices(ts_array)
-	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
-end
-
-function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, vals, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {T, N, ti, TIMES}
+function Base.setindex!(arr::TimestepArray{TS, T, N, ti}, vals, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	ts_idxs = _get_ts_indices(ts_array)
 	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
@@ -650,22 +634,12 @@ end
 # int indexing version supports old-style components and internal functions, not
 # part of the public API; first index is Int or Range, rather than a Timestep
 
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, FIRST, STEP}
+function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {TS, T, N, ti}
 	_throw_int_getindex_depwarning()
 	return arr.data[idx1, idx2, idxs...]
 end
 
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, TIMES}
-	_throw_int_getindex_depwarning()
-	return arr.data[idx1, idx2, idxs...]
-end
-
-function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, FIRST, STEP}
-	_throw_int_setindex_depwarning()
-	setindex!(arr.data, val, idx1, idx2, idxs...)
-end
-
-function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, TIMES}
+function Base.setindex!(arr::TimestepArray{TS, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {TS, T, N, ti}
 	_throw_int_setindex_depwarning()
 	setindex!(arr.data, val, idx1, idx2, idxs...)
 end
