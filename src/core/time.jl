@@ -141,11 +141,6 @@ function Base.:+(ts::TimestepIndex, val::Int)
 end
 
 # Colon support
-function Base.:(:)(start::T, step::T, stop::T) where {T<:TimestepIndex}
-	indices = [start.index:step.index:stop.index...]
-	return TimestepIndex.(indices)
-end
-
 function Base.:(:)(start::T, step::Int, stop::T) where {T<:TimestepIndex}
 	indices = [start.index:step:stop.index...]
 	return TimestepIndex.(indices)

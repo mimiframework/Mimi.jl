@@ -80,9 +80,19 @@ start = 1
 stop = 10
 step = 2
 
+# TimestepValue
+@test TimestepValue(2000, offset = 1) + 1 == TimestepValue(2000, offset = 2)
+@test TimestepValue(2000) + 1 == TimestepValue(2000, offset = 1)
+@test TimestepValue(2000, offset = 1) - 1 == TimestepValue(2000)
+
+# TimestepIndex
 @test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex.([start:stop...])
 @test TimestepIndex(start):TimestepIndex(stop) == TimestepIndex(start):1:TimestepIndex(stop)
 @test TimestepIndex(start):step:TimestepIndex(stop) == TimestepIndex.([start:step:stop...])
+
+@test TimestepIndex(1) + 1 == TimestepIndex(2)
+@test TimestepIndex(2) - 1 == TimestepIndex(1)
+
 #------------------------------------------------------------------------------
 #  Test a model with components with different offsets  
 #------------------------------------------------------------------------------

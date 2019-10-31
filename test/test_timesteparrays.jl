@@ -35,6 +35,12 @@ x = TimestepVector{FixedTimestep{2000, 1}, Int}(a[:,3])
 #1b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
+# Colon
+@test x[:] == a[:, 3]
+x[:] = [100, 101, 102, 103]
+@test x[:] == [100, 101, 102, 103]
+x[:] = a[:, 3] #reset
+
 # TimestepValue and TimestepIndex Indexing
 @test x[TimestepIndex(1)] == 9
 @test x[TimestepIndex(1) + 1] == 10
@@ -84,6 +90,12 @@ x = TimestepVector{VariableTimestep{years}, Int}(a[:,3])
 
 #2a.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
+
+# Colon
+@test x[:] == a[:, 3]
+x[:] = [100, 101, 102, 103]
+@test x[:] == [100, 101, 102, 103]
+x[:] = a[:, 3] #reset
 
 # TimestepValue and TimestepIndex Indexing
 @test x[TimestepIndex(1)] == 9
@@ -165,6 +177,12 @@ y[TimestepValue(2000), 1] = 1 # reset
 #3b.  test hasvalue, getindex, and setindex! (with both matching years and
 # mismatched years)
 
+# Colon Support
+@test y[:,1] == a[:, 1] 
+y[:, 1] = [100, 101, 102, 103]
+@test y[:, 1] == [100, 101, 102, 103]
+y[:, 1] = a[:, 1] #reset
+
 # AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
 
@@ -214,6 +232,12 @@ y = TimestepMatrix{VariableTimestep{years}, Int, 1}(a[:,1:2])
 
 #4a.  test hasvalue, getindex, setindex!, and lastindex (with both matching years and
 # mismatched years)
+
+# Colon Support 
+@test y[:,1] == a[:, 1] 
+y[:, 1] = [100, 101, 102, 103]
+@test y[:, 1] == [100, 101, 102, 103]
+y[:, 1] = a[:, 1] #reset
 
 # TimestepValue and TimestepIndex Indexing
 @test y[TimestepIndex(1), 1] == 1
@@ -277,8 +301,9 @@ data = collect(reshape(1:64, 4, 4, 4))
 arr_fixed = TimestepArray{FixedTimestep{2000, 5}, Int, 3, 1}(data)
 arr_variable = TimestepArray{VariableTimestep{years}, Int, 3, 1}(data)
 
-# Indexing with TimestepIndex
+# Colon Support - TODO_LFR 
 
+# Indexing with single TimestepIndex
 @test arr_fixed[TimestepIndex(1), 1, 1] == 1
 @test arr_fixed[TimestepIndex(3), 3, 3] == 43
 @test arr_variable[TimestepIndex(1), 1, 1] == 1
@@ -294,13 +319,15 @@ arr_variable[TimestepIndex(1), 1, 1] = 1 # reset
 @test_throws ErrorException arr_fixed[TimestepIndex(1)]
 @test_throws ErrorException arr_variable[TimestepIndex(1)]
 
-# Indexing with Array{TimestepIndex, N} (TODO_LFR)
-
+# Indexing with Array{TimestepIndex, N}
 @test arr_fixed[TimestepIndex.([1,3]), 1, 1] == [1, 3]
 @test arr_variable[TimestepIndex.([2,4]), 1, 1] == [2,4]
 
-# Indexing with TimestepValue
+# Indexing with Array{TimestepIndex, N} created by Colon syntax
+@test arr_fixed[TimestepIndex(1):TimestepIndex(3), 1, 1] == [1,2,3]
+@test arr_fixed[TimestepIndex(1):2:TimestepIndex(3), 1, 1] == [1,3]
 
+# Indexing with single TimestepValue
 @test arr_fixed[TimestepValue(2000), 1, 1] == 1
 @test arr_fixed[TimestepValue(2010), 3, 3] == 43
 @test arr_variable[TimestepValue(2000), 1, 1] == 1
@@ -316,7 +343,7 @@ arr_variable[TimestepValue(2000), 1, 1] = 1 # reset
 @test_throws ErrorException arr_fixed[TimestepValue(2000)]
 @test_throws ErrorException arr_variable[TimestepValue(2000)]
 
-# Indexing with Array{TimestepValue, N} (TODO_LFR)
+# Indexing with Array{TimestepValue, N} 
 
 @test arr_fixed[TimestepValue.([2000, 2010]), 1, 1] == [1, 3]
 @test arr_variable[TimestepValue.([2000, 2005, 2025]), 1, 1] == [1, 2,4]
