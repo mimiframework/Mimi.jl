@@ -70,20 +70,21 @@ t = FixedTimestep{2001, 1, 3000}(1)
 @test x[t] == 10
 
 t2 = next_timestep(t)
-
 @test x[t2] == 11
-
 x[t2] = 99
 @test x[t2] == 99
+x[t2] = 11 # reset 
 
 t3 = FixedTimestep{2000, 1, 2003}(1)
 @test x[t3] == 9
-
 x[t3] = 100
 @test x[t3] == 100
+x[t3] = 9 # reset
 
 # Deprecated int indexing should still run
 @test x[3] == 11
+x[3] = 100
+@test x[3] == 100
 
 #------------------------------------------------------------------------------
 # 2. Test TimestepVector - Variable Timestep 
@@ -134,21 +135,21 @@ t = VariableTimestep{y2}()
 @test x[t] == 10
 
 t2 =  next_timestep(t)
-
 @test x[t2] == 11
-#@test indices(x) == (2000:2003,) #may remove this function
-
 x[t2] = 99
 @test x[t2] == 99
+x[t2] = 11 # reset 
 
 t3 = VariableTimestep{years}()
 @test x[t3] == 9
-
 x[t3] = 100
 @test x[t3] == 100
+x[t3] = 9 # reset 
 
 # Deprecated int indexing should still run
 @test x[3] == 11
+x[3] = 100
+@test x[3] == 100
 
 #------------------------------------------------------------------------------
 # 3. Test TimestepMatrix - Fixed Timestep 
@@ -236,6 +237,10 @@ t2 = next_timestep(t)
 # Deprecated int indexing should still run
 @test y[1,2] == a[:,1:2][1,2]
 @test z[1,2] == a[:,3:4][1,2]
+val = 100
+y[1,2] = val
+z[1,2] = val
+@test y[1,2] == z[1,2] == val
 
 #------------------------------------------------------------------------------
 # 4. Test TimestepMatrix - Variable Timestep 
