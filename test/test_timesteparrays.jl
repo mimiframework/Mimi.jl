@@ -193,7 +193,7 @@ vals_mat = fill(11,4,2)
 @test y[:,1] == a[:, 1] 
 y[:, 1] = vals_arr
 @test y[:, 1] == vals_arr
-y[:,:] = 11
+y[:,:] .= vals_mat
 @test y[:,:] == vals_mat
 y[:,:] = vals_mat
 @test y[:,:] == vals_mat
