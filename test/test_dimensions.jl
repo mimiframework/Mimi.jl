@@ -115,4 +115,32 @@ set_dimension!(m, :time, 2010:2050)
 @test first_period(m.md) == 2010
 @test last_period(m.md)  == 2050
 
+
+# Test that d.time returns AbstracTimesteps that can be used as indexes
+
+@defcomp bar begin
+    v1 = Variable(index = [time])
+
+    function run_timestep(p, v, d, t)
+        if is_first(t)
+            for i in d.time
+                v.v1[i] = gettime(i)
+            end
+        end
+    end
+end
+
+fixed_years = 2000:2010
+variable_years = [2000, 2005, 2020, 2050, 2100]
+
+m = Model()
+set_dimension!(m, :time, fixed_years)
+add_comp!(m, bar)
+run(m)
+@test m[:bar, :v1] == fixed_years
+
+set_dimension!(m, :time, variable_years)
+run(m)
+@test m[:bar, :v1] == variable_years
+
 end #module

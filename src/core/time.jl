@@ -197,3 +197,13 @@ function Base.reset(c::Clock)
 	c.ts = c.ts - (c.ts.t - 1)
 	nothing
 end
+
+function timesteps(c::Clock)
+	c = deepcopy(c)
+	timesteps = AbstractTimestep[]
+	while !finished(c)
+		push!(timesteps, timestep(c))
+		advance(c)
+	end
+	return timesteps
+end

@@ -49,11 +49,14 @@ end
 
 # A container class that wraps the dimension dictionary when passed to run_timestep()
 # and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
+# All values in the dictionary are vectors of Ints, except the `:time` value, which is a 
+# vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
+# into timestep arrays.
 struct DimValueDict <: MimiStruct
-    dict::Dict{Symbol, Vector{Int}}
+    dict::Dict{Symbol, Union{Vector{Int}, Vector{AbstractTimestep}}}
 
-    function DimValueDict(dim_dict::AbstractDict)
-        d = Dict([name => collect(values(dim)) for (name, dim) in dim_dict])
+    function DimValueDict(dim_dict::AbstractDict, clock::Clock)
+        d = Dict([name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict])
         new(d)
     end
 end
