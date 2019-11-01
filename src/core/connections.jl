@@ -50,7 +50,7 @@ end
 # Default string, string unit check function
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
-function _check_labels(obj::AbstractCompositeComponentDef, 
+function _check_labels(obj::AbstractCompositeComponentDef,
                        comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
@@ -77,9 +77,9 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     # index_values = indexvalues(obj)
 
     for (i, dim) in enumerate(comp_dims)
-        if isa(dim, Symbol) 
+        if isa(dim, Symbol)
             param_length = size(ext_param.values)[i]
-            if dim == :time 
+            if dim == :time
                 t = dimension(obj, :time)
                 first = find_first_period(comp_def)
                 last = find_last_period(comp_def)
@@ -99,7 +99,7 @@ end
                    check_labels::Bool=true)
 
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
-the external parameter `ext_param_name`. 
+the external parameter `ext_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol;
                         check_labels::Bool=true)
@@ -120,23 +120,23 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, p
 end
 
 """
-    connect_param!(obj::AbstractCompositeComponentDef, 
-        dst_comp_path::ComponentPath, dst_par_name::Symbol, 
+    connect_param!(obj::AbstractCompositeComponentDef,
+        dst_comp_path::ComponentPath, dst_par_name::Symbol,
         src_comp_path::ComponentPath, src_var_name::Symbol,
-        backup::Union{Nothing, Array}=nothing; 
+        backup::Union{Nothing, Array}=nothing;
         ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_path` of composite `obj` to a
-variable `src_var_name` in another component `src_comp_path` of the same model using 
+variable `src_var_name` in another component `src_comp_path` of the same model using
 `backup` to provide default values and the `ignoreunits` flag to indicate the need to
-check match units between the two.  The `offset` argument indicates the offset between 
-the destination and the source ie. the value would be `1` if the destination component 
+check match units between the two.  The `offset` argument indicates the offset between
+the destination and the source ie. the value would be `1` if the destination component
 parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(obj::AbstractCompositeComponentDef, 
-                        dst_comp_path::ComponentPath, dst_par_name::Symbol, 
+function connect_param!(obj::AbstractCompositeComponentDef,
+                        dst_comp_path::ComponentPath, dst_par_name::Symbol,
                         src_comp_path::ComponentPath, src_var_name::Symbol,
-                        backup::Union{Nothing, Array}=nothing; 
+                        backup::Union{Nothing, Array}=nothing;
                         ignoreunits::Bool=false, offset::Int=0)
 
     # remove any existing connections for this dst parameter
@@ -167,55 +167,55 @@ function connect_param!(obj::AbstractCompositeComponentDef,
         dst_dims  = dim_names(dst_param)
 
         backup = convert(Array{Union{Missing, number_type(obj)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
-        first = first_period(obj, dst_comp_def)    
+        first = first_period(obj, dst_comp_def)
 
         T = eltype(backup)
-        
+
         dim_count = length(dst_dims)
 
         if dim_count == 0
             values = backup
         else
             ti = get_time_index_position(dst_param)
-            
+
             if isuniform(obj)
                 # use the first from the comp_def not the ModelDef
                 stepsize = step_size(obj)
-                last = last_period(obj, dst_comp_def) 
+                last = last_period(obj, dst_comp_def)
                 values = TimestepArray{FixedTimestep{first, stepsize, last}, T, dim_count, ti}(backup)
             else
                 times = time_labels(obj)
-                # use the first from the comp_def 
-                first_index = findfirst(isequal(first), times) 
+                # use the first from the comp_def
+                first_index = findfirst(isequal(first), times)
                 values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count, ti}(backup)
             end
-            
+
         end
 
         set_external_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
 
-    else 
+    else
         # If backup not provided, make sure the source component covers the span of the destination component
         src_first, src_last = first_and_last(src_comp_def)
         dst_first, dst_last = first_and_last(dst_comp_def)
-        if (dst_first !== nothing && src_first !== nothing && dst_first < src_first) || 
+        if (dst_first !== nothing && src_first !== nothing && dst_first < src_first) ||
             (dst_last  !== nothing && src_last  !== nothing && dst_last  > src_last)
             src_first = printable(src_first)
             src_last  = printable(src_last)
             dst_first = printable(dst_first)
             dst_last  = printable(dst_last)
-            error("""Cannot connect parameter: $src_comp_path runs only from $src_first to $src_last, 
+            error("""Cannot connect parameter: $src_comp_path runs only from $src_first to $src_last,
 whereas $dst_comp_path runs from $dst_first to $dst_last. Backup data must be provided for missing years.
-Try calling: 
+Try calling:
     `connect_param!(m, comp_name, par_name, comp_name, var_name, backup_data)`""")
-        end 
+        end
 
-        backup_param_name = nothing 
+        backup_param_name = nothing
     end
 
     # Check the units, if provided
-    if ! ignoreunits && ! verify_units(variable_unit(src_comp_def, src_var_name), 
+    if ! ignoreunits && ! verify_units(variable_unit(src_comp_def, src_var_name),
                                        parameter_unit(dst_comp_def, dst_par_name))
         error("Units of $src_comp_path:$src_var_name do not match $dst_comp_path:$dst_par_name.")
     end
@@ -226,30 +226,30 @@ Try calling:
     return nothing
 end
 
-function connect_param!(obj::AbstractCompositeComponentDef, 
-                        dst_comp_name::Symbol, dst_par_name::Symbol, 
+function connect_param!(obj::AbstractCompositeComponentDef,
+                        dst_comp_name::Symbol, dst_par_name::Symbol,
                         src_comp_name::Symbol, src_var_name::Symbol,
                         backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name, 
+    connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name,
                         ComponentPath(obj, src_comp_name), src_var_name,
                         backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 """
-    connect_param!(obj::AbstractCompositeComponentDef, 
-        dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
-        backup::Union{Nothing, Array}=nothing; 
+    connect_param!(obj::AbstractCompositeComponentDef,
+        dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
+        backup::Union{Nothing, Array}=nothing;
         ignoreunits::Bool=false, offset::Int=0)
 
 Bind the parameter `dst[2]` of one component `dst[1]` of composite `obj`
 to a variable `src[2]` in another component `src[1]` of the same composite
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination 
+between the destination and the source ie. the value would be `1` if the destination
 component parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(obj::AbstractCompositeComponentDef, 
-                        dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, 
+function connect_param!(obj::AbstractCompositeComponentDef,
+                        dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
                         backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
     connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
@@ -262,7 +262,7 @@ Split a string of the form "/path/to/component:datum_name" into the component pa
 """
 function split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
     elts = split(s, ":")
-    length(elts) != 2 && error("Can't split datum path '$s' into ComponentPath and datum name")   
+    length(elts) != 2 && error("Can't split datum path '$s' into ComponentPath and datum name")
     return (ComponentPath(obj, elts[1]), Symbol(elts[2]))
 end
 
@@ -277,7 +277,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, dst::AbstractString,
     src_path, src_name = split_datum_path(obj, src)
 
     connect_param!(obj, dst_path, dst_name, src_path, src_name,
-                   backup; ignoreunits=ignoreunits, offset=offset)    
+                   backup; ignoreunits=ignoreunits, offset=offset)
 end
 
 
@@ -297,14 +297,14 @@ function _collect_connected_params(obj::AbstractCompositeComponentDef, connected
 end
 
 """
-    connected_params(md::ModelDef)
+    connected_params(obj::AbstractCompositeComponentDef)
 
 Recursively search the component tree to find connected parameters in leaf components.
 Return a vector of tuples of the form `(path::ComponentPath, param_name::Symbol)`.
 """
-function connected_params(md::ModelDef)
+function connected_params(obj::AbstractCompositeComponentDef)
     connected = ParamVector()
-    _collect_connected_params(md, connected)
+    _collect_connected_params(obj, connected)
     return connected
 end
 
@@ -326,16 +326,16 @@ function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connect
 end
 
 """
-    unconnected_params(md::ModelDef)
+    unconnected_params(obj::AbstractCompositeComponentDef)
 
 Return a list of tuples (comp_path, param_name) of parameters
-that have not been connected to a value anywhere in `md`.
+that have not been connected to a value anywhere within `obj`.
 """
-function unconnected_params(md::ModelDef)
+function unconnected_params(obj::AbstractCompositeComponentDef)
     unconnected = ParamVector()
-    connected = connected_params(md)
+    connected = connected_params(obj)
 
-    _collect_unconnected_params(md, connected, unconnected)
+    _collect_unconnected_params(obj, connected, unconnected)
     return unconnected
 end
 
@@ -409,19 +409,19 @@ function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, v
     dirty!(obj)
 end
 
-function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Number; 
+function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Number;
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_scalar_param!(obj, name, value)
 end
 
-function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, 
-                             value::Union{AbstractArray, AbstractRange, Tuple}; 
+function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol,
+                             value::Union{AbstractArray, AbstractRange, Tuple};
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
     ti = get_time_index_position(param_dims)
     if ti != nothing
         value = convert(Array{number_type(obj)}, value)
         num_dims = length(param_dims)
-        values = get_timestep_array(obj, eltype(value), num_dims, ti, value)      
+        values = get_timestep_array(obj, eltype(value), num_dims, ti, value)
     else
         values = value
     end
@@ -430,38 +430,38 @@ function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol,
 end
 
 """
-    set_external_array_param!(obj::AbstractCompositeComponentDef, 
+    set_external_array_param!(obj::AbstractCompositeComponentDef,
                               name::Symbol, value::TimestepVector, dims)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
 `value` to the composite `obj`.  In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(obj::AbstractCompositeComponentDef, 
+function set_external_array_param!(obj::AbstractCompositeComponentDef,
                                    name::Symbol, value::TimestepVector, dims)
     param = ArrayModelParameter(value, [:time])  # must be :time
     set_external_param!(obj, name, param)
 end
 
 """
-    set_external_array_param!(obj::AbstractCompositeComponentDef, 
+    set_external_array_param!(obj::AbstractCompositeComponentDef,
                               name::Symbol, value::TimestepMatrix, dims)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the composite `obj`.  In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(obj::AbstractCompositeComponentDef, 
+function set_external_array_param!(obj::AbstractCompositeComponentDef,
                                    name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)
 end
 
 """
-    set_external_array_param!(obj::AbstractCompositeComponentDef, 
+    set_external_array_param!(obj::AbstractCompositeComponentDef,
                               name::Symbol, value::AbstractArray, dims)
 
 Add an array type parameter `name` with value `value` and `dims` dimensions to the composite `obj`.
 """
-function set_external_array_param!(obj::AbstractCompositeComponentDef, 
+function set_external_array_param!(obj::AbstractCompositeComponentDef,
                                    name::Symbol, value::AbstractArray, dims)
     numtype = Union{Missing, number_type(obj)}
 
@@ -486,16 +486,16 @@ end
 """
     update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
 
-Update the `value` of an external model parameter in composite `obj`, referenced 
-by `name`. Optional boolean argument `update_timesteps` with default value 
-`false` indicates whether to update the time keys associated with the parameter 
+Update the `value` of an external model parameter in composite `obj`, referenced
+by `name`. Optional boolean argument `update_timesteps` with default value
+`false` indicates whether to update the time keys associated with the parameter
 values to match the model's time index.
 """
 function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
     _update_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps; raise_error = true)
 end
 
-function _update_param!(obj::AbstractCompositeComponentDef, 
+function _update_param!(obj::AbstractCompositeComponentDef,
                         name::Symbol, value, update_timesteps; raise_error = true)
     param = external_param(obj, name, missing_ok=true)
     if param === nothing
@@ -529,12 +529,12 @@ end
 function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps, raise_error)
     # Get original parameter
     param = external_param(obj, name)
-    
+
     # Check type of provided parameter
     if !(typeof(value) <: AbstractArray)
         error("Cannot update array parameter $name with a value of type $(typeof(value)).")
 
-    elseif !(eltype(value) <: eltype(param.values)) 
+    elseif !(eltype(value) <: eltype(param.values))
         try
             value = convert(Array{eltype(param.values)}, value)
         catch e
@@ -545,7 +545,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
     # Check size of provided parameter
     if update_timesteps && param.values isa TimestepArray
         expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,)
-    else 
+    else
         expected_size = size(param.values)
     end
     if size(value) != expected_size
@@ -553,7 +553,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
     end
 
     if update_timesteps
-        if param.values isa TimestepArray 
+        if param.values isa TimestepArray
             T = eltype(value)
             N = length(size(value))
             ti = get_time_index_position(param)
@@ -577,13 +577,13 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
 end
 
 """
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}; 
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any};
                    update_timesteps = false) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
-is called to update the external parameter by name k to value v, with optional 
+is called to update the external parameter by name k to value v, with optional
 Boolean argument update_timesteps. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the 
+symbol matching the name of an external parameter that already exists in the
 component definition.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = false)
@@ -623,15 +623,15 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # Add the connector component before the user-defined component that required it
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             conn_path = conn_comp.comp_path
-           
+
             # add a connection between src_component and the ConnectorComp
             add_internal_param_conn!(obj, InternalParameterConnection(conn.src_comp_path, conn.src_var_name,
                                                                       conn_path, :input1,
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and dst_component
-            add_internal_param_conn!(obj, InternalParameterConnection(conn_path, :output, 
-                                                                      conn.dst_comp_path, conn.dst_par_name, 
+            add_internal_param_conn!(obj, InternalParameterConnection(conn_path, :output,
+                                                                      conn.dst_comp_path, conn.dst_par_name,
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
@@ -647,4 +647,31 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
     # obj.sorted_comps = _topological_sort(obj)
 
     return nothing
+end
+
+"""
+propagate_params!(
+    obj::AbstractCompositeComponentDef;
+    names::Union{Nothing,Vector{Symbol}}=nothing)
+
+Exports all unconnected parameters below the given composite `obj` by adding references
+to these parameters in `obj`. If `names` is not `nothing`, only the given names are
+exported into `obj`.
+
+This is called automatically by `build!()`, but it can be
+useful for developers of composites as well.
+
+TBD: should we just call this at the end of code emitted by @defcomposite?
+"""
+function propagate_params!(
+    obj::AbstractCompositeComponentDef;
+    names::Union{Nothing,Vector{Symbol}}=nothing)
+
+    # returns a Vector{ParamPath}, which are Tuple{ComponentPath, Symbol}
+    for (path, name) in unconnected_params(obj)
+        comp = compdef(obj, path)
+        if names === nothing || name in names
+            obj[name] = datum_reference(comp, name)
+        end
+    end
 end

@@ -119,7 +119,7 @@ Here, we first employ `run` to obtain results:
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi")
 
 # Explore the results saved in-memory
-results = si[:grosseconomy, :K] # model index chosen defaults to 1
+results = getdataframe(si, :grosseconomy, :K) # model index chosen defaults to 1
 ```
 
 and then again using our user-defined post-trial function as the `post_trial_func` parameter:
@@ -129,7 +129,7 @@ and then again using our user-defined post-trial function as the `post_trial_fun
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/Mimi", post_trial_func=print_result)
 
 # Explore the results saved in-memory
-results = si[:grosseconomy, :K] # model index chosen defaults to 1
+results = getdataframe(si, :grosseconomy, :K) # model index chosen defaults to 1
 ```
 
 ### Step 5. Explore and Plot Results
