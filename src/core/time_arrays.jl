@@ -568,7 +568,7 @@ function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{Times
 	return arr.data[idxs1..., ts_idxs, idxs2...]
 end
 
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_time, N, ti}, idxs::Union{Array{TimestepValue{T_data},1}, AnyIndex}...) where {T_time, N, ti, FIRST, STEP, T_data}
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, idxs::Union{Array{TimestepValue{T_time},1}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_time}
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	LAST = FIRST + ((length(arr.data)-1) * STEP)
 	ts_idxs = _get_ts_indices(ts_array, [FIRST:STEP:LAST...])
@@ -598,19 +598,6 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, t
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
 	ts_idxs = _get_ts_indices(ts_array, TIMES)
 	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
-end
-
-# int indexing version supports old-style components and internal functions, not
-# part of the public API; first index is Int or Range, rather than a Timestep
-
-function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon, idxs::AnyIndex_NonColon...) where {TS, T, N, ti}
-	_throw_int_getindex_depwarning()
-	return arr.data[idx1, idx2, idxs...]
-end
-
-function Base.setindex!(arr::TimestepArray{TS, T, N, ti}, val, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon, idxs::AnyIndex_NonColon...) where {TS, T, N, ti}
-	_throw_int_setindex_depwarning()
-	setindex!(arr.data, val, idx1, idx2, idxs...)
 end
 
 """

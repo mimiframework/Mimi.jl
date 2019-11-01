@@ -507,6 +507,14 @@ for ti = 1:2
         @test arr_fixed[TimestepValue.([2000, 2010]), 1, 1] == time_dim_val[[1,3],1,1]
         @test arr_variable[TimestepValue.([2000, 2005, 2025]), 1, 1] == time_dim_val[[1,2,4],1,1]
 
+        arr_fixed[TimestepValue.([2000, 2010]), 1, 1] = temp_dim_val[[1,3],1,1]
+        arr_variable[TimestepValue.([2000, 2005, 2025]), 1, 1] = temp_dim_val[[1,2,4],1,1]
+        @test arr_fixed[TimestepValue.([2000, 2010]), 1, 1] == temp_dim_val[[1,3],1,1]
+        @test arr_variable[TimestepValue.([2000, 2005, 2025]), 1, 1] == temp_dim_val[[1,2,4],1,1]
+
+        reset_time_val(arr_fixed, time_dim_val)
+        reset_time_val(arr_variable, time_dim_val)
+
     else
 
         @test arr_fixed[1, TimestepIndex(1), 1] == arr_variable[1, TimestepIndex(1), 1] == time_dim_val[1,1,1]
@@ -539,7 +547,24 @@ for ti = 1:2
         # Indexing with Array{TimestepValue, N} 
         @test arr_fixed[1, TimestepValue.([2000, 2010]), 1] == time_dim_val[1, [1,3],1]
         @test arr_variable[1, TimestepValue.([2000, 2005, 2025]), 1] == time_dim_val[1,[1,2,4],1]
+        arr_fixed[1, TimestepValue.([2000, 2010]), 1] = temp_dim_val[1, [1,3],1]
+        arr_variable[1, TimestepValue.([2000, 2005, 2025]), 1] = temp_dim_val[1,[1,2,4],1]
+        @test arr_fixed[1, TimestepValue.([2000, 2010]), 1] == temp_dim_val[1, [1,3],1]
+        @test arr_variable[1, TimestepValue.([2000, 2005, 2025]), 1] == temp_dim_val[1,[1,2,4],1]
+
+        reset_time_val(arr_fixed, time_dim_val)
+        reset_time_val(arr_variable, time_dim_val)
     end
+
+    # Deprecated int indexing should still run
+    @test arr_fixed[1,2,3] == time_dim_val[1,2,3]
+    @test arr_variable[1,2,3] == time_dim_val[1,2,3]
+    arr_fixed[1,2,3] = temp_dim_val[1,2,3]
+    arr_variable[1,2,3] = temp_dim_val[1,2,3]
+    @test arr_fixed[1,2,3] == arr_variable[1,2,3] == temp_dim_val[1,2,3]
+
+    reset_time_val(arr_fixed, time_dim_val)
+    reset_time_val(arr_variable, time_dim_val)
 end
 
 # other methods
