@@ -29,6 +29,8 @@ replace_comp!
 set_dimension! 
 set_leftover_params! 
 set_param! 
+TimestepIndex
+TimestepValue
 variable_dimensions
 variable_names
 update_param!

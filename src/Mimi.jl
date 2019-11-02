@@ -43,6 +43,8 @@ export
     set_dimension!,
     set_leftover_params!,
     set_param!,
+    TimestepIndex,
+    TimestepValue,
     update_param!,
     update_params!,
     # variables,

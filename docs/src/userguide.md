@@ -149,7 +149,7 @@ In order to invoke the explorer UI and explore all of the variables and paramete
  
 ```julia
 run(mymodel)
- explore(mymodel, title = "run1 results")
+explore(mymodel, title = "run1 results")
 ```
 
 ![Explorer Model Example](figs/explorer_model_example.png)
@@ -183,8 +183,8 @@ In the `run_timestep` functions which the user defines, it may be useful to use 
 is_first(t) # returns true or false, true if t is the first timestep to be run
 is_last(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
-is_time(t, s) # Return true or false, true if the current time (year) for t is y
-is_timestep(t, y) # rReturn true or false, true if t timestep is step s.
+is_time(t, y) # Return true or false, true if the current time (year) for t is y
+is_timestep(t, s) # Return true or false, true if t timestep is step s.
 ```
 
 The API details for AbstractTimestep object `t` are as follows:
@@ -193,6 +193,46 @@ The API details for AbstractTimestep object `t` are as follows:
 - to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
 - useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, `is_time(t, s)`, and `is_timestep(t, y)` as listed above
 - to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called. 
+
+Indexing into a variable or parameter's `time` dimension with an `Integer` is deprecated and will soon error. Instead, users should take advantage of the `TimestepIndex` and `TimestepValue` types. For examples we will refer back to our component definition above, and repeated below.
+```julia
+@defcomp MyComponentName begin
+  regions = Index()
+
+  A = Variable(index = [time])
+  B = Variable(index = [time, regions])
+
+  c = Parameter()
+  d = Parameter(index = [time])
+  e = Parameter(index = [time, regions])
+  f = Parameter(index = [regions])
+
+  function run_timestep(p, v, d, t)
+    v.A[t] = p.c + p.d[t]
+    for r in d.regions
+      v.B[t, r] = p.f[r] * p.e[t, r]
+    end
+  end
+
+end
+```
+`TimestepIndex` has one field, `index`, which refers to the absolute index in the parameter or variable array's `time` dimension. Thus, constructing a `TimestepIndex` is done by simply writing `TimestepIndex(index::Int)`. Looking back at our original component example
+one could modify the first line of `run_timestep` to always refer to the first timestep of `p.d` with the following. One may index into the `time` dimension with a single `TimestepIndex`, or an `Array` of them.
+```julia
+v.A[t] = p.c + p.d[TimestepIndex(1)]
+```
+`TimestepValue` has two fields, `value` and `offset`, referring to the value within the `time` dimension and an optional `offset` from that `value`. Thus, constructing a `TimestepValue` is done either by writing `TimestepValue(value)`, with an implied offset of 0, or `TimestepValue(value, offset = i::Int)`, with an explicit offset of i. One may index into the `time` dimension with a single `TimestepValue`, or an `Array` of them. For example, you can use a `TimestepValue` to keep track of a baseline year.
+```julia
+v.A[t] = p.c + p.d[TimestepValue(2000)]
+```
+You may also use shorthand to create arrays of `TimestepIndex` using Colon syntax.
+```julia
+TimestepIndex(1):TimestepIndex(10) # implicit step size of 1
+TimestepIndex(1):2:TimestepIndex(10) # explicit step of type Int 
+```
+Both `TimestepIndex` and `TimestepArray` have methods to support addition and subtraction of integers.  Note that the addition or subtraction is relative to the definition of the `time` dimension, so while `TimestepIndex(1) + 1 == TimestepIndex(2)`, `TimestepValue(2000) + 1` could be equivalent to `TimestepValue(2001)` **if** 2001 is the next year in the time dimension, or `TimestepValue(2005)` if the array has a step size of 5. Hence adding or subtracting is relative to the definition of the `time` dimension. 
+
+
 
 ### Parameter connections between different length components
 
