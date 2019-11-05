@@ -120,8 +120,7 @@ function Base.:+(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, S
 	elseif gettime(ts) + val > LAST + 1
 		error("Cannot get requested timestep, exceeds last timestep.")		
 	end
-	new_ts = FixedTimestep{FIRST, STEP, LAST}(ts.t + val)
-
+	return FixedTimestep{FIRST, STEP, LAST}(ts.t + val)
 end
 
 function Base.:+(ts::VariableTimestep{TIMES}, val::Int) where {TIMES}
@@ -139,6 +138,16 @@ end
 
 function Base.:+(ts::TimestepIndex, val::Int) 
 	return TimestepIndex(ts.index + val)
+end
+
+# Colon support
+function Base.:(:)(start::T, step::Int, stop::T) where {T<:TimestepIndex}
+	indices = [start.index:step:stop.index...]
+	return TimestepIndex.(indices)
+end
+
+function Base.:(:)(start::T, stop::T) where {T<:TimestepIndex} 
+	return Base.:(:)(start, 1, stop)
 end
 
 #
@@ -187,4 +196,14 @@ end
 function Base.reset(c::Clock)
 	c.ts = c.ts - (c.ts.t - 1)
 	nothing
+end
+
+function timesteps(c::Clock)
+	c = deepcopy(c)
+	timesteps = AbstractTimestep[]
+	while !finished(c)
+		push!(timesteps, timestep(c))
+		advance(c)
+	end
+	return timesteps
 end

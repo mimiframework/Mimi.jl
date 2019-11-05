@@ -72,12 +72,9 @@ The next step is to add components to the model. This is done by the following s
 
 ```julia
 add_comp!(mymodel, ComponentA, :GDP)
-add_comp!(mymodel, ComponentB; first=2010)
-add_comp!(mymodel, ComponentC; first=2010, last=2100)
-
 ```
 
-The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names. You can also have components that do not run for the full length of the model. You can specify custom first and last times with the optional keyword arguments as shown above. If no first or last time is provided, the component will assume the first or last time of the model's time index values that were specified in `set_dimension!`.
+The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
@@ -152,7 +149,7 @@ In order to invoke the explorer UI and explore all of the variables and paramete
  
 ```julia
 run(mymodel)
- explore(mymodel, title = "run1 results")
+explore(mymodel, title = "run1 results")
 ```
 
 ![Explorer Model Example](figs/explorer_model_example.png)
@@ -196,6 +193,46 @@ The API details for AbstractTimestep object `t` are as follows:
 - to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
 - useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, `is_time(t, s)`, and `is_timestep(t, y)` as listed above
 - to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called. 
+
+Indexing into a variable or parameter's `time` dimension with an `Integer` is deprecated and will soon error. Instead, users should take advantage of the `TimestepIndex` and `TimestepValue` types. For examples we will refer back to our component definition above, and repeated below.
+```julia
+@defcomp MyComponentName begin
+  regions = Index()
+
+  A = Variable(index = [time])
+  B = Variable(index = [time, regions])
+
+  c = Parameter()
+  d = Parameter(index = [time])
+  e = Parameter(index = [time, regions])
+  f = Parameter(index = [regions])
+
+  function run_timestep(p, v, d, t)
+    v.A[t] = p.c + p.d[t]
+    for r in d.regions
+      v.B[t, r] = p.f[r] * p.e[t, r]
+    end
+  end
+
+end
+```
+`TimestepIndex` has one field, `index`, which refers to the absolute index in the parameter or variable array's `time` dimension. Thus, constructing a `TimestepIndex` is done by simply writing `TimestepIndex(index::Int)`. Looking back at our original component example
+one could modify the first line of `run_timestep` to always refer to the first timestep of `p.d` with the following. One may index into the `time` dimension with a single `TimestepIndex`, or an `Array` of them.
+```julia
+v.A[t] = p.c + p.d[TimestepIndex(1)]
+```
+`TimestepValue` has two fields, `value` and `offset`, referring to the value within the `time` dimension and an optional `offset` from that `value`. Thus, constructing a `TimestepValue` is done either by writing `TimestepValue(value)`, with an implied offset of 0, or `TimestepValue(value, offset = i::Int)`, with an explicit offset of i. One may index into the `time` dimension with a single `TimestepValue`, or an `Array` of them. For example, you can use a `TimestepValue` to keep track of a baseline year.
+```julia
+v.A[t] = p.c + p.d[TimestepValue(2000)]
+```
+You may also use shorthand to create arrays of `TimestepIndex` using Colon syntax.
+```julia
+TimestepIndex(1):TimestepIndex(10) # implicit step size of 1
+TimestepIndex(1):2:TimestepIndex(10) # explicit step of type Int 
+```
+Both `TimestepIndex` and `TimestepArray` have methods to support addition and subtraction of integers.  Note that the addition or subtraction is relative to the definition of the `time` dimension, so while `TimestepIndex(1) + 1 == TimestepIndex(2)`, `TimestepValue(2000) + 1` could be equivalent to `TimestepValue(2001)` **if** 2001 is the next year in the time dimension, or `TimestepValue(2005)` if the array has a step size of 5. Hence adding or subtracting is relative to the definition of the `time` dimension. 
+
+
 
 ### Parameter connections between different length components
 
