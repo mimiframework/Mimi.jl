@@ -36,7 +36,7 @@ using MimiFUND
 ```
 Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
 
-```jldoctest tutorial1; output = false
+```jldoctest tutorial1; output = false, filter = r".*"s
 m = MimiFUND.get_model()
 run(m)
 
@@ -103,7 +103,7 @@ getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in fi
 
 # output
 
-16×3 DataFrames.DataFrame
+16×3 DataFrame
 │ Row │ time  │ regions │ income   │
 │     │ Int64 │ String  │ Float64⍰ │
 ├─────┼───────┼─────────┼──────────┤

@@ -81,7 +81,7 @@ using Mimi
 
 For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
 
-```jldoctest tutorial2; output = false
+```jldoctest tutorial2; output = false, filter = r".*"s 
 update_param!(m, :fco22x, 3.000)
 run(m)
 
