@@ -72,13 +72,13 @@ function show_E_Global(year::Int; bins=40)
               xlabel="Emissions")
 end
 
-# test getindex
+# test getdataframe
 results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
-results_getindex = si[:grosseconomy, :K] # Base.getindex
-results_getindex2 = si[:grosseconomy, :K, model = 1] # Base.getindex
+results_getdataframe = getdataframe(si, :grosseconomy, :K) # getdataframe
+results_getdataframe2 = getdataframe(si, :grosseconomy, :K, model = 1) # getdataframe
 
-@test results_getindex == results_mem
-@test results_getindex2 == results_mem
+@test results_getdataframe == results_mem
+@test results_getdataframe2 == results_mem
 
 # test that disk results equal in memory results
 results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
@@ -123,10 +123,10 @@ si = run(sd, m, N;
  
 @test loop_counter == 6
 
-# test getindex with scenarios
+# test getdataframe with scenarios
 results_mem = si.results[1][(:grosseconomy, :K)] # manual access to dictionary
-results_getindex = si[:grosseconomy, :K] # Base.getindex
-@test results_getindex == results_mem
+results_getdataframe = getdataframe(si, :grosseconomy, :K) # getdataframe
+@test results_getdataframe == results_mem
 
 # test in memory results compared to disk saved results
 results_disk = load(joinpath(output_dir, "high_0.03", "grosseconomy_K.csv")) |> DataFrame

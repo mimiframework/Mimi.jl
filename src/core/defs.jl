@@ -112,7 +112,7 @@ Example: `filter(istype(AbstractComponentDef), obj.namespace)`
 """
 istype(T::DataType) = (pair -> pair.second isa T)
 
-# Namespace filter functions return dicts of values for the given type. 
+# Namespace filter functions return dicts of values for the given type.
 # N.B. only composites hold comps in the namespace.
 components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
 
@@ -153,7 +153,7 @@ function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
     return item
 end
 
-function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)    
+function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)
     # Allow replacement of existing values for a key only with items of the same type.
     if haskey(comp, key)
         elt_type = typeof(comp[key])
@@ -169,7 +169,7 @@ end
 
 Create a reference to the given datum, which must already exist.
 """
-function datum_reference(comp::ComponentDef, datum_name::Symbol)  
+function datum_reference(comp::ComponentDef, datum_name::Symbol)
     obj = _ns_get(comp, datum_name, AbstractDatumDef)
     path = @or(obj.comp_path, ComponentPath(comp.name))
     ref_type = obj isa ParameterDef ? ParameterDefReference : VariableDefReference
@@ -262,7 +262,7 @@ function _check_run_period(obj::AbstractComponentDef, new_first, new_last)
     if new_first !== nothing && old_first !== nothing && new_first < old_first
         error("Attempted to set first period of $(obj.comp_id) to an earlier period ($new_first) than component indicates ($old_first)")
     end
-    
+
     if new_last !== nothing && old_last !== nothing && new_last > old_last
         error("Attempted to set last period of $(obj.comp_id) to a later period ($new_last) than component indicates ($old_last)")
     end
@@ -279,7 +279,7 @@ end
     _set_run_period!(obj::AbstractComponentDef, first, last)
 
 Allows user to change the bounds on a AbstractComponentDef's time dimension.
-An error is raised if the new time bounds are outside those of any 
+An error is raised if the new time bounds are outside those of any
 subcomponent, recursively.
 """
 function _set_run_period!(obj::AbstractComponentDef, first, last)
@@ -353,7 +353,8 @@ end
 """
     parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
 
-Returns the names of the dimensions of parameter `param_name`.
+Return the names of the dimensions of parameter `param_name` exposed in the composite 
+component definition indicated by`obj`.
 """
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -364,15 +365,21 @@ function parameter_unit(obj::AbstractComponentDef, comp_name::Symbol, param_name
     return parameter_unit(compdef(obj, comp_name), param_name)
 end
 
+"""
+    parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
+
+Return the names of the dimensions of parameter `param_name` in component `comp_name`,
+which is exposed in composite component definition indicated by`obj`.
+"""
 function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
 """
-    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, 
+    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath,
                 value_dict::Dict{Symbol, Any}, param_names)
 
-Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from 
+Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from
 `value_dict[param_name]`.
 """
 function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
@@ -382,13 +389,13 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value
 end
 
 """
-    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, 
+    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol,
                value_dict::Dict{Symbol, Any}, dims=nothing)
 
-Call `set_param!()` with `param_name` and a value dict in which `value_dict[param_name]` references 
+Call `set_param!()` with `param_name` and a value dict in which `value_dict[param_name]` references
 the value of parameter `param_name`.
 """
-function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, 
+function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any},
                     param_name::Symbol, dims=nothing)
     value = value_dict[param_name]
     set_param!(obj, comp_name, param_name, value, dims)
@@ -484,7 +491,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
         if ti != nothing   # there is a time dimension
             T = eltype(value)
 
-            if num_dims == 0    
+            if num_dims == 0
                 values = value
             else
                 # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
@@ -567,15 +574,22 @@ unit(obj::AbstractDatumDef) = obj.unit
 unit(obj::VariableDefReference)  = variable(obj).unit
 unit(obj::ParameterDefReference) = parameter(obj).unit
 
+"""
+    variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
+
+Return the names of the dimensions of variable `var_name` exposed in the composite 
+component definition indicated by`obj` along the component path `comp_path`.
+"""
 function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
     return dim_names(var)
 end
 
 """
-    function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
+    variable_dimensions(obj::AbstractComponentDef, name::Symbol)
 
-Returns the names of the dimensions of variable `name`.
+Return the names of the dimensions of variable `name` exposed in the composite 
+component definition indicated by`obj`.
 """
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
@@ -621,7 +635,7 @@ function _set_comps!(obj::AbstractCompositeComponentDef, comps::OrderedDict{Symb
     for (key, value) in comps
         obj[key] = value
     end
-    
+
     dirty!(obj)
 end
 
@@ -719,7 +733,7 @@ Propagate a time dimension down through the comp def tree.
 """
 function propagate_time!(obj::AbstractComponentDef, t::Dimension)
     set_dimension!(obj, :time, t)
-    
+
     obj.first = firstindex(t)
     obj.last  = lastindex(t)
 
@@ -729,90 +743,39 @@ function propagate_time!(obj::AbstractComponentDef, t::Dimension)
 end
 
 """
-    import_params!(comp::AbstractComponentDef) 
+    add_comp!(
+        obj::AbstractCompositeComponentDef, 
+        comp_def::AbstractComponentDef,
+        comp_name::Symbol=comp_def.comp_id.comp_name; 
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing,
+        rename::NothingPairList=nothing
+    )
 
-Recursively (depth-first) import parameters from leaf comps to composites, and from
-sub-composites to their parents. N.B. this is done in _build() after calling 
-fix_comp_paths!().
-"""
-function import_params!(comp::AbstractComponentDef)    
-    # nothing to do if there are no sub-components
-    length(comp) == 0 && return
-
-    sub_comps = values(components(comp))
-
-    for sub_comp in sub_comps
-        import_params!(sub_comp)
-    end
-
-    # grab any items imported in @defcomposite; create a reverse-lookup map
-    d = Dict()
-    for (local_name, ref) in param_dict(comp)
-        d[(ref.comp_path, ref.name)] = local_name
-    end
-
-    # import any unreferenced (and usually renamed locally) parameters
-    for sub_comp in sub_comps
-        # N.B. param_dict() returns dict of either params (for leafs) or param refs (from composite)
-        for (local_name, param) in param_dict(sub_comp)
-            ref = (param isa AbstractDatumReference ? param : datum_reference(sub_comp, nameof(param)))
-            if ! haskey(d, (ref.comp_path, ref.name))
-                comp[local_name] = ref   # add the reference to the local namespace
-            end
-        end
-    end
-end
-
-"""
-    add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-              comp_name::Symbol=comp_def.comp_id.comp_name; rename=nothing,
-              first=nothing, last=nothing, before=nothing, after=nothing)
-
-Add the component `comp_def` to the composite component indicated by `obj`. The component is 
+Add the component `comp_def` to the composite component indicated by `obj`. The component is
 added at the end of the list unless one of the keywords `before` or `after` is specified.
 Note that a copy of `comp_id` is made in the composite and assigned the give name. The optional
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
-
-Note: `first` and `last` keywords are currently disabled.
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                   comp_name::Symbol=comp_def.comp_id.comp_name;
-                   first::NothingInt=nothing, last::NothingInt=nothing,
-                   before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                   rename::NothingPairList=nothing)
-
-    if first !== nothing || last !== nothing
-        @warn "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."
-        first = last = nothing
-    end
-
-    # When adding composites to another composite, we disallow setting first and last periods.
-    if is_composite(comp_def) && (first !== nothing || last !== nothing)
-        error("Cannot set first or last period when adding a composite component: $(comp_def.comp_id)")
-    end
+function add_comp!(
+    obj::AbstractCompositeComponentDef, 
+    comp_def::AbstractComponentDef,
+    comp_name::Symbol=comp_def.comp_id.comp_name;
+    before::NothingSymbol=nothing, 
+    after::NothingSymbol=nothing,
+    rename::NothingPairList=nothing
+)
 
     # Check if component being added already exists
     has_comp(obj, comp_name) && error("Cannot add two components of the same name ($comp_name)")
 
+    if before !== nothing && after !== nothing
+        error("Cannot specify both 'before' and 'after' parameters")
+    end
+
     # check time constraints if the time dimension has been set
     if has_dim(obj, :time)
         # error("Cannot add component to composite without first setting time dimension.")
-
-        # check that first and last are within the model's time index range
-        time_index = time_labels(obj)
-
-        if first !== nothing && first < time_index[1]
-            error("Cannot add component $comp_name with first time before first of model's time index range.")
-        end
-
-        if last !== nothing && last > time_index[end]
-            error("Cannot add component $comp_name with last time after end of model's time index range.")
-        end
-
-        if before !== nothing && after !== nothing
-            error("Cannot specify both 'before' and 'after' parameters")
-        end
-
         propagate_time!(comp_def, dimension(obj, :time))
     end
 
@@ -821,7 +784,6 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
     comp_def.name = comp_name
     parent!(comp_def, obj)
 
-    _set_run_period!(comp_def, first, last)
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 
@@ -840,31 +802,41 @@ function add_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCompone
 end
 
 """
-    add_comp!(obj::CompositeComponentDef, comp_id::ComponentId; comp_name::Symbol=comp_id.comp_name,
-        first=nothing, last=nothing, before=nothing, after=nothing, rename=nothing)
+    add_comp!(
+        obj::AbstractCompositeComponentDef, 
+        comp_id::ComponentId,
+        comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing,
+        rename::NothingPairList=nothing
+    )
 
-Add the component indicated by `comp_id` to the composite component indicated by `obj`. The 
-component is added at the end of the list unless one of the keywords `before` or `after` is 
-specified. Note that a copy of `comp_id` is made in the composite and assigned the give name. 
+Add the component indicated by `comp_id` to the composite component indicated by `obj`. The
+component is added at the end of the list unless one of the keywords `before` or `after` is
+specified. Note that a copy of `comp_id` is made in the composite and assigned the give name.
 The optional argument `rename` can be a list of pairs indicating `original_name => imported_name`.
-
-Note: `first` and `last` keywords are currently disabled.
 """
-function add_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
-                   comp_name::Symbol=comp_id.comp_name;
-                   first::NothingInt=nothing, last::NothingInt=nothing,
-                   before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                   rename::NothingPairList=nothing)
+function add_comp!(
+    obj::AbstractCompositeComponentDef, 
+    comp_id::ComponentId,
+    comp_name::Symbol=comp_id.comp_name;
+    before::NothingSymbol=nothing, 
+    after::NothingSymbol=nothing,
+    rename::NothingPairList=nothing
+)
     # println("Adding component $comp_id as :$comp_name")
-    add_comp!(obj, compdef(comp_id), comp_name,
-              first=first, last=last, before=before, after=after, rename=rename)
+    add_comp!(obj, compdef(comp_id), comp_name, before=before, after=after, rename=rename)
 end
 
 """
-    replace_comp!(obj::CompositeComponentDef, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        first::NothingInt=nothing, last::NothingInt=nothing,
-        before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-        reconnect::Bool=true)
+    replace_comp!(
+        obj::AbstractCompositeComponentDef, 
+        comp_id::ComponentId,
+        comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing, 
+        after::NothingSymbol=nothing,
+        reconnect::Bool=true
+    )
 
 Replace the component with name `comp_name` in composite component definition `obj` with the
 component `comp_id` using the same name. The component is added in the same position as the
@@ -872,19 +844,15 @@ old component, unless one of the keywords `before` or `after` is specified. The 
 added with the same first and last values, unless the keywords `first` or `last` are specified.
 Optional boolean argument `reconnect` with default value `true` indicates whether the existing
 parameter connections should be maintained in the new component. Returns the added comp def.
-
-Note: `first` and `last` keywords are currently disabled.
 """
-function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
-                       comp_name::Symbol=comp_id.comp_name;
-                       first::NothingInt=nothing, last::NothingInt=nothing,
-                       before::NothingSymbol=nothing, after::NothingSymbol=nothing,
-                       reconnect::Bool=true)
-
-    if first !== nothing || last !== nothing
-        @warn "replace_comp!: Keyword arguments 'first' and 'last' are currently disabled."
-        first = last = nothing
-    end
+function replace_comp!(
+    obj::AbstractCompositeComponentDef, 
+    comp_id::ComponentId,
+    comp_name::Symbol=comp_id.comp_name;
+    before::NothingSymbol=nothing, 
+    after::NothingSymbol=nothing,
+    reconnect::Bool=true
+)
 
     if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
@@ -904,10 +872,8 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
         end
     end
 
-    # Get original first and last if new run period not specified
+    # Get the component definition of the component that is being replaced
     old_comp = compdef(obj, comp_name)
-    first = first === nothing ? old_comp.first : first
-    last  = last  === nothing ? old_comp.last  : last
 
     if reconnect
         new_comp = compdef(comp_id)
@@ -964,5 +930,5 @@ function replace_comp!(obj::AbstractCompositeComponentDef, comp_id::ComponentId,
     end
 
     # Re-add
-    return add_comp!(obj, comp_id, comp_name; before=before, after=after) # first=first, last=last, 
+    return add_comp!(obj, comp_id, comp_name; before=before, after=after)
 end

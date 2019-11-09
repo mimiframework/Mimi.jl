@@ -163,10 +163,10 @@ If provided, the generated trials and results will be saved in the indicated
 `trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set
 to false, then results will be cleared from memory and only stored in the
 `results_output_dir`. After `run`, the results of a `SimulationInstance` can be accessed using
-the familiar `getindex` function with the following signature, which returns a `DataFrame`. 
+the `getdataframe` function with the following signature, which returns a `DataFrame`. 
 
 ```
-Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
+getdataframe(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
 ```
 
 If `pre_trial_func` or `post_trial_func` are defined, the designated functions are called 
@@ -331,7 +331,7 @@ N = 100
 si = run(sd, m, N; trials_output_filename=trials_output_filename, results_output_dir=results_output_dir)
 
 # take a look at the results
-results = si[:grosseconomy, :K] # model index chosen defaults to 1
+results = getdataframe(si, :grosseconomy, :K) # model index chosen defaults to 1
 ```
 
 ## Plotting and the Explorer UI

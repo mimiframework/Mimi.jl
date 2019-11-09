@@ -40,10 +40,7 @@ add_comp!(model1, testcomp1)
 set_param!(model1, :testcomp1, :par1, years)
 set_param!(model1, :testcomp1, :par_scalar, 5.)
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(model1, testcomp2; first = late_first, last = early_last)
-)
+add_comp!(model1, testcomp2)
 
 @test_throws ErrorException set_param!(model1, :testcomp2, :par2, late_first:5:early_last)
 set_param!(model1, :testcomp2, :par2, years)
@@ -127,10 +124,7 @@ dim = Mimi.dimension(model3, :time)
 late_first = 2030
 early_last = 2100
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(model3, testcomp3; first = late_first, last = early_last)
-)
+add_comp!(model3, testcomp3)
 
 indices = collect(late_first:stepsize:early_last)
 nindices = length(indices)

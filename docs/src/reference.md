@@ -5,7 +5,6 @@
 MarginalModel
 Model
 add_comp!  
-components 
 connect_param!
 create_marginal_model
 dim_count
@@ -23,7 +22,6 @@ is_last
 is_time
 is_timestep
 modeldef
-parameters
 parameter_names
 parameter_dimensions
 plot_comp_graph
@@ -31,7 +29,8 @@ replace_comp!
 set_dimension! 
 set_leftover_params! 
 set_param! 
-variables  
+TimestepIndex
+TimestepValue
 variable_dimensions
 variable_names
 update_param!

@@ -304,10 +304,11 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
     indices = Vector()
     for (dim_name, dim_values) in zip(pdims, tdims)
         dim = dimension(md, dim_name)
-        push!(indices, dim[dim_values])
+        dim_indices = dim[dim_values]
+        dim_name == :time ? dim_indices = TimestepIndex.(dim_indices) : nothing
+        push!(indices, dim_indices)
     end
 
-    # println("indices: $indices")
     return indices
 end
 

@@ -47,26 +47,10 @@ last_A = 2150
 m = Model()
 set_dimension!(m, :time, years)
 
-# first and last are now disabled
-# @test_throws ErrorException add_comp!(m, A, last = 2210)
-# @test_throws ErrorException add_comp!(m, A, first = 2010)
-
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m, A, last = 2210)
-)
-
-# remove the comp we just added so later tests succeed
-delete!(m, :A)
-@test has_comp(m, :A) == false
-
 @test_throws ArgumentError add_comp!(m, A, after=:B)
 # @test_throws ErrorException add_comp!(m, A, after=:B)
 
-@test_logs(
-    (:warn, "add_comp!: Keyword arguments 'first' and 'last' are currently disabled."),
-    add_comp!(m, A, first = first_A, last = last_A) #test specific last and first
-)
+add_comp!(m, A)
 
 add_comp!(m, B, before=:A)
 

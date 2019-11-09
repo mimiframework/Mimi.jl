@@ -5,7 +5,7 @@ using DataFrames
 using DataStructures
 using Distributions
 using Electron
-using JSON 
+using JSON
 using NamedArrays
 using StringBuilders
 
@@ -16,7 +16,7 @@ export
     MarginalModel,
     Model,
     add_comp!,
-    components,
+    # components,
     connect_param!,
     create_marginal_model,
     dim_count,
@@ -24,7 +24,7 @@ export
     dim_key_dict,
     disconnect_param!,
     explore,
-    getdataframe, 
+    getdataframe,
     gettime,
     get_param_value,
     get_var_value,
@@ -35,17 +35,19 @@ export
     is_timestep,
     modeldef,
     name,
-    parameters, 
+    # parameters,
     parameter_dimensions,
     parameter_names,
     plot_comp_graph,
-    replace_comp!, 
-    set_dimension!, 
-    set_leftover_params!, 
-    set_param!, 
+    replace_comp!,
+    set_dimension!,
+    set_leftover_params!,
+    set_param!,
+    TimestepIndex,
+    TimestepValue,
     update_param!,
     update_params!,
-    variables,
+    # variables,
     variable_dimensions,
     variable_names
 
@@ -70,7 +72,7 @@ include("core/order.jl")
 include("core/paths.jl")
 include("core/show.jl")
 
-include("mcs/mcs.jl") # need mcs types for explorer
+include("mcs/mcs.jl") # need mcs types for explorer and utils
 include("explorer/explore.jl")
 include("utils/getdataframe.jl")
 include("utils/graph.jl")

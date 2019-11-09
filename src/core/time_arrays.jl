@@ -27,6 +27,7 @@ function get_time_index_position(obj::AbstractCompositeComponentDef, comp_name::
 end
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
+const AnyIndex_NonColon = Union{Int, Vector{Int}, Tuple, OrdinalRange}
 
 # Helper function for getindex; throws a MissingException if data is missing, otherwise returns data
 function _missing_data_check(data, t)
@@ -35,6 +36,36 @@ function _missing_data_check(data, t)
 	else
 		return data
 	end
+end
+
+# Helper function for getindex; throws an error if the TimestepIndex index is out of range of the TimestepArray
+function _index_bounds_check(data, dim, t)
+	if size(data, dim) < t
+		error("TimestepIndex index $t extends beyond bounds of TimestepArray dimension $dim")
+	end
+end
+
+# Helper function for getindex; throws an error if you index into a N-dimensional TimestepArray with only one index 
+# if N > 1; Note that Julia does allow this and returns the column-major value, but this could produce unexpected 
+# behavior for users in this case so we do not allow it for now
+function _single_index_check(data, idxs)
+	num_idxs = length(idxs)
+	num_dims = length(size(data))
+	if num_idxs < num_dims
+		error("Not enough indices provided to index into TimestepArray, $num_idxs provided, $num_dims required")
+	end
+end
+
+# Helper functionfor getindex; throws an error if one indexes into a TimestepArray with an integer
+function _throw_int_getindex_depwarning()
+	msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
+	Base.depwarn("$msg, $(stacktrace())", :getindex)
+end
+
+# Helper function for setindex; throws an deprecation warning if one indexes into a TimestepArray with an integer
+function _throw_int_setindex_depwarning()
+	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]"
+	Base.depwarn("$msg, $(stacktrace())", :setindex)
 end
 
 # Helper macro used by connector
@@ -53,6 +84,30 @@ macro allow_missing(expr)
 		end
 		return esc(retexpr)
 	end
+end
+
+
+# Helper functions for TimestepValue type
+function _get_time_value_position(times::Union{Tuple, Array}, ts::TimestepValue{T}) where T
+	t = findfirst(isequal.(ts.value, times))
+	if t === nothing
+		error("cannot use TimestepValue with value $(ts.value), value is not in the TimestepArray")
+	end
+
+	t_offset = t + ts.offset
+	if t_offset > length(times) 
+		error("cannot get TimestepValue offset of $(ts.offset) from value $(ts.value), offset is after the end of the TimestepArray")
+	end
+	return t_offset
+end
+
+# Helper function to get the array of indices from an Array{TimestepIndex,1}
+function _get_ts_indices(ts_array::Array{TimestepIndex, 1})
+    return [ts.index for ts in ts_array]
+end
+
+function _get_ts_indices(ts_array::Array{TimestepValue{T}, 1}, times::Union{Tuple, Array}) where T
+	return [_get_time_value_position(times, ts) for ts in ts_array]
 end
 
 #
@@ -81,15 +136,24 @@ function Base.getindex(v::TimestepVector{VariableTimestep{D_TIMES}, T}, ts::Vari
 	_missing_data_check(data, t)
 end
 
-# int indexing version supports old-style components and internal functions, not
-# part of the public API
-
-function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::AnyIndex) where {T, FIRST, STEP}
-	return v.data[i]
+function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T_data}, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, T_time} 
+	LAST = FIRST + ((length(v.data)-1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	data = v.data[t]
+	_missing_data_check(data, t)
 end
 
-function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::AnyIndex) where {T, TIMES}
-	return v.data[i]
+function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T_data}, ts::TimestepValue{T_time}) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	data = v.data[t]
+	_missing_data_check(data, t)
+end
+
+function Base.getindex(v::TimestepVector, ts::TimestepIndex) 
+	t = ts.index
+	_index_bounds_check(v.data, 1, t)
+	data = v.data[t]
+	_missing_data_check(data, t)
 end
 
 function Base.setindex!(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, val, ts::FixedTimestep{FIRST, STEP, LAST}) where {T, FIRST, STEP, LAST}
@@ -110,14 +174,41 @@ function Base.setindex!(v::TimestepVector{VariableTimestep{D_TIMES}, T}, val, ts
 	setindex!(v.data, val, t)
 end
 
+function Base.setindex!(v::TimestepVector{FixedTimestep{FIRST, STEP}, T_data}, val, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, T_time}
+	LAST = FIRST + ((length(v.data)-1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(v.data, val, t)
+end
+
+function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T_data}, val, ts::TimestepValue{T_time}) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(v.data, val, t)
+end
+
+function Base.setindex!(v::TimestepVector, val, ts::TimestepIndex)
+	setindex!(v.data, val, ts.index)
+end
+	
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex) where {T, Start, STEP}
+function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::AnyIndex_NonColon) where {T, FIRST, STEP}
+	_throw_int_getindex_depwarning()
+	return v.data[i]
+end
+
+function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::AnyIndex_NonColon) where {T, TIMES}
+	_throw_int_getindex_depwarning()
+	return v.data[i]
+end
+
+function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex_NonColon) where {T, Start, STEP}
+	_throw_int_setindex_depwarning()
 	setindex!(v.data, val, i)
 end
 
-function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex) where {T, TIMES}
+function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex_NonColon) where {T, TIMES}
+	_throw_int_setindex_depwarning()
 	setindex!(v.data, val, i)
 end
 
@@ -176,6 +267,45 @@ function Base.getindex(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, idx
 	_missing_data_check(data, t)
 end
 
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T_data, 1}, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, FIRST, STEP, T_time} 
+	LAST = FIRST + ((size(mat.data, 1) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	data = mat.data[t, idx]
+	_missing_data_check(data, t)
+end
+
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 1}, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	data = mat.data[t, idx]
+	_missing_data_check(data, t)
+end
+
+function Base.getindex(mat::TimestepMatrix, ts::TimestepIndex, idx::AnyIndex)
+	t = ts.index
+	_index_bounds_check(mat.data, 1, t)
+	data = mat.data[t, idx]
+	_missing_data_check(data, t)
+end
+
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T_data, 2}, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, T_time} 
+	LAST = FIRST + ((size(mat.data, 2) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	data = mat.data[idx, t]
+	_missing_data_check(data, t)
+end
+
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 2}, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	data = mat.data[idx, t]
+	_missing_data_check(data, t)
+end
+
+function Base.getindex(mat::TimestepMatrix, idx::AnyIndex, ts::TimestepIndex)
+	t = ts.index
+	_index_bounds_check(mat.data, 2, t)
+	data = mat.data[idx, t]
+	_missing_data_check(data, t)
+end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 1}, val, ts::FixedTimestep{FIRST, STEP, LAST}, idx::AnyIndex) where {T, FIRST, STEP, LAST}
 	setindex!(mat.data, val, ts.t, idx)
@@ -213,30 +343,66 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{D_TIMES}, T, 2}, va
 	setindex!(mat.data, val, idx, t)
 end
 
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T_data, 1}, val, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, FIRST, STEP, T_time}
+	LAST = FIRST + ((size(mat.data, 1) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(mat.data, val, t, idx)
+end
+
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 1}, val, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(mat.data, val, t, idx)
+end
+
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T_data, 2}, val, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, T_time}
+	LAST = FIRST + ((size(mat.data, 1) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(mat.data, val, idx, t)
+end
+
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 2}, val, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, TIMES, T_time}
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(mat.data, val, idx, t)
+end
+
+function Base.setindex!(mat::TimestepMatrix, val, idx::AnyIndex, ts::TimestepIndex)
+	setindex!(mat.data, val, idx, ts.index)
+end
+
+function Base.setindex!(mat::TimestepMatrix, val, ts::TimestepIndex, idx::AnyIndex)
+	setindex!(mat.data, val, ts.index, idx)
+end
+
 # int indexing version supports old-style components and internal functions, not
 # part of the public API
 
-function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP, ti}
+function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, FIRST, STEP, ti}
+	_throw_int_getindex_depwarning()
 	return mat.data[idx1, idx2]
 end
 
-function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES, ti}
+function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, TIMES, ti}
+	_throw_int_getindex_depwarning()
 	return mat.data[idx1, idx2]
 end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::Int, idx2::Int) where {T, FIRST, STEP, ti}
+	_throw_int_setindex_depwarning()
 	setindex!(mat.data, val, idx1, idx2)
 end
 
-function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, FIRST, STEP, ti}
+function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, FIRST, STEP, ti}
+	_throw_int_setindex_depwarning()
 	mat.data[idx1, idx2] .= val
 end
 
 function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::Int, idx2::Int) where {T, TIMES, ti}
+	_throw_int_setindex_depwarning()
 	setindex!(mat.data, val, idx1, idx2)
 end
 
-function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::AnyIndex, idx2::AnyIndex) where {T, TIMES, ti}
+function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, TIMES, ti}
+	_throw_int_setindex_depwarning()
 	mat.data[idx1, idx2] .= val
 end
 
@@ -292,6 +458,37 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti}, 
 	return arr.data[idxs1..., t, idxs2...]
 end
 
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_time}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((size(arr.data, ti) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	return arr.data[idxs1..., t, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, TIMES, T_time}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = _get_time_value_position(TIMES, ts)
+	return arr.data[idxs1..., t, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, FIRST, STEP}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.index
+	_index_bounds_check(arr.data, ti, t)
+	return arr.data[idxs1..., t, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, TIMES}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.index
+	_index_bounds_check(arr.data, ti, t)
+	return arr.data[idxs1..., t, idxs2...]
+end
+
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::Union{FixedTimestep{FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	setindex!(arr.data, val, idxs1..., ts.t, idxs2...)
@@ -314,23 +511,93 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{D_TIMES}, T, N, ti},
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
-# int indexing version supports old-style components and internal functions, not
-# part of the public API; first index is Int or Range, rather than a Timestep
-
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, FIRST, STEP}
-	return arr.data[idx1, idx2, idxs...]
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, val, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_time}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((size(arr.data, ti) - 1) * STEP)
+	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, TIMES}
-	return arr.data[idx1, idx2, idxs...]
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, val, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, TIMES, T_time}
+	_single_index_check(arr.data, idxs)
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = _get_time_value_position(TIMES, ts)
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
-function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, FIRST, STEP}
-	setindex!(arr.data, val, idx1, idx2, idxs...)
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, FIRST, STEP}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.index
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
-function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idx1::AnyIndex, idx2::AnyIndex, idxs::AnyIndex...) where {T, N, ti, TIMES}
-	setindex!(arr.data, val, idx1, idx2, idxs...)
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, TIMES}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	t = ts.index
+	setindex!(arr.data, val, idxs1..., t, idxs2...)
+end
+
+# Colon support - this allows the time dimension to be indexed with a colon, and 
+# the deprecation warning will become an error when integer indexing is fully deprecated
+
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
+    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
+    return arr.data[idxs...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::AnyIndex...) where {TIMES, T, N, ti}
+    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
+    return arr.data[idxs...]
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
+    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
+    setindex!(arr.data, val, idxs...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::AnyIndex...) where {TIMES, T, N, ti}
+    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
+    setindex!(arr.data, val, idxs...)
+end
+
+# Indexing with arrays of TimestepIndexes or TimestepValues
+function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	ts_idxs = _get_ts_indices(ts_array)
+	return arr.data[idxs1..., ts_idxs, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, idxs::Union{Array{TimestepValue{T_time},1}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_time}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((length(arr.data)-1) * STEP)
+	ts_idxs = _get_ts_indices(ts_array, [FIRST:STEP:LAST...])
+	return arr.data[idxs1..., ts_idxs, idxs2...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, idxs::Union{Array{TimestepValue{T_times},1}, AnyIndex}...) where {T_data, N, ti, TIMES, T_times}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	ts_idxs = _get_ts_indices(ts_array, TIMES)
+	return arr.data[idxs1..., ts_idxs, idxs2...]
+end
+
+function Base.setindex!(arr::TimestepArray{TS, T, N, ti}, vals, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	ts_idxs = _get_ts_indices(ts_array)
+	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T_data, N, ti}, vals, idxs::Union{Array{TimestepValue{T_times},1}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, T_times}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	LAST = FIRST + ((length(arr.data)-1) * STEP)
+	ts_idxs = _get_ts_indices(ts_array, [FIRST:STEP:LAST...])
+	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, vals, idxs::Union{Array{TimestepValue{T_times},1}, AnyIndex}...) where {T_data, N, ti, TIMES, T_times}
+	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
+	ts_idxs = _get_ts_indices(ts_array, TIMES)
+	setindex!(arr.data, vals, idxs1..., ts_idxs, idxs2...)
 end
 
 """
