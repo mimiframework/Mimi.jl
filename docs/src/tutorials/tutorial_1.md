@@ -103,7 +103,7 @@ getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in fi
 
 # output
 
-16×3 DataFrame
+16×3 DataFrames.DataFrame
 │ Row │ time  │ regions │ income   │
 │     │ Int64 │ String  │ Float64⍰ │
 ├─────┼───────┼─────────┼──────────┤
