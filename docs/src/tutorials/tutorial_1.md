@@ -32,6 +32,7 @@ Now open a julia REPL and type the following command to load the MimiFUND packag
 using MimiFUND
 
 # output
+
 THIS SHOULD CAUSE AN ERROR
 ```
 Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
