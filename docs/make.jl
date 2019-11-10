@@ -5,6 +5,7 @@ DocMeta.setdocmeta!(Mimi, :DocTestSetup, :(using Mimi; using Distributions; usin
 # doctest(Mimi)
 
 makedocs(
+	strict = true,
     modules = [Mimi],
 	sitename = "Mimi.jl",
 	pages = [
