@@ -22,6 +22,14 @@ struct VariableTimestep{TIMES} <: AbstractTimestep
     end
 end
 
+"""
+    TimestepValue
+
+A user-facing API used to index into a `TimestepArray` in `run_timestep` functions 
+and containing a `value` of the same Type as the times in the `TimstepArray` it
+ is used to index into, and an optional `offset` in terms of
+timesteps. 
+"""
 struct TimestepValue{T}
     value::T
     offset::Int
@@ -31,6 +39,12 @@ struct TimestepValue{T}
     end
 end
   
+"""
+    TimestepValue
+
+A user-facing API used to index into a `TimestepArray` in `run_timestep` functions 
+and containing an `index` in terms of timesteps. 
+"""
 struct TimestepIndex
     index::Int
 end
