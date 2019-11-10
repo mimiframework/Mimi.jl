@@ -235,7 +235,7 @@ Next, use the `run` function to run the simulation for the specified simulation 
 
 In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
-``````jldoctest tutorial4; output = false, filter = r".*"s
+```jldoctest tutorial4; output = false, filter = r".*"s
 # Run 100 trials, and optionally save results to the indicated directories
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4")
 
