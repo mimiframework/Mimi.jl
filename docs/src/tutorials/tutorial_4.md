@@ -239,8 +239,8 @@ In its simplest use, the `run` function generates and iterates over a sample of 
 # Run 100 trials, and optionally save results to the indicated directories
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4")
 
-# Explore the results saved in-memory by usign getdataframe into the returned SimulationInstance.
-# Values are save from each trial for each variable or parameter specified by the call to "save()" at the end of the @defsim block.
+# Explore the results saved in-memory by using getdataframe with the returned SimulationInstance.
+# Values are saved from each trial for each variable or parameter specified by the call to "save()" at the end of the @defsim block.
 K_results = getdataframe(si, :grosseconomy, :K)
 E_results = getdataframe(si, :emissions, :E)
 

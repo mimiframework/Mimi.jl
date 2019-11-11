@@ -353,8 +353,8 @@ end
 """
     parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
 
-Return the names of the dimensions of parameter `param_name` exposed in the composite 
-component definition indicated by`obj`.
+Return the names of the dimensions of parameter `param_name` exposed in the component 
+definition indicated by `obj`.
 """
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -588,8 +588,8 @@ end
 """
     variable_dimensions(obj::AbstractComponentDef, name::Symbol)
 
-Return the names of the dimensions of variable `name` exposed in the composite 
-component definition indicated by`obj`.
+Return the names of the dimensions of variable `name` exposed in the component definition 
+indicated by `obj`.
 """
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
     var = variable(obj, name)
