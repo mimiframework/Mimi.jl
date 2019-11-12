@@ -2,6 +2,8 @@ using Mimi
 using Test
 using Documenter
 
+doctest(Mimi)
+
 @testset "Mimi" begin
 
     @info("test_main.jl")
