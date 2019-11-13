@@ -25,6 +25,8 @@ branches:
   - /v(\d+)\.(\d+)\.(\d+)/
 env:
   - PYTHON="" MIMI_RUN_DEPENDENCY_TESTS="TRUE"
+before_script:
+  - julia -e 'using Pkg; Pkg.Registry.add(RegistrySpec(url ="https://github.com/mimiframework/MimiRegistry.git"))'
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("Mimi")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
 
