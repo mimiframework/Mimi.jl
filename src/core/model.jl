@@ -298,6 +298,9 @@ variable(m::Model, comp_name::Symbol, var_name::Symbol) = variable(compdef(m, co
 @delegate variable_unit(m::Model, comp_path::ComponentPath, var_name::Symbol) => md
 
 @delegate variable_dimensions(m::Model, comp_path::ComponentPath, var_name::Symbol) => md
+@delegate variable_dimensions(m::Model, comp::Symbol, var_name::Symbol) => md
+@delegate variable_dimensions(m::Model, comp_path::Tuple{N, Symbol} where N, var_name::Symbol) => md
+@delegate variable_dimensions(m::Model, comp_path::Tuple{Symbol}, var_name::Symbol) => md
 
 """
     variables(m::Model, comp_name::Symbol)

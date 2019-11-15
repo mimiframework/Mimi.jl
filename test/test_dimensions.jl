@@ -5,7 +5,7 @@ using Test
 
 import Mimi:
     compdef, AbstractDimension, RangeDimension, Dimension, key_type, first_period, last_period,
-    ComponentReference
+    ComponentReference, ComponentPath
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
 dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
@@ -142,5 +142,12 @@ run(m)
 set_dimension!(m, :time, variable_years)
 run(m)
 @test m[:bar, :v1] == variable_years
+
+# test variable_dimensions function
+comp_path = ComponentPath((:bar,))
+dims = [:time]
+@test variable_dimensions(m, comp_path, :v1) == dims
+@test variable_dimensions(m, :bar, :v1) == dims
+@test variable_dimensions(m, (:bar,), :v1) == dims
 
 end #module
