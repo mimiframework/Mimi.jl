@@ -579,7 +579,7 @@ unit(obj::ParameterDefReference) = parameter(obj).unit
 
 Return the names of the dimensions of variable `var_name` exposed in the composite 
 component definition indicated by`obj` along the component path `comp_path`. The 
-`comp_path`is of type `Mimi.ComponentPath` with the single arugment being a named
+`comp_path`is of type `Mimi.ComponentPath` with the single argument being a named
 tuple of symbols describing the relative (to a composite) or absolute (relative to ModelDef) 
 path through composite nodes to specific composite or leaf node.
 """
