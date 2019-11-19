@@ -164,6 +164,9 @@ using VegaLite
 
 # Plot model results
 Mimi.plot(m, :emissions, :E);
+
+# output
+
 ```
 and via explorer:
 ```julia
