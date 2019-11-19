@@ -2,6 +2,8 @@ using Mimi
 using Test
 using Documenter
 
+doctest(Mimi)
+
 @testset "Mimi" begin
 
     @info("test_main.jl")
@@ -103,5 +105,3 @@ using Documenter
         run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)
     end
 end
-
-doctest(Mimi)

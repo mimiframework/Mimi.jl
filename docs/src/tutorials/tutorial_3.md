@@ -158,18 +158,17 @@ m[:emissions, :E]
  87208.1411195294  
  92022.29655492865 
 ```
-Finally we can visualize the results:
+Finally we can visualize the results via plotting:
 ```jldoctest tutorial3; output = false, filter = r".*"s
 using VegaLite
 
 # Plot model results
 Mimi.plot(m, :emissions, :E);
-
+```
+and via explorer:
+```julia
 # Observe all model result graphs in UI
 explore(m)
-
-# output
-
 ```
 
 ## Constructing A Multi-Region Model
@@ -387,10 +386,7 @@ m[:emissions, :E_Global]
  36444.054899836294
  38226.21934898662 
 ```
-```jldoctest tutorial3; output = false, filter = r".*"s
+```julia
 # Observe model result graphs
 explore(m)
-
-# output
-
 ```

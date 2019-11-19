@@ -253,20 +253,14 @@ As described in the internals documentation [here](https://github.com/mimiframew
 
 To view your results in an interactive application viewer, simply call:
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```julia
 explore(si)
-
-# output
-
 ```
 
 If desired, you may also include a `title` for your application window. If more than one model was run in your Simulation, indicate which model you would like to explore with the `model` keyword argument, which defaults to 1. Finally, if your model leverages different scenarios, you **must** indicate the `scenario_name`.
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```julia
 explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name here since we have no scenarios
-
-# output
-
 ```
 
 To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
