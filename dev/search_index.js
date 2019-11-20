@@ -641,6 +641,278 @@ var documenterSearchIndex = {"docs": [
 },
 
 {
+    "location": "reference/#Mimi.@defcomp",
+    "page": "Reference",
+    "title": "Mimi.@defcomp",
+    "category": "macro",
+    "text": "defcomp(comp_name::Symbol, ex::Expr)\n\nDefine a Mimi component comp_name with the expressions in ex.  The following  types of expressions are supported:\n\ndimension_name = Index()   # defines a dimension\nparameter = Parameter(index = [dimension_name], units = \"unit_name\", default = default_value)    # defines a parameter with optional arguments\nvariable = Variable(index = [dimension_name], units = \"unit_name\")    # defines a variable with optional arguments\ninit(p, v, d)              # defines an init function for the component\nrun_timestep(p, v, d, t)   # defines a run_timestep function for the component\n\nParses a @defcomp definition, converting it into a series of function calls that create the corresponding ComponentDef instance. At model build time, the ModelDef (including its ComponentDefs) will be converted to a runnable model.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.MarginalModel",
+    "page": "Reference",
+    "title": "Mimi.MarginalModel",
+    "category": "type",
+    "text": "MarginalModel\n\nA Mimi Model whose results are obtained by subtracting results of one base Model from those of another marginal Modelthat has a difference ofdelta`.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.Model",
+    "page": "Reference",
+    "title": "Mimi.Model",
+    "category": "type",
+    "text": "Model\n\nA user-facing API containing a ModelInstance (mi) and a ModelDef (md). This Model can be created with the optional keyword argument number_type indicating the default type of number used for the ModelDef.  If not specified the Model assumes a number_type of Float64.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.add_comp!",
+    "page": "Reference",
+    "title": "Mimi.add_comp!",
+    "category": "function",
+    "text": "add_comp!(\n    obj::AbstractCompositeComponentDef, \n    comp_def::AbstractComponentDef,\n    comp_name::Symbol=comp_def.comp_id.comp_name; \n    before::NothingSymbol=nothing, \n    after::NothingSymbol=nothing,\n    rename::NothingPairList=nothing\n)\n\nAdd the component comp_def to the composite component indicated by obj. The component is added at the end of the list unless one of the keywords before or after is specified. Note that a copy of comp_id is made in the composite and assigned the give name. The optional argument rename can be a list of pairs indicating original_name => imported_name.\n\n\n\n\n\nadd_comp!(\n    obj::AbstractCompositeComponentDef, \n    comp_id::ComponentId,\n    comp_name::Symbol=comp_id.comp_name;\n    before::NothingSymbol=nothing, \n    after::NothingSymbol=nothing,\n    rename::NothingPairList=nothing\n)\n\nAdd the component indicated by comp_id to the composite component indicated by obj. The component is added at the end of the list unless one of the keywords before or after is specified. Note that a copy of comp_id is made in the composite and assigned the give name. The optional argument rename can be a list of pairs indicating original_name => imported_name.\n\n\n\n\n\nadd_comp!(obj::AbstractCompositeComponentInstance, ci::AbstractComponentInstance)\n\nAdd the (leaf or composite) component ci to a composite\'s list of components.\n\n\n\n\n\nadd_comp!(\n    m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;\n    before::NothingSymbol=nothing, \n    after::NothingSymbol=nothing, \n    rename::NothingPairList=nothing\n)\n\nAdd the component indicated by comp_id to the model indicated by m. The component is added  at the end of the list unless one of the keywords before or after is specified. Note that a copy of comp_id is made in the composite and assigned the give name. The optional argument rename can be a list of pairs indicating original_name => imported_name.\n\n\n\n\n\nadd_comp!(\n    m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;\n    before::NothingSymbol=nothing, \n    after::NothingSymbol=nothing, \n    rename::NothingPairList=nothing\n)\n\nAdd the component comp_def to the model indicated by m. The component is added at the end of the list unless one of the keywords, first, last, before, after. Note that a copy of comp_id is made in the composite and assigned the give name. The optional argument rename can be a list of pairs indicating original_name => imported_name.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.connect_param!",
+    "page": "Reference",
+    "title": "Mimi.connect_param!",
+    "category": "function",
+    "text": "connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol;\n               check_labels::Bool=true)\n\nConnect a parameter param_name in the component comp_name of composite obj to the external parameter ext_param_name.\n\n\n\n\n\nconnect_param!(obj::AbstractCompositeComponentDef,\n    dst_comp_path::ComponentPath, dst_par_name::Symbol,\n    src_comp_path::ComponentPath, src_var_name::Symbol,\n    backup::Union{Nothing, Array}=nothing;\n    ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst_par_name of one component dst_comp_path of composite obj to a variable src_var_name in another component src_comp_path of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(obj::AbstractCompositeComponentDef,\n    dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},\n    backup::Union{Nothing, Array}=nothing;\n    ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst[2] of one component dst[1] of composite obj to a variable src[2] in another component src[1] of the same composite using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nConnect a parameter and variable using string notation \"/path/to/component:datum_name\" where the potion before the \":\" is the string representation of a component path from obj and the portion after is the name of the src or dst datum.\n\n\n\n\n\nconnect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)\n\nConnect two components as connect_param!(dst, dst_name, src, src_name).\n\n\n\n\n\nconnect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)\n\nConnect two components with the same name as connect_param!(dst, src, name).\n\n\n\n\n\nconnect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, src_comp_path::ComponentPath,\n    src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)\n\nBind the parameter dst_par_name of one component dst_comp_path of model md to a variable src_var_name in another component src_comp_path of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\nconnect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)\n\nBind the parameter dst[2] of one component dst[1] of model md to a variable src[2] in another component src[1] of the same model using backup to provide default values and the ignoreunits flag to indicate the need to check match units between the two.  The offset argument indicates the offset between the destination and the source ie. the value would be 1 if the destination component parameter should only be calculated for the second timestep and beyond.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.create_marginal_model",
+    "page": "Reference",
+    "title": "Mimi.create_marginal_model",
+    "category": "function",
+    "text": "create_marginal_model(base::Model, delta::Float64=1.0)\n\nCreate a MarginalModel where base is the baseline model and delta is the difference used to create the marginal model.  Return the resulting MarginaModel which shares the internal ModelDef between the base and marginal.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.dim_count",
+    "page": "Reference",
+    "title": "Mimi.dim_count",
+    "category": "function",
+    "text": "dim_count(mi::ModelInstance, dim_name::Symbol)\n\nReturn the size of index dim_name in model instance mi.\n\n\n\n\n\ndim_count(m::Model, dim_name::Symbol)\n\nReturn the size of index dim_name in model m.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.dim_keys",
+    "page": "Reference",
+    "title": "Mimi.dim_keys",
+    "category": "function",
+    "text": "dim_keys(m::Model, dim_name::Symbol)\n\nReturn keys for dimension dim-name in model m.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.dim_key_dict",
+    "page": "Reference",
+    "title": "Mimi.dim_key_dict",
+    "category": "function",
+    "text": "dim_key_dict(m::Model)\n\nReturn a dict of dimension keys for all dimensions in model m.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.disconnect_param!",
+    "page": "Reference",
+    "title": "Mimi.disconnect_param!",
+    "category": "function",
+    "text": "disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, param_name::Symbol)\n\nRemove any parameter connections for a given parameter param_name in a given component comp_def which must be a direct subcomponent of composite obj.\n\n\n\n\n\ndisconnect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol)\n\nRemove any parameter connections for a given parameter param_name in a given component comp_def which must be a direct subcomponent of composite obj.\n\n\n\n\n\ndisconnect_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol)\n\nRemove any parameter connections for a given parameter param_name in the component identified by comp_path which must be under the composite obj.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.explore",
+    "page": "Reference",
+    "title": "Mimi.explore",
+    "category": "function",
+    "text": "explore(m::Model; title = \"Electron\")\n\nProduce a UI to explore the parameters and variables of Model m in a Window with title title.\n\n\n\n\n\nexplore(sim_inst::SimulationInstance; title=\"Electron\", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)\n\nProduce a UI to explore the output distributions of the saved variables in SimulationInstance sim for results of model model_index and scenario with the name scen_name in a Window with title title. The optional arguments default to a model_index of 1, a scen_name of nothing  assuming there is no secenario dimension, and a window with title Electron.   The results_output_dir keyword argument refers to the main output directory as provided to run,  where all subdirectories are held. If provided, results are assumed to be stored there, otherwise it is  assumed that results are held in results.sim and not  in an output folder.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.getdataframe",
+    "page": "Reference",
+    "title": "Mimi.getdataframe",
+    "category": "function",
+    "text": "getdataframe(m::AbstractModel, comp_name::Symbol, pairs::Pair{Symbol, Symbol}...)\n\nReturn a DataFrame with values for the given variables or parameters of model m indicated by pairs, where each pair is of the form comp_name => item_name. If more than one pair is provided, all must refer to items with the same dimensions, which are used to join the respective item values.\n\n\n\n\n\ngetdataframe(m::AbstractModel, pair::Pair{Symbol, NTuple{N, Symbol}})\n\nReturn a DataFrame with values for the given variables or parameters  indicated by pairs, where each pair is of the form comp_name => item_name. If more than one pair is provided, all must refer to items with the same dimensions, which are used to join the respective item values.\n\n\n\n\n\ngetdataframe(m::AbstractModel, comp_name::Symbol, item_name::Symbol)\n\nReturn the values for variable or parameter item_name in comp_name of  model m as a DataFrame.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.gettime",
+    "page": "Reference",
+    "title": "Mimi.gettime",
+    "category": "function",
+    "text": "gettime(ts::FixedTimestep)\n\nReturn the time (year) represented by Timestep ts \n\n\n\n\n\ngettime(ts::VariableTimestep)\n\nReturn the time (year) represented by Timestep ts \n\n\n\n\n\ngettime(c::Clock)\n\nReturn the current time of the timestep held by the c clock.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.get_param_value",
+    "page": "Reference",
+    "title": "Mimi.get_param_value",
+    "category": "function",
+    "text": "get_param_value(ci::AbstractComponentInstance, name::Symbol)\n\nReturn the value of parameter name in (leaf or composite) component ci.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.get_var_value",
+    "page": "Reference",
+    "title": "Mimi.get_var_value",
+    "category": "function",
+    "text": "get_var_value(ci::AbstractComponentInstance, name::Symbol)\n\nReturn the value of variable name in component ci.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.hasvalue",
+    "page": "Reference",
+    "title": "Mimi.hasvalue",
+    "category": "function",
+    "text": "hasvalue(arr::TimestepArray, ts::FixedTimestep)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::VariableTimestep)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::FixedTimestep, idxs::Int...)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts within indices idxs. Used when Array and Timestep have different FIRST, validating all dimensions.\n\n\n\n\n\nhasvalue(arr::TimestepArray, ts::VariableTimestep, idxs::Int...)\n\nReturn true or false, true if the TimestepArray arr contains the Timestep ts within indices idxs. Used when Array and Timestep different TIMES, validating all dimensions.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.is_first",
+    "page": "Reference",
+    "title": "Mimi.is_first",
+    "category": "function",
+    "text": "is_first(ts::AbstractTimestep)\n\nReturn true or false, true if ts is the first timestep to be run.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.is_last",
+    "page": "Reference",
+    "title": "Mimi.is_last",
+    "category": "function",
+    "text": "is_last(ts::FixedTimestep)\n\nReturn true or false, true if ts is the last timestep to be run.\n\n\n\n\n\nis_last(ts::VariableTimestep)\n\nReturn true or false, true if ts is the last timestep to be run.  Note that you may run next_timestep on ts, as ths final timestep has not been run through yet.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.is_time",
+    "page": "Reference",
+    "title": "Mimi.is_time",
+    "category": "function",
+    "text": "is_time(ts::AbstractTimestep, t::Int)\n\nReturn true or false, true if the current time (year) for ts is t\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.is_timestep",
+    "page": "Reference",
+    "title": "Mimi.is_timestep",
+    "category": "function",
+    "text": "is_timestep(ts::AbstractTimestep, t::Int)\n\nReturn true or false, true if ts timestep is step t.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.modeldef",
+    "page": "Reference",
+    "title": "Mimi.modeldef",
+    "category": "function",
+    "text": "modeldef(mi)\n\nReturn the ModelDef contained by ModelInstance mi.\n\n\n\n\n\nmodeldef(m)\n\nReturn the ModelDef contained by Model m.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.parameter_names",
+    "page": "Reference",
+    "title": "Mimi.parameter_names",
+    "category": "function",
+    "text": "parameter_names(md::ModelDef, comp_name::Symbol)\n\nReturn a list of all parameter names for a given component comp_name in a model def md.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.parameter_dimensions",
+    "page": "Reference",
+    "title": "Mimi.parameter_dimensions",
+    "category": "function",
+    "text": "parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)\n\nReturn the names of the dimensions of parameter param_name exposed in the composite  component definition indicated byobj.\n\n\n\n\n\nparameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, param_name::Symbol)\n\nReturn the names of the dimensions of parameter param_name in component comp_name, which is exposed in composite component definition indicated byobj.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.plot_comp_graph",
+    "page": "Reference",
+    "title": "Mimi.plot_comp_graph",
+    "category": "function",
+    "text": "plot_comp_graph(m::Model, filename::Union{Nothing, Symbol} = nothing)\n\nPlot the DAG of component connections within model m and save to filename. If no filename is given, plot will simply display.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.replace_comp!",
+    "page": "Reference",
+    "title": "Mimi.replace_comp!",
+    "category": "function",
+    "text": "replace_comp!(\n    obj::AbstractCompositeComponentDef, \n    comp_id::ComponentId,\n    comp_name::Symbol=comp_id.comp_name;\n    before::NothingSymbol=nothing, \n    after::NothingSymbol=nothing,\n    reconnect::Bool=true\n)\n\nReplace the component with name comp_name in composite component definition obj with the component comp_id using the same name. The component is added in the same position as the old component, unless one of the keywords before or after is specified. The component is added with the same first and last values, unless the keywords first or last are specified. Optional boolean argument reconnect with default value true indicates whether the existing parameter connections should be maintained in the new component. Returns the added comp def.\n\n\n\n\n\nreplace_comp!(\n    m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;\n    before::NothingSymbol=nothing, \n    after::NothingSymbol=nothing, \n    reconnect::Bool=true\n)\n\nReplace the component with name comp_name in model m with the component comp_id using the same name.  The component is added in the same position as the old component, unless one of the keywords before or after is specified. The component is added with the same first and last values, unless the keywords first or last are specified. Optional boolean argument reconnect with default value true indicates whether the existing parameter connections should be maintained in the new component.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.set_dimension!",
+    "page": "Reference",
+    "title": "Mimi.set_dimension!",
+    "category": "function",
+    "text": "set_dimension!(ccd::CompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})\n\nSet the values of ccd dimension name to integers 1 through count, if keys is an integer; or to the values in the vector or range if keys is either of those types.\n\n\n\n\n\nset_dimension!(m::Model, name::Symbol, keys::Union{Vector, Tuple, AbstractRange})\n\nSet the values of m dimension name to integers 1 through count, if keysis an integer; or to the values in the vector or range ifkeys`` is either of those types.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.set_leftover_params!",
+    "page": "Reference",
+    "title": "Mimi.set_leftover_params!",
+    "category": "function",
+    "text": "set_leftover_params!(m::Model, parameters::Dict)\n\nSet all of the parameters in model m that don\'t have a value and are not connected to some other component to a value from a dictionary parameters. This method assumes the dictionary keys are strings that match the names of unset parameters in the model.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.set_param!",
+    "page": "Reference",
+    "title": "Mimi.set_param!",
+    "category": "function",
+    "text": "set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath,\n            value_dict::Dict{Symbol, Any}, param_names)\n\nCall set_param!() for each name in param_names, retrieving the corresponding value from value_dict[param_name].\n\n\n\n\n\nset_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol,\n           value_dict::Dict{Symbol, Any}, dims=nothing)\n\nCall set_param!() with param_name and a value dict in which value_dict[param_name] references the value of parameter param_name.\n\n\n\n\n\nset_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)\n\nSet a parameter for a component with the given relative path (as a string), in which \"/x\" means the component with name :x beneath the root of the hierarchy in which obj is found. If the path does not begin with \"/\", it is treated as relative to obj.\n\n\n\n\n\nset_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)\n\nSet a parameter using a colon-delimited string to specify the component path (before the \":\") and the param name (after the \":\").\n\n\n\n\n\nset_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)\n\nSet the value of a parameter exposed in obj by following the ParameterDefReference. This method cannot be used on composites that are subcomponents of another composite.\n\n\n\n\n\nset_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, name::Symbol, value, dims=nothing)\n\nSet the parameter name of a component comp_name in a composite obj to a given value. The value can by a scalar, an array, or a NamedAray. Optional argument \'dims\' is a list of the dimension names of the provided data, and will be used to check that they match the model\'s index labels.\n\n\n\n\n\nset_param!(ref::ComponentReference, name::Symbol, value)\n\nSet a component parameter as set_param!(reference, name, value).\n\n\n\n\n\nset_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)\n\nSet the parameter of a component comp_name in a model m to a given value. The value can by a scalar, an array, or a NamedAray. Optional argument \'dims\' is a list of the dimension names of the provided data, and will be used to check that they match the model\'s index labels.\n\n\n\n\n\nset_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)\n\nSet a parameter for a component with the given relative path (as a string), in which \"/x\" means the component with name :x beneath m.md. If the path does not begin with \"/\", it is treated as relative to m.md, which at the top of the hierarchy, produces the same result as starting with \"/\".\n\n\n\n\n\nset_param!(m::Model, path::AbstractString, value, dims=nothing)\n\nSimilar to above but param_name appears in path after a colon delimiter.\n\n\n\n\n\nset_param!(m::Model, param_name::Symbol, value, dims=nothing)\n\nSet the value of a parameter exposed in the ModelDef (m.md).\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.TimestepIndex",
+    "page": "Reference",
+    "title": "Mimi.TimestepIndex",
+    "category": "type",
+    "text": "TimestepIndex\n\nA user-facing type used to index into a TimestepArray in run_timestep functions,  containing an Int index that indicates the position in the array in terms of timesteps. \n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.TimestepValue",
+    "page": "Reference",
+    "title": "Mimi.TimestepValue",
+    "category": "type",
+    "text": "TimestepValue\n\nA user-facing type used to index into a TimestepArray in run_timestep functions,   containing a value of the same Type as the times in the TimstepArray which is used to  index into the array at that position, with an optional Int offset in terms of timesteps.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.variable_dimensions",
+    "page": "Reference",
+    "title": "Mimi.variable_dimensions",
+    "category": "function",
+    "text": "variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)\n\nReturn the names of the dimensions of variable var_name exposed in the composite  component definition indicated byobj along the component path comp_path. The  comp_path is of type Mimi.ComponentPath with the single field being an NTuple  of symbols describing the relative (to a composite) or absolute (relative to ModelDef)  path through composite nodes to specific composite or leaf node.\n\n\n\n\n\nvariable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)\n\nReturn the names of the dimensions of variable var_name exposed in the composite  component definition indicated by obj for the component comp, which exists in a flat model.\n\n\n\n\n\nvariable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)\n\nReturn the names of the dimensions of variable var_name exposed in the composite  component definition indicated by obj along the component path comp_path. The  comp_path is a tuple of symbols describing the relative (to a composite) or  absolute (relative to ModelDef) path through composite nodes to specific composite or leaf node.\n\n\n\n\n\nvariable_dimensions(obj::AbstractComponentDef, name::Symbol)\n\nReturn the names of the dimensions of variable name exposed in the composite  component definition indicated byobj.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.variable_names",
+    "page": "Reference",
+    "title": "Mimi.variable_names",
+    "category": "function",
+    "text": "variable_names(md::AbstractCompositeComponentDef, comp_name::Symbol)\n\nReturn a list of all variable names for a given component comp_name in a model def md.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.update_param!",
+    "page": "Reference",
+    "title": "Mimi.update_param!",
+    "category": "function",
+    "text": "update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)\n\nUpdate the value of an external model parameter in composite obj, referenced by name. Optional boolean argument update_timesteps with default value false indicates whether to update the time keys associated with the parameter values to match the model\'s time index.\n\n\n\n\n\nupdate_param!(m::Model, name::Symbol, value; update_timesteps = false)\n\nUpdate the value of an external model parameter in model m, referenced by name. Optional boolean argument update_timesteps with default value false indicates whether to update the time keys associated with the parameter values to match the model\'s time index.\n\n\n\n\n\n"
+},
+
+{
+    "location": "reference/#Mimi.update_params!",
+    "page": "Reference",
+    "title": "Mimi.update_params!",
+    "category": "function",
+    "text": "update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any};\n               update_timesteps = false) where T\n\nFor each (k, v) in the provided parameters dictionary, update_param! is called to update the external parameter by name k to value v, with optional Boolean argument update_timesteps. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the component definition.\n\n\n\n\n\nupdate_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T\n\nFor each (k, v) in the provided parameters dictionary, update_param!` is called to update the external parameter by name k to value v, with optional Boolean argument update_timesteps. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.\n\n\n\n\n\n"
+},
+
+{
     "location": "reference/#Reference-1",
     "page": "Reference",
     "title": "Reference",
