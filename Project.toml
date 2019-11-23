@@ -38,11 +38,13 @@ VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"
 [compat]
 CSVFiles = "0.16.0"
 Classes = "0.1"
+Compose = "0.7"
 DataFrames = "0.19.1"
 Electron = "1.1"
 GraphPlot = "0.3, 0.4"
 IteratorInterfaceExtensions = "^0.1.1, ^1"
 TableTraits = "^0.4.1, ^1"
+VegaLite = "1.0"
 julia = "1"
 
 [extras]
