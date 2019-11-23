@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/mimiframework/Mimi.jl.svg?branch=master)](https://travis-ci.org/mimiframework/Mimi.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/f915ntkc0etgvim9/branch/master?svg=true)](https://ci.appveyor.com/project/mimiframework/mimi-jl/branch/master)
+![](https://github.com/mimiframework/Mimi.jl/workflows/Run%20CI%20on%20master/badge.svg)
 [![codecov](https://codecov.io/gh/mimiframework/Mimi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mimiframework/Mimi.jl)
 [![Stable documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://www.mimiframework.org/Mimi.jl/stable)
 
@@ -17,7 +16,7 @@ Mimi is a [Julia](http://julialang.org) package that provides a component model 
 
 ## Contributions and Questions
 
-You can interact with the Mimi development team via issues and pull requests here on github, and in the [Mimi Framework forum](https://forum.mimiframework.org). Contributions to Mimi are also most welcome, and 
+You can interact with the Mimi development team via issues and pull requests here on github, and in the [Mimi Framework forum](https://forum.mimiframework.org). Contributions to Mimi are also most welcome, and
 please get in touch with [David Anthoff](http://www.david-anthoff.com) if you are want to be involved in any way with this effort.
 
 ## Acknowledgements
