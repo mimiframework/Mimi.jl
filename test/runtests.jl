@@ -1,7 +1,12 @@
 using Mimi
 import Electron
 using Test
+using Pkg
 using Documenter
+
+# We need these for the doctests
+Pkg.add(PackageSpec(url="https://github.com/fund-model/MimiFUND.jl", rev="master"))
+Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
 
 Electron.prep_test_env()
 
