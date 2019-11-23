@@ -5,9 +5,9 @@ This tutorial walks through the steps to download, run, and view the output of a
 Working through the following tutorial will require:
 
 - [Julia v1.1.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl)
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
+If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
 
 ### Step 1. Download FUND
 
@@ -24,9 +24,9 @@ pkg> add MimiFUND
 
 ### Step 2. Run FUND
 
-The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).  
+The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).
 
-Now open a julia REPL and type the following command to load the MimiFUND package into the current environment: 
+Now open a julia REPL and type the following command to load the MimiFUND package into the current environment:
 
 ```jldoctest tutorial1; output = false
 using MimiFUND
@@ -63,7 +63,7 @@ run(m)
 ### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
-Start off by importing the Mimi package to your space with 
+Start off by importing the Mimi package to your space with
 ```jldoctest tutorial1; output = false
 using Mimi
 
@@ -80,8 +80,8 @@ m[:ComponentName, :VariableName][100] # returns just the 100th value
 ```
 Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component of FUND using the code below:
 ```jldoctest tutorial1; output = false
-m[:socioeconomic, :income] 
-m[:socioeconomic, :income][100] 
+m[:socioeconomic, :income]
+m[:socioeconomic, :income][100]
 
 # output
 
@@ -103,7 +103,7 @@ getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in fi
 
 # output
 
-16×3 DataFrames.DataFrame
+16×3 DataFrame
 │ Row │ time  │ regions │ income   │
 │     │ Int64 │ String  │ Float64⍰ │
 ├─────┼───────┼─────────┼──────────┤
@@ -127,7 +127,7 @@ getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in fi
 
 ### Step 4. Access Results: Plots and Graphs
 
-After running the FUND model, you may also explore the results using plots and graphs. 
+After running the FUND model, you may also explore the results using plots and graphs.
 
 Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the [`plot_comp_graph`](@ref) function.
 
