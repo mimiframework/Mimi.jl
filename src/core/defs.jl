@@ -578,11 +578,37 @@ unit(obj::ParameterDefReference) = parameter(obj).unit
     variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
 
 Return the names of the dimensions of variable `var_name` exposed in the composite 
-component definition indicated by`obj` along the component path `comp_path`.
+component definition indicated by`obj` along the component path `comp_path`. The 
+`comp_path` is of type `Mimi.ComponentPath` with the single field being an NTuple 
+of symbols describing the relative (to a composite) or absolute (relative to ModelDef) 
+path through composite nodes to specific composite or leaf node.
 """
 function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
     return dim_names(var)
+end
+
+"""
+    variable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)
+
+Return the names of the dimensions of variable `var_name` exposed in the composite 
+component definition indicated by `obj` for the component `comp`, which exists in a
+flat model.
+"""
+function variable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)
+    return variable_dimensions(obj, Mimi.ComponentPath((comp,)), var_name)
+end
+
+"""
+    variable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)
+
+Return the names of the dimensions of variable `var_name` exposed in the composite 
+component definition indicated by `obj` along the component path `comp_path`. The 
+`comp_path` is a tuple of symbols describing the relative (to a composite) or 
+absolute (relative to ModelDef) path through composite nodes to specific composite or leaf node.
+"""
+function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::NTuple{N, Symbol}, var_name::Symbol) where N
+    return variable_dimensions(obj, Mimi.ComponentPath((comp_path)), var_name)
 end
 
 """
