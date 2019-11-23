@@ -76,4 +76,4 @@ ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 
 [targets]
-test = ["Pkg", "Statistics", "NamedArrays", "ExcelFiles", "ExcelReaders", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query", "MimiFUND", "MimiDICE2010"]
+test = ["Pkg", "Statistics", "NamedArrays", "ExcelFiles", "ExcelReaders", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query"]
