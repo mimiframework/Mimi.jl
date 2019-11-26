@@ -4,8 +4,8 @@ This tutorial walks through the steps to download, run, and view the output of a
 
 Working through the following tutorial will require:
 
-- [Julia v1.1.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
+- [Julia v1.2.0](https://julialang.org/downloads/) or higher
+- [Mimi v0.9.0](https://github.com/mimiframework/Mimi.jl) 
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
 
