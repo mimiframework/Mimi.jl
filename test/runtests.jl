@@ -1,6 +1,14 @@
+using Pkg
+
+# We need these for the doctests. We install them before we load any
+# package so that we don't run into precompile problems
+Pkg.add(PackageSpec(url="https://github.com/fund-model/MimiFUND.jl", rev="master"))
+Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
+
 using Mimi
 import Electron
 using Test
+using Documenter
 
 Electron.prep_test_env()
 
@@ -99,7 +107,11 @@ Electron.prep_test_env()
     @info("test_plotting.jl")
     include("test_plotting.jl")
 
+    @info("mcs/runtests.jl")
     include("mcs/runtests.jl")
+    
+    @info("doctests")
+    doctest(Mimi)
 
     if haskey(ENV, "GITHUB_ACTIONS") && ENV["GITHUB_ACTIONS"] == "true"
         run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)

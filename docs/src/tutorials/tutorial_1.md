@@ -5,59 +5,70 @@ This tutorial walks through the steps to download, run, and view the output of a
 Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.0](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl)
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
+If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
 
 ### Step 1. Download FUND
 
-The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry.  Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models
+The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-You simply need to add the FUND model with 
-```
-add MimiFUND
+You simply need to add the FUND model in the Pkg REPL with:
+```julia
+pkg> add MimiFUND
 ```
 
 ### Step 2. Run FUND
 
-The next step is to run FUND.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  
+The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).
 
-In order to run FUND, you will need to have the packages `Distributions` and `StatsBase` installed, and if not do so by entering [Pkg mode](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) by typing `]`, and then `add StatsBase` and `add Distributions`.  
+Now open a julia REPL and type the following command to load the MimiFUND package into the current environment:
 
-Now open a julia REPL and type 
-
-```
+```jldoctest tutorial1; output = false
 using MimiFUND
-```
-to access the public API to FUND, which currently includes the function `getfund`, a function that returns a version of fund allowing for different user specifications.  
+
+# output
 
 ```
-m = getfund()
+Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
+
+```jldoctest tutorial1; output = false, filter = r".*"s
+m = MimiFUND.get_model()
 run(m)
+
+# output
+
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` or `construct_ModelX` which returns a version of the model, and can allow for model customization within the call.
+Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `getfund` has the signature
-``` 
-getfund(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
+In the MimiFUND package, the function `get_model` has the signature
+```julia
+get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
-Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to see only the first 100 timesteps,you may use:
-```
+Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to run only the first 200 timesteps, you may use:
+```jldoctest tutorial1; output = false, filter = r".*"s
 using MimiFUND
-m = getfund(nsteps = 100)
+m = MimiFUND.get_model(nsteps = 200)
 run(m)
+
+# output
+
 ```
+
 ### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
-Start off by importing the Mimi package to your space with 
-```
+Start off by importing the Mimi package to your space with
+```jldoctest tutorial1; output = false
 using Mimi
+
+# output
+
 ```
 
 First of all, you may use the `getindex` syntax as follows:
@@ -67,10 +78,14 @@ m[:ComponentName, :VariableName] # returns the whole array of values
 m[:ComponentName, :VariableName][100] # returns just the 100th value
 
 ```
-Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component using the code below:
-```
-m[:socioeconomic, :income] 
-m[:socioeconomic, :income][100] 
+Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component of FUND using the code below:
+```jldoctest tutorial1; output = false
+m[:socioeconomic, :income]
+m[:socioeconomic, :income][100]
+
+# output
+
+20980.834204000927
 ```
 
 You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
@@ -79,17 +94,40 @@ You may also get data in the form of a dataframe, which will display the corresp
 getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
 getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
 getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
-
 ```
 
 Try doing this for the `income` variable of the `socioeconomic` component using:
-```
+```jldoctest tutorial1; output = false
 getdataframe(m, :socioeconomic=>:income) # request one variable from one component
+getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in first year (1950)
+
+# output
+
+16×3 DataFrame
+│ Row │ time  │ regions │ income   │
+│     │ Int64 │ String  │ Float64⍰ │
+├─────┼───────┼─────────┼──────────┤
+│ 1   │ 1950  │ USA     │ 1643.9   │
+│ 2   │ 1950  │ CAN     │ 84.8225  │
+│ 3   │ 1950  │ WEU     │ 1913.32  │
+│ 4   │ 1950  │ JPK     │ 616.022  │
+│ 5   │ 1950  │ ANZ     │ 119.058  │
+│ 6   │ 1950  │ EEU     │ 87.9192  │
+│ 7   │ 1950  │ FSU     │ 167.309  │
+│ 8   │ 1950  │ MDE     │ 76.065   │
+│ 9   │ 1950  │ CAM     │ 40.5139  │
+│ 10  │ 1950  │ LAM     │ 193.139  │
+│ 11  │ 1950  │ SAS     │ 57.9714  │
+│ 12  │ 1950  │ SEA     │ 25.6943  │
+│ 13  │ 1950  │ CHI     │ 18.8014  │
+│ 14  │ 1950  │ MAF     │ 13.4482  │
+│ 15  │ 1950  │ SSA     │ 94.686   │
+│ 16  │ 1950  │ SIS     │ 6.82114  │
 ```
 
 ### Step 4. Access Results: Plots and Graphs
 
-After running the FUND model, you may also explore the results using plots and graphs. 
+After running the FUND model, you may also explore the results using plots and graphs.
 
 Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the [`plot_comp_graph`](@ref) function.
 
@@ -98,23 +136,23 @@ Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega
 If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
-```
+```julia
 explore(m, title = "My Window")
 ```
 Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
 
 ```julia
-using VegaLite
-run(m)
-p = Mimi.plot(m, component1, parameter1)
+p = Mimi.plot(m, :mycomponent, :myvariable)
 save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
-```julia
-using VegaLite
+```jldoctest tutorial1; output = false, filter = r".*"s
 p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
+
+# output
+
 ```
 
 #### Component Graph

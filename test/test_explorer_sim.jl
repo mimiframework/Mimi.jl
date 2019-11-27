@@ -11,7 +11,7 @@ import Mimi:
     _spec_for_sim_item, menu_item_list, getdataframe, get_sim_results
 
 # Get the example
-include("mcs/test-model-2/two-region-model.jl")
+include("mcs/test-model-2/multi-region-model.jl")
 using .MyModel
 m = construct_MyModel()
 
