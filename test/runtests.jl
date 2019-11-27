@@ -107,11 +107,13 @@ Electron.prep_test_env()
     @info("test_plotting.jl")
     include("test_plotting.jl")
 
+    @info("mcs/runtests.jl")
     include("mcs/runtests.jl")
-
+    
+    @info("doctests")
     doctest(Mimi)
 
-    if get(ENV, "MIMI_RUN_DEPENDENCY_TESTS", "")=="TRUE"
+    if haskey(ENV, "GITHUB_ACTIONS") && ENV["GITHUB_ACTIONS"] == "true"
         run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)
     end
 end
