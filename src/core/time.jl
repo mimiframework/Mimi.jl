@@ -26,6 +26,7 @@ end
 Return true or false, true if the current time (year) for `ts` is `t`
 """
 function is_time(ts::AbstractTimestep, t::Int) 
+	Base.depwarn("`is_time(ts, t)` is deprecated. Use comparison operators with TimestepValue objects instead: `ts == TimestepValue(t)` \n$(stacktrace())", :is_time)
 	return gettime(ts) == t
 end
 
@@ -44,6 +45,7 @@ end
 Return true or false, true if `ts` timestep is step `t`.
 """
 function is_timestep(ts::AbstractTimestep, t::Int)
+	Base.depwarn("`is_timestep(ts, t)` is deprecated. Use comparison operators with TimestepIndex objects instead: `ts == TimestepIndex(t)` \n$(stacktrace())", :is_timestep)
 	return ts.t == t
 end
 
@@ -138,6 +140,30 @@ end
 
 function Base.:+(ts::TimestepIndex, val::Int) 
 	return TimestepIndex(ts.index + val)
+end
+
+function Base.:(==)(ts::AbstractTimestep, ti::TimestepIndex)
+	return ts.t == ti.index
+end
+
+function Base.:(==)(ts::AbstractTimestep, tv::TimestepValue)
+	return gettime(ts) == (tv.value + tv.offset)
+end
+
+function Base.:<(ts::AbstractTimestep, ti::TimestepIndex)
+	return ts.t < ti.index
+end
+
+function Base.:<(ts::AbstractTimestep, tv::TimestepValue)
+	return gettime(ts) < (tv.value + tv.offset)
+end
+
+function Base.:<(ti::TimestepIndex, ts::AbstractTimestep)
+	return ti.index < ts.t
+end
+
+function Base.:<(tv::TimestepValue, ts::AbstractTimestep)
+	return (tv.value + tv.offset) < gettime(ts)
 end
 
 # Colon support
