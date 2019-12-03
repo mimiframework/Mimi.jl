@@ -92,7 +92,7 @@ run(m)
 A more complex example may a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
 
 First you upate the `time` dimension of the model as follows:
-```jldoctest tutorial2; output = false
+```jldoctest tutorial2; output = false, filter = r".*"s
 const ts = 10
 const years = collect(2000:ts:2500)
 nyears = length(years)
@@ -100,7 +100,6 @@ set_dimension!(m, :time, years)
 
 # output
 
-[2000, 2010, 2020, 2030, 2040, 2050, 2060, 2070, 2080, 2090  …  2400, 2410, 2420, 2430, 2440, 2450, 2460, 2470, 2480, 2490, 2500]
 ```
 
 Next, create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
