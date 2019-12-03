@@ -59,8 +59,8 @@ add_comp!(my_model, testcomp1)
 # Testing to catch if before or after does not exist
 @test_throws ErrorException add_comp!(my_model, testcomp2, before=:testcomp3)
 
-# N.B. Throws ArgumentError in v1.0, but ErrorException in 0.7, ... and back to ErrorException in v1.3.0!!
-@test_throws ErrorException add_comp!(my_model, testcomp2, after=:testcomp3)
+# N.B. Throws ArgumentError in v1.0, but ErrorException in 0.7
+@test_throws ArgumentError add_comp!(my_model, testcomp2, after=:testcomp3)
 
 # Add more components to model
 add_comp!(my_model, testcomp2)
