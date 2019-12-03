@@ -10,7 +10,7 @@ comp_last = 2008
     v = Variable(index = [time])
     function run_timestep(p, v, d, ts)
         # implement "short component" via time checking
-        if comp_first <= gettime(ts) <= comp_last
+        if TimestepValue(comp_first) <= ts <= TimestepValue(comp_last)
             v.v[ts] = gettime(ts)
         end
     end
@@ -20,11 +20,7 @@ end
     region = Index()
     v = Variable(index = [time, region])
     function run_timestep(p, v, d, ts)
-        # v.v[ts, 1:end] = gettime(ts)
-
-        for d in d.region
-            v.v[ts, d] = gettime(ts)
-        end
+        v.v[ts, :] .= gettime(ts)
     end
 end
 
@@ -65,13 +61,9 @@ m2 = Model()
     region = Index()
     v = Variable(index = [time, region])
     function run_timestep(p, v, d, ts)
-        # v.v[ts, 1:end] = gettime(ts)
-
         # implement "short component" via time checking
-        if comp_first <= gettime(ts) <= comp_last
-            for d in d.region
-                v.v[ts, d] = gettime(ts)
-            end
+        if TimestepValue(comp_first) <= ts <= TimestepValue(comp_last)
+            v.v[ts, :] .= gettime(ts)
         end
     end
 end
@@ -110,7 +102,7 @@ set_dimension!(m, :time, years_variable)
     v = Variable(index = [time])
     function run_timestep(p, v, d, ts)
         # implement "short component" via time checking
-        if foo2_first <= gettime(ts) <= foo2_last
+        if TimestepValue(foo2_first) <= ts <= TimestepValue(foo2_last)
             v.v[ts] = gettime(ts)
         end
     end
@@ -144,13 +136,9 @@ buz_last = 2010
     region = Index()
     v = Variable(index = [time, region])
     function run_timestep(p, v, d, ts)
-        # v.v[ts, 1:end] = gettime(ts)
-
         # implement "short component" via time checking
-        if buz_first <= gettime(ts) <= buz_last
-            for d in d.region
-                v.v[ts, d] = gettime(ts)
-            end
+        if TimestepValue(buz_first) <= ts <= TimestepValue(buz_last)
+            v.v[ts, :] .= gettime(ts)
         end
     end
 end

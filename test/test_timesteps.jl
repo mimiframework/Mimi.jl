@@ -5,8 +5,8 @@ using Test
 
 import Mimi:
     AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
-    TimestepMatrix, TimestepArray, next_timestep, hasvalue, is_first, is_last, 
-    gettime, getproperty, Clock, time_index, get_timestep_array
+    TimestepMatrix, TimestepArray, next_timestep, hasvalue, getproperty, Clock, 
+    time_index, get_timestep_array
 
 #------------------------------------------------------------------------------
 #  Test basic timestep functions and Base functions for Fixed Timestep 
