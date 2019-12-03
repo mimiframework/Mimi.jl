@@ -47,8 +47,8 @@ last_A = 2150
 m = Model()
 set_dimension!(m, :time, years)
 
-@test_throws ArgumentError add_comp!(m, A, after=:B)
-# @test_throws ErrorException add_comp!(m, A, after=:B)
+@test_throws ErrorException add_comp!(m, A, after=:B)
+# @test_throws ArgumentError add_comp!(m, A, after=:B)
 
 add_comp!(m, A)
 
