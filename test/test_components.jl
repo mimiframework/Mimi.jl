@@ -60,11 +60,11 @@ add_comp!(my_model, testcomp1)
 @test_throws ErrorException add_comp!(my_model, testcomp2, before=:testcomp3)
 
 # N.B. Throws ArgumentError in v1.0, but ErrorException in 0.7 ... and then in v1.3 it's back to ErrorException!
-if(VERSION < v"1.3.0")
-    @test_throws ArgumentError add_comp!(my_model, testcomp2, after=:testcomp3)
-else
-    @test_throws ErrorException add_comp!(my_model, testcomp2, after=:testcomp3)
-end
+# if(VERSION < v"1.3.0")
+#     @test_throws ArgumentError add_comp!(my_model, testcomp2, after=:testcomp3)
+# else
+#     @test_throws ErrorException add_comp!(my_model, testcomp2, after=:testcomp3)
+# end
 
 # Add more components to model
 add_comp!(my_model, testcomp2)
