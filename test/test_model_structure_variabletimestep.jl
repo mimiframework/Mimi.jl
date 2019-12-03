@@ -47,8 +47,11 @@ last_A = 2150
 m = Model()
 set_dimension!(m, :time, years)
 
-@test_throws ErrorException add_comp!(m, A, after=:B)
-# @test_throws ArgumentError add_comp!(m, A, after=:B)
+if(VERSION < v"1.3.0")
+    @test_throws ArgumentError add_comp!(m, A, after=:B)
+else
+    @test_throws ErrorException add_comp!(m, A, after=:B)
+end
 
 add_comp!(m, A)
 
