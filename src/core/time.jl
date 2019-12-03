@@ -146,20 +146,28 @@ function Base.:(==)(ts::AbstractTimestep, ti::TimestepIndex)
 	return ts.t == ti.index
 end
 
+function Base.:(==)(ti::TimestepIndex, ts::AbstractTimestep)
+	return ti.index == ts.t
+end
+
 function Base.:(==)(ts::AbstractTimestep, tv::TimestepValue)
 	return gettime(ts) == (tv.value + tv.offset)
+end
+
+function Base.:(==)(tv::TimestepValue, ts::AbstractTimestep)
+	return (tv.value + tv.offset) == gettime(ts)
 end
 
 function Base.:<(ts::AbstractTimestep, ti::TimestepIndex)
 	return ts.t < ti.index
 end
 
-function Base.:<(ts::AbstractTimestep, tv::TimestepValue)
-	return gettime(ts) < (tv.value + tv.offset)
-end
-
 function Base.:<(ti::TimestepIndex, ts::AbstractTimestep)
 	return ti.index < ts.t
+end
+
+function Base.:<(ts::AbstractTimestep, tv::TimestepValue)
+	return gettime(ts) < (tv.value + tv.offset)
 end
 
 function Base.:<(tv::TimestepValue, ts::AbstractTimestep)
