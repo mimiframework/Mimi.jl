@@ -1,5 +1,5 @@
 ![](https://github.com/mimiframework/Mimi.jl/workflows/Run%20CI%20on%20master/badge.svg)
-![](https://github.com/mimiframework/Mimi.jl/workflows/Run%20CI%20model%20tests/badge.svg)
+![](https://github.com/mimiframework/Mimi.jl/workflows/Run%20model%20tests/badge.svg)
 [![codecov](https://codecov.io/gh/mimiframework/Mimi.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/mimiframework/Mimi.jl)
 [![Stable documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://www.mimiframework.org/Mimi.jl/stable)
 
