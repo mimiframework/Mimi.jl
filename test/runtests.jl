@@ -69,10 +69,10 @@ Electron.prep_test_env()
     @time include("test_getindex_variabletimestep.jl")
 
     @info("test_components.jl")
-    include("test_components.jl")
+    @time include("test_components.jl")
 
     @info("test_variables_model_instance.jl")
-    include("test_variables_model_instance.jl")
+    @time include("test_variables_model_instance.jl")
 
     @info("test_getdataframe.jl")
     @time include("test_getdataframe.jl")
