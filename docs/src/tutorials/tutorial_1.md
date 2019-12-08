@@ -97,32 +97,12 @@ getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from
 ```
 
 Try doing this for the `income` variable of the `socioeconomic` component using:
-```jldoctest tutorial1; output = false
+```jldoctest tutorial1; output = false, filter = r".*"s
 getdataframe(m, :socioeconomic=>:income) # request one variable from one component
 getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in first year (1950)
 
 # output
 
-16×3 DataFrame
-│ Row │ time  │ regions │ income   │
-│     │ Int64 │ String  │ Float64⍰ │
-├─────┼───────┼─────────┼──────────┤
-│ 1   │ 1950  │ USA     │ 1643.9   │
-│ 2   │ 1950  │ CAN     │ 84.8225  │
-│ 3   │ 1950  │ WEU     │ 1913.32  │
-│ 4   │ 1950  │ JPK     │ 616.022  │
-│ 5   │ 1950  │ ANZ     │ 119.058  │
-│ 6   │ 1950  │ EEU     │ 87.9192  │
-│ 7   │ 1950  │ FSU     │ 167.309  │
-│ 8   │ 1950  │ MDE     │ 76.065   │
-│ 9   │ 1950  │ CAM     │ 40.5139  │
-│ 10  │ 1950  │ LAM     │ 193.139  │
-│ 11  │ 1950  │ SAS     │ 57.9714  │
-│ 12  │ 1950  │ SEA     │ 25.6943  │
-│ 13  │ 1950  │ CHI     │ 18.8014  │
-│ 14  │ 1950  │ MAF     │ 13.4482  │
-│ 15  │ 1950  │ SSA     │ 94.686   │
-│ 16  │ 1950  │ SIS     │ 6.82114  │
 ```
 
 ### Step 4. Access Results: Plots and Graphs

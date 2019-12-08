@@ -279,8 +279,6 @@ save("MyFigure.png", p)
 
 # output
 
-WARN Layer's shared color channel is overriden
-WARN Layer's shared color channel is overriden
 ```
 
 ## Advanced Features - Social Cost of Carbon (SCC) Example
