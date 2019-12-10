@@ -28,6 +28,18 @@ expr = :(
 )
 @test_throws LoadError eval(expr)
 
+#
+# Test that the old type parameterization syntax errors
+#
+expr = :(
+    @defcomp BadComp3 begin
+        a::Int = Parameter()
+        function run_timestep(p, v, d, t)
+        end
+    end
+)
+@test_throws LoadError eval(expr)
+
 
 @defcomp MyComp begin
     a = Parameter(index=[time, regions], default=ones(101,3))
@@ -35,16 +47,11 @@ expr = :(
     c = Parameter(index=[regions])
     d = Parameter()
     e = Parameter(index=[four])
-    f::Array{Float64, 2} = Parameter()
-    g::Int = Parameter(default=10.0)    # value should be Int despite Float64 default
+    f = Parameter{Array{Float64, 2}}()
+    g = Parameter{Int}(default=10.0)    # value should be Int despite Float64 default
     h = Parameter(default=10)           # should be "numtype", despite Int default
-
-    x = Variable(index=[time, regions])
     
     function run_timestep(p, v, d, t)
-        for r in d.regions
-            v.x[t, r] = 0
-        end
     end
 end
 
@@ -59,15 +66,10 @@ set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
 add_comp!(m, MyComp)
-# set_param!(m, :MyComp, :a, ones(101,3))
-# set_param!(m, :MyComp, :b, 1:101)
 set_param!(m, :MyComp, :c, [4,5,6])
 set_param!(m, :MyComp, :d, 0.5)   # 32-bit float constant
 set_param!(m, :MyComp, :e, [1,2,3,4])
-set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
-
-# THIS FAILS: Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}} != Array{Float64,2}
-# set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
+set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 
 extpars = external_params(m)
 
