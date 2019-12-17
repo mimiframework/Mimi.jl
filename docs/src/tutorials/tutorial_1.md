@@ -127,7 +127,7 @@ save("MyFilePath.svg", p)
 ```
 More specifically for our tutorial use of FUND, try:
 
-```jldoctest tutorial1; output = false, filter = r".*"s
+```julia
 p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 
