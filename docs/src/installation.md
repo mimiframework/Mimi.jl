@@ -25,7 +25,7 @@ This will update *all* installed packages to their latest version (not just the 
 ## Using Mimi
 
 When you start a new julia command prompt, Mimi is not yet loaded into that julia session. To load Mimi, issue the following command:
-```julia
+```jldoctest 
 julia> using Mimi
 ```
 You will have to run this command every time you want to use Mimi in julia. You would typically also add `using Mimi` to the top of any julia code file that for example defines Mimi components.

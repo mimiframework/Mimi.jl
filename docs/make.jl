@@ -1,6 +1,7 @@
 using Documenter, Mimi
 
 makedocs(
+	doctest = false,
     modules = [Mimi],
 	sitename = "Mimi.jl",
 	pages = [

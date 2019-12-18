@@ -24,7 +24,7 @@ The user must define a `run_timestep` function for each component.
 
 We define a component in the following way:
 
-```julia
+```jldoctest; output = false
 using Mimi
 
 @defcomp MyComponentName begin
@@ -44,8 +44,9 @@ using Mimi
       v.B[t, r] = p.f[r] * p.e[t, r]
     end
   end
-
 end
+
+# output
 
 ```
 
@@ -59,19 +60,26 @@ To access the data in a parameter or to assign a value to a variable, you must u
 
 The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers.  If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
 
-```julia
-mymodel = Model()
-set_dimension!(mymodel, :time, 1850:2200)
-set_dimension!(mymodel, :regions, ["USA", "EU", "LATAM"])
+```jldoctest; output = false
+using Mimi
 
+m = Model()
+set_dimension!(m, :time, 1850:2200)
+set_dimension!(m, :regions, ["USA", "EU", "LATAM"])
+
+# output
+
+["USA", "EU", "LATAM"]
 ```
 
 *A Note on Time Indexes:* It is important to note that the values used for the time index are the *start times* of the timesteps.  If the range or array of time values has a uniform timestep length, the model will run *through* the last year of the range with a last timestep period length consistent with the other timesteps.  If the time values are provided as an array with non-uniform timestep lengths, the model will run *through* the last year in the array with a last timestep period length *assumed to be one*. 
 
 The next step is to add components to the model. This is done by the following syntax:
 
-```julia
-add_comp!(mymodel, ComponentA, :GDP)
+```julia 
+add_comp!(m, ComponentA, :GDP)
+add_comp!(m, ComponentB; first=2010)
+add_comp!(m, ComponentC; first=2010, last=2100)
 ```
 
 The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
@@ -81,22 +89,23 @@ The next step is to set the values for all the parameters in the components. Par
 To make an external connection, the syntax is as follows:
 
 ```julia
-set_param!(mymodel, :ComponentName, :parametername, 0.8) # a scalar parameter
-set_param!(mymodel, :ComponentName, :parametername2, rand(351, 3)) # a two-dimensional parameter
-
+set_param!(m, :ComponentName, :ParameterName, 0.8) # a scalar parameter
+set_param!(m, :ComponentName, :ParameterName2, rand(351, 3)) # a two-dimensional parameter
 ```
 
 To make an internal connection, the syntax is as follows.  
 
 ```julia
-connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
-connect_param!(mymodel, :TargetComponent=>:parametername, :SourceComponent=>:variablename)
+connect_param!(m, :TargetComponent=>:ParameterName, :SourceComponent=>:VariableName)
+connect_param!(m, :TargetComponent=>:ParameterName, :SourceComponent=>:VariableName)
 ```
 
 If you wish to delete a component that has already been added, do the following:
+
 ```julia
-delete!(mymodel, :ComponentName)
+delete!(m, :ComponentName)
 ```
+
 This will delete the component from the model and remove any existing connections it had. Thus if a different component was previously connected to this component, you will need to connect its parameter(s) to something else.
 
 ## Running a Model
@@ -104,8 +113,7 @@ This will delete the component from the model and remove any existing connection
 After all components have been added to your model and all parameters have been connected to either external values or internally to another component, then the model is ready to be run. Note: at each timestep, the model will run the components in the order you added them. So if one component is going to rely on the value of another component, then the user must add them to the model in the appropriate order.
 
 ```julia
-run(mymodel)
-
+run(m)
 ```
 
 ## Accessing Results
@@ -115,20 +123,19 @@ After a model has been run, you can access the results (the calculated variable 
 You can use the `getindex` syntax as follows:
 
 ```julia
-mymodel[:ComponentName, :VariableName] # returns the whole array of values
-mymodel[:ComponentName, :VariableName][100] # returns just the 100th value
-
+m[:ComponentName, :VariableName] # returns the whole array of values
+m[:ComponentName, :VariableName][100] # returns just the 100th value
 ```
+
 Indexing into a model with the name of the component and variable will return an array with values from each timestep.
 You can index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned.
 
 You can also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this is:
 
 ```julia
-getdataframe(mymodel, :ComponentName=>:Variable) # request one variable from one component
-getdataframe(mymodel, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
-getdataframe(mymodel, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
-
+getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
+getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
+getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
 ```
 
 ## Plotting and the Explorer UI
@@ -148,8 +155,8 @@ Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.
 In order to invoke the explorer UI and explore all of the variables and parameters in a model, simply call the function `explore` with the model run as the required argument, and a window title as an optional keyword argument, as shown below.  This will produce a new browser window containing a selectable list of parameters and variables, organized by component, each of which produces a graphic.  The exception here being that if the parameter or variable is a single scalar value, the value will appear alongside the name in the left-hand list.
  
 ```julia
-run(mymodel)
-explore(mymodel, title = "run1 results")
+run(m)
+explore(m, title = "run1 results")
 ```
 
 ![Explorer Model Example](figs/explorer_model_example.png)
@@ -158,11 +165,10 @@ Alternatively, in order to view just one parameter or variable, call the (unexpo
 
 ```julia
 using VegaLite
-run(mymodel)
-p = Mimi.plot(mymodel, :component1, :parameter1)
+run(m)
+p = Mimi.plot(m, :ComponentName, :ParameterName)
 save("figure.svg", p)
 ```
-
 ![Plot Model Example](figs/plot_model_example.png)
 
 These two functions, `explore` and `plot` also have methods applicable to the sensitivity analysis support described in the next section. Details can be found in the linked [internals documentation](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) as well as [Tutorial 4: Sensitivity Analysis (SA) Support](@ref).
@@ -243,7 +249,7 @@ As mentioned earlier, it is possible for some components to start later or end s
 
 ```julia
 backup = rand(100) # data array of the proper size
-connect_param!(mymodel, :LongComponent=>:parametername, :ShortComponent=>:variablename, backup)
+connect_param!(m, :LongComponent=>:ParameterName, :ShortComponent=>:VariableName, backup)
 ```
 
 Note: for now, to avoid discrepancy with timing and alignment, the backup data must be the length of the whole component's first to last time, even though it will only be used for values not found in the shorter component.
@@ -258,6 +264,7 @@ As mentioned above, a parameter can have no index (a scalar), or one or multiple
   p2::Array{Float64, 2} = Parameter() # a two dimensional array of unspecified length
 end
 ```
+
 In both of these cases, the parameter's values are stored of as an array (p1 is one dimensional, and p2 is two dimensional). But with respect to the model, they are considered "scalar" parameters, simply because they do not use any of the model's indices (namely 'time', or 'regions').
 
 ### Updating an external parameter
@@ -265,8 +272,8 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. If the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
 
 ```julia
-update_param!(mymodel, :parametername, newvalues) # update values only 
-update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
+update_param!(m, :ParameterName, newvalues) # update values only 
+update_param!(m, :ParameterName, newvalues, update_timesteps=true) # also update time keys
 ```
 
 Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
@@ -276,7 +283,7 @@ Note: `newvalues` must be the same size and type (or be able to convert to the t
 In larger models it can be beneficial to set some of the external parameters using a dictionary of values. To do this, use the following function:
 
 ```julia
-set_leftover_params!(mymodel, parameters)
+set_leftover_params!(m, parameters)
 ```
 
 Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters.
@@ -290,11 +297,11 @@ When a user sets a parameter, Mimi checks that the size and dimensions match wha
  When you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays have been allocated. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model's structure mostly the same. For example:
 
 ```julia
-instance1 = Mimi.build(mymodel)
+instance1 = Mimi.build(m)
 run(instance1)
 
-update_param!(mymodel, paramname, newvalue)
-instance2 = Mimi.build(mymodel)
+update_param!(m, ParameterName, newvalue)
+instance2 = Mimi.build(m)
 run(instance2)
 
 result1 = instance1[:Comp, :Var]

@@ -1,5 +1,16 @@
+using Pkg
+
+# We need these for the doctests. We install them before we load any
+# package so that we don't run into precompile problems
+Pkg.add(PackageSpec(url="https://github.com/fund-model/MimiFUND.jl", rev="master"))
+Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
+
 using Mimi
+import Electron
 using Test
+using Documenter
+
+Electron.prep_test_env()
 
 @testset "Mimi" begin
 
@@ -30,7 +41,7 @@ using Test
     @info("test_model_structure.jl")
     include("test_model_structure.jl")
 
-    @info("test_model_structure_variabletimestep.jl") 
+    @info("test_model_structure_variabletimestep.jl")
     include("test_model_structure_variabletimestep.jl")
 
     @info("test_replace_comp.jl")
@@ -54,7 +65,7 @@ using Test
     @info("test_getindex.jl")
     include("test_getindex.jl")
 
-    @info("test_getindex_variabletimestep.jl") 
+    @info("test_getindex_variabletimestep.jl")
     include("test_getindex_variabletimestep.jl")
 
     @info("test_components.jl")
@@ -66,14 +77,14 @@ using Test
     @info("test_getdataframe.jl")
     include("test_getdataframe.jl")
 
-    @info("test_mult_getdataframe.jl")        
-    include("test_mult_getdataframe.jl")    
+    @info("test_mult_getdataframe.jl")
+    include("test_mult_getdataframe.jl")
 
     @info("test_clock.jl")
     include("test_clock.jl")
- 
-    @info("test_timesteps.jl")           
-    include("test_timesteps.jl") 
+
+    @info("test_timesteps.jl")
+    include("test_timesteps.jl")
 
     @info("test_timesteparrays.jl")
     include("test_timesteparrays.jl")
@@ -83,7 +94,7 @@ using Test
 
     @info("test_datum_storage.jl")
     include("test_datum_storage.jl")
-    
+
     @info("test_connectorcomp.jl")
     include("test_connectorcomp.jl")
 
@@ -96,9 +107,9 @@ using Test
     @info("test_plotting.jl")
     include("test_plotting.jl")
 
+    @info("mcs/runtests.jl")
     include("mcs/runtests.jl")
-
-    if get(ENV, "MIMI_RUN_DEPENDENCY_TESTS", "")=="TRUE"
-        run(`$(Base.julia_cmd()) --startup-file=no --project=$(joinpath(@__DIR__, "dependencies", ".")) $(joinpath(@__DIR__, "dependencies", "run_dependency_tests.jl"))`)
-    end
+    
+    @info("doctests")
+    doctest(Mimi)
 end

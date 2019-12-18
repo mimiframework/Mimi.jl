@@ -1,19 +1,17 @@
 # Tutorial 2: Modify an Existing Model
 
-This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use MimiDICE2010, available on Github [here](https://github.com/anthofflab/MimiDICE2010.jl).
+This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on the [MimiRegistry](https://github.com/mimiframework/MimiRegistry), and for the purposes of this tutorial we will use the `MimiDICE2010` model.
 
 Working through the following tutorial will require:
 
-- [Julia v1.1.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.8.0](https://github.com/mimiframework/Mimi.jl) 
+- [Julia v1.2.0](https://julialang.org/downloads/) or higher
+- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
 
-Futhermore, this tutorial uses the [DICE](https://github.com/anthofflab/MimiDICE2010.jl) model as an example.  Downloading `DICE` uses similar steps to those described for `FUND` in Tutorial 1 Steps 1 and 2.
-
 ## Introduction
 
-There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the new model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model they are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
+There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the existing model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model you are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
 
 Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These take advantage of the public API listed [here](https://www.mimiframework.org/Mimi.jl/dev/reference/), as well as other functions listed in the Mimi Documentation.
 
@@ -26,67 +24,85 @@ When the original model calls [`set_param!`](@ref), Mimi creates an external par
 ```julia
 update_param!(mymodel, :parametername, newvalues) # update values only 
 
-update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys
+update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys. Only necessary if the time dimension of the model has been changed.
 ```
 
-Also note that in the code above,`newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
+Also note that in the code above, `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
 If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
 
 ## Parametric Modifications: DICE Example
 
-### Step 1. Download DICE
+### Step 1. Download MimiDICE2010
 
-The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry.  Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models
+The first step in this process is downloading the DICE2010 model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-You simply need to add the DICE2010 model with 
+You simply need to add the MimiDICE2010 model in the Pkg REPL with:
+```julia
+pkg> add MimiDICE2010
 ```
-add MimiDICE2010
-```
-You have now successfully downloaded DICE to your local machine.
+You have now successfully downloaded MimiDICE2010 to your local machine.
 
 ### Step 2. Run DICE
 
-The next step is to run DICE.  If you wish to first get more aquainted with the model itself, take a look at the provided online documentation.  Now run DICE using the provided API for the package:
+The next step is to run DICE using the provided API for the package:
 
-```
+```jldoctest tutorial2; output = false, filter = r".*"s
 using MimiDICE2010
-m = construct_dice()
+m = MimiDICE2010.get_model()
 run(m)
+
+# output
+
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `getModelX` or `construct_ModelX` which returns a version of the model, and can allow for model customization within the call.
+Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `construct_dice` has the signature
-``` 
-construct_dice(params=nothing)
+In this case, the function `MimiDICE2010.get_model()` has the signature
+```julia
+get_model(params=nothing)
 ```
-Thus there are no required arguments, although the user can input `params`, a dictionary definining the parameters of the model. 
+Thus there are no required arguments, although the user can input `params`, a dictionary definining the parameters of the model. If nothing is provided, the model will be built with the default parameters for DICE2010.
 
 ### Step 3. Altering Parameters
 
-In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
+In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
 
-```julia
-update_param!(m, :fco22x, 3.000)
-run(m)
+```jldoctest tutorial2; output = false
+using Mimi
+
+# output
+
 ```
 
-A more complex example may a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself.  DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
+For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
+
+```jldoctest tutorial2; output = false, filter = r".*"s 
+update_param!(m, :fco22x, 3.000)
+run(m)
+
+# output
+
+```
+
+A more complex example may a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
 
 First you upate the `time` dimension of the model as follows:
-```julia
+```jldoctest tutorial2; output = false, filter = r".*"s
 const ts = 10
 const years = collect(2000:ts:2500)
 nyears = length(years)
 set_dimension!(m, :time, years)
+
+# output
+
 ```
 
-Next, create a dictionary `params` with one entry (k, v) per external parameter by name k to value v. Each key k must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
+Next, create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
 
 ```julia
 params = Dict{Any, Any}()
@@ -99,7 +115,7 @@ params[:S]          = repeat([0.23], nyears)
 
 Now you simply update the parameters listen in `params` and re-run the model with
 
-```
+```julia
 update_params!(m, params, update_timesteps=true)
 run(m)
 ```
@@ -118,4 +134,4 @@ If you wish to modify the component structure we recommend you also look into th
 
 ## Component and Structural Modifications: DICE Example
 
- This example is in progress and will be built out soon.
+This example is in progress and will be built out soon.
