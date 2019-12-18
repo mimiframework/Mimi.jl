@@ -137,18 +137,11 @@ getdataframe(m, :emissions, :E) # or m[:emissions, :E_Global] to return just the
 # output
 
 ```
-Finally we can visualize the results via plotting:
-```jldoctest tutorial3; output = false, filter = r".*"s
-using VegaLite
-
+Finally we can visualize the results via plotting and explorer:
+```julia
 # Plot model results
 Mimi.plot(m, :emissions, :E);
 
-# output
-
-```
-and via explorer:
-```julia
 # Observe all model result graphs in UI
 explore(m)
 ```

@@ -265,20 +265,14 @@ explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name 
 
 To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```julia
 Mimi.plot(si, :grosseconomy, :K)
-
-# output
-
 ```
 To save your figure, use the `save` function to save typical file formats such as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
 
 ```julia
 p = Mimi.plot(si, :grosseconomy, :K)
 save("MyFigure.png", p)
-
-# output
-
 ```
 
 ## Advanced Features - Social Cost of Carbon (SCC) Example
