@@ -36,7 +36,7 @@ TableTraits = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 VegaLite = "112f6efa-9a02-5b7d-90c0-432ed331239a"
 
 [compat]
-CSVFiles = "0.16"
+CSVFiles = "0.16, 1.0"
 Classes = "0.1"
 Compose = "0.7"
 DataFrames = "0.19.1, 0.20"
