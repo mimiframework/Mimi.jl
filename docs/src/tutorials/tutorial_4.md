@@ -276,9 +276,6 @@ To save your figure, use the `save` function to save typical file formats such a
 ```julia
 p = Mimi.plot(si, :grosseconomy, :K)
 save("MyFigure.png", p)
-
-# output
-
 ```
 
 ## Advanced Features - Social Cost of Carbon (SCC) Example

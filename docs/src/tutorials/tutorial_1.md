@@ -130,9 +130,6 @@ More specifically for our tutorial use of FUND, try:
 ```julia
 p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
-
-# output
-
 ```
 
 #### Component Graph
