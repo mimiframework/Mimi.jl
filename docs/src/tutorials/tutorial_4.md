@@ -273,14 +273,12 @@ Mimi.plot(si, :grosseconomy, :K)
 ```
 To save your figure, use the `save` function to save typical file formats such as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```julia
 p = Mimi.plot(si, :grosseconomy, :K)
 save("MyFigure.png", p)
 
 # output
 
-WARN Layer's shared color channel is overriden
-WARN Layer's shared color channel is overriden
 ```
 
 ## Advanced Features - Social Cost of Carbon (SCC) Example
