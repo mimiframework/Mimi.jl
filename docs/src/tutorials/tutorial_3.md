@@ -126,7 +126,7 @@ Note that as an alternative to using many of the `set_param!` calls above, one m
 
 Now we can run the model and examine the results:
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial3; output = false, filter = r".*"s
 # Run model
 m = construct_model()
 run(m)
@@ -136,39 +136,12 @@ getdataframe(m, :emissions, :E) # or m[:emissions, :E_Global] to return just the
 
 # output
 
-20×2 DataFrame
-│ Row │ time  │ E        │
-│     │ Int64 │ Float64⍰ │
-├─────┼───────┼──────────┤
-│ 1   │ 2015  │ 4211.09  │
-│ 2   │ 2020  │ 15079.5  │
-│ 3   │ 2025  │ 23922.3  │
-│ 4   │ 2030  │ 30255.8  │
-│ 5   │ 2035  │ 35175.7  │
-│ 6   │ 2040  │ 39293.0  │
-│ 7   │ 2045  │ 42947.7  │
-⋮
-│ 13  │ 2075  │ 62909.4  │
-│ 14  │ 2080  │ 66496.9  │
-│ 15  │ 2085  │ 70244.9  │
-│ 16  │ 2090  │ 74173.1  │
-│ 17  │ 2095  │ 78299.0  │
-│ 18  │ 2100  │ 82638.8  │
-│ 19  │ 2105  │ 87208.1  │
-│ 20  │ 2110  │ 92022.3  │
 ```
-Finally we can visualize the results via plotting:
-```jldoctest tutorial3; output = false, filter = r".*"s
-using VegaLite
-
+Finally we can visualize the results via plotting and explorer:
+```julia
 # Plot model results
 Mimi.plot(m, :emissions, :E);
 
-# output
-
-```
-and via explorer:
-```julia
 # Observe all model result graphs in UI
 explore(m)
 ```
@@ -357,7 +330,7 @@ using Mimi
 include("MyModel.jl")
 using .MyModel
 ```
-```jldoctest tutorial3; output = false
+```jldoctest tutorial3; output = false, filter = r".*"s
 m = construct_MyModel()
 run(m)
 
@@ -366,26 +339,6 @@ getdataframe(m, :emissions, :E_Global) # or m[:emissions, :E_Global] to return j
 
 # output
 
-20×2 DataFrame
-│ Row │ time  │ E_Global │
-│     │ Int64 │ Float64⍰ │
-├─────┼───────┼──────────┤
-│ 1   │ 2015  │ 2392.08  │
-│ 2   │ 2020  │ 7740.88  │
-│ 3   │ 2025  │ 11842.4  │
-│ 4   │ 2030  │ 14629.7  │
-│ 5   │ 2035  │ 16686.5  │
-│ 6   │ 2040  │ 18338.4  │
-│ 7   │ 2045  │ 19763.7  │
-⋮
-│ 13  │ 2075  │ 27340.2  │
-│ 14  │ 2080  │ 28694.1  │
-│ 15  │ 2085  │ 30105.8  │
-│ 16  │ 2090  │ 31581.4  │
-│ 17  │ 2095  │ 33126.3  │
-│ 18  │ 2100  │ 34745.6  │
-│ 19  │ 2105  │ 36444.1  │
-│ 20  │ 2110  │ 38226.2  │
 ```
 ```julia
 # Observe model result graphs
