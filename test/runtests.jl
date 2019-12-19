@@ -106,7 +106,7 @@ Electron.prep_test_env()
 
     @info("test_plotting.jl")
     @time include("test_plotting.jl")
-x
+
     @info("mcs/runtests.jl")
     @time include("mcs/runtests.jl")
     
