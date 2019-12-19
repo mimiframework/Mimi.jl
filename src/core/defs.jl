@@ -353,7 +353,7 @@ end
 """
     parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
 
-Return the names of the dimensions of parameter `param_name` exposed in the component 
+Return the names of the dimensions of parameter `param_name` exposed in the component
 definition indicated by `obj`.
 """
 function parameter_dimensions(obj::AbstractComponentDef, param_name::Symbol)
@@ -375,9 +375,82 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
+function comps_with_unbound_param(md::ModelDef, param_name::Symbol)
+    found = Vector{ComponentDef}()
+
+    for (comp_path, pname) in unconnected_params(md)
+        if pname == param_name
+            cd = find_comp(md, comp_path)
+            push!(found, cd)
+        end
+    end
+    return found
+end
+
+#
+# TBD: needs better name
+#
+"""
+    new_set_param!(m::ModelDef, param_name::Symbol, value)
+
+Search all model components, find all unbound parameters named `param_name`, create
+external parameter called `param_name`, set its value to `value`, and create
+connections from the external unbound parameters named `param_name` to the new
+external parameter. If a prior external parameter `param_name` is found, raise error.
+"""
+function new_set_param!(md::ModelDef, param_name::Symbol, value)
+    comps = comps_with_unbound_param(md, param_name)
+    new_set_param!(md, comps, param_name, value)
+end
+
+function new_set_param!(md::ModelDef, comp_list::Vector{ComponentDef},
+                        param_name::Symbol, value)
+    pairs = [pathof(cd) => param_name for cd in comp_list]
+    new_set_param!(md, pairs, param_name, value)
+end
+
+function new_set_param!(md::ModelDef, pairs::Vector{Pair{ComponentPath, Symbol}},
+                        ext_param_name::Symbol, value)
+    if length(pairs) > 0
+        param = set_external_param!(md, ext_param_name, value)
+
+        # add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
+
+        for (comp_path, param_name) in pairs
+            connect_param!(md, comp_path, param_name, ext_param)
+        end
+    end
+    return nothing
+end
+
+"""
+Find and return a vector of tuples containing references to a ComponentDef and
+a ParameterDef for all instances of parameters with name `param_name`, below the
+composite `obj`. If none are found, an empty vector is returned.
+"""
+function find_params(obj::AbstractCompositeComponentDef, param_name::Symbol)
+    found = Vector{Tuple{ComponentDef, ParameterDef}}()
+
+    for (name, compdef) in components(obj)
+        items = find_params(compdef, param_name)
+        append!(found, items)
+    end
+
+    return found
+end
+
+function find_params(obj::ComponentDef, param_name::Symbol)
+    namespace = ns(obj)
+    if haskey(namespace, param_name) && (item = namespace[param_name]) isa ParameterDef
+        return [(obj, item)]
+    end
+
+    return []
+end
+
 """
     set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath,
-                value_dict::Dict{Symbol, Any}, param_names)
+               value_dict::Dict{Symbol, Any}, param_names)
 
 Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from
 `value_dict[param_name]`.
@@ -577,10 +650,10 @@ unit(obj::ParameterDefReference) = parameter(obj).unit
 """
     variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
 
-Return the names of the dimensions of variable `var_name` exposed in the composite 
-component definition indicated by`obj` along the component path `comp_path`. The 
-`comp_path` is of type `Mimi.ComponentPath` with the single field being an NTuple 
-of symbols describing the relative (to a composite) or absolute (relative to ModelDef) 
+Return the names of the dimensions of variable `var_name` exposed in the composite
+component definition indicated by`obj` along the component path `comp_path`. The
+`comp_path` is of type `Mimi.ComponentPath` with the single field being an NTuple
+of symbols describing the relative (to a composite) or absolute (relative to ModelDef)
 path through composite nodes to specific composite or leaf node.
 """
 function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
@@ -591,7 +664,7 @@ end
 """
     variable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)
 
-Return the names of the dimensions of variable `var_name` exposed in the composite 
+Return the names of the dimensions of variable `var_name` exposed in the composite
 component definition indicated by `obj` for the component `comp`, which exists in a
 flat model.
 """
@@ -602,9 +675,9 @@ end
 """
     variable_dimensions(obj::AbstractCompositeComponentDef, comp::Symbol, var_name::Symbol)
 
-Return the names of the dimensions of variable `var_name` exposed in the composite 
-component definition indicated by `obj` along the component path `comp_path`. The 
-`comp_path` is a tuple of symbols describing the relative (to a composite) or 
+Return the names of the dimensions of variable `var_name` exposed in the composite
+component definition indicated by `obj` along the component path `comp_path`. The
+`comp_path` is a tuple of symbols describing the relative (to a composite) or
 absolute (relative to ModelDef) path through composite nodes to specific composite or leaf node.
 """
 function variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::NTuple{N, Symbol}, var_name::Symbol) where N
@@ -614,7 +687,7 @@ end
 """
     variable_dimensions(obj::AbstractComponentDef, name::Symbol)
 
-Return the names of the dimensions of variable `name` exposed in the component definition 
+Return the names of the dimensions of variable `name` exposed in the component definition
 indicated by `obj`.
 """
 function variable_dimensions(obj::AbstractComponentDef, name::Symbol)
@@ -770,10 +843,10 @@ end
 
 """
     add_comp!(
-        obj::AbstractCompositeComponentDef, 
+        obj::AbstractCompositeComponentDef,
         comp_def::AbstractComponentDef,
-        comp_name::Symbol=comp_def.comp_id.comp_name; 
-        before::NothingSymbol=nothing, 
+        comp_name::Symbol=comp_def.comp_id.comp_name;
+        before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
     )
@@ -784,10 +857,10 @@ Note that a copy of `comp_id` is made in the composite and assigned the give nam
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 """
 function add_comp!(
-    obj::AbstractCompositeComponentDef, 
+    obj::AbstractCompositeComponentDef,
     comp_def::AbstractComponentDef,
     comp_name::Symbol=comp_def.comp_id.comp_name;
-    before::NothingSymbol=nothing, 
+    before::NothingSymbol=nothing,
     after::NothingSymbol=nothing,
     rename::NothingPairList=nothing
 )
@@ -829,10 +902,10 @@ end
 
 """
     add_comp!(
-        obj::AbstractCompositeComponentDef, 
+        obj::AbstractCompositeComponentDef,
         comp_id::ComponentId,
         comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing, 
+        before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
     )
@@ -843,10 +916,10 @@ specified. Note that a copy of `comp_id` is made in the composite and assigned t
 The optional argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 """
 function add_comp!(
-    obj::AbstractCompositeComponentDef, 
+    obj::AbstractCompositeComponentDef,
     comp_id::ComponentId,
     comp_name::Symbol=comp_id.comp_name;
-    before::NothingSymbol=nothing, 
+    before::NothingSymbol=nothing,
     after::NothingSymbol=nothing,
     rename::NothingPairList=nothing
 )
@@ -856,10 +929,10 @@ end
 
 """
     replace_comp!(
-        obj::AbstractCompositeComponentDef, 
+        obj::AbstractCompositeComponentDef,
         comp_id::ComponentId,
         comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing, 
+        before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         reconnect::Bool=true
     )
@@ -872,10 +945,10 @@ Optional boolean argument `reconnect` with default value `true` indicates whethe
 parameter connections should be maintained in the new component. Returns the added comp def.
 """
 function replace_comp!(
-    obj::AbstractCompositeComponentDef, 
+    obj::AbstractCompositeComponentDef,
     comp_id::ComponentId,
     comp_name::Symbol=comp_id.comp_name;
-    before::NothingSymbol=nothing, 
+    before::NothingSymbol=nothing,
     after::NothingSymbol=nothing,
     reconnect::Bool=true
 )

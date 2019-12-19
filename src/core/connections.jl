@@ -407,6 +407,7 @@ function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, v
     # end
     obj.external_params[name] = value
     dirty!(obj)
+    return value
 end
 
 function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Number;

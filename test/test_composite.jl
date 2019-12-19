@@ -61,7 +61,7 @@ set_dimension!(m, :time, 2005:2020)
     foo1 = Comp1.foo
     foo2 = Comp2.foo
 
-    # Should accomplish the same as calling 
+    # Should accomplish the same as calling
     #   connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
     # after the `@defcomposite top ...`
     Comp2.par_2_1 = Comp1.var_1_1
@@ -155,12 +155,28 @@ mi = m.mi
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
+#
+# Test joining external params.
+#
+m2 = Model()
+set_dimension!(m2, :time, 2005:2020)
+
+@defcomposite top2 begin
+    component(Comp1)
+    component(Comp2)
+
+    Comp2.par_2_1 = Comp1.var_1_1
+    Comp2.par_2_2 = Comp1.var_1_1
+end
+
+top2_ref = add_comp!(m2, top2, nameof(top2))
+
 end # module
 
-m = TestComposite.m
-md = m.md
-top   = Mimi.find_comp(md, :top)
-A     = Mimi.find_comp(top, :A)
-comp1 = Mimi.find_comp(A, :Comp1)
+using Mimi
+m2 = TestComposite.m2
+md2 = m2.md
+top2 = Mimi.find_comp(md2, :top2)
+
 
 nothing
