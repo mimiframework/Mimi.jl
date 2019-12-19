@@ -112,4 +112,9 @@ Electron.prep_test_env()
     
     @info("doctests")
     doctest(Mimi)
+
+    for app in Electron.applications()
+        close(app)
+    end
+    
 end
