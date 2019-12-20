@@ -17,7 +17,9 @@ t1 = FixedTimestep{1850, 10, 3000}(1)
 @test is_timestep(t1, 1)
 @test is_time(t1, 1850)
 @test t1 == TimestepIndex(1)
+@test TimestepIndex(1) == t1    # test both ways because to test both method definitions
 @test t1 == TimestepValue(1850)
+@test TimestepValue(1850) == t1 # test both ways because to test both method definitions
 @test_throws ErrorException t1_prev = t1-1 #first timestep, so cannot get previous
 
 t2 = next_timestep(t1)
