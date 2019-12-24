@@ -28,7 +28,7 @@ The next step is to run FUND. If you wish to first get more acquainted with the 
 
 Now open a julia REPL and type the following command to load the MimiFUND package into the current environment:
 
-```jldoctest tutorial1; output = false
+```jldoctest tutorial1; output = false, filter = r".*"s
 using MimiFUND
 
 # output
