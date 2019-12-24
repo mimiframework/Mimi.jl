@@ -38,7 +38,8 @@ expr = :(
         end
     end
 )
-@test_throws LoadError eval(expr)
+eval(expr)  # Just a deprecation warning for v0.10, then will change to error in v1.0
+# @test_throws LoadError eval(expr)
 
 
 @defcomp MyComp begin
