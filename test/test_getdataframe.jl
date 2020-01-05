@@ -27,7 +27,7 @@ early_last = 2100
     par2 = Parameter(index=[time])
 
     function run_timestep(p, v, d, t)
-        if late_first <= gettime(t) <= early_last       # apply time constraints in the component
+        if TimestepValue(late_first) <= t <= TimestepValue(early_last)       # apply time constraints in the component
             v.var2[t] = p.par2[t]
         end
     end
