@@ -16,7 +16,7 @@ late_start = 2005
     b = Variable(index=[time])
 
     function run_timestep(p, v, d, t)
-        if gettime(t) >= late_start
+        if t >= TimestepValue(late_start)
             v.b[t] = p.a * t.t
         end
     end
