@@ -223,8 +223,8 @@ macro defcomposite(cc_name, ex)
                 Mimi.connect_param!($cc_name, dst_path, dst_name, src_path, src_name)
             end
 
-            # propagates unconnected parameters
-            Mimi.propagate_params!($cc_name)
+            # import unconnected parameters
+            Mimi.import_params!($cc_name)
 
             $cc_name
         end

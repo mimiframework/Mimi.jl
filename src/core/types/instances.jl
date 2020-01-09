@@ -49,7 +49,7 @@ end
 
 # A container class that wraps the dimension dictionary when passed to run_timestep()
 # and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
-# All values in the dictionary are vectors of Ints, except the `:time` value, which is a 
+# All values in the dictionary are vectors of Ints, except the `:time` value, which is a
 # vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
 # into timestep arrays.
 struct DimValueDict <: MimiStruct
@@ -86,8 +86,8 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
         # If first or last is `nothing`, substitute first or last time period
         self.first = @or(comp_def.first, time_bounds[1])
         self.last  = @or(comp_def.last,  time_bounds[2])
-    end 
-       
+    end
+
     function ComponentInstance(comp_def::AbstractComponentDef,
                                time_bounds::Tuple{Int,Int},
                                name::Symbol=nameof(comp_def))
@@ -96,7 +96,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
     end
 end
 
-@class mutable LeafComponentInstance{TV <: ComponentInstanceVariables, 
+@class mutable LeafComponentInstance{TV <: ComponentInstanceVariables,
                                      TP <: ComponentInstanceParameters} <: ComponentInstance begin
     variables::TV                   # TBD: write functions to extract these from type instead of storing?
     parameters::TP
@@ -108,7 +108,7 @@ end
                                    vars::TV, pars::TP,
                                    time_bounds::Tuple{Int,Int},
                                    name::Symbol=nameof(comp_def)) where
-                                {TV <: ComponentInstanceVariables, 
+                                {TV <: ComponentInstanceVariables,
                                  TP <: ComponentInstanceParameters}
 
         # superclass initializer
@@ -161,7 +161,7 @@ end
 
 # These can be called on CompositeComponentInstances and ModelInstances
 compdef(obj::AbstractComponentInstance) = compdef(comp_id(obj))
-pathof(obj::AbstractComponentInstance) = obj.comp_path
+Base.pathof(obj::AbstractComponentInstance) = obj.comp_path
 first_period(obj::AbstractComponentInstance) = obj.first
 last_period(obj::AbstractComponentInstance)  = obj.last
 

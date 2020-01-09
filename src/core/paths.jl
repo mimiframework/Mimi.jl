@@ -25,14 +25,14 @@ Base.joinpath(p1::ComponentPath, other...) = joinpath(joinpath(p1, other[1]), ot
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
 For composites, also update the component paths for all internal connections, and
-for all DatumReferences in the namespace. For leaf components, also update the 
+for all DatumReferences in the namespace. For leaf components, also update the
 ComponentPath for ParameterDefs and VariableDefs.
 """
 function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     parent_path = parent.comp_path
     child.comp_path = child_path = ComponentPath(parent_path, child.name)
     # @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
-    
+
     # First, fix up child's namespace objs. We later recurse down the hierarchy.
     ns = child.namespace
     root = get_root(parent)
@@ -86,7 +86,7 @@ end
 
 Recursively set the ComponentPaths in a tree below a ModelDef to the absolute path equivalent.
 This includes updating the component paths for all internal/external connections, and all
-DatumReferences in the namespace. For leaf components, we also update the ComponentPath for 
+DatumReferences in the namespace. For leaf components, we also update the ComponentPath for
 ParameterDefs and VariableDefs.
 """
 function fix_comp_paths!(md::AbstractModelDef)
@@ -166,7 +166,7 @@ end
 
 find_comp(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
 
-find_comp(cr::ComponentReference) = find_comp(cr.parent, cr.comp_path)
+find_comp(cr::AbstractComponentReference) = find_comp(parent(cr), pathof(cr))
 
 """
 Return the relative path of `descendant` if is within the path of composite `ancestor` or

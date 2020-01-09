@@ -67,7 +67,7 @@ end
         self.comp_id = comp_id
         self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
 
-        self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
+        self.dim_dict  = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.namespace = OrderedDict{Symbol, Any}()
         self.first = self.last = nothing
         self.is_uniform = true
@@ -84,7 +84,7 @@ end
 
 ns(obj::AbstractComponentDef) = obj.namespace
 comp_id(obj::AbstractComponentDef) = obj.comp_id
-pathof(obj::AbstractComponentDef) = obj.comp_path
+Base.pathof(obj::AbstractComponentDef) = obj.comp_path
 dim_dict(obj::AbstractComponentDef) = obj.dim_dict
 first_period(obj::AbstractComponentDef) = obj.first
 last_period(obj::AbstractComponentDef) = obj.last
@@ -112,14 +112,14 @@ end
 
 @class VariableDefReference  <: DatumReference
 
-function _dereference(ref::AbstractDatumReference)
+function dereference(ref::AbstractDatumReference)
     comp = find_comp(ref)
     return comp[ref.name]
 end
 
 # Might not be useful
-# convert(::Type{VariableDef},  ref::VariableDefReference)  = _dereference(ref)
-# convert(::Type{ParameterDef}, ref::ParameterDefReference) = _dereference(ref)
+# convert(::Type{VariableDef},  ref::VariableDefReference)  = dereference(ref)
+# convert(::Type{ParameterDef}, ref::ParameterDefReference) = dereference(ref)
 
 
 # Define type aliases to avoid repeating these in several places
@@ -215,6 +215,10 @@ end
     comp_path::ComponentPath
 end
 
+# Define access methods via getfield() since we override dot syntax
+Base.parent(comp_ref::AbstractComponentReference) = getfield(comp_ref, :parent)
+Base.pathof(comp_ref::AbstractComponentReference) = getfield(comp_ref, :comp_path)
+
 function ComponentReference(parent::AbstractComponentDef, name::Symbol)
     return ComponentReference(parent, ComponentPath(parent.comp_path, name))
 end
@@ -224,3 +228,5 @@ end
 @class VariableReference <: ComponentReference begin
     var_name::Symbol
 end
+
+var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)

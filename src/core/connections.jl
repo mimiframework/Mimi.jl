@@ -651,23 +651,20 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
 end
 
 """
-propagate_params!(
-    obj::AbstractCompositeComponentDef;
-    names::Union{Nothing,Vector{Symbol}}=nothing)
+    import_params!(obj::AbstractCompositeComponentDef;
+                   names::Union{Nothing,Vector{Symbol}}=nothing)
 
-Exports all unconnected parameters below the given composite `obj` by adding references
+Imports all unconnected parameters below the given composite `obj` by adding references
 to these parameters in `obj`. If `names` is not `nothing`, only the given names are
-exported into `obj`.
+imported into `obj`.
 
-This is called automatically by `build!()`, but it can be
-useful for developers of composites as well.
+This is called automatically by `build!()`, but it can be useful for developers of
+composites as well.
 
-TBD: should we just call this at the end of code emitted by @defcomposite?
+N.B. This is called at the end of code emitted by @defcomposite.
 """
-function propagate_params!(
-    obj::AbstractCompositeComponentDef;
-    names::Union{Nothing,Vector{Symbol}}=nothing)
-
+function import_params!(obj::AbstractCompositeComponentDef;
+                        names::Union{Nothing,Vector{Symbol}}=nothing)
     # returns a Vector{ParamPath}, which are Tuple{ComponentPath, Symbol}
     for (path, name) in unconnected_params(obj)
         comp = compdef(obj, path)

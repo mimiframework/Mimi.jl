@@ -27,21 +27,41 @@ end
 
 """
     connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
-    
+
 Connect two components with the same name as `connect_param!(dst, src, name)`.
 """
 function connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
     connect_param!(dst.parent, dst.comp_path, name, src.comp_path, name)
 end
 
-
 """
-    Base.getindex(comp_ref::ComponentReference, var_name::Symbol)
+    Base.getindex(ref::ComponentReference, name::Symbol)
 
-Get a variable reference as `comp_ref[var_name]`.
+Get a sub-comp, parameter, or variable reference as `ref[name]`.
 """
-function Base.getindex(comp_ref::ComponentReference, var_name::Symbol)
-    VariableReference(comp_ref, var_name)
+function Base.getindex(ref::ComponentReference, name::Symbol)
+    VariableReference(ref, var_name)
+end
+
+# Methods to convert components, params, and vars to references
+# for use with getproperty() chaining.
+function make_reference(obj::AbstractComponentDef)
+    return ComponentReference(parent(obj), nameof(obj))
+end
+
+function make_reference(obj::VariableDef)
+    comp_def = find_comp(obj)
+    return VariableReference(pathof(comp_def), nameof(obj))
+end
+
+function make_reference(obj::ParameterDef)
+    comp_def = find_comp(obj)
+    return ParameterReference(pathof(comp_def), nameof(obj))
+end
+
+function Base.getproperty(ref::ComponentReference, name::Symbol)
+    comp_def = find_comp(ref)
+    return make_reference(comp_def[name]) # might be ref to comp, var, or param
 end
 
 function _same_composite(ref1::AbstractComponentReference, ref2::AbstractComponentReference)
@@ -51,7 +71,7 @@ end
 
 """
     Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
-    
+
 Connect two components as `comp_ref[var_name] = var_ref`.
 """
 function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
