@@ -1,10 +1,165 @@
 using MacroTools
 
+# From 1/16/2020 meeting
+#
+# c1 = Component(A)
+# Component(B) # equiv B = Component(B)
+#
+# x3 = Parameter(a.p1, a.p2, b.p3, default=3, description="asflijasef", visibility=:private)
+#
+# This creates external param x3, and connects b.p3 and ANY parameter in any child named p1 to it
+# AND now no p1 in any child can be connected to anything else. Use Not from the next if you want
+# an exception for that
+# x3 = Parameter(p1, b.p3, default=3, description="asflijasef", visibility=:private)
+#
+# x3 = Parameter(p1, p2, Not(c3.p1), b.p3, default=3, description="asflijasef", visibility=:private)
+#
+# connect(B.p2, c1.v4)
+# connect(B.p3, c1.v4)
+#
+# x2 = Parameter(c2.x2, default=35)
+#
+# BUBBLE UP PHASE
+#
+# for p in unique(unbound_parameters)
+#   x1 = Parameter(c1.x1)
+# end
+#
+# if any(unbound_parameter) then error("THIS IS WRONG")
+#
+#
+# Expressions to parse in @defcomposite:
+#
+# 1. name_ = Component(compname_)
+# 2. Component(compname_) => (compname = Component(compname_))
+# 3. pname_ = Parameter(args__) # args can be: pname, comp.pname, or keyword=value
+# 4. connect(a.param, b.var)
+#
+#
+# @defcomposite should just emit all the same API calls one could make manually
+#
+
  # splitarg produces a tuple for each arg of the form (arg_name, arg_type, slurp, default)
 _arg_name(arg_tup) = arg_tup[1]
 _arg_type(arg_tup) = arg_tup[2]
 _arg_slurp(arg_tup) = arg_tup[3]
 _arg_default(arg_tup) = arg_tup[4]
+
+function _typecheck(obj, expected_type, msg)
+    obj isa expected_type || error("$msg must be a $expected_type; got $(typeof(obj)): $obj")
+end
+
+function _parse(expr)
+    valid_keys = (:default, :description, :visability, :unit)
+    result = nothing
+
+    if @capture(expr, newname_ = Component(compname_)) ||
+       @capture(expr, Component(compname_))
+        # check newname is nothing or Symbol, compname is Symbol
+        _typecheck(compname, Symbol, "Referenced component name")
+
+        if newname !== nothing
+            _typecheck(newname, Symbol, "Local name for component name")
+        end
+
+        newname = (newname === nothing ? compname : newname)
+        result = :(Mimi.add_comp!(obj, $compname, $(QuoteNode(newname))))
+
+    elseif @capture(expr, localparname_ = Parameter(args__))
+        regargs = []
+        keyargs = []
+
+        for arg in args
+            if @capture(arg, keywd_ = value_)
+                if keywd in valid_keys
+                    push!(keyargs, arg)
+                else
+                    error("Unrecognized Parameter keyword '$keywd'; must be one of $valid_keys")
+                end
+
+            elseif @capture(arg, (cname_.pname_ | pname_))
+                cname = (cname === nothing ? :(:*) : cname) # wildcard
+                push!(regargs, :($cname => $(QuoteNode(pname))))
+            end
+        end
+        result = :(Mimi.import_param!(obj, $(QuoteNode(localparname)), $(regargs...);
+                                      $(keyargs...)))
+
+    elseif @capture(expr, localvarname_ = Variable(varcomp_.varname_))
+        _typecheck(localvarname, Symbol, "Local variable name")
+        _typecheck(varcomp, Symbol, "Name of referenced component")
+        _typecheck(varname, Symbol, "Name of referenced variable")
+
+        result = :(Mimi.import_var!(obj, $(QuoteNode(localvarname)),
+                                    $varcomp, $(QuoteNode(varname))))
+
+    elseif @capture(expr, connect(parcomp_.parname_, varcomp_.varname_))
+        # raise error if parameter is already bound
+        result = :(Mimi.connect_param!(obj,
+                                       $parcomp => $(QuoteNode(parname)),
+                                       $varcomp => $(QuoteNode(varname));
+                                       allow_overwrite=false)) # new keyword to implement
+    else
+        error("Unrecognized composite statement: $expr")
+    end
+    return result
+end
+
+macro newdefcomposite(cc_name, ex)
+    @capture(ex, exprs__)
+
+    calling_module = __module__
+
+    # @info "defcomposite calling module: $calling_module"
+
+    stmts = [_parse(expr) for expr in exprs]
+
+    result = :(
+        let cc_id = Mimi.ComponentId($calling_module, $(QuoteNode(cc_name))),
+            obj = Mimi.CompositeComponentDef(cc_id)
+
+            global $cc_name = obj
+            $(stmts...)
+            Mimi.import_params!(obj)
+        end
+    )
+    return esc(result)
+end
+
+"""
+    import_params!(obj::AbstractCompositeComponentDef;
+                   names::Union{Nothing,Vector{Symbol}}=nothing)
+
+Imports all unconnected parameters below the given composite `obj` by adding references
+to these parameters in `obj`. If `names` is not `nothing`, only the given names are
+imported into `obj`.
+
+This is called automatically by `build!()`, but it can be useful for developers of
+composites as well.
+
+N.B. This is called at the end of code emitted by @defcomposite.
+"""
+function import_params!(obj::AbstractCompositeComponentDef;
+                        names::Union{Nothing,Vector{Symbol}}=nothing)
+    # returns a Vector{ParamPath}, which are Tuple{ComponentPath, Symbol}
+    for (path, name) in unconnected_params(obj)
+        comp = compdef(obj, path)
+        if names === nothing || name in names
+            obj[name] = datum_reference(comp, name)
+        end
+    end
+end
+
+function _import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
+                        pairs::Pair...)
+    @info "pairs: $pairs"
+    for (comp, pname) in pairs
+        if comp == :*       # wild card
+            @info "Got wildcard for param $pname"
+        end
+    end
+end
+
 
 const NumericArray = Array{T, N} where {T <: Number, N}
 

@@ -649,27 +649,3 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
 
     return nothing
 end
-
-"""
-    import_params!(obj::AbstractCompositeComponentDef;
-                   names::Union{Nothing,Vector{Symbol}}=nothing)
-
-Imports all unconnected parameters below the given composite `obj` by adding references
-to these parameters in `obj`. If `names` is not `nothing`, only the given names are
-imported into `obj`.
-
-This is called automatically by `build!()`, but it can be useful for developers of
-composites as well.
-
-N.B. This is called at the end of code emitted by @defcomposite.
-"""
-function import_params!(obj::AbstractCompositeComponentDef;
-                        names::Union{Nothing,Vector{Symbol}}=nothing)
-    # returns a Vector{ParamPath}, which are Tuple{ComponentPath, Symbol}
-    for (path, name) in unconnected_params(obj)
-        comp = compdef(obj, path)
-        if names === nothing || name in names
-            obj[name] = datum_reference(comp, name)
-        end
-    end
-end
