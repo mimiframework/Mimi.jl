@@ -82,8 +82,8 @@ function _parse(expr)
                 push!(regargs, :($cname => $(QuoteNode(pname))))
             end
         end
-        result = :(Mimi.import_param!(obj, $(QuoteNode(localparname)), $(regargs...);
-                                      $(keyargs...)))
+        result = :(Mimi._import_param!(obj, $(QuoteNode(localparname)), $(regargs...);
+                                       $(keyargs...)))
 
     elseif @capture(expr, localvarname_ = Variable(varcomp_.varname_))
         _typecheck(localvarname, Symbol, "Local variable name")
@@ -96,16 +96,17 @@ function _parse(expr)
     elseif @capture(expr, connect(parcomp_.parname_, varcomp_.varname_))
         # raise error if parameter is already bound
         result = :(Mimi.connect_param!(obj,
-                                       $parcomp => $(QuoteNode(parname)),
-                                       $varcomp => $(QuoteNode(varname));
-                                       allow_overwrite=false)) # new keyword to implement
+                    $(QuoteNode(parcomp)), $(QuoteNode(parname)),
+                    $(QuoteNode(varcomp)), $(QuoteNode(varname));
+                    #allow_overwrite=false # new keyword to implement
+        ))
     else
         error("Unrecognized composite statement: $expr")
     end
     return result
 end
 
-macro newdefcomposite(cc_name, ex)
+macro defcomposite(cc_name, ex)
     @capture(ex, exprs__)
 
     calling_module = __module__
@@ -121,6 +122,7 @@ macro newdefcomposite(cc_name, ex)
             global $cc_name = obj
             $(stmts...)
             Mimi.import_params!(obj)
+            nothing
         end
     )
     return esc(result)
@@ -152,10 +154,15 @@ end
 
 function _import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
                         pairs::Pair...)
-    @info "pairs: $pairs"
+    # @info "pairs: $pairs"
     for (comp, pname) in pairs
         if comp == :*       # wild card
             @info "Got wildcard for param $pname"
+        else
+            # import the parameter from the given component
+            newcomp = obj[nameof(comp)]
+            root = get_root(obj)
+            obj[localname] = ParameterDefReference(localname, root, pathof(newcomp))
         end
     end
 end
@@ -269,7 +276,7 @@ Unlike leaf components, composite components do not have user-defined `init` or 
 functions; these are defined internally to iterate over constituent components and call the
 associated method on each.
 """
-macro defcomposite(cc_name, ex)
+macro OLD_defcomposite(cc_name, ex)
     # @info "defining composite $cc_name in module $(fullname(__module__))"
 
     @capture(ex, elements__)

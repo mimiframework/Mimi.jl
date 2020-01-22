@@ -55,37 +55,34 @@ m = Model()
 set_dimension!(m, :time, 2005:2020)
 
 @defcomposite A begin
-    component(Comp1)
-    component(Comp2)
+    Component(Comp1)
+    Component(Comp2)
 
-    foo1 = Comp1.foo
-    foo2 = Comp2.foo
+    foo1 = Parameter(Comp1.foo)
+    foo2 = Parameter(Comp2.foo)
 
-    # Should accomplish the same as calling
-    #   connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
-    # after the `@defcomposite top ...`
-    Comp2.par_2_1 = Comp1.var_1_1
-    Comp2.par_2_2 = Comp1.var_1_1
+    connect(Comp2.par_2_1, Comp1.var_1_1)
+    connect(Comp2.par_2_2, Comp1.var_1_1)
 end
 
 @defcomposite B begin
-    component(Comp3) # bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
-    component(Comp4)
+    Component(Comp3) # bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
+    Component(Comp4)
 
-    foo3 = Comp3.foo
-    foo4 = Comp4.foo
+    foo3 = Parameter(Comp3.foo)
+    foo4 = Parameter(Comp4.foo)
 end
 
 @defcomposite top begin
-    component(A)
+    Component(A)
 
-    fooA1 = A.foo1
-    fooA2 = A.foo2
+    fooA1 = Parameter(A.foo1)
+    fooA2 = Parameter(A.foo2)
 
     # TBD: component B isn't getting added to mi
-    component(B)
-    foo3 = B.foo3
-    foo4 = B.foo4
+    Component(B)
+    foo3 = Parameter(B.foo3)
+    foo4 = Parameter(B.foo4)
 end
 
 # We have created the following composite structure:
@@ -162,11 +159,11 @@ m2 = Model()
 set_dimension!(m2, :time, 2005:2020)
 
 @defcomposite top2 begin
-    component(Comp1)
-    component(Comp2)
+    Component(Comp1)
+    Component(Comp2)
 
-    Comp2.par_2_1 = Comp1.var_1_1
-    Comp2.par_2_2 = Comp1.var_1_1
+    connect(Comp2.par_2_1, Comp1.var_1_1)
+    connect(Comp2.par_2_2, Comp1.var_1_1)
 end
 
 top2_ref = add_comp!(m2, top2, nameof(top2))
