@@ -189,16 +189,25 @@ In the `run_timestep` functions which the user defines, it may be useful to use 
 is_first(t) # returns true or false, true if t is the first timestep to be run
 is_last(t) # returns true or false, true if t is the last timestep to be run
 gettime(t) # returns the year represented by timestep t
-is_time(t, y) # Return true or false, true if the current time (year) for t is y
-is_timestep(t, s) # Return true or false, true if t timestep is step s.
 ```
+There are also two helper types `TimestepValue` and `TimestepIndex` that can be used with comparison operators (`==`, `<`, and `>`) to check whether an `AbstractTimestep` `t` during the `run_timestep` function corresponds with a certain year or index number. For example:
+```julia
+if t > TimestepValue(2020)
+  # run this code only for timesteps after the year 2020
+end
+
+if t == TimestepIndex(3)
+  # run this code only during the third timestep
+end
+```
+See below for further discussion of the `TimestepValue` and `TimestepIndex` objects and how they should be used.
 
 The API details for AbstractTimestep object `t` are as follows:
 
 - you may index into a variable or parameter with `[t]` or `[t +/- x]` as usual
 - to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
-- useful functions for commonly used conditionals are `is_first(t)`,`is_last(t)`, `is_time(t, s)`, and `is_timestep(t, y)` as listed above
-- to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called. 
+- useful functions for commonly used conditionals are `is_first(t)` and `is_last(t)`
+- to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use comparisons with `TimestepIndex` objects to check if an AbstractTimestep `t` corresponds with a specific index number, as described above.
 
 Indexing into a variable or parameter's `time` dimension with an `Integer` is deprecated and will soon error. Instead, users should take advantage of the `TimestepIndex` and `TimestepValue` types. For examples we will refer back to our component definition above, and repeated below.
 ```julia
