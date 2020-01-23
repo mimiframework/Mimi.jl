@@ -261,7 +261,7 @@ As mentioned above, a parameter can have no index (a scalar), or one or multiple
 ```julia
 @defcomp MyComponent begin
   p1 = Parameter(index=[4]) # an array of length 4
-  p2::Array{Float64, 2} = Parameter() # a two dimensional array of unspecified length
+  p2 = Parameter{Array{Float64, 2}}() # a two dimensional array of unspecified length
 end
 ```
 
