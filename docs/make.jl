@@ -17,6 +17,7 @@ makedocs(
 		],
 		"FAQ" => "faq.md",
 		"Reference" => "reference.md",
+		"Integration Guide: Port to v1.0.0" => "integrationguide_v1.0.0.md",
 		"Integration Guide: Port to v0.5.0" => "integrationguide_v0.5.0.md"],
 
 		format = Documenter.HTML(prettyurls = get(ENV, "JULIA_NO_LOCAL_PRETTY_URLS", nothing) === nothing)
