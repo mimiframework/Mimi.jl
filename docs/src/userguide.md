@@ -265,7 +265,7 @@ But you can also specify individual Parameters or Variables to have different da
   p4 = Parameter{Int64}(index = [time, regions]) # ArrayModelParameter with two dimensions whose eltype is Int64
 end
 ```
-If there are "index"s listed in the Parameter definition, then it will be an ArrayModelParameter whose eltype is the type specified in the curly brackets. If there are no "index"s listed, then the type specified in the curly brackets is the actual type of the parameter value, and it will be represent by Mimi as a ScalarModelParameter.
+If there are "index"s listed in the Parameter definition, then it will be an `ArrayModelParameter` whose `eltype` is the type specified in the curly brackets. If there are no "index"s listed, then the type specified in the curly brackets is the actual type of the parameter value, and it will be represent by Mimi as a `ScalarModelParameter`.
 
 ### Parameter connections between different length components
 
