@@ -56,6 +56,8 @@ The API for using the fourth argument, represented as `t` in this explanation, i
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
+By default, all parameters and variables defined in the `@defcomp` will be allocated storage as scalars or Arrays of type `Float64.` For a description of other data type options, see **Advanced Topics: DataType specification of Parameters and Variables**.
+
 ## Constructing a Model
 
 The first step in constructing a model is to set the values for each index of the model. Below is an example for setting the 'time' and 'regions' indexes. The time index expects either a numerical range or an array of numbers.  If a single value is provided, say '100', then that index will be set from 1 to 100. Other indexes can have values of any type.
@@ -248,6 +250,22 @@ TimestepIndex(1):2:TimestepIndex(10) # explicit step of type Int
 Both `TimestepIndex` and `TimestepArray` have methods to support addition and subtraction of integers.  Note that the addition or subtraction is relative to the definition of the `time` dimension, so while `TimestepIndex(1) + 1 == TimestepIndex(2)`, `TimestepValue(2000) + 1` could be equivalent to `TimestepValue(2001)` **if** 2001 is the next year in the time dimension, or `TimestepValue(2005)` if the array has a step size of 5. Hence adding or subtracting is relative to the definition of the `time` dimension. 
 
 
+### DataType specification of Parameters and Variables 
+
+By default, the Parameters and Variables defined by a user will be allocated storage arrays of type `Float64` when a model is constructed. This default "number_type" can be overriden when a model is created, with the following syntax:
+```
+m = Model(Int64)    # creates a model with default number type Int64
+```
+But you can also specify individual Parameters or Variables to have different data types with the following syntax in a `@defcomp` macro:
+```
+@defcomp example begin
+  p1 = Parameter{Bool}()                         # ScalarModelParameter that is a Bool
+  p2 = Parameter{Bool}(index = [regions])        # ArrayModelParameter with one dimension whose eltype is Bool
+  p3 = Parameter{Matrix{Int64}}()                # ScalarModelParameter that is a Matrix of Integers
+  p4 = Parameter{Int64}(index = [time, regions]) # ArrayModelParameter with two dimensions whose eltype is Int64
+end
+```
+If there are "index"s listed in the Parameter definition, then it will be an `ArrayModelParameter` whose `eltype` is the type specified in the curly brackets. If there are no "index"s listed, then the type specified in the curly brackets is the actual type of the parameter value, and it will be represent by Mimi as a `ScalarModelParameter`.
 
 ### Parameter connections between different length components
 
@@ -270,7 +288,7 @@ As mentioned above, a parameter can have no index (a scalar), or one or multiple
 ```julia
 @defcomp MyComponent begin
   p1 = Parameter(index=[4]) # an array of length 4
-  p2::Array{Float64, 2} = Parameter() # a two dimensional array of unspecified length
+  p2 = Parameter{Array{Float64, 2}}() # a two dimensional array of unspecified length
 end
 ```
 

@@ -105,7 +105,7 @@ function _generate_var_or_param(elt_type, name, datatype, dimensions, dflt, desc
     return expr
 end
 
-function _generate_dims_expr(name, args, vartype)
+function _generate_dims_expr(name, args, datum_type)
     @debug "  Index $name"
 
     # Args are not permitted; we attempt capture only to check syntax
@@ -114,8 +114,8 @@ function _generate_dims_expr(name, args, vartype)
     end
 
     # Ditto types for Index, e.g., region::Foo = Index()
-    if vartype !== nothing
-        error("Index $name: Type specification ($vartype) is not supported")
+    if datum_type !== nothing
+        error("Index $name: Type specification ($datum_type) is not supported")
     end
 
     name_expr = (name isa Symbol) ? :($(QuoteNode(name))) : name
@@ -195,13 +195,16 @@ macro defcomp(comp_name, ex)
             continue
         end
 
-        if ! @capture(elt, (name_::vartype_ | name_) = elt_type_(args__))
-            error("Element syntax error: $elt")           
+        if @capture(elt, name_::datum_type_ = elt_type_(args__))
+            msg = "The following syntax has been deprecated in @defcomp: \"$name::$datum_type = $elt_type(...)\". Use curly bracket syntax instead: \"$name = $elt_type{$datum_type}(...)\""
+            Base.depwarn("$msg\n$(reduce((x,y) -> "$x\n$y", stacktrace()))", :defcomp)   
+        elseif ! @capture(elt, name_ = (elt_type_{datum_type_}(args__) | elt_type_(args__)))
+            error("Element syntax error: $elt")       
         end
 
         # elt_type is one of {:Variable, :Parameter, :Index}
         if elt_type == :Index
-            expr = _generate_dims_expr(name, args, vartype)
+            expr = _generate_dims_expr(name, args, datum_type)
             push!(known_dims, name)
             addexpr(expr)
 
@@ -266,8 +269,8 @@ macro defcomp(comp_name, ex)
                 end
             end
 
-            vartype = (vartype === nothing ? Number : Main.eval(vartype))
-            addexpr(_generate_var_or_param(elt_type, name, vartype, dimensions, dflt, desc, unit))
+            datum_type = (datum_type === nothing ? Number : Main.eval(datum_type))
+            addexpr(_generate_var_or_param(elt_type, name, datum_type, dimensions, dflt, desc, unit))
 
         else
             error("Unrecognized element type: $elt_type")

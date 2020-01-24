@@ -13,7 +13,7 @@ import Mimi:
     c = Parameter(index=[regions])
     d = Parameter()
     e = Parameter(index=[four])
-    f::Array{Float64, 2} = Parameter()
+    f = Parameter{Array{Float64, 2}}()
 
     x = Variable(index=[time, regions])
     
