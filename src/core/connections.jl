@@ -465,7 +465,9 @@ end
 
 
 function add_connector_comps(md::ModelDef)
-     conns = md.internal_param_conns        # we modify this, so we don't use functional API
+    conns = md.internal_param_conns        # we modify this, so we don't use functional API
+
+    i = 1 # counter to track the number of connector comps added 
 
     for comp_def in compdefs(md)
         comp_name = name(comp_def)
@@ -476,7 +478,7 @@ function add_connector_comps(md::ModelDef)
 
         # println("Need connectors comps: $need_conn_comps")
 
-        for (i, conn) in enumerate(need_conn_comps)
+        for conn in need_conn_comps
             push!(md.backups, conn.backup)
 
             num_dims = length(size(external_param(md, conn.backup).values))
@@ -488,6 +490,7 @@ function add_connector_comps(md::ModelDef)
             # Fetch the definition of the appropriate connector commponent
             conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
             conn_comp_name = connector_comp_name(i)
+            i += 1 # increment connector comp counter
 
             # Add the connector component before the user-defined component that required it
             # println("add_connector_comps: add_comp!(md, $(conn_comp_def.comp_id), $conn_comp_name, before=$comp_name)")
