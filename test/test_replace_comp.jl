@@ -37,7 +37,7 @@ end
 end
 
 @defcomp bad4 begin
-    x::Symbol = Parameter(index = [time])   # different datatype
+    x = Parameter{Symbol}(index = [time])   # different datatype
     y = Variable()                          # different variable dimensions
 end
 
