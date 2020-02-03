@@ -108,7 +108,14 @@ end
     comp_path::ComponentPath
 end
 
-@class ParameterDefReference <: DatumReference
+@class ParameterDefReference <: DatumReference begin
+    default::Any    # allows defaults set in composites
+end
+
+function ParameterDefReference(name::Symbol, root::AbstractComponentDef,
+                               comp_path::ComponentPath)
+    return ParameterDefReference(name, root, comp_path, nothing)
+end
 
 @class VariableDefReference  <: DatumReference
 
@@ -131,11 +138,13 @@ global const CompositeNamespaceElement = Union{AbstractComponentDef, AbstractDat
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
-    bindings::Vector{Binding}
+    bindings::Vector{Binding}   # TBD: deprecated
 
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
-    external_params::Dict{Symbol, ModelParameter}               # TBD: make key (ComponentPath, Symbol)?
+
+    # TBD: Have external_params only in ModelDef
+    external_params::Dict{Symbol, ModelParameter}
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
@@ -195,6 +204,9 @@ ComponentPath(obj::AbstractCompositeComponentDef, path::AbstractString) = comp_p
 ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentPath(obj.comp_path.names..., names...)
 
 @class mutable ModelDef <: CompositeComponentDef begin
+    # TBD: Have external_params only in ModelDef
+    # external_params::Dict{Symbol, ModelParameter}
+
     number_type::DataType
     dirty::Bool
 

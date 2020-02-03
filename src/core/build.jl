@@ -199,6 +199,9 @@ function _build(comp_def::AbstractCompositeComponentDef,
 end
 
 function _build(md::ModelDef)
+    # import any unconnected params into ModelDef
+    import_params!(md)
+
     # @info "_build(md)"
     add_connector_comps!(md)
 

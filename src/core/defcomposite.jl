@@ -49,6 +49,9 @@ function _typecheck(obj, expected_type, msg)
     obj isa expected_type || error("$msg must be a $expected_type; got $(typeof(obj)): $obj")
 end
 
+#
+# Convert @defcomposite "shorthand" statements into Mimi API calls
+#
 function _parse(expr)
     valid_keys = (:default, :description, :visability, :unit)
     result = nothing
@@ -90,8 +93,8 @@ function _parse(expr)
         _typecheck(varcomp, Symbol, "Name of referenced component")
         _typecheck(varname, Symbol, "Name of referenced variable")
 
-        result = :(Mimi.import_var!(obj, $(QuoteNode(localvarname)),
-                                    $varcomp, $(QuoteNode(varname))))
+        result = :(Mimi._import_var!(obj, $(QuoteNode(localvarname)),
+                                     $varcomp, $(QuoteNode(varname))))
 
     elseif @capture(expr, connect(parcomp_.parname_, varcomp_.varname_))
         # raise error if parameter is already bound
@@ -122,7 +125,7 @@ macro defcomposite(cc_name, ex)
             global $cc_name = obj
             $(stmts...)
             Mimi.import_params!(obj)
-            nothing
+            $cc_name
         end
     )
     return esc(result)
@@ -145,8 +148,12 @@ function import_params!(obj::AbstractCompositeComponentDef;
                         names::Union{Nothing,Vector{Symbol}}=nothing)
     # returns a Vector{ParamPath}, which are Tuple{ComponentPath, Symbol}
     for (path, name) in unconnected_params(obj)
+        @info "import_params!($(obj.comp_id)) ($path, $name)"
+
         comp = compdef(obj, path)
         if names === nothing || name in names
+            #
+            # TBD: looks like this works only for composites (which have refs), not leafs
             obj[name] = datum_reference(comp, name)
         end
     end
@@ -157,19 +164,31 @@ function _import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
     # @info "pairs: $pairs"
     for (comp, pname) in pairs
         if comp == :*       # wild card
-            @info "Got wildcard for param $pname"
+            @info "Got wildcard for param $pname (Not yet implemented)"
         else
-            # import the parameter from the given component
             newcomp = obj[nameof(comp)]
-            root = get_root(obj)
-            obj[localname] = ParameterDefReference(localname, root, pathof(newcomp))
+            @info "import_param!($(obj.comp_id)) ($(pathof(newcomp)), $pname) as $localname"
+
+            # import the parameter from the given component
+            obj[localname] = datum_reference(newcomp, pname)
         end
     end
+end
+
+#
+# Import a variable from the given subcomponent
+#
+function _import_var!(obj::AbstractCompositeComponentDef, localname::Symbol,
+                      comp::AbstractComponentDef, vname::Symbol)
+    @info "import_var!($(obj.comp_id), $localname, $(comp.comp_id), $vname):"
+
+    obj[localname] = datum_reference(comp, vname)
 end
 
 
 const NumericArray = Array{T, N} where {T <: Number, N}
 
+# Deprecated
 function _collect_bindings(exprs)
     bindings = []
     # @info "_collect_bindings: $exprs"
@@ -187,6 +206,7 @@ function _collect_bindings(exprs)
     return bindings
 end
 
+# Deprecated
 function _subcomp(calling_module, args, kwargs)
     # splitarg produces a tuple for each arg of the form (arg_name, arg_type, slurp, default)
     arg_tups = map(splitarg, args)

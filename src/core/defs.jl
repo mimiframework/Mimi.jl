@@ -335,15 +335,18 @@ parameter_names(comp_def::AbstractComponentDef) = collect(keys(param_dict(comp_d
 
 parameter(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, ParameterDef)
 
-parameter(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, ParameterDefReference)
+parameter(obj::AbstractCompositeComponentDef,
+          name::Symbol) = dereference(_ns_get(obj, name, ParameterDefReference))
 
-parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
+parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol,
+          param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
 
 parameter(dr::ParameterDefReference) = parameter(compdef(dr), nameof(dr))
 
 has_parameter(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, ParameterDef)
 
-has_parameter(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, ParameterDefReference)
+has_parameter(comp_def::AbstractCompositeComponentDef,
+              name::Symbol) = _ns_has(comp_def, name, ParameterDefReference)
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -375,6 +378,7 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
+# TBD: Used only by (unused) new_set_param!
 function comps_with_unbound_param(md::ModelDef, param_name::Symbol)
     found = Vector{ComponentDef}()
 
@@ -388,7 +392,7 @@ function comps_with_unbound_param(md::ModelDef, param_name::Symbol)
 end
 
 #
-# TBD: needs better name
+# TBD: needs better name. Currently unused (1/22/2020)
 #
 """
     new_set_param!(m::ModelDef, param_name::Symbol, value)
@@ -417,7 +421,7 @@ function new_set_param!(md::ModelDef, pairs::Vector{Pair{ComponentPath, Symbol}}
         # add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
         for (comp_path, param_name) in pairs
-            connect_param!(md, comp_path, param_name, ext_param)
+            connect_param!(md, comp_path, param_name, ext_param_name)
         end
     end
     return nothing
@@ -515,7 +519,7 @@ function set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, valu
         error("Parameter setting is supported only for top-level composites. $(obj.comp_path) is a subcomponent.")
     end
     param_ref = obj[param_name]
-    set_param!(obj, param_ref.comp_path, param_ref.name, value, dims=dims)
+    set_param!(obj, param_ref.comp_path, param_ref.name, value, dims)
 end
 
 """
@@ -856,14 +860,12 @@ added at the end of the list unless one of the keywords `before` or `after` is s
 Note that a copy of `comp_id` is made in the composite and assigned the give name. The optional
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 """
-function add_comp!(
-    obj::AbstractCompositeComponentDef,
-    comp_def::AbstractComponentDef,
-    comp_name::Symbol=comp_def.comp_id.comp_name;
-    before::NothingSymbol=nothing,
-    after::NothingSymbol=nothing,
-    rename::NothingPairList=nothing
-)
+function add_comp!(obj::AbstractCompositeComponentDef,
+                   comp_def::AbstractComponentDef,
+                   comp_name::Symbol=comp_def.comp_id.comp_name;
+                   before::NothingSymbol=nothing,
+                   after::NothingSymbol=nothing,
+                   rename::NothingPairList=nothing) # TBD: rename is not yet implemented
 
     # Check if component being added already exists
     has_comp(obj, comp_name) && error("Cannot add two components of the same name ($comp_name)")
@@ -890,7 +892,7 @@ function add_comp!(
     if is_leaf(comp_def)
         for param in parameters(comp_def)
             if param.default !== nothing
-                x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
+                #x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
                 set_param!(obj, comp_name, nameof(param), param.default)
             end
         end
@@ -913,18 +915,15 @@ end
 Add the component indicated by `comp_id` to the composite component indicated by `obj`. The
 component is added at the end of the list unless one of the keywords `before` or `after` is
 specified. Note that a copy of `comp_id` is made in the composite and assigned the give name.
+
+[Not yet implemented:]
 The optional argument `rename` can be a list of pairs indicating `original_name => imported_name`.
 """
-function add_comp!(
-    obj::AbstractCompositeComponentDef,
-    comp_id::ComponentId,
-    comp_name::Symbol=comp_id.comp_name;
-    before::NothingSymbol=nothing,
-    after::NothingSymbol=nothing,
-    rename::NothingPairList=nothing
-)
+function add_comp!(obj::AbstractCompositeComponentDef,
+                   comp_id::ComponentId,
+                   comp_name::Symbol=comp_id.comp_name; kwargs...)
     # println("Adding component $comp_id as :$comp_name")
-    add_comp!(obj, compdef(comp_id), comp_name, before=before, after=after, rename=rename)
+    add_comp!(obj, compdef(comp_id), comp_name; kwargs...)
 end
 
 """
@@ -944,15 +943,12 @@ added with the same first and last values, unless the keywords `first` or `last`
 Optional boolean argument `reconnect` with default value `true` indicates whether the existing
 parameter connections should be maintained in the new component. Returns the added comp def.
 """
-function replace_comp!(
-    obj::AbstractCompositeComponentDef,
-    comp_id::ComponentId,
-    comp_name::Symbol=comp_id.comp_name;
-    before::NothingSymbol=nothing,
-    after::NothingSymbol=nothing,
-    reconnect::Bool=true
-)
-
+function replace_comp!(obj::AbstractCompositeComponentDef,
+                       comp_id::ComponentId,
+                       comp_name::Symbol=comp_id.comp_name;
+                       before::NothingSymbol=nothing,
+                       after::NothingSymbol=nothing,
+                       reconnect::Bool=true)
     if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
     end

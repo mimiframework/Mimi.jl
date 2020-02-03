@@ -4,9 +4,9 @@ using Test
 using Mimi
 
 import Mimi:
-    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef, CompositeComponentDef,
-    Binding, ModelDef, build, time_labels, compdef, find_comp
-
+    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
+    CompositeComponentDef, Binding, ModelDef, build, time_labels, compdef, find_comp,
+    import_params!
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
