@@ -11,8 +11,8 @@ import Mimi:
     dim_names, compdef, getproperty, setproperty!, dimension, compdefs
 
 @defcomp A begin
-    varA::Int = Variable(index=[time])
-    parA::Int = Parameter()
+    varA = Variable{Int}(index=[time])
+    parA = Parameter{Int}()
 
     function run_timestep(p, v, d, t)
         v.varA[t] = p.parA
@@ -20,7 +20,7 @@ import Mimi:
 end
 
 @defcomp B begin
-    varB::Int = Variable()
+    varB = Variable{Int}()
 
     function run_timestep(p, v, d, t)
         if t.t < 10
@@ -32,8 +32,8 @@ end
 end
 
 @defcomp C begin
-    varC::Int = Variable()
-    parC::Int = Parameter()
+    varC = Variable{Int}()
+    parC = Parameter{Int}()
 
     function run_timestep(p, v, d, t)
         v.varC = p.parC

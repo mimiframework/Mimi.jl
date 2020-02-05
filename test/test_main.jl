@@ -12,7 +12,7 @@ import Mimi:
     index1 = Index()
 
     par1 = Parameter()
-    par2::Bool = Parameter(index=[time,index1], description="description par 1")
+    par2 = Parameter{Bool}(index=[time,index1], description="description par 1")
     par3 = Parameter(index=[time])
 
     var1 = Variable()
@@ -21,7 +21,7 @@ import Mimi:
 
     idx3 = Index()
     idx4 = Index()
-    var4::Bool = Variable(index=[idx3])
+    var4 = Variable{Bool}(index=[idx3])
     var5 = Variable(index=[index1, idx4])
 end
 
