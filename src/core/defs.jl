@@ -181,7 +181,9 @@ end
 
 Create a reference to the given datum, which itself must be a DatumReference.
 """
-datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol) = _ns_get(comp, datum_name, AbstractDatumReference)
+function datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol)
+    _ns_get(comp, datum_name, AbstractDatumReference)
+end
 
 function Base.setindex!(comp::AbstractCompositeComponentDef, value::CompositeNamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
@@ -392,7 +394,7 @@ function comps_with_unbound_param(md::ModelDef, param_name::Symbol)
 end
 
 #
-# TBD: needs better name. Currently unused (1/22/2020)
+# TBD: needs better name. Currently (2/4/2020) unused.
 #
 """
     new_set_param!(m::ModelDef, param_name::Symbol, value)
@@ -565,7 +567,7 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
 
         ti = get_time_index_position(obj, comp_name, param_name)
 
-        if ti != nothing   # there is a time dimension
+        if ti !== nothing   # there is a time dimension
             T = eltype(value)
 
             if num_dims == 0
@@ -794,6 +796,9 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
         _set_comps!(obj, new_comps)
     end
 
+    # adjust paths to include new parent
+    _fix_comp_path!(comp_def, obj)
+
     # @info "parent obj comp_path: $(printable(obj.comp_path))"
     # @info "inserted comp's path: $(comp_def.comp_path)"
     dirty!(obj)
@@ -823,6 +828,7 @@ function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::Abstract
     end
 
     if has_parameter(comp_def, datum_name)
+        @info "Calling ParameterDefReference($datum_name, $(root.comp_id), $path)"
         return ParameterDefReference(datum_name, root, path)
     end
 

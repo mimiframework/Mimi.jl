@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi:
     ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
-    CompositeComponentDef, Binding, ModelDef, build, time_labels, compdef, find_comp,
+    CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
     import_params!
 
 @defcomp Comp1 begin
@@ -66,7 +66,7 @@ set_dimension!(m, :time, 2005:2020)
 end
 
 @defcomposite B begin
-    Component(Comp3) # bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
+    Component(Comp3)
     Component(Comp4)
 
     foo3 = Parameter(Comp3.foo)

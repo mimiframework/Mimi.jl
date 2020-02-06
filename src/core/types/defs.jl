@@ -65,7 +65,9 @@ end
         NamedObj(self, name)
 
         self.comp_id = comp_id
-        self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
+
+        # self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
+        self.comp_path = ComponentPath(name)    # this is set in add_comp!() and ModelDef()
 
         self.dim_dict  = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.namespace = OrderedDict{Symbol, Any}()
@@ -97,7 +99,6 @@ struct SubComponent <: MimiStruct
     module_obj::Union{Nothing, Module}
     comp_name::Symbol
     alias::Union{Nothing, Symbol}
-    bindings::Vector{Pair{Symbol, Any}}
 end
 
 # Stores references to the name of a component variable or parameter
@@ -128,18 +129,12 @@ end
 # convert(::Type{VariableDef},  ref::VariableDefReference)  = dereference(ref)
 # convert(::Type{ParameterDef}, ref::ParameterDefReference) = dereference(ref)
 
-
-# Define type aliases to avoid repeating these in several places
-global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
-
 # Define which types can appear in the namespace dict for leaf and composite compdefs
 global const LeafNamespaceElement      = AbstractDatumDef
 global const CompositeNamespaceElement = Union{AbstractComponentDef, AbstractDatumReference}
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
-    bindings::Vector{Binding}   # TBD: deprecated
-
     internal_param_conns::Vector{InternalParameterConnection}
     external_param_conns::Vector{ExternalParameterConnection}
 
@@ -161,7 +156,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
         ComponentDef(self, comp_id) # call superclass' initializer
 
         self.comp_path = ComponentPath(self.name)
-        self.bindings = Vector{Binding}()
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.external_param_conns = Vector{ExternalParameterConnection}()
         self.external_params = Dict{Symbol, ModelParameter}()

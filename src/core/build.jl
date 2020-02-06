@@ -124,6 +124,8 @@ _collect_params(comp_def::ComponentDef, var_dict, par_dict) = nothing
 function _collect_params(comp_def::AbstractCompositeComponentDef,
                          var_dict::Dict{ComponentPath, Any},
                          par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
+
+    # TBD: with reformulation of parameter importing, we shouldn't need to recurse.
     # depth-first search of composites
     for cd in compdefs(comp_def)
         _collect_params(cd, var_dict, par_dict)

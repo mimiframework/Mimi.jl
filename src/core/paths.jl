@@ -24,14 +24,14 @@ Base.joinpath(p1::ComponentPath, other...) = joinpath(joinpath(p1, other[1]), ot
     _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
-For composites, also update the component paths for all internal connections, and
-for all DatumReferences in the namespace. For leaf components, also update the
-ComponentPath for ParameterDefs and VariableDefs.
+For composites, also update the component paths for all connections, and for all
+DatumReferences in the namespace. For leaf components, also update the ComponentPath
+for ParameterDefs and VariableDefs.
 """
 function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
-    parent_path = parent.comp_path
+    parent_path = pathof(parent)
     child.comp_path = child_path = ComponentPath(parent_path, child.name)
-    # @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
+    @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
 
     # First, fix up child's namespace objs. We later recurse down the hierarchy.
     ns = child.namespace
@@ -40,13 +40,18 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
     for (name, ref) in ns
         if ref isa AbstractDatumReference
             T = typeof(ref)
-            ns[name] = new_ref = T(ref.name, root, child_path)
-            #@info "old ref: $ref, new: $new_ref"
+            new_path = joinpath(parent_path, ref.comp_path)
+            ns[name] = new_ref = T(ref.name, root, new_path)
+            # @info "old ref: $ref, new: $new_ref"
         end
     end
 
     # recursively reset all comp_paths to their abspath equivalent
     if is_composite(child)
+        # do same recursively
+        for grandchild in compdefs(child)
+            _fix_comp_path!(grandchild, child)
+        end
 
         # Fix internal param conns
         conns = child.internal_param_conns
@@ -69,10 +74,6 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
             # @info "Resetting EPC $child_path from $(conn.comp_path) to $path"
 
             conns[i] = ExternalParameterConnection(path, conn.param_name, conn.external_param)
-        end
-
-        for cd in compdefs(child)
-            _fix_comp_path!(cd, child)
         end
     else
         for datum in [variables(child)..., parameters(child)...]

@@ -5,22 +5,8 @@ using Mimi
 
 import Mimi:
     ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
-    CompositeComponentDef, Binding, ModelDef, build, time_labels, compdef, find_comp,
+    CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
     import_params!
-
-@defcomp Leaf begin
-    p1 = Parameter()
-    v1 = Variable()
-
-    function run_timestep(p, v, d, t)
-        v.v1 = p.p1
-    end
-end
-
-@defcomposite Composite begin
-    Component(Leaf)
-    v1 = Variable(Leaf.v1)
-end
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input

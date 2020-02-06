@@ -308,22 +308,36 @@ function connected_params(obj::AbstractCompositeComponentDef)
     return connected
 end
 
+#
+# TBD: recursion should no longer be required, given recent simplifications
+#
 """
 Depth-first search for unconnected parameters, which are appended to `unconnected`. Parameter
 connections are made to the "original" component, not to a composite that exports the parameter.
 Thus, only the leaf (non-composite) variant of this method actually collects unconnected params.
 """
-function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
-    params = [(obj.comp_path, x) for x in parameter_names(obj)]
-    diffs = setdiff(params, connected)
-    append!(unconnected, diffs)
-end
+# function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
+# function _collect_unconnected_params(obj::AbstractComponentDef,
+#                                      connected::ParamVector, unconnected::ParamVector)
+#     params = [(obj.comp_path, x) for x in parameter_names(obj)]
+#     diffs = setdiff(params, connected)
+#     append!(unconnected, diffs)
+# end
 
-function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connected::ParamVector, unconnected::ParamVector)
+function _collect_unconnected_params(obj::AbstractCompositeComponentDef,
+                                     connected::ParamVector, unconnected::ParamVector)
     for comp_def in compdefs(obj)
-        _collect_unconnected_params(comp_def, connected, unconnected)
+        params = [(comp_def.comp_path, x) for x in parameter_names(comp_def)]
+        diffs = setdiff(params, connected)
+        append!(unconnected, diffs)
     end
 end
+
+# function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connected::ParamVector, unconnected::ParamVector)
+#     for comp_def in compdefs(obj)
+#         _collect_unconnected_params(comp_def, connected, unconnected)
+#     end
+# end
 
 """
     unconnected_params(obj::AbstractCompositeComponentDef)
@@ -597,7 +611,7 @@ end
 
 function add_connector_comps!(obj::AbstractCompositeComponentDef)
     conns = internal_param_conns(obj)
-    i = 1 # counter to track the number of connector comps added 
+    i = 1 # counter to track the number of connector comps added
 
     for comp_def in compdefs(obj)
         comp_name = nameof(comp_def)
@@ -622,7 +636,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
             conn_comp_name = connector_comp_name(i) # generate a new name
             i += 1 # increment connector comp counter
-            
+
             # Add the connector component before the user-defined component that required it
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             conn_path = conn_comp.comp_path
