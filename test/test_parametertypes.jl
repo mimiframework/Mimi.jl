@@ -40,6 +40,7 @@ expr = :(
     f::Array{Float64, 2} = Parameter()
     g::Int = Parameter(default=10.0)    # value should be Int despite Float64 default
     h = Parameter(default=10)           # should be "numtype", despite Int default
+    j::Int = Parameter(index=[regions])
 
     x = Variable(index=[time, regions])
     
@@ -65,6 +66,7 @@ set_param!(m, :MyComp, :c, [4,5,6])
 set_param!(m, :MyComp, :d, 0.5)   # 32-bit float constant
 set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
+set_param!(m, :MyComp, :j, [1,2,3])
 
 # THIS FAILS: Base.ReshapedArray{Int64,2,UnitRange{Int64},Tuple{}} != Array{Float64,2}
 # set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
@@ -100,7 +102,7 @@ update_param!(m, :d, 5) # should work, will convert to float
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
 
-@test length(extpars) == 8
+@test length(extpars) == 9
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, numtype, 1}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{numtype, 1}
