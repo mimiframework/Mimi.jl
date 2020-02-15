@@ -123,6 +123,11 @@ end
         # CompositeComponentInstances use a standard method that just loops over inner components.
         # TBD: use FunctionWrapper here?
         function get_func(name)
+
+            #
+            # TBD: since this class is no longer a superclass of CompositeComponentInstance
+            # this test should be unnecessary. Double-check this though...
+            #
             if is_composite(self)
                 return nothing
             end
@@ -136,8 +141,6 @@ end
             end
         end
 
-        # `is_composite` indicates a LeafComponentInstance used to store summary
-        # data for LeafComponentInstance and is not itself runnable.
         self.init         = get_func("init")
         self.run_timestep = get_func("run_timestep")
 

@@ -27,6 +27,8 @@ Base.nameof(obj::AbstractNamedObj) = obj.name
     unit::String
 end
 
+Base.pathof(obj::AbstractDatumDef) = obj.comp_path
+
 @class mutable VariableDef <: DatumDef
 
 @class mutable ParameterDef <: DatumDef begin
@@ -109,6 +111,8 @@ end
     comp_path::ComponentPath
 end
 
+Base.pathof(dr::AbstractDatumReference) = dr.comp_path
+
 @class ParameterDefReference <: DatumReference begin
     default::Any    # allows defaults set in composites
 end
@@ -136,10 +140,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
 
 @class mutable CompositeComponentDef <: ComponentDef begin
     internal_param_conns::Vector{InternalParameterConnection}
-    external_param_conns::Vector{ExternalParameterConnection}
-
-    # TBD: Have external_params only in ModelDef
-    external_params::Dict{Symbol, ModelParameter}
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
@@ -157,8 +157,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
 
         self.comp_path = ComponentPath(self.name)
         self.internal_param_conns = Vector{InternalParameterConnection}()
-        self.external_param_conns = Vector{ExternalParameterConnection}()
-        self.external_params = Dict{Symbol, ModelParameter}()
         self.backups = Vector{Symbol}()
         self.sorted_comps = nothing
     end
@@ -183,9 +181,6 @@ end
 add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
-external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
-
-external_params(obj::AbstractCompositeComponentDef) = obj.external_params
 
 is_leaf(c::AbstractComponentDef) = true
 is_leaf(c::AbstractCompositeComponentDef) = false
@@ -198,8 +193,8 @@ ComponentPath(obj::AbstractCompositeComponentDef, path::AbstractString) = comp_p
 ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentPath(obj.comp_path.names..., names...)
 
 @class mutable ModelDef <: CompositeComponentDef begin
-    # TBD: Have external_params only in ModelDef
-    # external_params::Dict{Symbol, ModelParameter}
+    external_param_conns::Vector{ExternalParameterConnection}
+    external_params::Dict{Symbol, ModelParameter}
 
     number_type::DataType
     dirty::Bool
@@ -207,9 +202,18 @@ ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentP
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        return ModelDef(self, number_type, false)       # call @class-generated method
+
+        ext_conns  = Vector{ExternalParameterConnection}()
+        ext_params = Dict{Symbol, ModelParameter}()
+
+        # N.B. @class-generated method
+        return ModelDef(self, ext_conns, ext_params, number_type, false)
     end
 end
+
+external_param_conns(md::ModelDef) = md.external_param_conns
+
+external_params(md::ModelDef) = md.external_params
 
 #
 # Reference types offer a more convenient syntax for interrogating Components.

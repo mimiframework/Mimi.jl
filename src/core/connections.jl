@@ -18,7 +18,10 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::Abstrac
     end
 
     filter!(x -> !(x.dst_comp_path == path && x.dst_par_name == param_name), obj.internal_param_conns)
-    filter!(x -> !(x.comp_path == path && x.param_name == param_name),       obj.external_param_conns)
+
+    if obj isa ModelDef
+        filter!(x -> !(x.comp_path == path && x.param_name == param_name), obj.external_param_conns)
+    end
     dirty!(obj)
 end
 
@@ -101,9 +104,15 @@ end
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
 the external parameter `ext_param_name`.
 """
-function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol;
+function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
+                        param_name::Symbol, ext_param_name::Symbol;
                         check_labels::Bool=true)
     comp_def = compdef(obj, comp_name)
+    connect_param!(obj, comp_def, param_name, ext_param_name, check_labels=check_labels)
+end
+
+function connect_param!(obj::AbstractCompositeComponentDef, comp_def::ComponentDef,
+                        param_name::Symbol, ext_param_name::Symbol; check_labels::Bool=true)
     ext_param = external_param(obj, ext_param_name)
 
     if ext_param isa ArrayModelParameter && check_labels
@@ -159,14 +168,16 @@ function connect_param!(obj::AbstractCompositeComponentDef,
 
         # Check that the backup data is the right size
         if size(backup) != datum_size(obj, dst_comp_def, dst_par_name)
-            error("Cannot connect parameter; the provided backup data is the wrong size. Expected size $(datum_size(obj, dst_comp_def, dst_par_name)) but got $(size(backup)).")
+            error("Cannot connect parameter; the provided backup data is the wrong size. ",
+                  "Expected size $(datum_size(obj, dst_comp_def, dst_par_name)) but got $(size(backup)).")
         end
 
         # some other check for second dimension??
         dst_param = parameter(dst_comp_def, dst_par_name)
         dst_dims  = dim_names(dst_param)
 
-        backup = convert(Array{Union{Missing, number_type(obj)}}, backup) # converts number type and, if it's a NamedArray, it's converted to Array
+        # convert number type and, if it's a NamedArray, convert to Array
+        backup = convert(Array{Union{Missing, number_type(obj)}}, backup)
         first = first_period(obj, dst_comp_def)
 
         T = eltype(backup)
@@ -220,7 +231,8 @@ Try calling:
         error("Units of $src_comp_path:$src_var_name do not match $dst_comp_path:$dst_par_name.")
     end
 
-    conn = InternalParameterConnection(src_comp_path, src_var_name, dst_comp_path, dst_par_name, ignoreunits, backup_param_name, offset=offset)
+    conn = InternalParameterConnection(src_comp_path, src_var_name, dst_comp_path, dst_par_name,
+                                       ignoreunits, backup_param_name, offset=offset)
     add_internal_param_conn!(obj, conn)
 
     return nothing
@@ -266,6 +278,7 @@ function split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
     return (ComponentPath(obj, elts[1]), Symbol(elts[2]))
 end
 
+# TBD: Deprecated?
 """
 Connect a parameter and variable using string notation "/path/to/component:datum_name" where
 the potion before the ":" is the string representation of a component path from `obj` and the
@@ -280,77 +293,69 @@ function connect_param!(obj::AbstractCompositeComponentDef, dst::AbstractString,
                    backup; ignoreunits=ignoreunits, offset=offset)
 end
 
+"""
+    param_ref(md::ModelDef, conn::InternalParameterConnection)
 
-const ParamVector = Vector{ParamPath}
+Return a ParameterDefReference to the parameter indicated in the given
+connection. Used for comparing connections to parameters to find those
+that are (un)connected.
+"""
+function param_ref(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
+    comp = find_comp(obj, conn.dst_comp_path)
+    comp !== nothing || error("Can't find $(conn.dst_comp_path) from $(obj.comp_id)")
+    return datum_reference(comp, conn.dst_par_name)
+end
 
-_collect_connected_params(obj::ComponentDef, connected) = nothing
+"""
+    dereferenced_conn(obj::AbstractCompositeComponentDef,
+                      conn::InternalParameterConnection)
 
-function _collect_connected_params(obj::AbstractCompositeComponentDef, connected::ParamVector)
-    for comp_def in compdefs(obj)
-        _collect_connected_params(comp_def, connected)
+Convert an InternalParameterConnection with datum references to one referring
+only to leaf component pars and vars.
+"""
+function dereferenced_conn(obj::AbstractCompositeComponentDef,
+                           conn::InternalParameterConnection)
+    comp = find_comp(obj, conn.dst_comp_path)
+    comp !== nothing || error("Can't find $(conn.dst_comp_path) from $(obj.comp_id)")
+    pref = datum_reference(comp, conn.dst_par_name)
+
+    comp = find_comp(obj, conn.src_comp_path)
+    comp !== nothing || error("Can't find $(conn.src_comp_path) from $(obj.comp_id)")
+    vref = datum_reference(comp, conn.src_var_name)
+
+    ipc = InternalParameterConnection(pathof(vref), nameof(vref), pathof(pref), nameof(pref),
+                                      conn.ignoreunits, conn.backup; offset=conn.offset)
+    return ipc
+end
+
+"""
+    connection_refs(obj::AbstractCompositeComponentDef)
+
+Return a vector of ParameterDefReferences to parameters with connections.
+The references are always to the original Parameter definition in a leaf
+component.
+"""
+function connection_refs(obj::AbstractCompositeComponentDef)
+    refs = ParameterDefReference[]
+    root = get_root(obj)
+    # @info "root of $(obj.comp_id) is $(root.comp_id))"
+
+    function _add_conns(obj::AbstractCompositeComponentDef)
+        append!(refs, [param_ref(root, conn) for conn in obj.internal_param_conns])
     end
 
-    ext_set_params = map(x->(x.comp_path, x.param_name), external_param_conns(obj))
-    int_set_params = map(x->(x.dst_comp_path, x.dst_par_name), internal_param_conns(obj))
-
-    append!(connected, union(ext_set_params, int_set_params))
+    recurse(obj, _add_conns; composite_only=true)
+    return refs
 end
-
-"""
-    connected_params(obj::AbstractCompositeComponentDef)
-
-Recursively search the component tree to find connected parameters in leaf components.
-Return a vector of tuples of the form `(path::ComponentPath, param_name::Symbol)`.
-"""
-function connected_params(obj::AbstractCompositeComponentDef)
-    connected = ParamVector()
-    _collect_connected_params(obj, connected)
-    return connected
-end
-
-#
-# TBD: recursion should no longer be required, given recent simplifications
-#
-"""
-Depth-first search for unconnected parameters, which are appended to `unconnected`. Parameter
-connections are made to the "original" component, not to a composite that exports the parameter.
-Thus, only the leaf (non-composite) variant of this method actually collects unconnected params.
-"""
-# function _collect_unconnected_params(obj::ComponentDef, connected::ParamVector, unconnected::ParamVector)
-# function _collect_unconnected_params(obj::AbstractComponentDef,
-#                                      connected::ParamVector, unconnected::ParamVector)
-#     params = [(obj.comp_path, x) for x in parameter_names(obj)]
-#     diffs = setdiff(params, connected)
-#     append!(unconnected, diffs)
-# end
-
-function _collect_unconnected_params(obj::AbstractCompositeComponentDef,
-                                     connected::ParamVector, unconnected::ParamVector)
-    for comp_def in compdefs(obj)
-        params = [(comp_def.comp_path, x) for x in parameter_names(comp_def)]
-        diffs = setdiff(params, connected)
-        append!(unconnected, diffs)
-    end
-end
-
-# function _collect_unconnected_params(obj::AbstractCompositeComponentDef, connected::ParamVector, unconnected::ParamVector)
-#     for comp_def in compdefs(obj)
-#         _collect_unconnected_params(comp_def, connected, unconnected)
-#     end
-# end
 
 """
     unconnected_params(obj::AbstractCompositeComponentDef)
 
-Return a list of tuples (comp_path, param_name) of parameters
-that have not been connected to a value anywhere within `obj`.
+Return a list of ParameterDefReferences to parameters that have not been connected
+to a value.
 """
 function unconnected_params(obj::AbstractCompositeComponentDef)
-    unconnected = ParamVector()
-    connected = connected_params(obj)
-
-    _collect_unconnected_params(obj, connected, unconnected)
-    return unconnected
+    return setdiff(leaf_params(obj), connection_refs(obj))
 end
 
 """
@@ -361,7 +366,9 @@ to some other component to a value from a dictionary `parameters`. This method a
 the dictionary keys are strings that match the names of unset parameters in the model.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-    for (comp_path, param_name) in unconnected_params(md)
+    for param_ref in unconnected_params(md)
+        comp_path = pathof(param_ref)
+        param_name = nameof(param_ref)
         comp_def = compdef(md, comp_path)
         comp_name = nameof(comp_def)
 
@@ -393,16 +400,20 @@ function add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::Inte
     dirty!(obj)
 end
 
+#
+# These should all take ModelDef instead of AbstractCompositeComponentDef as 1st argument
+#
+
 # Find external param conns for a given comp
-function external_param_conns(obj::AbstractCompositeComponentDef, comp_path::ComponentPath)
+function external_param_conns(obj::ModelDef, comp_path::ComponentPath)
     return filter(x -> x.comp_path == comp_path, external_param_conns(obj))
 end
 
-function external_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
+function external_param_conns(obj::ModelDef, comp_name::Symbol)
     return external_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
-function external_param(obj::AbstractCompositeComponentDef, name::Symbol; missing_ok=false)
+function external_param(obj::ModelDef, name::Symbol; missing_ok=false)
     haskey(obj.external_params, name) && return obj.external_params[name]
 
     missing_ok && return nothing
@@ -410,12 +421,12 @@ function external_param(obj::AbstractCompositeComponentDef, name::Symbol; missin
     error("$name not found in external parameter list")
 end
 
-function add_external_param_conn!(obj::AbstractCompositeComponentDef, conn::ExternalParameterConnection)
+function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
     dirty!(obj)
 end
 
-function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::ModelParameter)
+function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
     # if haskey(obj.external_params, name)
     #     @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
     # end
@@ -424,12 +435,12 @@ function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, v
     return value
 end
 
-function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Number;
+function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
     set_external_scalar_param!(obj, name, value)
 end
 
-function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol,
+function set_external_param!(obj::ModelDef, name::Symbol,
                              value::Union{AbstractArray, AbstractRange, Tuple};
                              param_dims::Union{Nothing,Array{Symbol}} = nothing)
     ti = get_time_index_position(param_dims)
@@ -445,38 +456,38 @@ function set_external_param!(obj::AbstractCompositeComponentDef, name::Symbol,
 end
 
 """
-    set_external_array_param!(obj::AbstractCompositeComponentDef,
+    set_external_array_param!(obj::ModelDef,
                               name::Symbol, value::TimestepVector, dims)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
 `value` to the composite `obj`.  In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(obj::AbstractCompositeComponentDef,
+function set_external_array_param!(obj::ModelDef,
                                    name::Symbol, value::TimestepVector, dims)
     param = ArrayModelParameter(value, [:time])  # must be :time
     set_external_param!(obj, name, param)
 end
 
 """
-    set_external_array_param!(obj::AbstractCompositeComponentDef,
+    set_external_array_param!(obj::ModelDef,
                               name::Symbol, value::TimestepMatrix, dims)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the composite `obj`.  In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(obj::AbstractCompositeComponentDef,
+function set_external_array_param!(obj::ModelDef,
                                    name::Symbol, value::TimestepArray, dims)
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)
 end
 
 """
-    set_external_array_param!(obj::AbstractCompositeComponentDef,
+    set_external_array_param!(obj::ModelDef,
                               name::Symbol, value::AbstractArray, dims)
 
 Add an array type parameter `name` with value `value` and `dims` dimensions to the composite `obj`.
 """
-function set_external_array_param!(obj::AbstractCompositeComponentDef,
+function set_external_array_param!(obj::ModelDef,
                                    name::Symbol, value::AbstractArray, dims)
     numtype = Union{Missing, number_type(obj)}
 
@@ -489,11 +500,11 @@ function set_external_array_param!(obj::AbstractCompositeComponentDef,
 end
 
 """
-    set_external_scalar_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Any)
+    set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
 
 Add a scalar type parameter `name` with the value `value` to the composite `obj`.
 """
-function set_external_scalar_param!(obj::AbstractCompositeComponentDef, name::Symbol, value::Any)
+function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
     p = ScalarModelParameter(value)
     set_external_param!(obj, name, p)
 end
@@ -654,6 +665,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # add a connection between ConnectorComp and the external backup data
             add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
+            # TBD: first/last stuff may be deprecated
             src_comp_def = compdef(obj, conn.src_comp_path)
             set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def))
             set_param!(obj, conn_comp_name, :last, last_period(obj, src_comp_def))

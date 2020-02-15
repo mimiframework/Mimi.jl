@@ -380,54 +380,39 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
-# TBD: Used only by (unused) new_set_param!
-function comps_with_unbound_param(md::ModelDef, param_name::Symbol)
-    found = Vector{ComponentDef}()
-
-    for (comp_path, pname) in unconnected_params(md)
-        if pname == param_name
-            cd = find_comp(md, comp_path)
-            push!(found, cd)
-        end
-    end
-    return found
-end
-
 #
 # TBD: needs better name. Currently (2/4/2020) unused.
 #
-"""
-    new_set_param!(m::ModelDef, param_name::Symbol, value)
+# """
+#     new_set_param!(m::ModelDef, param_name::Symbol, value)
 
-Search all model components, find all unbound parameters named `param_name`, create
-external parameter called `param_name`, set its value to `value`, and create
-connections from the external unbound parameters named `param_name` to the new
-external parameter. If a prior external parameter `param_name` is found, raise error.
-"""
-function new_set_param!(md::ModelDef, param_name::Symbol, value)
-    comps = comps_with_unbound_param(md, param_name)
-    new_set_param!(md, comps, param_name, value)
-end
+# Search all model components, find all unbound parameters named `param_name`, create
+# external parameter called `param_name`, set its value to `value`, and create
+# connections from the external unbound parameters named `param_name` to the new
+# external parameter. If a prior external parameter `param_name` is found, raise error.
+# """
+# function new_set_param!(md::ModelDef, param_name::Symbol, value)
+#     comps = comps_with_unbound_param(md, param_name)
+#     new_set_param!(md, comps, param_name, value)
+# end
 
-function new_set_param!(md::ModelDef, comp_list::Vector{ComponentDef},
-                        param_name::Symbol, value)
-    pairs = [pathof(cd) => param_name for cd in comp_list]
-    new_set_param!(md, pairs, param_name, value)
-end
+# function new_set_param!(md::ModelDef, comp_list::Vector{ComponentDef},
+#                         param_name::Symbol, value)
+#     pairs = [pathof(cd) => param_name for cd in comp_list]
+#     new_set_param!(md, pairs, param_name, value)
+# end
 
-function new_set_param!(md::ModelDef, pairs::Vector{Pair{ComponentPath, Symbol}},
-                        ext_param_name::Symbol, value)
-    if length(pairs) > 0
-        param = set_external_param!(md, ext_param_name, value)
+# function new_set_param!(md::ModelDef, pairs::Vector{Pair{ComponentPath, Symbol}},
+#                         ext_param_name::Symbol, value)
+#     if length(pairs) > 0
+#         param = set_external_param!(md, ext_param_name, value)
 
-        # add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
-
-        for (comp_path, param_name) in pairs
-            connect_param!(md, comp_path, param_name, ext_param_name)
-        end
-    end
-    return nothing
-end
+#         for (comp_path, param_name) in pairs
+#             connect_param!(md, comp_path, param_name, ext_param_name)
+#         end
+#     end
+#     return nothing
+# end
 
 """
 Find and return a vector of tuples containing references to a ComponentDef and
@@ -455,103 +440,191 @@ function find_params(obj::ComponentDef, param_name::Symbol)
 end
 
 """
-    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath,
+    recurse(obj::AbstractComponentDef, f::Function, args...;
+            composite_only=false, depth_first=true)
+
+Generalized recursion functions for walking composite structures. The function `f`
+is called with the first argument a leaf or composite component, followed by any
+other arguments passed before the semi-colon delimiting keywords. Set `composite_only`
+to `true` if the function should be called only on composites, or `leaf_only` to
+call `f` only on leaf ComponentDefs.
+
+By default, the recursion is depth-first; set `depth_first=false`, to walk the
+structure breadth-first.
+
+For example, to collect all parameters defined in leaf ComponentDefs, do this:
+
+    `params = []
+     recurse(md, obj->append!(params, parameters(obj)); leaf_only=true)`
+"""
+function recurse(obj::AbstractCompositeComponentDef, f::Function, args...;
+                 composite_only=false, leaf_only=false, depth_first=true)
+
+    if (! leaf_only && ! depth_first)
+        f(obj, args...)
+    end
+
+    for child in compdefs(obj)
+        recurse(child, f, args...;
+                composite_only=composite_only, leaf_only=leaf_only,
+                depth_first=depth_first)
+    end
+
+    if (! leaf_only && depth_first)
+        f(obj, args...)
+    end
+
+    nothing
+end
+
+# Same thing, but for leaf ComponentDefs
+function recurse(obj::ComponentDef, f::Function, args...;
+    composite_only=false, leaf_only=false, depth_first=true)
+
+    composite_only || f(obj, args...)
+    nothing
+end
+
+function leaf_params(obj::AbstractCompositeComponentDef)
+    params = []
+    recurse(obj, x->append!(params, parameters(x)); leaf_only=true)
+
+    root = get_root(obj)
+    return [ParameterDefReference(nameof(param), root, pathof(param)) for param in params]
+end
+
+"""
+    # set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath,
+
+    set_param!(md::ModelDef, comp_path::ComponentPath,
                value_dict::Dict{Symbol, Any}, param_names)
 
 Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from
 `value_dict[param_name]`.
 """
-function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
+function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
+#function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
     for param_name in param_names
-        set_param!(obj, comp_name, value_dict, param_name)
+        set_param!(md, comp_name, value_dict, param_name)
     end
 end
 
 """
-    set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol,
+    # set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol,
+
+    set_param!(md::ModelDef, comp_path::ComponentPath, param_name::Symbol,
                value_dict::Dict{Symbol, Any}, dims=nothing)
 
 Call `set_param!()` with `param_name` and a value dict in which `value_dict[param_name]` references
 the value of parameter `param_name`.
 """
-function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any},
+function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, Any},
                     param_name::Symbol, dims=nothing)
     value = value_dict[param_name]
-    set_param!(obj, comp_name, param_name, value, dims)
+    set_param!(md, comp_name, param_name, value, dims)
 end
 
-function set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing)
-    # @info "set_param!($(obj.comp_id), $comp_path, $param_name, $value)"
-    comp = find_comp(obj, comp_path)
+# TBD: Deprecate?
+function set_param!(md::ModelDef, comp_path::ComponentPath,
+                    param_name::Symbol, value, dims=nothing)
+    # @info "set_param!($(md.comp_id), $comp_path, $param_name, $value)"
+    comp = find_comp(md, comp_path)
     @or(comp, error("Component with path $comp_path not found"))
-    set_param!(comp.parent, nameof(comp), param_name, value, dims)
+    # set_param!(comp.parent, nameof(comp), param_name, value, dims)
+    set_param!(md, nameof(comp), param_name, value, dims)
 end
 
-"""
-    set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
+# Deprecated
+# """
+#     # set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
-Set a parameter for a component with the given relative path (as a string), in which "/x" means the
-component with name `:x` beneath the root of the hierarchy in which `obj` is found. If the path does
-not begin with "/", it is treated as relative to `obj`.
-"""
-function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-    # @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
-    set_param!(obj, comp_path(obj, path), param_name, value, dims)
-end
+#     set_param!(md::ModelDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
-"""
-    set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
+# Set a parameter for a component with the given relative path (as a string), in which "/x" means the
+# component with name `:x` beneath the root of the hierarchy in which `obj` is found. If the path does
+# not begin with "/", it is treated as relative to `md`.
+# """
+# function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
+#     # @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
+#     set_param!(obj, comp_path(obj, path), param_name, value, dims)
+# end
 
-Set a parameter using a colon-delimited string to specify the component path (before the ":")
-and the param name (after the ":").
-"""
-function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
-    comp_path, param_name = split_datum_path(obj, path)
-    set_param!(obj, comp_path, param_name, value, dims)
-end
+# Deprecated
+# """
+#     set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
 
-"""
-    set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)
+# Set a parameter using a colon-delimited string to specify the component path (before the ":")
+# and the param name (after the ":").
+# """
+# function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
+#     comp_path, param_name = split_datum_path(obj, path)
+#     set_param!(obj, comp_path, param_name, value, dims)
+# end
 
-Set the value of a parameter exposed in `obj` by following the ParameterDefReference. This
-method cannot be used on composites that are subcomponents of another composite.
-"""
-function set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)
-    if obj.parent !== nothing
-        error("Parameter setting is supported only for top-level composites. $(obj.comp_path) is a subcomponent.")
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+    comp_def = compdef(md, comp_name)
+
+    has_parameter(comp_def, param_name) ||
+        error("Can't find parameter :$param_name in component $comp_name")
+
+    if ! has_parameter(md, param_name)
+        import_param!(md, param_name, comp_def => param_name)
+
+    elseif md[param_name] != comp_def[param_name]
+        error("Can't import parameter :$param_name; ModelDef has another item with this name")
     end
-    param_ref = obj[param_name]
-    set_param!(obj, param_ref.comp_path, param_ref.name, value, dims)
+
+    set_param!(md, param_name, value, dims)
 end
 
 """
-    set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, name::Symbol, value, dims=nothing)
+    # set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)
+    set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
 
-Set the parameter `name` of a component `comp_name` in a composite `obj` to a given `value`. The
-`value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a
-list of the dimension names of the provided data, and will be used to check that
-they match the model's index labels.
+Set the value of a parameter exposed in `md` by following the ParameterDefReference. If
+not found in the local namespace, import it if there is only one such parameter in md'same
+children, and it is not yet bound. Otherwise raise an error.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+
 """
-function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    # @info "set_param!($(obj.comp_id), $comp_name, $param_name, $value)"
-    # perform possible dimension and labels checks
+function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
+    if ! has_parameter(md, param_name)
+        # search components for this parameter
+        found = [pair for pair in components(md) if has_parameter(pair[2], param_name)]
+        count = length(found)
+        if count == 1
+            (pname, comp) = found[1]
+            @info "Found one child with $param_name to auto-import: $(comp.comp_id);$pname"
+            import_param!(md, param_name, comp => pname)
+
+        elseif count > 1
+            error("Can't set parameter :$param_name found in multiple components")
+        else # count == 0
+            error("Can't set parameter :$param_name; not found in ModelDef or children")
+        end
+    end
+
     if value isa NamedArray
         dims = dimnames(value)
     end
 
     if dims !== nothing
-        check_parameter_dimensions(obj, value, dims, param_name)
+        check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    comp_def = compdef(obj, comp_name)
-    comp_param_dims = parameter_dimensions(comp_def, param_name)
-    num_dims = length(comp_param_dims)
+    param_ref = md[param_name]
+    comp_def = compdef(param_ref)
+    param = dereference(param_ref)
+    param_dims = dim_names(param)
+    num_dims = length(param_dims)
 
-    param  = parameter(comp_def, param_name)
     data_type = param.datatype
-    dtype = Union{Missing, (data_type == Number ? number_type(obj) : data_type)}
+    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
 
-    if length(comp_param_dims) > 0
+    if num_dims > 0
 
         # convert the number type and, if NamedArray, convert to Array
         if dtype <: AbstractArray
@@ -560,12 +633,14 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             # check that number of dimensions matches
             value_dims = length(size(value))
             if num_dims != value_dims
-                error("Mismatched data size for a set parameter call: dimension :$param_name in $(comp_name) has $num_dims dimensions; indicated value has $value_dims dimensions.")
+                error("Mismatched data size for a set parameter call: dimension :$param_name",
+                      " in $(pathof(comp_def)) has $num_dims dimensions; indicated value",
+                      " has $value_dims dimensions.")
             end
             value = convert(Array{dtype, num_dims}, value)
         end
 
-        ti = get_time_index_position(obj, comp_name, param_name)
+        ti = get_time_index_position(param_dims)
 
         if ti !== nothing   # there is a time dimension
             T = eltype(value)
@@ -574,14 +649,14 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
                 values = value
             else
                 # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
-                first = first_period(obj, comp_def)
+                first = first_period(md, comp_def)
                 first === nothing && @warn "set_param!: first === nothing"
 
-                if isuniform(obj)
-                    stepsize = step_size(obj)
+                if isuniform(md)
+                    stepsize = step_size(md)
                     values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims, ti}(value)
                 else
-                    times = time_labels(obj)
+                    times = time_labels(md)
                     # use the first from the comp_def
                     first_index = findfirst(isequal(first), times)
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
@@ -591,16 +666,15 @@ function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param
             values = value
         end
 
-        set_external_array_param!(obj, param_name, values, comp_param_dims)
+        set_external_array_param!(md, param_name, values, param_dims)
 
     else # scalar parameter case
         value = convert(dtype, value)
-        set_external_scalar_param!(obj, param_name, value)
+        set_external_scalar_param!(md, param_name, value)
     end
 
     # connect_param! calls dirty! so we don't have to
-    # @info "Calling connect_param!($(printable(obj === nothing ? nothing : obj.comp_id)), $comp_name, $param_name)"
-    connect_param!(obj, comp_name, param_name, param_name)
+    connect_param!(md, comp_def, param_name, param_name)
     nothing
 end
 
@@ -797,6 +871,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     end
 
     # adjust paths to include new parent
+    # @info "_insert_comp: fixing comp path"
     _fix_comp_path!(comp_def, obj)
 
     # @info "parent obj comp_path: $(printable(obj.comp_path))"

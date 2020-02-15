@@ -85,7 +85,7 @@ function _parse(expr)
                 push!(regargs, :($cname => $(QuoteNode(pname))))
             end
         end
-        result = :(Mimi._import_param!(obj, $(QuoteNode(localparname)), $(regargs...);
+        result = :(Mimi.import_param!(obj, $(QuoteNode(localparname)), $(regargs...);
                                        $(keyargs...)))
 
     elseif @capture(expr, localvarname_ = Variable(varcomp_.varname_))
@@ -176,34 +176,23 @@ function import_params!(obj::AbstractCompositeComponentDef;
     unconn = unconnected_params(obj)
     params = parameters(obj)
 
-    # filter function to check if a parameter has been imported
-    function _imported(pair)
-        (path, name) = pair
-        comp = compdef(obj, path)
-        dr = datum_reference(comp, name)
-        return (dr in params)
-    end
-
     # remove imported params from list of unconnected params
-    filter!(!_imported, unconn)
+    filter!(param_ref -> !(param_ref in params), unconn)
 
     # verify that all explicit names are importable
     if names !== nothing
-        unconn_names = [name for (path, name) in unconn]
+        unconn_names = [nameof(param_ref) for param_ref in unconn]
         unknown = setdiff(names, unconn_names)
         if ! isempty(unknown)
             @error "Can't import names $unknown as these are not unconnected params"
         end
     end
 
-    # returns a Vector{ParamPath}, which are Tuple{ComponentPath, Symbol}
-    for (path, name) in unconn
-        @info "importing ($path, :$name) to $(obj.comp_id)"
-
-        comp = compdef(obj, path)
-
+    for param_ref in unconn
+        # @info "importing $param_ref to $(obj.comp_id)"
+        name = nameof(param_ref)
         if names === nothing || name in names
-            obj[name] = datum_reference(comp, name)
+            obj[name] = param_ref
         end
     end
 end
@@ -220,11 +209,11 @@ function _find_param_ref(obj, dr)
     nothing
 end
 
-function _import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
+function import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
                         pairs::Pair...; kwargs...)
 
     print_pairs = [(comp.comp_id, name) for (comp, name) in pairs]
-    @info "_import_param!($(obj.comp_id), :$localname, $print_pairs)"
+    # @info "import_param!($(obj.comp_id), :$localname, $print_pairs)"
 
     for (comp, pname) in pairs
 
@@ -244,10 +233,11 @@ function _import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
             key = :allow_overwrite
             if old_name === nothing || (haskey(kwargs, key) && kwargs[key])
                 # import the parameter from the given component
-                obj[localname] = datum_reference(newcomp, pname)
+                obj[localname] = dr = datum_reference(newcomp, pname)
+                # @info "import_param! created dr $dr"
             else
-                error("Duplicate import of $dr as $localname, already imported as $old_name. "
-                    * "To allow duplicates, use Parameter($(nameof(comp)).$pname; :$key=True)")
+                error("Duplicate import of $dr as $localname, already imported as $old_name. ",
+                      "To allow duplicates, use Parameter($(nameof(comp)).$pname; :$key=True)")
             end
         end
     end
@@ -259,7 +249,7 @@ end
 #
 function _import_var!(obj::AbstractCompositeComponentDef, localname::Symbol,
                       comp::AbstractComponentDef, vname::Symbol)
-    @info "_import_var!($(obj.comp_id), $localname, $(comp.comp_id), $vname):"
+    # @info "_import_var!($(obj.comp_id), $localname, $(comp.comp_id), $vname):"
 
     obj[localname] = datum_reference(comp, vname)
 end

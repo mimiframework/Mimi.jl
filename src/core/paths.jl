@@ -31,52 +31,47 @@ for ParameterDefs and VariableDefs.
 function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     parent_path = pathof(parent)
     child.comp_path = child_path = ComponentPath(parent_path, child.name)
-    @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
+    # @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
 
     # First, fix up child's namespace objs. We later recurse down the hierarchy.
-    ns = child.namespace
     root = get_root(parent)
-
-    for (name, ref) in ns
-        if ref isa AbstractDatumReference
-            T = typeof(ref)
-            new_path = joinpath(parent_path, ref.comp_path)
-            ns[name] = new_ref = T(ref.name, root, new_path)
-            # @info "old ref: $ref, new: $new_ref"
-        end
-    end
 
     # recursively reset all comp_paths to their abspath equivalent
     if is_composite(child)
         # do same recursively
         for grandchild in compdefs(child)
+            # @info "recursively fixing comp path: child: $(pathof(child)), grandchild: $(pathof(grandchild))"
             _fix_comp_path!(grandchild, child)
         end
 
         # Fix internal param conns
         conns = child.internal_param_conns
         for (i, conn) in enumerate(conns)
-            src_path = ComponentPath(child_path, conn.src_comp_path)
-            dst_path = ComponentPath(child_path, conn.dst_comp_path)
+            src_path = ComponentPath(child_path, tail(conn.src_comp_path))
+            dst_path = ComponentPath(child_path, tail(conn.dst_comp_path))
 
             # @info "Resetting IPC src in $child_path from $(conn.src_comp_path) to $src_path"
             # @info "Resetting IPC dst in $child_path from $(conn.dst_comp_path) to $dst_path"
 
             # InternalParameterConnections are immutable, but the vector holding them is not
-            conns[i] = InternalParameterConnection(src_path, conn.src_var_name, dst_path, conn.dst_par_name,
-                                                   conn.ignoreunits, conn.backup; offset=conn.offset)
+            conns[i] = InternalParameterConnection(src_path, conn.src_var_name,
+                                                   dst_path, conn.dst_par_name,
+                                                   conn.ignoreunits, conn.backup;
+                                                   offset=conn.offset)
         end
 
-        # Fix external param conns
-        conns = child.external_param_conns
-        for (i, conn) in enumerate(conns)
-            path = ComponentPath(parent_path, conn.comp_path)
-            # @info "Resetting EPC $child_path from $(conn.comp_path) to $path"
-
-            conns[i] = ExternalParameterConnection(path, conn.param_name, conn.external_param)
+        for (name, ref) in ns(child)
+            if ref isa AbstractDatumReference
+                T = typeof(ref)
+                # @info "parent_path: $parent_path ref.comp_path: $(ref.comp_path)"
+                ref_comp = find_comp(parent, ref.comp_path)
+                child[name] = new_ref = T(ref.name, root, pathof(ref_comp))
+                # @info "new path: $(new_ref.comp_path)"
+            end
         end
     else
         for datum in [variables(child)..., parameters(child)...]
+            # @info "Resetting leaf IPC from $(datum.comp_path) to $child_path"
             datum.comp_path = child_path
         end
     end

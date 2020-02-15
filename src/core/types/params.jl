@@ -78,3 +78,6 @@ end
 function ExternalParameterConnection(comp_name::Symbol, param_name::Symbol, external_param::Symbol)
     return ExternalParameterConnection(ComponentPath(comp_name), param_name, external_param)
 end
+
+Base.pathof(obj::ExternalParameterConnection) = obj.comp_path
+Base.nameof(obj::ExternalParameterConnection) = obj.param_name

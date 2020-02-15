@@ -22,7 +22,7 @@ macro defmodel(model_name, ex)
             global $model_name = Model()
         end
     )
-    
+
     # helper function used in loop below
     function addexpr(expr)
         let_block = result.args[end].args
@@ -36,7 +36,7 @@ macro defmodel(model_name, ex)
                          component(comp_mod_name_.comp_name_, alias_) | component(comp_name_, alias_))
 
             # set local copy of comp_mod_name to the stated or default component module
-            expr = (comp_mod_name === nothing ? :(comp_mod_obj = calling_module) # nameof(calling_module)) 
+            expr = (comp_mod_name === nothing ? :(comp_mod_obj = calling_module) # nameof(calling_module))
                                               # TBD: This may still not be right:
                                               : :(comp_mod_obj = getfield(calling_module, $(QuoteNode(comp_mod_name)))))
             addexpr(expr)
@@ -54,19 +54,15 @@ macro defmodel(model_name, ex)
 
             expr = :(Mimi.connect_param!($model_name,
                                          $(QuoteNode(dst_comp)), $(QuoteNode(dst_name)),
-                                         $(QuoteNode(src_comp)), $(QuoteNode(src_name)), 
+                                         $(QuoteNode(src_comp)), $(QuoteNode(src_name)),
                                          offset=$offset))
 
         elseif @capture(elt, index[idx_name_] = rhs_)
             expr = :(Mimi.set_dimension!($model_name, $(QuoteNode(idx_name)), $rhs))
 
-        # elseif @capture(elt, comp_name_.param_name_ = rhs_)
-        #     expr = :(Mimi.set_param!($model_name, $(QuoteNode(comp_name)), $(QuoteNode(param_name)), $rhs))
-
         elseif @capture(elt, lhs_ = rhs_) && @capture(lhs, comp_.name_)
             (path, param_name) = parse_dotted_symbols(lhs)
             expr = :(Mimi.set_param!($model_name, $path, $(QuoteNode(param_name)), $rhs))
-            # @info "expr: $expr"
 
         else
             # Pass through anything else to allow the user to define intermediate vars, etc.
