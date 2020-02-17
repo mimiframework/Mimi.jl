@@ -595,12 +595,12 @@ model's index labels.
 function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     if ! has_parameter(md, param_name)
         # search components for this parameter
-        found = [pair for pair in components(md) if has_parameter(pair[2], param_name)]
+        found = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
         count = length(found)
         if count == 1
-            (pname, comp) = found[1]
-            @info "Found one child with $param_name to auto-import: $(comp.comp_id);$pname"
-            import_param!(md, param_name, comp => pname)
+            comp = found[1]
+            @info "Found one child with $param_name to auto-import: $(comp.comp_id)"
+            import_param!(md, param_name, comp => param_name)
 
         elseif count > 1
             error("Can't set parameter :$param_name found in multiple components")
