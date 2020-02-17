@@ -147,7 +147,9 @@ function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
 end
 
 function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
-    haskey(obj.namespace, name) || error("Item :$name was not found in component $(obj.comp_path)")
+    if ! haskey(obj.namespace, name)
+        error("Item :$name was not found in component $(obj.comp_path)")
+    end
     item = obj[name]
     item isa T || error(":$name in component $(obj.comp_path) is a $(typeof(item)); expected type $T")
     return item

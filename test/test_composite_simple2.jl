@@ -40,10 +40,12 @@ top = md[:Top]
 inter = top[:Intermediate]
 leaf = inter[:Leaf]
 
-set_param!(m, :Top, :p, 10)
+#set_param!(m, :Top, :p, 10)
 
-# import_params!(m)
-# set_param!(m, :p, 10)
+import_params!(m)
+# use m.md to avoid delegate macro in debugger
+set_param!(m.md, :p, 10)
+
 build(m)
-
+run(m)
 #end
