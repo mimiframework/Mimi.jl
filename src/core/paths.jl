@@ -64,11 +64,18 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
             if ref isa AbstractDatumReference
                 T = typeof(ref)
                 # @info "parent_path: $parent_path ref.comp_path: $(ref.comp_path)"
-                ref_comp = find_comp(parent, ref.comp_path)
+                ref_comp = find_comp(parent, pathof(ref))
                 child[name] = new_ref = T(ref.name, root, pathof(ref_comp))
                 # @info "new path: $(new_ref.comp_path)"
             end
         end
+
+        defaults = child.defaults
+        for (i, ref) in enumerate(defaults)
+            ref_comp = find_comp(parent, pathof(ref))
+            defaults[i] = ParameterDefReference(ref.name, root, pathof(ref_comp), ref.default)
+        end
+
     else
         for datum in [variables(child)..., parameters(child)...]
             # @info "Resetting leaf IPC from $(datum.comp_path) to $child_path"

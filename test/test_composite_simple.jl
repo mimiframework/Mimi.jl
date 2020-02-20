@@ -33,12 +33,12 @@ end
     Component(Comp2)
 
     foo1 = Parameter(Comp1.foo)
-    foo2 = Parameter(Comp2.foo)
+    foo2 = Parameter(Comp2.foo, default=100)
 
     connect(Comp2.par_2_1, Comp1.var_1_1)
 end
 
-@defcomposite top begin
+@defcomposite Top begin
     Component(A)
 
     fooA1 = Parameter(A.foo1)
@@ -50,10 +50,13 @@ md = m.md
 
 set_dimension!(m, :time, 2005:2020)
 
-top_ref = add_comp!(m, top, nameof(top))
-top_comp = compdef(top_ref)
+add_comp!(m, Top)
+top = md[:Top]
 
-set_param!(m, :top, :fooA1, 10)
+set_param!(m, :Top, :fooA1, 10)
+
+import_params!(m)
+set_param!(m, :par_1_1, 1:16)
 
 build(m)
 run(m)

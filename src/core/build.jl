@@ -105,18 +105,18 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
 
     for conn in conns
         ipc = dereferenced_conn(md, conn)
-        @info "src_comp_path: $(ipc.src_comp_path)"
+        # @info "src_comp_path: $(ipc.src_comp_path)"
         src_vars = var_dict[ipc.src_comp_path]
-        @info "src_vars: $src_vars, name: $(ipc.src_var_name)"
+        # @info "src_vars: $src_vars, name: $(ipc.src_var_name)"
         var_value_obj = get_property_obj(src_vars, ipc.src_var_name)
         pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
-        @info "internal conn: $(ipc.src_comp_path):$(ipc.src_var_name) => $(ipc.dst_comp_path):$(ipc.dst_par_name)"
+        # @info "internal conn: $(ipc.src_comp_path):$(ipc.src_var_name) => $(ipc.dst_comp_path):$(ipc.dst_par_name)"
     end
 
     for epc in external_param_conns(md)
         param = external_param(md, epc.external_param)
         pdict[(epc.comp_path, epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
-        @info "external conn: $(pathof(epc)).$(nameof(epc)) => $(param)"
+        # @info "external conn: $(pathof(epc)).$(nameof(epc)) => $(param)"
     end
 
     # Make the external parameter connections for the hidden ConnectorComps.
@@ -177,12 +177,47 @@ function _build(comp_def::AbstractCompositeComponentDef,
     return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
 
+"""
+    _set_defaults!(md::ModelDef)
+
+Look for default values for any unset parameters and set those values. The
+depth-first search starts stores results in a dict, so higher-level settings
+(i.e., closer to ModelDef in the hierarchy) overwrite lower-level ones.
+"""
+function _set_defaults!(md::ModelDef)
+    not_set = unconnected_params(md)
+    isempty(not_set) && return
+
+    d = Dict()
+    function _store_defs(obj)
+        for ref in obj.defaults
+            d[(pathof(ref), nameof(ref))] = ref.default
+        end
+    end
+    recurse(md, _store_defs; composite_only=true)
+
+    for ref in not_set
+        param = dereference(ref)
+        path = pathof(param)
+        name = nameof(param)
+        key = (path, name)
+        value = get(d, key, missing)
+        if value !== missing
+            #@info "Setting default for :$name in $path to $value"
+            set_param!(md, path, name, value)
+        end
+    end
+end
+
 function _build(md::ModelDef)
     # import any unconnected params into ModelDef
     import_params!(md)
 
     # @info "_build(md)"
     add_connector_comps!(md)
+
+    # apply defaults to unset parameters
+    _set_defaults!(md)
 
     # check if all parameters are set
     not_set = unconnected_params(md)
@@ -209,9 +244,6 @@ function _build(md::ModelDef)
 end
 
 function build(m::Model)
-    # fix paths and propagate imports
-    # fix_comp_paths!(m.md)
-
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
     m.mi = _build(md)

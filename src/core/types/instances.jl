@@ -179,33 +179,6 @@ function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
 
     comps_dict = Dict([comp.comp_name => comp for comp in comps])
 
-    # for (name, item) in comp_def.namespace
-    #     # Skip component references
-    #     item isa AbstractComponentDef && continue
-
-    #     # if ! item isa VariableDefReference
-    #     #     item =
-
-    #     datum_comp = find_comp(dr)
-    #     datum_name = nameof(dr)
-    #     ci = comps_dict[nameof(datum_comp)]
-
-    #     datum = (is_parameter(dr) ? ci.parameters : ci.variables)
-    #     d = (is_parameter(dr) ? pdict : vdict)
-
-    #     # Find the position of the desired field in the named tuple
-    #     # so we can extract it's datatype.
-    #     pos = findfirst(isequal(datum_name), names(datum))
-    #     datatypes = types(datum)
-    #     dtype = datatypes[pos]
-    #     value = getproperty(datum, datum_name)
-
-    #     push!(d[:names],  export_name)
-    #     push!(d[:types],  dtype)
-    #     push!(d[:values], value)
-    #     push!(d[:paths],  dr.comp_path)
-    # end
-
     vars = ComponentInstanceVariables(Vector{Symbol}(vdict[:names]), Vector{DataType}(vdict[:types]),
                                       Vector{Any}(vdict[:values]), Vector{ComponentPath}(vdict[:paths]))
 

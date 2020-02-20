@@ -144,6 +144,9 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
 
+    # store default values at the composite level until ModelDef is built
+    defaults::Vector{ParameterDefReference}
+
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
     function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}=nothing)
@@ -158,6 +161,7 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
         self.comp_path = ComponentPath(self.name)
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.backups = Vector{Symbol}()
+        self.defaults = Vector{ParameterDefReference}()
         self.sorted_comps = nothing
     end
 end
@@ -230,7 +234,7 @@ Base.parent(comp_ref::AbstractComponentReference) = getfield(comp_ref, :parent)
 Base.pathof(comp_ref::AbstractComponentReference) = getfield(comp_ref, :comp_path)
 
 function ComponentReference(parent::AbstractComponentDef, name::Symbol)
-    return ComponentReference(parent, ComponentPath(parent.comp_path, name))
+    return ComponentReference(parent, ComponentPath(pathof(parent), name))
 end
 
 # A container for a variable within a component, to improve connect_param! aesthetics,
@@ -240,3 +244,26 @@ end
 end
 
 var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)
+
+#
+# This is a bit funky, but necessary. Since we override the getproperty function
+# on reference objects to access values held in data structures, the methods that
+# Classes generates cannot use simple dot operators. Thus, we override them here.
+# This creates a maintenance issue, but it's not clear how best to solve this...
+#
+# On second thought, this breaks incremental compilation... sigh.
+#
+# function ComponentReference(_self::T, parent::AbstractComponentDef,
+#                             comp_path::ComponentPath) where  T <: AbstractComponentReference
+#     setfield!(_self, :parent, parent)
+#     setfield!(_self, :comp_path, comp_path)
+#     _self
+# end
+
+# function VariableReference(_self::T, parent::AbstractComponentDef, comp_path::ComponentPath,
+#                            var_name::Symbol) where T <: AbstractVariableReference
+#     setfield!(_self, :parent, parent)
+#     setfield!(_self, :comp_path, comp_path)
+#     setfield!(_self, :var_name, var_name)
+#     _self
+# end

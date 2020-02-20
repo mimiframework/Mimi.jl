@@ -306,6 +306,12 @@ function param_ref(obj::AbstractCompositeComponentDef, conn::InternalParameterCo
     return datum_reference(comp, conn.dst_par_name)
 end
 
+function param_ref(md::ModelDef, conn::ExternalParameterConnection)
+    comp = find_comp(md, pathof(conn))
+    comp !== nothing || error("Can't find $(pathof(conn)) from $(md.comp_id)")
+    return datum_reference(comp, nameof(conn))
+end
+
 """
     dereferenced_conn(obj::AbstractCompositeComponentDef,
                       conn::InternalParameterConnection)
@@ -345,6 +351,10 @@ function connection_refs(obj::AbstractCompositeComponentDef)
     end
 
     recurse(obj, _add_conns; composite_only=true)
+
+    if obj isa ModelDef
+        append!(refs, [param_ref(obj, epc) for epc in external_param_conns(obj)])
+    end
     return refs
 end
 

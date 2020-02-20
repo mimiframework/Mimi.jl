@@ -496,24 +496,19 @@ function leaf_params(obj::AbstractCompositeComponentDef)
 end
 
 """
-    # set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath,
-
-    set_param!(md::ModelDef, comp_path::ComponentPath,
+    set_param!(md::ModelDef, comp_name::Symbol,
                value_dict::Dict{Symbol, Any}, param_names)
 
 Call `set_param!()` for each name in `param_names`, retrieving the corresponding value from
 `value_dict[param_name]`.
 """
 function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
-#function set_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, value_dict::Dict{Symbol, Any}, param_names)
     for param_name in param_names
         set_param!(md, comp_name, value_dict, param_name)
     end
 end
 
 """
-    # set_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol,
-
     set_param!(md::ModelDef, comp_path::ComponentPath, param_name::Symbol,
                value_dict::Dict{Symbol, Any}, dims=nothing)
 
@@ -526,53 +521,41 @@ function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, An
     set_param!(md, comp_name, param_name, value, dims)
 end
 
-# TBD: Deprecate?
 function set_param!(md::ModelDef, comp_path::ComponentPath,
                     param_name::Symbol, value, dims=nothing)
     # @info "set_param!($(md.comp_id), $comp_path, $param_name, $value)"
-    comp = find_comp(md, comp_path)
-    @or(comp, error("Component with path $comp_path not found"))
+    comp_def = find_comp(md, comp_path)
+    @or(comp_def, error("Component with path $comp_path not found"))
     # set_param!(comp.parent, nameof(comp), param_name, value, dims)
-    set_param!(md, nameof(comp), param_name, value, dims)
+    set_param!(md, comp_def, param_name, value, dims)
 end
-
-# Deprecated
-# """
-#     # set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-
-#     set_param!(md::ModelDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-
-# Set a parameter for a component with the given relative path (as a string), in which "/x" means the
-# component with name `:x` beneath the root of the hierarchy in which `obj` is found. If the path does
-# not begin with "/", it is treated as relative to `md`.
-# """
-# function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, param_name::Symbol, value, dims=nothing)
-#     # @info "set_param!($(obj.comp_id), $path, $param_name, $value)"
-#     set_param!(obj, comp_path(obj, path), param_name, value, dims)
-# end
-
-# Deprecated
-# """
-#     set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
-
-# Set a parameter using a colon-delimited string to specify the component path (before the ":")
-# and the param name (after the ":").
-# """
-# function set_param!(obj::AbstractCompositeComponentDef, path::AbstractString, value, dims=nothing)
-#     comp_path, param_name = split_datum_path(obj, path)
-#     set_param!(obj, comp_path, param_name, value, dims)
-# end
 
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
     comp_def = compdef(md, comp_name)
+    @or(comp_def, error("Top-level component with name $comp_name not found"))
+    set_param!(md, comp_def, param_name, value, dims)
+end
 
+"""
+Compare two items, each of which must be either a ParameterDef or ParameterDefReference,
+to see if they refer to the same ultimate parameter.
+"""
+function _is_same_param(p1::Union{ParameterDef, ParameterDefReference},
+                        p2::Union{ParameterDef, ParameterDefReference})
+    p1 = (p1 isa ParameterDefReference ? dereference(p1) : p1)
+    p2 = (p2 isa ParameterDefReference ? dereference(p2) : p2)
+    return p1 == p2
+end
+
+function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol,
+                    value, dims=nothing)
     has_parameter(comp_def, param_name) ||
-        error("Can't find parameter :$param_name in component $comp_name")
+        error("Can't find parameter :$param_name in component $(pathof(comp_def))")
 
     if ! has_parameter(md, param_name)
         import_param!(md, param_name, comp_def => param_name)
 
-    elseif md[param_name] != comp_def[param_name]
+    elseif ! _is_same_param(md[param_name], comp_def[param_name])
         error("Can't import parameter :$param_name; ModelDef has another item with this name")
     end
 
@@ -599,7 +582,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
         count = length(found)
         if count == 1
             comp = found[1]
-            @info "Found one child with $param_name to auto-import: $(comp.comp_id)"
+            # @info "Found one child with $param_name to auto-import: $(comp.comp_id)"
             import_param!(md, param_name, comp => param_name)
 
         elseif count > 1
@@ -676,7 +659,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     end
 
     # connect_param! calls dirty! so we don't have to
-    connect_param!(md, comp_def, param_name, param_name)
+    connect_param!(md, comp_def, nameof(param_ref), param_name)
     nothing
 end
 
@@ -928,6 +911,20 @@ function propagate_time!(obj::AbstractComponentDef, t::Dimension)
     end
 end
 
+# Save the default value for a parameter, which is applied, if needed, at build time.
+function save_default!(obj::AbstractCompositeComponentDef, comp::AbstractComponentDef,
+                       param::ParameterDef)
+    root = get_root(obj)
+    path = pathof(comp)
+    name = nameof(param)
+    save_default!(obj, ParameterDefReference(name, root, path, param.default))
+end
+
+function save_default!(obj::AbstractCompositeComponentDef, ref::ParameterDefReference)
+    push!(obj.defaults, ref)
+    nothing
+end
+
 """
     add_comp!(
         obj::AbstractCompositeComponentDef,
@@ -975,8 +972,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     if is_leaf(comp_def)
         for param in parameters(comp_def)
             if param.default !== nothing
-                #x = printable(obj === nothing ? "obj==nothing" : obj.comp_id)
-                set_param!(obj, comp_name, nameof(param), param.default)
+                save_default!(obj, comp_def, param)
             end
         end
     end

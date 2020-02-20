@@ -49,6 +49,33 @@ function _typecheck(obj, expected_type, msg)
     obj isa expected_type || error("$msg must be a $expected_type; got $(typeof(obj)): $obj")
 end
 
+"""
+    parse_dotted_symbols(expr)
+
+Parse and expression like `a.b.c.d` and return the tuple `(ComponentPath(:a, :b, :c), :d)`,
+or `nothing` if the expression is not a series of dotted symbols.
+"""
+function parse_dotted_symbols(expr)
+    global Args = expr
+    syms = Symbol[]
+
+    ex = expr
+    while @capture(ex, left_.right_) && right isa Symbol
+        push!(syms, right)
+        ex = left
+    end
+
+    if ex isa Symbol
+        push!(syms, ex)
+    else
+        return nothing
+    end
+
+    syms = reverse(syms)
+    datum_name = pop!(syms)
+    return ComponentPath(syms), datum_name
+end
+
 #
 # Convert @defcomposite "shorthand" statements into Mimi API calls
 #
@@ -88,15 +115,20 @@ function _parse(expr)
         result = :(Mimi.import_param!(obj, $(QuoteNode(localparname)), $(regargs...);
                                        $(keyargs...)))
 
-    elseif @capture(expr, localvarname_ = Variable(varcomp_.varname_))
+    elseif @capture(expr, localvarname_ = Variable(datum_expr_))
+        if ((tup = parse_dotted_symbols(datum_expr)) === nothing)
+            error("In @defcomposite's Variable(x), x must a Symbol or ",
+                  "a dotted series of Symbols. Got :($datum_expr)")
+        end
+        comppath, varname = tup
+        # @info "Variable: $comppath, :$varname"
         _typecheck(localvarname, Symbol, "Local variable name")
-        _typecheck(varcomp, Symbol, "Name of referenced component")
+        _typecheck(comppath, ComponentPath, "The referenced component")
         _typecheck(varname, Symbol, "Name of referenced variable")
 
         # import from the added copy of the component, not the template -- thus
         # the lookup of obj[varcomp].
-        result = :(Mimi._import_var!(obj, $(QuoteNode(localvarname)),
-                                     obj[$(QuoteNode(varcomp))],
+        result = :(Mimi._import_var!(obj, $(QuoteNode(localvarname)), $comppath,
                                      $(QuoteNode(varname))))
 
     elseif @capture(expr, connect(parcomp_.parname_, varcomp_.varname_))
@@ -200,9 +232,9 @@ end
 # Return the local name of an already-imported parameter, or nothing if not found
 function _find_param_ref(obj, dr)
     for (name, param_ref) in param_dict(obj)
-        @info "Comparing refs $param_ref == $dr"
+        # @info "Comparing refs $param_ref == $dr"
         if param_ref == dr
-            @info "Found prior import to $dr named $name"
+            # @info "Found prior import to $dr named $name"
             return name
         end
     end
@@ -239,45 +271,27 @@ function import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
                 error("Duplicate import of $dr as $localname, already imported as $old_name. ",
                       "To allow duplicates, use Parameter($(nameof(comp)).$pname; :$key=True)")
             end
+
+            if haskey(kwargs, :default)
+                root =  get_root(obj)
+                ref = ParameterDefReference(pname, root, pathof(newcomp), kwargs[:default])
+                save_default!(obj, ref)
+            end
         end
     end
 end
 
-#
-# Import a variable from the given subcomponent
-# TBD: add check for duplicate import.
-#
+"""
+Import a variable from the given subcomponent
+"""
 function _import_var!(obj::AbstractCompositeComponentDef, localname::Symbol,
-                      comp::AbstractComponentDef, vname::Symbol)
-    # @info "_import_var!($(obj.comp_id), $localname, $(comp.comp_id), $vname):"
+                      path::ComponentPath, vname::Symbol)
+    if haskey(obj, localname)
+        error("Can't import variable; :$localname already exists in component $(obj.comp_id)")
+    end
 
+    comp = @or(find_comp(obj, path), error("$path not found from component $(obj.comp_id)"))
     obj[localname] = datum_reference(comp, vname)
-end
-
-
-const NumericArray = Array{T, N} where {T <: Number, N}
-
-# Convert an expr like `a.b.c.d` to `[:a, :b, :c, :d]`
-function parse_dotted_symbols(expr)
-    global Args = expr
-    syms = Symbol[]
-
-    ex = expr
-    while @capture(ex, left_.right_) && right isa Symbol
-        push!(syms, right)
-        ex = left
-    end
-
-    if ex isa Symbol
-        push!(syms, ex)
-    else
-        # @warn "Expected Symbol or Symbol.Symbol..., got $expr"
-        return nothing
-    end
-
-    syms = reverse(syms)
-    var_or_par = pop!(syms)
-    return ComponentPath(syms), var_or_par
 end
 
 nothing

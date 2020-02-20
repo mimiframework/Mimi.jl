@@ -40,12 +40,18 @@ top = md[:Top]
 inter = top[:Intermediate]
 leaf = inter[:Leaf]
 
-# Can do this, referencing :p in Top,
-#set_param!(m, :Top, :p, 10)
-
-# Or, import into model and reference it there
-import_params!(m)
-set_param!(m, :p, 10)
+#
+# Two ways to set a value in a subcomponent of the ModelDef:
+#
+use_import = false
+if use_import
+    # import into model and reference it there
+    import_params!(m)
+    set_param!(m, :p, 10)
+else
+    # or, reference :p in Top,
+    set_param!(m, :Top, :p, 10)
+end
 
 build(m)
 run(m)

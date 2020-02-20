@@ -61,6 +61,8 @@ set_dimension!(m, :time, 2005:2020)
     foo1 = Parameter(Comp1.foo)
     foo2 = Parameter(Comp2.foo)
 
+    var_2_1 = Variable(Comp2.var_2_1)
+
     connect(Comp2.par_2_1, Comp1.var_1_1)
     connect(Comp2.par_2_2, Comp1.var_1_1)
 end
@@ -71,6 +73,8 @@ end
 
     foo3 = Parameter(Comp3.foo)
     foo4 = Parameter(Comp4.foo)
+
+    var_3_1 = Variable(Comp3.var_3_1)
 end
 
 @defcomposite top begin
@@ -83,6 +87,11 @@ end
     Component(B)
     foo3 = Parameter(B.foo3)
     foo4 = Parameter(B.foo4)
+
+    var_3_1 = Variable(B.Comp3.var_3_1)
+
+    connect(B.par_3_1, A.var_2_1)
+    connect(B.par_4_1, B.var_3_1)
 end
 
 # We have created the following composite structure:
@@ -112,36 +121,20 @@ c2 = md[:top][:A][:Comp2]
 c3 = find_comp(md, "/top/B/Comp3")
 @test c3.comp_id == Comp3.comp_id
 
-set_param!(m, "/top/A/Comp1:foo", 1)
-set_param!(m, "/top/A/Comp2:foo", 2)
+set_param!(m, :fooA1, 1)
+set_param!(m, :fooA2, 2)
 
 # TBD: default values set in @defcomp are not working...
 # Also, external_parameters are stored in the parent, so both of the
 # following set parameter :foo in "/top/B", with 2nd overwriting 1st.
-set_param!(m, "/top/B/Comp3:foo", 10)
-set_param!(m, "/top/B/Comp4:foo", 20)
+set_param!(m, :foo3, 10)
+set_param!(m, :foo4, 20)
 
-set_param!(m, "/top/A/Comp1", :par_1_1, collect(1:length(time_labels(md))))
-
-# connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
-# connect_param!(m, "/top/A/Comp2:par_2_2", "/top/A/Comp1:var_1_1")
-connect_param!(m, "/top/B/Comp3:par_3_1", "/top/A/Comp2:var_2_1")
-connect_param!(m, "/top/B/Comp4:par_4_1", "/top/B/Comp3:var_3_1")
+set_param!(m, :par_1_1, collect(1:length(time_labels(md))))
 
 build(m)
 
 run(m)
-
-#
-# TBD
-#
-# 1. Create parallel structure of exported vars/pars in Instance hierarchy?
-#    - Perhaps just a dict mapping local name to a component path under mi, to where the var actually exists
-# 2. Be able to connect to the leaf version of vars/pars or by specifying exported version below the compdef
-#    given as first arg to connect_param!().
-# 3. set_param!() should work with relative path from any compdef.
-# 4. set_param!() stores external_parameters in the parent object, creating namespace conflicts between comps.
-#    Either store these in the leaf or store them with a key (comp_name, param_name)
 
 mi = m.mi
 
@@ -174,6 +167,5 @@ using Mimi
 m2 = TestComposite.m2
 md2 = m2.md
 top2 = Mimi.find_comp(md2, :top2)
-
 
 nothing

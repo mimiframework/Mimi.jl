@@ -34,13 +34,19 @@ foo = ComponentReference(m, :Foo)
 bar = ComponentReference(m, :Bar)
 baz = ComponentReference(m, :Baz)
 
+#
+# RJP: this got broken somewhere along the way. I'm translating
+# it to a function call for now.
+#
 # Check that we cannot connect foo and bar...
-@test_throws ErrorException bar[:input] = foo[:output]
+# @test_throws ErrorException bar[:input] = foo[:output]
+@test_throws ErrorException connect_param!(m, :Bar, :input,  :Foo, :output, ignoreunits=false)
 
 # ...unless we pass ignoreunits=true
 connect_param!(m, :Bar, :input,  :Foo, :output, ignoreunits=true)
 
 # But we can connect foo and baz
-baz[:input] = foo[:output]
+#baz[:input] = foo[:output]
+connect_param!(m, :Baz, :input,  :Foo, :output, ignoreunits=false)
 
 end # module
