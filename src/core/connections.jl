@@ -515,8 +515,8 @@ end
 Add a scalar type parameter `name` with the value `value` to the composite `obj`.
 """
 function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
-    p = ScalarModelParameter(value)
-    set_external_param!(obj, name, p)
+    param = ScalarModelParameter(value)
+    set_external_param!(obj, name, param)
 end
 
 """

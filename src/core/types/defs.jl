@@ -244,26 +244,3 @@ end
 end
 
 var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)
-
-#
-# This is a bit funky, but necessary. Since we override the getproperty function
-# on reference objects to access values held in data structures, the methods that
-# Classes generates cannot use simple dot operators. Thus, we override them here.
-# This creates a maintenance issue, but it's not clear how best to solve this...
-#
-# On second thought, this breaks incremental compilation... sigh.
-#
-# function ComponentReference(_self::T, parent::AbstractComponentDef,
-#                             comp_path::ComponentPath) where  T <: AbstractComponentReference
-#     setfield!(_self, :parent, parent)
-#     setfield!(_self, :comp_path, comp_path)
-#     _self
-# end
-
-# function VariableReference(_self::T, parent::AbstractComponentDef, comp_path::ComponentPath,
-#                            var_name::Symbol) where T <: AbstractVariableReference
-#     setfield!(_self, :parent, parent)
-#     setfield!(_self, :comp_path, comp_path)
-#     setfield!(_self, :var_name, var_name)
-#     _self
-# end

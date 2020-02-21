@@ -83,12 +83,11 @@ end
 @delegate disconnect_param!(m::Model, comp_path::ComponentPath, param_name::Symbol) => md
 @delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
+# TBD: these may not be needed as delegators
 @delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
-@delegate set_external_param!(m::Model, name::Symbol, value::Number;
-                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
-
-@delegate set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple};
+@delegate set_external_param!(m::Model, name::Symbol,
+                              value::Union{Number, AbstractArray, AbstractRange, Tuple};
                               param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
@@ -342,6 +341,7 @@ that they match the model's index labels.
 """
 @delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
 
+# Deprecated?
 """
     set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
@@ -351,6 +351,7 @@ relative to `m.md`, which at the top of the hierarchy, produces the same result 
 """
 @delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
 
+# Deprecated?
 """
     set_param!(m::Model, path::AbstractString, value, dims=nothing)
 
@@ -365,6 +366,7 @@ Set the value of a parameter exposed in the ModelDef (m.md).
 """
 @delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
 
+# Deprecated?
 @delegate set_param!(m::Model, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing) => md
 
 @delegate import_params!(m::Model) => md

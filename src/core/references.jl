@@ -59,12 +59,12 @@ end
 
 function Base.getproperty(ref::ComponentReference, name::Symbol)
     comp = find_comp(ref)
-    return _make_reference(comp[name], ref) # might be ref to comp, var, or param
+    return _make_reference(getfield(comp, name), ref) # might be ref to comp, var, or param
 end
 
 function _same_composite(ref1::AbstractComponentReference, ref2::AbstractComponentReference)
     # @info "same_composite($(ref1.comp_path), $(ref2.comp_path))"
-    return ref1.comp_path.names[1] == ref2.comp_path.names[1]
+    return head(pathof(ref1)) == head(pathof(ref2))
 end
 
 """
@@ -72,8 +72,8 @@ end
 
 Connect two components as `comp_ref[var_name] = var_ref`.
 """
-function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, var_name::Symbol)
-    _same_composite(comp_ref, var_ref)|| error("Can't connect variables defined in different composite trees")
+function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, vname::Symbol)
+    _same_composite(comp_ref, var_ref) || error("Can't connect variables defined in different composite trees")
 
-    connect_param!(parent(comp_ref), pathof(comp_ref), var_name, pathof(var_ref), var_name(var_ref))
+    connect_param!(parent(comp_ref), pathof(comp_ref), vname, pathof(var_ref), var_name(var_ref))
 end

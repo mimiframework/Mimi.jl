@@ -383,7 +383,7 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
 end
 
 #
-# TBD: needs better name. Currently (2/4/2020) unused.
+# TBD: handling for importing/joining a set of parameters into a composite
 #
 # """
 #     new_set_param!(m::ModelDef, param_name::Symbol, value)
@@ -521,6 +521,7 @@ function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, An
     set_param!(md, comp_name, param_name, value, dims)
 end
 
+# May be deprecated
 function set_param!(md::ModelDef, comp_path::ComponentPath,
                     param_name::Symbol, value, dims=nothing)
     # @info "set_param!($(md.comp_id), $comp_path, $param_name, $value)"
@@ -563,7 +564,6 @@ function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Sy
 end
 
 """
-    # set_param!(obj::AbstractCompositeComponentDef, param_name::Symbol, value, dims=nothing)
     set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
 
 Set the value of a parameter exposed in `md` by following the ParameterDefReference. If
@@ -573,11 +573,10 @@ children, and it is not yet bound. Otherwise raise an error.
 The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.
-
 """
 function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     if ! has_parameter(md, param_name)
-        # search components for this parameter
+        # search immediate subcomponents for this parameter
         found = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
         count = length(found)
         if count == 1
@@ -586,7 +585,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
             import_param!(md, param_name, comp => param_name)
 
         elseif count > 1
-            error("Can't set parameter :$param_name found in multiple components")
+            error("Can't set parameter :$param_name; found in multiple components")
         else # count == 0
             error("Can't set parameter :$param_name; not found in ModelDef or children")
         end

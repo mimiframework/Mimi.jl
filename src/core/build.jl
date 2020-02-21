@@ -189,12 +189,21 @@ function _set_defaults!(md::ModelDef)
     isempty(not_set) && return
 
     d = Dict()
+
     function _store_defs(obj)
-        for ref in obj.defaults
-            d[(pathof(ref), nameof(ref))] = ref.default
+        if obj isa AbstractCompositeComponentDef
+            for ref in obj.defaults
+                d[(pathof(ref), nameof(ref))] = ref.default
+            end
+        else
+            for param in parameters(obj)
+                if param.default !== nothing
+                    d[(pathof(obj), nameof(param))] = param.default
+                end
+            end
         end
     end
-    recurse(md, _store_defs; composite_only=true)
+    recurse(md, _store_defs)
 
     for ref in not_set
         param = dereference(ref)

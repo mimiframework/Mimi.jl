@@ -4,7 +4,7 @@ using Test
 using Mimi
 using MacroTools
 
-import Mimi: ComponentPath, build, @defmodel, import_params!
+import Mimi: ComponentPath, build, import_params!
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -42,16 +42,6 @@ end
     connect(Comp2.par_2_1, Comp1.var_1_1)
     connect(Comp2.par_2_2, Comp1.var_1_1)
 end
-
-
-# doesn't work currently
-# @defmodel m begin
-#     index[time] = 2005:2020
-#     component(A)
-
-#     A.foo1 = 10
-#     A.foo2 = 4
-# end
 
 m = Model()
 years = 2005:2020
