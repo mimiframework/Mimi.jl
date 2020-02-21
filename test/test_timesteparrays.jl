@@ -436,7 +436,6 @@ for ti = 1:2
         reset_time_val(y, time_dim_val)
     end
 
-    # Deprecated int indexing should still run
     @test y[idx1,2] == time_dim_val[1,2]
     y[idx1,2] = temp_dim_val[1,2]
     @test y[idx1,2] == temp_dim_val[1,2]
