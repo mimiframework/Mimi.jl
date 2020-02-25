@@ -113,7 +113,7 @@ Example: `filter(istype(AbstractComponentDef), obj.namespace)`
 istype(T::DataType) = (pair -> pair.second isa T)
 
 # Namespace filter functions return dicts of values for the given type.
-# N.B. only composites hold comps in the namespace.
+# N.B. only composites hold other comps in the namespace.
 components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
 
 param_dict(obj::ComponentDef) = filter(istype(ParameterDef), obj.namespace)
@@ -129,6 +129,7 @@ Return an iterator of the parameter definitions (or references) for `comp_def`.
 """
 parameters(obj::AbstractComponentDef) = values(param_dict(obj))
 
+parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
 
 """
     variables(comp_def::AbstractComponentDef)
@@ -136,16 +137,21 @@ parameters(obj::AbstractComponentDef) = values(param_dict(obj))
 Return an iterator of the variable definitions (or references) for `comp_def`.
 """
 variables(obj::ComponentDef)  = values(filter(istype(VariableDef), obj.namespace))
+
 variables(obj::AbstractCompositeComponentDef) = values(filter(istype(VariableDefReference), obj.namespace))
 
 variables(comp_id::ComponentId)  = variables(compdef(comp_id))
-parameters(comp_id::ComponentId) = parameters(compdef(comp_id))
 
-# Return true if the component namespace has an item `name` that isa `T`
+"""
+Return true if the component namespace has an item `name` that isa `T`
+"""
 function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
     return haskey(comp_def.namespace, name) && comp_def.namespace[name] isa T
 end
 
+"""
+Get a named element from the namespace of `obj` and verify its type.
+"""
 function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
     if ! haskey(obj.namespace, name)
         error("Item :$name was not found in component $(obj.comp_path)")
@@ -155,8 +161,11 @@ function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
     return item
 end
 
+"""
+Save a value to a component's namespace. Allow replacement of existing values for a key
+only with items of the same type; otherwise an error is thrown.
+"""
 function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)
-    # Allow replacement of existing values for a key only with items of the same type.
     if haskey(comp, key)
         elt_type = typeof(comp[key])
         T = typeof(value)
@@ -203,7 +212,7 @@ end
 step_size(values::Vector{Int}) = (length(values) > 1 ? values[2] - values[1] : 1)
 
 #
-# TBD: should these be defined as methods of CompositeComponentDef?
+# TBD: should these be defined as methods of CompositeComponentDef, i.e., not for leaf comps
 #
 function step_size(obj::AbstractComponentDef)
     keys = time_labels(obj)

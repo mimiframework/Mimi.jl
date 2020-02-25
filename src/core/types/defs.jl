@@ -113,6 +113,33 @@ end
 
 Base.pathof(dr::AbstractDatumReference) = dr.comp_path
 
+#
+# TBD: rather than store an array of these, perhaps this class should store
+# multiple references, since there is only one name and (at most) one default
+# value. It might look like this:
+#
+# @class DatumReference <: NamedObj
+#
+# struct UnnamedReference
+#    root::AbstractComponentDef
+#    comp_path::ComponentPath
+# end
+#
+# @class ParameterDefReference <: DatumReference begin
+#    name::Symbol is inherited from NamedObj
+#    default::Any    # allows defaults set in composites
+#    refs::Vector{UnnammedReference}
+# end
+#
+# DatumReference would become simpler, with no new fields beyond those in NamedObj,
+# with the root and comp_path moved into VariableDefReference instead.
+#
+# @class VariableDefReference  <: DatumReference begin
+#    name::Symbol is inherited from NamedObj
+#    unnamed_ref::UnnamedReference
+# end
+#
+
 @class ParameterDefReference <: DatumReference begin
     default::Any    # allows defaults set in composites
 end
