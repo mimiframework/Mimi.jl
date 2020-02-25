@@ -325,7 +325,6 @@ for ti = 1:2
         years = (2000, 2005)
     end
     y = TimestepMatrix{VariableTimestep{years}, Int, ti}(collect(reshape(1:8, 4, 2)))
-    y = TimestepMatrix{VariableTimestep{years}, Int, ti}(collect(reshape(1:8, 4, 2)))
 
     time_dim_val = collect(reshape(1:8, 4, 2))
     temp_dim_val = collect(reshape(100:107, 4, 2))
