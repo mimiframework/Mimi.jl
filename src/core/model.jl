@@ -59,7 +59,7 @@ component parameter should only be calculated for the second timestep and beyond
 
 @delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
 
-@delegate connect_param!(m::Model, dst::AbstractString, src::AbstractString, backup::Union{Nothing, Array}=nothing; 
+@delegate connect_param!(m::Model, dst::AbstractString, src::AbstractString, backup::Union{Nothing, Array}=nothing;
                          ignoreunits::Bool=false, offset::Int=0) => md
 
 
@@ -83,12 +83,11 @@ end
 @delegate disconnect_param!(m::Model, comp_path::ComponentPath, param_name::Symbol) => md
 @delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
+# TBD: these may not be needed as delegators
 @delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
-@delegate set_external_param!(m::Model, name::Symbol, value::Number;
-                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
-
-@delegate set_external_param!(m::Model, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple};
+@delegate set_external_param!(m::Model, name::Symbol,
+                              value::Union{Number, AbstractArray, AbstractRange, Tuple};
                               param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
@@ -122,12 +121,12 @@ model definition.
 """
     add_comp!(
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing, 
-        after::NothingSymbol=nothing, 
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
     )
 
-Add the component indicated by `comp_id` to the model indicated by `m`. The component is added 
+Add the component indicated by `comp_id` to the model indicated by `m`. The component is added
 at the end of the list unless one of the keywords `before` or `after` is specified. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
 argument `rename` can be a list of pairs indicating `original_name => imported_name`.
@@ -140,8 +139,8 @@ end
 """
     add_comp!(
         m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing, 
-        after::NothingSymbol=nothing, 
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
     )
 
@@ -157,8 +156,8 @@ end
 """
     replace_comp!(
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing, 
-        after::NothingSymbol=nothing, 
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
         reconnect::Bool=true
     )
 
@@ -342,6 +341,7 @@ that they match the model's index labels.
 """
 @delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
 
+# Deprecated?
 """
     set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
 
@@ -351,6 +351,7 @@ relative to `m.md`, which at the top of the hierarchy, produces the same result 
 """
 @delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
 
+# Deprecated?
 """
     set_param!(m::Model, path::AbstractString, value, dims=nothing)
 
@@ -365,8 +366,10 @@ Set the value of a parameter exposed in the ModelDef (m.md).
 """
 @delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
 
+# Deprecated?
 @delegate set_param!(m::Model, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing) => md
 
+@delegate import_params!(m::Model) => md
 
 """
     run(m::Model)

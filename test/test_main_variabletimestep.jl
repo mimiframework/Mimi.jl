@@ -3,9 +3,9 @@ module TestMain_VariableTimestep
 using Test
 using Mimi
 
-import Mimi: 
-    reset_variables, @defmodel, 
-    variable, variable_names, external_param, build, 
+import Mimi:
+    reset_variables, @defmodel,
+    variable, variable_names, external_param, build,
     compdef, compdefs, dimension, compinstance
 
 @defcomp foo1 begin

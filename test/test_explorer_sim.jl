@@ -7,7 +7,7 @@ using Distributions
 using Query
 using CSVFiles
 
-import Mimi: 
+import Mimi:
     _spec_for_sim_item, menu_item_list, getdataframe, get_sim_results
 
 # Get the example
@@ -37,11 +37,12 @@ sd = @defsim begin
             Region3 => Uniform(0.10, 0.20)]
 
     sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
-    
+
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
     # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, grosseconomy.share_var, grosseconomy.depk_var, emissions.E, emissions.E_Global)
+    save(grosseconomy.K, grosseconomy.YGROSS, grosseconomy.share_var, grosseconomy.depk_var,
+         emissions.E, emissions.E_Global)
 end
 
 si = run(sd, m, N)
@@ -49,7 +50,8 @@ results_output_dir = tempdir()
 si_disk = run(sd, m, N; results_output_dir = results_output_dir, results_in_memory = false)
 
 ## 1. Specs and Menu
-pairs = [(:grosseconomy, :K), (:grosseconomy, :YGROSS), (:grosseconomy, :share_var), (:grosseconomy, :depk_var), (:emissions, :E), (:emissions, :E_Global)]
+pairs = [(:grosseconomy, :K), (:grosseconomy, :YGROSS), (:grosseconomy, :share_var),
+         (:grosseconomy, :depk_var), (:emissions, :E), (:emissions, :E_Global)]
 for (comp, var) in pairs
     results = get_sim_results(si, comp, var)
 
@@ -105,16 +107,18 @@ p = Mimi.plot(si, :grosseconomy, :share_var; interactive = true); # currently ju
 
 p = Mimi.plot(si_disk, :grosseconomy, :share_var; results_output_dir = results_output_dir)
 @test typeof(p) == VegaLite.VLSpec{:plot}
-p = Mimi.plot(si_disk, :grosseconomy, :share_var; interactive = true, results_output_dir = results_output_dir); # currently just calls static version
+p = Mimi.plot(si_disk, :grosseconomy, :share_var; interactive = true,
+              results_output_dir = results_output_dir); # currently just calls static version
 @test typeof(p) == VegaLite.VLSpec{:plot}
 
 # multihistogram plot
 p = Mimi.plot(si, :grosseconomy, :depk_var)
 @test typeof(p) == VegaLite.VLSpec{:plot}
-p = Mimi.plot(si, :grosseconomy, :depk_var; interactive = true); 
+p = Mimi.plot(si, :grosseconomy, :depk_var; interactive = true);
 @test typeof(p) == VegaLite.VLSpec{:plot}
 
 p = Mimi.plot(si_disk, :grosseconomy, :depk_var; results_output_dir = results_output_dir)
 @test typeof(p) == VegaLite.VLSpec{:plot}
-p = Mimi.plot(si_disk, :grosseconomy, :depk_var; interactive = true, results_output_dir = results_output_dir); 
+p = Mimi.plot(si_disk, :grosseconomy, :depk_var; interactive = true,
+              results_output_dir = results_output_dir);
 @test typeof(p) == VegaLite.VLSpec{:plot}
