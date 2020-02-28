@@ -76,6 +76,16 @@ The model definition is constructed from the following elements.
 
     This class adds only a "default value" field to the `DatumDef`. Note that functions defined to operate on the `AbstractDatumDef` type work for both variable and parameter definitions.
 
+1. `ComponentDef`
+
+Instances of `ComponentDef` are defined using `@defcomp`. Their internal `namespace`
+dictionary can hold both `VariableDef` and `ParameterDef` instances.
+
+### Composite components
+
+Composite components provide a single component-like interface to an arbitrarily complex set
+of components (both leaf and composite components).
+
 1. `DatumReference`
 
     This abstract class serves as a superclass for `ParameterDefReference`, and
@@ -83,24 +93,24 @@ The model definition is constructed from the following elements.
 
 1. `ParameterDefReference`, and `VariableDefReference`
 
-    These are used in composite components to store references to `ParameterDef` and `VariableDef` defined in leaf components. (They are conceptually like symbolic links in a file system.)
-    Whereas a `VariableDef` or `ParameterDef` can appear only once in a leaf component,
-    references to these may appear in any number of composite components.
+    These are used in composite components to store references to `ParameterDef` and `VariableDef` instances defined in leaf components. (They are conceptually like symbolic links in a
+    file system.) Whereas a `VariableDef` or `ParameterDef` can appear in a leaf
+    component, references to these may appear in any number of composite components.
 
     "Importing" a parameter or variable from a sub-component defines a reference to that
     datum in a leaf component. Note that if a composite imports a datum from another
     composite, a reference to the leaf datum is stored in each case. That is, we don't
     store references to references.
 
-1. `ComponentDef`
+1. `CompositeComponentDef <: ComponentDef`
 
-### Composite components
+    Instances of `CompositeComponentDef` are defined using `@defcomposite`. Their internal `namespace` dictionary can hold instances of `ComponentDef`, `CompositeComponentDef`, `VariableDefReference` and `ParameterDefReference`.
+    Composite components also record internal parameter connections.
 
-1. `CompositeComponentDef`
+1. `ModelDef <: CompositeComponentDef`
 
-The `run_timestep()` method of a `MetaComponentInstance` simply calls the `run_timestep()` method of each of its sub-components in dependency order.
-
-1. `ModelDef`
+    A `ModelDef` is a top-level composite that also stores external parameters and a list
+    of external parameter connections.
 
 ### Parameter Connections
 
@@ -155,6 +165,9 @@ end
 1. `LeafComponentInstance <: ComponentInstance`
 
 1. `CompositeComponentInstance <: ComponentInstance`
+
+    The `run_timestep()` method of a `ComponentInstance` simply calls the `run_timestep()`
+    method of each of its sub-components in dependency order.
 
 1. `ModelInstance <: CompositeComponentInstance`
 
