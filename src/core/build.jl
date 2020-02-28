@@ -190,7 +190,7 @@ function _set_defaults!(md::ModelDef)
 
     d = Dict()
 
-    function _store_defs(obj)
+    function _store_defaults(obj)
         if obj isa AbstractCompositeComponentDef
             for ref in obj.defaults
                 d[(pathof(ref), nameof(ref))] = ref.default
@@ -203,7 +203,7 @@ function _set_defaults!(md::ModelDef)
             end
         end
     end
-    recurse(md, _store_defs)
+    recurse(md, _store_defaults)
 
     for ref in not_set
         param = dereference(ref)
@@ -212,21 +212,21 @@ function _set_defaults!(md::ModelDef)
         key = (path, name)
         value = get(d, key, missing)
         if value !== missing
-            #@info "Setting default for :$name in $path to $value"
-            set_param!(md, path, name, value)
+            # @info "Setting param :$name to default $value"
+            set_param!(md, name, value)
         end
     end
 end
 
 function _build(md::ModelDef)
-    # import any unconnected params into ModelDef
-    import_params!(md)
+    # moved to build(m), below
+    # import_params!(md)
 
     # @info "_build(md)"
     add_connector_comps!(md)
 
-    # apply defaults to unset parameters
-    _set_defaults!(md)
+    # moved to build(m), below
+    # _set_defaults!(md)
 
     # check if all parameters are set
     not_set = unconnected_params(md)
@@ -253,6 +253,12 @@ function _build(md::ModelDef)
 end
 
 function build(m::Model)
+    # import any unconnected params into ModelDef
+    import_params!(m.md)
+
+    # apply defaults to unset parameters
+    _set_defaults!(m.md)
+
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
     m.mi = _build(md)
