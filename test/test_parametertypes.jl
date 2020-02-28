@@ -51,6 +51,7 @@ eval(expr)  # Just a deprecation warning for v0.10, then will change to error in
     f = Parameter{Array{Float64, 2}}()
     g = Parameter{Int}(default=10.0)    # value should be Int despite Float64 default
     h = Parameter(default=10)           # should be "numtype", despite Int default
+    j::Int = Parameter(index = [regions])
 
     function run_timestep(p, v, d, t)
     end
@@ -71,6 +72,7 @@ set_param!(m, :MyComp, :c, [4,5,6])
 set_param!(m, :MyComp, :d, 0.5)   # 32-bit float constant
 set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
+set_param!(m, :MyComp, :j, [1,2,3])
 
 build(m)    # applies defaults, creating external params
 extpars = external_params(m)
@@ -84,22 +86,22 @@ extpars = external_params(m)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-# @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
-# @test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, arrtype}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, arrtype}
 
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{arrtype, 1}
 @test typeof(extpars[:f].value) == Array{Float64, 2}
-# @test typeof(extpars[:g].value) <: Int
-# @test typeof(extpars[:h].value) == numtype
+@test typeof(extpars[:g].value) <: Int
+@test typeof(extpars[:h].value) == numtype
 
 # test updating parameters
 @test_throws ErrorException update_param!(m, :a, 5) # expects an array
 @test_throws ErrorException update_param!(m, :a, ones(101)) # wrong size
 @test_throws ErrorException update_param!(m, :a, fill("hi", 101, 3)) # wrong type
 
-# update_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
+update_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 
 @test_throws ErrorException update_param!(m, :d, ones(5)) # wrong type; should be scalar
 update_param!(m, :d, 5) # should work, will convert to float
@@ -108,9 +110,8 @@ update_param!(m, :d, 5) # should work, will convert to float
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
 
-@test length(extpars) == 4      # TBD
-# @test length(extpars) == 8
-# @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+@test length(extpars) == 9
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
 
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{arrtype, 1}

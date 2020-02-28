@@ -209,7 +209,8 @@ function import_params!(obj::AbstractCompositeComponentDef;
     params = parameters(obj)
 
     # remove imported params from list of unconnected params
-    filter!(param_ref -> !(param_ref in params), unconn)
+    unconn = setdiff(unconn, params)
+    # filter!(param_ref -> !(param_ref in params), unconn)
 
     # verify that all explicit names are importable
     if names !== nothing

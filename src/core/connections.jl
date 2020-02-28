@@ -499,12 +499,6 @@ Add an array type parameter `name` with value `value` and `dims` dimensions to t
 """
 function set_external_array_param!(obj::ModelDef,
                                    name::Symbol, value::AbstractArray, dims)
-    numtype = Union{Missing, number_type(obj)}
-
-    if !(typeof(value) <: Array{numtype} || (value isa AbstractArray && eltype(value) <: numtype))
-        # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(value)
-    end
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)
 end
