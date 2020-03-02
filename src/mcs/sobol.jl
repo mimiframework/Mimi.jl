@@ -50,7 +50,7 @@ function sample!(sim_inst::SobolSimulationInstance, samplesize::Int)
     end
 end
 
-function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Int = 10_000, conf_level::Number = 0.95) where N
+function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Union{Nothing, Int} = 10_000, conf_level::Union{Nothing, Number} = 0.95) where N
 
     if sim_inst.trials == 0
         error("Cannot analyze simulation with 0 trials.")
