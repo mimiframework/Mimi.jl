@@ -17,11 +17,11 @@ packages_to_test = [
     "MimiRICE2010",
     "MimiFUND",
     "MimiPAGE2009",
-    "MimiDICE2016" => "https://github.com/AlexandrePavlov/MimiDICE2016.jl",
-    "MimiSNEASY" => "https://github.com/anthofflab/MimiSNEASY.jl",
-    "MimiFAIR" => "https://github.com/anthofflab/MimiFAIR.jl",
-    "MimiMAGICC" => "https://github.com/anthofflab/MimiMAGICC.jl",
-    "MimiHECTOR" => "https://github.com/anthofflab/MimiHECTOR.jl"
+    "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
+    "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
+    "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
+    "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
+    "MimiHECTOR" => ("https://github.com/anthofflab/MimiHECTOR.jl", "master")
 ]
 
 using Pkg
@@ -32,7 +32,7 @@ mktempdir() do folder_name
 
     Pkg.develop(PackageSpec(path=joinpath(homedir(), ".julia", "dev", "Mimi")))
 
-    Pkg.add([i isa Pair ? PackageSpec(url=i[2]) : PackageSpec(i) for i in packages_to_test])
+    Pkg.add([i isa Pair ? PackageSpec(url=i[2][1], rev=i[2][2]) : PackageSpec(i) for i in packages_to_test])
 
     Pkg.resolve()
 
