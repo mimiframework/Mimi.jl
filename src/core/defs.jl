@@ -584,17 +584,18 @@ of the dimension names of the provided data, and will be used to check that they
 model's index labels.
 """
 function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
+    # search immediate subcomponents for this parameter
+    found = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
+
     if ! has_parameter(md, param_name)
-        # search immediate subcomponents for this parameter
-        found = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
         count = length(found)
-        if count == 1
+        if count >= 1
             comp = found[1]
             # @info "Found one child with $param_name to auto-import: $(comp.comp_id)"
             import_param!(md, param_name, comp => param_name)
 
-        elseif count > 1
-            error("Can't set parameter :$param_name; found in multiple components")
+        # elseif count > 1
+        #     # error("Can't set parameter :$param_name; found in multiple components")
         else # count == 0
             error("Can't set parameter :$param_name; not found in ModelDef or children")
         end
@@ -667,7 +668,13 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     end
 
     # connect_param! calls dirty! so we don't have to
-    connect_param!(md, comp_def, nameof(param_ref), param_name)
+    if length(found) == 1
+        connect_param!(md, comp_def, nameof(param_ref), param_name)
+    else
+        for comp_def in found
+            connect_param!(md, comp_def, param_name, param_name)
+        end
+    end
     nothing
 end
 
