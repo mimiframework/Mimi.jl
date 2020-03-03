@@ -1,7 +1,7 @@
 using Pkg
 
 packages_to_test = [
-    ("https://github.com/anthofflab/MimiRICE2010.jl.git", "v2.0.3", "MimiRICE2010"),
+    ("https://github.com/lrennels/mimi-rice-2010.jl.git", "mimi-next", "MimiRICE2010"),
     ("https://github.com/fund-model/MimiFUND.jl.git", "mimi-next", "MimiFUND")
 ]
 
