@@ -463,12 +463,6 @@ Add an array type parameter `name` with value `value` and `dims` dimensions to t
 """
 function set_external_array_param!(obj::AbstractCompositeComponentDef,
                                    name::Symbol, value::AbstractArray, dims)
-    numtype = Union{Missing, number_type(obj)}
-
-    if !(typeof(value) <: Array{numtype} || (value isa AbstractArray && eltype(value) <: numtype))
-        # Need to force a conversion (simple convert may alias in v0.6)
-        value = Array{numtype}(value)
-    end
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
     set_external_param!(obj, name, param)
 end
@@ -596,6 +590,7 @@ end
 
 function add_connector_comps!(obj::AbstractCompositeComponentDef)
     conns = internal_param_conns(obj)
+    i = 1 # counter to track the number of connector comps added 
 
     for comp_def in compdefs(obj)
         comp_name = nameof(comp_def)
@@ -607,7 +602,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
 
         # isempty(need_conn_comps) || @info "Need connectors comps: $need_conn_comps"
 
-        for (i, conn) in enumerate(need_conn_comps)
+        for conn in need_conn_comps
             add_backup!(obj, conn.backup)
 
             num_dims = length(size(external_param(obj, conn.backup).values))
@@ -619,7 +614,8 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # Fetch the definition of the appropriate connector commponent
             conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
             conn_comp_name = connector_comp_name(i) # generate a new name
-
+            i += 1 # increment connector comp counter
+            
             # Add the connector component before the user-defined component that required it
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             conn_path = conn_comp.comp_path
