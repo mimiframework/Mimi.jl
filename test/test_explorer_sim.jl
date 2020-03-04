@@ -75,46 +75,46 @@ close(w)
 
 # trumpet plot
 p = Mimi.plot(si, :emissions, :E_Global)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si, :emissions, :E_Global; interactive = true)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 p = Mimi.plot(si_disk, :emissions, :E_Global, results_output_dir = results_output_dir)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si_disk, :emissions, :E_Global; interactive = true, results_output_dir = results_output_dir)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 @test_throws ErrorException p = Mimi.plot(si_disk, :emissions, :E_Global) #should error, no in-memory results
 
 # mulitrumpet plot
 p = Mimi.plot(si, :emissions, :E)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si, :emissions, :E; interactive = true);
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 p = Mimi.plot(si_disk, :emissions, :E, results_output_dir = results_output_dir)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si_disk, :emissions, :E; interactive = true, results_output_dir = results_output_dir);
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 # histogram plot
 p = Mimi.plot(si, :grosseconomy, :share_var)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si, :grosseconomy, :share_var; interactive = true); # currently just calls static version
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 p = Mimi.plot(si_disk, :grosseconomy, :share_var; results_output_dir = results_output_dir)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si_disk, :grosseconomy, :share_var; interactive = true, results_output_dir = results_output_dir); # currently just calls static version
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 # multihistogram plot
 p = Mimi.plot(si, :grosseconomy, :depk_var)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si, :grosseconomy, :depk_var; interactive = true); 
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 
 p = Mimi.plot(si_disk, :grosseconomy, :depk_var; results_output_dir = results_output_dir)
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec
 p = Mimi.plot(si_disk, :grosseconomy, :depk_var; interactive = true, results_output_dir = results_output_dir); 
-@test typeof(p) == VegaLite.VLSpec{:plot}
+@test typeof(p) == VegaLite.VLSpec

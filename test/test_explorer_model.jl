@@ -70,7 +70,7 @@ close(w)
 items = [:a, :b, :c, :d, :e, :f, :x]
 for item in items
     p = Mimi.plot(m, :MyComp, item)
-    @test typeof(p) == VegaLite.VLSpec{:plot}
+    @test typeof(p) == VegaLite.VLSpec
 end
 
 #6.  errors and warnings
