@@ -33,7 +33,7 @@ _Additional AERE Workshop Tutorials: The Mimi developement team recently partici
 
 ## Requirements and Initial Setup
 
-These tutorials require [Julia v1.2.0](https://julialang.org/downloads/) and [Mimi v0.9.0](https://github.com/mimiframework/Mimi.jl), or later. 
+These tutorials require [Julia v1.3.0](https://julialang.org/downloads/) and [Mimi v0.9.0](https://github.com/mimiframework/Mimi.jl), or later. 
 
 To use the following tutorials, follow the steps below.
 
