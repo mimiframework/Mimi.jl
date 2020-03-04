@@ -329,7 +329,6 @@ for ti = 1:2
         years = (2000, 2005)
     end
     y = TimestepMatrix{VariableTimestep{years}, Int, ti}(collect(reshape(1:8, 4, 2)))
-    y = TimestepMatrix{VariableTimestep{years}, Int, ti}(collect(reshape(1:8, 4, 2)))
 
     time_dim_val = collect(reshape(1:8, 4, 2))
     temp_dim_val = collect(reshape(100:107, 4, 2))
@@ -456,18 +455,31 @@ for ti = 1:2
     temp_dim_val = collect(reshape(100:163, 4, 4, 4))
 
     # Using a colon in the time dimension
-    @test arr_fixed[:,1,1] == arr_variable[:,1,1] == time_dim_val[:,1,1]
-    @test arr_fixed[:,2,3] == arr_variable[:,2,3] == time_dim_val[:,2,3]
-    arr_fixed[:,1,1] = temp_dim_val[:,1,1]
-    arr_variable[:,1,1] = temp_dim_val[:,1,1]
-    @test arr_fixed[:,1,1] == arr_variable[:,1,1] == temp_dim_val[:,1,1]
-    arr_fixed[:,:,2] = temp_dim_val[:,:,2]
-    arr_variable[:,:,2] = temp_dim_val[:,:,2]
-    @test arr_fixed[:,:,2] == arr_variable[:,:,2] == temp_dim_val[:,:,2]
-    arr_fixed[:,:,:] = temp_dim_val
-    arr_variable[:,:,:] = temp_dim_val
-    @test arr_fixed[:,:,:] == arr_variable[:,:,:] == temp_dim_val[:,:,:]
-
+    if ti == 1
+        @test arr_fixed[:,1,1] == arr_variable[:,1,1] == time_dim_val[:,1,1]
+        @test arr_fixed[:,2,3] == arr_variable[:,2,3] == time_dim_val[:,2,3]
+        arr_fixed[:,1,1] = temp_dim_val[:,1,1]
+        arr_variable[:,1,1] = temp_dim_val[:,1,1]
+        @test arr_fixed[:,1,1] == arr_variable[:,1,1] == temp_dim_val[:,1,1]
+        arr_fixed[:,:,2] = temp_dim_val[:,:,2]
+        arr_variable[:,:,2] = temp_dim_val[:,:,2]
+        @test arr_fixed[:,:,2] == arr_variable[:,:,2] == temp_dim_val[:,:,2]
+        arr_fixed[:,:,:] = temp_dim_val
+        arr_variable[:,:,:] = temp_dim_val
+        @test arr_fixed[:,:,:] == arr_variable[:,:,:] == temp_dim_val[:,:,:]
+    else
+        @test arr_fixed[1,:,1] == arr_variable[1,:,1] == time_dim_val[1,:,1]
+        @test arr_fixed[2,:,3] == arr_variable[2,:,3] == time_dim_val[2,:,3]
+        arr_fixed[1,:,1] = temp_dim_val[1,:,1]
+        arr_variable[1,:,1] = temp_dim_val[1,:,1]
+        @test arr_fixed[1,:,1] == arr_variable[1,:,1] == temp_dim_val[1,:,1]
+        arr_fixed[:,:,2] = temp_dim_val[:,:,2]
+        arr_variable[:,:,2] = temp_dim_val[:,:,2]
+        @test arr_fixed[:,:,2] == arr_variable[:,:,2] == temp_dim_val[:,:,2]
+        arr_fixed[:,:,:] = temp_dim_val
+        arr_variable[:,:,:] = temp_dim_val
+        @test arr_fixed[:,:,:] == arr_variable[:,:,:] == temp_dim_val[:,:,:]
+    end
     reset_time_val(arr_fixed, time_dim_val)
     reset_time_val(arr_variable, time_dim_val)
 
