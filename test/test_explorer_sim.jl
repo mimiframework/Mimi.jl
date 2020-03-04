@@ -74,10 +74,10 @@ close(w)
 ## 3. Plots
 
 function plot_type_test(p)
-    if(VERSION < v"1.3.0")
-        @test typeof(p) == VegaLite.VLSpec{:plot}
-    else
+    if _is_VegaLite_v3()
         @test typeof(p) == VegaLite.VLSpec
+    else
+        @test typeof(p) == VegaLite.VLSpec{:plot}
     end
 end
 

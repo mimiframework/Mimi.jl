@@ -7,6 +7,11 @@ using Electron
 import Mimi: 
     dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, dim_names
 
+# Helper function returns true if VegaLite is verison 3 or above, and false otherwise
+function _is_VegaLite_v3()
+    return isdefined(VegaLite, :vlplot) ? true : false
+end
+
 @defcomp MyComp begin
     a = Parameter(index=[time, regions])
     b = Parameter(index=[time])
@@ -70,11 +75,8 @@ close(w)
 items = [:a, :b, :c, :d, :e, :f, :x]
 for item in items
     p = Mimi.plot(m, :MyComp, item)
-    if(VERSION < v"1.3.0")
-        @test typeof(p) == VegaLite.VLSpec{:plot}
-    else
-        @test typeof(p) == VegaLite.VLSpec
-    end
+    p_type = _is_VegaLite_v3() ? VegaLite.VLSpec : VegaLite.VLSpec{:plot}
+    @test typeof(p) == p_type
 end
 
 #6.  errors and warnings
