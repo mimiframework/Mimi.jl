@@ -605,13 +605,25 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 #------------------------------------------------------------------------------
 
 @defcomp foo begin
-    par = Parameter(index=[time])
-    var = Variable(index=[time])
+    par1 = Parameter(index=[time])
+    var1 = Variable(index=[time])
     function run_timestep(p, v, d, t)
         if is_last(t)
-            v.var[t] = 0
+            v.var1[t] = 0
         else
-            v.var[t] = p.par[t+1]   # This is where the error will be thrown, if connected to an internal variable that has not yet been computed.
+            v.var1[t] = p.par1[t+1]   # This is where the error will be thrown, if connected to an internal variable that has not yet been computed.
+        end
+    end
+end
+
+@defcomp bar begin
+    par2 = Parameter(index=[time])
+    var2 = Variable(index=[time])
+    function run_timestep(p, v, d, t)
+        if is_last(t)
+            v.var2[t] = 0
+        else
+            v.var2[t] = p.par2[t+1]   # This is where the error will be thrown, if connected to an internal variable that has not yet been computed.
         end
     end
 end
@@ -621,9 +633,9 @@ years = 2000:2010
 m = Model()
 set_dimension!(m, :time, years)
 add_comp!(m, foo, :first)
-add_comp!(m, foo, :second)
-connect_param!(m, :second => :par, :first => :var)
-set_param!(m, :first, :par, 1:length(years))
+add_comp!(m, bar, :second)
+connect_param!(m, :second => :par2, :first => :var1)
+set_param!(m, :first, :par1, 1:length(years))
 
 @test_throws MissingException run(m)
 
