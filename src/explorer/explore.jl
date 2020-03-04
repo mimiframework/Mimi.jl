@@ -128,7 +128,11 @@ function plot(m::Model, comp_name::Symbol, datum_name::Symbol; interactive::Bool
     spec = Mimi._spec_for_item(m, comp_name, datum_name, interactive=interactive)
     spec === nothing ? error("Spec cannot be built.") : VLspec = spec["VLspec"]
 
-    return VegaLite.VLSpec(VLspec)
+    if(VERSION < v"1.3.0")
+        return VegaLite.VLSpec{:plot}(VLspec)
+    else
+        return VegaLite.VLSpec(VLspec)
+    end
 
 end
 
@@ -158,5 +162,9 @@ function plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbo
     spec = Mimi._spec_for_sim_item(sim_inst, comp_name, datum_name, results; interactive = interactive, model_index = model_index)
     spec === nothing ? error("Spec cannot be built.") : VLspec = spec["VLspec"]
 
-    return VegaLite.VLSpec(VLspec)
+    if(VERSION < v"1.3.0")
+        return VegaLite.VLSpec{:plot}(VLspec)
+    else
+        return VegaLite.VLSpec(VLspec)
+    end
 end
