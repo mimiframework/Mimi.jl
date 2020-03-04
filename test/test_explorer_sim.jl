@@ -98,7 +98,7 @@ plot_type_test(p)
 p = Mimi.plot(si, :emissions, :E)
 plot_type_test(p)
 p = Mimi.plot(si, :emissions, :E; interactive = true);
-plot_type_test(p)c
+plot_type_test(p)
 
 p = Mimi.plot(si_disk, :emissions, :E, results_output_dir = results_output_dir)
 plot_type_test(p)
