@@ -1,8 +1,8 @@
 using Pkg
 
 packages_to_test = [
-    ("https://github.com/anthofflab/MimiRICE2010.jl.git", "v2.0.3", "MimiRICE2010"),
-    ("https://github.com/fund-model/MimiFUND.jl.git", "v3.11.9", "MimiFUND")
+    ("https://github.com/lrennels/mimi-rice-2010.jl.git", "mimi-next", "MimiRICE2010"),
+    ("https://github.com/fund-model/MimiFUND.jl.git", "mimi-next", "MimiFUND")
 ]
 
 for (pkg_url, pkg_rev, pkg_name) in packages_to_test
