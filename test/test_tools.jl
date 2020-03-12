@@ -21,7 +21,7 @@ ts = 10
 @defcomp Foo begin
     input = Parameter()
     intermed = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, t)
         v.intermed[t] = p.input
     end
@@ -30,7 +30,7 @@ end
 @defcomp Bar begin
     intermed = Parameter(index=[time])
     output = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, t)
         v.output[t] = p.intermed[t]
     end
@@ -42,7 +42,10 @@ foo = add_comp!(m, Foo)
 bar = add_comp!(m, Bar)
 
 foo[:input] = 3.14
-bar[:intermed] = foo[:intermed]
+
+# The connection via references is broken...
+# bar[:intermed] = m.md[:Foo][:intermed]
+connect_param!(m, :Bar, :intermed,  :Foo, :intermed)
 
 run(m)
 

@@ -27,6 +27,8 @@ Base.nameof(obj::AbstractNamedObj) = obj.name
     unit::String
 end
 
+Base.pathof(obj::AbstractDatumDef) = obj.comp_path
+
 @class mutable VariableDef <: DatumDef
 
 @class mutable ParameterDef <: DatumDef begin
@@ -65,9 +67,11 @@ end
         NamedObj(self, name)
 
         self.comp_id = comp_id
-        self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
 
-        self.dim_dict   = OrderedDict{Symbol, Union{Nothing, Dimension}}()
+        # self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
+        self.comp_path = ComponentPath(name)    # this is set in add_comp!() and ModelDef()
+
+        self.dim_dict  = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.namespace = OrderedDict{Symbol, Any}()
         self.first = self.last = nothing
         self.is_uniform = true
@@ -84,7 +88,7 @@ end
 
 ns(obj::AbstractComponentDef) = obj.namespace
 comp_id(obj::AbstractComponentDef) = obj.comp_id
-pathof(obj::AbstractComponentDef) = obj.comp_path
+Base.pathof(obj::AbstractComponentDef) = obj.comp_path
 dim_dict(obj::AbstractComponentDef) = obj.dim_dict
 first_period(obj::AbstractComponentDef) = obj.first
 last_period(obj::AbstractComponentDef) = obj.last
@@ -97,7 +101,6 @@ struct SubComponent <: MimiStruct
     module_obj::Union{Nothing, Module}
     comp_name::Symbol
     alias::Union{Nothing, Symbol}
-    bindings::Vector{Pair{Symbol, Any}}
 end
 
 # Stores references to the name of a component variable or parameter
@@ -108,22 +111,54 @@ end
     comp_path::ComponentPath
 end
 
-@class ParameterDefReference <: DatumReference
+Base.pathof(dr::AbstractDatumReference) = dr.comp_path
+
+#
+# TBD: rather than store an array of these, perhaps this class should store
+# multiple references, since there is only one name and (at most) one default
+# value. It might look like this:
+#
+# @class DatumReference <: NamedObj
+#
+# struct UnnamedReference
+#    root::AbstractComponentDef
+#    comp_path::ComponentPath
+# end
+#
+# @class ParameterDefReference <: DatumReference begin
+#    name::Symbol is inherited from NamedObj
+#    default::Any    # allows defaults set in composites
+#    refs::Vector{UnnammedReference}
+# end
+#
+# DatumReference would become simpler, with no new fields beyond those in NamedObj,
+# with the root and comp_path moved into VariableDefReference instead.
+#
+# @class VariableDefReference  <: DatumReference begin
+#    name::Symbol is inherited from NamedObj
+#    unnamed_ref::UnnamedReference
+# end
+#
+
+@class ParameterDefReference <: DatumReference begin
+    default::Any    # allows defaults set in composites
+end
+
+function ParameterDefReference(name::Symbol, root::AbstractComponentDef,
+                               comp_path::ComponentPath)
+    return ParameterDefReference(name, root, comp_path, nothing)
+end
 
 @class VariableDefReference  <: DatumReference
 
-function _dereference(ref::AbstractDatumReference)
+function dereference(ref::AbstractDatumReference)
     comp = find_comp(ref)
     return comp[ref.name]
 end
 
 # Might not be useful
-# convert(::Type{VariableDef},  ref::VariableDefReference)  = _dereference(ref)
-# convert(::Type{ParameterDef}, ref::ParameterDefReference) = _dereference(ref)
-
-
-# Define type aliases to avoid repeating these in several places
-global const Binding = Pair{AbstractDatumReference, Union{Int, Float64, AbstractDatumReference}}
+# convert(::Type{VariableDef},  ref::VariableDefReference)  = dereference(ref)
+# convert(::Type{ParameterDef}, ref::ParameterDefReference) = dereference(ref)
 
 # Define which types can appear in the namespace dict for leaf and composite compdefs
 global const LeafNamespaceElement      = AbstractDatumDef
@@ -131,14 +166,13 @@ global const CompositeNamespaceElement = Union{AbstractComponentDef, AbstractDat
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
-    bindings::Vector{Binding}
-
     internal_param_conns::Vector{InternalParameterConnection}
-    external_param_conns::Vector{ExternalParameterConnection}
-    external_params::Dict{Symbol, ModelParameter}               # TBD: make key (ComponentPath, Symbol)?
 
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
+
+    # store default values at the composite level until ModelDef is built
+    defaults::Vector{ParameterDefReference}
 
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
@@ -152,11 +186,9 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
         ComponentDef(self, comp_id) # call superclass' initializer
 
         self.comp_path = ComponentPath(self.name)
-        self.bindings = Vector{Binding}()
         self.internal_param_conns = Vector{InternalParameterConnection}()
-        self.external_param_conns = Vector{ExternalParameterConnection}()
-        self.external_params = Dict{Symbol, ModelParameter}()
         self.backups = Vector{Symbol}()
+        self.defaults = Vector{ParameterDefReference}()
         self.sorted_comps = nothing
     end
 end
@@ -180,9 +212,6 @@ end
 add_backup!(obj::AbstractCompositeComponentDef, backup) = push!(obj.backups, backup)
 
 internal_param_conns(obj::AbstractCompositeComponentDef) = obj.internal_param_conns
-external_param_conns(obj::AbstractCompositeComponentDef) = obj.external_param_conns
-
-external_params(obj::AbstractCompositeComponentDef) = obj.external_params
 
 is_leaf(c::AbstractComponentDef) = true
 is_leaf(c::AbstractCompositeComponentDef) = false
@@ -195,15 +224,27 @@ ComponentPath(obj::AbstractCompositeComponentDef, path::AbstractString) = comp_p
 ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentPath(obj.comp_path.names..., names...)
 
 @class mutable ModelDef <: CompositeComponentDef begin
+    external_param_conns::Vector{ExternalParameterConnection}
+    external_params::Dict{Symbol, ModelParameter}
+
     number_type::DataType
     dirty::Bool
 
     function ModelDef(number_type::DataType=Float64)
         self = new()
         CompositeComponentDef(self)  # call super's initializer
-        return ModelDef(self, number_type, false)       # call @class-generated method
+
+        ext_conns  = Vector{ExternalParameterConnection}()
+        ext_params = Dict{Symbol, ModelParameter}()
+
+        # N.B. @class-generated method
+        return ModelDef(self, ext_conns, ext_params, number_type, false)
     end
 end
+
+external_param_conns(md::ModelDef) = md.external_param_conns
+
+external_params(md::ModelDef) = md.external_params
 
 #
 # Reference types offer a more convenient syntax for interrogating Components.
@@ -215,8 +256,12 @@ end
     comp_path::ComponentPath
 end
 
+# Define access methods via getfield() since we override dot syntax
+Base.parent(comp_ref::AbstractComponentReference) = getfield(comp_ref, :parent)
+Base.pathof(comp_ref::AbstractComponentReference) = getfield(comp_ref, :comp_path)
+
 function ComponentReference(parent::AbstractComponentDef, name::Symbol)
-    return ComponentReference(parent, ComponentPath(parent.comp_path, name))
+    return ComponentReference(parent, ComponentPath(pathof(parent), name))
 end
 
 # A container for a variable within a component, to improve connect_param! aesthetics,
@@ -224,3 +269,5 @@ end
 @class VariableReference <: ComponentReference begin
     var_name::Symbol
 end
+
+var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)

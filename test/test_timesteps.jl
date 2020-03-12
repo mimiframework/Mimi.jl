@@ -4,19 +4,18 @@ using Mimi
 using Test
 
 import Mimi:
-    AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector, 
-    TimestepMatrix, TimestepArray, next_timestep, hasvalue, getproperty, Clock, 
+    AbstractTimestep, FixedTimestep, VariableTimestep, TimestepVector,
+    TimestepMatrix, TimestepArray, next_timestep, hasvalue, getproperty, Clock,
     time_index, get_timestep_array
 
 #------------------------------------------------------------------------------
-#  Test basic timestep functions and Base functions for Fixed Timestep 
+#  Test basic timestep functions and Base functions for Fixed Timestep
 #------------------------------------------------------------------------------
 
 t1 = FixedTimestep{1850, 10, 3000}(1)
 @test is_first(t1)  # is_first and is_timestep still run but are deprecated; will error in v1.0 and should remove these two tests then
-@test is_timestep(t1, 1)
-@test is_time(t1, 1850)
 @test t1 == TimestepIndex(1)
+@test t1 == TimestepValue(1850)
 @test TimestepIndex(1) == t1    # test both ways because to test both method definitions
 @test t1 == TimestepValue(1850)
 @test TimestepValue(1850) == t1 # test both ways because to test both method definitions
@@ -47,7 +46,7 @@ t4 = next_timestep(t3)
 
 
 #------------------------------------------------------------------------------
-#  Test basic timestep functions and Base functions for Variable Timestep 
+#  Test basic timestep functions and Base functions for Variable Timestep
 #------------------------------------------------------------------------------
 years = Tuple([2000:1:2024; 2025:5:2105])
 
@@ -78,9 +77,9 @@ t3 = VariableTimestep{years}(42)
 t4 = next_timestep(t3)
 @test t4 == TimestepIndex(43)
 
-# note here that this comes back to an assumption made in variable 
+# note here that this comes back to an assumption made in variable
 # timesteps that we may assume the next step is 1 year for the final year in TIMES
-@test t4 == TimestepValue(2106) 
+@test t4 == TimestepValue(2106)
 @test_throws ErrorException t_next = t4 + 1
 @test_throws ErrorException next_timestep(t4)
 
@@ -105,7 +104,7 @@ step = 2
 @test TimestepIndex(2) - 1 == TimestepIndex(1)
 
 #------------------------------------------------------------------------------
-#  Test a model with components with different offsets  
+#  Test a model with components with different offsets
 #------------------------------------------------------------------------------
 
 # we'll have Bar run from 2000 to 2010
@@ -114,7 +113,7 @@ step = 2
 @defcomp Foo begin
     inputF = Parameter()
     output = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, ts)
         v.output[ts] = p.inputF + ts.t
     end
@@ -123,7 +122,7 @@ end
 @defcomp Bar begin
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, ts)
         if ts < TimestepValue(2005)
             v.output[ts] = p.inputB[ts]
@@ -200,13 +199,13 @@ t_matrix = get_timestep_array(m.md, Float64, 2, 2, matrix)
 
 
 #------------------------------------------------------------------------------
-#  Now build a model with connecting components  
+#  Now build a model with connecting components
 #------------------------------------------------------------------------------
 
 @defcomp Foo2 begin
     inputF = Parameter(index=[time])
     output = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, ts)
         v.output[ts] = p.inputF[ts]
     end
@@ -221,7 +220,7 @@ set_param!(m2, :Bar, :inputB, collect(1:length(years)))
 
 # TBD: Connecting components with different "first" times creates a mismatch
 # in understanding how to translate the index back to a year.
-connect_param!(m2, :Foo2, :inputF, :Bar, :output)        
+connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
@@ -231,13 +230,13 @@ for i in 1:6
 end
 
 #------------------------------------------------------------------------------
-#  Connect them in the other direction  
+#  Connect them in the other direction
 #------------------------------------------------------------------------------
 
 @defcomp Bar2 begin
     inputB = Parameter(index=[time])
     output = Variable(index=[time])
-    
+
     function run_timestep(p, v, d, ts)
         v.output[ts] = p.inputB[ts] * ts.t
     end

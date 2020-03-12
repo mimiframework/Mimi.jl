@@ -23,19 +23,15 @@ end
     input = Parameter(unit="kg")
 end
 
-@defmodel m begin
-    index[time] = [1]
-    component(Foo)
-    component(Bar)
-    component(Baz)
-end
-
-foo = ComponentReference(m, :Foo)
-bar = ComponentReference(m, :Bar)
-baz = ComponentReference(m, :Baz)
+m = Model()
+set_dimension!(m, :time, [1])
+foo = add_comp!(m, Foo)
+bar = add_comp!(m, Bar)
+baz = add_comp!(m, Baz)
 
 # Check that we cannot connect foo and bar...
 @test_throws ErrorException bar[:input] = foo[:output]
+#@test_throws ErrorException connect_param!(m, :Bar, :input,  :Foo, :output, ignoreunits=false)
 
 # ...unless we pass ignoreunits=true
 connect_param!(m, :Bar, :input,  :Foo, :output, ignoreunits=true)

@@ -4,9 +4,9 @@ using Test
 using Mimi
 
 import Mimi:
-    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef, CompositeComponentDef,
-    Binding, ModelDef, build, time_labels, compdef, find_comp
-
+    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
+    CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
+    import_params!
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -55,37 +55,43 @@ m = Model()
 set_dimension!(m, :time, 2005:2020)
 
 @defcomposite A begin
-    component(Comp1)
-    component(Comp2)
+    Component(Comp1)
+    Component(Comp2)
 
-    foo1 = Comp1.foo
-    foo2 = Comp2.foo
+    foo1 = Parameter(Comp1.foo)
+    foo2 = Parameter(Comp2.foo)
 
-    # Should accomplish the same as calling 
-    #   connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
-    # after the `@defcomposite top ...`
-    Comp2.par_2_1 = Comp1.var_1_1
-    Comp2.par_2_2 = Comp1.var_1_1
+    var_2_1 = Variable(Comp2.var_2_1)
+
+    connect(Comp2.par_2_1, Comp1.var_1_1)
+    connect(Comp2.par_2_2, Comp1.var_1_1)
 end
 
 @defcomposite B begin
-    component(Comp3) # bindings=[foo => bar, baz => [1 2 3; 4 5 6]])
-    component(Comp4)
+    Component(Comp3)
+    Component(Comp4)
 
-    foo3 = Comp3.foo
-    foo4 = Comp4.foo
+    foo3 = Parameter(Comp3.foo)
+    foo4 = Parameter(Comp4.foo)
+
+    var_3_1 = Variable(Comp3.var_3_1)
 end
 
 @defcomposite top begin
-    component(A)
+    Component(A)
 
-    fooA1 = A.foo1
-    fooA2 = A.foo2
+    fooA1 = Parameter(A.foo1)
+    fooA2 = Parameter(A.foo2)
 
     # TBD: component B isn't getting added to mi
-    component(B)
-    foo3 = B.foo3
-    foo4 = B.foo4
+    Component(B)
+    foo3 = Parameter(B.foo3)
+    foo4 = Parameter(B.foo4)
+
+    var_3_1 = Variable(B.Comp3.var_3_1)
+
+    connect(B.par_3_1, A.var_2_1)
+    connect(B.par_4_1, B.var_3_1)
 end
 
 # We have created the following composite structure:
@@ -115,36 +121,20 @@ c2 = md[:top][:A][:Comp2]
 c3 = find_comp(md, "/top/B/Comp3")
 @test c3.comp_id == Comp3.comp_id
 
-set_param!(m, "/top/A/Comp1:foo", 1)
-set_param!(m, "/top/A/Comp2:foo", 2)
+set_param!(m, :fooA1, 1)
+set_param!(m, :fooA2, 2)
 
 # TBD: default values set in @defcomp are not working...
 # Also, external_parameters are stored in the parent, so both of the
 # following set parameter :foo in "/top/B", with 2nd overwriting 1st.
-set_param!(m, "/top/B/Comp3:foo", 10)
-set_param!(m, "/top/B/Comp4:foo", 20)
+set_param!(m, :foo3, 10)
+set_param!(m, :foo4, 20)
 
-set_param!(m, "/top/A/Comp1", :par_1_1, collect(1:length(time_labels(md))))
-
-# connect_param!(m, "/top/A/Comp2:par_2_1", "/top/A/Comp1:var_1_1")
-# connect_param!(m, "/top/A/Comp2:par_2_2", "/top/A/Comp1:var_1_1")
-connect_param!(m, "/top/B/Comp3:par_3_1", "/top/A/Comp2:var_2_1")
-connect_param!(m, "/top/B/Comp4:par_4_1", "/top/B/Comp3:var_3_1")
+set_param!(m, :par_1_1, collect(1:length(time_labels(md))))
 
 build(m)
 
 run(m)
-
-#
-# TBD
-#
-# 1. Create parallel structure of exported vars/pars in Instance hierarchy?
-#    - Perhaps just a dict mapping local name to a component path under mi, to where the var actually exists
-# 2. Be able to connect to the leaf version of vars/pars or by specifying exported version below the compdef
-#    given as first arg to connect_param!().
-# 3. set_param!() should work with relative path from any compdef.
-# 4. set_param!() stores external_parameters in the parent object, creating namespace conflicts between comps.
-#    Either store these in the leaf or store them with a key (comp_name, param_name)
 
 mi = m.mi
 
@@ -155,12 +145,27 @@ mi = m.mi
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
+#
+# Test joining external params.
+#
+m2 = Model()
+set_dimension!(m2, :time, 2005:2020)
+
+@defcomposite top2 begin
+    Component(Comp1)
+    Component(Comp2)
+
+    connect(Comp2.par_2_1, Comp1.var_1_1)
+    connect(Comp2.par_2_2, Comp1.var_1_1)
+end
+
+top2_ref = add_comp!(m2, top2, nameof(top2))
+
 end # module
 
-m = TestComposite.m
-md = m.md
-top   = Mimi.find_comp(md, :top)
-A     = Mimi.find_comp(top, :A)
-comp1 = Mimi.find_comp(A, :Comp1)
+using Mimi
+m2 = TestComposite.m2
+md2 = m2.md
+top2 = Mimi.find_comp(md2, :top2)
 
 nothing

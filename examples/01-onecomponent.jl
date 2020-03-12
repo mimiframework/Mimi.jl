@@ -18,16 +18,11 @@ using Mimi
 
 end
 
-
 # Create a model uses the component
 # =================================
 
-@defmodel begin
-
-    m = Model()
-
-    component(component1)
-end
+m = Model()
+add_comp!(m, component1)
 
 # Run model
 # =========

@@ -24,58 +24,61 @@ Base.joinpath(p1::ComponentPath, other...) = joinpath(joinpath(p1, other[1]), ot
     _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
-For composites, also update the component paths for all internal connections, and
-for all DatumReferences in the namespace. For leaf components, also update the 
-ComponentPath for ParameterDefs and VariableDefs.
+For composites, also update the component paths for all connections, and for all
+DatumReferences in the namespace. For leaf components, also update the ComponentPath
+for ParameterDefs and VariableDefs.
 """
 function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
-    parent_path = parent.comp_path
+    parent_path = pathof(parent)
     child.comp_path = child_path = ComponentPath(parent_path, child.name)
     # @info "Setting path of child $(child.name) with parent $parent_path to $child_path"
-    
-    # First, fix up child's namespace objs. We later recurse down the hierarchy.
-    ns = child.namespace
-    root = get_root(parent)
 
-    for (name, ref) in ns
-        if ref isa AbstractDatumReference
-            T = typeof(ref)
-            ns[name] = new_ref = T(ref.name, root, child_path)
-            #@info "old ref: $ref, new: $new_ref"
-        end
-    end
+    # First, fix up child's namespace objs. We later recurse down the hierarchy.
+    root = get_root(parent)
 
     # recursively reset all comp_paths to their abspath equivalent
     if is_composite(child)
+        # do same recursively
+        for grandchild in compdefs(child)
+            # @info "recursively fixing comp path: child: $(pathof(child)), grandchild: $(pathof(grandchild))"
+            _fix_comp_path!(grandchild, child)
+        end
 
         # Fix internal param conns
         conns = child.internal_param_conns
         for (i, conn) in enumerate(conns)
-            src_path = ComponentPath(child_path, conn.src_comp_path)
-            dst_path = ComponentPath(child_path, conn.dst_comp_path)
+            src_path = ComponentPath(child_path, tail(conn.src_comp_path))
+            dst_path = ComponentPath(child_path, tail(conn.dst_comp_path))
 
             # @info "Resetting IPC src in $child_path from $(conn.src_comp_path) to $src_path"
             # @info "Resetting IPC dst in $child_path from $(conn.dst_comp_path) to $dst_path"
 
             # InternalParameterConnections are immutable, but the vector holding them is not
-            conns[i] = InternalParameterConnection(src_path, conn.src_var_name, dst_path, conn.dst_par_name,
-                                                   conn.ignoreunits, conn.backup; offset=conn.offset)
+            conns[i] = InternalParameterConnection(src_path, conn.src_var_name,
+                                                   dst_path, conn.dst_par_name,
+                                                   conn.ignoreunits, conn.backup;
+                                                   offset=conn.offset)
         end
 
-        # Fix external param conns
-        conns = child.external_param_conns
-        for (i, conn) in enumerate(conns)
-            path = ComponentPath(parent_path, conn.comp_path)
-            # @info "Resetting EPC $child_path from $(conn.comp_path) to $path"
-
-            conns[i] = ExternalParameterConnection(path, conn.param_name, conn.external_param)
+        for (name, ref) in ns(child)
+            if ref isa AbstractDatumReference
+                T = typeof(ref)
+                # @info "parent_path: $parent_path ref.comp_path: $(ref.comp_path)"
+                ref_comp = find_comp(parent, pathof(ref))
+                child[name] = new_ref = T(ref.name, root, pathof(ref_comp))
+                # @info "new path: $(new_ref.comp_path)"
+            end
         end
 
-        for cd in compdefs(child)
-            _fix_comp_path!(cd, child)
+        defaults = child.defaults
+        for (i, ref) in enumerate(defaults)
+            ref_comp = find_comp(parent, pathof(ref))
+            defaults[i] = ParameterDefReference(ref.name, root, pathof(ref_comp), ref.default)
         end
+
     else
         for datum in [variables(child)..., parameters(child)...]
+            # @info "Resetting leaf IPC from $(datum.comp_path) to $child_path"
             datum.comp_path = child_path
         end
     end
@@ -86,7 +89,7 @@ end
 
 Recursively set the ComponentPaths in a tree below a ModelDef to the absolute path equivalent.
 This includes updating the component paths for all internal/external connections, and all
-DatumReferences in the namespace. For leaf components, we also update the ComponentPath for 
+DatumReferences in the namespace. For leaf components, we also update the ComponentPath for
 ParameterDefs and VariableDefs.
 """
 function fix_comp_paths!(md::AbstractModelDef)
@@ -166,7 +169,7 @@ end
 
 find_comp(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
 
-find_comp(cr::ComponentReference) = find_comp(cr.parent, cr.comp_path)
+find_comp(cr::AbstractComponentReference) = find_comp(parent(cr), pathof(cr))
 
 """
 Return the relative path of `descendant` if is within the path of composite `ancestor` or

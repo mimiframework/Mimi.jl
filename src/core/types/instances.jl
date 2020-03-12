@@ -49,7 +49,7 @@ end
 
 # A container class that wraps the dimension dictionary when passed to run_timestep()
 # and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
-# All values in the dictionary are vectors of Ints, except the `:time` value, which is a 
+# All values in the dictionary are vectors of Ints, except the `:time` value, which is a
 # vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
 # into timestep arrays.
 struct DimValueDict <: MimiStruct
@@ -86,8 +86,8 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
         # If first or last is `nothing`, substitute first or last time period
         self.first = @or(comp_def.first, time_bounds[1])
         self.last  = @or(comp_def.last,  time_bounds[2])
-    end 
-       
+    end
+
     function ComponentInstance(comp_def::AbstractComponentDef,
                                time_bounds::Tuple{Int,Int},
                                name::Symbol=nameof(comp_def))
@@ -96,7 +96,7 @@ Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[pro
     end
 end
 
-@class mutable LeafComponentInstance{TV <: ComponentInstanceVariables, 
+@class mutable LeafComponentInstance{TV <: ComponentInstanceVariables,
                                      TP <: ComponentInstanceParameters} <: ComponentInstance begin
     variables::TV                   # TBD: write functions to extract these from type instead of storing?
     parameters::TP
@@ -108,7 +108,7 @@ end
                                    vars::TV, pars::TP,
                                    time_bounds::Tuple{Int,Int},
                                    name::Symbol=nameof(comp_def)) where
-                                {TV <: ComponentInstanceVariables, 
+                                {TV <: ComponentInstanceVariables,
                                  TP <: ComponentInstanceParameters}
 
         # superclass initializer
@@ -123,6 +123,11 @@ end
         # CompositeComponentInstances use a standard method that just loops over inner components.
         # TBD: use FunctionWrapper here?
         function get_func(name)
+
+            #
+            # TBD: since this class is no longer a superclass of CompositeComponentInstance
+            # this test should be unnecessary. Double-check this though...
+            #
             if is_composite(self)
                 return nothing
             end
@@ -136,8 +141,6 @@ end
             end
         end
 
-        # `is_composite` indicates a LeafComponentInstance used to store summary
-        # data for LeafComponentInstance and is not itself runnable.
         self.init         = get_func("init")
         self.run_timestep = get_func("run_timestep")
 
@@ -161,7 +164,7 @@ end
 
 # These can be called on CompositeComponentInstances and ModelInstances
 compdef(obj::AbstractComponentInstance) = compdef(comp_id(obj))
-pathof(obj::AbstractComponentInstance) = obj.comp_path
+Base.pathof(obj::AbstractComponentInstance) = obj.comp_path
 first_period(obj::AbstractComponentInstance) = obj.first
 last_period(obj::AbstractComponentInstance)  = obj.last
 
@@ -175,33 +178,6 @@ function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
     pdict = Dict([:types => [], :names => [], :values => [], :paths => []])
 
     comps_dict = Dict([comp.comp_name => comp for comp in comps])
-
-    # for (name, item) in comp_def.namespace
-    #     # Skip component references
-    #     item isa AbstractComponentDef && continue
-
-    #     # if ! item isa VariableDefReference
-    #     #     item =
-
-    #     datum_comp = find_comp(dr)
-    #     datum_name = nameof(dr)
-    #     ci = comps_dict[nameof(datum_comp)]
-
-    #     datum = (is_parameter(dr) ? ci.parameters : ci.variables)
-    #     d = (is_parameter(dr) ? pdict : vdict)
-
-    #     # Find the position of the desired field in the named tuple
-    #     # so we can extract it's datatype.
-    #     pos = findfirst(isequal(datum_name), names(datum))
-    #     datatypes = types(datum)
-    #     dtype = datatypes[pos]
-    #     value = getproperty(datum, datum_name)
-
-    #     push!(d[:names],  export_name)
-    #     push!(d[:types],  dtype)
-    #     push!(d[:values], value)
-    #     push!(d[:paths],  dr.comp_path)
-    # end
 
     vars = ComponentInstanceVariables(Vector{Symbol}(vdict[:names]), Vector{DataType}(vdict[:types]),
                                       Vector{Any}(vdict[:values]), Vector{ComponentPath}(vdict[:paths]))
