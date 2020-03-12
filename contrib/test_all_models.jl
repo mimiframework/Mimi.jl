@@ -12,16 +12,16 @@
 
 
 packages_to_test = [
-    "MimiDICE2010",
-    "MimiDICE2013",
-    "MimiRICE2010",
-    "MimiFUND",
-    "MimiPAGE2009",
-    "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
-    "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
-    "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
-    "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
-    "MimiHECTOR" => ("https://github.com/anthofflab/MimiHECTOR.jl", "master")
+    "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "mimi-next"),
+    # "MimiDICE2013",
+    "MimiRICE2010" => ("https://github.com/lrennels/mimi-rice-2010.jl", "mimi-next"),
+    "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "mimi-next"),
+    "MimiPAGE2009" => ("https://github.com/fund-model/MimiFUND.jl", "mimi-next"),
+    # "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
+    # "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
+    # "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
+    # "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
+    # "MimiHECTOR" => ("https://github.com/anthofflab/MimiHECTOR.jl", "master")
 ]
 
 using Pkg
@@ -30,7 +30,7 @@ mktempdir() do folder_name
     pkg_that_errored = []
     Pkg.activate(folder_name)
 
-    Pkg.develop(PackageSpec(path=joinpath(homedir(), ".julia", "dev", "Mimi")))
+    Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..")))
 
     Pkg.add([i isa Pair ? PackageSpec(url=i[2][1], rev=i[2][2]) : PackageSpec(i) for i in packages_to_test])
 
