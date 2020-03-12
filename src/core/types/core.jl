@@ -47,6 +47,9 @@ ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath(path1.
 
 ComponentPath(::Nothing, name::Symbol) = ComponentPath(name)
 
+# Convert path string like "/foo/bar/baz" to ComponentPath(:foo, :bar, :baz)
+ComponentPath(path::AbstractString) = ComponentPath([Symbol(s) for s in split(path, "/") if s != ""]...)
+
 const ParamPath = Tuple{ComponentPath, Symbol}
 
 #
@@ -87,4 +90,3 @@ end
 mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
     range::T
  end
-

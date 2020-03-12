@@ -55,11 +55,11 @@ add_comp!(m, C, after=:B)
 
 connect_param!(m, :A, :parA, :C, :varC)
 
-unconn = unconnected_params(m)
-@test length(unconn) == 1
-
+unconns = unconnected_params(m)
+@test length(unconns) == 1
 c = compdef(m, :C)
-@test unconn[1] == (c.comp_path, :parC)
+uconn = unconns[1]
+@test (pathof(uconn), nameof(uconn)) == (c.comp_path, :parC)
 
 connect_param!(m, :C => :parC, :B => :varB)
 

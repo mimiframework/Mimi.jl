@@ -268,7 +268,7 @@ end
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
 
-    if (ncomps = length(components(mi))) == 0
+    if length(components(mi)) == 0
         error("Cannot run the model: no components have been created.")
     end
 

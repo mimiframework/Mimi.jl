@@ -3,9 +3,9 @@ module TestParameterTypes
 using Mimi
 using Test
 
-import Mimi: 
-    external_params, external_param, TimestepMatrix, TimestepVector, 
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep
+import Mimi:
+    external_params, external_param, TimestepMatrix, TimestepVector,
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, build, import_params!
 
 #
 # Test that parameter type mismatches are caught
@@ -52,7 +52,7 @@ eval(expr)  # Just a deprecation warning for v0.10, then will change to error in
     g = Parameter{Int}(default=10.0)    # value should be Int despite Float64 default
     h = Parameter(default=10)           # should be "numtype", despite Int default
     j::Int = Parameter(index = [regions])
-    
+
     function run_timestep(p, v, d, t)
     end
 end
@@ -74,10 +74,13 @@ set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 set_param!(m, :MyComp, :j, [1,2,3])
 
+build(m)    # applies defaults, creating external params
 extpars = external_params(m)
 
+# TBD: These are not (yet) external params. Defaults are applied at build time.
 @test isa(extpars[:a], ArrayModelParameter)
 @test isa(extpars[:b], ArrayModelParameter)
+
 @test isa(extpars[:c], ArrayModelParameter)
 @test isa(extpars[:d], ScalarModelParameter)
 @test isa(extpars[:e], ArrayModelParameter)
@@ -85,6 +88,7 @@ extpars = external_params(m)
 
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
 @test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, arrtype}
+
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{arrtype, 1}
@@ -96,6 +100,7 @@ extpars = external_params(m)
 @test_throws ErrorException update_param!(m, :a, 5) # expects an array
 @test_throws ErrorException update_param!(m, :a, ones(101)) # wrong size
 @test_throws ErrorException update_param!(m, :a, fill("hi", 101, 3)) # wrong type
+
 update_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 
 @test_throws ErrorException update_param!(m, :d, ones(5)) # wrong type; should be scalar
@@ -107,6 +112,7 @@ update_param!(m, :e, [4,5,6,7])
 
 @test length(extpars) == 9
 @test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{arrtype, 1}
 
@@ -115,8 +121,8 @@ update_param!(m, :e, [4,5,6,7])
 # Test updating TimestepArrays with update_param!
 #------------------------------------------------------------------------------
 
-@defcomp MyComp2 begin 
-    x=Parameter(index=[time]) 
+@defcomp MyComp2 begin
+    x=Parameter(index=[time])
     y=Variable(index=[time])
     function run_timestep(p,v,d,t)
         v.y[t]=p.x[t]
@@ -187,7 +193,7 @@ m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
-    
+
 set_dimension!(m, :time, [2005, 2020, 2050])
 
 update_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
@@ -220,12 +226,12 @@ run(m)
 
 # 5. Test all the warning and error cases
 
-@defcomp MyComp3 begin 
+@defcomp MyComp3 begin
     regions=Index()
     x=Parameter(index=[time])       # One timestep array parameter
     y=Parameter(index=[regions])    # One non-timestep array parameter
     z=Parameter()                   # One scalar parameter
-end 
+end
 
 m = Model()                             # Build the model
 set_dimension!(m, :time, 2000:2002)     # Set the time dimension
