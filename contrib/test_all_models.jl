@@ -13,7 +13,7 @@
 
 packages_to_test = [
     "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "mimi-next"),
-    "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl.git", "mimi-next"),
+    "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "mimi-next"),
     "MimiRICE2010" => ("https://github.com/anthofflab/MimiRICE2010.jl", "mimi-next"),
     "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "mimi-next"),
     "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "mimi-next"),
