@@ -17,6 +17,9 @@ Electron.prep_test_env()
     @info("test_main.jl")
     @time include("test_main.jl")
 
+    @info ("test_parameters.jl")
+    @time include("test_parameters.jl")
+
     @info("test_composite.jl")
     @time include("test_composite.jl")
 
