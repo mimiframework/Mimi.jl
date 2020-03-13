@@ -8,9 +8,12 @@ using Test
 end
 
 m = Model()
-
+set_dimension!(m, :time, 1:10)
 add_comp!(m, Foo)
 
+@test haskey(m.md.external_params, :par)
+
+run(m)
 @test haskey(m.md.external_params, :par)
 
 end
