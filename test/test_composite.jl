@@ -83,7 +83,6 @@ end
     fooA1 = Parameter(A.foo1)
     fooA2 = Parameter(A.foo2)
 
-    # TBD: component B isn't getting added to mi
     Component(B)
     foo3 = Parameter(B.foo3)
     foo4 = Parameter(B.foo4)
@@ -144,6 +143,10 @@ mi = m.mi
 @test mi["/top/A/Comp2", :var_2_1] == collect(3.0:3:48.0)
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
+
+# Test accessing values at the top level
+m[:top, :fooA1] == 1
+m[:top, :var_3_1] == collect(6:6:96)
 
 #
 # Test joining external params.
