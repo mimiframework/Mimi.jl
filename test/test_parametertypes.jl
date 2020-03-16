@@ -51,7 +51,7 @@ eval(expr)  # Just a deprecation warning for v0.10, then will change to error in
     f = Parameter{Array{Float64, 2}}()
     g = Parameter{Int}(default=10.0)    # value should be Int despite Float64 default
     h = Parameter(default=10)           # should be "numtype", despite Int default
-    j::Int = Parameter(index = [regions])
+    j = Parameter{Int}(index = [regions])
 
     function run_timestep(p, v, d, t)
     end
