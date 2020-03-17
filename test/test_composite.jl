@@ -163,9 +163,4 @@ top2_ref = add_comp!(m2, top2, nameof(top2))
 
 end # module
 
-using Mimi
-m2 = TestComposite.m2
-md2 = m2.md
-top2 = Mimi.find_comp(md2, :top2)
-
 nothing
