@@ -103,6 +103,51 @@ struct SubComponent <: MimiStruct
     alias::Union{Nothing, Symbol}
 end
 
+struct UnnamedReference
+    # root::AbstractComponentDef
+    # comp_path::ComponentPath
+    comp_name::Symbol
+    datum_name::Symbol
+end
+
+@class CompositeParameterDef <: ParameterDef begin
+    refs::Vector{UnnamedReference}
+end
+
+# Create a CompositeParameterDef from a list of compdefs/pnames
+function CompositeParameterDef(name::Symbol, comp_path::ComponentPath, pairs::Vector{Pair{T, Symbol}}, kwargs) where T <: AbstractComponentDef
+    # Create the necessary references
+    refs = [UnnamedReference(nameof(comp), param_name) for (comp, param_name) in pairs]
+
+    # Unpack the kwargs
+    datatype = kwargs[:datatype]
+    dim_names = kwargs[:dim_names]
+    description = kwargs[:description]
+    unit = kwargs[:unit]
+    default = kwargs[:default]
+
+    return CompositeParameterDef(name, comp_path, datatype, dim_names, description, unit, default, refs)
+end
+
+# Create a CompositeParameterDef from one subcomponent's ParameterDef (used by import_params!)
+function CompositeParameterDef(obj, param_ref)
+    subcomp_name = param_ref.comp_name
+    pname = param_ref.datum_name
+
+    pardef = obj.namespace[subcomp_name].namespace[pname]
+    return CompositeParameterDef(pname, pathof(obj), pardef.datatype, pardef.dim_names, pardef.description, pardef.unit, pardef.default, [param_ref])
+end
+
+@class CompositeVariableDef <: VariableDef begin
+    ref::UnnamedReference
+end
+
+function CompositeVariableDef(name::Symbol, comp_path::ComponentPath, subcomp::AbstractComponentDef, vname::Symbol)
+    vardef = subcomp.namespace[vname]
+    comp_name = subcomp.name
+    return CompositeVariableDef(name, comp_path, vardef.datatype, vardef.dim_names, vardef.description, vardef.unit, UnnamedReference(comp_name, vname))
+end
+
 # Stores references to the name of a component variable or parameter
 # and the ComponentPath of the component in which it is defined
 @class DatumReference <: NamedObj begin
@@ -112,33 +157,6 @@ end
 end
 
 Base.pathof(dr::AbstractDatumReference) = dr.comp_path
-
-#
-# TBD: rather than store an array of these, perhaps this class should store
-# multiple references, since there is only one name and (at most) one default
-# value. It might look like this:
-#
-# @class DatumReference <: NamedObj
-#
-# struct UnnamedReference
-#    root::AbstractComponentDef
-#    comp_path::ComponentPath
-# end
-#
-# @class ParameterDefReference <: DatumReference begin
-#    name::Symbol is inherited from NamedObj
-#    default::Any    # allows defaults set in composites
-#    refs::Vector{UnnammedReference}
-# end
-#
-# DatumReference would become simpler, with no new fields beyond those in NamedObj,
-# with the root and comp_path moved into VariableDefReference instead.
-#
-# @class VariableDefReference  <: DatumReference begin
-#    name::Symbol is inherited from NamedObj
-#    unnamed_ref::UnnamedReference
-# end
-#
 
 @class ParameterDefReference <: DatumReference begin
     default::Any    # allows defaults set in composites
@@ -156,13 +174,10 @@ function dereference(ref::AbstractDatumReference)
     return comp[ref.name]
 end
 
-# Might not be useful
-# convert(::Type{VariableDef},  ref::VariableDefReference)  = dereference(ref)
-# convert(::Type{ParameterDef}, ref::ParameterDefReference) = dereference(ref)
-
 # Define which types can appear in the namespace dict for leaf and composite compdefs
 global const LeafNamespaceElement      = AbstractDatumDef
-global const CompositeNamespaceElement = Union{AbstractComponentDef, AbstractDatumReference}
+global const CompositeDatumDef         = Union{AbstractCompositeParameterDef, AbstractCompositeVariableDef}
+global const CompositeNamespaceElement = Union{AbstractComponentDef, CompositeDatumDef}
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
 @class mutable CompositeComponentDef <: ComponentDef begin
@@ -171,8 +186,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
 
-    # store default values at the composite level until ModelDef is built
-    defaults::Vector{ParameterDefReference}
 
     sorted_comps::Union{Nothing, Vector{Symbol}}
 
@@ -188,7 +201,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
         self.comp_path = ComponentPath(self.name)
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.backups = Vector{Symbol}()
-        self.defaults = Vector{ParameterDefReference}()
         self.sorted_comps = nothing
     end
 end

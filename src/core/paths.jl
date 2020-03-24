@@ -70,11 +70,6 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
             end
         end
 
-        defaults = child.defaults
-        for (i, ref) in enumerate(defaults)
-            ref_comp = find_comp(parent, pathof(ref))
-            defaults[i] = ParameterDefReference(ref.name, root, pathof(ref_comp), ref.default)
-        end
 
     else
         for datum in [variables(child)..., parameters(child)...]

@@ -175,26 +175,26 @@ function _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::Name
     comp.namespace[key] = value
 end
 
-"""
-    datum_reference(comp::ComponentDef, datum_name::Symbol)
+# """
+#     datum_reference(comp::ComponentDef, datum_name::Symbol)
 
-Create a reference to the given datum, which must already exist.
-"""
-function datum_reference(comp::ComponentDef, datum_name::Symbol)
-    obj = _ns_get(comp, datum_name, AbstractDatumDef)
-    path = @or(obj.comp_path, ComponentPath(comp.name))
-    ref_type = obj isa ParameterDef ? ParameterDefReference : VariableDefReference
-    return ref_type(datum_name, get_root(comp), path)
-end
+# Create a reference to the given datum, which must already exist.
+# """
+# function datum_reference(comp::ComponentDef, datum_name::Symbol)
+#     obj = _ns_get(comp, datum_name, AbstractDatumDef)
+#     path = @or(obj.comp_path, ComponentPath(comp.name))
+#     ref_type = obj isa ParameterDef ? ParameterDefReference : VariableDefReference
+#     return ref_type(datum_name, get_root(comp), path)
+# end
 
-"""
-    datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol)
+# """
+#     datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol)
 
-Create a reference to the given datum, which itself must be a DatumReference.
-"""
-function datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol)
-    _ns_get(comp, datum_name, AbstractDatumReference)
-end
+# Create a reference to the given datum, which itself must be a DatumReference.
+# """
+# function datum_reference(comp::AbstractCompositeComponentDef, datum_name::Symbol)
+#     _ns_get(comp, datum_name, AbstractDatumReference)
+# end
 
 function Base.setindex!(comp::AbstractCompositeComponentDef, value::CompositeNamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
@@ -346,20 +346,24 @@ parameter_names(md::ModelDef, comp_name::Symbol) = parameter_names(compdef(md, c
 
 parameter_names(comp_def::AbstractComponentDef) = collect(keys(param_dict(comp_def)))
 
-parameter(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, ParameterDef)
+# parameter(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, ParameterDef)
 
-parameter(obj::AbstractCompositeComponentDef,
-          name::Symbol) = dereference(_ns_get(obj, name, ParameterDefReference))
+# parameter(obj::AbstractCompositeComponentDef,
+#           name::Symbol) = dereference(_ns_get(obj, name, ParameterDefReference))
+
+parameter(obj::AbstractComponentDef, name::Symbol) = _ns_get(obj, name, AbstractParameterDef)
 
 parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol,
           param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
 
 parameter(dr::ParameterDefReference) = parameter(compdef(dr), nameof(dr))
 
-has_parameter(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, ParameterDef)
+# has_parameter(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, ParameterDef)
 
-has_parameter(comp_def::AbstractCompositeComponentDef,
-              name::Symbol) = _ns_has(comp_def, name, ParameterDefReference)
+# has_parameter(comp_def::AbstractCompositeComponentDef,
+#               name::Symbol) = _ns_has(comp_def, name, ParameterDefReference)
+
+has_parameter(comp_def::AbstractComponentDef, name::Symbol) = _ns_has(comp_def, name, AbstractParameterDef)
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -496,12 +500,27 @@ function recurse(obj::ComponentDef, f::Function, args...;
     nothing
 end
 
-function leaf_params(obj::AbstractCompositeComponentDef)
-    params = []
-    recurse(obj, x->append!(params, parameters(x)); leaf_only=true)
+# function leaf_params(obj::AbstractCompositeComponentDef)
+#     params = []
+#     recurse(obj, x->append!(params, parameters(x)); leaf_only=true)
 
-    root = get_root(obj)
-    return [ParameterDefReference(nameof(param), root, pathof(param)) for param in params]
+#     root = get_root(obj)
+#     return [ParameterDefReference(nameof(param), root, pathof(param)) for param in params]
+# end
+
+# return UnnamedReference's for all subcomponents' parameters
+function subcomp_params(obj::AbstractCompositeComponentDef)
+    params = UnnamedReference[]
+    for (name, sub_obj) in obj.namespace
+        if sub_obj isa ComponentDef
+            for (subname, curr_obj) in sub_obj.namespace
+                if curr_obj isa AbstractParameterDef
+                    push!(params, UnnamedReference(name, subname))
+                end
+            end
+        end
+    end
+    return params
 end
 
 """
@@ -585,17 +604,12 @@ model's index labels.
 """
 function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     # search immediate subcomponents for this parameter
-    found = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
+    found_comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
 
     if ! has_parameter(md, param_name)
-        count = length(found)
+        count = length(found_comps)
         if count >= 1
-            comp = found[1]
-            # @info "Found one child with $param_name to auto-import: $(comp.comp_id)"
-            import_param!(md, param_name, comp => param_name)
-
-        # elseif count > 1
-        #     # error("Can't set parameter :$param_name; found in multiple components")
+            import_param!(md, param_name, [comp => param_name for comp in found_comps]...)
         else # count == 0
             error("Can't set parameter :$param_name; not found in ModelDef or children")
         end
@@ -609,13 +623,13 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    param_ref = md[param_name]
-    comp_def = compdef(param_ref)
-    param = dereference(param_ref)
-    param_dims = dim_names(param)
+    param_def = md[param_name]
+    comp_name = found_comps[1].name
+    comp_def = md[comp_name]
+    param_dims = param_def.dim_names
     num_dims = length(param_dims)
 
-    data_type = param.datatype
+    data_type = param_def.datatype
     dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
 
     if num_dims > 0
@@ -628,7 +642,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
             value_dims = length(size(value))
             if num_dims != value_dims
                 error("Mismatched data size for a set parameter call: dimension :$param_name",
-                      " in $(pathof(comp_def)) has $num_dims dimensions; indicated value",
+                      " in $comp_name has $num_dims dimensions; indicated value",
                       " has $value_dims dimensions.")
             end
             value = convert(Array{dtype, num_dims}, value)
@@ -668,12 +682,8 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     end
 
     # connect_param! calls dirty! so we don't have to
-    if length(found) == 1
-        connect_param!(md, comp_def, nameof(param_ref), param_name)
-    else
-        for comp_def in found
-            connect_param!(md, comp_def, param_name, param_name)
-        end
+    for comp in found_comps
+        connect_param!(md, comp, param_name, param_name)
     end
     nothing
 end
@@ -984,13 +994,13 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     _insert_comp!(obj, comp_def, before=before, after=after)
 
     # Set parameters to any specified defaults, but only for leaf components
-    if is_leaf(comp_def)
-        for param in parameters(comp_def)
-            if param.default !== nothing
-                save_default!(obj, comp_def, param)
-            end
-        end
-    end
+    # if is_leaf(comp_def)
+    #     for param in parameters(comp_def)
+    #         if param.default !== nothing
+    #             save_default!(obj, comp_def, param)
+    #         end
+    #     end
+    # end
 
     # Return the comp since it's a copy of what was passed in
     return comp_def

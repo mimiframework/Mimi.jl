@@ -54,7 +54,7 @@ end
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
 function _check_labels(obj::AbstractCompositeComponentDef,
-                       comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
+                       comp_def::AbstractComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(ext_param.values)
@@ -111,7 +111,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
     connect_param!(obj, comp_def, param_name, ext_param_name, check_labels=check_labels)
 end
 
-function connect_param!(obj::AbstractCompositeComponentDef, comp_def::ComponentDef,
+function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                         param_name::Symbol, ext_param_name::Symbol; check_labels::Bool=true)
     ext_param = external_param(obj, ext_param_name)
 
@@ -334,38 +334,72 @@ function dereferenced_conn(obj::AbstractCompositeComponentDef,
     return ipc
 end
 
+# """
+#     connection_refs(obj::AbstractCompositeComponentDef)
+
+# Return a vector of ParameterDefReferences to parameters with connections.
+# The references are always to the original Parameter definition in a leaf
+# component.
+# """
+# function connection_refs(obj::AbstractCompositeComponentDef)
+#     refs = ParameterDefReference[]
+#     root = get_root(obj)
+#     # @info "root of $(obj.comp_id) is $(root.comp_id))"
+
+#     function _add_conns(obj::AbstractCompositeComponentDef)
+#         append!(refs, [param_ref(root, conn) for conn in obj.internal_param_conns])
+#     end
+
+#     recurse(obj, _add_conns; composite_only=true)
+
+#     if obj isa ModelDef
+#         append!(refs, [param_ref(obj, epc) for epc in external_param_conns(obj)])
+#     end
+#     return refs
+# end
+
 """
     connection_refs(obj::AbstractCompositeComponentDef)
 
-Return a vector of ParameterDefReferences to parameters with connections.
-The references are always to the original Parameter definition in a leaf
-component.
+Return a vector of UnnamedReference's to parameters with connections.
 """
 function connection_refs(obj::AbstractCompositeComponentDef)
-    refs = ParameterDefReference[]
-    root = get_root(obj)
-    # @info "root of $(obj.comp_id) is $(root.comp_id))"
+    refs = UnnamedReference[]
 
-    function _add_conns(obj::AbstractCompositeComponentDef)
-        append!(refs, [param_ref(root, conn) for conn in obj.internal_param_conns])
+    for item in values(obj.namespace)
+        if item isa CompositeParameterDef
+            for ref in item.refs
+                push!(refs, ref)
+            end
+        end
     end
-
-    recurse(obj, _add_conns; composite_only=true)
 
     if obj isa ModelDef
         append!(refs, [param_ref(obj, epc) for epc in external_param_conns(obj)])
+        error("CK need to implement")
     end
+
     return refs
 end
+
+# """
+#     unconnected_params(obj::AbstractCompositeComponentDef)
+
+# Return a list of ParameterDefReferences to parameters that have not been connected
+# to a value.
+# """
+# function unconnected_params(obj::AbstractCompositeComponentDef)
+#     return setdiff(leaf_params(obj), connection_refs(obj))
+# end
 
 """
     unconnected_params(obj::AbstractCompositeComponentDef)
 
-Return a list of ParameterDefReferences to parameters that have not been connected
+Return a list of UnnamedReference's to parameters that have not been connected
 to a value.
 """
 function unconnected_params(obj::AbstractCompositeComponentDef)
-    return setdiff(leaf_params(obj), connection_refs(obj))
+    return setdiff(subcomp_params(obj), connection_refs(obj))
 end
 
 """
