@@ -512,7 +512,7 @@ end
 function subcomp_params(obj::AbstractCompositeComponentDef)
     params = UnnamedReference[]
     for (name, sub_obj) in obj.namespace
-        if sub_obj isa ComponentDef
+        if sub_obj isa AbstractComponentDef
             for (subname, curr_obj) in sub_obj.namespace
                 if curr_obj isa AbstractParameterDef
                     push!(params, UnnamedReference(name, subname))
@@ -607,11 +607,10 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
     found_comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
 
     if ! has_parameter(md, param_name)
-        count = length(found_comps)
-        if count >= 1
-            import_param!(md, param_name, [comp => param_name for comp in found_comps]...)
-        else # count == 0
+        if isempty(found_comps)
             error("Can't set parameter :$param_name; not found in ModelDef or children")
+        else 
+            import_param!(md, param_name, [comp => param_name for comp in found_comps]...)
         end
     end
 

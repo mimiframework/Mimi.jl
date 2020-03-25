@@ -361,10 +361,15 @@ end
 """
     connection_refs(obj::AbstractCompositeComponentDef)
 
-Return a vector of UnnamedReference's to parameters with connections.
+Return a vector of UnnamedReference's to parameters from subcomponents that are either found in
+internal connections or that have been already imported in a parameter definition.
 """
 function connection_refs(obj::AbstractCompositeComponentDef)
     refs = UnnamedReference[]
+
+    for conn in obj.internal_param_conns
+        push!(refs, UnnamedReference(conn.dst_comp_path.names[end], conn.dst_par_name))
+    end
 
     for item in values(obj.namespace)
         if item isa CompositeParameterDef
@@ -374,9 +379,18 @@ function connection_refs(obj::AbstractCompositeComponentDef)
         end
     end
 
-    if obj isa ModelDef
-        append!(refs, [param_ref(obj, epc) for epc in external_param_conns(obj)])
-        error("CK need to implement")
+    return refs
+end
+
+function connection_refs(obj::ModelDef)
+    refs = UnnamedReference[]
+
+    for conn in obj.internal_param_conns
+        push!(refs, UnnamedReference(conn.dst_comp_path.names[end], conn.dst_par_name))
+    end
+
+    for conn in obj.external_param_conns
+        push!(refs, UnnamedReference(conn.comp_path.names[end], conn.param_name))
     end
 
     return refs
