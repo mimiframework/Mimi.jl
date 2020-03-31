@@ -226,33 +226,41 @@ function import_params!(obj::AbstractCompositeComponentDef;
     end
 end
 
+function _find_collisions(fields, pairs)
+    collisions = Symbol[]
+
+    pardefs = [comp.namespace[param_name] for (comp, param_name) in pairs]
+    for f in fields
+        subcomponent_set = Set([getproperty(pardef, f) for pardef in pardefs])
+        length(subcomponent_set) > 1 && push!(collisions, f)
+    end
+
+    return collisions
+end
+
 # `kwargs` contains the keywords specified by the user when defining the composite parameter in @defcomposite.
 # If the user does not provide a value for one or any of the possible fields, this function looks at the fields 
 # of the subcomponents' parameters to use, but errors if any of them are in conflict.
 # Note that :dim_names and :datatype can't be specified at the composite level, but must match from the subcomponents.
 function _resolve_composite_parameter_kwargs(obj::AbstractCompositeComponentDef, kwargs::Dict{Symbol, Any}, pairs::Vector{Pair{T, Symbol}}, parname::Symbol)  where T <: AbstractComponentDef
     
-    composite_parameter_conflict_fields = (:default, :description, :unit, :dim_names, :datatype)
-
-    # Access the subcomponents' ParameterDef's specified in `pairs` to be used below for field-checking
-    pardefs = [comp.namespace[param_name] for (comp, param_name) in pairs]
+    fields = (:default, :description, :unit, :dim_names, :datatype)
+    collisions = _find_collisions(fields, pairs)
 
     # Create a new dictionary of resolved values to return
     new_kwargs = Dict{Symbol, Any}()
 
-    for f in composite_parameter_conflict_fields
+    for f in fields
         try 
             new_kwargs[f] = kwargs[f] # Get the user specified value for this field if there is one
         catch e
             # If the composite definition does not specify a value, then need to look to subcomponents and resolve or error
-            subcomponent_set = Set([getproperty(pardef, f) for pardef in pardefs]) # could add an optional "if" here if we want to exclude nothing's or ""'s
-            n = length(subcomponent_set)
-            if n == 1
-                new_kwargs[f] = collect(subcomponent_set)[1]
-            elseif n == 0
-                new_kwargs[f] = nothing
-            else
+            if f in collisions
                 error("Cannot build composite parameter :$parname, subcomponents have conflicting values for the \"$f\" field.")
+            else
+                compdef, curr_parname = pairs[1]
+                pardef = compdef[curr_parname]   
+                new_kwargs[f] = getproperty(pardef, f)
             end
         end
     end

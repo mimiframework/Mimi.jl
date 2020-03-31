@@ -594,23 +594,32 @@ end
 """
     set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
 
-Set the value of a parameter exposed in `md` by following the ParameterDefReference. If
-not found in the local namespace, import it if there is only one such parameter in md'same
-children, and it is not yet bound. Otherwise raise an error.
+Set the value of a parameter in all components of the model that have a parameter of 
+the specified name.
 
 The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.
 """
-function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
+function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing; ignore_units::Bool=false)
     # search immediate subcomponents for this parameter
     found_comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
 
-    if ! has_parameter(md, param_name)
-        if isempty(found_comps)
-            error("Can't set parameter :$param_name; not found in ModelDef or children")
-        else 
-            import_param!(md, param_name, [comp => param_name for comp in found_comps]...)
+    if isempty(found_comps)
+        error("Can't set parameter :$param_name; not found in ModelDef or children")
+    end
+
+    # which fields to check for collisions in subcomponents
+    fields = ignore_units ? [:dim_names, :datatype] : [:dim_names, :datatype, :unit]
+    collisions = _find_collisions(fields, [comp => param_name for comp in found_comps])
+    if ! isempty(collisions) 
+        if :unit in collisions
+            error("Cannot set parameter :$param_name in the model, components have conflicting values for the :unit field of this parameter. ", 
+            "Call `set_param!` with optional keyword argument `ignore_units = true` to override.")
+        else
+            spec = join(collisions, " and ")
+            error("Cannot set parameter :$param_name in the model, components have conflicting values for the $spec of this parameter. ",
+            "Set these parameters with separate calls to `set_param!(m, comp_name, param_name, unique_param_name, value)`.")
         end
     end
 
@@ -622,9 +631,8 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    param_def = md[param_name]
-    comp_name = found_comps[1].name
-    comp_def = md[comp_name]
+    comp_def = found_comps[1]   # since we alread checked that the found comps have no conflicting fields in their parameter definitions, we can just use the first one for reference below
+    param_def = comp_def[param_name]
     param_dims = param_def.dim_names
     num_dims = length(param_dims)
 
@@ -641,7 +649,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
             value_dims = length(size(value))
             if num_dims != value_dims
                 error("Mismatched data size for a set parameter call: dimension :$param_name",
-                      " in $comp_name has $num_dims dimensions; indicated value",
+                      " in has $num_dims dimensions; indicated value",
                       " has $value_dims dimensions.")
             end
             value = convert(Array{dtype, num_dims}, value)

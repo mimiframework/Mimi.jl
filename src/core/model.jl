@@ -341,33 +341,14 @@ that they match the model's index labels.
 """
 @delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
 
-# Deprecated?
-"""
-    set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
-
-Set a parameter for a component with the given relative path (as a string), in which "/x" means the
-component with name `:x` beneath `m.md`. If the path does not begin with "/", it is treated as
-relative to `m.md`, which at the top of the hierarchy, produces the same result as starting with "/".
-"""
-@delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
-
-# Deprecated?
-"""
-    set_param!(m::Model, path::AbstractString, value, dims=nothing)
-
-Similar to above but param_name appears in `path` after a colon delimiter.
-"""
-@delegate set_param!(m::Model, path::AbstractString, value, dims=nothing) => md
 
 """
     set_param!(m::Model, param_name::Symbol, value, dims=nothing)
 
-Set the value of a parameter exposed in the ModelDef (m.md).
+Set the value of a parameter in all components of the model that have a parameter of 
+the specified name.
 """
-@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
-
-# Deprecated?
-@delegate set_param!(m::Model, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing) => md
+@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing; ignore_units::Bool=false) => md
 
 @delegate import_params!(m::Model) => md
 
