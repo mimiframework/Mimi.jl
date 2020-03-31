@@ -188,51 +188,24 @@ function _set_defaults!(md::ModelDef)
     not_set = unconnected_params(md)
     isempty(not_set) && return
 
-    d = Dict()
-
-    function _store_defaults(obj)
-        if obj isa AbstractCompositeComponentDef
-            for ref in obj.defaults
-                d[(pathof(ref), nameof(ref))] = ref.default
-            end
-        else
-            for param in parameters(obj)
-                if param.default !== nothing
-                    d[(pathof(obj), nameof(param))] = param.default
-                end
-            end
-        end
-    end
-    recurse(md, _store_defaults)
-
     for ref in not_set
-        param = dereference(ref)
-        path = pathof(param)
-        name = nameof(param)
-        key = (path, name)
-        value = get(d, key, missing)
-        if value !== missing
-            # @info "Setting param :$name to default $value"
-            set_param!(md, name, value)
-        end
+        comp_name, par_name = ref.comp_name, ref.datum_name
+        pardef = md[comp_name][par_name]
+        default_value = pardef.default
+        default_value === nothing || set_param!(md, par_name, default_value)
     end
 end
 
 function _build(md::ModelDef)
-    # moved to build(m), below
-    # import_params!(md)
 
     # @info "_build(md)"
     add_connector_comps!(md)
-
-    # moved to build(m), below
-    # _set_defaults!(md)
 
     # check if all parameters are set
     not_set = unconnected_params(md)
 
     if ! isempty(not_set)
-        params = join(not_set, "\n  ")
+        params = join([p.datum_name for p in not_set], "\n  ")
         error("Cannot build model; the following parameters are not set:\n  $params")
     end
 
@@ -253,11 +226,9 @@ function _build(md::ModelDef)
 end
 
 function build(m::Model)
-    # import any unconnected params into ModelDef
-    import_params!(m.md)
 
     # apply defaults to unset parameters
-    _set_defaults!(m.md)
+    _set_defaults!(m.md)    # should this actually happen on the deepcopy below isntead?
 
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
