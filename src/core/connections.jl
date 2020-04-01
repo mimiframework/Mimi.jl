@@ -294,69 +294,98 @@ function connect_param!(obj::AbstractCompositeComponentDef, dst::AbstractString,
 end
 
 """
-    param_ref(md::ModelDef, conn::InternalParameterConnection)
+    _find_paths_and_names(obj::AbstractComponentDef, datum_name::Symbol)
 
-Return a ParameterDefReference to the parameter indicated in the given
-connection. Used for comparing connections to parameters to find those
-that are (un)connected.
+Recurses through sub components and finds the full path(s) to desired datum, and their
+names at the leaf level. Returns a tuple (paths::Vector{ComponentPath}, datum_names::Vector{Symbol})
 """
-function param_ref(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
-    comp = find_comp(obj, conn.dst_comp_path)
-    comp !== nothing || error("Can't find $(conn.dst_comp_path) from $(obj.comp_id)")
-    return datum_reference(comp, conn.dst_par_name)
+function _find_paths_and_names(obj::AbstractComponentDef, datum_name::Symbol)
+
+    # Base case-- leaf component
+    if obj isa ComponentDef
+        return ([nothing], [datum_name])
+    end
+
+    datumdef = obj[datum_name]
+    if datumdef isa CompositeVariableDef
+        refs = [datumdef.ref]   # CompositeVariableDef's can only point to one subcomponent
+    else
+        refs = datumdef.refs    # ComposteParameterDef's can have multiple refs
+    end
+
+    paths = []
+    datum_names = []
+
+    for ref in refs
+        # Get the comp and datum's for the current ref
+        next_obj = obj[ref.comp_name]
+        next_datum_name = ref.datum_name
+
+        # Recurse
+        sub_paths, sub_datum_names = _find_paths_and_names(next_obj, next_datum_name)
+
+        # Append the paths, and save with datum_names
+        for (sp, dn) in zip(sub_paths, sub_datum_names)
+            push!(paths, ComponentPath(next_obj.name, sp))
+            push!(datum_names, dn)
+        end
+    end
+
+    return (paths, datum_names)
 end
 
-function param_ref(md::ModelDef, conn::ExternalParameterConnection)
-    comp = find_comp(md, pathof(conn))
-    comp !== nothing || error("Can't find $(pathof(conn)) from $(md.comp_id)")
-    return datum_reference(comp, nameof(conn))
+"""
+    _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
+
+Returns a vector of InternalParameterConnections that represent all of the connections at the leaf level 
+that need to be made under the hood as specified by `conn`.
+"""
+function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
+
+    top_dst_path = conn.dst_comp_path
+    comp = find_comp(md, top_dst_path)
+    comp !== nothing || error("Can't find $(top_dst_path) from $(md.comp_id)")
+    par_sub_paths, param_names = _find_paths_and_names(comp, conn.dst_par_name)
+    param_paths = [ComponentPath(top_dst_path, sub_path) for sub_path in par_sub_paths]
+
+    top_src_path = conn.src_comp_path
+    comp = find_comp(md, top_src_path)
+    comp !== nothing || error("Can't find $(top_src_path) from $(md.comp_id)")
+    var_sub_path, var_name = _find_paths_and_names(comp, conn.src_var_name)
+    var_path = ComponentPath(top_src_path, var_sub_path[1])
+
+    ipcs = [InternalParameterConnection(var_path, var_name[1], param_path, param_name, 
+        conn.ignoreunits, conn.backup; offset=conn.offset) for (param_path, param_name) in
+        zip(param_paths, param_names)]
+    return ipcs
 end
 
+
 """
-    dereferenced_conn(obj::AbstractCompositeComponentDef,
-                      conn::InternalParameterConnection)
+    _get_leaf_level_epcs(md::AbstractCompositeComponentDef, epc::ExternalParameterConnection)
 
-Convert an InternalParameterConnection with datum references to one referring
-only to leaf component pars and vars.
+Returns a vector that has a new ExternalParameterConnections that represent all of the connections at the leaf level 
+that need to be made under the hood as specified by `epc`.
 """
-function dereferenced_conn(obj::AbstractCompositeComponentDef,
-                           conn::InternalParameterConnection)
-    comp = find_comp(obj, conn.dst_comp_path)
-    comp !== nothing || error("Can't find $(conn.dst_comp_path) from $(obj.comp_id)")
-    pref = datum_reference(comp, conn.dst_par_name)
+function _get_leaf_level_epcs(md::ModelDef, epc::ExternalParameterConnection)
 
-    comp = find_comp(obj, conn.src_comp_path)
-    comp !== nothing || error("Can't find $(conn.src_comp_path) from $(obj.comp_id)")
-    vref = datum_reference(comp, conn.src_var_name)
+    comp = find_comp(md, epc.comp_path)
+    comp !== nothing || error("Can't find $(epc.comp_path) from $(md.comp_id)")
+    par_sub_paths, param_names = _find_paths_and_names(comp, epc.param_name)
 
-    ipc = InternalParameterConnection(pathof(vref), nameof(vref), pathof(pref), nameof(pref),
-                                      conn.ignoreunits, conn.backup; offset=conn.offset)
-    return ipc
+    leaf_epcs = ExternalParameterConnection[]
+    external_param_name = epc.external_param
+
+    top_path = epc.comp_path
+
+    for (par_sub_path, param_name) in zip(par_sub_paths, param_names)
+        param_path = ComponentPath(top_path, par_sub_path)
+        epc = ExternalParameterConnection(param_path, param_name, external_param_name)
+        push!(leaf_epcs, epc)
+    end
+
+    return leaf_epcs
 end
-
-# """
-#     connection_refs(obj::AbstractCompositeComponentDef)
-
-# Return a vector of ParameterDefReferences to parameters with connections.
-# The references are always to the original Parameter definition in a leaf
-# component.
-# """
-# function connection_refs(obj::AbstractCompositeComponentDef)
-#     refs = ParameterDefReference[]
-#     root = get_root(obj)
-#     # @info "root of $(obj.comp_id) is $(root.comp_id))"
-
-#     function _add_conns(obj::AbstractCompositeComponentDef)
-#         append!(refs, [param_ref(root, conn) for conn in obj.internal_param_conns])
-#     end
-
-#     recurse(obj, _add_conns; composite_only=true)
-
-#     if obj isa ModelDef
-#         append!(refs, [param_ref(obj, epc) for epc in external_param_conns(obj)])
-#     end
-#     return refs
-# end
 
 """
     connection_refs(obj::AbstractCompositeComponentDef)
@@ -382,6 +411,12 @@ function connection_refs(obj::AbstractCompositeComponentDef)
     return refs
 end
 
+"""
+    connection_refs(obj::ModelDef)
+
+Return a vector of UnnamedReference's to parameters from subcomponents that are either found in
+internal connections or that have been already connected to external parameter values.
+"""
 function connection_refs(obj::ModelDef)
     refs = UnnamedReference[]
 
@@ -395,16 +430,6 @@ function connection_refs(obj::ModelDef)
 
     return refs
 end
-
-# """
-#     unconnected_params(obj::AbstractCompositeComponentDef)
-
-# Return a list of ParameterDefReferences to parameters that have not been connected
-# to a value.
-# """
-# function unconnected_params(obj::AbstractCompositeComponentDef)
-#     return setdiff(leaf_params(obj), connection_refs(obj))
-# end
 
 """
     unconnected_params(obj::AbstractCompositeComponentDef)

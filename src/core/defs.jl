@@ -700,7 +700,7 @@ end
 #
 variable(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, VariableDef)
 
-variable(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, VariableDefReference)
+variable(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, CompositeVariableDef)
 
 variable(comp_id::ComponentId, var_name::Symbol) = variable(compdef(comp_id), var_name)
 
@@ -717,7 +717,7 @@ variable(dr::VariableDefReference) = variable(compdef(dr), nameof(dr))
 
 has_variable(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDef)
 
-has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDefReference)
+has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, CompositeVariableDef)
 
 """
     variable_names(md::AbstractCompositeComponentDef, comp_name::Symbol)

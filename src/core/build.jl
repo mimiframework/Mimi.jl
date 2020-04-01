@@ -104,19 +104,20 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
     pdict = Dict{Tuple{ComponentPath, Symbol}, Any}()
 
     for conn in conns
-        ipc = dereferenced_conn(md, conn)
-        # @info "src_comp_path: $(ipc.src_comp_path)"
-        src_vars = var_dict[ipc.src_comp_path]
-        # @info "src_vars: $src_vars, name: $(ipc.src_var_name)"
-        var_value_obj = get_property_obj(src_vars, ipc.src_var_name)
-        pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
-        # @info "internal conn: $(ipc.src_comp_path):$(ipc.src_var_name) => $(ipc.dst_comp_path):$(ipc.dst_par_name)"
+        ipcs = _get_leaf_level_ipcs(md, conn)
+        src_vars = var_dict[ipcs[1].src_comp_path]
+        var_value_obj = get_property_obj(src_vars, ipcs[1].src_var_name)
+        for ipc in ipcs
+            pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
+        end
     end
 
     for epc in external_param_conns(md)
         param = external_param(md, epc.external_param)
-        pdict[(epc.comp_path, epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
-        # @info "external conn: $(pathof(epc)).$(nameof(epc)) => $(param)"
+        leaf_level_epcs = _get_leaf_level_epcs(md, epc)
+        for leaf_epc in leaf_level_epcs
+            pdict[(leaf_epc.comp_path, leaf_epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
+        end
     end
 
     # Make the external parameter connections for the hidden ConnectorComps.
