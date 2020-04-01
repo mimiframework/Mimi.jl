@@ -364,6 +364,7 @@ parameter(dr::ParameterDefReference) = parameter(compdef(dr), nameof(dr))
 #               name::Symbol) = _ns_has(comp_def, name, ParameterDefReference)
 
 has_parameter(comp_def::AbstractComponentDef, name::Symbol) = _ns_has(comp_def, name, AbstractParameterDef)
+has_parameter(md::ModelDef, name::Symbol) = haskey(md.external_params, name)
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -565,27 +566,15 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, 
     set_param!(md, comp_def, param_name, value, dims)
 end
 
-"""
-Compare two items, each of which must be either a ParameterDef or ParameterDefReference,
-to see if they refer to the same ultimate parameter.
-"""
-function _is_same_param(p1::Union{ParameterDef, ParameterDefReference},
-                        p2::Union{ParameterDef, ParameterDefReference})
-    p1 = (p1 isa ParameterDefReference ? dereference(p1) : p1)
-    p2 = (p2 isa ParameterDefReference ? dereference(p2) : p2)
-    return p1 == p2
-end
-
 function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol,
                     value, dims=nothing)
     has_parameter(comp_def, param_name) ||
         error("Can't find parameter :$param_name in component $(pathof(comp_def))")
 
-    if ! has_parameter(md, param_name)
-        import_param!(md, param_name, comp_def => param_name)
-
-    elseif ! _is_same_param(md[param_name], comp_def[param_name])
-        error("Can't import parameter :$param_name; ModelDef has another item with this name")
+    if has_parameter(md, param_name)
+        error("Cannot set parameter :$param_name, the model already has an external parameter with this name.", 
+        " Use `update_param(m, param_name, value)` to change the value, or use ",
+        "`set_param(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
     end
 
     set_param!(md, param_name, value, dims)

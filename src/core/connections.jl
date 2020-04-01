@@ -450,10 +450,9 @@ the dictionary keys are strings that match the names of unset parameters in the 
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     for param_ref in unconnected_params(md)
-        comp_path = pathof(param_ref)
-        param_name = nameof(param_ref)
-        comp_def = compdef(md, comp_path)
-        comp_name = nameof(comp_def)
+        param_name = param_ref.datum_name
+        comp_name = param_ref.comp_name
+        comp_def = find_comp(md, comp_name)
 
         # @info "set_leftover_params: comp_name=$comp_name, param=$param_name"
         # check whether we need to set the external parameter
