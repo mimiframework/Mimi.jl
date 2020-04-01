@@ -216,8 +216,11 @@ function import_params!(obj::AbstractCompositeComponentDef;
         end
     end
 
-    unique_names = Set([ref.datum_name for ref in unconn])
-    length(unique_names) == length(unconn) || error("There are unresolved parameter name collisions from subcomponents.")
+    all_names = [ref.datum_name for ref in unconn]
+    unique_names = unique(all_names)
+    _map = Dict([name => count(isequal(name), all_names) for name in unique_names])
+    non_unique = [name for (name, val) in _map if val>1]
+    isempty(non_unique) || error("There are unresolved parameter name collisions from subcomponents for the following parameter names: $(non_unique...).")
 
     for param_ref in unconn
         name = param_ref.datum_name
