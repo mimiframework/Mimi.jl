@@ -453,17 +453,25 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
         param_name = param_ref.datum_name
         comp_name = param_ref.comp_name
         comp_def = find_comp(md, comp_name)
+        param_def = comp_def[param_name]
+
 
         # @info "set_leftover_params: comp_name=$comp_name, param=$param_name"
         # check whether we need to set the external parameter
+        _skip = false
         if external_param(md, param_name, missing_ok=true) === nothing
-            value = parameters[string(param_name)]
-            param_dims = parameter_dimensions(md, comp_name, param_name)
+            if haskey(parameters, string(param_name))  
+                value = parameters[string(param_name)]
+                param_dims = parameter_dimensions(md, comp_name, param_name)
 
-            set_external_param!(md, param_name, value; param_dims = param_dims)
-
+                set_external_param!(md, param_name, value; param_dims = param_dims)
+            elseif param_def.default != nothing
+                _skip = true
+            else
+                error("Cannot set parameter :$param_name, not found in provided dictionary and no default value deteceted.")
+            end
         end
-        connect_param!(md, comp_name, param_name, param_name)
+        _skip || connect_param!(md, comp_name, param_name, param_name)
     end
     nothing
 end
