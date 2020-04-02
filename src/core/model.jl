@@ -348,7 +348,7 @@ that they match the model's index labels.
 Set the value of a parameter in all components of the model that have a parameter of 
 the specified name.
 """
-@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing; ignore_units::Bool=false) => md
+@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing; ignoreunits::Bool=false) => md
 
 @delegate import_params!(m::Model) => md
 

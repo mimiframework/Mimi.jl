@@ -550,34 +550,28 @@ function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, An
     set_param!(md, comp_name, param_name, value, dims)
 end
 
-# May be deprecated
-function set_param!(md::ModelDef, comp_path::ComponentPath,
-                    param_name::Symbol, value, dims=nothing)
-    # @info "set_param!($(md.comp_id), $comp_path, $param_name, $value)"
-    comp_def = find_comp(md, comp_path)
-    @or(comp_def, error("Component with path $comp_path not found"))
-    # set_param!(comp.parent, nameof(comp), param_name, value, dims)
-    set_param!(md, comp_def, param_name, value, dims)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+    set_param!(md, comp_name, param_name, param_name, value, dims)
 end
 
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value, dims=nothing)
     comp_def = compdef(md, comp_name)
     @or(comp_def, error("Top-level component with name $comp_name not found"))
-    set_param!(md, comp_def, param_name, value, dims)
+    set_param!(md, comp_def, param_name, ext_param_name, value, dims)
 end
 
 function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol,
-                    value, dims=nothing)
+                    ext_param_name::Symbol, value, dims=nothing)
     has_parameter(comp_def, param_name) ||
         error("Can't find parameter :$param_name in component $(pathof(comp_def))")
 
-    if has_parameter(md, param_name)
-        error("Cannot set parameter :$param_name, the model already has an external parameter with this name.", 
+    if has_parameter(md, ext_param_name)
+        error("Cannot set parameter :$ext_param_name, the model already has an external parameter with this name.", 
         " Use `update_param(m, param_name, value)` to change the value, or use ",
         "`set_param(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
     end
 
-    set_param!(md, param_name, value, dims)
+    set_param!(md, param_name, value, dims, comps = [comp_def], ext_param_name = ext_param_name)
 end
 
 """
@@ -590,21 +584,27 @@ The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' 
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.
 """
-function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing; ignore_units::Bool=false)
+function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing; ignoreunits::Bool=false, comps=nothing, ext_param_name=nothing)
     # search immediate subcomponents for this parameter
-    found_comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
+    if comps === nothing
+        comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
+    end
 
-    if isempty(found_comps)
+    if ext_param_name === nothing
+        ext_param_name = param_name
+    end
+
+    if isempty(comps)
         error("Can't set parameter :$param_name; not found in ModelDef or children")
     end
 
     # which fields to check for collisions in subcomponents
-    fields = ignore_units ? [:dim_names, :datatype] : [:dim_names, :datatype, :unit]
-    collisions = _find_collisions(fields, [comp => param_name for comp in found_comps])
+    fields = ignoreunits ? [:dim_names, :datatype] : [:dim_names, :datatype, :unit]
+    collisions = _find_collisions(fields, [comp => param_name for comp in comps])
     if ! isempty(collisions) 
         if :unit in collisions
             error("Cannot set parameter :$param_name in the model, components have conflicting values for the :unit field of this parameter. ", 
-            "Call `set_param!` with optional keyword argument `ignore_units = true` to override.")
+            "Call `set_param!` with optional keyword argument `ignoreunits = true` to override.")
         else
             spec = join(collisions, " and ")
             error("Cannot set parameter :$param_name in the model, components have conflicting values for the $spec of this parameter. ",
@@ -620,7 +620,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing; ignor
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    comp_def = found_comps[1]   # since we alread checked that the found comps have no conflicting fields in their parameter definitions, we can just use the first one for reference below
+    comp_def = comps[1]   # since we alread checked that the found comps have no conflicting fields in their parameter definitions, we can just use the first one for reference below
     param_def = comp_def[param_name]
     param_dims = param_def.dim_names
     num_dims = length(param_dims)
@@ -670,16 +670,16 @@ function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing; ignor
             values = value
         end
 
-        set_external_array_param!(md, param_name, values, param_dims)
+        set_external_array_param!(md, ext_param_name, values, param_dims)
 
     else # scalar parameter case
         value = convert(dtype, value)
-        set_external_scalar_param!(md, param_name, value)
+        set_external_scalar_param!(md, ext_param_name, value)
     end
 
     # connect_param! calls dirty! so we don't have to
-    for comp in found_comps
-        connect_param!(md, comp, param_name, param_name)
+    for comp in comps
+        connect_param!(md, comp, param_name, ext_param_name)
     end
     nothing
 end

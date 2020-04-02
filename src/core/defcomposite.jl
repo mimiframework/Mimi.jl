@@ -224,7 +224,7 @@ function import_params!(obj::AbstractCompositeComponentDef;
 
     for param_ref in unconn
         name = param_ref.datum_name
-        haskey(obj, name) && error("Failed to auto-import parameter :$name from component :$(param_ref.comp_name), this name has already been defined in the Composite component's namesapce.")
+        haskey(obj, name) && error("Failed to auto-import parameter :$name from component :$(param_ref.comp_name), this name has already been defined in the composite component's namespace.")
         obj[name] = CompositeParameterDef(obj, param_ref)
     end
 end
