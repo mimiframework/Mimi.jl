@@ -226,8 +226,6 @@ function Base.length(v::TimestepVector)
 	return length(v.data)
 end
 
-Base.lastindex(v::TimestepVector) = length(v)
-
 #
 # c. TimestepMatrix
 #
