@@ -180,7 +180,7 @@ function Base.:(:)(start::T, step::Int, stop::T) where {T<:TimestepIndex}
 	return TimestepIndex.(indices)
 end
 
-function Base.:(:)(start::T, stop::T) where {T<:TimestepIndex}
+function Base.:(:)(start::T, stop::T) where {T<:TimestepIndex} 
 	return Base.:(:)(start, 1, stop)
 end
 
