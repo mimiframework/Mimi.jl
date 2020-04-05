@@ -44,7 +44,7 @@ idx4 = TimestepIndex(4)
 
 x = TimestepVector{FixedTimestep{2000, 1}, Int}([9, 10, 11, 12])
 @test length(x) == 4
-@test lastindex(x) == 4
+@test lastindex(x) == TimestepIndex(4)
 
 time_dim_val = [9, 10, 11, 12]
 temp_dim_val = [100, 101, 102, 103]
@@ -613,9 +613,9 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 # try  begin and end (in the methods begin and end are converted into TimestepIndex types
 @test x_vec[begin:end] == time_dim_val[:,1,1]
-@test x_mat[begin:end] == time_dim_val[:,:,1]
+@test x_mat[begin:end] == reshape(time_dim_val[:,:,1], (16))
 @test y_vec[begin:end] == time_dim_val[:,2,2]
-@test y_mat[begin:end] == time_dim_val[:,:,2]
+@test y_mat[begin:end] == reshape(time_dim_val[:,:,2], (16))
 
 #------------------------------------------------------------------------------
 # 6. Test that getindex for TimestepArrays doesn't allow access to `missing`

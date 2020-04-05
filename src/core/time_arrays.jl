@@ -112,13 +112,9 @@ end
 
 # Base.firstindex and Base.lastindex
 Base.firstindex(arr::TimestepArray) = Mimi.TimestepIndex(1)
-Base.lastindex(arr::TimestepArray) = Mimi.TimestepIndex(length(arr))
-
-Base.firstindex(arr::TimestepVector) = Mimi.TimestepIndex(1)
-Base.lastindex(arr::TimestepVector) = Mimi.TimestepIndex(length(arr))
-
-Base.firstindex(arr::TimestepMatrix) = Mimi.TimestepIndex(1)
-Base.lastindex(arr::TimestepMatrix) = Mimi.TimestepIndex(length(arr))
+# TODO Base.lastindex(arr::TimestepArray, d::Int) = 
+Base.lastindex(arr::TimestepArray) = Mimi.TimestepIndex(length(arr.data))
+# TODO Base.lastindex(arr::TimestepArray, dim::Int) = 
 
 #
 # b. TimestepVector
