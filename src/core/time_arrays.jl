@@ -110,6 +110,16 @@ function _get_ts_indices(ts_array::Array{TimestepValue{T}, 1}, times::Union{Tupl
 	return [_get_time_value_position(times, ts) for ts in ts_array]
 end
 
+# Base.firstindex and Base.lastindex
+Base.firstindex(arr::TimestepArray) = Mimi.TimestepIndex(1)
+Base.lastindex(arr::TimestepArray) = Mimi.TimestepIndex(length(arr))
+
+Base.firstindex(arr::TimestepVector) = Mimi.TimestepIndex(1)
+Base.lastindex(arr::TimestepVector) = Mimi.TimestepIndex(length(arr))
+
+Base.firstindex(arr::TimestepMatrix) = Mimi.TimestepIndex(1)
+Base.lastindex(arr::TimestepMatrix) = Mimi.TimestepIndex(length(arr))
+
 #
 # b. TimestepVector
 #
@@ -250,7 +260,6 @@ function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 2}, id
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 2}, idx::AnyIndex, ts::VariableTimestep{TIMES}) where {T, TIMES}
-	# WAS THIS: data = mat.data[ts.t, idx, ts.t]
 	data = mat.data[idx, ts.t]
 	_missing_data_check(data, ts.t)
 end

@@ -611,6 +611,11 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
+@test x_vec[begin:end] == time_dim_val[:,1,1]
+@test x_mat[begin:end] == time_dim_val[:,:,1]
+@test y_vec[begin:end] == time_dim_val[:,2,2]
+@test y_mat[begin:end] == time_dim_val[:,:,2]
+
 #------------------------------------------------------------------------------
 # 6. Test that getindex for TimestepArrays doesn't allow access to `missing`
 #       values during `run` that haven't been computed yet.
