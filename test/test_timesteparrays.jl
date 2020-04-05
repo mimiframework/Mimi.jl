@@ -611,14 +611,14 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
-# try  begin and end (in the methods begin and end are converted into TimestepIndex types which
-# is actually only enabled starting in Julia 1.2.0
-if(VERSION > v"1.2.0")
-    @test x_vec[begin:end] == time_dim_val[:,1,1]
-    @test x_mat[begin:end] == reshape(time_dim_val[:,:,1], (16))
-    @test y_vec[begin:end] == time_dim_val[:,2,2]
-    @test y_mat[begin:end] == reshape(time_dim_val[:,:,2], (16))
-end
+# this fails for lower versions of Julia
+# if(VERSION > v"1.2.0")
+#     @test x_vec[begin:end] == time_dim_val[:,1,1]
+#     @test x_mat[begin:end] == reshape(time_dim_val[:,:,1], (16))
+#     @test y_vec[begin:end] == time_dim_val[:,2,2]
+#     @test y_mat[begin:end] == reshape(time_dim_val[:,:,2], (16))
+# end
+
 #------------------------------------------------------------------------------
 # 6. Test that getindex for TimestepArrays doesn't allow access to `missing`
 #       values during `run` that haven't been computed yet.
