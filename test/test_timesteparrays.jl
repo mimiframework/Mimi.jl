@@ -611,6 +611,7 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
+# try  begin and end (in the methods begin and end are converted into TimestepIndex types
 @test x_vec[begin:end] == time_dim_val[:,1,1]
 @test x_mat[begin:end] == time_dim_val[:,:,1]
 @test y_vec[begin:end] == time_dim_val[:,2,2]
