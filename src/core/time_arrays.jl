@@ -56,16 +56,29 @@ function _single_index_check(data, idxs)
 	end
 end
 
+# Helper to print stacktrace
+function _get_stacktrace_string()
+	s = ""
+	for line in stacktrace()
+		s = string(s, line, "\n")
+	end
+	return s
+end
+
 # Helper functionfor getindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_getindex_depwarning()
-	msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
-	Base.depwarn("$msg, $(stacktrace())", :getindex)
+	msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]\n"
+	st = _get_stacktrace_string()
+	full_msg = string(msg, " \n", st)
+	Base.depwarn(full_msg, :getindex)
 end
 
 # Helper function for setindex; throws an deprecation warning if one indexes into a TimestepArray with an integer
 function _throw_int_setindex_depwarning()
 	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]"
-	Base.depwarn("$msg, $(stacktrace())", :setindex)
+	st = _get_stacktrace_string()
+	full_msg = string(msg, " \n", st)
+	Base.depwarn(full_msg, :setindex!)
 end
 
 # Helper macro used by connector
