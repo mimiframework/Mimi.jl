@@ -58,13 +58,15 @@ end
 
 # Helper to print stacktrace for the integer indexing deprecatino warning
 function _get_stacktrace_string()
-
 	s = ""
 	for line in stacktrace()
-		s = string(s, line, "\n")
-		if startswith(string(line), "macro expansion") # return as soon as you hit a macro expand
-			return s
+		line_string = string(line)
+		if startswith(line_string, "run_timestep") # shorten calls to run_timestep
+			l = "run_timestep function call"
+		else
+			l = line_string
 		end
+		s = string(s, l, "\n")
 	end
 	return s
 end
