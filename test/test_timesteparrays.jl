@@ -611,13 +611,16 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
-# TODO failures
-@test x_vec[begin] == time_dim_val[:,1,1][begin]
-@test x_mat[begin,1] == time_dim_val[:,:,1][begin,1]
-@test x_mat[begin,2] == time_dim_val[:,:,1][begin,2]
-@test y_vec[begin] == time_dim_val[:,2,2][begin]
-@test y_mat[begin,1] == time_dim_val[:,:,2][begin,1]
-@test y_mat[begin,2] == time_dim_val[:,:,2][begin,2]
+# These tests are temporarily removed because the begin syntax was deprecated for
+# a few versions and thus causes CI errors. We can bring it back in when we are 
+# testing only v1.4.0 and above.
+
+# @test x_vec[begin] == time_dim_val[:,1,1][begin]
+# @test x_mat[begin,1] == time_dim_val[:,:,1][begin,1]
+# @test x_mat[begin,2] == time_dim_val[:,:,1][begin,2]
+# @test y_vec[begin] == time_dim_val[:,2,2][begin]
+# @test y_mat[begin,1] == time_dim_val[:,:,2][begin,1]
+# @test y_mat[begin,2] == time_dim_val[:,:,2][begin,2]
 
 @test x_vec[end] == time_dim_val[:,1,1][end]
 @test x_mat[end,1] == time_dim_val[:,:,1][end,1]
