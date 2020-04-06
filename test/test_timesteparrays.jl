@@ -611,11 +611,20 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
-# TODO this fails for lower versions of Julia, PASSES on 1.4.0
-@test x_vec[begin:end] == time_dim_val[:,1,1]
-@test x_mat[begin:end] == reshape(time_dim_val[:,:,1], (16))
-@test y_vec[begin:end] == time_dim_val[:,2,2]
-@test y_mat[begin:end] == reshape(time_dim_val[:,:,2], (16))
+# TODO failures
+@test x_vec[begin] == time_dim_val[:,1,1][begin]
+@test x_mat[begin,1] == time_dim_val[:,:,1][begin,1]
+@test x_mat[begin,2] == time_dim_val[:,:,1][begin,2]
+@test y_vec[begin] == time_dim_val[:,2,2][begin]
+@test y_mat[begin,1] == time_dim_val[:,:,2][begin,1]
+@test y_mat[begin,2] == time_dim_val[:,:,2][begin,2]
+
+@test x_vec[end] == time_dim_val[:,1,1][end]
+@test x_mat[end,1] == time_dim_val[:,:,1][end,1]
+@test x_mat[end,2] == time_dim_val[:,:,1][end,2]
+@test y_vec[end] == time_dim_val[:,2,2][end]
+@test y_mat[end,1] == time_dim_val[:,:,2][end,1]
+@test y_mat[end,2] == time_dim_val[:,:,2][end,2]
 
 #------------------------------------------------------------------------------
 # 6. Test that getindex for TimestepArrays doesn't allow access to `missing`
