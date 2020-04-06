@@ -56,11 +56,15 @@ function _single_index_check(data, idxs)
 	end
 end
 
-# Helper to print stacktrace
+# Helper to print stacktrace for the integer indexing deprecatino warning
 function _get_stacktrace_string()
+
 	s = ""
 	for line in stacktrace()
 		s = string(s, line, "\n")
+		if startswith(string(line), "macro expansion") # return as soon as you hit a macro expand
+			return s
+		end
 	end
 	return s
 end
