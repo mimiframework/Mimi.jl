@@ -60,13 +60,11 @@ end
 function _get_stacktrace_string()
 	s = ""
 	for line in stacktrace()
-		line_string = string(line)
-		if startswith(line_string, "run_timestep") # shorten the reporting on calls to run_timestep
-			l = "run_timestep function call"
+		if startswith(string(line), "run_timestep")
+			return s
 		else
-			l = line_string
+			s = string(s, line, "\n")
 		end
-		s = string(s, l, "\n")
 	end
 	return s
 end
