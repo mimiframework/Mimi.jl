@@ -265,7 +265,7 @@ model3 = Model()
 set_dimension!(model3, :time, collect(2015:5:2110))
 set_dimension!(model3, :regions, ["Region1", "Region2", "Region3"])
 add_comp!(model3, compA)
-set_param!(model3, :compA, :x, x, [:time, :regions])
+set_param!(model3, :compA, :x, x, dims = [:time, :regions])
 run(model3)
 
 for t in 1:length(time_labels)

@@ -1,3 +1,5 @@
+module TestCompositeParameters
+
 using Mimi
 using Test 
 
@@ -131,3 +133,5 @@ err8 = try set_param!(m2, :B, :p1, 2) catch err err end
 set_param!(m2, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
 @test length(m2.md.external_param_conns) == 2 
 @test Set(keys(m2.md.external_params)) == Set([:p1, :B_p1])
+
+end

@@ -539,29 +539,28 @@ end
 
 """
     set_param!(md::ModelDef, comp_path::ComponentPath, param_name::Symbol,
-               value_dict::Dict{Symbol, Any}, dims=nothing)
+               value_dict::Dict{Symbol, Any}; dims=nothing)
 
 Call `set_param!()` with `param_name` and a value dict in which `value_dict[param_name]` references
 the value of parameter `param_name`.
 """
 function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, Any},
-                    param_name::Symbol, dims=nothing)
+                    param_name::Symbol; dims=nothing)
     value = value_dict[param_name]
-    set_param!(md, comp_name, param_name, value, dims)
+    set_param!(md, comp_name, param_name, value, dims=dims)
 end
 
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value, dims=nothing)
-    set_param!(md, comp_name, param_name, param_name, value, dims)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
+    set_param!(md, comp_name, param_name, param_name, value, dims=dims)
 end
 
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value, dims=nothing)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
     comp_def = compdef(md, comp_name)
     @or(comp_def, error("Top-level component with name $comp_name not found"))
-    set_param!(md, comp_def, param_name, ext_param_name, value, dims)
+    set_param!(md, comp_def, param_name, ext_param_name, value, dims=dims)
 end
 
-function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol,
-                    ext_param_name::Symbol, value, dims=nothing)
+function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
     has_parameter(comp_def, param_name) ||
         error("Can't find parameter :$param_name in component $(pathof(comp_def))")
 
@@ -571,20 +570,20 @@ function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Sy
         "`set_param(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
     end
 
-    set_param!(md, param_name, value, dims, comps = [comp_def], ext_param_name = ext_param_name)
+    set_param!(md, param_name, value, dims = dims, comps = [comp_def], ext_param_name = ext_param_name)
 end
 
 """
-    set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing)
+    set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing)
 
 Set the value of a parameter in all components of the model that have a parameter of 
 the specified name.
 
-The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims' is a list
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.
 """
-function set_param!(md::ModelDef, param_name::Symbol, value, dims=nothing; ignoreunits::Bool=false, comps=nothing, ext_param_name=nothing)
+function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing, ext_param_name=nothing)
     # search immediate subcomponents for this parameter
     if comps === nothing
         comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]

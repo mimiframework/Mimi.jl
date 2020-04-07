@@ -259,4 +259,45 @@ update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) 
 @test external_param(m.md, :y).values == [10.,20.]
 @test external_param(m.md, :z).value == 0
 
+
+#------------------------------------------------------------------------------
+# Test the three different set_param! methods for a Symbol type parameter
+#------------------------------------------------------------------------------
+
+
+@defcomp A begin
+    p1 = Parameter{Symbol}()
+end
+
+function _get_model()
+    m = Model()
+    set_dimension!(m, :time, 10)
+    add_comp!(m, A)
+    return m
+end
+
+# Test the 3-argument version of set_param!
+m = _get_model()
+@test_throws MethodError set_param!(m, :p1, 3)  # Can't set it with an Int
+
+set_param!(m, :p1, :foo)    # Set it with a Symbol
+run(m)
+@test m[:A, :p1] == :foo
+
+# Test the 4-argument version of set_param!
+m = _get_model()
+@test_throws MethodError set_param!(m, :A, :p1, 3)
+
+set_param!(m, :A, :p1, :foo)
+run(m)
+@test m[:A, :p1] == :foo
+
+# Test the 5-argument version of set_param!
+m = _get_model()
+@test_throws MethodError set_param!(m, :A, :p1, :A_p1, 3)
+
+set_param!(m, :A, :p1, :A_p1, :foo)
+run(m)
+@test m[:A, :p1] == :foo
+
 end #module
