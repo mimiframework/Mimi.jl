@@ -35,6 +35,9 @@ Electron.prep_test_env()
     @info("test_metainfo_variabletimestep.jl")
     @time include("test_metainfo_variabletimestep.jl")
 
+    @info("test_references.jl")
+    @time include("test_references.jl")
+
     @info("test_units.jl")
     @time include("test_units.jl")
 
