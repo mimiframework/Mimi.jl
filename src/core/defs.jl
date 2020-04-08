@@ -669,7 +669,13 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
             values = value
         end
 
-        set_external_array_param!(md, ext_param_name, values, param_dims)
+        param = ArrayModelParameter(values, param_dims)
+        # Need to check the dimensions of the parameter data against each component before addeding it to the model's external parameters
+        for comp in comps
+            _check_labels(md, comp, param_name, param)
+        end
+        set_external_param!(md, ext_param_name, param)
+
 
     else # scalar parameter case
         value = convert(dtype, value)
@@ -678,7 +684,8 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
 
     # connect_param! calls dirty! so we don't have to
     for comp in comps
-        connect_param!(md, comp, param_name, ext_param_name)
+        # Set check_labels=false because we already checked above before setting the param
+        connect_param!(md, comp, param_name, ext_param_name, check_labels=false)
     end
     nothing
 end

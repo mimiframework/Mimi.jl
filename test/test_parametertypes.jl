@@ -300,4 +300,25 @@ set_param!(m, :A, :p1, :A_p1, :foo)
 run(m)
 @test m[:A, :p1] == :foo
 
+#------------------------------------------------------------------------------
+# Test that if set_param! errors in the connection step, 
+#       the created param doesn't remain in the model's list of params
+#------------------------------------------------------------------------------
+
+@defcomp A begin
+    p1 = Parameter(index = [time])
+end
+
+@defcomp B begin
+    p1 = Parameter(index = [time])
+end
+
+m = Model()
+set_dimension!(m, :time, 10)
+add_comp!(m, A)
+add_comp!(m, B)
+
+@test_throws ErrorException set_param!(m, :p1, 1:5)     # this will error because the provided data is the wrong size
+@test isempty(m.md.external_params)                     # But it should not be added to the model's dictionary
+
 end #module
