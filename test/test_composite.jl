@@ -171,6 +171,10 @@ end
 
 @test top3[:top][:A].internal_param_conns[1].src_comp_path == Mimi.ComponentPath(:top3, :top, :A, :Comp1)
 
+path1 = ComponentPath(:a, :b)
+path2 = ComponentPath(:c, :d)
+@test ComponentPath(path1, path2) == ComponentPath(:a, :b, :c, :d)
+
 end # module
 
 nothing
