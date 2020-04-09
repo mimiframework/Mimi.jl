@@ -78,7 +78,6 @@ end
 # Convert @defcomposite "shorthand" statements into Mimi API calls
 #
 function _parse(expr)
-    # valid_keys = (:default, :description, :visability, :unit)
     valid_keys = (:default, :description, :unit)
     result = nothing
 
@@ -188,34 +187,19 @@ macro defcomposite(cc_name, ex)
 end
 
 """
-    import_params!(obj::AbstractCompositeComponentDef;
-                   names::Union{Nothing,Vector{Symbol}}=nothing)
+    import_params!(obj::AbstractCompositeComponentDef)
 
 Imports all unconnected parameters below the given composite `obj` by adding references
 to these parameters in `obj`.
 
-NOT IMPLEMENTED: If `names` is not `nothing`, only the given names ar imported.
-
-This is called automatically by `build!()`, but it can be useful for developers of
-composites as well.
-
 N.B. This is also called at the end of code emitted by @defcomposite.
 """
-function import_params!(obj::AbstractCompositeComponentDef;
-                        names::Union{Nothing,Vector{Symbol}}=nothing)
+function import_params!(obj::AbstractCompositeComponentDef)
 
     unconn = unconnected_params(obj)
 
-    # verify that all explicit names are importable
-    if names !== nothing
-        error("CK: need to implement/verify what this behavior is")
-        unconn_names = [nameof(param_ref) for param_ref in unconn]
-        unknown = setdiff(names, unconn_names)
-        if ! isempty(unknown)
-            @error "Can't import names $unknown as these are not unconnected params"
-        end
-    end
-
+    # Check for unresolved parameter name collisions. 
+    # Users must explicitly define any parameters that come from multiple subcomponents.
     all_names = [ref.datum_name for ref in unconn]
     unique_names = unique(all_names)
     _map = Dict([name => count(isequal(name), all_names) for name in unique_names])
@@ -229,7 +213,8 @@ function import_params!(obj::AbstractCompositeComponentDef;
     end
 end
 
-function _find_collisions(fields, pairs)
+# Helper function for finding any field collisions for parameters that want to be joined
+function _find_collisions(fields, pairs::Vector{Pair{T, Symbol}}) where T
     collisions = Symbol[]
 
     pardefs = [comp.namespace[param_name] for (comp, param_name) in pairs]
@@ -271,6 +256,7 @@ function _resolve_composite_parameter_kwargs(obj::AbstractCompositeComponentDef,
     return new_kwargs
 end
 
+# Helper function for detecting whether a specified datum has already been imported or connected
 function _is_connected(obj::AbstractCompositeComponentDef, comp_name::Symbol, datum_name::Symbol)
     for (k, item) in obj.namespace
         if isa(item, AbstractCompositeParameterDef)
@@ -292,12 +278,12 @@ function _is_connected(obj::AbstractCompositeComponentDef, comp_name::Symbol, da
     # return UnnamedReference(comp_name, datum_name) in unconnected_params(obj)
 end
 
+# This function creates a CompositeParameterDef in the CompositeComponentDef obj
 function import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
                         pairs::Pair...; kwargs...)
 
     print_pairs = [(comp.comp_id, name) for (comp, name) in pairs]
     # @info "import_param!($(obj.comp_id), :$localname, $print_pairs)"
-    # @info "kwargs: $kwargs"
 
     for (comp, pname) in pairs
 

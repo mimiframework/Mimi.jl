@@ -598,7 +598,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     end
 
     # which fields to check for collisions in subcomponents
-    fields = ignoreunits ? [:dim_names, :datatype] : [:dim_names, :datatype, :unit]
+    fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)
     collisions = _find_collisions(fields, [comp => param_name for comp in comps])
     if ! isempty(collisions) 
         if :unit in collisions
