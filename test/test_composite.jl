@@ -4,7 +4,7 @@ using Test
 using Mimi
 
 import Mimi:
-    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
+    ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
     CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
     import_params!
 
@@ -157,6 +157,8 @@ set_dimension!(m2, :time, 2005:2020)
 
     connect(Comp2.par_2_1, Comp1.var_1_1)
     connect(Comp2.par_2_2, Comp1.var_1_1)
+
+    foo = Parameter(Comp1.foo, Comp2.foo)
 end
 
 top2_ref = add_comp!(m2, top2, nameof(top2))

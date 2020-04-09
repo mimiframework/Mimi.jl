@@ -1,10 +1,10 @@
-#module TestCompositeSimple
+module TestCompositeSimple
 
 using Test
 using Mimi
 
 import Mimi:
-    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
+    ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
     CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
     import_params!
 
@@ -51,14 +51,10 @@ md = m.md
 set_dimension!(m, :time, 2005:2020)
 
 add_comp!(m, Top)
-top = md[:Top]
 
 set_param!(m, :Top, :fooA1, 10)
-
-import_params!(m)
 set_param!(m, :par_1_1, 1:16)
 
-build(m)
 run(m)
 
-#end
+end
