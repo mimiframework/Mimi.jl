@@ -10,8 +10,7 @@ end
 """
     nameof(obj::NamedDef) = obj.name
 
-Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`,
-`CompositeComponentDef`, and `VariableDefReference` and `ParameterDefReference`.
+Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, and `CompositeComponentDef`
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
@@ -103,11 +102,11 @@ struct SubComponent <: MimiStruct
     alias::Union{Nothing, Symbol}
 end
 
+# UnnamedReferences are stored in CompositeParameterDefs or CompositeVariableDefs
+# to point to subcomponents' parameters or variables.
 struct UnnamedReference
-    # root::AbstractComponentDef
-    # comp_path::ComponentPath
-    comp_name::Symbol
-    datum_name::Symbol
+    comp_name::Symbol   # name of the referenced subcomponent
+    datum_name::Symbol  # name of the parameter or variable in the subcomponent's namespace
 end
 
 @class CompositeParameterDef <: ParameterDef begin
@@ -146,32 +145,6 @@ function CompositeVariableDef(name::Symbol, comp_path::ComponentPath, subcomp::A
     vardef = subcomp.namespace[vname]
     comp_name = subcomp.name
     return CompositeVariableDef(name, comp_path, vardef.datatype, vardef.dim_names, vardef.description, vardef.unit, UnnamedReference(comp_name, vname))
-end
-
-# Stores references to the name of a component variable or parameter
-# and the ComponentPath of the component in which it is defined
-@class DatumReference <: NamedObj begin
-    # name::Symbol is inherited from NamedObj
-    root::AbstractComponentDef
-    comp_path::ComponentPath
-end
-
-Base.pathof(dr::AbstractDatumReference) = dr.comp_path
-
-@class ParameterDefReference <: DatumReference begin
-    default::Any    # allows defaults set in composites
-end
-
-function ParameterDefReference(name::Symbol, root::AbstractComponentDef,
-                               comp_path::ComponentPath)
-    return ParameterDefReference(name, root, comp_path, nothing)
-end
-
-@class VariableDefReference  <: DatumReference
-
-function dereference(ref::AbstractDatumReference)
-    comp = find_comp(ref)
-    return comp[ref.name]
 end
 
 # Define which types can appear in the namespace dict for leaf and composite compdefs

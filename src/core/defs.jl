@@ -8,8 +8,6 @@ end
 
 compdef(cr::ComponentReference) = find_comp(cr)
 
-compdef(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
-
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
 
 compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = components(obj)[comp_name]
@@ -51,11 +49,6 @@ function dirty!(obj::AbstractComponentDef)
 end
 
 dirty!(md::ModelDef) = (md.dirty = true)
-
-compname(dr::AbstractDatumReference) = dr.comp_path.names[end]
-
-is_variable(dr::AbstractDatumReference)  = has_variable(find_comp(dr), nameof(dr))
-is_parameter(dr::AbstractDatumReference) = has_parameter(find_comp(dr), nameof(dr))
 
 number_type(md::ModelDef) = md.number_type
 
@@ -117,10 +110,10 @@ istype(T::DataType) = (pair -> pair.second isa T)
 components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
 
 param_dict(obj::ComponentDef) = filter(istype(ParameterDef), obj.namespace)
-param_dict(obj::AbstractCompositeComponentDef) = filter(istype(ParameterDefReference), obj.namespace)
+param_dict(obj::AbstractCompositeComponentDef) = filter(istype(CompositeParameterDef), obj.namespace)
 
 var_dict(obj::ComponentDef) = filter(istype(VariableDef), obj.namespace)
-var_dict(obj::AbstractCompositeComponentDef) = filter(istype(VariableDefReference), obj.namespace)
+var_dict(obj::AbstractCompositeComponentDef) = filter(istype(CompositeVariableDef), obj.namespace)
 
 """
     parameters(comp_def::AbstractComponentDef)
@@ -138,7 +131,7 @@ Return an iterator of the variable definitions (or references) for `comp_def`.
 """
 variables(obj::ComponentDef)  = values(filter(istype(VariableDef), obj.namespace))
 
-variables(obj::AbstractCompositeComponentDef) = values(filter(istype(VariableDefReference), obj.namespace))
+variables(obj::AbstractCompositeComponentDef) = values(filter(istype(CompositeVariableDef), obj.namespace))
 
 variables(comp_id::ComponentId)  = variables(compdef(comp_id))
 
@@ -179,7 +172,7 @@ function Base.setindex!(comp::AbstractCompositeComponentDef, value::CompositeNam
     _save_to_namespace(comp, key, value)
 end
 
-# Leaf components store ParameterDefReference or VariableDefReference instances in the namespace
+# Leaf components store DatumDef instances in the namespace
 function Base.setindex!(comp::ComponentDef, value::LeafNamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
 end
@@ -329,8 +322,6 @@ parameter(obj::AbstractComponentDef, name::Symbol) = _ns_get(obj, name, Abstract
 
 parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol,
           param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
-
-parameter(dr::ParameterDefReference) = parameter(compdef(dr), nameof(dr))
 
 has_parameter(comp_def::AbstractComponentDef, name::Symbol) = _ns_has(comp_def, name, AbstractParameterDef)
 has_parameter(md::ModelDef, name::Symbol) = haskey(md.external_params, name)
@@ -634,10 +625,6 @@ function variable(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, 
     return variable(comp_def, var_name)
 end
 
-variable(dr::VariableDefReference) = variable(compdef(dr), nameof(dr))
-
-
-
 has_variable(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDef)
 
 has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, CompositeVariableDef)
@@ -662,10 +649,7 @@ function variable_unit(obj::AbstractComponentDef, name::Symbol)
     return unit(var)
 end
 
-# Smooth over difference between VariableDef and VariableDefReference
 unit(obj::AbstractDatumDef) = obj.unit
-unit(obj::VariableDefReference)  = variable(obj).unit
-unit(obj::ParameterDefReference) = parameter(obj).unit
 
 """
     variable_dimensions(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
@@ -831,25 +815,6 @@ function time_contains(outer::Dimension, inner::Dimension)
     return outer_idx[1] <= inner_idx[1] && outer_idx[end] >= inner_idx[end]
 end
 
-function _find_var_par(parent::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                       comp_name::Symbol, datum_name::Symbol)
-    path = ComponentPath(parent.comp_path, comp_name)
-    root = get_root(parent)
-
-    root === nothing && error("Component $(parent.comp_id) does not have a root")
-
-    if has_variable(comp_def, datum_name)
-        return VariableDefReference(datum_name, root, path)
-    end
-
-    if has_parameter(comp_def, datum_name)
-        @info "Calling ParameterDefReference($datum_name, $(root.comp_id), $path)"
-        return ParameterDefReference(datum_name, root, path)
-    end
-
-    error("Component $(comp_def.comp_id) does not have a data item named $datum_name")
-end
-
 """
     propagate_time!(obj::AbstractComponentDef, t::Dimension)
 
@@ -864,20 +829,6 @@ function propagate_time!(obj::AbstractComponentDef, t::Dimension)
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
         propagate_time!(c, t)
     end
-end
-
-# Save the default value for a parameter, which is applied, if needed, at build time.
-function save_default!(obj::AbstractCompositeComponentDef, comp::AbstractComponentDef,
-                       param::ParameterDef)
-    root = get_root(obj)
-    path = pathof(comp)
-    name = nameof(param)
-    save_default!(obj, ParameterDefReference(name, root, path, param.default))
-end
-
-function save_default!(obj::AbstractCompositeComponentDef, ref::ParameterDefReference)
-    push!(obj.defaults, ref)
-    nothing
 end
 
 """
