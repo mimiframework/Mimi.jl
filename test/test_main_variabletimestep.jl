@@ -4,7 +4,7 @@ using Test
 using Mimi
 
 import Mimi:
-    reset_variables, @defmodel,
+    reset_variables,
     variable, variable_names, external_param, build,
     compdef, compdefs, dimension, compinstance
 
@@ -25,15 +25,6 @@ import Mimi:
     var5 = Variable(index=[index1, idx4])
 end
 
-# @defmodel x1 begin
-#     index[index1] = [:r1, :r2, :r3]
-#     index[time] = [2010, 2015, 2030]
-#     index[idx3] = 1:3
-#     index[idx4] = 1:4
-#     component(foo1)
-
-#     foo1.par1 = 5.0
-# end
 x1 = Model()
 set_dimension!(x1, :index1, [:r1, :r2, :r3])
 set_dimension!(x1, :time, [2010, 2015, 2030])
