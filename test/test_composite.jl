@@ -161,6 +161,16 @@ end
 
 top2_ref = add_comp!(m2, top2, nameof(top2))
 
+#
+# Test _fix_comp_path on internal connections 3 levels down
+#
+
+@defcomposite top3 begin
+    Component(top)
+end
+
+@test top3[:top][:A].internal_param_conns[1].src_comp_path == Mimi.ComponentPath(:top3, :top, :A, :Comp1)
+
 end # module
 
 nothing
