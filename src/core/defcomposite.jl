@@ -204,11 +204,11 @@ function import_params!(obj::AbstractCompositeComponentDef)
     unique_names = unique(all_names)
     _map = Dict([name => count(isequal(name), all_names) for name in unique_names])
     non_unique = [name for (name, val) in _map if val>1]
-    isempty(non_unique) || error("There are unresolved parameter name collisions from subcomponents for the following parameter names: $(non_unique...).")
+    isempty(non_unique) || error("Cannot build composite :$(obj.name). There are unresolved parameter name collisions from subcomponents for the following parameter names: $(join(non_unique, ", ")).")
 
     for param_ref in unconn
         name = param_ref.datum_name
-        haskey(obj, name) && error("Failed to auto-import parameter :$name from component :$(param_ref.comp_name), this name has already been defined in the composite component's namespace.")
+        haskey(obj, name) && error("Cannot build composite :$(obj.name). Failed to auto-import parameter :$name from component :$(param_ref.comp_name), this name has already been defined in the composite component's namespace.")
         obj[name] = CompositeParameterDef(obj, param_ref)
     end
 end
