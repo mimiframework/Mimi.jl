@@ -60,6 +60,35 @@ set_param!(m, :par_1_1, 2:2:2*length(years))
 build(m)
 run(m)
 
+# Chek that renaming components in composite definitions works properly
+@defcomp CompA begin
+    p1 = Parameter()
+    p2 = Parameter()
+
+    v1 = Variable()
+end
+
+@defcomp CompB begin
+    v2 = Variable()
+end
+
+@defcomposite CompC begin
+
+    foo = Component(CompA)
+    bar = Component(CompB) 
+
+    rename_p1 = Parameter(foo.p1) 
+
+    connect(foo.p2, bar.v2)
+
+    rename_v1 = Variable(foo.v1)
+end
+
+for key in [:foo, :bar, :rename_p1, :rename_v1]
+    @test key in keys(CompC.namespace)
+end
+
+
 end # module
 
 m = TestDefComposite.m
