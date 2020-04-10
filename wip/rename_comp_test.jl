@@ -6,8 +6,10 @@ include("/Users/lisarennels/.julia/dev/Mimi/wip/export_all.jl")
 end
 
 @defcomposite C begin
-    foo = Component(A)
-    rename_p1 = Parameter(foo.p1)
+
+    foo = Component(A) 
+
+    rename_p1 = Parameter(foo.p1) # this line triggers the error below
 end
 
 # ERROR: UndefVarError: foo not defined
