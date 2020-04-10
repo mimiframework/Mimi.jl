@@ -33,9 +33,10 @@ end
 
     # imports
     bar  = Parameter(Comp1.par_1_1)
+    foo2 = Parameter(Comp2.foo)
 
     # linked imports
-    foo = Parameter(Comp1.foo, Comp2.foo)
+    foo = Parameter(Comp1.foo)
 
     # connections
     connect(Comp2.par_2_1, Comp1.var_1_1)
