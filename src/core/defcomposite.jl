@@ -107,7 +107,8 @@ function _parse(expr)
 
             elseif @capture(arg, (cname_.pname_ | pname_))
                 cname = (cname === nothing ? :(:*) : cname) # wildcard
-                push!(regargs, :($cname => $(QuoteNode(pname))))
+                push!(regargs, :(obj[$(QuoteNode(cname))] => $(QuoteNode(pname))))
+
             end
         end
         result = :(Mimi.import_param!(obj, $(QuoteNode(localparname)), $(regargs...);

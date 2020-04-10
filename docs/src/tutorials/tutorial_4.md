@@ -186,7 +186,7 @@ param1 = Normal(0, 0.8)
 The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. 
 Other options include Latin Hypercube sampling and Sobol sampling.
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial4; output = false, filter = r".*"s
 using Mimi
 using Distributions 
 
@@ -226,7 +226,6 @@ end
 
 # output
 
-LHSData(Tuple{Symbol,Symbol,Float64}[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
 ```
 
 ### Step 3. Run Simulation

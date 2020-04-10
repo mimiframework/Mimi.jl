@@ -46,8 +46,8 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
         # Fix internal param conns
         conns = child.internal_param_conns
         for (i, conn) in enumerate(conns)
-            src_path = ComponentPath(child_path, tail(conn.src_comp_path))
-            dst_path = ComponentPath(child_path, tail(conn.dst_comp_path))
+            src_path = ComponentPath(child_path, conn.src_comp_path.names[end])
+            dst_path = ComponentPath(child_path, conn.dst_comp_path.names[end])
 
             # @info "Resetting IPC src in $child_path from $(conn.src_comp_path) to $src_path"
             # @info "Resetting IPC dst in $child_path from $(conn.dst_comp_path) to $dst_path"
