@@ -175,6 +175,35 @@ path1 = ComponentPath(:a, :b)
 path2 = ComponentPath(:c, :d)
 @test ComponentPath(path1, path2) == ComponentPath(:a, :b, :c, :d)
 
+# renaming
+
+@defcomp A begin
+    p1 = Parameter()
+    p2 = Parameter()
+
+    v1 = Variable()
+end
+
+@defcomp B begin
+    v2 = Variable()
+end
+
+@defcomposite C begin
+
+    foo = Component(A)
+    bar = Component(B) 
+
+    rename_p1 = Parameter(foo.p1) 
+
+    connect(foo.p2, bar.v2)
+
+    rename_v1 = Variable(foo.v1)
+end
+
+for key in [:foo, :bar, :rename_p1, :rename_v1]
+    @test key in keys(C.namespace)
+end
+
 end # module
 
 nothing
