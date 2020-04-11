@@ -4,7 +4,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    reset_variables, @defmodel, 
+    reset_variables,
     variable, variable_names, external_param, build, 
     compdefs, dimension, compinstance
 
@@ -25,19 +25,13 @@ import Mimi:
     var5 = Variable(index=[index1, idx4])
 end
 
-
-@defmodel x1 begin
-    index[index1] = [:r1, :r2, :r3]
-    index[time] = 2010:10:2030
-    index[idx3] = 1:3
-    index[idx4] = 1:4
-    component(foo1)
-
-    foo1.par1 = 5.0
-end
-
-# x1 = foo1(Float64, Dict{Symbol, Int}(:time=>10, :index1=>3))
-# x1 = foo1(Float64, Val{1}, Val{1}, Val{10}, Val{1}, Val{1}, Val{1}, Val{1}, Dict{Symbol, Int}(:time=>10, :index1=>3))
+x1 = Model()
+set_dimension!(x1, :index1, [:r1, :r2, :r3])
+set_dimension!(x1, :time, 2010:10:2030)
+set_dimension!(x1, :idx3, 1:3)
+set_dimension!(x1, :idx4, 1:4)
+add_comp!(x1, foo1)
+set_param!(x1, :foo1, :par1, 5.0)
 
 @test length(dimension(x1.md, :index1)) == 3
 
@@ -46,7 +40,7 @@ end
 par1 = external_param(x1, :par1)
 @test par1.value == 5.0
 
-set_param!(x1, :foo1, :par1, 6.0)
+update_param!(x1, :par1, 6.0)
 par1 = external_param(x1, :par1)
 @test par1.value == 6.0
 

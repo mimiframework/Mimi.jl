@@ -42,10 +42,13 @@ ComponentPath(names::Vector{Symbol}) = ComponentPath(Tuple(names))
 ComponentPath(names::Vararg{Symbol}) = ComponentPath(Tuple(names))
 
 ComponentPath(path::ComponentPath, name::Symbol) = ComponentPath(path.names..., name)
+ComponentPath(name::Symbol, path::ComponentPath) = ComponentPath(name, path.names...)
 
 ComponentPath(path1::ComponentPath, path2::ComponentPath) = ComponentPath(path1.names..., path2.names...)
 
 ComponentPath(::Nothing, name::Symbol) = ComponentPath(name)
+ComponentPath(name::Symbol, ::Nothing) = ComponentPath(name)
+ComponentPath(path::ComponentPath, ::Nothing) = ComponentPath(path.names...)
 
 # Convert path string like "/foo/bar/baz" to ComponentPath(:foo, :bar, :baz)
 ComponentPath(path::AbstractString) = ComponentPath([Symbol(s) for s in split(path, "/") if s != ""]...)

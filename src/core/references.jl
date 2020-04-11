@@ -2,18 +2,24 @@
     set_param!(ref::ComponentReference, name::Symbol, value)
 
 Set a component parameter as `set_param!(reference, name, value)`.
+This creates a unique name :compname_paramname in the model's external parameter list, 
+and sets the parameter only in the referenced component to that value.
 """
 function set_param!(ref::ComponentReference, name::Symbol, value)
-    set_param!(parent(ref), pathof(ref), name, value)
+    compdef = find_comp(ref)
+    unique_name = Symbol("$(compdef.name)_$name")
+    set_param!(parent(ref), compdef, name, unique_name, value)
 end
 
 """
     Base.setindex!(ref::ComponentReference, value, name::Symbol)
 
-Set a component parameter as `reference[symbol] = value`.
+Set a component parameter as `reference[name] = value`.
+This creates a unique name :compname_paramname in the model's external parameter list, 
+and sets the parameter only in the referenced component to that value.
 """
 function Base.setindex!(ref::ComponentReference, value, name::Symbol)
-    set_param!(parent(ref), pathof(ref), name, value)
+    set_param!(ref, name, value)
 end
 
 """

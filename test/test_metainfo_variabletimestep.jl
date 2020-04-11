@@ -29,11 +29,10 @@ import Mimi:
     end
 end
 
-@Mimi.defmodel test_model begin
-    index[time] = [2010:2100; 2105:5:2200]
-    component(ch4forcing1)
-    component(ch4forcing1, ch4forcing2) # add another one with a different name
-end
+test_model = Model()
+set_dimension!(test_model, :time, [2010:2100; 2105:5:2200])
+add_comp!(test_model, ch4forcing1)
+add_comp!(test_model, ch4forcing1, :ch4forcing2) # add another one with a different name
 
 c1 = compdef(test_model, :ch4forcing1)
 c2 = compdef(test_model, :ch4forcing2)

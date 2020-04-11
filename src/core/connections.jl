@@ -54,7 +54,7 @@ end
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
 function _check_labels(obj::AbstractCompositeComponentDef,
-                       comp_def::ComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
+                       comp_def::AbstractComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(ext_param.values)
@@ -111,7 +111,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
     connect_param!(obj, comp_def, param_name, ext_param_name, check_labels=check_labels)
 end
 
-function connect_param!(obj::AbstractCompositeComponentDef, comp_def::ComponentDef,
+function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                         param_name::Symbol, ext_param_name::Symbol; check_labels::Bool=true)
     ext_param = external_param(obj, ext_param_name)
 
@@ -278,94 +278,58 @@ function split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
     return (ComponentPath(obj, elts[1]), Symbol(elts[2]))
 end
 
-# TBD: Deprecated?
-"""
-Connect a parameter and variable using string notation "/path/to/component:datum_name" where
-the potion before the ":" is the string representation of a component path from `obj` and the
-portion after is the name of the src or dst datum.
-"""
-function connect_param!(obj::AbstractCompositeComponentDef, dst::AbstractString, src::AbstractString,
-                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    dst_path, dst_name = split_datum_path(obj, dst)
-    src_path, src_name = split_datum_path(obj, src)
-
-    connect_param!(obj, dst_path, dst_name, src_path, src_name,
-                   backup; ignoreunits=ignoreunits, offset=offset)
-end
-
-"""
-    param_ref(md::ModelDef, conn::InternalParameterConnection)
-
-Return a ParameterDefReference to the parameter indicated in the given
-connection. Used for comparing connections to parameters to find those
-that are (un)connected.
-"""
-function param_ref(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
-    comp = find_comp(obj, conn.dst_comp_path)
-    comp !== nothing || error("Can't find $(conn.dst_comp_path) from $(obj.comp_id)")
-    return datum_reference(comp, conn.dst_par_name)
-end
-
-function param_ref(md::ModelDef, conn::ExternalParameterConnection)
-    comp = find_comp(md, pathof(conn))
-    comp !== nothing || error("Can't find $(pathof(conn)) from $(md.comp_id)")
-    return datum_reference(comp, nameof(conn))
-end
-
-"""
-    dereferenced_conn(obj::AbstractCompositeComponentDef,
-                      conn::InternalParameterConnection)
-
-Convert an InternalParameterConnection with datum references to one referring
-only to leaf component pars and vars.
-"""
-function dereferenced_conn(obj::AbstractCompositeComponentDef,
-                           conn::InternalParameterConnection)
-    comp = find_comp(obj, conn.dst_comp_path)
-    comp !== nothing || error("Can't find $(conn.dst_comp_path) from $(obj.comp_id)")
-    pref = datum_reference(comp, conn.dst_par_name)
-
-    comp = find_comp(obj, conn.src_comp_path)
-    comp !== nothing || error("Can't find $(conn.src_comp_path) from $(obj.comp_id)")
-    vref = datum_reference(comp, conn.src_var_name)
-
-    ipc = InternalParameterConnection(pathof(vref), nameof(vref), pathof(pref), nameof(pref),
-                                      conn.ignoreunits, conn.backup; offset=conn.offset)
-    return ipc
-end
-
 """
     connection_refs(obj::AbstractCompositeComponentDef)
 
-Return a vector of ParameterDefReferences to parameters with connections.
-The references are always to the original Parameter definition in a leaf
-component.
+Return a vector of UnnamedReference's to parameters from subcomponents that are either found in
+internal connections or that have been already imported in a parameter definition.
 """
 function connection_refs(obj::AbstractCompositeComponentDef)
-    refs = ParameterDefReference[]
-    root = get_root(obj)
-    # @info "root of $(obj.comp_id) is $(root.comp_id))"
+    refs = UnnamedReference[]
 
-    function _add_conns(obj::AbstractCompositeComponentDef)
-        append!(refs, [param_ref(root, conn) for conn in obj.internal_param_conns])
+    for conn in obj.internal_param_conns
+        push!(refs, UnnamedReference(conn.dst_comp_path.names[end], conn.dst_par_name))
     end
 
-    recurse(obj, _add_conns; composite_only=true)
-
-    if obj isa ModelDef
-        append!(refs, [param_ref(obj, epc) for epc in external_param_conns(obj)])
+    for item in values(obj.namespace)
+        if item isa CompositeParameterDef
+            for ref in item.refs
+                push!(refs, ref)
+            end
+        end
     end
+
+    return refs
+end
+
+"""
+    connection_refs(obj::ModelDef)
+
+Return a vector of UnnamedReference's to parameters from subcomponents that are either found in
+internal connections or that have been already connected to external parameter values.
+"""
+function connection_refs(obj::ModelDef)
+    refs = UnnamedReference[]
+
+    for conn in obj.internal_param_conns
+        push!(refs, UnnamedReference(conn.dst_comp_path.names[end], conn.dst_par_name))
+    end
+
+    for conn in obj.external_param_conns
+        push!(refs, UnnamedReference(conn.comp_path.names[end], conn.param_name))
+    end
+
     return refs
 end
 
 """
     unconnected_params(obj::AbstractCompositeComponentDef)
 
-Return a list of ParameterDefReferences to parameters that have not been connected
+Return a list of UnnamedReference's to parameters that have not been connected
 to a value.
 """
 function unconnected_params(obj::AbstractCompositeComponentDef)
-    return setdiff(leaf_params(obj), connection_refs(obj))
+    return setdiff(subcomp_params(obj), connection_refs(obj))
 end
 
 """
@@ -377,21 +341,26 @@ the dictionary keys are strings that match the names of unset parameters in the 
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     for param_ref in unconnected_params(md)
-        comp_path = pathof(param_ref)
-        param_name = nameof(param_ref)
-        comp_def = compdef(md, comp_path)
-        comp_name = nameof(comp_def)
+        param_name = param_ref.datum_name
+        comp_name = param_ref.comp_name
+        comp_def = find_comp(md, comp_name)
+        param_def = comp_def[param_name]
 
-        # @info "set_leftover_params: comp_name=$comp_name, param=$param_name"
-        # check whether we need to set the external parameter
-        if external_param(md, param_name, missing_ok=true) === nothing
-            value = parameters[string(param_name)]
-            param_dims = parameter_dimensions(md, comp_name, param_name)
+        # Only set the unconnected parameter if it doesn't have a default
+        if param_def.default === nothing
+            # check whether we need to create the external parameter
+            if external_param(md, param_name, missing_ok=true) === nothing
+                if haskey(parameters, string(param_name))  
+                    value = parameters[string(param_name)]
+                    param_dims = parameter_dimensions(md, comp_name, param_name)
 
-            set_external_param!(md, param_name, value; param_dims = param_dims)
-
+                    set_external_param!(md, param_name, value; param_dims = param_dims)
+                else
+                    error("Cannot set parameter :$param_name, not found in provided dictionary and no default value detected.")
+                end
+            end
+            connect_param!(md, comp_name, param_name, param_name)
         end
-        connect_param!(md, comp_name, param_name, param_name)
     end
     nothing
 end

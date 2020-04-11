@@ -67,7 +67,7 @@ end
     if T <: ScalarModelParameter
         return setproperty!(prop_obj, :value, value)
     else
-        error("You cannot override indexed variable $name::$T.")
+        error("You cannot override indexed variable $name::$T. Make sure you are using proper indexing syntax in the `run_timestep` function: v.varname[t] = ...")
     end
 end
 

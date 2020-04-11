@@ -332,42 +332,34 @@ Delete a `component`` by name from a model `m`'s ModelDef, and nullify the Model
 @delegate Base.delete!(m::Model, comp_name::Symbol) => md
 
 """
-    set_param!(m::Model, comp_name::Symbol, name::Symbol, value, dims=nothing)
+    set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
 
 Set the parameter of a component `comp_name` in a model `m` to a given `value`.
-The `value` can by a scalar, an array, or a NamedAray. Optional argument 'dims'
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims'
 is a list of the dimension names of the provided data, and will be used to check
 that they match the model's index labels.
 """
-@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value, dims=nothing) => md
-
-# Deprecated?
-"""
-    set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing)
-
-Set a parameter for a component with the given relative path (as a string), in which "/x" means the
-component with name `:x` beneath `m.md`. If the path does not begin with "/", it is treated as
-relative to `m.md`, which at the top of the hierarchy, produces the same result as starting with "/".
-"""
-@delegate set_param!(m::Model, path::AbstractString, param_name::Symbol, value, dims=nothing) => md
-
-# Deprecated?
-"""
-    set_param!(m::Model, path::AbstractString, value, dims=nothing)
-
-Similar to above but param_name appears in `path` after a colon delimiter.
-"""
-@delegate set_param!(m::Model, path::AbstractString, value, dims=nothing) => md
+@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing) => md
 
 """
-    set_param!(m::Model, param_name::Symbol, value, dims=nothing)
+    set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
 
-Set the value of a parameter exposed in the ModelDef (m.md).
+Set the parameter `param_name` of a component `comp_name` in a model `m` to a given `value`, 
+storing the value in the model's external parameter list by the provided name `ext_param_name`.
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims'
+is a list of the dimension names of the provided data, and will be used to check
+that they match the model's index labels.
 """
-@delegate set_param!(m::Model, param_name::Symbol, value, dims=nothing) => md
+@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing) => md
 
-# Deprecated?
-@delegate set_param!(m::Model, comp_path::ComponentPath, param_name::Symbol, value, dims=nothing) => md
+
+"""
+    set_param!(m::Model, param_name::Symbol, value; dims=nothing)
+
+Set the value of a parameter in all components of the model that have a parameter of 
+the specified name.
+"""
+@delegate set_param!(m::Model, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false) => md
 
 @delegate import_params!(m::Model) => md
 

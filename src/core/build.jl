@@ -92,6 +92,100 @@ function _instantiate_vars(md::ModelDef)
     return vdict
 end
 
+"""
+    _find_paths_and_names(obj::AbstractComponentDef, datum_name::Symbol)
+
+Recurses through sub components and finds the full path(s) to desired datum, and their
+names at the leaf level. Returns a tuple (paths::Vector{ComponentPath}, datum_names::Vector{Symbol})
+"""
+function _find_paths_and_names(obj::AbstractComponentDef, datum_name::Symbol)
+
+    # Base case-- leaf component
+    if obj isa ComponentDef
+        return ([nothing], [datum_name])
+    end
+
+    datumdef = obj[datum_name]
+    if datumdef isa CompositeVariableDef
+        refs = [datumdef.ref]   # CompositeVariableDef's can only point to one subcomponent
+    else
+        refs = datumdef.refs    # ComposteParameterDef's can have multiple refs
+    end
+
+    paths = []
+    datum_names = []
+
+    for ref in refs
+        # Get the comp and datum's for the current ref
+        next_obj = obj[ref.comp_name]
+        next_datum_name = ref.datum_name
+
+        # Recurse
+        sub_paths, sub_datum_names = _find_paths_and_names(next_obj, next_datum_name)
+
+        # Append the paths, and save with datum_names
+        for (sp, dn) in zip(sub_paths, sub_datum_names)
+            push!(paths, ComponentPath(next_obj.name, sp))
+            push!(datum_names, dn)
+        end
+    end
+
+    return (paths, datum_names)
+end
+
+"""
+    _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
+
+Returns a vector of InternalParameterConnections that represent all of the connections at the leaf level 
+that need to be made under the hood as specified by `conn`.
+"""
+function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
+
+    top_dst_path = conn.dst_comp_path
+    comp = find_comp(md, top_dst_path)
+    comp !== nothing || error("Can't find $(top_dst_path) from $(md.comp_id)")
+    par_sub_paths, param_names = _find_paths_and_names(comp, conn.dst_par_name)
+    param_paths = [ComponentPath(top_dst_path, sub_path) for sub_path in par_sub_paths]
+
+    top_src_path = conn.src_comp_path
+    comp = find_comp(md, top_src_path)
+    comp !== nothing || error("Can't find $(top_src_path) from $(md.comp_id)")
+    var_sub_path, var_name = _find_paths_and_names(comp, conn.src_var_name)
+    var_path = ComponentPath(top_src_path, var_sub_path[1])
+
+    ipcs = [InternalParameterConnection(var_path, var_name[1], param_path, param_name, 
+        conn.ignoreunits, conn.backup; offset=conn.offset) for (param_path, param_name) in
+        zip(param_paths, param_names)]
+    return ipcs
+end
+
+
+"""
+    _get_leaf_level_epcs(md::AbstractCompositeComponentDef, epc::ExternalParameterConnection)
+
+Returns a vector that has a new ExternalParameterConnections that represent all of the connections at the leaf level 
+that need to be made under the hood as specified by `epc`.
+"""
+function _get_leaf_level_epcs(md::ModelDef, epc::ExternalParameterConnection)
+
+    comp = find_comp(md, epc.comp_path)
+    comp !== nothing || error("Can't find $(epc.comp_path) from $(md.comp_id)")
+    par_sub_paths, param_names = _find_paths_and_names(comp, epc.param_name)
+
+    leaf_epcs = ExternalParameterConnection[]
+    external_param_name = epc.external_param
+
+    top_path = epc.comp_path
+
+    for (par_sub_path, param_name) in zip(par_sub_paths, param_names)
+        param_path = ComponentPath(top_path, par_sub_path)
+        epc = ExternalParameterConnection(param_path, param_name, external_param_name)
+        push!(leaf_epcs, epc)
+    end
+
+    return leaf_epcs
+end
+
 # Collect all parameters with connections to allocated variable storage
 function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
 
@@ -104,19 +198,20 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
     pdict = Dict{Tuple{ComponentPath, Symbol}, Any}()
 
     for conn in conns
-        ipc = dereferenced_conn(md, conn)
-        # @info "src_comp_path: $(ipc.src_comp_path)"
-        src_vars = var_dict[ipc.src_comp_path]
-        # @info "src_vars: $src_vars, name: $(ipc.src_var_name)"
-        var_value_obj = get_property_obj(src_vars, ipc.src_var_name)
-        pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
-        # @info "internal conn: $(ipc.src_comp_path):$(ipc.src_var_name) => $(ipc.dst_comp_path):$(ipc.dst_par_name)"
+        ipcs = _get_leaf_level_ipcs(md, conn)
+        src_vars = var_dict[ipcs[1].src_comp_path]
+        var_value_obj = get_property_obj(src_vars, ipcs[1].src_var_name)
+        for ipc in ipcs
+            pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
+        end
     end
 
     for epc in external_param_conns(md)
         param = external_param(md, epc.external_param)
-        pdict[(epc.comp_path, epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
-        # @info "external conn: $(pathof(epc)).$(nameof(epc)) => $(param)"
+        leaf_level_epcs = _get_leaf_level_epcs(md, epc)
+        for leaf_epc in leaf_level_epcs
+            pdict[(leaf_epc.comp_path, leaf_epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
+        end
     end
 
     # Make the external parameter connections for the hidden ConnectorComps.
@@ -188,51 +283,24 @@ function _set_defaults!(md::ModelDef)
     not_set = unconnected_params(md)
     isempty(not_set) && return
 
-    d = Dict()
-
-    function _store_defaults(obj)
-        if obj isa AbstractCompositeComponentDef
-            for ref in obj.defaults
-                d[(pathof(ref), nameof(ref))] = ref.default
-            end
-        else
-            for param in parameters(obj)
-                if param.default !== nothing
-                    d[(pathof(obj), nameof(param))] = param.default
-                end
-            end
-        end
-    end
-    recurse(md, _store_defaults)
-
     for ref in not_set
-        param = dereference(ref)
-        path = pathof(param)
-        name = nameof(param)
-        key = (path, name)
-        value = get(d, key, missing)
-        if value !== missing
-            # @info "Setting param :$name to default $value"
-            set_param!(md, name, value)
-        end
+        comp_name, par_name = ref.comp_name, ref.datum_name
+        pardef = md[comp_name][par_name]
+        default_value = pardef.default
+        default_value === nothing || set_param!(md, par_name, default_value)
     end
 end
 
 function _build(md::ModelDef)
-    # moved to build(m), below
-    # import_params!(md)
 
     # @info "_build(md)"
     add_connector_comps!(md)
-
-    # moved to build(m), below
-    # _set_defaults!(md)
 
     # check if all parameters are set
     not_set = unconnected_params(md)
 
     if ! isempty(not_set)
-        params = join(not_set, "\n  ")
+        params = join([p.datum_name for p in not_set], "\n  ")
         error("Cannot build model; the following parameters are not set:\n  $params")
     end
 
@@ -253,8 +321,6 @@ function _build(md::ModelDef)
 end
 
 function build(m::Model)
-    # import any unconnected params into ModelDef
-    import_params!(m.md)
 
     # apply defaults to unset parameters
     _set_defaults!(m.md)
