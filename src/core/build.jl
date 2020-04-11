@@ -322,11 +322,10 @@ end
 
 function build(m::Model)
 
-    # apply defaults to unset parameters
-    _set_defaults!(m.md)
-
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
+    _set_defaults!(md)
+    
     m.mi = _build(md)
     m.md.dirty = false
     return nothing
