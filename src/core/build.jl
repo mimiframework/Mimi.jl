@@ -323,7 +323,7 @@ end
 function build(m::Model)
 
     # apply defaults to unset parameters
-    _set_defaults!(m.md)    # should this actually happen on the deepcopy below isntead?
+    _set_defaults!(m.md)
 
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
