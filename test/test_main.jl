@@ -4,7 +4,7 @@ using Test
 using Mimi
 
 import Mimi: 
-    reset_variables, @defmodel,
+    reset_variables,
     variable, variable_names, external_param, build, 
     compdefs, dimension, compinstance
 
