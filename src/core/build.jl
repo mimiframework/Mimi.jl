@@ -324,7 +324,7 @@ function build(m::Model)
 
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
-    _set_defaults!(md)
+    _set_defaults!(md)  # apply defaults to unset parameters in the model instance's copy of the model definition
     
     m.mi = _build(md)
     m.md.dirty = false
