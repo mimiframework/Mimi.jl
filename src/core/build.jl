@@ -241,9 +241,10 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{Compon
     return ComponentInstanceParameters(names, types, vals, paths)
 end
 
-function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
-    _combine_exported_pars(comp_def)
-end
+# LFR: commented out because potentially doing nothing ... never called
+# function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
+#     _combine_exported_pars(comp_def)
+# end
 
 # Return a built leaf or composite LeafComponentInstance
 function _build(comp_def::ComponentDef,
@@ -269,6 +270,11 @@ function _build(comp_def::AbstractCompositeComponentDef,
     # @info "  par_dict $(par_dict)"
 
     comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]
+
+    # LFR TODO
+    # vars_dict = get_vars_dict(comp_def)
+    # pars_dict = get_pars_dict(comp_def)
+    
     return CompositeComponentInstance(comps, comp_def, time_bounds)
 end
 

@@ -189,8 +189,8 @@ end
 
 @class mutable CompositeComponentInstance <: ComponentInstance begin
     comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
-    var_dict::OrderedDict{Symbol, Any}
-    par_dict::OrderedDict{Symbol, Any}
+    var_dict::OrderedDict{Symbol, UnnamedReference}
+    par_dict::OrderedDict{Symbol, UnnamedReference}
 
     function CompositeComponentInstance(self::AbstractCompositeComponentInstance,
                                         comps::Vector{<: AbstractComponentInstance},
@@ -203,8 +203,9 @@ end
             comps_dict[ci.comp_name] = ci
         end
 
-        var_dict = OrderedDict{Symbol, Any}()
-        par_dict = OrderedDict{Symbol, Any}()
+        # LFR TODO - will pass in the pardict and vardict from build
+        # var_dict = OrderedDict{Symbol, Any}()
+        # par_dict = OrderedDict{Symbol, Any}()
 
         ComponentInstance(self, comp_def, time_bounds, name)
         CompositeComponentInstance(self, comps_dict, var_dict, par_dict)
