@@ -214,8 +214,10 @@ end
     function CompositeComponentInstance(comps::Vector{<: AbstractComponentInstance},
                                         comp_def::AbstractCompositeComponentDef,
                                         time_bounds::Tuple{Int,Int},
+                                        variables::NamedTuple, 
+                                        parameters::NamedTuple,
                                         name::Symbol=nameof(comp_def))
-        CompositeComponentInstance(new(), comps, comp_def, time_bounds, name)
+        CompositeComponentInstance(new(), comps, comp_def, time_bounds, variables, parameters, name)
     end
 end
 

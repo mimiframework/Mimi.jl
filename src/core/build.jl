@@ -271,26 +271,34 @@ function _build(comp_def::AbstractCompositeComponentDef,
 
     comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]
 
-    variables = _get_variables(comp_def, var_dict)
-    parameters = _get_parameters(comp_def, par_dict)
+    variables = _get_variables(comp_def)
+    parameters = _get_parameters(comp_def)
 
     return CompositeComponentInstance(comps, comp_def, time_bounds, variables, parameters)
 end
 
 # helper functions for to create the variables and parameters NamedTuples for a 
 # CompositeComponentInstance
-function _get_variables(comp_def::AbstractCompositeComponentDef, var_dict::Dict{ComponentPath, Any})
+function _get_variables(comp_def::AbstractCompositeComponentDef)
 
-    # TODO (dummy below)
-    NT = NamedTuple(Tuple(:var1, :var2), Tuple(1.0, 2.0))
-    return NT
+    namespace = comp_def.namespace
+    var_defs = filter(namespace -> isa(namespace.second, CompositeVariableDef), namespace)
+    names = [k for (k,v) in var_defs]
+    vals = [v.ref for (k,v) in var_defs]
+    variables = (; zip(names, vals)...)
+    
+    return variables
 end
 
-function _get_parameters(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
+function _get_parameters(comp_def::AbstractCompositeComponentDef)
 
-    # TODO (dummy below)
-    NT = NamedTuple(Tuple(:par1, :par2), Tuple(1.0, 2.0))
-    return NT
+    namespace = comp_def.namespace
+    par_defs = filter(namespace -> isa(namespace.second, CompositeParameterDef), namespace)
+    names = [k for (k,v) in par_defs]
+    vals = [v.refs[1] for (k,v) in par_defs]
+    parameters = (; zip(names, vals)...)
+
+    return parameters
 end
 
 """

@@ -6,7 +6,7 @@ using Mimi
 import Mimi:
     ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
     CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
-    import_params!
+    import_params!, CompositeVariableDef, CompositeParameterDef
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -138,12 +138,24 @@ run(m)
 
 mi = m.mi
 
+# test access methods
 @test mi[:top][:A][:Comp2, :par_2_2] == collect(1.0:16.0)
 @test mi["/top/A/Comp2", :par_2_2] == collect(1.0:16.0)
 
 @test mi["/top/A/Comp2", :var_2_1] == collect(3.0:3:48.0)
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
+
+# test parameters and variables fields of CompositeComponentInstance
+top_var_keys = keys(mi[:top].variables)
+top_par_keys = keys(mi[:top].parameters)
+for item in md[:top].namespace
+    if isa(item.second, CompositeVariableDef)
+        @test in(item.first, top_var_keys)
+    elseif isa(item.second, CompositeParameterDef)
+        @test in(item.first, top_par_keys)
+    end
+end
 
 #
 # Test joining external params.
