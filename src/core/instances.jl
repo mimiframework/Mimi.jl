@@ -185,13 +185,9 @@ function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     end
     
     ref = getproperty(which, datum_name)
-    leaf_comp_name = ref.comp_name
-    leaf_datum_name = ref.datum_name
     
-    # LFR TODO figure out which path to go down to find the leaf
-    # next_comp_name = 
-    # next_datum_name = 
-    return _get_datum(ci.comps_dict[next_comp_name, next_datum_name])
+    # LFR TODO get the comp_name and datum_name to use ...
+    return _get_datum(ci.comps_dict[comp_name, datum_name])
 
 end
 
