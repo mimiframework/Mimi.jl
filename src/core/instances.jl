@@ -168,10 +168,37 @@ function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbo
     return compinstance(obj, comp_name)
 end
 
-function _get_datum(ci::AbstractComponentInstance, datum_name::Symbol)
+# LFR TODO some of this is very similar to _get_datum for leaf component instance, 
+# but in some ways it seems clearner to separate them
+function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     vars = variables(ci)
 
-    if datum_name in names(vars)
+    if datum_name in keys(vars) # could merge with below if made names(NamedTuple) = keys(NamedTuple)
+        which = vars
+    else
+        pars = parameters(ci)
+        if datum_name in keys(pars) # could merge with below if made names(NamedTuple) = keys(NamedTuple)
+            which = pars
+        else
+            error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
+        end
+    end
+    
+    ref = getproperty(which, datum_name)
+    leaf_comp_name = ref.comp_name
+    leaf_datum_name = ref.datum_name
+    
+    # LFR TODO figure out which path to go down to find the leaf
+    # next_comp_name = 
+    # next_datum_name = 
+    return _get_datum(ci.comps_dict[next_comp_name, next_datum_name])
+
+end
+
+function _get_datum(ci::LeafComponentInstance, datum_name::Symbol)
+    vars = variables(ci)
+
+    if datum_name in names(vars) 
         which = vars
     else
         pars = parameters(ci)
@@ -191,10 +218,13 @@ function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)
     _get_datum(mi[key], datum)
 end
 
+# LFR TODO: does this get used? should we keep it?
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
     ci = obj[comp_name]
     return _get_datum(ci, datum)
 end
+
+
 
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
