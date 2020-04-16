@@ -271,11 +271,26 @@ function _build(comp_def::AbstractCompositeComponentDef,
 
     comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]
 
-    # LFR TODO
-    variables = NamedTuple(Tuple(:var1, :var2), Tuple(1.0, 2.0))
-    parameters = NamedTuple(Tuple(:par1, :par2), Tuple(1.0, 2.0))
+    variables = _get_variables(comp_def, var_dict)
+    parameters = _get_parameters(comp_def, par_dict)
 
     return CompositeComponentInstance(comps, comp_def, time_bounds, variables, parameters)
+end
+
+# helper functions for to create the variables and parameters NamedTuples for a 
+# CompositeComponentInstance
+function _get_variables(comp_def::AbstractCompositeComponentDef, var_dict::Dict{ComponentPath, Any})
+
+    # TODO (dummy below)
+    NT = NamedTuple(Tuple(:var1, :var2), Tuple(1.0, 2.0))
+    return NT
+end
+
+function _get_parameters(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
+
+    # TODO (dummy below)
+    NT = NamedTuple(Tuple(:par1, :par2), Tuple(1.0, 2.0))
+    return NT
 end
 
 """
