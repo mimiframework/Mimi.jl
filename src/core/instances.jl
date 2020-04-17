@@ -168,16 +168,16 @@ function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbo
     return compinstance(obj, comp_name)
 end
 
-# LFR TODO some of this is very similar to _get_datum for leaf component instance, 
+# TBD: some of this is very similar to _get_datum for leaf component instance, 
 # but in some ways it seems clearner to separate them
 function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     vars = variables(ci)
 
-    if datum_name in keys(vars) # could merge with below if made names(NamedTuple) = keys(NamedTuple)
+    if datum_name in keys(vars) # could merge with method below if made names(NamedTuple) = keys(NamedTuple)
         which = vars
     else
         pars = parameters(ci)
-        if datum_name in keys(pars) # could merge with below if made names(NamedTuple) = keys(NamedTuple)
+        if datum_name in keys(pars) # could merge with method below if made names(NamedTuple) = keys(NamedTuple)
             which = pars
         else
             error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
@@ -186,8 +186,7 @@ function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     
     ref = getproperty(which, datum_name)
     
-    # LFR TODO get the comp_name and datum_name to use ...
-    return _get_datum(ci.comps_dict[comp_name, datum_name])
+    return _get_datum(ci.comps_dict[ref.comp_name], ref.datum_name)
 
 end
 
@@ -214,7 +213,6 @@ function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)
     _get_datum(mi[key], datum)
 end
 
-# LFR TODO: does this get used? should we keep it?
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
     ci = obj[comp_name]
     return _get_datum(ci, datum)
