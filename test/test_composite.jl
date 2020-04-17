@@ -161,8 +161,6 @@ end
 @test m[:top, :foo3] == 10
 @test m[:top, :var_3_1] == collect(6.0:6:96.0)
 
-# vars
-
 # Test joining external params.
 #
 m2 = Model()
