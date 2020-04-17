@@ -168,8 +168,9 @@ function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbo
     return compinstance(obj, comp_name)
 end
 
-# TBD: some of this is very similar to _get_datum for leaf component instance, 
-# but in some ways it seems clearner to separate them
+# TBD we could probably combine the two _get_datum methods into one that takes a
+# ci::AbstractComponentInstance, but for now it seems there are enough differences
+# that keeping them separate is cleaner
 function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     vars = variables(ci)
 
@@ -187,7 +188,6 @@ function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     ref = getproperty(which, datum_name)
     
     return _get_datum(ci.comps_dict[ref.comp_name], ref.datum_name)
-
 end
 
 function _get_datum(ci::LeafComponentInstance, datum_name::Symbol)

@@ -158,6 +158,7 @@ end
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
 @test m[:top, :fooA1] == 1
+@test m[:top, :foo3] == 10
 @test m[:top, :var_3_1] == collect(6.0:6:96.0)
 
 # vars
