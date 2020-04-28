@@ -77,14 +77,6 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     return ComponentInstanceVariables(names, types, values, paths)
 end
 
-function _combine_exported_pars(comp_def::AbstractCompositeComponentDef)
-    names  = Symbol[]
-    values = Any[]
-    paths = repeat(Any[comp_def.comp_path], length(names))
-    types = DataType[typeof(val) for val in values]
-    return ComponentInstanceParameters(names, types, values, paths)
-end
-
 # Creates the top-level vars for the model
 function _instantiate_vars(md::ModelDef)
     vdict = Dict{ComponentPath, Any}()
@@ -240,11 +232,6 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{Compon
 
     return ComponentInstanceParameters(names, types, vals, paths)
 end
-
-# commented out because potentially doing nothing ... the fcn is never called
-# function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
-#     _combine_exported_pars(comp_def)
-# end
 
 # Return a built leaf or composite LeafComponentInstance
 function _build(comp_def::ComponentDef,
