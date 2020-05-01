@@ -16,7 +16,7 @@ modelinstance_def(m::Model) = modeldef(modelinstance(m))
 
 is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 
-is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.marginal))
+is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 
 @delegate compinstance(m::Model, name::Symbol) => mi
 @delegate has_comp(m::Model, name::Symbol) => md
