@@ -14,50 +14,50 @@ Electron.prep_test_env()
 
 @testset "Mimi" begin
 
-    # @info("test_main.jl")
-    # @time include("test_main.jl")
+    @info("test_main.jl")
+    @time include("test_main.jl")
 
-    # @info("test_composite.jl")
-    # @time include("test_composite.jl")
+    @info("test_composite.jl")
+    @time include("test_composite.jl")
 
-    # @info("test_composite_parameters.jl")
-    # @time include("test_composite_parameters.jl")
+    @info("test_composite_parameters.jl")
+    @time include("test_composite_parameters.jl")
 
-    # @info("test_main_variabletimestep.jl")
-    # @time include("test_main_variabletimestep.jl")
+    @info("test_main_variabletimestep.jl")
+    @time include("test_main_variabletimestep.jl")
 
-    # @info("test_broadcast.jl")
-    # @time include("test_broadcast.jl")
+    @info("test_broadcast.jl")
+    @time include("test_broadcast.jl")
 
-    # @info("test_metainfo.jl")
-    # @time include("test_metainfo.jl")
+    @info("test_metainfo.jl")
+    @time include("test_metainfo.jl")
 
-    # @info("test_metainfo_variabletimestep.jl")
-    # @time include("test_metainfo_variabletimestep.jl")
+    @info("test_metainfo_variabletimestep.jl")
+    @time include("test_metainfo_variabletimestep.jl")
 
-    # @info("test_references.jl")
-    # @time include("test_references.jl")
+    @info("test_references.jl")
+    @time include("test_references.jl")
 
-    # @info("test_units.jl")
-    # @time include("test_units.jl")
+    @info("test_units.jl")
+    @time include("test_units.jl")
 
-    # @info("test_model_structure.jl")
-    # @time include("test_model_structure.jl")
+    @info("test_model_structure.jl")
+    @time include("test_model_structure.jl")
 
-    # @info("test_model_structure_variabletimestep.jl")
-    # @time include("test_model_structure_variabletimestep.jl")
+    @info("test_model_structure_variabletimestep.jl")
+    @time include("test_model_structure_variabletimestep.jl")
 
-    # @info("test_replace_comp.jl")
-    # @time include("test_replace_comp.jl")
+    @info("test_replace_comp.jl")
+    @time include("test_replace_comp.jl")
 
-    # @info("test_tools.jl")
-    # @time include("test_tools.jl")
+    @info("test_tools.jl")
+    @time include("test_tools.jl")
 
-    # @info("test_parameter_labels.jl")
-    # @time include("test_parameter_labels.jl")
+    @info("test_parameter_labels.jl")
+    @time include("test_parameter_labels.jl")
 
-    # @info("test_parametertypes.jl")
-    # @time include("test_parametertypes.jl")
+    @info("test_parametertypes.jl")
+    @time include("test_parametertypes.jl")
 
     @info("test_marginal_models.jl")
     @time include("test_marginal_models.jl")
