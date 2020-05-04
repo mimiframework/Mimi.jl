@@ -18,8 +18,8 @@ run_timestep::Union{Nothing, Function}
 
 # CompositeComponentInstance <: ComponentInstance
 comps_dict::OrderedDict{Symbol, ComponentInstance}
-pars_dict::OrderedDict{Symbol, Any}   # not currently being used but, probably should for better datum access
-vars_dict::OrderedDict{Symbol, Any}   # ^ same
+parameters::NamedTuple
+variables::NamedTuple
 
 # ModelInstance <: CompositeComponentInstance
 md::ModelDef

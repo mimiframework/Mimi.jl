@@ -6,7 +6,7 @@ using Mimi
 import Mimi:
     ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
     CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
-    import_params!
+    import_params!, CompositeVariableDef, CompositeParameterDef
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -88,7 +88,7 @@ end
     foo3 = Parameter(B.foo3)
     foo4 = Parameter(B.foo4)
 
-    var_3_1 = Variable(B.Comp3.var_3_1)
+    var_3_1 = Variable(B.var_3_1)
 
     connect(B.par_3_1, A.var_2_1)
     connect(B.par_4_1, B.var_3_1)
@@ -138,6 +138,18 @@ run(m)
 
 mi = m.mi
 
+# test parameters and variables fields of CompositeComponentInstance
+top_var_keys = keys(mi[:top].variables)
+top_par_keys = keys(mi[:top].parameters)
+for item in md[:top].namespace
+    if isa(item.second, CompositeVariableDef)
+        @test in(item.first, top_var_keys)
+    elseif isa(item.second, CompositeParameterDef)
+        @test in(item.first, top_par_keys)
+    end
+end
+
+# test access methods
 @test mi[:top][:A][:Comp2, :par_2_2] == collect(1.0:16.0)
 @test mi["/top/A/Comp2", :par_2_2] == collect(1.0:16.0)
 
@@ -145,7 +157,10 @@ mi = m.mi
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
-#
+@test m[:top, :fooA1] == 1
+@test m[:top, :foo3] == 10
+@test m[:top, :var_3_1] == collect(6.0:6:96.0)
+
 # Test joining external params.
 #
 m2 = Model()
