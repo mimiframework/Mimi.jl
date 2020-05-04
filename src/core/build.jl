@@ -77,14 +77,6 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     return ComponentInstanceVariables(names, types, values, paths)
 end
 
-function _combine_exported_pars(comp_def::AbstractCompositeComponentDef)
-    names  = Symbol[]
-    values = Any[]
-    paths = repeat(Any[comp_def.comp_path], length(names))
-    types = DataType[typeof(val) for val in values]
-    return ComponentInstanceParameters(names, types, values, paths)
-end
-
 # Creates the top-level vars for the model
 function _instantiate_vars(md::ModelDef)
     vdict = Dict{ComponentPath, Any}()
@@ -241,10 +233,6 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{Compon
     return ComponentInstanceParameters(names, types, vals, paths)
 end
 
-function _instantiate_params(comp_def::AbstractCompositeComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
-    _combine_exported_pars(comp_def)
-end
-
 # Return a built leaf or composite LeafComponentInstance
 function _build(comp_def::ComponentDef,
                 var_dict::Dict{ComponentPath, Any},
@@ -269,7 +257,35 @@ function _build(comp_def::AbstractCompositeComponentDef,
     # @info "  par_dict $(par_dict)"
 
     comps = [_build(cd, var_dict, par_dict, time_bounds) for cd in compdefs(comp_def)]
-    return CompositeComponentInstance(comps, comp_def, time_bounds)
+
+    variables = _get_variables(comp_def)
+    parameters = _get_parameters(comp_def)
+
+    return CompositeComponentInstance(comps, comp_def, time_bounds, variables, parameters)
+end
+
+# helper functions for to create the variables and parameters NamedTuples for a 
+# CompositeComponentInstance
+function _get_variables(comp_def::AbstractCompositeComponentDef)
+
+    namespace = comp_def.namespace
+    var_defs = filter(namespace -> isa(namespace.second, CompositeVariableDef), namespace)
+    names = [k for (k,v) in var_defs]
+    vals = [v.ref for (k,v) in var_defs]
+    variables = (; zip(names, vals)...)
+    
+    return variables
+end
+
+function _get_parameters(comp_def::AbstractCompositeComponentDef)
+
+    namespace = comp_def.namespace
+    par_defs = filter(namespace -> isa(namespace.second, CompositeParameterDef), namespace)
+    names = [k for (k,v) in par_defs]
+    vals = [v.refs[1] for (k,v) in par_defs]
+    parameters = (; zip(names, vals)...)
+
+    return parameters
 end
 
 """
