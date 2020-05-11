@@ -34,7 +34,7 @@ from those of another `marginal` Model` that has a difference of `delta`.
 """
 struct MarginalModel <: AbstractModel
     base::Model
-    marginal::Model
+    modified::Model
     delta::Float64
 
     function MarginalModel(base::Model, delta::Float64=1.0)
@@ -43,5 +43,13 @@ struct MarginalModel <: AbstractModel
 end
 
 function Base.getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
-    return (mm.marginal[comp_name, name] .- mm.base[comp_name, name]) ./ mm.delta
+    return (mm.modified[comp_name, name] .- mm.base[comp_name, name]) ./ mm.delta
+end
+
+function Base.getproperty(base::MarginalModel, s::Symbol)
+    if (s == :marginal)
+        @warn("Use of 'MarginalModel.marginal' will be deprecated, in favor of 'MarginalModel.modified'");
+        return getfield(base, :modified);
+    end
+    return getfield(base, s);
 end
