@@ -22,7 +22,7 @@ function post_trial1(si, trialnum, ntimesteps, tup)
 end
 
 si = run(simdef, mm1, 2, post_trial_func = post_trial1, results_in_memory = true)
-@test all(iszero, si.results[1][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.marginal)
+@test all(iszero, si.results[1][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.modified)
 
 
 # Test running a vector of MarginalModels
@@ -35,7 +35,7 @@ end
 
 si = run(simdef, [mm1, mm2], 2, post_trial_func = post_trial2, results_in_memory = true)
 @test all(iszero, si.results[1][:emissions, :E_Global][!, :E_Global])  # Test that the regular model has non-zero emissions
-@test all(iszero, si.results[2][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.marginal)
+@test all(iszero, si.results[2][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.modified)
 
 
 # Test running a vector of a Model and a MarginalModel
@@ -48,4 +48,4 @@ end
 
 si = run(simdef, [m, mm1], 2, post_trial_func = post_trial3, results_in_memory = true)
 @test all(!iszero, si.results[1][:emissions, :E_Global][!, :E_Global])  # Test that the regular model has non-zero emissions
-@test all(iszero, si.results[2][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.marginal)
+@test all(iszero, si.results[2][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.modified)
