@@ -1,4 +1,4 @@
-# Tutorial 4: Sensitivity Analysis (SA) Support
+# Tutorial 6: Sensitivity Analysis (SA) Support
 
 This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
 

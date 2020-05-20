@@ -1,4 +1,4 @@
-# Tutorial 2: Modify an Existing Model
+# Tutorial 3: Modify an Existing Model
 
 This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on the [MimiRegistry](https://github.com/mimiframework/MimiRegistry), and for the purposes of this tutorial we will use the `MimiDICE2010` model.
 

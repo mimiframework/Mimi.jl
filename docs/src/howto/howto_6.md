@@ -1,4 +1,4 @@
-# Integration Guide:  Porting Mimi Models from v0.4.0 to v0.5.0
+# How-to Guide 6: Port to Mimi v0.5.0
 
 ## Overview
 

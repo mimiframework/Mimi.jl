@@ -1,4 +1,4 @@
-# Introduction
+# Tutorials Introduction
 
 The following tutorials target [Mimi](https://github.com/mimiframework/Mimi.jl) users of different experience levels, starting with first-time users.  Before engaging with these tutorials, we recommend that users go to the beginning and read the introductory [Welcome to Mimi](@ref) documentation. It will also be helpful to be comfortable with the basics of the [Julia](https://julialang.org/) language, though expertise is not required.
 
