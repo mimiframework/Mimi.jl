@@ -4,7 +4,7 @@
 
 See the Tutorials for in-depth examples of Mimi's functionality.
 
-This guide is organized into six main sections for understanding how to use Mimi.
+This guide is organized into several main sections for understanding how to use Mimi.
 
 1) Defining components
 2) Constructing a model
@@ -173,11 +173,11 @@ save("figure.svg", p)
 ```
 ![Plot Model Example](figs/plot_model_example.png)
 
-These two functions, `explore` and `plot` also have methods applicable to the sensitivity analysis support described in the next section. Details can be found in the linked [internals documentation](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) as well as [Tutorial 4: Sensitivity Analysis (SA) Support](@ref).
+These two functions, `explore` and `plot` also have methods applicable to the sensitivity analysis support described in the next section. Details can be found in the linked [internals documentation](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) as well as Tutorial 4: Sensitivity Analysis (SA) Support].
 
 ## Sensitivity Analysis (SA) Support
 
-Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. The best current documentation on the SA API is the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the SA support of Mimi. This file should be used in conjunction with the examples in [Tutorial 4: Sensitivity Analysis (SA) Support](@ref), since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. The best current documentation on the SA API is the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working, although informal, description of the SA support of Mimi. This file should be used in conjunction with the examples in Tutorial 4: Sensitivity Analysis (SA) Support, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 ## Advanced Topics
 
@@ -359,3 +359,49 @@ If defined for a specific component, this function will run **before** the times
 
 end
 ```
+### Using References
+
+
+#### Component References
+
+Component references allow you to write cleaner model code when connecting components.  The `add_comp!` function returns a reference to the component that you just added:
+
+```jldoctest faq1; output = false
+using Mimi
+
+# create a component
+@defcomp MyComp begin
+    # empty
+end
+
+# construct a model and add the component
+m = Model()
+set_dimension!(m, :time, collect(2015:5:2110))
+add_comp!(m, MyComp)
+typeof(MyComp) # note the type is a Mimi Component Definition
+
+# output
+
+Mimi.ComponentDef
+```
+
+If you want to get a reference to a component after the `add_comp!` call has been made, you can construct the reference as:
+
+```jldoctest faq1; output = false
+mycomponent = Mimi.ComponentReference(m, :MyComp)
+typeof(mycomponent) # note the type is a Mimi Component Reference
+
+# output
+
+Mimi.ComponentReference
+```
+
+You can use this component reference in place of the `set_param!` and `connect_param!` calls.
+
+#### References in place of `set_param!`
+
+The line `set_param!(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
+
+#### References in place of `connect_param!`
+
+The line `connect_param!(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.

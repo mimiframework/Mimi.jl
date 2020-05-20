@@ -11,12 +11,17 @@ Mimi is an installable package which requires the programming language [julia](h
 ```julia
 pkg> add Mimi
 ```
-For more complete setup instructions, follow the [Installation Guide](@ref).
+For more complete setup instructions, follow the the first tutorial on installing Mimi.
 
+## Getting started
+
+The best way to get started with Mimi is to work through the **Tutorials**. In addition, looking at the code at the links below to various models that are based on Mimi can be instructive.
+
+Finally, when in doubt, ask your question in the [Mimi Framework forum](https://forum.mimiframework.org) or post an [Issue](https://github.com/mimiframework/Mimi.jl/issues) to the Github repository if you have a specific request for the development team.   Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
 
 ## Mimi Registry
 
-Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
+Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/mimiframework/MimiRegistry), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
