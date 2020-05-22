@@ -1,4 +1,4 @@
-# How-to Guide 1: Construct and Run a Flat Model
+# How-to Guide 1: Construct and Run a Model
 
 ## Defining Components
 
