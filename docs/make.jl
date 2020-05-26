@@ -18,13 +18,15 @@ makedocs(
 			"How-to Guides Intro" => "howto/howto_main.md",
 			"1 Construct + Run a Model" => "howto/howto_1.md",
 			"2 Explore Results" => "howto/howto_2.md",
-			"3 Sensitvity Analysis" => "howto/howto_3.md",
-			"4 Advanced Topics" => "howto/howto_4.md",
+			"3 Sensitivity Analysis" => "howto/howto_3.md",
+			"4 Timesteps, Params, and Vars" => "howto/howto_4.md",
 			"5 Port to v0.5.0" => "howto/howto_5.md",
 			"6 Port to v1.0.0" => "howto/howto_6.md"
 		],
 		"Reference Guides" => Any[
-			"API Reference" => "ref/reference.md"
+			"API Reference" => "ref/reference.md",
+			"Using References" => "ref/refs.md", 
+			"Build and Init" => "ref/build_and_init.md"
 		],
 		"FAQ" => "faq.md",
 	]
