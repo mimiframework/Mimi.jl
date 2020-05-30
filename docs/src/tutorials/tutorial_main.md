@@ -4,12 +4,6 @@ The following tutorials target [Mimi](https://github.com/mimiframework/Mimi.jl) 
 
 If you find a bug in these tutorials, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi Framework forum](https://forum.mimiframework.org).  We welcome your feedback.
 
-## Terminology
-
-The following terminology is used throughout the documentation.
-
-**Application Programming Interface (API):**  The public classes, methods, and functions provided by `Mimi` to facilitate construction of custom scripts and work with existing models. Function documentation provided in "docstrings" in the Reference Guides which define the Mimi API in more detail.
-
 ## Available Tutorials
 
 1. **Install Mimi**

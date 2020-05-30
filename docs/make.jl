@@ -24,9 +24,10 @@ makedocs(
 			"6 Port to v1.0.0" => "howto/howto_6.md"
 		],
 		"Reference Guides" => Any[
-			"API Reference" => "ref/reference.md",
-			"Using References" => "ref/refs.md", 
-			"Build and Init" => "ref/build_and_init.md"
+			"Reference Guides Intro" => "ref/ref_main.md",
+			"Mimi API" => "ref/ref_API.md",
+			"Using Datum References" => "ref/ref_refs.md", 
+			"Build and Init Functions" => "ref/ref_build_init.md"
 		],
 		"FAQ" => "faq.md",
 	]

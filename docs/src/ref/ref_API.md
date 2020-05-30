@@ -1,4 +1,4 @@
-# Reference: API Reference
+# Reference Guide: The Mimi API
 
 ```@docs
 @defcomp

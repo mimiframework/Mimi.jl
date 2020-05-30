@@ -1,4 +1,4 @@
-# Reference Guide: Build and Init
+# Reference Guide: Build and Init Functions
 
 ## The Internal 'build' Function and Model Instances
 
