@@ -7,9 +7,11 @@ While we will walk through the code step by step below, the full code for implem
 Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v1.0.0](https://github.com/mimiframework/Mimi.jl) or higher
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
+
+If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
 
 ## Constructing A One-Region Model
 
@@ -344,3 +346,6 @@ getdataframe(m, :emissions, :E_Global) # or m[:emissions, :E_Global] to return j
 # Observe model result graphs
 explore(m)
 ```
+
+----
+Next, feel free to move on to the next tutorial, which will go into depth on how to **run a sensitvity analysis** on a own model.

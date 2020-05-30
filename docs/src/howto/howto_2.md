@@ -1,5 +1,7 @@
 # How-to Guide 2: View and Explore Model Results
 
+This guide show show to access the numerical values of your results in a usable format, and also how to plot your results.
+
 ## Accessing Results
 
 After a model has been run, you can access the results (the calculated variable values in each component) in a few different ways.

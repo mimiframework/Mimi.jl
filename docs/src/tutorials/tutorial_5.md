@@ -5,15 +5,17 @@ This tutorial walks through the sensitivity analysis (SA) functionality of Mimi,
 Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v1.0.0](https://github.com/mimiframework/Mimi.jl) or higher
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
 
-Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running MimiDICE2010, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1 for the MimiDICE2010 package and then return to continue with this tutorial. Note that MimiDICE2010 is only required for the second example in this tutorial. 
+If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
+
+Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running MimiDICE2010, refer to Tutorial 2 for instructions.  Carry out **Steps 1 and 2** from Tutorial 2 for the MimiDICE2010 package and then return to continue with this tutorial. Note that MimiDICE2010 is only required for the second example in this tutorial. 
 
 ## The API
 
-The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
 We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
 
@@ -378,7 +380,7 @@ A small set of unexported functions are available to modify an existing `Simulat
 
 ### Full list of keyword options for running a simulation
 
-View the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of this function**:
+View How-to Guide 3: Conduct Sensitivity Analysis for **critical and useful details on the full signature of this function**, as well as more details and optionality for more advanced use cases.
 
 ```julia
 function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;

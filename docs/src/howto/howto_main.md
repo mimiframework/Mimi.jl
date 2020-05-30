@@ -1,6 +1,8 @@
 # How-to Guides Introduction
 
-## Terminology
+The following how-to guides provide steps to carry out several common real-world problems that Mimi is targeted at solving. They are a bit less detailed than the tutorials, and are thus targeted at a user with some level of experience with Mimi (likely obtained through moving through some or all of the tutorials). 
+
+If you find a bug in these guides, or have a clarifying question or suggestion, please reach out via Github Issues or our [Mimi Framework forum](https://forum.mimiframework.org).  We welcome your feedback.
 
 ## Available How-to Guides
 
