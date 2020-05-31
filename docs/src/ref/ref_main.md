@@ -6,15 +6,18 @@ If you find a bug in these reference guides, or have a clarifying question or su
 
 ## Available Reference Guides
 
-1. **The Mimi API**
+- **The Mimi API**
 
-   [Reference Guide: The Mimi API](@ref) 
+   [Reference Guide: The Mimi API](@ref) provides a guide to the public API for Mimi, including macros, types, and functions along with their signatures and descriptions.
 
-2. **Using Datum References**
+- **Structures 1. Overview**
 
-   [Reference Guide: Using Datum References](@ref) 
+   [Reference Guide: Structures 1. Overview](@ref)
 
-3. **Build and Init Functions**
+- **Structures 2. Definitions**
 
-    [Reference Guide: Build and Init Functions](@ref)
+   [Reference Guide: Structures 2. Definitions](@ref)
 
+- **Structures 3. Instances**
+
+   [Reference Guide: Structures 3. Instances](@ref)

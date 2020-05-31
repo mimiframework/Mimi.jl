@@ -1,8 +1,10 @@
-# Reference Guide: Build and Init Functions
+# Advanced How-to Guide: Build and Init Functions
+
+In some cases, it may be useful for a user to better understand the inner-workings of the internal `build` function, as well as the ModelInstance and ModelDef types. In addition, components with one-time computations irrespective of timesteps may lend themselves to the use of the optional `init` function, as described below.
 
 ## The Internal 'build' Function and Model Instances
 
- When you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays have been allocated. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model's structure mostly the same. For example:
+ The structural definition of a Model is held in the mutable ModelDef, and then when you call the run function on your model, first the internal `build` function is called, which produces a ModelInstance, and then the ModelInstance is run. A model instance is an instantiated version of the model you have designed where all of the component constructors have been called and all of the data arrays have been allocated. If you wish to create and run multiple versions of your model, you can use the intermediate build function and store the separate ModelInstances. This may be useful if you want to change some parameter values, while keeping the model's structure mostly the same. For example:
 
 ```julia
 instance1 = Mimi.build(m)
@@ -16,7 +18,7 @@ result1 = instance1[:Comp, :Var]
 result2 = instance2[:Comp, :Var]
 ```
 
-Note that you can retrieve values from a ModelInstance in the same way previously shown for indexing into a model.
+Note that you can retrieve values from a ModelInstance in the same way you index into a model.
 
 ## The init function
 

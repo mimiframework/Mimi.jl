@@ -1,6 +1,6 @@
 # How-to Guide 1: Construct and Run a Model
 
-This how-to guide pairs nicely withsion of Tutorial 4: Create a Model, serving as an abbreviated, less-detailed version and refresher for those with some experience with Mimi. If this is your first time constructing and running a Mimi model, we recommend you start with Tutorial 4, which will give you more detailed step-by step instructions.
+This how-to guide pairs nicely with Tutorial 4: Create a Model, serving as an abbreviated, less-detailed version and refresher for those with some experience with Mimi. If this is your first time constructing and running a Mimi model, we recommend you start with Tutorial 4, which will give you more detailed step-by step instructions.
 
 ## Defining Components
 

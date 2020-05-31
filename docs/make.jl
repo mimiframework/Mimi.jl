@@ -23,11 +23,17 @@ makedocs(
 			"5 Port to v0.5.0" => "howto/howto_5.md",
 			"6 Port to v1.0.0" => "howto/howto_6.md"
 		],
+		"Advanced How-to Guides" => Any[
+			"Advanced How-to Guides Intro" => "howto_advanced/howto_adv_main.md",
+			"Build and Init Functions" => "howto_advanced/howto_adv_buildinit.md",
+			"Using Datum References" => "howto_advanced/howto_adv_datumrefs.md"
+		],
 		"Reference Guides" => Any[
 			"Reference Guides Intro" => "ref/ref_main.md",
 			"Mimi API" => "ref/ref_API.md",
-			"Using Datum References" => "ref/ref_refs.md", 
-			"Build and Init Functions" => "ref/ref_build_init.md"
+			"Structures: Overview" => "ref/ref_structures_1_overview.md", 
+			"Structures: Definitions" => "ref/ref_structures_2_definitions.md", 
+			"Structures: Instances" => "ref/ref_structures_3_instances.md"
 		],
 		"FAQ" => "faq.md",
 	]

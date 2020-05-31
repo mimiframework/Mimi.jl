@@ -1,4 +1,6 @@
-# Reference Guide: Using Datum References
+# Advanced How-to Guide: Using Datum References
+
+While it is not encouraged in the customary use of Mimi, some scenarios may make using references to datum desireable for code brevity and understandability.
 
 ## Component References
 
@@ -34,12 +36,12 @@ typeof(mycomponent) # note the type is a Mimi Component Reference
 Mimi.ComponentReference
 ```
 
-You can use this component reference in place of the `set_param!` and `connect_param!` calls.
+You can use this component reference in place of the `set_param!` and `connect_param!` calls:
 
-## References in place of `set_param!`
+### References in place of `set_param!`
 
 The line `set_param!(model, :MyComponent, :myparameter, myvalue)` can be written as `mycomponent[:myparameter] = myvalue`, where `mycomponent` is a component reference.
 
-## References in place of `connect_param!`
+### References in place of `connect_param!`
 
 The line `connect_param!(model, :MyComponent, :myparameter, :YourComponent, :yourparameter)` can be written as `mycomponent[:myparameter] = yourcomponent[:yourparameter]`, where `mycomponent` and `yourcomponent` are component references.
