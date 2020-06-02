@@ -107,7 +107,7 @@ Electron.prep_test_env()
     @info("test_explorer_sim.jl")
     @time include("test_explorer_sim.jl")
 
-    @info("test_explorer_model.jl")
+    @info("test_explorer_compositecomp.jl")
     @time include("test_explorer_compositecomp.jl")
 
     @info("test_plotting.jl")
