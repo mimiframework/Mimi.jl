@@ -22,7 +22,7 @@ set_param!(model1, :compA, :parA, x1)
 
 mm = MarginalModel(model1, .5)
 
-model2 = mm.marginal
+model2 = mm.modified
 update_param!(model2, :parA, x2)
 
 run(mm)
@@ -33,7 +33,7 @@ end
 
 mm2 = create_marginal_model(model1, 0.5)
 
-mm2_marginal = mm2.marginal
+mm2_marginal = @test_logs (:warn, "Use of 'MarginalModel.marginal' will be deprecated, in favor of 'MarginalModel.modified'") mm2.marginal
 update_param!(mm2_marginal, :parA, x2)
 
 run(mm2)
