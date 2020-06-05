@@ -15,7 +15,7 @@ end
     p1 = Parameter(unit = "thous \$", default=3)
     p3 = Parameter(description="B p3")
     p4 = Parameter(index=[time])
-
+    p5 = Parameter(default = 1)
 end
 
 #------------------------------------------------------------------------------
@@ -133,5 +133,15 @@ err8 = try set_param!(m2, :B, :p1, 2) catch err err end
 set_param!(m2, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
 @test length(m2.md.external_param_conns) == 2 
 @test Set(keys(m2.md.external_params)) == Set([:p1, :B_p1])
+
+# Test defaults being set properly:
+m3 = get_model()
+set_param!(m3, :p1, 1, ignoreunits=true)    # Need to set parameter values for all except :p5, which has a default
+set_param!(m3, :p2, 2)    
+set_param!(m3, :p3, 3)    
+set_param!(m3, :p4, 1:10)    
+run(m3)
+@test length(keys(m3.md.external_params)) == 4      # The default value was not added to the original md's list
+@test length(keys(m3.mi.md.external_params)) == 5   # Only added to the model instance's definition
 
 end

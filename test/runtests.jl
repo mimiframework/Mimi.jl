@@ -59,6 +59,9 @@ Electron.prep_test_env()
     @info("test_parametertypes.jl")
     @time include("test_parametertypes.jl")
 
+    @info("test_defaults.jl")
+    @time include("test_defaults.jl")
+
     @info("test_marginal_models.jl")
     @time include("test_marginal_models.jl")
 

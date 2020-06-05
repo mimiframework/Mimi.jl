@@ -74,10 +74,9 @@ set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 set_param!(m, :MyComp, :j, [1,2,3])
 
-build(m)    # applies defaults, creating external params
-extpars = external_params(m)
+build(m)    # applies defaults, creating external params in the model instance's copied definition
+extpars = external_params(m.mi.md)
 
-# TBD: These are not (yet) external params. Defaults are applied at build time.
 @test isa(extpars[:a], ArrayModelParameter)
 @test isa(extpars[:b], ArrayModelParameter)
 
@@ -101,20 +100,22 @@ extpars = external_params(m)
 @test_throws ErrorException update_param!(m, :a, ones(101)) # wrong size
 @test_throws ErrorException update_param!(m, :a, fill("hi", 101, 3)) # wrong type
 
-update_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
-
+set_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 @test_throws ErrorException update_param!(m, :d, ones(5)) # wrong type; should be scalar
 update_param!(m, :d, 5) # should work, will convert to float
-@test extpars[:d].value == 5
+new_extpars = external_params(m)    # Since there are changes since the last build, need to access the updated dictionary in the model definition
+@test extpars[:d].value == 0.5      # The original dictionary still has the old value
+@test new_extpars[:d].value == 5.   # The new dicitonary has the updated value
 @test_throws ErrorException update_param!(m, :e, 5) # wrong type; should be array
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
 
-@test length(extpars) == 9
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+@test length(extpars) == 9          # The old dictionary has the default values that were added during build, so it has more entries
+@test length(new_extpars) == 6
+@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
 
-@test typeof(extpars[:d].value) == numtype
-@test typeof(extpars[:e].values) == Array{arrtype, 1}
+@test typeof(new_extpars[:d].value) == numtype
+@test typeof(new_extpars[:e].values) == Array{arrtype, 1}
 
 
 #------------------------------------------------------------------------------
