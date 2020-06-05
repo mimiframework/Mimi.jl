@@ -13,40 +13,9 @@ import Mimi:
 @test pretty_string("_snake__case__weird_") == pretty_string(:_snake__case__weird_) == "Snake Case Weird"
 
 #utils: interpolate
-stepsize = 2       # N.B. ERROR: cannot assign variable Base.step from module Main
-final = 10         # N.B. ERROR: cannot assign variable Base.last from module Main
+stepsize = 2       
+final = 10         
 ts = 10
 @test Mimi.interpolate(collect(0:stepsize:final), ts) == collect(0:stepsize/ts:final)
-
-@defcomp Foo begin
-    input = Parameter()
-    intermed = Variable(index=[time])
-
-    function run_timestep(p, v, d, t)
-        v.intermed[t] = p.input
-    end
-end
-
-@defcomp Bar begin
-    intermed = Parameter(index=[time])
-    output = Variable(index=[time])
-
-    function run_timestep(p, v, d, t)
-        v.output[t] = p.intermed[t]
-    end
-end
-
-m = Model()
-set_dimension!(m, :time, 2)
-foo = add_comp!(m, Foo)
-bar = add_comp!(m, Bar)
-
-foo[:input] = 3.14
-
-# The connection via references is broken...
-# bar[:intermed] = m.md[:Foo][:intermed]
-connect_param!(m, :Bar, :intermed,  :Foo, :intermed)
-
-run(m)
 
 end #module

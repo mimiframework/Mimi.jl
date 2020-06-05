@@ -36,8 +36,6 @@ using MacroTools
 # 4. connect(a.param, b.var)
 #
 #
-# @defcomposite should just emit all the same API calls one could make manually
-#
 
  # splitarg produces a tuple for each arg of the form (arg_name, arg_type, slurp, default)
 _arg_name(arg_tup) = arg_tup[1]
@@ -80,7 +78,7 @@ end
 # Convert @defcomposite "shorthand" statements into Mimi API calls
 #
 function _parse(expr)
-    valid_keys = (:default, :description, :visability, :unit)
+    valid_keys = (:default, :description, :unit)
     result = nothing
 
     if @capture(expr, newname_ = Component(compname_)) ||
@@ -190,59 +188,98 @@ macro defcomposite(cc_name, ex)
 end
 
 """
-    import_params!(obj::AbstractCompositeComponentDef;
-                   names::Union{Nothing,Vector{Symbol}}=nothing)
+    import_params!(obj::AbstractCompositeComponentDef)
 
 Imports all unconnected parameters below the given composite `obj` by adding references
 to these parameters in `obj`.
 
-NOT IMPLEMENTED: If `names` is not `nothing`, only the given names ar imported.
-
-This is called automatically by `build!()`, but it can be useful for developers of
-composites as well.
-
 N.B. This is also called at the end of code emitted by @defcomposite.
 """
-function import_params!(obj::AbstractCompositeComponentDef;
-                        names::Union{Nothing,Vector{Symbol}}=nothing)
+function import_params!(obj::AbstractCompositeComponentDef)
 
     unconn = unconnected_params(obj)
-    params = parameters(obj)
 
-    # remove imported params from list of unconnected params
-    unconn = setdiff(unconn, params)
-    # filter!(param_ref -> !(param_ref in params), unconn)
-
-    # verify that all explicit names are importable
-    if names !== nothing
-        unconn_names = [nameof(param_ref) for param_ref in unconn]
-        unknown = setdiff(names, unconn_names)
-        if ! isempty(unknown)
-            @error "Can't import names $unknown as these are not unconnected params"
-        end
-    end
+    # Check for unresolved parameter name collisions. 
+    # Users must explicitly define any parameters that come from multiple subcomponents.
+    all_names = [ref.datum_name for ref in unconn]
+    unique_names = unique(all_names)
+    _map = Dict([name => count(isequal(name), all_names) for name in unique_names])
+    non_unique = [name for (name, val) in _map if val>1]
+    isempty(non_unique) || error("Cannot build composite :$(obj.name). There are unresolved parameter name collisions from subcomponents for the following parameter names: $(join(non_unique, ", ")).")
 
     for param_ref in unconn
-        # @info "importing $param_ref to $(obj.comp_id)"
-        name = nameof(param_ref)
-        if names === nothing || name in names
-            obj[name] = param_ref
-        end
+        name = param_ref.datum_name
+        haskey(obj, name) && error("Cannot build composite :$(obj.name). Failed to auto-import parameter :$name from component :$(param_ref.comp_name), this name has already been defined in the composite component's namespace.")
+        obj[name] = CompositeParameterDef(obj, param_ref)
     end
 end
 
-# Return the local name of an already-imported parameter, or nothing if not found
-function _find_param_ref(obj, dr)
-    for (name, param_ref) in param_dict(obj)
-        # @info "Comparing refs $param_ref == $dr"
-        if param_ref == dr
-            # @info "Found prior import to $dr named $name"
-            return name
-        end
+# Helper function for finding any field collisions for parameters that want to be joined
+function _find_collisions(fields, pairs::Vector{Pair{T, Symbol}}) where T
+    collisions = Symbol[]
+
+    pardefs = [comp.namespace[param_name] for (comp, param_name) in pairs]
+    for f in fields
+        subcomponent_set = Set([getproperty(pardef, f) for pardef in pardefs])
+        length(subcomponent_set) > 1 && push!(collisions, f)
     end
-    nothing
+
+    return collisions
 end
 
+# `kwargs` contains the keywords specified by the user when defining the composite parameter in @defcomposite.
+# If the user does not provide a value for one or any of the possible fields, this function looks at the fields 
+# of the subcomponents' parameters to use, but errors if any of them are in conflict.
+# Note that :dim_names and :datatype can't be specified at the composite level, but must match from the subcomponents.
+function _resolve_composite_parameter_kwargs(obj::AbstractCompositeComponentDef, kwargs::Dict{Symbol, Any}, pairs::Vector{Pair{T, Symbol}}, parname::Symbol)  where T <: AbstractComponentDef
+    
+    fields = (:default, :description, :unit, :dim_names, :datatype)
+    collisions = _find_collisions(fields, pairs)
+
+    # Create a new dictionary of resolved values to return
+    new_kwargs = Dict{Symbol, Any}()
+
+    for f in fields
+        try 
+            new_kwargs[f] = kwargs[f] # Get the user specified value for this field if there is one
+        catch e
+            # If the composite definition does not specify a value, then need to look to subcomponents and resolve or error
+            if f in collisions
+                error("Cannot build composite parameter :$parname, subcomponents have conflicting values for the \"$f\" field.")
+            else
+                compdef, curr_parname = pairs[1]
+                pardef = compdef[curr_parname]   
+                new_kwargs[f] = getproperty(pardef, f)
+            end
+        end
+    end
+
+    return new_kwargs
+end
+
+# Helper function for detecting whether a specified datum has already been imported or connected
+function _is_connected(obj::AbstractCompositeComponentDef, comp_name::Symbol, datum_name::Symbol)
+    for (k, item) in obj.namespace
+        if isa(item, AbstractCompositeParameterDef)
+            for ref in item.refs
+                if ref.comp_name == comp_name && ref.datum_name == datum_name
+                    return true
+                end
+            end
+        elseif isa(item, AbstractCompositeVariableDef)
+            ref = item.ref
+            if ref.comp_name == comp_name && ref.datum_name == datum_name
+                return true
+            end            
+        end
+    end
+    return false
+
+    # cannot use the following, because all parameters haven't bubbled up yet
+    # return UnnamedReference(comp_name, datum_name) in unconnected_params(obj)
+end
+
+# This function creates a CompositeParameterDef in the CompositeComponentDef obj
 function import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
                         pairs::Pair...; kwargs...)
 
@@ -252,35 +289,19 @@ function import_param!(obj::AbstractCompositeComponentDef, localname::Symbol,
     for (comp, pname) in pairs
 
         if comp == :*       # wild card
-            @info "Got wildcard for param $pname (Not yet implemented)"
+            error("Got wildcard component specification (*) for param $pname (Not yet implemented)")
         else
             compname = nameof(comp)
             has_comp(obj, compname) ||
                 error("_import_param!: $(obj.comp_id) has no element named $compname")
 
-            newcomp = obj[compname]
-
-            dr = datum_reference(newcomp, pname)
-            old_name = _find_param_ref(obj, dr)
-
-            # TBD: :allow_overwrite is not yet passed from @defcomposite
-            key = :allow_overwrite
-            if old_name === nothing || (haskey(kwargs, key) && kwargs[key])
-                # import the parameter from the given component
-                obj[localname] = dr = datum_reference(newcomp, pname)
-                # @info "import_param! created dr $dr"
-            else
-                error("Duplicate import of $dr as $localname, already imported as $old_name. ",
-                      "To allow duplicates, use Parameter($(nameof(comp)).$pname; :$key=True)")
-            end
-
-            if haskey(kwargs, :default)
-                root =  get_root(obj)
-                ref = ParameterDefReference(pname, root, pathof(newcomp), kwargs[:default])
-                save_default!(obj, ref)
-            end
+            _is_connected(obj, compname, pname) &&
+                error("Duplicate import of $(comp.name).$pname")
         end
     end
+    new_kwargs = _resolve_composite_parameter_kwargs(obj, Dict{Symbol, Any}(kwargs), collect(pairs), localname)
+
+    obj[localname] = CompositeParameterDef(localname, pathof(obj), collect(pairs), new_kwargs)
 end
 
 """
@@ -293,7 +314,7 @@ function _import_var!(obj::AbstractCompositeComponentDef, localname::Symbol,
     end
 
     comp = @or(find_comp(obj, path), error("$path not found from component $(obj.comp_id)"))
-    obj[localname] = datum_reference(comp, vname)
+    obj[localname] = CompositeVariableDef(localname, pathof(obj), comp, vname)
 end
 
 nothing

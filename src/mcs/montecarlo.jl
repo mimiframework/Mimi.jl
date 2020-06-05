@@ -231,7 +231,7 @@ function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSi
     for m in sim_inst.models
         if m isa MarginalModel
             push!(flat_model_list, m.base)
-            push!(flat_model_list, m.marginal)
+            push!(flat_model_list, m.modified)
         else
             push!(flat_model_list, m)
         end
@@ -255,7 +255,7 @@ function _restore_sim_params!(sim_inst::SimulationInstance{T},
     for m in sim_inst.models
         if m isa MarginalModel
             push!(flat_model_list, m.base)
-            push!(flat_model_list, m.marginal)
+            push!(flat_model_list, m.modified)
         else
             push!(flat_model_list, m)
         end
@@ -358,7 +358,7 @@ function _perturb_params!(sim_inst::SimulationInstance{T}, trialnum::Int) where 
 
     for m in sim_inst.models
         # If it's a MarginalModel, need to perturb the params in both the base and marginal modeldefs
-        mds = m isa MarginalModel ? [m.base.mi.md, m.marginal.mi.md] : [m.mi.md]
+        mds = m isa MarginalModel ? [m.base.mi.md, m.modified.mi.md] : [m.mi.md]
         for md in mds
             for trans in sim_inst.sim_def.translist        
                 param = external_param(md, trans.paramname)

@@ -67,7 +67,8 @@ unconns = unconnected_params(m)
 @test length(unconns) == 1
 c = compdef(m, :C)
 uconn = unconns[1]
-@test (pathof(uconn), nameof(uconn)) == (c.comp_path, :parC)
+@test uconn.comp_name == :C
+@test uconn.datum_name == :parC
 
 connect_param!(m, :C => :parC, :B => :varB)
 

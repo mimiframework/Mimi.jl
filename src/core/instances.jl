@@ -67,7 +67,7 @@ end
     if T <: ScalarModelParameter
         return setproperty!(prop_obj, :value, value)
     else
-        error("You cannot override indexed variable $name::$T.")
+        error("You cannot override indexed variable $name::$T. Make sure you are using proper indexing syntax in the `run_timestep` function: v.varname[t] = ...")
     end
 end
 
@@ -168,10 +168,32 @@ function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbo
     return compinstance(obj, comp_name)
 end
 
-function _get_datum(ci::AbstractComponentInstance, datum_name::Symbol)
+# TBD we could probably combine the two _get_datum methods into one that takes a
+# ci::AbstractComponentInstance, but for now it seems there are enough differences
+# that keeping them separate is cleaner
+function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
     vars = variables(ci)
 
-    if datum_name in names(vars)
+    if datum_name in keys(vars) # could merge with method below if made names(NamedTuple) = keys(NamedTuple)
+        which = vars
+    else
+        pars = parameters(ci)
+        if datum_name in keys(pars) # could merge with method below if made names(NamedTuple) = keys(NamedTuple)
+            which = pars
+        else
+            error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
+        end
+    end
+    
+    ref = getproperty(which, datum_name)
+    
+    return _get_datum(ci.comps_dict[ref.comp_name], ref.datum_name)
+end
+
+function _get_datum(ci::LeafComponentInstance, datum_name::Symbol)
+    vars = variables(ci)
+
+    if datum_name in names(vars) 
         which = vars
     else
         pars = parameters(ci)
@@ -195,6 +217,8 @@ function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbo
     ci = obj[comp_name]
     return _get_datum(ci, datum)
 end
+
+
 
 """
     dim_count(mi::ModelInstance, dim_name::Symbol)
