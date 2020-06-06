@@ -205,7 +205,7 @@ Return an iterator on the components in a model's model instance.
 
 Return a DatumDef for `item` in the given component `comp_def`.
 """
-function datumdef(comp_def::ComponentDef, item::Symbol)
+function datumdef(comp_def::AbstractComponentDef, item::Symbol)
     if has_variable(comp_def, item)
         return variable(comp_def, item)
 
