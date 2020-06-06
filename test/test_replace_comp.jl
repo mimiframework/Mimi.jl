@@ -138,4 +138,23 @@ replace_comp!(m, X_repl, :c2)        # test replacing not the last one
 @test compdef(m, :c2).comp_id == X_repl.comp_id
 
 
+# 9. Test that any previous set parameters are preserved, even in the presence of default values
+
+@defcomp A begin
+    p1 = Parameter(default=1)
+end
+
+@defcomp B begin
+    p1 = Parameter(default=2)
+end
+
+m = Model()
+set_dimension!(m, :time, 10)
+add_comp!(m, A)
+set_param!(m, :A, :p1, 3)
+replace_comp!(m, B, :A)
+run(m)
+@test m[:A, :p1] == 3
+
+
 end # module
