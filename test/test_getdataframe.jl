@@ -43,6 +43,7 @@ set_param!(model1, :testcomp1, :par_scalar, 5.)
 add_comp!(model1, testcomp2)
 
 @test_throws ErrorException set_param!(model1, :testcomp2, :par2, late_first:5:early_last)
+@test ! (:par2 in keys(model1.md.external_params))  # Test that after the previous error, the :par2 didn't stay in the model's parameter list
 set_param!(model1, :testcomp2, :par2, years)
 
 # Test running before model built

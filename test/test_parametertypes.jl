@@ -74,10 +74,9 @@ set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 set_param!(m, :MyComp, :j, [1,2,3])
 
-build(m)    # applies defaults, creating external params
-extpars = external_params(m)
+build(m)    # applies defaults, creating external params in the model instance's copied definition
+extpars = external_params(m.mi.md)
 
-# TBD: These are not (yet) external params. Defaults are applied at build time.
 @test isa(extpars[:a], ArrayModelParameter)
 @test isa(extpars[:b], ArrayModelParameter)
 
@@ -101,20 +100,22 @@ extpars = external_params(m)
 @test_throws ErrorException update_param!(m, :a, ones(101)) # wrong size
 @test_throws ErrorException update_param!(m, :a, fill("hi", 101, 3)) # wrong type
 
-update_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
-
+set_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 @test_throws ErrorException update_param!(m, :d, ones(5)) # wrong type; should be scalar
 update_param!(m, :d, 5) # should work, will convert to float
-@test extpars[:d].value == 5
+new_extpars = external_params(m)    # Since there are changes since the last build, need to access the updated dictionary in the model definition
+@test extpars[:d].value == 0.5      # The original dictionary still has the old value
+@test new_extpars[:d].value == 5.   # The new dicitonary has the updated value
 @test_throws ErrorException update_param!(m, :e, 5) # wrong type; should be array
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
 
-@test length(extpars) == 9
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+@test length(extpars) == 9          # The old dictionary has the default values that were added during build, so it has more entries
+@test length(new_extpars) == 6
+@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
 
-@test typeof(extpars[:d].value) == numtype
-@test typeof(extpars[:e].values) == Array{arrtype, 1}
+@test typeof(new_extpars[:d].value) == numtype
+@test typeof(new_extpars[:e].values) == Array{arrtype, 1}
 
 
 #------------------------------------------------------------------------------
@@ -258,5 +259,67 @@ update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) 
 @test external_param(m.md, :x).values.data == [3.,4.,5.]
 @test external_param(m.md, :y).values == [10.,20.]
 @test external_param(m.md, :z).value == 0
+
+
+#------------------------------------------------------------------------------
+# Test the three different set_param! methods for a Symbol type parameter
+#------------------------------------------------------------------------------
+
+
+@defcomp A begin
+    p1 = Parameter{Symbol}()
+end
+
+function _get_model()
+    m = Model()
+    set_dimension!(m, :time, 10)
+    add_comp!(m, A)
+    return m
+end
+
+# Test the 3-argument version of set_param!
+m = _get_model()
+@test_throws MethodError set_param!(m, :p1, 3)  # Can't set it with an Int
+
+set_param!(m, :p1, :foo)    # Set it with a Symbol
+run(m)
+@test m[:A, :p1] == :foo
+
+# Test the 4-argument version of set_param!
+m = _get_model()
+@test_throws MethodError set_param!(m, :A, :p1, 3)
+
+set_param!(m, :A, :p1, :foo)
+run(m)
+@test m[:A, :p1] == :foo
+
+# Test the 5-argument version of set_param!
+m = _get_model()
+@test_throws MethodError set_param!(m, :A, :p1, :A_p1, 3)
+
+set_param!(m, :A, :p1, :A_p1, :foo)
+run(m)
+@test m[:A, :p1] == :foo
+
+#------------------------------------------------------------------------------
+# Test that if set_param! errors in the connection step, 
+#       the created param doesn't remain in the model's list of params
+#------------------------------------------------------------------------------
+
+@defcomp A begin
+    p1 = Parameter(index = [time])
+end
+
+@defcomp B begin
+    p1 = Parameter(index = [time])
+end
+
+m = Model()
+set_dimension!(m, :time, 10)
+add_comp!(m, A)
+add_comp!(m, B)
+
+@test_throws ErrorException set_param!(m, :p1, 1:5)     # this will error because the provided data is the wrong size
+@test isempty(m.md.external_params)                     # But it should not be added to the model's dictionary
 
 end #module

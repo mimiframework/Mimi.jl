@@ -188,15 +188,6 @@ function show(io::IO, obj::AbstractComponentDef)
     end
 end
 
-function show(io::IO, obj::VariableDefReference)
-    print(io, "VariableDefReference(name=:$(obj.name) path=$(obj.comp_path))")
-end
-
-function show(io::IO, obj::ParameterDefReference)
-    default = printable(obj.default)
-    print(io, "ParameterDefReference(name=:$(obj.name) path=$(obj.comp_path) default=$default)")
-end
-
 function show(io::IO, obj::ModelInstance)
     # Don't print full type signature since it's shown in .variables and .parameters
     print(io, "ModelInstance")

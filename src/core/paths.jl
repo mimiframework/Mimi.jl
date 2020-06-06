@@ -24,9 +24,8 @@ Base.joinpath(p1::ComponentPath, other...) = joinpath(joinpath(p1, other[1]), ot
     _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
 
 Set the ComponentPath of a child object to extend the path of its composite parent.
-For composites, also update the component paths for all connections, and for all
-DatumReferences in the namespace. For leaf components, also update the ComponentPath
-for ParameterDefs and VariableDefs.
+For composites, also update the component paths for all connections. For leaf components, 
+also update the ComponentPath for ParameterDefs and VariableDefs.
 """
 function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeComponentDef)
     parent_path = pathof(parent)
@@ -47,8 +46,8 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
         # Fix internal param conns
         conns = child.internal_param_conns
         for (i, conn) in enumerate(conns)
-            src_path = ComponentPath(child_path, tail(conn.src_comp_path))
-            dst_path = ComponentPath(child_path, tail(conn.dst_comp_path))
+            src_path = ComponentPath(child_path, conn.src_comp_path.names[end])
+            dst_path = ComponentPath(child_path, conn.dst_comp_path.names[end])
 
             # @info "Resetting IPC src in $child_path from $(conn.src_comp_path) to $src_path"
             # @info "Resetting IPC dst in $child_path from $(conn.dst_comp_path) to $dst_path"
@@ -58,22 +57,6 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
                                                    dst_path, conn.dst_par_name,
                                                    conn.ignoreunits, conn.backup;
                                                    offset=conn.offset)
-        end
-
-        for (name, ref) in ns(child)
-            if ref isa AbstractDatumReference
-                T = typeof(ref)
-                # @info "parent_path: $parent_path ref.comp_path: $(ref.comp_path)"
-                ref_comp = find_comp(parent, pathof(ref))
-                child[name] = new_ref = T(ref.name, root, pathof(ref_comp))
-                # @info "new path: $(new_ref.comp_path)"
-            end
-        end
-
-        defaults = child.defaults
-        for (i, ref) in enumerate(defaults)
-            ref_comp = find_comp(parent, pathof(ref))
-            defaults[i] = ParameterDefReference(ref.name, root, pathof(ref_comp), ref.default)
         end
 
     else
@@ -88,9 +71,8 @@ end
     fix_comp_paths!(md::AbstractModelDef)
 
 Recursively set the ComponentPaths in a tree below a ModelDef to the absolute path equivalent.
-This includes updating the component paths for all internal/external connections, and all
-DatumReferences in the namespace. For leaf components, we also update the ComponentPath for
-ParameterDefs and VariableDefs.
+This includes updating the component paths for all internal/external connections. For leaf components, 
+we also update the ComponentPath for ParameterDefs and VariableDefs.
 """
 function fix_comp_paths!(md::AbstractModelDef)
     for child in compdefs(md)
@@ -166,8 +148,6 @@ function find_comp(obj::AbstractCompositeComponentDef, pathstr::AbstractString)
     path = comp_path(obj, pathstr)
     find_comp(obj, path)
 end
-
-find_comp(dr::AbstractDatumReference) = find_comp(dr.root, dr.comp_path)
 
 find_comp(cr::AbstractComponentReference) = find_comp(parent(cr), pathof(cr))
 

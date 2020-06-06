@@ -20,6 +20,9 @@ Electron.prep_test_env()
     @info("test_composite.jl")
     @time include("test_composite.jl")
 
+    @info("test_composite_parameters.jl")
+    @time include("test_composite_parameters.jl")
+
     @info("test_main_variabletimestep.jl")
     @time include("test_main_variabletimestep.jl")
 
@@ -55,6 +58,9 @@ Electron.prep_test_env()
 
     @info("test_parametertypes.jl")
     @time include("test_parametertypes.jl")
+
+    @info("test_defaults.jl")
+    @time include("test_defaults.jl")
 
     @info("test_marginal_models.jl")
     @time include("test_marginal_models.jl")

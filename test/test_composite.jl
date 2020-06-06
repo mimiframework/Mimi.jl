@@ -4,9 +4,9 @@ using Test
 using Mimi
 
 import Mimi:
-    ComponentId, ComponentPath, DatumReference, ComponentDef, AbstractComponentDef,
+    ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
     CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
-    import_params!
+    import_params!, CompositeVariableDef, CompositeParameterDef
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -88,7 +88,7 @@ end
     foo3 = Parameter(B.foo3)
     foo4 = Parameter(B.foo4)
 
-    var_3_1 = Variable(B.Comp3.var_3_1)
+    var_3_1 = Variable(B.var_3_1)
 
     connect(B.par_3_1, A.var_2_1)
     connect(B.par_4_1, B.var_3_1)
@@ -138,6 +138,18 @@ run(m)
 
 mi = m.mi
 
+# test parameters and variables fields of CompositeComponentInstance
+top_var_keys = keys(mi[:top].variables)
+top_par_keys = keys(mi[:top].parameters)
+for item in md[:top].namespace
+    if isa(item.second, CompositeVariableDef)
+        @test in(item.first, top_var_keys)
+    elseif isa(item.second, CompositeParameterDef)
+        @test in(item.first, top_par_keys)
+    end
+end
+
+# test access methods
 @test mi[:top][:A][:Comp2, :par_2_2] == collect(1.0:16.0)
 @test mi["/top/A/Comp2", :par_2_2] == collect(1.0:16.0)
 
@@ -145,7 +157,10 @@ mi = m.mi
 @test mi["/top/A/Comp1", :var_1_1] == collect(1.0:16.0)
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
-#
+@test m[:top, :fooA1] == 1
+@test m[:top, :foo3] == 10
+@test m[:top, :var_3_1] == collect(6.0:6:96.0)
+
 # Test joining external params.
 #
 m2 = Model()
@@ -157,9 +172,54 @@ set_dimension!(m2, :time, 2005:2020)
 
     connect(Comp2.par_2_1, Comp1.var_1_1)
     connect(Comp2.par_2_2, Comp1.var_1_1)
+
+    foo = Parameter(Comp1.foo, Comp2.foo)
 end
 
 top2_ref = add_comp!(m2, top2, nameof(top2))
+
+#
+# Test _fix_comp_path on internal connections 3 levels down
+#
+
+@defcomposite top3 begin
+    Component(top)
+end
+
+@test top3[:top][:A].internal_param_conns[1].src_comp_path == Mimi.ComponentPath(:top3, :top, :A, :Comp1)
+
+path1 = ComponentPath(:a, :b)
+path2 = ComponentPath(:c, :d)
+@test ComponentPath(path1, path2) == ComponentPath(:a, :b, :c, :d)
+
+# renaming
+
+@defcomp A begin
+    p1 = Parameter()
+    p2 = Parameter()
+
+    v1 = Variable()
+end
+
+@defcomp B begin
+    v2 = Variable()
+end
+
+@defcomposite C begin
+
+    foo = Component(A)
+    bar = Component(B) 
+
+    rename_p1 = Parameter(foo.p1) 
+
+    connect(foo.p2, bar.v2)
+
+    rename_v1 = Variable(foo.v1)
+end
+
+for key in [:foo, :bar, :rename_p1, :rename_v1]
+    @test key in keys(C.namespace)
+end
 
 end # module
 
