@@ -612,7 +612,7 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
 # begin syntax is depreacated v1.0.0 - v1.3.0 
-@static if(VERSION > v"1.3.0")
+if VERSION > v"1.3.0"
     include("test_timesteparrays_v1.4.jl")
 end
 
