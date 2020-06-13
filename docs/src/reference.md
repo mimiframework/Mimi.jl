@@ -19,8 +19,6 @@ get_var_value
 hasvalue
 is_first
 is_last
-is_time
-is_timestep
 modeldef
 parameter_names
 parameter_dimensions

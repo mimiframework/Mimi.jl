@@ -31,8 +31,6 @@ export
     hasvalue,
     is_first,
     is_last,
-    is_time,
-    is_timestep,
     modeldef,
     name,
     # parameters,

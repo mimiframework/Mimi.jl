@@ -69,22 +69,6 @@ function _get_stacktrace_string()
 	return s
 end
 
-# Helper functionfor getindex; throws an error if one indexes into a TimestepArray with an integer
-function _throw_int_getindex_depwarning()
-	msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]\n"
-	st = _get_stacktrace_string()
-	full_msg = string(msg, " \n", st)
-	Base.depwarn(full_msg, :getindex)
-end
-
-# Helper function for setindex; throws an deprecation warning if one indexes into a TimestepArray with an integer
-function _throw_int_setindex_depwarning()
-	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]"
-	st = _get_stacktrace_string()
-	full_msg = string(msg, " \n", st)
-	Base.depwarn(full_msg, :setindex!)
-end
-
 # Helper macro used by connector
 macro allow_missing(expr)
 	let e = gensym("e")
@@ -204,29 +188,6 @@ end
 
 function Base.setindex!(v::TimestepVector, val, ts::TimestepIndex)
 	setindex!(v.data, val, ts.index)
-end
-	
-# int indexing version supports old-style components and internal functions, not
-# part of the public API
-
-function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP}, T}, i::AnyIndex_NonColon) where {T, FIRST, STEP}
-	_throw_int_getindex_depwarning()
-	return v.data[i]
-end
-
-function Base.getindex(v::TimestepVector{VariableTimestep{TIMES}, T}, i::AnyIndex_NonColon) where {T, TIMES}
-	_throw_int_getindex_depwarning()
-	return v.data[i]
-end
-
-function Base.setindex!(v::TimestepVector{FixedTimestep{Start, STEP}, T}, val, i::AnyIndex_NonColon) where {T, Start, STEP}
-	_throw_int_setindex_depwarning()
-	setindex!(v.data, val, i)
-end
-
-function Base.setindex!(v::TimestepVector{VariableTimestep{TIMES}, T}, val, i::AnyIndex_NonColon) where {T, TIMES}
-	_throw_int_setindex_depwarning()
-	setindex!(v.data, val, i)
 end
 
 function Base.length(v::TimestepVector)
@@ -390,39 +351,6 @@ function Base.setindex!(mat::TimestepMatrix, val, ts::TimestepIndex, idx::AnyInd
 	setindex!(mat.data, val, ts.index, idx)
 end
 
-# int indexing version supports old-style components and internal functions, not
-# part of the public API
-
-function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, FIRST, STEP, ti}
-	_throw_int_getindex_depwarning()
-	return mat.data[idx1, idx2]
-end
-
-function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, TIMES, ti}
-	_throw_int_getindex_depwarning()
-	return mat.data[idx1, idx2]
-end
-
-function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::Int, idx2::Int) where {T, FIRST, STEP, ti}
-	_throw_int_setindex_depwarning()
-	setindex!(mat.data, val, idx1, idx2)
-end
-
-function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, ti}, val, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, FIRST, STEP, ti}
-	_throw_int_setindex_depwarning()
-	mat.data[idx1, idx2] .= val
-end
-
-function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::Int, idx2::Int) where {T, TIMES, ti}
-	_throw_int_setindex_depwarning()
-	setindex!(mat.data, val, idx1, idx2)
-end
-
-function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T, ti}, val, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon) where {T, TIMES, ti}
-	_throw_int_setindex_depwarning()
-	mat.data[idx1, idx2] .= val
-end
-
 #
 # TimestepArray methods
 #
@@ -555,28 +483,7 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, v
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
 end
 
-# Colon support - this allows the time dimension to be indexed with a colon, and 
-# the deprecation warning will become an error when integer indexing is fully deprecated
-
-function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
-    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
-    return arr.data[idxs...]
-end
-
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::AnyIndex...) where {TIMES, T, N, ti}
-    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
-    return arr.data[idxs...]
-end
-
-function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
-    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
-    setindex!(arr.data, val, idxs...)
-end
-
-function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::AnyIndex...) where {TIMES, T, N, ti}
-    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
-    setindex!(arr.data, val, idxs...)
-end
+# Colon support - this allows the time dimension to be indexed with a colon
 
 # Indexing with arrays of TimestepIndexes or TimestepValues
 function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}

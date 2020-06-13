@@ -45,11 +45,3 @@ end
 function Base.getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
     return (mm.modified[comp_name, name] .- mm.base[comp_name, name]) ./ mm.delta
 end
-
-function Base.getproperty(base::MarginalModel, s::Symbol)
-    if (s == :marginal)
-        @warn("Use of 'MarginalModel.marginal' will be deprecated, in favor of 'MarginalModel.modified'");
-        return getfield(base, :modified);
-    end
-    return getfield(base, s);
-end
