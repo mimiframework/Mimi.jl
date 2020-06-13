@@ -211,7 +211,7 @@ The API details for AbstractTimestep object `t` are as follows:
 - useful functions for commonly used conditionals are `is_first(t)` and `is_last(t)`
 - to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use comparisons with `TimestepIndex` objects to check if an AbstractTimestep `t` corresponds with a specific index number, as described above.
 
-Indexing into a variable or parameter's `time` dimension with an `Integer` is deprecated and will soon error. Instead, users should take advantage of the `TimestepIndex` and `TimestepValue` types. For examples we will refer back to our component definition above, and repeated below.
+Indexing into a variable or parameter's `time` dimension with an `Integer` is no longer supported. Instead, users should take advantage of the `TimestepIndex` and `TimestepValue` types. For examples we will refer back to our component definition above, and repeated below.
 ```julia
 @defcomp MyComponentName begin
   regions = Index()

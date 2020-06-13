@@ -56,19 +56,6 @@ function _single_index_check(data, idxs)
 	end
 end
 
-# Helper to print stacktrace for the integer indexing deprecatino warning
-function _get_stacktrace_string()
-	s = ""
-	for line in stacktrace()
-		if startswith(string(line), "run_timestep")
-			return s
-		else
-			s = string(s, line, "\n")
-		end
-	end
-	return s
-end
-
 # Helper macro used by connector
 macro allow_missing(expr)
 	let e = gensym("e")
