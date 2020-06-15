@@ -127,6 +127,59 @@ function _get_ts_indices(ts_array::Array{TimestepValue{T}, 1}, times::Union{Tupl
 	return [_get_time_value_position(times, ts) for ts in ts_array]
 end
 
+# Base.firstindex and Base.lastindex
+function Base.firstindex(arr::TimestepArray{T_TS, T, N, ti}) where {T_TS, T, N, ti}
+	if ti == 1
+		return Mimi.TimestepIndex(1)
+	else
+		return 1
+	end
+end
+
+function Base.lastindex(arr::TimestepArray{T_TS, T, N, ti}) where {T_TS, T, N, ti}
+	if ti == length(size(arr.data))
+		return Mimi.TimestepIndex(length(arr.data))
+	else
+		return length(arr.data)
+	end
+end
+
+function Base.lastindex(arr::TimestepArray{T_TS, T, N, ti}, dim::Int) where {T_TS, T, N, ti}
+	if ti == dim
+		return Mimi.TimestepIndex(size(arr.data, dim))
+	else
+		return size(arr.data, dim)
+	end
+end
+
+function Base.firstindex(arr::TimestepArray{T_TS, T, N, ti}, dim::Int) where {T_TS, T, N, ti}
+	if ti == dim
+		return Mimi.TimestepIndex(1)
+	else
+		return 1
+	end
+end
+
+# add axes methos copied from abstarctarray.jl:56
+function Base.axes(A::TimestepArray{T_TS, T, N, ti}, d::Int) where {T_TS, T, N, ti}
+	_d_lessthan_N = d <= N;
+	if d == ti
+		if _d_lessthan_N
+			return Tuple(TimestepIndex.(1:size(A,d)))
+		else
+			return TimestepIndex(1)
+		end
+	else
+		if _d_lessthan_N
+			if _d_lessthan_N
+				return 1:size(A,d)
+			else
+				return 1
+			end
+		end
+	end
+end
+
 #
 # b. TimestepVector
 #
@@ -233,8 +286,6 @@ function Base.length(v::TimestepVector)
 	return length(v.data)
 end
 
-Base.lastindex(v::TimestepVector) = length(v)
-
 #
 # c. TimestepMatrix
 #
@@ -267,7 +318,6 @@ function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP}, T, 2}, id
 end
 
 function Base.getindex(mat::TimestepMatrix{VariableTimestep{TIMES}, T, 2}, idx::AnyIndex, ts::VariableTimestep{TIMES}) where {T, TIMES}
-	# WAS THIS: data = mat.data[ts.t, idx, ts.t]
 	data = mat.data[idx, ts.t]
 	_missing_data_check(data, ts.t)
 end
