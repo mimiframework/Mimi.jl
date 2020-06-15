@@ -27,7 +27,6 @@ function get_time_index_position(obj::AbstractCompositeComponentDef, comp_name::
 end
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
-const AnyIndex_NonColon = Union{Int, Vector{Int}, Tuple, OrdinalRange}
 
 # Helper function for getindex; throws a MissingException if data is missing, otherwise returns data
 function _missing_data_check(data, t)
@@ -471,6 +470,22 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, v
 end
 
 # Colon support - this allows the time dimension to be indexed with a colon
+
+ function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
+	return arr.data[idxs...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::AnyIndex...) where {TIMES, T, N, ti}
+	return arr.data[idxs...]
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
+	setindex!(arr.data, val, idxs...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::AnyIndex...) where {TIMES, T, N, ti}
+	setindex!(arr.data, val, idxs...)
+end
 
 # Indexing with arrays of TimestepIndexes or TimestepValues
 function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}

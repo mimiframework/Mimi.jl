@@ -38,7 +38,7 @@ expr = :(
         end
     end
 )
-@test_throws LoadError eval(expr)
+@test_throws MethodError eval(expr)
 
 
 @defcomp MyComp begin
