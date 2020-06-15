@@ -619,12 +619,12 @@ function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, id
 end
 
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti}, val, idxs::AnyIndex...) where {FIRST, STEP, T, N, ti}
-    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
+    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_setindex_depwarning() : nothing
     setindex!(arr.data, val, idxs...)
 end
 
 function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::AnyIndex...) where {TIMES, T, N, ti}
-    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_depwarning() : nothing
+    isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_setindex_depwarning() : nothing
     setindex!(arr.data, val, idxs...)
 end
 
