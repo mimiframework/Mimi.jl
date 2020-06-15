@@ -47,6 +47,9 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
 set_param!(m, :X, :x, zeros(6))
+# The following `replace_comp!` function name will be deprecated in v1.0.0.
+#   Every other use in this test file has been switched to `replace!` instead.
+#   This one remains to test the preserved version with warning for v0.10.0.
 replace_comp!(m, X_repl, :X)            # Replace X with X_repl
 run(m)
 @test length(components(m)) == 1        # Only one component exists in the model
@@ -60,8 +63,8 @@ set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X, :first)                                     # Add two components
 add_comp!(m, X, :second)
 connect_param!(m, :second => :x, :first => :y)              # Make an internal connection with a parameter with a time dimension
-@test_throws ErrorException replace_comp!(m, bad1, :second) # Cannot make reconnections because :x in bad1 has different dimensions
-replace_comp!(m, bad1, :second, reconnect = false)          # Can replace without reconnecting
+@test_throws ErrorException replace!(m, :second => bad1)    # Cannot make reconnections because :x in bad1 has different dimensions
+replace!(m, :second => bad1, reconnect = false)             # Can replace without reconnecting
 second = compdef(m, :second)
 @test second.comp_id.comp_name == :bad1                     # Successfully replaced
 
@@ -70,13 +73,13 @@ second = compdef(m, :second)
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)
-add_comp!(m, X, :first)                                     # Add two components
+add_comp!(m, X, :first)                                  # Add two components
 add_comp!(m, X, :second)
-connect_param!(m, :second => :x, :first => :y)              # Make an internal connection from a variable with a time dimension
-@test_throws ErrorException replace_comp!(m, bad2, :first)  # Cannot make reconnections because bad2 does not have a variable :y
-replace_comp!(m, bad2, :first, reconnect = false)           # Can replace without reconnecting
+connect_param!(m, :second => :x, :first => :y)           # Make an internal connection from a variable with a time dimension
+@test_throws ErrorException replace!(m, :first => bad2)  # Cannot make reconnections because bad2 does not have a variable :y
+replace!(m, :first => bad2, reconnect = false)           # Can replace without reconnecting
 first = compdef(m, :first)
-@test first.comp_id.comp_name == :bad2                      # Successfully replaced
+@test first.comp_id.comp_name == :bad2                   # Successfully replaced
 
 
 # 4. Test bad external parameter name
@@ -89,7 +92,7 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs(
     # (:warn, r".*parameter x no longer exists in component.*"),
-    replace_comp!(m, bad3, :X)
+    replace!(m, :X => bad3)
 )
 
 @test compname(compdef(m, :X)) == :bad3            # The replacement was still successful
@@ -103,7 +106,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
 set_param!(m, :X, :x, zeros(6))                         # Set external parameter for :x
-@test_throws ErrorException replace_comp!(m, bad1, :X)  # Cannot reconnect external parameter, :x in bad1 has different dimensions
+@test_throws ErrorException replace!(m, :X => bad1)     # Cannot reconnect external parameter, :x in bad1 has different dimensions
 
 
 # 6. Test bad external parameter datatype
@@ -112,7 +115,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
 set_param!(m, :X, :x, zeros(6))                         # Set external parameter for :x
-@test_throws ErrorException replace_comp!(m, bad4, :X)  # Cannot reconnect external parameter, :x in bad4 has different datatype
+@test_throws ErrorException replace!(m, :X => bad4)  # Cannot reconnect external parameter, :x in bad4 has different datatype
 
 
 # 7. Test component name that doesn't exist
@@ -120,7 +123,7 @@ set_param!(m, :X, :x, zeros(6))                         # Set external parameter
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
-@test_throws ErrorException replace_comp!(m, X_repl, :Z)    # Component Z does not exist in the model, cannot be replaced
+@test_throws ErrorException replace!(m, :Z => X_repl)    # Component Z does not exist in the model, cannot be replaced
 
 
 # 8. Test original position placement functionality
@@ -131,10 +134,10 @@ add_comp!(m, X, :c1)
 add_comp!(m, X, :c2)
 add_comp!(m, X, :c3)
 
-replace_comp!(m, X_repl, :c3)        # test replacing the last component
+replace!(m, :c3 => X_repl)        # test replacing the last component
 @test compdef(m, :c3).comp_id == X_repl.comp_id
 
-replace_comp!(m, X_repl, :c2)        # test replacing not the last one
+replace!(m, :c2 => X_repl)        # test replacing not the last one
 @test compdef(m, :c2).comp_id == X_repl.comp_id
 
 
@@ -152,7 +155,7 @@ m = Model()
 set_dimension!(m, :time, 10)
 add_comp!(m, A)
 set_param!(m, :A, :p1, 3)
-replace_comp!(m, B, :A)
+replace!(m, :A => B)
 run(m)
 @test m[:A, :p1] == 3
 
