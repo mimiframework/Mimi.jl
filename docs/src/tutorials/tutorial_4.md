@@ -350,7 +350,7 @@ my_scc_calculation (generic function with 1 method)
 
 Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```julia
 # Build the marginal model
 mm = MimiDICE2010.get_marginal_model(year = scc_year)   # The additional emissions pulse will be added in the specified year
 
