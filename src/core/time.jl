@@ -20,6 +20,16 @@ function gettime(ts::VariableTimestep)
 	return ts.current
 end
 
+# DEPRECATION TBD - ERROR OR REMOVE
+"""
+ 	is_time(ts::AbstractTimestep, t::Int)
+
+ [DEPRECATED FUNCTION] Return true or false, true if the current time (year) for `ts` is `t`
+ """
+ function is_time(ts::AbstractTimestep, t::Int) 
+ 	error("`is_time(ts, t)` is deprecated. Use comparison operators with TimestepValue objects instead: `ts == TimestepValue(t)` \n$(stacktrace())", :is_time)
+ end
+
 """
 	is_first(ts::AbstractTimestep)
 
@@ -28,6 +38,16 @@ Return true or false, true if `ts` is the first timestep to be run.
 function is_first(ts::AbstractTimestep)
 	return ts.t == 1
 end
+
+# DEPRECATION TBD - ERROR OR REMOVE
+"""
+ 	is_timestep(ts::AbstractTimestep, t::Int)
+
+[DEPRECATED FUNCTION] Return true or false, true if `ts` timestep is step `t`.
+ """
+ function is_timestep(ts::AbstractTimestep, t::Int)
+ 	error("`is_timestep(ts, t)` is deprecated. Use comparison operators with TimestepIndex objects instead: `ts == TimestepIndex(t)` \n$(stacktrace())", :is_timestep)
+ end
 
 """
 	is_last(ts::FixedTimestep)
