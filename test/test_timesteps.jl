@@ -13,7 +13,7 @@ import Mimi:
 #------------------------------------------------------------------------------
 
 t1 = FixedTimestep{1850, 10, 3000}(1)
-@test is_first(t1)  # is_first and is_timestep still run but are deprecated; will error in v1.0 and should remove these two tests then
+@test is_first(t1)
 @test t1 == TimestepIndex(1)
 @test t1 == TimestepValue(1850)
 @test TimestepIndex(1) == t1    # test both ways because to test both method definitions
