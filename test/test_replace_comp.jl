@@ -48,7 +48,6 @@ set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
 set_param!(m, :X, :x, zeros(6))
 # The following `replace_comp!` function name will be deprecated in v1.0.0.
-#   Every other use in this test file has been switched to `replace!` instead.
 #   This one remains to test the preserved version with warning for v0.10.0.
 replace_comp!(m, X_repl, :X)            # Replace X with X_repl
 run(m)
@@ -64,7 +63,10 @@ add_comp!(m, X, :first)                                     # Add two components
 add_comp!(m, X, :second)
 connect_param!(m, :second => :x, :first => :y)              # Make an internal connection with a parameter with a time dimension
 @test_throws ErrorException replace!(m, :second => bad1)    # Cannot make reconnections because :x in bad1 has different dimensions
-replace!(m, :second => bad1, reconnect = false)             # Can replace without reconnecting
+# The following `replace_comp!` function name will be deprecated in v1.0.0.
+#   This one remains to test the preserved version with warning for v0.10.0.
+#   Every other use in this test file has been switched to `replace!` instead.
+replace_comp!(m, bad1.comp_id, :second, reconnect = false)             # Can replace without reconnecting
 second = compdef(m, :second)
 @test second.comp_id.comp_name == :bad1                     # Successfully replaced
 
