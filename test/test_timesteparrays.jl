@@ -44,7 +44,7 @@ idx4 = TimestepIndex(4)
 
 x = TimestepVector{FixedTimestep{2000, 1}, Int}([9, 10, 11, 12])
 @test length(x) == 4
-@test lastindex(x) == 4
+@test lastindex(x) == TimestepIndex(4)
 
 time_dim_val = [9, 10, 11, 12]
 temp_dim_val = [100, 101, 102, 103]
@@ -610,6 +610,23 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 @test ndims(x_mat) == ndims(y_mat) == 2
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
+
+# TODO begin syntax is depreacated v1.0.0 - v1.3.0, so enable the tests after 
+# after we disable Julia versions below v1.4.0
+
+# @test x_vec[begin] == time_dim_val[:,1,1][begin]
+# @test x_mat[begin,1] == time_dim_val[:,:,1][begin,1]
+# @test x_mat[begin,2] == time_dim_val[:,:,1][begin,2]
+# @test y_vec[begin] == time_dim_val[:,2,2][begin]
+# @test y_mat[begin,1] == time_dim_val[:,:,2][begin,1]
+# @test y_mat[begin,2] == time_dim_val[:,:,2][begin,2]
+
+@test x_vec[end] == time_dim_val[:,1,1][end]
+@test x_mat[end,1] == time_dim_val[:,:,1][end,1]
+@test x_mat[end,2] == time_dim_val[:,:,1][end,2]
+@test y_vec[end] == time_dim_val[:,2,2][end]
+@test y_mat[end,1] == time_dim_val[:,:,2][end,1]
+@test y_mat[end,2] == time_dim_val[:,:,2][end,2]
 
 #------------------------------------------------------------------------------
 # 6. Test that getindex for TimestepArrays doesn't allow access to `missing`
