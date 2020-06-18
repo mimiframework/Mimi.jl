@@ -34,7 +34,7 @@ In order to view a DAG representing the component ordering and relationships, us
 run(m)
 plot_comp_graph(m; filename = "MyFilePath.png")
 ```
-![Plot Component Graph Example](figs/plot_comp_graph_example.png)
+![Plot Component Graph Example](../figs/plot_comp_graph_example.png)
 
 Other plotting support is provided by the **Explorer UI**, rooted in `VegaLite`.  The `explore` function allows the user to view and explore the variables and parameters of a model run.  The explorer can be used in two primary ways.
 
@@ -45,7 +45,7 @@ run(m)
 explore(m, title = "run1 results")
 ```
 
-![Explorer Model Example](figs/explorer_model_example.png)
+![Explorer Model Example](../figs/explorer_model_example.png)
 
 Alternatively, in order to view just one parameter or variable, call the (unexported) function `Mimi.plot` as below to return a plot object and automatically display the plot in a viewer, assuming `Mimi.plot` is the last command executed.  Note that `plot` is not exported in order to avoid namespace conflicts, but a user may import it if desired. This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function.  
 
@@ -57,6 +57,6 @@ run(m)
 p = Mimi.plot(m, :ComponentName, :ParameterName)
 save("figure.svg", p)
 ```
-![Plot Model Example](figs/plot_model_example.png)
+![Plot Model Example](../figs/plot_model_example.png)
 
-These two functions, `explore` and `plot` also have methods applicable to the sensitivity analysis support described in the next section. Details can be found in the sensitivity analysis how-to guide How-to Guide 3: Conduct Sensitivity Analysis as well as Tutorial 4: Sensitivity Analysis (SA) Support].
+These two functions, `explore` and `plot` also have methods applicable to the sensitivity analysis support described in the next section. Details can be found in the sensitivity analysis how-to guide How-to Guide 3: Conduct Sensitivity Analysis as well as Tutorial 4: Sensitivity Analysis (SA) Support.

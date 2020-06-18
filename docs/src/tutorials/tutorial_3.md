@@ -36,7 +36,7 @@ If you wish to alter connections within an existing model, [`disconnect_param!`]
 
 ## Parametric Modifications: DICE Example
 
-### Step 1. Download MimiDICE2010
+#### Step 1. Download MimiDICE2010
 
 The first step in this process is downloading the DICE2010 model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models,
 
@@ -50,7 +50,7 @@ pkg> add MimiDICE2010
 ```
 You have now successfully downloaded MimiDICE2010 to your local machine.
 
-### Step 2. Run DICE
+#### Step 2. Run DICE
 
 The next step is to run DICE using the provided API for the package:
 
@@ -73,7 +73,7 @@ get_model(params=nothing)
 
 Thus there are no required arguments, although the user can input `params`, a dictionary definining the parameters of the model. If nothing is provided, the model will be built with the default parameters for DICE2010.
 
-### Step 3. Altering Parameters
+#### Step 3. Altering Parameters
 
 In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
 

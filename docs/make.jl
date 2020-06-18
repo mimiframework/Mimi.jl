@@ -8,7 +8,7 @@ makedocs(
 		"Home" => "index.md",
 		"Tutorials" => Any[
 			"Tutorials Intro" => "tutorials/tutorial_main.md",
-			"1 Install Mimi" => "tutorials/tutorial_1.md"
+			"1 Install Mimi" => "tutorials/tutorial_1.md",
 			"2 Run an Existing Model" => "tutorials/tutorial_2.md",
 			"3 Modify an Existing Model" => "tutorials/tutorial_3.md",
 			"4 Create a Model" => "tutorials/tutorial_4.md",
@@ -36,7 +36,7 @@ makedocs(
 			"Structures: Instances" => "ref/ref_structures_3_instances.md"
 		],
 		"FAQ" => "faq.md",
-	]
+	],
 	format = Documenter.HTML(prettyurls = get(ENV, "JULIA_NO_LOCAL_PRETTY_URLS", nothing) === nothing)
 )
 

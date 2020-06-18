@@ -34,7 +34,7 @@ run!(r, 5000)
 write(r, dirname)
 ```
 
-### Saving ensemble results
+#### Saving ensemble results
 
 Ensemble results will be stored in an object of type `EnsembleResult`, which is used by all subtypes of `ModelRunner`. By default, only model outputs tagged for output will be saved in the `EnsembleResult` instance. Parameters can be identified as "output" parameters in `@defsim`, and/or directly in a concrete subtype of `ModelRunner`, in which case default values set in `@defsim` can be overridden.
 
@@ -116,7 +116,7 @@ saveresults(m::Model, pathname::String, append=true)
 saveresults(sim:Simulation, pathname::String)
 ```
 
-### JSON file format
+#### JSON file format
 
 The JSON file format is basically a set of nested dictionaries, with a few lists at the innermost levels. We assign names to these levels for clarity of exposition in this documentation, but these names do not exist in the actual files.
 

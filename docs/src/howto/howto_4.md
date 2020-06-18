@@ -110,7 +110,7 @@ update_param!(m, :ParameterName, newvalues, update_timesteps=true) # also update
 
 Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
 
-### Setting parameters with a dictionary
+#### Setting parameters with a dictionary
 
 In larger models it can be beneficial to set some of the external parameters using a dictionary of values. To do this, use the following function:
 

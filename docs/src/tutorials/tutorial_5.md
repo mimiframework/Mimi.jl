@@ -23,7 +23,7 @@ Below we will refer separately to two types, `SimulationDef` and `SimulationInst
 
 This section will walk through a simple example of how to define a simulation, run the simulation for a given model, and access the outputs.
 
-### Step 1. Setup
+#### Step 1. Setup
 You should have `Mimi` installed by now, and if you do not have the `Distributions` package, take a moment to add that package by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
 
 As a reminder, the following code is the multi-region model that was constructed in the second half of tutorial 3. You can either load the `MyModel` module from tutorial 3, or run the following code which defines the same `construct_Mymodel` function that we will use.
@@ -168,7 +168,7 @@ Mimi.Model
   Built: false
 ```
 
-### Step 2. Define Random Variables
+#### Step 2. Define Random Variables
 The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
 
 There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example. 
@@ -229,7 +229,7 @@ end
 
 ```
 
-### Step 3. Run Simulation
+#### Step 3. Run Simulation
 
 Next, use the `run` function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the `run` function**.
 
@@ -247,7 +247,7 @@ E_results = getdataframe(si, :emissions, :E)
 # output
 
 ```
-### Step 4. Explore and Plot Results
+#### Step 4. Explore and Plot Results
 
 As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
 
@@ -301,7 +301,7 @@ end
 MCSData()
 ```
 
-### Payload object
+#### Payload object
 Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
 
 ```jldoctest tutorial4; output = false, filter = r".*"s
@@ -325,7 +325,7 @@ Mimi.set_payload!(sd, my_payload_object)
 
 ```
 
-### Post-trial function
+#### Post-trial function
 
 In the simple multi-region simulation example, the only values that were saved during each trial of the simulation were values of variables calculated internally by the model. Sometimes, a user may need to perform other calculations before or after each trial is run. For example, the SCC is calculated using two models, so this calculation needs to happen in a post-trial function, as shown below.
 
@@ -347,7 +347,7 @@ end
 my_scc_calculation (generic function with 1 method)
 ```
 
-### Run the simulation
+#### Run the simulation
 
 Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
 
@@ -365,7 +365,7 @@ scc_results = Mimi.payload(si)[2]   # Recall that the SCC array was the second o
 
 ```
 
-### Simulation Modification Functions
+#### Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDef`.  The functions include:
 * `delete_RV!`
 * `add_RV!`
@@ -377,7 +377,7 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `set_payload!`
 * `payload`
 
-### Full list of keyword options for running a simulation
+#### Full list of keyword options for running a simulation
 
 View How-to Guide 3: Conduct Sensitivity Analysis for **critical and useful details on the full signature of this function**, as well as more details and optionality for more advanced use cases.
 

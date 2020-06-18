@@ -40,7 +40,7 @@ end
 
 The `run_timestep` function is responsible for calculating values for each variable in that component.  Note that the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined. You can access each parameter, variable, or dimension using dot notation as shown above.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`, which represents which timestep the model is at.
 
-The API for using the fourth argument, represented as `t` in this explanation, is described in this document under **Advanced Topics:  Timesteps and available functions**. 
+The API for using the fourth argument, represented as `t` in this explanation, is described in a following how-to guide How-to Guide 4: Work with Timesteps, Parameters, and Variables. 
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 

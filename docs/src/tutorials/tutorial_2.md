@@ -12,7 +12,7 @@ If you have not yet prepared these, go back to the first tutorial to set up your
 
 Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
 
-### Step 1. Download FUND
+#### Step 1. Download FUND
 
 The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models, as instructed in the first tutorial,
 
@@ -26,7 +26,7 @@ you simply need to add the FUND model in the Pkg REPL with:
 pkg> add MimiFUND
 ```
 
-### Step 2. Run FUND
+#### Step 2. Run FUND
 
 The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).
 
@@ -67,7 +67,7 @@ run(m)
 
 ```
 
-### Step 3. Access Results: Values
+#### Step 3. Access Results: Values
 After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
 
 Start off by importing the Mimi package to your space with
@@ -116,7 +116,7 @@ getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in fi
 
 ```
 
-### Step 4. Access Results: Plots and Graphs
+#### Step 4. Access Results: Plots and Graphs
 
 After running the FUND model, you may also explore the results using plots and graphs.
 

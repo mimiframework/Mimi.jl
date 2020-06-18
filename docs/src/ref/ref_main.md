@@ -10,14 +10,18 @@ If you find a bug in these reference guides, or have a clarifying question or su
 
    [Reference Guide: The Mimi API](@ref) provides a guide to the public API for Mimi, including macros, types, and functions along with their signatures and descriptions.
 
+
 - **Structures 1. Overview**
 
    [Reference Guide: Structures 1. Overview](@ref)
+
 
 - **Structures 2. Definitions**
 
    [Reference Guide: Structures 2. Definitions](@ref)
 
+
 - **Structures 3. Instances**
 
    [Reference Guide: Structures 3. Instances](@ref)
+   

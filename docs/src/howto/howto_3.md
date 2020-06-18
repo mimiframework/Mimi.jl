@@ -353,7 +353,7 @@ explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, sc
 ```
 The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to `run` you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument. Finally, if you have saved the results of your simulation to disk and cleared them from memory using `run`'s `results_in_memory` keyword argument flag set to `false`, you **must** provide a `results_output_dir` which indicates the parent folder for all outputs and potential subdirectories, identical to that passed to `run`.
 
-![Explorer Simulation Example](figs/explorer_sim_example.png)
+![Explorer Simulation Example](../figs/explorer_sim_example.png)
 
 Alternatively, in order to view just one variable, call the (unexported) function `Mimi.plot` as below to return a plot object and automatically display the plot in a viewer, assuming `Mimi.plot` is the last command executed.  Note that `plot` is not exported in order to avoid namespace conflicts, but a user may import it if desired. This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved in many typical file formats such as  [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
 
@@ -369,7 +369,7 @@ Note the function signature below, which has the same keyword arguments and requ
 plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
 
-![Plot Simulation Example](figs/plot_sim_example.png)
+![Plot Simulation Example](../figs/plot_sim_example.png)
 
 ## Simulation Modification Functions
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
