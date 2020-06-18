@@ -1,6 +1,4 @@
-# Integration Guide:  Porting Mimi Models from v0.4.0 to v0.5.0
-
-## Overview
+# How-to Guide 5: Port to Mimi v0.5.0
 
 The release of Mimi v0.5.0 is a breaking release, necessitating the adaptation of existing models' syntax and structure in order for those models to run on this new version.  This guide provides an overview of the steps required to get most models using the v0.4.0 API working with v0.5.0.  It is **not** a comprehensive review of all changes and new functionalities, but a guide to the minimum steps required to port old models between versions.  For complete information on the new version and its functionalities, see the full documentation.
 
@@ -72,7 +70,7 @@ The new version does, however, include a new UI tool that can be used to visuali
 
 ## Advanced Topics
 
-### Timesteps and available functions
+#### Timesteps and available functions
 
 As previously mentioned, some relevant function names have changed.  These changes were made to eliminate ambiguity.  For example, the new naming clarifies that `is_last` returns whether the timestep is on the last valid period to be run, not whether it has run through that period already.  This check can still be achieved with `is_finished`, which retains its name and function.  Below is a subset of such changes related to timesteps and available functions.
 
@@ -90,11 +88,11 @@ The full API:
 - useful functions for commonly used conditionals are `is_first(t)` and `is_last(t)`
 - to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called.  
 
-### Parameter connections between different length components
+#### Parameter connections between different length components
 
-### More on parameter indices
+#### More on parameter indices
 
-### Updating an external parameter
+#### Updating an external parameter
 
 To update an external parameter, use the functions `update_param!` and `udpate_params!` (previously known as `update_external_parameter` and `update_external_parameters`, respectively.)  Their calling signatures are:
 
@@ -104,10 +102,6 @@ To update an external parameter, use the functions `update_param!` and `udpate_p
 
 For external parameters with a `:time` dimension, passing `update_timesteps=true` indicates that the time _keys_ (i.e., year labels) should also be updated in addition to updating the parameter values.
 
-### Setting parameters with a dictionary
+#### Setting parameters with a dictionary
 
 The function `set_leftover_params!` replaces the function `setleftoverparameters`.
-
-### Using NamedArrays for setting parameters
-
-### The internal 'build' function and model instances

@@ -1,137 +1,161 @@
-# Tutorial 2: Modify an Existing Model
+# Tutorial 2: Run an Existing Model
 
-This tutorial walks through the steps to modify an existing model.  There are several existing models publically available on the [MimiRegistry](https://github.com/mimiframework/MimiRegistry), and for the purposes of this tutorial we will use the `MimiDICE2010` model.
+This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github, and for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
 
 Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
+- connection of your julia installation with the central Mimi registry of Mimi models
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download. 
+If you have not yet prepared these, go back to the first tutorial to set up your system.
 
-## Introduction
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
 
-There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the existing model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model you are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
+#### Step 1. Download FUND
 
-Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component. These take advantage of the public API listed [here](https://www.mimiframework.org/Mimi.jl/dev/reference/), as well as other functions listed in the Mimi Documentation.
-
-## Parametric Modifications: The API
-
-Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference [here](https://www.mimiframework.org/Mimi.jl/dev/reference/).
-
-When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
-
-```julia
-update_param!(mymodel, :parametername, newvalues) # update values only 
-
-update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys. Only necessary if the time dimension of the model has been changed.
-```
-
-Also note that in the code above, `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
-
-If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
-
-## Parametric Modifications: DICE Example
-
-### Step 1. Download MimiDICE2010
-
-The first step in this process is downloading the DICE2010 model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following to connect your julia installation with the central Mimi registry of Mimi models:
+The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models, as instructed in the first tutorial,
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-You simply need to add the MimiDICE2010 model in the Pkg REPL with:
+you simply need to add the FUND model in the Pkg REPL with:
+
 ```julia
-pkg> add MimiDICE2010
+pkg> add MimiFUND
 ```
-You have now successfully downloaded MimiDICE2010 to your local machine.
 
-### Step 2. Run DICE
+#### Step 2. Run FUND
 
-The next step is to run DICE using the provided API for the package:
+The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).
 
-```jldoctest tutorial2; output = false, filter = r".*"s
-using MimiDICE2010
-m = MimiDICE2010.get_model()
+Now open a julia REPL and type the following command to load the MimiFUND package into the current environment:
+
+```jldoctest tutorial1; output = false, filter = r".*"s
+using MimiFUND
+
+# output
+
+```
+Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
+
+```jldoctest tutorial1; output = false, filter = r".*"s
+m = MimiFUND.get_model()
 run(m)
 
 # output
 
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
+These steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
-In this case, the function `MimiDICE2010.get_model()` has the signature
+In the MimiFUND package, the function `get_model` has the signature
+
 ```julia
-get_model(params=nothing)
+get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
 ```
-Thus there are no required arguments, although the user can input `params`, a dictionary definining the parameters of the model. If nothing is provided, the model will be built with the default parameters for DICE2010.
 
-### Step 3. Altering Parameters
+Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to run only the first 200 timesteps, you may use:
 
-In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
+```jldoctest tutorial1; output = false, filter = r".*"s
+using MimiFUND
+m = MimiFUND.get_model(nsteps = 200)
+run(m)
 
-```jldoctest tutorial2; output = false
+# output
+
+```
+
+#### Step 3. Access Results: Values
+After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
+
+Start off by importing the Mimi package to your space with
+
+```jldoctest tutorial1; output = false
 using Mimi
 
 # output
 
 ```
 
-For example, in DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  If you wanted to change this value from its default value of `3.200` to `3.000` in both components,you would use the following code:
+First of all, you may use the `getindex` syntax as follows:
 
-```jldoctest tutorial2; output = false, filter = r".*"s 
-update_param!(m, :fco22x, 3.000)
-run(m)
+```julia
+m[:ComponentName, :VariableName] # returns the whole array of values
+m[:ComponentName, :VariableName][100] # returns just the 100th value
+
+```
+
+Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component of FUND using the code below:
+
+```jldoctest tutorial1; output = false
+m[:socioeconomic, :income]
+m[:socioeconomic, :income][100]
+
+# output
+
+20980.834204000927
+```
+
+You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
+
+```julia
+getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
+getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
+getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
+```
+
+Try doing this for the `income` variable of the `socioeconomic` component using:
+
+```jldoctest tutorial1; output = false, filter = r".*"s
+getdataframe(m, :socioeconomic=>:income) # request one variable from one component
+getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in first year (1950)
 
 # output
 
 ```
 
-A more complex example may a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
+#### Step 4. Access Results: Plots and Graphs
 
-First you upate the `time` dimension of the model as follows:
-```jldoctest tutorial2; output = false, filter = r".*"s
-const ts = 10
-const years = collect(2000:ts:2500)
-nyears = length(years)
-set_dimension!(m, :time, years)
+After running the FUND model, you may also explore the results using plots and graphs.
 
-# output
+Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the [`plot_comp_graph`](@ref) function.
 
-```
+#### Explore
 
-Next, create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
+If you wish to explore the results graphically, use the explorer UI. This functionality is described in more detail in the second how-to guide, How-to Guide 2: View and Explore Model Results. For now, however, you don't need this level of detail and can simply follow the steps below.
+
+To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
 
 ```julia
-params = Dict{Any, Any}()
-params[:a1]         = 0.00008162
-params[:a2]         = 0.00204626
-...
-params[:S]          = repeat([0.23], nyears)
-...
+explore(m, title = "My Window")
 ```
 
-Now you simply update the parameters listen in `params` and re-run the model with
+Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. 
+
+Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
 
 ```julia
-update_params!(m, params, update_timesteps=true)
-run(m)
+p = Mimi.plot(m, :mycomponent, :myvariable)
+save("MyFilePath.svg", p)
 ```
 
-Note that here we use the `update_timesteps` flag and set it to `true`, because since we have changed the time index we want the time labels on the parameters to change, not simply their values.
+More specifically for our tutorial use of FUND, try:
 
-## Component and Structural Modifications: The API
+```julia
+p = Mimi.plot(m, :socioeconomic, :income)
+save("MyFilePath.svg", p)
+```
 
-Most model modifications will include not only parametric updates, but also strutural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace_comp!`](@ref), [`add_comp!`](@ref)** along with **`Mimi.delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference [here](https://www.mimiframework.org/Mimi.jl/dev/reference/). 
+#### Component Graph
 
-If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
+In order to view a DAG representing the component ordering and relationships, use the [`plot_comp_graph`](@ref) function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
 
-* `adder.jl` -- Defines `Mimi.adder`, which simply adds two parameters, `input` and `add` and stores the result in `output`.
+```julia
+plot_comp_graph(m, "MyFilePath.png")
+```
 
-* `connector.jl` -- Defines a pair of components, `Mimi.ConnectorCompVector` and `Mimi.ConnectorCompMatrix`. These copy the value of parameter `input1`, if available, to the variable `output`, otherwise the value of parameter `input2` is used. It is an error if neither has a value.
+----
 
-## Component and Structural Modifications: DICE Example
-
-This example is in progress and will be built out soon.
+You're done!  Now feel free to move on to the next tutorial, which will go into depth on how to **modify** an existing model such as FUND.

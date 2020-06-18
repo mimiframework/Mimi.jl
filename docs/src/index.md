@@ -2,33 +2,22 @@
 
 ## Overview
 
-Mimi is a package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling).
+Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org).
 
-## Installation
+The following documentation is organized into the following four sections, roughly adhering to the [Divio documentation system](https://documentation.divio.com) guidelines. For insights into the goals of each of these sections, please refer to the Divio documentation.
 
-Mimi is an installable package which requires the programming language [julia](http://julialang.org/) to run. To install Mimi, first enter Pkg REPL mode by typing `]`, and then use the following script. You may then exit Pkg REPL mode with a single backpace.
+1. Tutorials
+2. How-to Guides
+3. Technical Reference
+4. Explanations
 
-```julia
-pkg> add Mimi
-```
-For more complete setup instructions, follow the [Installation Guide](@ref).
+## Getting started
 
+We aim to provide assistance to users of all different experience levels, starting with first-time users. If this is your first time using Mimi, we recommend you begin with the Tutorials. In addition, looking through the code at the links below to various existing models based on Mimi can be instructive. 
 
-## Mimi Registry
+The first step for any user includes installation of julia and Mimi, as well as optionally adding the Mimi Registry. See the first tutorial for instructions on these tasks.
 
-Several models currently use the Mimi framework, as listed in the section below.  For convenience, several models are registered in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), and operate as julia packages. To use this feature, you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL: 
-
-```julia
-pkg> registry add https://github.com/mimiframework/MimiRegistry.git
-```
-
-You only need to run this command once on a computer. 
-
-From there you may add any of the registered packages, such as MimiRICE2010.jl by running the following command at the julia package REPL:
-
-```julia
-pkg> add MimiRICE2010
-```
+Finally, when in doubt, ask your question on the [Mimi Framework forum](https://forum.mimiframework.org) or post an [Issue](https://github.com/mimiframework/Mimi.jl/issues) to the Github repository if you have a specific request for the development team.   Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
 
 ## Models using Mimi
 
