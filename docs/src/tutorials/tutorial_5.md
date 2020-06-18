@@ -7,17 +7,17 @@ Working through the following tutorial will require:
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
 - [Mimi v1.0.0](https://github.com/mimiframework/Mimi.jl) or higher
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
-
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
 
-Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running MimiDICE2010, refer to Tutorial 2 for instructions.  Carry out **Steps 1 and 2** from Tutorial 2 for the MimiDICE2010 package and then return to continue with this tutorial. Note that MimiDICE2010 is only required for the second example in this tutorial. 
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
+
+MimiDICE2010 is required for the second example in this tutorial. If you are not yet comfortable with downloading and running a registered Mimi model, refer to Tutorial 2 for instructions.
 
 ## The API
 
-The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+The best current documentation on the SA API is the how to guide How-to Guide 3: Conduct Sensitivity Analysis. This file can be used in conjunction with the examples below for details since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
 
-We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
+Below we will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
 
 ## Multi-Region Model Example
 
@@ -169,10 +169,9 @@ Mimi.Model
 ```
 
 ### Step 2. Define Random Variables
-The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions, 
-and associate model parameters with the defined random variables.
+The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
 
-There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example.
+There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example. 
 
 The first is the following:
 ```julia

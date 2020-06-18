@@ -1,6 +1,6 @@
 # Tutorial 1: Install Mimi
 
-This tutorial describes how to install julia, Mimi, and the Mimi Registry.
+This tutorial describes how to set up your system by installing julia, Mimi, and the Mimi registry.
 
 ## Installing julia
 
@@ -8,11 +8,11 @@ Mimi requires the programming language [julia](http://julialang.org/) to run. Yo
 
 ## Editor support
 
-There are various editors around that have julia support:
+There are various editors around that have julia support, including the following:
 
 - [IJulia](https://github.com/JuliaLang/IJulia.jl) adds julia support to the [jupyter](http://jupyter.org/) (formerly IPython) notebook system.
-- [Juno](http://junolab.org/) adds julia specific features to the [Atom](https://atom.io/) editor. It currently is the closest to a fully featured julia IDE.
-- [Sublime](https://www.sublimetext.com/), [VS Code](https://code.visualstudio.com/), [Emacs](https://www.gnu.org/software/emacs/) and many other editors all have julia extensions that add various levels of support for the julia language.
+- [VS Code](https://code.visualstudio.com/) has an excellent julia extension
+- other editors such as [Emacs](https://www.gnu.org/software/emacs/) and [Sublime](https://www.sublimetext.com/) have julia extensions that add various levels of support for the julia language.
 
 ## Installing Mimi
 

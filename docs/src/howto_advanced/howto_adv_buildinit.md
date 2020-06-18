@@ -42,4 +42,3 @@ If defined for a specific component, this function will run **before** the times
 
 end
 ```
-

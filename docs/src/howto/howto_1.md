@@ -44,7 +44,7 @@ The API for using the fourth argument, represented as `t` in this explanation, i
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
-By default, all parameters and variables defined in the `@defcomp` will be allocated storage as scalars or Arrays of type `Float64.` For a description of other data type options, see **Advanced Topics: DataType specification of Parameters and Variables**.
+By default, all parameters and variables defined in the `@defcomp` will be allocated storage as scalars or Arrays of type `Float64.` For a description of other data type options, see How-to Guide 4: Work with Timesteps, Parameters, and Variables 
 
 ## Constructing a Model
 

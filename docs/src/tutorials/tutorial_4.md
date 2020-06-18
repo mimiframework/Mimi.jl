@@ -9,9 +9,9 @@ Working through the following tutorial will require:
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
 - [Mimi v1.0.0](https://github.com/mimiframework/Mimi.jl) or higher
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
-
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
+
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
 
 ## Constructing A One-Region Model
 
@@ -26,7 +26,7 @@ Starting with the economy component, each variable and parameter is listed. If e
 
 Next, the `run_timestep` function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
 
-It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the **userguide** in **Advanced Topics:  Timesteps and available functions**. 
+It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the how to guide How-to Guide 4: Work with Timesteps, Parameters, and Variables 
 
 ```jldoctest tutorial3; output = false
 using Mimi # start by importing the Mimi package to your space

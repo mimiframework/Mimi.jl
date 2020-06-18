@@ -6,20 +6,21 @@ Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
 - [Mimi v1.0.0](https://github.com/mimiframework/Mimi.jl) or higher
+- connection of your julia installation with the central Mimi registry of Mimi models
+
+If you have not yet prepared these, go back to the first tutorial to set up your system.
 
 Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
-
 ### Step 1. Download FUND
 
-The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models, as instructed in the previous tutorial:
+The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models, as instructed in the first tutorial,
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-You simply need to add the FUND model in the Pkg REPL with:
+you simply need to add the FUND model in the Pkg REPL with:
 
 ```julia
 pkg> add MimiFUND
@@ -47,7 +48,7 @@ run(m)
 
 ```
 
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
+These steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
 
 In the MimiFUND package, the function `get_model` has the signature
 
@@ -123,7 +124,7 @@ Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega
 
 #### Explore
 
-If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
+If you wish to explore the results graphically, use the explorer UI. This functionality is described in more detail in the second how-to guide, How-to Guide 2: View and Explore Model Results. For now, however, you don't need this level of detail and can simply follow the steps below.
 
 To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
 
@@ -131,7 +132,9 @@ To explore all variables and parameters of FUND in a dynamic UI app window, use 
 explore(m, title = "My Window")
 ```
 
-Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
+Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. 
+
+Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
 
 ```julia
 p = Mimi.plot(m, :mycomponent, :myvariable)
@@ -155,5 +158,4 @@ plot_comp_graph(m, "MyFilePath.png")
 
 ----
 
-Next, feel free to move on to the next tutorial, which will go into depth on how to **modify** an existing model such as FUND.
-
+You're done!  Now feel free to move on to the next tutorial, which will go into depth on how to **modify** an existing model such as FUND.
