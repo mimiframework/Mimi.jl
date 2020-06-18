@@ -218,7 +218,7 @@ component. Returns a ComponentReference for the added component.
 function Base.replace!(m::Model, old_new::Pair{Symbol, ComponentDef}; kwargs...)
     comp_name, comp_def = old_new
     _replace!(m.md, comp_name => comp_def.comp_id; kwargs...)
-    return ComponentReference(m.md, old_new[1])
+    return ComponentReference(m.md, comp_name)
 end
 
 @delegate ComponentReference(m::Model, name::Symbol) => md
