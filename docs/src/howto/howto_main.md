@@ -21,7 +21,7 @@ If you find a bug in these guides, or have a clarifying question or suggestion, 
     [How-to Guide 3: Conduct Sensitivity Analysis](@ref)
 
 
-4. **Work with Timesteps, Paraemters, and Variables**
+4. **Work with Timesteps, Parameters, and Variables**
 
     [How-to Guide 4: Work with Timesteps, Parameters, and Variables](@ref)
 
