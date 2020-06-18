@@ -5,11 +5,11 @@ This tutorial walks through the sensitivity analysis (SA) functionality of Mimi,
 Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v1.0.0](https://github.com/mimiframework/Mimi.jl) or higher
+- [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0.
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
 
 MimiDICE2010 is required for the second example in this tutorial. If you are not yet comfortable with downloading and running a registered Mimi model, refer to Tutorial 2 for instructions.
 
