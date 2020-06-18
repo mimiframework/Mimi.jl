@@ -162,18 +162,18 @@ end
     )
 
 Deprecated function for replacing the component with name `comp_name` in model `m` with the 
-component `comp_id`. Use the following syntax instead:
+new component specified by `comp_id`. Use the following syntax instead:
 
-`replace!(m, comp_name => comp_id; kwargs...)`
+`replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)`
 
 See docstring for `replace!` for further description of available functionality.
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
-    msg = "Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_id; kwargs...)` instead."
+    msg = "Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead."
     st = _get_stacktrace_string()
 	full_msg = string(msg, " \n", st)
 	Base.depwarn(full_msg, :replace_comp!)
-    return replace!(m, comp_name => comp_id; kwargs...)
+    return replace!(m, comp_name => compdef(comp_id); kwargs...)
 end
 
 """
@@ -185,7 +185,7 @@ end
     )
 
 Deprecated function for replacing the component with name `comp_name` in model `m` with the 
-component `comp_def`. Use the following syntax instead:
+new component specified by `comp_def`. Use the following syntax instead:
 
 `replace!(m, comp_name => comp_def; kwargs...)`
 
@@ -197,27 +197,6 @@ function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_
 	full_msg = string(msg, " \n", st)
 	Base.depwarn(full_msg, :replace_comp!)
     return replace!(m, comp_name => comp_def; kwargs...)
-end
-
-"""
-    replace!(
-        m::Model,
-        old_new::Pair{Symbol, ComponentId},
-        before::NothingSymbol=nothing,
-        after::NothingSymbol=nothing,
-        reconnect::Bool=true
-    )
-
-For the pair `comp_name => comp_id` in `old_new`, replace the component with name `comp_name` in 
-the model `m` with the new component specified by `comp_id`. The new component is added 
-in the same position as the old component, unless one of the keywords `before` or `after` is 
-specified for a different position. The optional boolean argument `reconnect` with default value 
-`true` indicates whether the existing parameter connections should be maintained in the new 
-component. Returns a ComponentReference for the added component.
-"""
-function Base.replace!(m::Model, old_new::Pair{Symbol, ComponentId}; kwargs...)
-    replace!(m.md, old_new; kwargs...)
-    return ComponentReference(m.md, old_new[1])
 end
 
 """
@@ -238,7 +217,8 @@ component. Returns a ComponentReference for the added component.
 """
 function Base.replace!(m::Model, old_new::Pair{Symbol, ComponentDef}; kwargs...)
     comp_name, comp_def = old_new
-    return replace!(m, comp_name => comp_def.comp_id; kwargs...)
+    _replace!(m.md, comp_name => comp_def.comp_id; kwargs...)
+    return ComponentReference(m.md, old_new[1])
 end
 
 @delegate ComponentReference(m::Model, name::Symbol) => md

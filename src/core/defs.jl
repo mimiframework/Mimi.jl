@@ -903,7 +903,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
 end
 
 """
-    replace!(
+    _replace!(
         obj::AbstractCompositeComponentDef,
         old_new::Pair{Symbol, ComponentId},
         before::NothingSymbol=nothing,
@@ -918,7 +918,7 @@ unless one of the keywords `before` or `after` is specified for a different posi
 optional boolean argument `reconnect` with default value `true` indicates whether the existing
 parameter connections should be maintained in the new component. Returns the added component def.
 """
-function Base.replace!(obj::AbstractCompositeComponentDef, 
+function _replace!(obj::AbstractCompositeComponentDef, 
     old_new::Pair{Symbol, ComponentId};
     before::NothingSymbol=nothing,
     after::NothingSymbol=nothing,
