@@ -81,5 +81,5 @@ Connect two components as `comp_ref[var_name] = var_ref`.
 function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, vname::Symbol)
     _same_composite(comp_ref, var_ref) || error("Can't connect variables defined in different composite trees")
 
-    connect_param!(parent(comp_ref), pathof(comp_ref), vname, pathof(var_ref), var_name(var_ref))
+    _connect_param!(parent(comp_ref), pathof(comp_ref), vname, pathof(var_ref), var_name(var_ref))
 end
