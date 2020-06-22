@@ -28,7 +28,7 @@ end
 Connect two components as `connect_param!(dst, dst_name, src, src_name)`.
 """
 function connect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)
-    connect_param!(parent(dst), pathof(dst), dst_name, pathof(src), src_name)
+    _connect_param!(parent(dst), pathof(dst), dst_name, pathof(src), src_name)
 end
 
 """
@@ -37,7 +37,7 @@ end
 Connect two components with the same name as `connect_param!(dst, src, name)`.
 """
 function connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
-    connect_param!(parent(dst), pathof(dst), name, pathof(src), name)
+    _connect_param!(parent(dst), pathof(dst), name, pathof(src), name)
 end
 
 """
