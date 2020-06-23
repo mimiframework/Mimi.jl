@@ -39,7 +39,7 @@ This guide is organized into five main sections, each descripting an independent
 
 ## Integer indexing 
 - cannot index with integers
-- removed `is_time` and `is_timestep`
+-  `is_time` and `is_timestep` error now
 
 ## Composite components 
 

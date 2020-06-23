@@ -279,7 +279,7 @@ save("MyFigure.png", p)
 
 This example will discuss the more advanced SA capabilities of post-trial functions and payload objects.
 
-Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `marginal` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
+Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `modified` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
 
 The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sd`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 

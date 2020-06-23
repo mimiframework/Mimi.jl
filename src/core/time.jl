@@ -20,7 +20,7 @@ function gettime(ts::VariableTimestep)
 	return ts.current
 end
 
-# DEPRECATION TBD - ERROR OR REMOVE
+# DEPRECATION - EVENTUALLY REMOVE
 """
  	is_time(ts::AbstractTimestep, t::Int)
 
@@ -39,7 +39,7 @@ function is_first(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
-# DEPRECATION TBD - ERROR OR REMOVE
+# DEPRECATION - EVENTUALLY REMOVE
 """
  	is_timestep(ts::AbstractTimestep, t::Int)
 
