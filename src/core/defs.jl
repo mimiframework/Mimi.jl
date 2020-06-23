@@ -903,28 +903,29 @@ function add_comp!(obj::AbstractCompositeComponentDef,
 end
 
 """
-    replace_comp!(
+    _replace!(
         obj::AbstractCompositeComponentDef,
-        comp_id::ComponentId,
-        comp_name::Symbol=comp_id.comp_name;
+        old_new::Pair{Symbol, ComponentId},
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         reconnect::Bool=true
     )
 
-Replace the component with name `comp_name` in composite component definition `obj` with the
-component `comp_id` using the same name. The component is added in the same position as the
-old component, unless one of the keywords `before` or `after` is specified. The component is
-added with the same first and last values, unless the keywords `first` or `last` are specified.
-Optional boolean argument `reconnect` with default value `true` indicates whether the existing
-parameter connections should be maintained in the new component. Returns the added comp def.
+For the pair `comp_name => comp_id` in `old_new`, replace the component with name `comp_name` in 
+`obj` (a model definition or composite component definition) with the new component  
+specified by `comp_id`. The component is added in the same position as the old component, 
+unless one of the keywords `before` or `after` is specified for a different position. The
+optional boolean argument `reconnect` with default value `true` indicates whether the existing
+parameter connections should be maintained in the new component. Returns the added component def.
 """
-function replace_comp!(obj::AbstractCompositeComponentDef,
-                       comp_id::ComponentId,
-                       comp_name::Symbol=comp_id.comp_name;
-                       before::NothingSymbol=nothing,
-                       after::NothingSymbol=nothing,
-                       reconnect::Bool=true)
+function _replace!(obj::AbstractCompositeComponentDef, 
+    old_new::Pair{Symbol, ComponentId};
+    before::NothingSymbol=nothing,
+    after::NothingSymbol=nothing,
+    reconnect::Bool=true)
+
+    comp_name, comp_id = old_new
+
     if ! has_comp(obj, comp_name)
         error("Cannot replace '$comp_name'; component not found in model.")
     end

@@ -1,144 +1,62 @@
-# Tutorial 1: Run an Existing Model
+# Tutorial 1: Install Mimi
 
-This tutorial walks through the steps to download, run, and view the output of an existing model.  There are several existing models publically available on Github for the purposes of this tutorial we will use [The Climate Framework for Uncertainty, Negotiation and Distribution (FUND)](http://www.fund-model.org), available on Github [here](https://github.com/fund-model/fund).
+This tutorial describes how to set up your system by installing julia, Mimi, and the Mimi registry.
 
-Working through the following tutorial will require:
+## Installing julia
 
-- [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl)
+Mimi requires the programming language [julia](http://julialang.org/) to run. You can download the current release from the julia [download page](http://julialang.org/downloads/). You should download and install the command line version from that page.
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
+## Editor support
 
-### Step 1. Download FUND
+There are various editors around that have julia support, including the following:
 
-The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models:
+- [IJulia](https://github.com/JuliaLang/IJulia.jl) adds julia support to the [jupyter](http://jupyter.org/) (formerly IPython) notebook system.
+- [VS Code](https://code.visualstudio.com/) has an excellent julia extension
+- other editors such as [Emacs](https://www.gnu.org/software/emacs/) and [Sublime](https://www.sublimetext.com/) have julia extensions that add various levels of support for the julia language.
+
+## Installing Mimi
+
+Once julia is installed, start julia and you should see a julia command prompt. To install the Mimi package, issue the following command from the Pkg REPL mode, which is entered by typing `]` and exited with a single backspace:
+
+```julia
+pkg> add Mimi
+```
+You only have to run this command once on your machine.
+
+As we work to enhance and improve Mimi we will release new versions of the package. To make sure you always have the latest version of Mimi installed, we recommend that on occasion you run the following command at the julia Pkg REPL:
+
+```julia
+pkg> update
+```
+This will update *all* installed packages to their latest version (not just the Mimi package). To *only* update the Mimi package you may run the following, although we recommend you do a comprehensive update each time as indicated above.
+
+```julia
+pkg> update Mimi
+```
+
+## Using Mimi
+
+When you start a new julia command prompt, Mimi is not yet loaded into that julia session. To load Mimi, issue the following command:
+```jldoctest 
+julia> using Mimi
+```
+You will have to run this command every time you want to use Mimi in julia. You would typically also add `using Mimi` to the top of any julia code file that employs the Mimi API.
+
+## Mimi Registry
+
+To access the models in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl), you first need to connect your julia installation with the central Mimi registry of Mimi models. This central registry is like a catalogue of models that use Mimi that is maintained by the Mimi project. To add this registry, run the following command at the julia package REPL:
 
 ```julia
 pkg> registry add https://github.com/mimiframework/MimiRegistry.git
 ```
 
-You simply need to add the FUND model in the Pkg REPL with:
-```julia
-pkg> add MimiFUND
-```
+You only need to run this command once on a computer. 
 
-### Step 2. Run FUND
-
-The next step is to run FUND. If you wish to first get more acquainted with the model itself, take a look at the provided online [documentation](http://www.fund-model.org).
-
-Now open a julia REPL and type the following command to load the MimiFUND package into the current environment:
-
-```jldoctest tutorial1; output = false, filter = r".*"s
-using MimiFUND
-
-# output
-
-```
-Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
-
-```jldoctest tutorial1; output = false, filter = r".*"s
-m = MimiFUND.get_model()
-run(m)
-
-# output
-
-```
-
-Note that these steps should be relatively consistent across models, where a repository for `ModelX` should contain a primary file `ModelX.jl` which exports, at minimum, a function named something like `get_model` or `construct_model` which returns a version of the model, and can allow for model customization within the call.
-
-In the MimiFUND package, the function `get_model` has the signature
-```julia
-get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default_params)
-```
-Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to run only the first 200 timesteps, you may use:
-```jldoctest tutorial1; output = false, filter = r".*"s
-using MimiFUND
-m = MimiFUND.get_model(nsteps = 200)
-run(m)
-
-# output
-
-```
-
-### Step 3. Access Results: Values
-After the model has been run, you may access the results (the calculated variable values in each component) in a few different ways.
-
-Start off by importing the Mimi package to your space with
-```jldoctest tutorial1; output = false
-using Mimi
-
-# output
-
-```
-
-First of all, you may use the `getindex` syntax as follows:
+From there you will be add any of the registered packages, such as MimiDICE2010.jl by running the following command at the julia package REPL:
 
 ```julia
-m[:ComponentName, :VariableName] # returns the whole array of values
-m[:ComponentName, :VariableName][100] # returns just the 100th value
-
-```
-Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component of FUND using the code below:
-```jldoctest tutorial1; output = false
-m[:socioeconomic, :income]
-m[:socioeconomic, :income][100]
-
-# output
-
-20980.834204000927
+pkg> add MimiDICE2010
 ```
 
-You may also get data in the form of a dataframe, which will display the corresponding index labels rather than just a raw array. The syntax for this uses [`getdataframe`](@ref) as follows:
-
-```julia
-getdataframe(m, :ComponentName=>:Variable) # request one variable from one component
-getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
-getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
-```
-
-Try doing this for the `income` variable of the `socioeconomic` component using:
-```jldoctest tutorial1; output = false, filter = r".*"s
-getdataframe(m, :socioeconomic=>:income) # request one variable from one component
-getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in first year (1950)
-
-# output
-
-```
-
-### Step 4. Access Results: Plots and Graphs
-
-After running the FUND model, you may also explore the results using plots and graphs.
-
-Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the [`plot_comp_graph`](@ref) function.
-
-#### Explore
-
-If you wish to explore the results graphically, use the explorer UI, described [here](https://www.mimiframework.org/Mimi.jl/stable/userguide/#Plotting-and-the-Explorer-UI-1) in Section 5 of the Mimi User Guide.
-
-To explore all variables and parameters of FUND in a dynamic UI app window, use the [`explore`](@ref) function called with the model as the required first argument, and the optional argument of the `title`  The menu on the left hand side will list each element in a label formatted as `component: variable/parameter`.
-```julia
-explore(m, title = "My Window")
-```
-Alternatively, in order to view just one parameter or variable, call the function [`explore`](@ref) as below to return a plot object and automatically display the plot in a viewer, assuming [`explore`](@ref) is the last command executed.  This call will return the type `VegaLite.VLSpec`, which you may interact with using the API described in the [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) documentation.  For example, [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) plots can be saved as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. You may save a plot using the `save` function. Note that saving an interactive plot in a non-interactive file format, such as .pdf or .svg will result in a warning `WARN Can not resolve event source: window`, but the plot will be saved as a static image. If you wish to preserve interactive capabilities, you may save it using the .vegalite file extension. If you then open this file in Jupyter lab, the interactive aspects will be preserved.
-
-```julia
-p = Mimi.plot(m, :mycomponent, :myvariable)
-save("MyFilePath.svg", p)
-```
-More specifically for our tutorial use of FUND, try:
-
-```julia
-p = Mimi.plot(m, :socioeconomic, :income)
-save("MyFilePath.svg", p)
-```
-
-#### Component Graph
-
-In order to view a DAG representing the component ordering and relationships, use the [`plot_comp_graph`](@ref) function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
-
-```julia
-plot_comp_graph(m, "MyFilePath.png")
-```
-### Step 4. Tutorial 2
-
-Next, feel free to move on to the second tutorial, which will go into depth on how to **modify** an existing model such as FUND!
+----
+After taking the steps above you have prepared your system and are ready to run the next tutorials!

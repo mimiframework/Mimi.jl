@@ -2,7 +2,7 @@
 
 ## 1. Code organization
 
-### Types
+#### Types
 
 All Mimi types are defined in `Mimi/src/core/types.jl`.
 
@@ -54,11 +54,11 @@ The types `InternalParameterConnection` and `ExternalParameterConnection` are no
 
 ## 2. Changes to `@defcomp`
 
-### Macro simplification
+#### Macro simplification
 
 The `@defcomp` macro has been substantially simplified by relying on MacroTools.jl package and by avoiding the construction of expressions using Abstract Syntax Tree form. The macro now operates by producing a fairly simple sequence of function calls.
 
-### Dot-overloading
+#### Dot-overloading
 
 In a change from the prior iteration of Mimi, the `run_timestep` function must now be defined within the `@defcomp` macro. It takes four arguments: parameters, variables, dimensions, and time.
 
@@ -70,7 +70,7 @@ In a change from the prior iteration of Mimi, the `run_timestep` function must n
 
 With the `run_timestep` function inside the `@defcomp` macro, we are able to modify the code to translate references like `p.gdp` and assignments like `v.foo = 3` to use new `@generated` functions `getproperty` and `setproperty!`, which compile down to direct array access operations on the `values` field of parameter and variable instances.
 
-### Component naming
+#### Component naming
 
 In the previous version of Mimi, components were named by a pair of symbols indicating the module the component was defined in, and the name of the component. Each component was also reified in a newly generated custom type.
 

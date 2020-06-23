@@ -1,35 +1,170 @@
-# Tutorial 4: Sensitivity Analysis (SA) Support
+# Tutorial 4: Create a Model
 
-This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
+This tutorial walks through the steps to create a new model, first a one-region model and then a more complex multi-region model. 
+
+While we will walk through the code step by step below, the full code for implementation is also available in the `examples/tutorial` folder in the [Mimi](https://github.com/mimiframework/Mimi.jl) github repository.
 
 Working through the following tutorial will require:
 
 - [Julia v1.2.0](https://julialang.org/downloads/) or higher
-- [Mimi v0.9.4](https://github.com/mimiframework/Mimi.jl) 
+- [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
 
-If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.  
+If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
 
-Futhermore, if you are not yet comfortable with downloading (only needs to be done once) and running MimiDICE2010, refer to Tutorial 1 for instructions.  Carry out **Steps 1 and 2** from Tutorial 1 for the MimiDICE2010 package and then return to continue with this tutorial. Note that MimiDICE2010 is only required for the second example in this tutorial. 
+Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
 
-## The API
+## Constructing A One-Region Model
 
-The best current documentation on the SA API is the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), which provides a working and informal description of the Sensitivity Analysis support of Mimi. This file should be used in conjunction with the examples below for details, since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.
+In this example, we construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy involves creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
 
-We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.
+There are two main steps to creating a component, both within the  `@defcomp` macro which defines a component:
 
-## Multi-Region Model Example
+* List the parameters and variables.
+* Use the `run_timestep` function `run_timestep(p, v, d, t)` to set the equations of that component.
 
-This section will walk through a simple example of how to define a simulation, run the simulation for a given model, and access the outputs.
+Starting with the economy component, each variable and parameter is listed. If either variables or parameters have a time-dimension, that must be set with `(index=[time])`.
 
-### Step 1. Setup
-You should have `Mimi` installed by now, and if you do not have the `Distributions` package, take a moment to add that package by entering `]` to enter the [Pkg REPL](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) mode and then typing `add Distributions`.
+Next, the `run_timestep` function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
 
-As a reminder, the following code is the multi-region model that was constructed in the second half of tutorial 3. You can either load the `MyModel` module from tutorial 3, or run the following code which defines the same `construct_Mymodel` function that we will use.
+It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the how to guide How-to Guide 4: Work with Timesteps, Parameters, and Variables 
 
-```jldoctest tutorial4; output = false
-using Mimi 
+```jldoctest tutorial3; output = false
+using Mimi # start by importing the Mimi package to your space
 
-# Define the grosseconomy component
+@defcomp grosseconomy begin
+	YGROSS	= Variable(index=[time])	# Gross output
+	K	    = Variable(index=[time])	# Capital
+	l	    = Parameter(index=[time])	# Labor
+	tfp	    = Parameter(index=[time])	# Total factor productivity
+	s	    = Parameter(index=[time])	# Savings rate
+	depk	= Parameter()			    # Depreciation rate on capital - Note that it has no time index
+	k0	    = Parameter()			    # Initial level of capital
+	share	= Parameter()			    # Capital share
+
+	function run_timestep(p, v, d, t)
+		# Define an equation for K
+		if is_first(t)
+			# Note the use of v. and p. to distinguish between variables and parameters
+			v.K[t] 	= p.k0	
+		else
+			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
+		end
+
+		# Define an equation for YGROSS
+		v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)
+	end
+end
+
+# output
+
+```
+
+Next, the component for greenhouse gas emissions must be created.  Although the steps are the same as for the `grosseconomy` component, there is one minor difference. While `YGROSS` was a variable in the `grosseconomy` component, it now enters the `emissions` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
+
+```jldoctest tutorial3; output = false
+@defcomp emissions begin
+	E 	    = Variable(index=[time])	# Total greenhouse gas emissions
+	sigma	= Parameter(index=[time])	# Emissions output ratio
+	YGROSS	= Parameter(index=[time])	# Gross output - Note that YGROSS is now a parameter
+
+	function run_timestep(p, v, d, t)
+
+		# Define an equation for E
+		v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
+	end
+end
+
+# output
+
+```
+
+We can now use Mimi to construct a model that binds the `grosseconomy` and `emissions` components together in order to solve for the emissions level of the global economy over time. In this example, we will run the model for twenty periods with a timestep of five years between each period.
+
+* Once the model is defined, [`set_dimension!`](@ref) is used to set the length and interval of the time step.
+* We then use [`add_comp!`](@ref) to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component.
+* Next, [`set_param!`](@ref) is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using [`set_param!`](@ref) two different times. The syntax is `set_param!(model_name, :component_name, :parameter_name, value)`
+* If any variables of one component are parameters for another, [`connect_param!`](@ref) is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
+* Finally, the model can be run using the command `run(model_name)`.
+* To access model results, use `model_name[:component, :variable_name]`.
+* To observe model results in a graphical form , [`explore`](@ref) as either `explore(model_name)` to open the UI window, or use `Mimi.plot(model_name, :component_name, :variable_name)` or `Mimi.plot(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
+
+```jldoctest tutorial3; output = false
+
+using Mimi
+
+function construct_model()
+	m = Model()
+
+	set_dimension!(m, :time, collect(2015:5:2110))
+
+	# Order matters here. If the emissions component were defined first, the model would not run.
+	add_comp!(m, grosseconomy)  
+	add_comp!(m, emissions)
+
+	# Set parameters for the grosseconomy component
+	set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+	set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+	set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+	set_param!(m, :grosseconomy, :depk, 0.1)
+	set_param!(m, :grosseconomy, :k0, 130.)
+	set_param!(m, :grosseconomy, :share, 0.3)
+
+	# Set parameters for the emissions component
+	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
+	# Note that connect_param! was used here.
+
+	return m
+
+end #end function
+
+# output
+
+construct_model (generic function with 1 method)
+
+```
+
+Note that as an alternative to using many of the `set_param!` calls above, one may use the `default` keyword argument in `@defcomp` when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
+
+Now we can run the model and examine the results:
+
+```jldoctest tutorial3; output = false, filter = r".*"s
+# Run model
+m = construct_model()
+run(m)
+
+# Check model results
+getdataframe(m, :emissions, :E) # or m[:emissions, :E_Global] to return just the Array
+
+# output
+
+```
+Finally we can visualize the results via plotting and explorer:
+```julia
+# Plot model results
+Mimi.plot(m, :emissions, :E);
+
+# Observe all model result graphs in UI
+explore(m)
+```
+
+## Constructing A Multi-Region Model
+
+We can now modify our two-component model of the globe to include multiple regional economies.  Global greenhouse gas emissions will now be the sum of regional emissions. The modeling approach is the same, with a few minor adjustments:
+
+* When using [`@defcomp`](@ref), a regions index must be specified. In addition, for variables that have a regional index it is necessary to include `(index=[regions])`. This can be combined with the time index as well, `(index=[time, regions])`.
+* In the `run_timestep` function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
+* [`set_dimension!`](@ref) must be used to specify your regions in the same way that it is used to specify your timestep.
+* When using [`set_param!`](@ref) for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into [`set_param!`](@ref) rather than an entire equation.
+* When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, `using Mimi` must be speficied for each component. This approach will be used here.
+
+To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.
+
+As this model is also more complex and spread across several files, we will also take this as a chance to introduce the custom of using [Modules](https://docs.julialang.org/en/v1/manual/modules/index.html) to package Mimi models, as shown below.
+
+```jldoctest tutorial3; output = false
+using Mimi
+
 @defcomp grosseconomy begin
     regions = Index()                           #Note that a regional index is defined here
 
@@ -61,7 +196,15 @@ using Mimi
     end
 end
 
-# define the emissions component
+# output
+
+```
+
+Save this component as **`gross_economy.jl`**
+
+```jldoctest tutorial3; output = false, filter = r".*"s
+using Mimi	#Make sure to call Mimi again
+
 @defcomp emissions begin
     regions     = Index()                           # The regions index must be specified for each component
 
@@ -87,8 +230,15 @@ end
 
 end
 
-# Define values for input parameters to be used when constructing the model
+# output
 
+```
+
+Save this component as **`emissions.jl`**
+
+Let's create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.
+
+```jldoctest tutorial3; output = false
 l = Array{Float64}(undef, 20, 3)
 for t in 1:20
     l[t,1] = (1. + 0.015)^t *2000
@@ -120,8 +270,25 @@ for t in 1:20
     sigma[t,3] = (1. - 0.045)^t * 0.6
 end
 
-# Define a function for building the model
+# output
 
+```
+Save this file as **`region_parameters.jl`**
+
+The final step is to create a module:
+
+```julia
+module MyModel
+
+using Mimi
+
+include("region_parameters.jl")
+include("gross_economy.jl")
+include("emissions.jl")
+
+export construct_MyModel
+```
+```jldoctest tutorial3; output = false
 function construct_MyModel()
 
 	m = Model()
@@ -149,246 +316,36 @@ end
 # output
 
 construct_MyModel (generic function with 1 method)
+
 ```
+```julia
+end #module
+``` 
 
-Then, we obtain a copy of the model:
+Save this file as **`MyModel.jl`**
 
-```jldoctest tutorial4; output = false
+We can now run the model and evaluate the results.
+
+```julia
+using Mimi
+
+include("MyModel.jl")
+using .MyModel
+```
+```jldoctest tutorial3; output = false, filter = r".*"s
 m = construct_MyModel()
+run(m)
 
-# output
-
-Mimi.Model    
-  Module: Mimi
-  Components:
-    ComponentId(grosseconomy)
-    ComponentId(emissions)
-  Built: false
-```
-
-### Step 2. Define Random Variables
-The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions, 
-and associate model parameters with the defined random variables.
-
-There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example.
-
-The first is the following:
-```julia
-rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the specified distribution
-param1 = rv1                # then assign this random variable "rv1" to the parameter "param1" in the model
-```
-
-The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a random variable is created under the hood and then assigned to `param1`.
-```julia
-param1 = Normal(0, 0.8)
-```
-
-The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. 
-Other options include Latin Hypercube sampling and Sobol sampling.
-
-```jldoctest tutorial4; output = false, filter = r".*"s
-using Mimi
-using Distributions 
-
-sd = @defsim begin
-    # Define random variables. The rv() is only required when defining correlations 
-    # or sharing an RV across parameters. Otherwise, you can use the shortcut syntax
-    # to assign a distribution to a parameter name.
-    rv(name1) = Normal(1, 0.2)
-    rv(name2) = Uniform(0.75, 1.25)
-    rv(name3) = LogNormal(20, 4)
-
-    # If using LHS, you can define correlations like this:
-    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
-
-    # Exclude the sampling() call, or use the following for simple random sampling:
-    # sampling(MCSData)
-
-    # For Sobol sampling, specify N, and calc_second_order, which defaults to false.
-    # sampling(SobolData, N=10000, calc_second_order=true)
-
-    # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
-    sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
-
-    # For parameters that have a region dimension, you can assign an array of distributions, 
-    # keyed by region label, which must match the region labels in the model
-    depk = [Region1 => Uniform(0.7, .9),
-            Region2 => Uniform(0.8, 1.),
-            Region3 => Truncated(Normal(), 0, 1)]
-
-    # Indicate which variables to save for each model run.
-    # The syntax is: component_name.variable_name
-    save(grosseconomy.K, grosseconomy.YGROSS, 
-         emissions.E, emissions.E_Global)
-end
+# Check results
+getdataframe(m, :emissions, :E_Global) # or m[:emissions, :E_Global] to return just the Array
 
 # output
 
 ```
-
-### Step 3. Run Simulation
-
-Next, use the `run` function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the `run` function**.
-
-In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
-
-```jldoctest tutorial4; output = false, filter = r".*"s
-# Run 100 trials, and optionally save results to the indicated directories
-si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4")
-
-# Explore the results saved in-memory by using getdataframe with the returned SimulationInstance.
-# Values are saved from each trial for each variable or parameter specified by the call to "save()" at the end of the @defsim block.
-K_results = getdataframe(si, :grosseconomy, :K)
-E_results = getdataframe(si, :emissions, :E)
-
-# output
-
-```
-### Step 4. Explore and Plot Results
-
-As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
-
-To view your results in an interactive application viewer, simply call:
-
 ```julia
-explore(si)
+# Observe model result graphs
+explore(m)
 ```
 
-If desired, you may also include a `title` for your application window. If more than one model was run in your Simulation, indicate which model you would like to explore with the `model` keyword argument, which defaults to 1. Finally, if your model leverages different scenarios, you **must** indicate the `scenario_name`.
-
-```julia
-explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name here since we have no scenarios
-```
-
-To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
-
-```julia
-Mimi.plot(si, :grosseconomy, :K)
-```
-To save your figure, use the `save` function to save typical file formats such as [PNG](https://en.wikipedia.org/wiki/Portable_Network_Graphics), [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics), [PDF](https://en.wikipedia.org/wiki/PDF) and [EPS](https://en.wikipedia.org/wiki/Encapsulated_PostScript) files. Note that while `explore(sim_inst)` returns interactive plots for several graphs, `Mimi.plot(si, :foo, :bar)` will return only static plots. 
-
-```julia
-p = Mimi.plot(si, :grosseconomy, :K)
-save("MyFigure.png", p)
-```
-
-## Advanced Features - Social Cost of Carbon (SCC) Example
-
-This example will discuss the more advanced SA capabilities of post-trial functions and payload objects.
-
-Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `modified` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
-
-The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sd`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
-
-```jldoctest tutorial4; output = false
-using Mimi
-using MimiDICE2010
-using Distributions
-
-# define the number of trials
-N = 100
-
-# define your simulation (defaults to Monte Carlo sampling)
-sd = @defsim begin
-    t2xco2 = Truncated(Gamma(6.47815626,0.547629469), 1.0, Inf) # a dummy distribution
-end
-
-# output
-
-MCSData()
-```
-
-### Payload object
-Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
-
-```jldoctest tutorial4; output = false, filter = r".*"s
-# Choose what year to calculate the SCC for
-scc_year = 2015
-year_idx = findfirst(isequal(scc_year), MimiDICE2010.model_years)
-
-# Pre-compute the discount factors for each discount rate
-discount_rates = [0.03, 0.05, 0.07]
-nyears = length(MimiDICE2010.model_years)
-discount_factors = [[zeros(year_idx - 1)... [(1/(1 + r))^((t-year_idx)*10) for t in year_idx:nyears]...] for r in discount_rates] 
-
-# Create an array to store the computed SCC in each trial for each discount rate
-scc_results = zeros(N, length(discount_rates))  
-
-# Set the payload object in the simulation definition
-my_payload_object = (discount_factors, scc_results) # In this case, the payload object is a tuple which holds both both arrays
-Mimi.set_payload!(sd, my_payload_object)  
-
-# output
-
-```
-
-### Post-trial function
-
-In the simple multi-region simulation example, the only values that were saved during each trial of the simulation were values of variables calculated internally by the model. Sometimes, a user may need to perform other calculations before or after each trial is run. For example, the SCC is calculated using two models, so this calculation needs to happen in a post-trial function, as shown below.
-
-Here we define a `post_trial_function` called `my_scc_calculation` which will calculate the SCC for each trial of the simulation. Notice that this function retrieves and uses the payload object that was previously stored in the `SimulationDef`.
-
-```jldoctest tutorial4; output = false
-function my_scc_calculation(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Nothing)
-    mm = sim_inst.models[1] 
-    discount_factors, scc_results = Mimi.payload(sim_inst)  # Unpack the payload object
-
-    marginal_damages = mm[:neteconomy, :C] * -1 * 10^12 * 12/44 # convert from trillion $/ton C to $/ton CO2; multiply by -1 to get positive value for damages
-    for (i, df) in enumerate(discount_factors)
-        scc_results[trialnum, i] = sum(df .* marginal_damages .* 10)
-    end
-end
-
-# output
-
-my_scc_calculation (generic function with 1 method)
-```
-
-### Run the simulation
-
-Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
-
-```julia
-# Build the marginal model
-mm = MimiDICE2010.get_marginal_model(year = scc_year)   # The additional emissions pulse will be added in the specified year
-
-# Run
-si = run(sd, mm, N; trials_output_filename = "ecs_sample.csv", post_trial_func = my_scc_calculation)
-
-# View the scc_results by retrieving them from the payload object
-scc_results = Mimi.payload(si)[2]   # Recall that the SCC array was the second of two arrays we stored in the payload tuple
-
-# output
-
-```
-
-### Simulation Modification Functions
-A small set of unexported functions are available to modify an existing `SimulationDef`.  The functions include:
-* `delete_RV!`
-* `add_RV!`
-* `replace_RV!`
-* `delete_transform!`
-* `add_transform!`
-* `delete_save!`
-* `add_save!`
-* `set_payload!`
-* `payload`
-
-### Full list of keyword options for running a simulation
-
-View the internals documentation [here](https://github.com/anthofflab/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of this function**:
-
-```julia
-function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
-                 ntimesteps::Int=typemax(Int), 
-                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
-                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
-                 pre_trial_func::Union{Nothing, Function}=nothing, 
-                 post_trial_func::Union{Nothing, Function}=nothing,
-                 scenario_func::Union{Nothing, Function}=nothing,
-                 scenario_placement::ScenarioLoopPlacement=OUTER,
-                 scenario_args=nothing,
-                 results_in_memory::Bool=true) where T <: AbstractSimulationData
-```
+----
+Next, feel free to move on to the next tutorial, which will go into depth on how to **run a sensitvity analysis** on a own model.
