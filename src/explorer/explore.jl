@@ -26,12 +26,9 @@ function explore(m::Model; title = "Electron")
         global app = Application()
     end
 
-    #load main html file
-    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\" => "/")
-
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
-    w = Window(app, URI(joinpath(@__PATH__, "assets", "main.html")), options = windowopts)
+    w = Window(app, joinpath(@__PATH__, p"mimiexplorer-app/build/index.html"), options = windowopts)
     
     #set async block to process messages
     @async for msg in msgchannel(w)
@@ -46,7 +43,9 @@ function explore(m::Model; title = "Electron")
     menulist = menu_item_list(m)
     menulistJSON = JSON.json(menulist)
 
-    result = run(w, "refresh($menulistJSON)")
+    Electron.toggle_devtools(w)
+
+    result = run(w, "refreshItemsList($menulistJSON)")
     
     return w
 
