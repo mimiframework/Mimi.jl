@@ -172,7 +172,7 @@ function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id
     msg = "Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead."
     st = _get_stacktrace_string()
 	full_msg = string(msg, " \n", st)
-	Base.depwarn(full_msg, :replace_comp!)
+	error(full_msg)
     return replace!(m, comp_name => compdef(comp_id); kwargs...)
 end
 
@@ -195,7 +195,7 @@ function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_
     msg = "Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead."
     st = _get_stacktrace_string()
 	full_msg = string(msg, " \n", st)
-	Base.depwarn(full_msg, :replace_comp!)
+	error(full_msg)
     return replace!(m, comp_name => comp_def; kwargs...)
 end
 

@@ -47,9 +47,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
 set_param!(m, :X, :x, zeros(6))
-# The following `replace_comp!` function name will be deprecated in v1.0.0.
-#   This one remains to test the preserved version with warning for v0.10.0.
-replace_comp!(m, X_repl, :X)            # Replace X with X_repl
+replace!(m, :X => X_repl)            # Replace X with X_repl
 run(m)
 @test length(components(m)) == 1        # Only one component exists in the model
 @test m[:X, :y] == 2 * ones(6)          # Successfully ran the run_timestep function from X_repl
@@ -66,7 +64,7 @@ connect_param!(m, :second => :x, :first => :y)              # Make an internal c
 # The following `replace_comp!` function name will be deprecated in v1.0.0.
 #   This one remains to test the preserved version with warning for v0.10.0.
 #   Every other use in this test file has been switched to `replace!` instead.
-replace_comp!(m, bad1.comp_id, :second, reconnect = false)             # Can replace without reconnecting
+replace!(m, :second => bad1, reconnect = false)             # Can replace without reconnecting
 second = compdef(m, :second)
 @test second.comp_id.comp_name == :bad1                     # Successfully replaced
 

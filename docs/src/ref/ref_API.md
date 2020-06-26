@@ -23,7 +23,7 @@ modeldef
 parameter_names
 parameter_dimensions
 plot_comp_graph
-replace_comp! 
+replace!
 set_dimension! 
 set_leftover_params! 
 set_param! 

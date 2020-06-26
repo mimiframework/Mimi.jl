@@ -24,7 +24,7 @@ end
 """
  	is_time(ts::AbstractTimestep, t::Int)
 
- [DEPRECATED FUNCTION] Return true or false, true if the current time (year) for `ts` is `t`
+Deprecated fucntion to return true or false, true if the current time (year) for `ts` is `t`
  """
  function is_time(ts::AbstractTimestep, t::Int) 
  	error("`is_time(ts, t)` is deprecated. Use comparison operators with TimestepValue objects instead: `ts == TimestepValue(t)` \n$(stacktrace())", :is_time)
@@ -43,7 +43,7 @@ end
 """
  	is_timestep(ts::AbstractTimestep, t::Int)
 
-[DEPRECATED FUNCTION] Return true or false, true if `ts` timestep is step `t`.
+Deprecated function to return true or false, true if `ts` timestep is step `t`.
  """
  function is_timestep(ts::AbstractTimestep, t::Int)
  	error("`is_timestep(ts, t)` is deprecated. Use comparison operators with TimestepIndex objects instead: `ts == TimestepIndex(t)` \n$(stacktrace())", :is_timestep)
