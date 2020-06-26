@@ -38,4 +38,18 @@ run(m)
 @test m[:B, :p1] == 5
 @test m[:B, :p2] == collect(1:10)
 
+# Test `connect_param!` methods for ComponentReferences
+
+connect_param!(refB, :p2, refA, :v1)
+run(m)
+@test m[:B, :p2] == collect(1:10)
+
+@defcomp C begin
+    v1 = Parameter(index = [time])
+end
+refC = add_comp!(m, C)
+connect_param!(refC, refA, :v1)
+run(m)
+@test m[:C, :v1] == collect(1:10)
+
 end
