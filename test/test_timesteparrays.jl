@@ -611,14 +611,15 @@ y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
 @test eltype(x_vec) == eltype(y_vec) == eltype(y_vec) == eltype(y_mat) == eltype(time_dim_val)
 
-# begin syntax is deprecated v1.0.0 - v1.3.0, so enable only works for post v1.4.0 
+# TODO begin syntax is depreated v1.0.0 - v1.3.0, so enable the tests after 
+ # after we disable Julia versions below v1.4.0
 
-@test x_vec[begin] == time_dim_val[:,1,1][begin]
-@test x_mat[begin,1] == time_dim_val[:,:,1][begin,1]
-@test x_mat[begin,2] == time_dim_val[:,:,1][begin,2]
-@test y_vec[begin] == time_dim_val[:,2,2][begin]
-@test y_mat[begin,1] == time_dim_val[:,:,2][begin,1]
-@test y_mat[begin,2] == time_dim_val[:,:,2][begin,2]
+ # @test x_vec[begin] == time_dim_val[:,1,1][begin]
+ # @test x_mat[begin,1] == time_dim_val[:,:,1][begin,1]
+ # @test x_mat[begin,2] == time_dim_val[:,:,1][begin,2]
+ # @test y_vec[begin] == time_dim_val[:,2,2][begin]
+ # @test y_mat[begin,1] == time_dim_val[:,:,2][begin,1]
+ # @test y_mat[begin,2] == time_dim_val[:,:,2][begin,2]
 
 @test x_vec[end] == time_dim_val[:,1,1][end]
 @test x_mat[end,1] == time_dim_val[:,:,1][end,1]
