@@ -40,10 +40,8 @@ Note: in the `ComponentInstanceParameters`, the values stored in the named tuple
 
 ## User-facing Classes
 
-1. `Model`
+1. `Model`: The `Model` class contains the `ModelDef`, and after the `build()` function is called, a `ModelInstance` that can be run. The API for `Model` delegates many calls to either its top-level `ModeDef` or `ModelInstance`, while providing additional functionality including running a Monte Carlo simulation.
 
-The `Model` class contains the `ModelDef`, and after the `build()` function is called, a `ModelInstance` that can be run. The API for `Model` delegates many calls to either its top-level `ModeDef` or `ModelInstance`, while providing additional functionality including running a Monte Carlo simulation.
+2. `ComponentReference`
 
-1. `ComponentReference`
-
-1. `VariableReference`
+3. `VariableReference`
