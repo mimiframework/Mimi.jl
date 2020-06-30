@@ -94,14 +94,14 @@ Any instance of the `is_timestep` function should be replaced with simple compar
 
 Any instance of the `is_time` function should be repalced with simple comparison with a `TimestepValue` object ie. replace the logic `if is_time(t, 2010) ...` with `if t == TimestepValue(2010) ...`.
 
-## The set_param! Function (TODO CORA)
+## The set_param! Function
 
 *The Mimi Change:* 
 The `set_param!` method for setting a parameter value in a component now has the following signature:
 ```
 set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, val::Any)
 ```
-This function creates an external parameter called `ext_param_name` with value `val` in the model `m`'s list of external parameters, and connects the parameter `param_name` in component `comp_name` to this newly created external parameter.
+This function creates an external parameter called `ext_param_name` with value `val` in the model `m`'s list of external parameters, and connects the parameter `param_name` in component `comp_name` to this newly created external parameter. If there is already a parameter called `ext_param_name` in the model's list of external parameters, it errors.
 
 There are two available shortcuts:
 ```
