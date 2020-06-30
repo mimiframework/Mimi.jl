@@ -97,11 +97,39 @@ Any instance of the `is_time` function should be repalced with simple comparison
 ## The set_param! Function (TODO CORA)
 
 *The Mimi Change:* 
-- explain new function (now has five arguments)
-- explain the shortcuts
-- explain when it errors
+The `set_param!` method for setting a parameter value in a component now has the following signature:
+```
+set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, val::Any)
+```
+This function creates an external parameter called `ext_param_name` with value `val` in the model `m`'s list of external parameters, and connects the parameter `param_name` in component `comp_name` to this newly created external parameter.
+
+There are two available shortcuts:
+```
+# Shortcut 1
+set_param!(m::Model, param_name::Symbol, val::Any)
+```
+This method create an external parameter in the model called `param_name`, sets its value to `val`, looks at all the components in the model `m`, finds all the unbound parameters named `param_name`, and creates connections from all the unbound parameters that are named `param_name` to the newly created external parameter. If there is already a parameter called `param_name` in the external parameter list, it errors.
+
+```
+# Shortcut 2
+set_param!(m::Model, comp_name::Symbol, param_name::Symbol, val::Any)
+```
+This method creates a new external parameter called `param_name` in the model `m` (if that already exists, it errors), sets its value to `val`, and then connects the parameter `param_name` in component `comp_name` to this newly created external parameter.
 
 *The User Change:* 
+Any old code that uses the `set_param!` method with only 4 arguments (shortcut #2 shown above) will still work for setting parameters if they are found in only one component. But if you have multiple components that have parameters with the same name, using the old 4-argument version of `set_param!` multiple times will cause an error. Instead, you need to determine what behavior you want across multiple components with parameters of the same name:
+- If you want these parameters with the same name that are found in multiple components to have the _same_ value, use the 3-argument method:  `set_param!(m, :param_name, val)`. You only have to call this once and it will set the same value for all components with an unconnected parameter called `param_name`.
+- If you want different components that have parameters with the same name to have _different_ values, then you need to call the 5-argument version of `set_param!` individually for each parameter value, such as:
+```
+set_param!(m, :comp1, :foo, :foo1, 25)  # creates an external parameter called :foo1 with value 25, and connects just comp1/foo to that value
+set_param!(m, :comp2, :foo, :foo2, 30)  # creates an external parameter called :foo2 with value 30, and connects just comp2/foo to that value
+```
+
+Also, you can no longer call `set_param!` to change the value of a parameter that has already been set in the model. If the parameter has already been set, you must use the following to change it:
+```
+update_param!(m, ext_param_name, new_val)
+```
+This updates the value of the external parameter called `ext_param_name` in the model `m`'s list of external parameters. Any component that have parameters connected to this external parameter will now be connected to this new value.
 
 ## The replace_comp! Function
 
