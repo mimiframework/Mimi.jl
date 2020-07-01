@@ -146,12 +146,13 @@ to replace the `old` component with `new`, they should now use
 replace!(m, old => new)
 ```
 
-## Different-length Components (TODO CORA)
+## Different-length Components 
 
 *The Mimi Change:* 
- - either the functionality will be gone, or implemented differently
+Through Mimi v0.9.4, the optional keyword arguments `first` and `last` could be used to specify times for components that do not run for the full length of the model, like this: `add_comp!(mymodel, ComponentC; first=2010, last=2100)`. This functionality is still disabled, as it was starting in v0.9.5, and all components must run for the full length of the model's time dimension. This functionality may be re-implemented in a later version of Mimi.
 
 *The User Change:* 
+Refactor your model so that all components are the same length. You may use the `run_timestep` function within each component to dictate it's behavior in different timesteps, including doing no calculations for a portion of the full model runtime.
 
 ## Marginal Models
 
