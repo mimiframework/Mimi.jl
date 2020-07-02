@@ -2,7 +2,7 @@
 
 The release of Mimi v0.5.0 is a breaking release, necessitating the adaptation of existing models' syntax and structure in order for those models to run on this new version.  This guide provides an overview of the steps required to get most models using the v0.4.0 API working with v0.5.0.  It is **not** a comprehensive review of all changes and new functionalities, but a guide to the minimum steps required to port old models between versions.  For complete information on the new version and its functionalities, see the full documentation.
 
-This guide is organized into six main sections, each descripting an independent set of changes that can be undertaken in any order desired.  For clarity, these sections echo the organization of the `userguide`.
+This guide is organized into six main sections, each descripting an independent set of changes that can be undertaken in any order desired.  
 
 1) Defining components
 2) Constructing a model

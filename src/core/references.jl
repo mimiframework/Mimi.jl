@@ -28,7 +28,7 @@ end
 Connect two components as `connect_param!(dst, dst_name, src, src_name)`.
 """
 function connect_param!(dst::ComponentReference, dst_name::Symbol, src::ComponentReference, src_name::Symbol)
-    connect_param!(parent(dst), pathof(dst), dst_name, pathof(src), src_name)
+    _connect_param!(parent(dst), pathof(dst), dst_name, pathof(src), src_name)
 end
 
 """
@@ -37,7 +37,7 @@ end
 Connect two components with the same name as `connect_param!(dst, src, name)`.
 """
 function connect_param!(dst::ComponentReference, src::ComponentReference, name::Symbol)
-    connect_param!(parent(dst), pathof(dst), name, pathof(src), name)
+    _connect_param!(parent(dst), pathof(dst), name, pathof(src), name)
 end
 
 """
@@ -81,5 +81,5 @@ Connect two components as `comp_ref[var_name] = var_ref`.
 function Base.setindex!(comp_ref::ComponentReference, var_ref::VariableReference, vname::Symbol)
     _same_composite(comp_ref, var_ref) || error("Can't connect variables defined in different composite trees")
 
-    connect_param!(parent(comp_ref), pathof(comp_ref), vname, pathof(var_ref), var_name(var_ref))
+    _connect_param!(parent(comp_ref), pathof(comp_ref), vname, pathof(var_ref), var_name(var_ref))
 end

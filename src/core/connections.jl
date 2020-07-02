@@ -37,19 +37,6 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol
     disconnect_param!(obj, comp, param_name)
 end
 
-"""
-    disconnect_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol)
-
-Remove any parameter connections for a given parameter `param_name` in the component identified by
-`comp_path` which must be under the composite `obj`.
-"""
-function disconnect_param!(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, param_name::Symbol)
-    if (comp_def = find_comp(obj, comp_path)) === nothing
-        return
-    end
-    disconnect_param!(obj, comp_def, param_name)
-end
-
 # Default string, string unit check function
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
@@ -129,7 +116,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractCo
 end
 
 """
-    connect_param!(obj::AbstractCompositeComponentDef,
+    _connect_param!(obj::AbstractCompositeComponentDef,
         dst_comp_path::ComponentPath, dst_par_name::Symbol,
         src_comp_path::ComponentPath, src_var_name::Symbol,
         backup::Union{Nothing, Array}=nothing;
@@ -142,17 +129,17 @@ check match units between the two.  The `offset` argument indicates the offset b
 the destination and the source ie. the value would be `1` if the destination component
 parameter should only be calculated for the second timestep and beyond.
 """
-function connect_param!(obj::AbstractCompositeComponentDef,
+function _connect_param!(obj::AbstractCompositeComponentDef,
                         dst_comp_path::ComponentPath, dst_par_name::Symbol,
                         src_comp_path::ComponentPath, src_var_name::Symbol,
                         backup::Union{Nothing, Array}=nothing;
                         ignoreunits::Bool=false, offset::Int=0)
 
-    # remove any existing connections for this dst parameter
-    disconnect_param!(obj, dst_comp_path, dst_par_name)  # calls dirty!()
-
     dst_comp_def = compdef(obj, dst_comp_path)
     src_comp_def = compdef(obj, src_comp_path)
+
+    # remove any existing connections for this dst parameter
+    disconnect_param!(obj, dst_comp_def, dst_par_name)  # calls dirty!()
 
     # @info "dst_comp_def: $dst_comp_def"
     # @info "src_comp_def: $src_comp_def"
@@ -242,7 +229,7 @@ function connect_param!(obj::AbstractCompositeComponentDef,
                         dst_comp_name::Symbol, dst_par_name::Symbol,
                         src_comp_name::Symbol, src_var_name::Symbol,
                         backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name,
+    _connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name,
                         ComponentPath(obj, src_comp_name), src_var_name,
                         backup; ignoreunits=ignoreunits, offset=offset)
 end

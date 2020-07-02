@@ -35,38 +35,34 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 @delegate add_connector_comps!(m::Model) => md
 
 """
-    connect_param!(m::Model, dst_comp_path::ComponentPath, dst_par_name::Symbol, src_comp_path::ComponentPath,
-        src_var_name::Symbol, backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol, 
+    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
 
-Bind the parameter `dst_par_name` of one component `dst_comp_path` of model `md`
-to a variable `src_var_name` in another component `src_comp_path` of the same model
+Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `m`
+to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
 between the destination and the source ie. the value would be `1` if the destination
 component parameter should only be calculated for the second timestep and beyond.
 """
 @delegate connect_param!(m::Model,
-                         dst_comp_path::ComponentPath, dst_par_name::Symbol,
-                         src_comp_path::ComponentPath, src_var_name::Symbol,
-                         backup::Union{Nothing, Array}=nothing;
-                         ignoreunits::Bool=false, offset::Int=0) => md
-
-@delegate connect_param!(m::Model,
                          dst_comp_name::Symbol, dst_par_name::Symbol,
                          src_comp_name::Symbol, src_var_name::Symbol,
                          backup::Union{Nothing, Array}=nothing;
                          ignoreunits::Bool=false, offset::Int=0) => md
 
+"""
+    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+
+Bind the parameter `param_name` in the component `comp_name` of model `m` to the external parameter 
+`ext_param_name` already present in the model's list of external parameters.
+"""
 @delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
-
-@delegate connect_param!(m::Model, dst::AbstractString, src::AbstractString, backup::Union{Nothing, Array}=nothing;
-                         ignoreunits::Bool=false, offset::Int=0) => md
-
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
 
-Bind the parameter `dst[2]` of one component `dst[1]` of model `md`
+Bind the parameter `dst[2]` of one component `dst[1]` of model `m`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
 to check match units between the two.  The `offset` argument indicates the offset
@@ -80,7 +76,12 @@ function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, S
     connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
 end
 
-@delegate disconnect_param!(m::Model, comp_path::ComponentPath, param_name::Symbol) => md
+"""
+    disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol)
+
+Remove any parameter connections for a given parameter `param_name` in a given component
+`comp_def` in model `m`.
+"""
 @delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
 # TBD: these may not be needed as delegators
