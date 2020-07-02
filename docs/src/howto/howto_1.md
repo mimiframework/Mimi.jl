@@ -67,12 +67,11 @@ set_dimension!(m, :regions, ["USA", "EU", "LATAM"])
 The next step is to add components to the model. This is done by the following syntax:
 
 ```julia 
+add_comp!(m, ComponentA)
 add_comp!(m, ComponentA, :GDP)
-add_comp!(m, ComponentB; first=2010)
-add_comp!(m, ComponentC; first=2010, last=2100)
 ```
 
-The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the first line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
+The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
 
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 

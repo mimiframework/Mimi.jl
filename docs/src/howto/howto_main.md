@@ -33,5 +33,4 @@ If you find a bug in these guides, or have a clarifying question or suggestion, 
 
 6. **Port to Mimi v1.0.0**
 
-    [How-to Guide 6: Port to Mimi v1.0.0](@ref)
-
+    [How-to Guide 6: Port from (>=) Mimi v0.5.0 to Mimi v1.0.0](@ref)

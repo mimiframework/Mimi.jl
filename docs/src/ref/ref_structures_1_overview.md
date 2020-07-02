@@ -23,11 +23,9 @@ For example, in Mimi, `ModelDef` is a subclass of `CompositeComponentDef`, which
 
 ## Core types
 
-These are defined in `types/core.jl`.
+Several core types are defined in `types/core.jl`, including the two primary abstract types, `MimiStruct` and `MimiClass`. 
 
-1. `MimiStruct` and `MimiClass`
-
-All structs and classes in Mimi are derived from these abstract types, which allows us to identify Mimi-defined items when writing `show()` methods.
+All structs and classes in Mimi are derived from these abstract types, which allows us to identify Mimi-defined items when writing `show()` methods. Important structs and classes include:
 
 1. `ComponentId`
 
@@ -41,7 +39,7 @@ All structs and classes in Mimi are derived from these abstract types, which all
     end
     ```
 
-1. `ComponentPath`
+2. `ComponentPath`
 
     A `ComponentPath` identifies the path from one or more composites to any component, using an `NTuple` of symbols. Since component names are unique at the composite level, the sequence of names through a component hierarchy uniquely identifies a component in that hierarchy.
 
