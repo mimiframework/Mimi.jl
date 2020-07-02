@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>5 Sensitivity Analysis · Mimi.jl</title><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.11.1/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit">Mimi.jl</span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../tutorial_main/">Tutorials Intro</a></li><li><a class="tocitem" href="../tutorial_1/">1 Install Mimi</a></li><li><a class="tocitem" href="../tutorial_2/">2 Run an Existing Model</a></li><li><a class="tocitem" href="../tutorial_3/">3 Modify an Existing Model</a></li><li><a class="tocitem" href="../tutorial_4/">4 Create a Model</a></li><li class="is-active"><a class="tocitem" href>5 Sensitivity Analysis</a><ul class="internal"><li><a class="tocitem" href="#The-API-1"><span>The API</span></a></li><li><a class="tocitem" href="#Multi-Region-Model-Example-1"><span>Multi-Region Model Example</span></a></li><li><a class="tocitem" href="#Advanced-Features-Social-Cost-of-Carbon-(SCC)-Example-1"><span>Advanced Features - Social Cost of Carbon (SCC) Example</span></a></li></ul></li></ul></li><li><span class="tocitem">How-to Guides</span><ul><li><a class="tocitem" href="../../howto/howto_main/">How-to Guides Intro</a></li><li><a class="tocitem" href="../../howto/howto_1/">1 Construct + Run a Model</a></li><li><a class="tocitem" href="../../howto/howto_2/">2 Explore Results</a></li><li><a class="tocitem" href="../../howto/howto_3/">3 Sensitivity Analysis</a></li><li><a class="tocitem" href="../../howto/howto_4/">4 Timesteps, Params, and Vars</a></li><li><a class="tocitem" href="../../howto/howto_5/">5 Port to v0.5.0</a></li><li><a class="tocitem" href="../../howto/howto_6/">6 Port to v1.0.0</a></li></ul></li><li><span class="tocitem">Advanced How-to Guides</span><ul><li><a class="tocitem" href="../../howto_advanced/howto_adv_main/">Advanced How-to Guides Intro</a></li><li><a class="tocitem" href="../../howto_advanced/howto_adv_buildinit/">Build and Init Functions</a></li><li><a class="tocitem" href="../../howto_advanced/howto_adv_datumrefs/">Using Datum References</a></li></ul></li><li><span class="tocitem">Reference Guides</span><ul><li><a class="tocitem" href="../../ref/ref_main/">Reference Guides Intro</a></li><li><a class="tocitem" href="../../ref/ref_API/">Mimi API</a></li><li><a class="tocitem" href="../../ref/ref_structures_1_overview/">Structures: Overview</a></li><li><a class="tocitem" href="../../ref/ref_structures_2_definitions/">Structures: Definitions</a></li><li><a class="tocitem" href="../../ref/ref_structures_3_instances/">Structures: Instances</a></li></ul></li><li><a class="tocitem" href="../../faq/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>5 Sensitivity Analysis</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>5 Sensitivity Analysis</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/tutorials/tutorial_5.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Tutorial-5:-Sensitivity-Analysis-(SA)-Support-1"><a class="docs-heading-anchor" href="#Tutorial-5:-Sensitivity-Analysis-(SA)-Support-1">Tutorial 5: Sensitivity Analysis (SA) Support</a><a class="docs-heading-anchor-permalink" href="#Tutorial-5:-Sensitivity-Analysis-(SA)-Support-1" title="Permalink"></a></h1><p>This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at <code>examples/tutorial/02-multi-region-model</code>. Then we will show some more advanced features using a real Integrated Assessment model, <a href="https://github.com/anthofflab/MimiDICE2010.jl">MimiDICE2010</a>.</p><p>Working through the following tutorial will require:</p><ul><li><a href="https://julialang.org/downloads/">Julia v1.2.0</a> or higher</li><li><a href="https://github.com/mimiframework/Mimi.jl">Mimi v0.10.0</a> or higher</li></ul><p>If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.</p><p>Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.</p><p>MimiDICE2010 is required for the second example in this tutorial. If you are not yet comfortable with downloading and running a registered Mimi model, refer to Tutorial 2 for instructions.</p><h2 id="The-API-1"><a class="docs-heading-anchor" href="#The-API-1">The API</a><a class="docs-heading-anchor-permalink" href="#The-API-1" title="Permalink"></a></h2><p>The best current documentation on the SA API is the how to guide How-to Guide 3: Conduct Sensitivity Analysis. This file can be used in conjunction with the examples below for details since the documentation covers more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in this tutorial.</p><p>Below we will refer separately to two types, <code>SimulationDef</code> and <code>SimulationInstance</code>.  They are referred to as <code>sim_def</code> and <code>sim_inst</code> respectively as function arguments, and <code>sd</code> and <code>si</code> respectively as local variables.</p><h2 id="Multi-Region-Model-Example-1"><a class="docs-heading-anchor" href="#Multi-Region-Model-Example-1">Multi-Region Model Example</a><a class="docs-heading-anchor-permalink" href="#Multi-Region-Model-Example-1" title="Permalink"></a></h2><p>This section will walk through a simple example of how to define a simulation, run the simulation for a given model, and access the outputs.</p><h4 id="Step-1.-Setup-1"><a class="docs-heading-anchor" href="#Step-1.-Setup-1">Step 1. Setup</a><a class="docs-heading-anchor-permalink" href="#Step-1.-Setup-1" title="Permalink"></a></h4><p>You should have <code>Mimi</code> installed by now, and if you do not have the <code>Distributions</code> package, take a moment to add that package by entering <code>]</code> to enter the <a href="https://docs.julialang.org/en/v1/stdlib/Pkg/index.html">Pkg REPL</a> mode and then typing <code>add Distributions</code>.</p><p>As a reminder, the following code is the multi-region model that was constructed in the second half of tutorial 3. You can either load the <code>MyModel</code> module from tutorial 3, or run the following code which defines the same <code>construct_Mymodel</code> function that we will use.</p><pre><code class="language-julia">using Mimi 
+
+# Define the grosseconomy component
+@defcomp grosseconomy begin
+    regions = Index()                           #Note that a regional index is defined here
+
+    YGROSS  = Variable(index=[time, regions])   #Gross output
+    K       = Variable(index=[time, regions])   #Capital
+    l       = Parameter(index=[time, regions])  #Labor
+    tfp     = Parameter(index=[time, regions])  #Total factor productivity
+    s       = Parameter(index=[time, regions])  #Savings rate
+    depk    = Parameter(index=[regions])        #Depreciation rate on capital - Note that it only has a region index
+    k0      = Parameter(index=[regions])        #Initial level of capital
+    share   = Parameter()                       #Capital share
+
+    function run_timestep(p, v, d, t)
+    # Note that the regional dimension is defined in d and parameters and variables are indexed by &#39;r&#39;
+
+        # Define an equation for K
+        for r in d.regions
+            if is_first(t)
+                v.K[t,r] = p.k0[r]
+            else
+                v.K[t,r] = (1 - p.depk[r])^5 * v.K[t-1,r] + v.YGROSS[t-1,r] * p.s[t-1,r] * 5
+            end
+        end
+
+        # Define an equation for YGROSS
+        for r in d.regions
+            v.YGROSS[t,r] = p.tfp[t,r] * v.K[t,r]^p.share * p.l[t,r]^(1-p.share)
+        end
+    end
+end
+
+# define the emissions component
+@defcomp emissions begin
+    regions     = Index()                           # The regions index must be specified for each component
+
+    E           = Variable(index=[time, regions])   # Total greenhouse gas emissions
+    E_Global    = Variable(index=[time])            # Global emissions (sum of regional emissions)
+    sigma       = Parameter(index=[time, regions])  # Emissions output ratio
+    YGROSS      = Parameter(index=[time, regions])  # Gross output - Note that YGROSS is now a parameter
+
+    # function init(p, v, d)
+    # end
+    
+    function run_timestep(p, v, d, t)
+        # Define an equation for E
+        for r in d.regions
+            v.E[t,r] = p.YGROSS[t,r] * p.sigma[t,r]
+        end
+
+        # Define an equation for E_Global
+        for r in d.regions
+            v.E_Global[t] = sum(v.E[t,:])
+        end
+    end
+
+end
+
+# Define values for input parameters to be used when constructing the model
+
+l = Array{Float64}(undef, 20, 3)
+for t in 1:20
+    l[t,1] = (1. + 0.015)^t *2000
+    l[t,2] = (1. + 0.02)^t * 1250
+    l[t,3] = (1. + 0.03)^t * 1700
+end
+
+tfp = Array{Float64}(undef, 20, 3)
+for t in 1:20
+    tfp[t,1] = (1 + 0.06)^t * 3.2
+    tfp[t,2] = (1 + 0.03)^t * 1.8
+    tfp[t,3] = (1 + 0.05)^t * 2.5
+end
+
+s = Array{Float64}(undef, 20, 3)
+for t in 1:20
+    s[t,1] = 0.21
+    s[t,2] = 0.15
+    s[t,3] = 0.28
+end
+
+depk = [0.11, 0.135 ,0.15]
+k0   = [50.5, 22., 33.5]
+
+sigma = Array{Float64}(undef, 20, 3)
+for t in 1:20
+    sigma[t,1] = (1. - 0.05)^t * 0.58
+    sigma[t,2] = (1. - 0.04)^t * 0.5
+    sigma[t,3] = (1. - 0.045)^t * 0.6
+end
+
+# Define a function for building the model
+
+function construct_MyModel()
+
+	m = Model()
+
+	set_dimension!(m, :time, collect(2015:5:2110))
+	set_dimension!(m, :regions, [:Region1, :Region2, :Region3])	 # Note that the regions of your model must be specified here
+
+	add_comp!(m, grosseconomy)
+	add_comp!(m, emissions)
+
+	set_param!(m, :grosseconomy, :l, l)
+	set_param!(m, :grosseconomy, :tfp, tfp)
+	set_param!(m, :grosseconomy, :s, s)
+	set_param!(m, :grosseconomy, :depk,depk)
+	set_param!(m, :grosseconomy, :k0, k0)
+	set_param!(m, :grosseconomy, :share, 0.3)
+
+	# set parameters for emissions component
+	set_param!(m, :emissions, :sigma, sigma)
+	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
+
+    return m
+end</code></pre><p>Then, we obtain a copy of the model:</p><pre><code class="language-julia">m = construct_MyModel()</code></pre><h4 id="Step-2.-Define-Random-Variables-1"><a class="docs-heading-anchor" href="#Step-2.-Define-Random-Variables-1">Step 2. Define Random Variables</a><a class="docs-heading-anchor-permalink" href="#Step-2.-Define-Random-Variables-1" title="Permalink"></a></h4><p>The <code>@defsim</code> macro is the first step in the process, and returns a <code>SimulationDef</code>. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.</p><p>There are two ways of assigning random variables to model parameters in the <code>@defsim</code> macro. Notice that both of the following syntaxes are used in the following example. </p><p>The first is the following:</p><pre><code class="language-julia">rv(rv1) = Normal(0, 0.8)    # create a random variable called &quot;rv1&quot; with the specified distribution
+param1 = rv1                # then assign this random variable &quot;rv1&quot; to the parameter &quot;param1&quot; in the model</code></pre><p>The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a random variable is created under the hood and then assigned to <code>param1</code>.</p><pre><code class="language-julia">param1 = Normal(0, 0.8)</code></pre><p>The <code>@defsim</code> macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default.  Other options include Latin Hypercube sampling and Sobol sampling.</p><pre><code class="language-julia">using Mimi
+using Distributions 
+
+sd = @defsim begin
+    # Define random variables. The rv() is only required when defining correlations 
+    # or sharing an RV across parameters. Otherwise, you can use the shortcut syntax
+    # to assign a distribution to a parameter name.
+    rv(name1) = Normal(1, 0.2)
+    rv(name2) = Uniform(0.75, 1.25)
+    rv(name3) = LogNormal(20, 4)
+
+    # If using LHS, you can define correlations like this:
+    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
+
+    # Exclude the sampling() call, or use the following for simple random sampling:
+    # sampling(MCSData)
+
+    # For Sobol sampling, specify N, and calc_second_order, which defaults to false.
+    # sampling(SobolData, N=10000, calc_second_order=true)
+
+    # assign RVs to model Parameters
+    share = Uniform(0.2, 0.8)
+    sigma[:, Region1] *= name2
+    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+
+    # For parameters that have a region dimension, you can assign an array of distributions, 
+    # keyed by region label, which must match the region labels in the model
+    depk = [Region1 =&gt; Uniform(0.7, .9),
+            Region2 =&gt; Uniform(0.8, 1.),
+            Region3 =&gt; Truncated(Normal(), 0, 1)]
+
+    # Indicate which variables to save for each model run.
+    # The syntax is: component_name.variable_name
+    save(grosseconomy.K, grosseconomy.YGROSS, 
+         emissions.E, emissions.E_Global)
+end</code></pre><h4 id="Step-3.-Run-Simulation-1"><a class="docs-heading-anchor" href="#Step-3.-Run-Simulation-1">Step 3. Run Simulation</a><a class="docs-heading-anchor-permalink" href="#Step-3.-Run-Simulation-1" title="Permalink"></a></h4><p>Next, use the <code>run</code> function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation <a href="https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md">here</a> for <strong>critical and useful details on the full signature of the <code>run</code> function</strong>.</p><p>In its simplest use, the <code>run</code> function generates and iterates over a sample of trial data from the distributions of the random variables defined in the <code>SimulationDef</code>, perturbing the subset of Mimi&#39;s &quot;external parameters&quot; that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a <code>SimulationInstance</code>, which holds a copy of the original <code>SimulationDef</code> in addition to trials information (<code>trials</code>, <code>current_trial</code>, and <code>current_data</code>), the model list <code>models</code>, and results information in <code>results</code>. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the <code>results_in_memory</code> flag set to <code>false</code> to incrementally clear the results from memory. </p><pre><code class="language-julia"># Run 100 trials, and optionally save results to the indicated directories
+si = run(sd, m, 100; trials_output_filename = &quot;/tmp/trialdata.csv&quot;, results_output_dir=&quot;/tmp/tutorial4&quot;)
+
+# Explore the results saved in-memory by using getdataframe with the returned SimulationInstance.
+# Values are saved from each trial for each variable or parameter specified by the call to &quot;save()&quot; at the end of the @defsim block.
+K_results = getdataframe(si, :grosseconomy, :K)
+E_results = getdataframe(si, :emissions, :E)</code></pre><h4 id="Step-4.-Explore-and-Plot-Results-1"><a class="docs-heading-anchor" href="#Step-4.-Explore-and-Plot-Results-1">Step 4. Explore and Plot Results</a><a class="docs-heading-anchor-permalink" href="#Step-4.-Explore-and-Plot-Results-1" title="Permalink"></a></h4><p>As described in the internals documentation <a href="https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md">here</a>, Mimi provides both <code>explore</code> and <code>Mimi.plot</code> to explore the results of both a run <code>Model</code> and a run <code>SimulationInstance</code>. </p><p>To view your results in an interactive application viewer, simply call:</p><pre><code class="language-julia">explore(si)</code></pre><p>If desired, you may also include a <code>title</code> for your application window. If more than one model was run in your Simulation, indicate which model you would like to explore with the <code>model</code> keyword argument, which defaults to 1. Finally, if your model leverages different scenarios, you <strong>must</strong> indicate the <code>scenario_name</code>.</p><pre><code class="language-julia">explore(si; title = &quot;MyWindow&quot;, model_index = 1) # we do not indicate scen_name here since we have no scenarios</code></pre><p>To view the results for one of the saved variables from the <code>save</code> command in <code>@defsim</code>, use the (unexported to avoid namespace collisions) <code>Mimi.plot</code> function.  This function has the same keyword arguments and requirements as <code>explore</code> (except for <code>title</code>), and three required arguments: the <code>SimulationInstance</code>, the component name (as a <code>Symbol</code>), and the variable name (as a <code>Symbol</code>).</p><pre><code class="language-julia">Mimi.plot(si, :grosseconomy, :K)</code></pre><p>To save your figure, use the <code>save</code> function to save typical file formats such as <a href="https://en.wikipedia.org/wiki/Portable_Network_Graphics">PNG</a>, <a href="https://en.wikipedia.org/wiki/Scalable_Vector_Graphics">SVG</a>, <a href="https://en.wikipedia.org/wiki/PDF">PDF</a> and <a href="https://en.wikipedia.org/wiki/Encapsulated_PostScript">EPS</a> files. Note that while <code>explore(sim_inst)</code> returns interactive plots for several graphs, <code>Mimi.plot(si, :foo, :bar)</code> will return only static plots. </p><pre><code class="language-julia">p = Mimi.plot(si, :grosseconomy, :K)
+save(&quot;MyFigure.png&quot;, p)</code></pre><h2 id="Advanced-Features-Social-Cost-of-Carbon-(SCC)-Example-1"><a class="docs-heading-anchor" href="#Advanced-Features-Social-Cost-of-Carbon-(SCC)-Example-1">Advanced Features - Social Cost of Carbon (SCC) Example</a><a class="docs-heading-anchor-permalink" href="#Advanced-Features-Social-Cost-of-Carbon-(SCC)-Example-1" title="Permalink"></a></h2><p>This example will discuss the more advanced SA capabilities of post-trial functions and payload objects.</p><p>Case: We want to do an SCC calculation with <code>MimiDICE2010</code>, which consists of running both a <code>base</code> and <code>marginal</code> model (the latter being a model including an additional emissions pulse, see the <a href="../../ref/ref_API/#Mimi.create_marginal_model"><code>create_marginal_model</code></a> function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.</p><p>The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials <code>N</code> and the simulation definition <code>sd</code>.  In this case we only define one random variable, <code>t2xco2</code>, but note there could be any number of random variables defined here.</p><pre><code class="language-julia">using Mimi
+using MimiDICE2010
+using Distributions
+
+# define the number of trials
+N = 100
+
+# define your simulation (defaults to Monte Carlo sampling)
+sd = @defsim begin
+    t2xco2 = Truncated(Gamma(6.47815626,0.547629469), 1.0, Inf) # a dummy distribution
+end</code></pre><h4 id="Payload-object-1"><a class="docs-heading-anchor" href="#Payload-object-1">Payload object</a><a class="docs-heading-anchor-permalink" href="#Payload-object-1" title="Permalink"></a></h4><p>Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.</p><pre><code class="language-julia"># Choose what year to calculate the SCC for
+scc_year = 2015
+year_idx = findfirst(isequal(scc_year), MimiDICE2010.model_years)
+
+# Pre-compute the discount factors for each discount rate
+discount_rates = [0.03, 0.05, 0.07]
+nyears = length(MimiDICE2010.model_years)
+discount_factors = [[zeros(year_idx - 1)... [(1/(1 + r))^((t-year_idx)*10) for t in year_idx:nyears]...] for r in discount_rates] 
+
+# Create an array to store the computed SCC in each trial for each discount rate
+scc_results = zeros(N, length(discount_rates))  
+
+# Set the payload object in the simulation definition
+my_payload_object = (discount_factors, scc_results) # In this case, the payload object is a tuple which holds both both arrays
+Mimi.set_payload!(sd, my_payload_object)</code></pre><h4 id="Post-trial-function-1"><a class="docs-heading-anchor" href="#Post-trial-function-1">Post-trial function</a><a class="docs-heading-anchor-permalink" href="#Post-trial-function-1" title="Permalink"></a></h4><p>In the simple multi-region simulation example, the only values that were saved during each trial of the simulation were values of variables calculated internally by the model. Sometimes, a user may need to perform other calculations before or after each trial is run. For example, the SCC is calculated using two models, so this calculation needs to happen in a post-trial function, as shown below.</p><p>Here we define a <code>post_trial_function</code> called <code>my_scc_calculation</code> which will calculate the SCC for each trial of the simulation. Notice that this function retrieves and uses the payload object that was previously stored in the <code>SimulationDef</code>.</p><pre><code class="language-julia">function my_scc_calculation(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Nothing)
+    mm = sim_inst.models[1] 
+    discount_factors, scc_results = Mimi.payload(sim_inst)  # Unpack the payload object
+
+    marginal_damages = mm[:neteconomy, :C] * -1 * 10^12 * 12/44 # convert from trillion $/ton C to $/ton CO2; multiply by -1 to get positive value for damages
+    for (i, df) in enumerate(discount_factors)
+        scc_results[trialnum, i] = sum(df .* marginal_damages .* 10)
+    end
+end</code></pre><h4 id="Run-the-simulation-1"><a class="docs-heading-anchor" href="#Run-the-simulation-1">Run the simulation</a><a class="docs-heading-anchor-permalink" href="#Run-the-simulation-1" title="Permalink"></a></h4><p>Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel <code>mm</code> from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.</p><pre><code class="language-julia"># Build the marginal model
+mm = MimiDICE2010.get_marginal_model(year = scc_year)   # The additional emissions pulse will be added in the specified year
+
+# Run
+si = run(sd, mm, N; trials_output_filename = &quot;ecs_sample.csv&quot;, post_trial_func = my_scc_calculation)
+
+# View the scc_results by retrieving them from the payload object
+scc_results = Mimi.payload(si)[2]   # Recall that the SCC array was the second of two arrays we stored in the payload tuple</code></pre><h4 id="Simulation-Modification-Functions-1"><a class="docs-heading-anchor" href="#Simulation-Modification-Functions-1">Simulation Modification Functions</a><a class="docs-heading-anchor-permalink" href="#Simulation-Modification-Functions-1" title="Permalink"></a></h4><p>A small set of unexported functions are available to modify an existing <code>SimulationDef</code>.  The functions include:</p><ul><li><code>delete_RV!</code></li><li><code>add_RV!</code></li><li><code>replace_RV!</code></li><li><code>delete_transform!</code></li><li><code>add_transform!</code></li><li><code>delete_save!</code></li><li><code>add_save!</code></li><li><code>set_payload!</code></li><li><code>payload</code></li></ul><h4 id="Full-list-of-keyword-options-for-running-a-simulation-1"><a class="docs-heading-anchor" href="#Full-list-of-keyword-options-for-running-a-simulation-1">Full list of keyword options for running a simulation</a><a class="docs-heading-anchor-permalink" href="#Full-list-of-keyword-options-for-running-a-simulation-1" title="Permalink"></a></h4><p>View How-to Guide 3: Conduct Sensitivity Analysis for <strong>critical and useful details on the full signature of this function</strong>, as well as more details and optionality for more advanced use cases.</p><pre><code class="language-julia">function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
+                 ntimesteps::Int=typemax(Int), 
+                 trials_output_filename::Union{Nothing, AbstractString}=nothing, 
+                 results_output_dir::Union{Nothing, AbstractString}=nothing, 
+                 pre_trial_func::Union{Nothing, Function}=nothing, 
+                 post_trial_func::Union{Nothing, Function}=nothing,
+                 scenario_func::Union{Nothing, Function}=nothing,
+                 scenario_placement::ScenarioLoopPlacement=OUTER,
+                 scenario_args=nothing,
+                 results_in_memory::Bool=true) where T &lt;: AbstractSimulationData</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tutorial_4/">« 4 Create a Model</a><a class="docs-footer-nextpage" href="../../howto/howto_main/">How-to Guides Intro »</a></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> on <span class="colophon-date" title="Thursday 2 July 2020 23:09">Thursday 2 July 2020</span>. Using Julia version 1.4.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
