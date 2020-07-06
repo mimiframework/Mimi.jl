@@ -154,6 +154,7 @@ function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=c
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
+# DEPRECATION - EVENTUALLY REMOVE
 """
     replace_comp!(
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
@@ -174,9 +175,9 @@ function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id
     st = _get_stacktrace_string()
 	full_msg = string(msg, " \n", st)
 	error(full_msg)
-    return replace!(m, comp_name => compdef(comp_id); kwargs...)
 end
 
+# DEPRECATION - EVENTUALLY REMOVE
 """
     replace_comp!(
         m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_id.comp_name;
@@ -197,7 +198,6 @@ function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_
     st = _get_stacktrace_string()
 	full_msg = string(msg, " \n", st)
 	error(full_msg)
-    return replace!(m, comp_name => comp_def; kwargs...)
 end
 
 """
@@ -279,9 +279,8 @@ dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(
 # DEPRECATION - EVENTUALLY REMOVE
 function Base.getproperty(base::MarginalModel, s::Symbol)
     if (s == :marginal)
-        error("Use of 'MarginalModel.marginal' is deprecated in favor of 'MarginalModel.modified'");
+        error("Use of `MarginalModel.marginal` is deprecated in favor of `MarginalModel.modified`.")
     end
-    return getfield(base, s);
 end
 
 """

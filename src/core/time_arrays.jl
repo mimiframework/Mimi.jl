@@ -83,7 +83,7 @@ end
 # DEPRECATION - EVENTUALLY REMOVE
 # Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_setindex_error()
-	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndec(2)]"
+	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
 	st = _get_stacktrace_string()
 	full_msg = string(msg, " \n", st)
 	error(full_msg)

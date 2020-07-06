@@ -61,9 +61,6 @@ add_comp!(m, X, :first)                                     # Add two components
 add_comp!(m, X, :second)
 connect_param!(m, :second => :x, :first => :y)              # Make an internal connection with a parameter with a time dimension
 @test_throws ErrorException replace!(m, :second => bad1)    # Cannot make reconnections because :x in bad1 has different dimensions
-# The following `replace_comp!` function name will be deprecated in v1.0.0.
-#   This one remains to test the preserved version with warning for v0.10.0.
-#   Every other use in this test file has been switched to `replace!` instead.
 replace!(m, :second => bad1, reconnect = false)             # Can replace without reconnecting
 second = compdef(m, :second)
 @test second.comp_id.comp_name == :bad1                     # Successfully replaced
