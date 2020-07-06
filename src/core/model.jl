@@ -276,13 +276,6 @@ dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(
 # Allow access of the form my_model[:grosseconomy, :tfp]
 @delegate Base.getindex(m::Model, comp_name::Symbol, datum_name::Symbol) => mi
 
-# DEPRECATION - EVENTUALLY REMOVE
-function Base.getproperty(base::MarginalModel, s::Symbol)
-    if (s == :marginal)
-        error("Use of `MarginalModel.marginal` is deprecated in favor of `MarginalModel.modified`.")
-    end
-end
-
 """
     dim_count(m::Model, dim_name::Symbol)
 
