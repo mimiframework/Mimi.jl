@@ -32,6 +32,7 @@ for i in collect(1:10)
 end
 
 mm2 = create_marginal_model(model1, 0.5)
+@test_throws ErrorException mm2_modified = mm2.marginal     # test that trying to access by the old field name, "marginal", now errors
 mm2_modified = mm2.modified
 
 update_param!(mm2_modified, :parA, x2)
