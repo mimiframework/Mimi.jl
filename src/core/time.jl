@@ -20,15 +20,15 @@ function gettime(ts::VariableTimestep)
 	return ts.current
 end
 
+# DEPRECATION - EVENTUALLY REMOVE
 """
-	is_time(ts::AbstractTimestep, t::Int)
+ 	is_time(ts::AbstractTimestep, t::Int)
 
-Return true or false, true if the current time (year) for `ts` is `t`
-"""
-function is_time(ts::AbstractTimestep, t::Int) 
-	Base.depwarn("`is_time(ts, t)` is deprecated. Use comparison operators with TimestepValue objects instead: `ts == TimestepValue(t)` \n$(stacktrace())", :is_time)
-	return gettime(ts) == t
-end
+Deprecated fucntion to return true or false, true if the current time (year) for `ts` is `t`
+ """
+ function is_time(ts::AbstractTimestep, t::Int) 
+ 	error("`is_time(ts, t)` is deprecated. Use comparison operators with TimestepValue objects instead: `ts == TimestepValue(t)` \n$(stacktrace())", :is_time)
+ end
 
 """
 	is_first(ts::AbstractTimestep)
@@ -39,15 +39,15 @@ function is_first(ts::AbstractTimestep)
 	return ts.t == 1
 end
 
+# DEPRECATION - EVENTUALLY REMOVE
 """
-	is_timestep(ts::AbstractTimestep, t::Int)
+ 	is_timestep(ts::AbstractTimestep, t::Int)
 
-Return true or false, true if `ts` timestep is step `t`.
-"""
-function is_timestep(ts::AbstractTimestep, t::Int)
-	Base.depwarn("`is_timestep(ts, t)` is deprecated. Use comparison operators with TimestepIndex objects instead: `ts == TimestepIndex(t)` \n$(stacktrace())", :is_timestep)
-	return ts.t == t
-end
+Deprecated function to return true or false, true if `ts` timestep is step `t`.
+ """
+ function is_timestep(ts::AbstractTimestep, t::Int)
+ 	error("`is_timestep(ts, t)` is deprecated. Use comparison operators with TimestepIndex objects instead: `ts == TimestepIndex(t)` \n$(stacktrace())", :is_timestep)
+ end
 
 """
 	is_last(ts::FixedTimestep)

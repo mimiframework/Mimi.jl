@@ -31,7 +31,7 @@ export
     hasvalue,
     is_first,
     is_last,
-    is_time,
+    is_time, 
     is_timestep,
     modeldef,
     name,
@@ -60,7 +60,6 @@ include("core/build.jl")
 include("core/connections.jl")
 include("core/defs.jl")
 include("core/defcomp.jl")
-include("core/defmodel.jl")
 include("core/defcomposite.jl")
 include("core/dimensions.jl")
 include("core/instances.jl")

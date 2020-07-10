@@ -97,11 +97,9 @@ x[t3] = temp_dim_val[1]
 @test x[t3] == temp_dim_val[1]
 reset_time_val(x, time_dim_val)
 
-# Deprecated int indexing should still run
-@test x[3] == time_dim_val[3]
-x[TimestepIndex(3)] = temp_dim_val[3]
-@test x[TimestepIndex(3)] == temp_dim_val[3]
-reset_time_val(x, time_dim_val)
+# Deprecated int indexing now errors
+@test_throws ErrorException x[3] == time_dim_val[3]
+@test_throws ErrorException x[3] = temp_dim_val[3]
 
 #------------------------------------------------------------------------------
 # 2. Test TimestepVector - Variable Timestep
