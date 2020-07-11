@@ -4,7 +4,7 @@ This tutorial walks through the steps to download, run, and view the output of a
 
 Working through the following tutorial will require:
 
-- [Julia v1.2.0](https://julialang.org/downloads/) or higher
+- [Julia v1.4.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
 - connection of your julia installation with the central Mimi registry of Mimi models
 
@@ -32,7 +32,7 @@ The next step is to run FUND. If you wish to first get more acquainted with the 
 
 Now open a julia REPL and type the following command to load the MimiFUND package into the current environment:
 
-```jldoctest tutorial1; output = false, filter = r".*"s
+```jldoctest tutorial2; output = false, filter = r".*"s
 using MimiFUND
 
 # output
@@ -40,7 +40,7 @@ using MimiFUND
 ```
 Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
 
-```jldoctest tutorial1; output = false, filter = r".*"s
+```jldoctest tutorial2; output = false, filter = r".*"s
 m = MimiFUND.get_model()
 run(m)
 
@@ -58,7 +58,7 @@ get_model(; nsteps = default_nsteps, datadir = default_datadir, params = default
 
 Thus there are no required arguments, although the user can input `nsteps` to define the number of timesteps (years in this case) the model runs for, `datadir` to define the location of the input data, and `params`, a dictionary definining the parameters of the model.  For example, if you wish to run only the first 200 timesteps, you may use:
 
-```jldoctest tutorial1; output = false, filter = r".*"s
+```jldoctest tutorial2; output = false, filter = r".*"s
 using MimiFUND
 m = MimiFUND.get_model(nsteps = 200)
 run(m)
@@ -72,7 +72,7 @@ After the model has been run, you may access the results (the calculated variabl
 
 Start off by importing the Mimi package to your space with
 
-```jldoctest tutorial1; output = false
+```jldoctest tutorial2; output = false
 using Mimi
 
 # output
@@ -89,7 +89,7 @@ m[:ComponentName, :VariableName][100] # returns just the 100th value
 
 Indexing into a model with the name of the component and variable will return an array with values from each timestep. You may index into this array to get one value (as in the second line, which returns just the 100th value). Note that if the requested variable is two-dimensional, then a 2-D array will be returned. For example, try taking a look at the `income` variable of the `socioeconomic` component of FUND using the code below:
 
-```jldoctest tutorial1; output = false
+```jldoctest tutorial2; output = false
 m[:socioeconomic, :income]
 m[:socioeconomic, :income][100]
 
@@ -108,7 +108,7 @@ getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from
 
 Try doing this for the `income` variable of the `socioeconomic` component using:
 
-```jldoctest tutorial1; output = false, filter = r".*"s
+```jldoctest tutorial2; output = false, filter = r".*"s
 getdataframe(m, :socioeconomic=>:income) # request one variable from one component
 getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in first year (1950)
 

@@ -4,7 +4,7 @@ This tutorial walks through the sensitivity analysis (SA) functionality of Mimi,
 
 Working through the following tutorial will require:
 
-- [Julia v1.2.0](https://julialang.org/downloads/) or higher
+- [Julia v1.4.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
@@ -28,7 +28,7 @@ You should have `Mimi` installed by now, and if you do not have the `Distributio
 
 As a reminder, the following code is the multi-region model that was constructed in the second half of tutorial 3. You can either load the `MyModel` module from tutorial 3, or run the following code which defines the same `construct_Mymodel` function that we will use.
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial5; output = false
 using Mimi 
 
 # Define the grosseconomy component
@@ -155,7 +155,7 @@ construct_MyModel (generic function with 1 method)
 
 Then, we obtain a copy of the model:
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial5; output = false
 m = construct_MyModel()
 
 # output
@@ -172,7 +172,7 @@ Mimi.Model
 The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
 
 There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example. 
-
+ 
 The first is the following:
 ```julia
 rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the specified distribution
@@ -187,7 +187,7 @@ param1 = Normal(0, 0.8)
 The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. 
 Other options include Latin Hypercube sampling and Sobol sampling.
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```jldoctest tutorial5; output = false, filter = r".*"s
 using Mimi
 using Distributions 
 
@@ -235,7 +235,7 @@ Next, use the `run` function to run the simulation for the specified simulation 
 
 In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```jldoctest tutorial5; output = false, filter = r".*"s
 # Run 100 trials, and optionally save results to the indicated directories
 si = run(sd, m, 100; trials_output_filename = "/tmp/trialdata.csv", results_output_dir="/tmp/tutorial4")
 
@@ -279,11 +279,11 @@ save("MyFigure.png", p)
 
 This example will discuss the more advanced SA capabilities of post-trial functions and payload objects.
 
-Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `marginal` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
+Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of running both a `base` and `modified` model (the latter being a model including an additional emissions pulse, see the [`create_marginal_model`](@ref) function or create your own two models). We then take the difference between the consumption level in these two models and obtain the discounted net present value to get the SCC.
 
 The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sd`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial5; output = false
 using Mimi
 using MimiDICE2010
 using Distributions
@@ -304,7 +304,7 @@ MCSData()
 #### Payload object
 Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```jldoctest tutorial5; output = false, filter = r".*"s
 # Choose what year to calculate the SCC for
 scc_year = 2015
 year_idx = findfirst(isequal(scc_year), MimiDICE2010.model_years)
@@ -331,7 +331,7 @@ In the simple multi-region simulation example, the only values that were saved d
 
 Here we define a `post_trial_function` called `my_scc_calculation` which will calculate the SCC for each trial of the simulation. Notice that this function retrieves and uses the payload object that was previously stored in the `SimulationDef`.
 
-```jldoctest tutorial4; output = false
+```jldoctest tutorial5; output = false
 function my_scc_calculation(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Nothing)
     mm = sim_inst.models[1] 
     discount_factors, scc_results = Mimi.payload(sim_inst)  # Unpack the payload object
@@ -351,7 +351,7 @@ my_scc_calculation (generic function with 1 method)
 
 Now that we have our post-trial function, we can proceed to obtain our two models and run the simulation. Note that we are using a Mimi MarginalModel `mm` from MimiDICE2010, which is a Mimi object that holds both the base model and the model with the additional pulse of emissions.
 
-```jldoctest tutorial4; output = false, filter = r".*"s
+```julia
 # Build the marginal model
 mm = MimiDICE2010.get_marginal_model(year = scc_year)   # The additional emissions pulse will be added in the specified year
 
@@ -360,8 +360,6 @@ si = run(sd, mm, N; trials_output_filename = "ecs_sample.csv", post_trial_func =
 
 # View the scc_results by retrieving them from the payload object
 scc_results = Mimi.payload(si)[2]   # Recall that the SCC array was the second of two arrays we stored in the payload tuple
-
-# output
 
 ```
 

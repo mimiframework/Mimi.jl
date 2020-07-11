@@ -78,53 +78,6 @@ In the new version, all component definitions are represented by one type, `Comp
 
 ![Object structure](figs/MimiModelArchitecture-v1.png)
 
-## 3. New macro `@defmodel`
-
-The `@defmodel` macro provides simplified syntax for model creation, eliminating many redundant parameters. For example, you can write:
-
-```
-@defmodel mymodel begin
-
-    index[time] = 2015:5:2110
-
-    component(grosseconomy)
-    component(emissions)
-
-    # Set parameters for the grosseconomy component
-    grosseconomy.l = [(1. + 0.015)^t *6404 for t in 1:20]
-    grosseconomy.tfp = [(1 + 0.065)^t * 3.57 for t in 1:20]
-    grosseconomy.s = ones(20).* 0.22
-    grosseconomy.depk = 0.1
-    grosseconomy.k0 = 130.0
-    grosseconomy.share = 0.3
-
-    # Set parameters for the emissions component
-    emissions.sigma = [(1. - 0.05)^t *0.58 for t in 1:20]
-
-    # Connect pararameters (source_variable => destination_parameter)
-    grosseconomy.YGROSS => emissions.YGROSS
-end
-```
-
-which produces these function calls:
-
-```
-quote
-    mymodel = Model()
-    set_dimension!(mymodel, :time, 2015:5:2110)
-    add_comp!(mymodel, Main.grosseconomy, :grosseconomy)
-    add_comp!(mymodel, Main.emissions, :emissions)
-    set_param!(mymodel, :grosseconomy, :l, [(1.0 + 0.015) ^ t * 6404 for t = 1:20])
-    set_param!(mymodel, :grosseconomy, :tfp, [(1 + 0.065) ^ t * 3.57 for t = 1:20])
-    set_param!(mymodel, :grosseconomy, :s, ones(20) * 0.22)
-    set_param!(mymodel, :grosseconomy, :depk, 0.1)
-    set_param!(mymodel, :grosseconomy, :k0, 130.0)
-    set_param!(mymodel, :grosseconomy, :share, 0.3)
-    set_param!(mymodel, :emissions, :sigma, [(1.0 - 0.05) ^ t * 0.58 for t = 1:20])
-    connect_param!(mymodel, :emissions, :YGROSS, :grosseconomy, :YGROSS)
-end
-```
-
-## 4. Pre-compilation and built-in components
+## 3. Pre-compilation and built-in components
 
 To get `__precompile__()` to work required moving the creation of "helper" components to an `__init__()` method in Mimi.jl, which is run automatically after Mimi loads. It defines the two "built-in" components, from `adder.jl` and `connector.jl` in the `components` subdirectory.

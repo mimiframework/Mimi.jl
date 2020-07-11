@@ -456,19 +456,6 @@ function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, An
     end
 end
 
-"""
-    set_param!(md::ModelDef, comp_path::ComponentPath, param_name::Symbol,
-               value_dict::Dict{Symbol, Any}; dims=nothing)
-
-Call `set_param!()` with `param_name` and a value dict in which `value_dict[param_name]` references
-the value of parameter `param_name`.
-"""
-function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, Any},
-                    param_name::Symbol; dims=nothing)
-    value = value_dict[param_name]
-    set_param!(md, comp_name, param_name, value, dims=dims)
-end
-
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
     set_param!(md, comp_name, param_name, param_name, value, dims=dims)
 end

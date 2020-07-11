@@ -195,13 +195,13 @@ macro defcomp(comp_name, ex)
             continue
         end
 
+        # DEPRECATION - EVENTUALLY REMOVE
         if @capture(elt, name_::datum_type_ = elt_type_(args__))
             msg = "The following syntax has been deprecated in @defcomp: \"$name::$datum_type = $elt_type(...)\". Use curly bracket syntax instead: \"$name = $elt_type{$datum_type}(...)\""
-            Base.depwarn("$msg\n$(reduce((x,y) -> "$x\n$y", stacktrace()))", :defcomp)   
+            error("$msg\n$(reduce((x,y) -> "$x\n$y", stacktrace()))")  
         elseif ! @capture(elt, name_ = (elt_type_{datum_type_}(args__) | elt_type_(args__)))
-            error("Element syntax error: $elt")       
         end
-
+        
         # elt_type is one of {:Variable, :Parameter, :Index}
         if elt_type == :Index
             expr = _generate_dims_expr(name, args, datum_type)

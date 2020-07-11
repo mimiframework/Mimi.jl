@@ -6,7 +6,7 @@ While we will walk through the code step by step below, the full code for implem
 
 Working through the following tutorial will require:
 
-- [Julia v1.2.0](https://julialang.org/downloads/) or higher
+- [Julia v1.4.0](https://julialang.org/downloads/) or higher
 - [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
 
 If you have not yet prepared these, go back to the main tutorial page and follow the instructions for their download.
@@ -28,7 +28,7 @@ Next, the `run_timestep` function must be defined along with the various equatio
 
 It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the how to guide How-to Guide 4: Work with Timesteps, Parameters, and Variables 
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial4; output = false
 using Mimi # start by importing the Mimi package to your space
 
 @defcomp grosseconomy begin
@@ -61,7 +61,7 @@ end
 
 Next, the component for greenhouse gas emissions must be created.  Although the steps are the same as for the `grosseconomy` component, there is one minor difference. While `YGROSS` was a variable in the `grosseconomy` component, it now enters the `emissions` component as a parameter. This will be true for any variable that becomes a parameter for another component in the model.
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial4; output = false
 @defcomp emissions begin
 	E 	    = Variable(index=[time])	# Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	# Emissions output ratio
@@ -88,7 +88,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 * To access model results, use `model_name[:component, :variable_name]`.
 * To observe model results in a graphical form , [`explore`](@ref) as either `explore(model_name)` to open the UI window, or use `Mimi.plot(model_name, :component_name, :variable_name)` or `Mimi.plot(model_name, :component_name, :parameter_name)` to plot a specific parameter or variable.
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial4; output = false
 
 using Mimi
 
@@ -128,7 +128,7 @@ Note that as an alternative to using many of the `set_param!` calls above, one m
 
 Now we can run the model and examine the results:
 
-```jldoctest tutorial3; output = false, filter = r".*"s
+```jldoctest tutorial4; output = false, filter = r".*"s
 # Run model
 m = construct_model()
 run(m)
@@ -162,7 +162,7 @@ To create a three-regional model, we will again start by constructing the grosse
 
 As this model is also more complex and spread across several files, we will also take this as a chance to introduce the custom of using [Modules](https://docs.julialang.org/en/v1/manual/modules/index.html) to package Mimi models, as shown below.
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial4; output = false
 using Mimi
 
 @defcomp grosseconomy begin
@@ -202,7 +202,7 @@ end
 
 Save this component as **`gross_economy.jl`**
 
-```jldoctest tutorial3; output = false, filter = r".*"s
+```jldoctest tutorial4; output = false, filter = r".*"s
 using Mimi	#Make sure to call Mimi again
 
 @defcomp emissions begin
@@ -238,7 +238,7 @@ Save this component as **`emissions.jl`**
 
 Let's create a file with all of our parameters that we can call into our model.  This will help keep things organized as the number of components and regions increases. Each column refers to parameter values for a region, reflecting differences in initial parameter values and growth rates between the three regions.
 
-```jldoctest tutorial3; output = false
+```jldoctest tutorial4; output = false
 l = Array{Float64}(undef, 20, 3)
 for t in 1:20
     l[t,1] = (1. + 0.015)^t *2000
@@ -288,7 +288,7 @@ include("emissions.jl")
 
 export construct_MyModel
 ```
-```jldoctest tutorial3; output = false
+```jldoctest tutorial4; output = false
 function construct_MyModel()
 
 	m = Model()
@@ -332,7 +332,7 @@ using Mimi
 include("MyModel.jl")
 using .MyModel
 ```
-```jldoctest tutorial3; output = false, filter = r".*"s
+```jldoctest tutorial4; output = false, filter = r".*"s
 m = construct_MyModel()
 run(m)
 
