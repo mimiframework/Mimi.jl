@@ -230,6 +230,5 @@ function getdataframe(sim_inst::SimulationInstance, comp_name::Symbol, datum_nam
 end
 
 function Base.getindex(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
-    msg = "getindex method for `SimulationInstance` has been replaced with getdataframe function for consistency of return type, please use getdataframe instead"
-    error("$msg")
+    error("getindex method for `SimulationInstance` has been replaced with getdataframe function for consistency of return type, please use getdataframe instead")
 end

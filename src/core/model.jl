@@ -171,10 +171,7 @@ new component specified by `comp_id`. Use the following syntax instead:
 See docstring for `replace!` for further description of available functionality.
 """
 function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
-    msg = "Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead."
-    st = _get_stacktrace_string()
-	full_msg = string(msg, " \n", st)
-	error(full_msg)
+    error("Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead.")
 end
 
 # DEPRECATION - EVENTUALLY REMOVE
@@ -194,10 +191,7 @@ new component specified by `comp_def`. Use the following syntax instead:
 See docstring for `replace!` for further description of available functionality.
 """
 function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
-    msg = "Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead."
-    st = _get_stacktrace_string()
-	full_msg = string(msg, " \n", st)
-	error(full_msg)
+    error("Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead.")
 end
 
 """
