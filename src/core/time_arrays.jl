@@ -58,35 +58,15 @@ function _single_index_check(data, idxs)
 end
 
 # DEPRECATION - EVENTUALLY REMOVE
-# Helper to print stacktrace for the integer indexing errors
-function _get_stacktrace_string()
-	s = ""
-	for line in stacktrace()
-		if startswith(string(line), "run_timestep")
-			return s
-		else
-			s = string(s, line, "\n")
-		end
-	end
-	return s
-end
-
-# DEPRECATION - EVENTUALLY REMOVE
 # Helper function for getindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_getindex_error()
-	msg = "Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]\n"
-	st = _get_stacktrace_string()
-	full_msg = string(msg, " \n", st)
-	error(full_msg)
+	error("Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
 end
 
 # DEPRECATION - EVENTUALLY REMOVE
 # Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
 function _throw_int_setindex_error()
-	msg = "Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]"
-	st = _get_stacktrace_string()
-	full_msg = string(msg, " \n", st)
-	error(full_msg)
+	error("Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
 end
 
 # Helper macro used by connector
