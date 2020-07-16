@@ -6,7 +6,7 @@ This guide provides an overview of the steps required to get most models using t
 
 ## Workflow Advice
 
-To port your model, we recommend you update to **Mimi v0.10.0**, which is identical to Mimi v1.0.0 **except** that it includes deprecation warnings for most breaking changes, instead of errors. This means that models written using Mimi v0.9.5 will, in most cases, run successfully under Mimi v0.10.0 and things that will cause errors in v1.0.0 will throw deprecation warnings. your changes. These can guide Thus a good workflow would be:
+To port your model, we recommend you update to **Mimi v0.10.0**, which is identical to Mimi v1.0.0 **except** that it includes deprecation warnings for most breaking changes, instead of errors. This means that models written using Mimi v0.9.5 will, in most cases, run successfully under Mimi v0.10.0 and things that will cause errors in v1.0.0 will throw deprecation warnings. These can guide your changes, and thus a good workflow would be:
 
 1) Update your environment to use Mimi v0.10.0 with 
     ```julia
