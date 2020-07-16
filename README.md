@@ -13,7 +13,7 @@ On 7/15/2020 we officially tagged and released Mimi v1.0.0, which has some new f
 
 **Please view the how to guide here: https://www.mimiframework.org/Mimi.jl/stable/howto/howto_6/ for a run-down of how you should update your own code.**
 
-In addition please do not hesitate to ask any questions in this thread.  We are working hard to keep this transition smooth.
+In addition please do not hesitate to ask any questions on the forum, we are working hard to keep this transition smooth.
 
 ## Contributions and Questions
 
