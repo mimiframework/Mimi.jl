@@ -34,7 +34,6 @@ Composite components are defined using the `@defcomposite` macro which generates
 # CompositeComponentDef <: ComponentDef 
 internal_param_conns::Vector{InternalParameterConnection}   
 backups::Vector{Symbol}
-sorted_comps::Union{Nothing, Vector{Symbol}}
 ```
 The namespace of a composite component can hold `CompositeParameterDef`s and`CompositeVariableDef`s, as well as `AbstractComponentDef`s (which can be other leaf or composite component definitions).
 

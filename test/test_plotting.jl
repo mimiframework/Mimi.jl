@@ -40,4 +40,7 @@ run(m)
 graph = plot_comp_graph(m)
 @test typeof(graph) == Mimi.Compose.Context
 
+graph = plot_comp_graph(m, joinpath(tempdir(), "plot.pdf"))
+@test typeof(graph) == Mimi.Compose.Context
+
 end #module

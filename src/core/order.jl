@@ -46,19 +46,3 @@ function comp_graph(md::ModelDef)
 
     return graph
 end
-
-"""
-    _topological_sort(md::ModelDef)
-
-Build a directed acyclic graph referencing the positions of the components in 
-the OrderedDict of model `md`, tracing dependencies to create the DAG.
-Perform a topological sort on the graph for the given model and return a vector 
-of component paths in the order that will ensure dependencies are processed 
-prior to dependent components.
-"""
-function _topological_sort(md::ModelDef)
-    graph = comp_graph(md)
-    ordered = topological_sort_by_dfs(graph)
-    paths = map(i -> graph[i, :path], ordered)
-    return paths
-end
