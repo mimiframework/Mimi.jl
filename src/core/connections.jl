@@ -632,8 +632,5 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
         end
     end
 
-    # Save the sorted component order for processing
-    # obj.sorted_comps = _topological_sort(obj)
-
     return nothing
 end
