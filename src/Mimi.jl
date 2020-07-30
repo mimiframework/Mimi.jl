@@ -38,7 +38,6 @@ export
     # parameters,
     parameter_dimensions,
     parameter_names,
-    plot_comp_graph,
     replace_comp!,
     set_dimension!,
     set_leftover_params!,
@@ -77,7 +76,6 @@ include("utils/getdataframe.jl")
 include("utils/graph.jl")
 include("utils/lint_helper.jl")
 include("utils/misc.jl")
-include("utils/plotting.jl")
 
 # Load built-in components
 include("components/adder.jl")
