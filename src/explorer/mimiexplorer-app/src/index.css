@@ -1,13 +1,62 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Mimi UI */
+
+/* Style the tab */
+
+.tab {
+  float: left;
+  border: 1px solid #ccc;
+  background-color: #FFFFFF;
+  width: 35%;
+  height: 100%;
+  overflow-y: auto;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Style the buttons that are used to open the tab content */
+
+.tab button {
+  display: block;
+  background-color: inherit;
+  color: black;
+  padding: 22px 16px;
+  height: 2.5%;
+  width: 100%;
+  border: none;
+  outline: none;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.3s;
+  overflow-y: visible;
+}
+
+/* Change background color of buttons on hover */
+
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Create an focus "tab button" class */
+
+.tab button:focus {
+  background-color: #98CADB;
+}
+
+/* Style the tab content */
+
+.tabcontent {
+  float: left;
+  padding: 0px 12px;
+  border: 1px solid #ccc;
+  width: 60%;
+  border-left: none;
+  height: 100%;
+  overflow-y: scroll;
+}
+
+.graphic {
+  float: right;
+  border: 1px solid #ccc;
+  background-color: #FFFFFF;
+  width: 60%;
+  height: 100%;
+  overflow-y: scroll;
 }
