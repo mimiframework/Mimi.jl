@@ -1,4 +1,5 @@
 import * as electron from 'electron';
+import embed from 'vega-embed';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
@@ -30,19 +31,17 @@ function refreshItemsList(menu_item_list: any) {
           var comp_name = menu_item_list[i]["comp_name"]
           var item_name = menu_item_list[i]["item_name"]
           return function() {
-            //alert(this);
             global['sendMessageToJulia']({cmd: 'display_spec', comp_name: comp_name, item_name: item_name})
-            // alert(`ARNAV sees ${comp_name} ${item_name}`);
           }
       })()
       newButton.appendChild(document.createTextNode(menu_item_list[i]["name"]));
       element!.appendChild(newButton);
   }
-  // return function() {
-  //     sendMessageToJulia({cmd: 'display_spec', comp_name: comp_name, item_name: item_name})
-  // }
+}
 
-
+function display(spec) {
+  embed("#vis", spec["VLspec"], {actions: false});
 }
 
 global['refreshItemsList'] = refreshItemsList
+global['display'] = display
