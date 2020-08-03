@@ -28,11 +28,11 @@ function refreshItemsList(menu_item_list: any) {
       
       // Set onclick for button
       newButton.onclick = (function() {
-          var comp_name = menu_item_list[i]["comp_name"]
-          var item_name = menu_item_list[i]["item_name"]
-          return function() {
-            global['sendMessageToJulia']({cmd: 'display_spec', comp_name: comp_name, item_name: item_name})
-          }
+        var comp_name = menu_item_list[i]["comp_name"]
+        var item_name = menu_item_list[i]["item_name"]
+        return function() {
+          global['sendMessageToJulia']({cmd: 'display_spec', comp_name: comp_name, item_name: item_name})
+        }
       })()
       newButton.appendChild(document.createTextNode(menu_item_list[i]["name"]));
       element!.appendChild(newButton);

@@ -13,6 +13,9 @@ end
 
 # Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
+    if item_name == :_subcomponent
+        return createspec_subcomponent(m, comp_name)
+    end
     dims = dim_names(m, comp_name, item_name)
     if length(dims) > 2
         # Drop references to singleton dimensions
@@ -108,9 +111,11 @@ function menu_item_list(model::Model)
     all_menuitems = []
 
     for comp_name in map(nameof, compdefs(model)) 
+        push!(all_menuitems, _menu_item(model, comp_name))
         items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
 
         for item_name in items
+            println(item_name)
             menu_item = _menu_item(model, comp_name, item_name)
             if menu_item !== nothing
                 push!(all_menuitems, menu_item) 
@@ -155,6 +160,10 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
 
     menu_item = Dict("name" => name, "comp_name" => comp_name, "item_name" => item_name)
     return menu_item
+end
+
+function _menu_item(m::Model, comp_name::Symbol)
+    return Dict("name" => "$comp_name", "comp_name" => "$comp_name", "item_name" => "_subcomponent")
 end
 
 function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbol})
@@ -922,6 +931,25 @@ function createspec_multihistogram_interactive(name, df, dffields)
             ]
         )
     )
+    return spec
+end
+
+# Spec for subcomponents
+
+function createspec_subcomponent(m::Model, comp_name::Symbol)
+    datapart = [];
+    comp_list = components(m, comp_name)
+    spec = Dict(
+        "name" => comp_name, 
+        "type" => "_subcomponent",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "contents of  a specific subcomponent",
+            "title" => "$comp_name",
+            "data"  => Dict("values" => comp_list)
+        )
+    )
+    println(spec)
     return spec
 end
 
