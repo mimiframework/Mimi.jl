@@ -1,5 +1,5 @@
 
-# Reference Guide: Structures 1. Overview
+# Reference Guide: Structures
 
 This document (along with "structures_2_definitions" and "structures_3_instances") describes the core data structures used to implement in Mimi 1.0.
 
