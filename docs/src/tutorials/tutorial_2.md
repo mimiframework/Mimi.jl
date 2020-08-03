@@ -120,7 +120,7 @@ getdataframe(m, :socioeconomic=>:income)[1:16,:] # results for all regions in fi
 
 After running the FUND model, you may also explore the results using plots and graphs.
 
-Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI, and the [LightGraphs](https://github.com/JuliaGraphs/LightGraphs.jl) and [MetaGraphs](https://github.com/JuliaGraphs/MetaGraphs.jl) for the [`plot_comp_graph`](@ref) function.
+Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI.
 
 #### Explore
 
@@ -147,15 +147,6 @@ More specifically for our tutorial use of FUND, try:
 p = Mimi.plot(m, :socioeconomic, :income)
 save("MyFilePath.svg", p)
 ```
-
-#### Component Graph
-
-In order to view a DAG representing the component ordering and relationships, use the [`plot_comp_graph`](@ref) function to view a plot and optionally save it to a file. This function returns a plot object displayed in the viewer and showing a graph with components as nodes and component connections as edges.
-
-```julia
-plot_comp_graph(m, "MyFilePath.png")
-```
-
 ----
 
 You're done!  Now feel free to move on to the next tutorial, which will go into depth on how to **modify** an existing model such as FUND.
