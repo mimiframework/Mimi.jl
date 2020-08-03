@@ -1,4 +1,4 @@
-# Reference Guide: Structures 3. Instances
+# Reference Guide: Structures - Instances
 
 ## Models and Components
 

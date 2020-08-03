@@ -1,4 +1,4 @@
-# Reference Guide: Structures 2. Definitions
+# Reference Guide: Structures - Definitions
 
 ## Model Definition
 

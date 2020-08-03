@@ -31,9 +31,9 @@ makedocs(
 		"Reference Guides" => Any[
 			"Reference Guides Intro" => "ref/ref_main.md",
 			"Mimi API" => "ref/ref_API.md",
-			"Structures: Overview" => "ref/ref_structures_1_overview.md", 
-			"Structures: Definitions" => "ref/ref_structures_2_definitions.md", 
-			"Structures: Instances" => "ref/ref_structures_3_instances.md"
+			"Structures" => "ref/ref_structures.md", 
+			"Structures: Definitions" => "ref/ref_structures_definitions.md", 
+			"Structures: Instances" => "ref/ref_structures_instances.md"
 		],
 		"FAQ" => "faq.md",
 	],
