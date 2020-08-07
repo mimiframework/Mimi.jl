@@ -4,7 +4,7 @@ import GlobalSensitivityAnalysis
 mutable struct SobolData <: AbstractSimulationData
     calc_second_order::Bool
 
-    function SobolData(;calc_second_order = false)
+    function SobolData(;calc_second_order = true)
         return new(calc_second_order)
     end
 end

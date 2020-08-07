@@ -205,7 +205,7 @@ sd = @defsim begin
     # Exclude the sampling() call, or use the following for simple random sampling:
     # sampling(MCSData)
 
-    # For Sobol sampling, specify N, and calc_second_order, which defaults to false.
+    # For Sobol sampling, specify N, and calc_second_order, which defaults to true.
     # sampling(SobolData, N=10000, calc_second_order=true)
 
     # assign RVs to model Parameters
