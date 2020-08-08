@@ -50,7 +50,7 @@ function sample!(sim_inst::SobolSimulationInstance, samplesize::Int)
     end
 end
 
-function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Union{Nothing, Int} = 10_000, conf_level::Union{Nothing, Number} = 0.95) where N
+function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Union{Nothing, Int} = 10_000, conf_level::Union{Nothing, Number} = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where N
 
     if sim_inst.trials == 0
         error("Cannot analyze simulation with 0 trials.")
@@ -58,7 +58,7 @@ function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{
     
     payload = create_GSA_payload(sim_inst)
 
-    return GlobalSensitivityAnalysis.analyze(payload, model_output; num_resamples = num_resamples, conf_level = conf_level)
+    return GlobalSensitivityAnalysis.analyze(payload, model_output; num_resamples = num_resamples, conf_level = conf_level, N_override = N_override, progress_meter = progress_meter)
 end
 
 function create_GSA_payload(sim_inst::SobolSimulationInstance)
