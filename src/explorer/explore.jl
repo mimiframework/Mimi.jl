@@ -29,7 +29,7 @@ function explore(m::Model; title = "Electron")
     #window options
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
     w = Window(app, joinpath(@__PATH__, p"mimiexplorer-app/build/index.html"), options = windowopts)
-    
+
     #set async block to process messages
     @async for msg in msgchannel(w)
 
@@ -42,11 +42,11 @@ function explore(m::Model; title = "Electron")
     #refresh variable list
     menulist = menu_item_list(m)
     menulistJSON = JSON.json(menulist)
-
-    Electron.toggle_devtools(w)
-
-    result = run(w, "refreshItemsList($menulistJSON)")
     
+    Electron.toggle_devtools(w)
+    
+    result = run(w, "setTreeChildren($menulistJSON)")
+
     return w
 
 end

@@ -1,11 +1,14 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import ExplorerTreeView from './ExplorerTreeView'
 
-function App() {
+function App() {    
   return (
     <div className="App">
-      <div id="variablelist" className="tab"></div>
+      <ExplorerTreeView
+        id="variablelist"
+        name="Values"
+      ></ExplorerTreeView>
       <div id="vis" className="graphic"></div>
     </div>
   );
