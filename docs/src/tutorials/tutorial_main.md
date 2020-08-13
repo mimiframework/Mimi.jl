@@ -6,29 +6,19 @@ If you find a bug in these tutorials, or have a clarifying question or suggestio
 
 ## Available Tutorials
 
-1. **Install Mimi**
-
-   [Tutorial 1: Install Mimi](@ref) describes how to set up your system by installing julia, Mimi, and the Mimi registry.
+1. [Tutorial 1: Install Mimi](@ref) describes how to set up your system by installing julia, Mimi, and the Mimi registry.
 
 
-2. **Run an Existing Model**
-
-   [Tutorial 2: Run an Existing Model](@ref) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
+2. [Tutorial 2: Run an Existing Model](@ref) steps through the tasks to download, run, and view the results of a registered model such as [FUND](http://www.fund-model.org).  It should be usable for all users, including first-time users, and is a good place to start when learning to use Mimi.
 
 
-3. **Modify an Existing Model**
-
-   [Tutorial 3: Modify an Existing Model](@ref) builds on Tutorial 2, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
+3. [Tutorial 3: Modify an Existing Model](@ref) builds on Tutorial 2, showing how to modify an existing model such as [DICE](https://github.com/anthofflab/mimi-dice-2010.jl).
 
 
-4. **Create a Model**
-
-   [Tutorial 4: Create a Model](@ref) takes a step beyond using registered models, explaining how to create a model from scratch.
+4. [Tutorial 4: Create a Model](@ref) takes a step beyond using registered models, explaining how to create a model from scratch.
 
 
-5. **Sensitivity Analysis**
-
-   [Tutorial 5: Sensitivity Analysis (SA) Support](@ref) explores Mimi's Sensitivity Analysis support, using both the simple multi-Region tutorial model and MimiDICE2010 examples.
+5. [Tutorial 5: Sensitivity Analysis (SA) Support](@ref) explores Mimi's Sensitivity Analysis support, using both the simple multi-Region tutorial model and MimiDICE2010 examples.
 
 
 _Additional AERE Workshop Tutorials: The Mimi developement team recently participated in the 2019 Association of Environmental and Resource Economists (AERE) summer conference during the pre-conference workshop on Advances in Integrated Assessment Models. This included both a presentation and a hands-on session demonstrating various use cases for Mimi. The Github repository [here](https://github.com/davidanthoff/teaching-2019-aere-workshop) contains a) all slides from the workshop and b) all the code from the hands on sessions, which may be of interest to Mimi users. Importantly note that the linked code represents as a snapshot of Mimi at the time of the workshop, and **will not** be updated to reflect new changes._

@@ -68,7 +68,8 @@ results_disk[!,2] = Symbol.(results_disk[!,2])
 
 # do some analysis
 E = CSVFiles.load(joinpath(output_dir, "emissions_E.csv")) |> DataFrame
-results = analyze(si, E[1:60:end, 3]; num_resamples = 10_000, conf_level = 0.95)
+results = analyze(si, E[1:60:end, 3]; progress_meter = false, N_override = 100)
+results = analyze(si, E[1:60:end, 3]; progress_meter = false, num_resamples = 10_000, conf_level = 0.95)
 
 function show_E_Region(year::Int; region = "Region1", bins=40)
     df = @from i in E begin
