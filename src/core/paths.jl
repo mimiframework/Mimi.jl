@@ -151,6 +151,8 @@ end
 
 find_comp(cr::AbstractComponentReference) = find_comp(parent(cr), pathof(cr))
 
+@delegate find_comp(m::Model, path::ComponentPath) => md
+
 """
 Return the relative path of `descendant` if is within the path of composite `ancestor` or
 or nothing otherwise.
