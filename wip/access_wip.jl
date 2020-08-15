@@ -18,7 +18,7 @@ import Mimi: components, ComponentPath, ComponentInstance, LeafComponentInstance
 # values being the ComponentPaths
 function _get_all_paths(m::Model)
     all_paths = Dict{Symbol, ComponentPath}()
-    for comp in components(m) # iterate over top level components
+    for comp in components(m) # iterate over top level ComponentInstances
         _add_paths(m, comp, all_paths)
     end
     return all_paths
@@ -46,7 +46,7 @@ end
 paths = _get_all_paths(m)
 comp_name = :Comp1
 comp_path = paths[comp_name]
-comp_def = find_comp(m, comp_path)
+comp_def = find_comp(m, comp_path) # returns a ComponentDefinition
 vars_names = variable_names(comp_def)
 par_names = parameter_names(comp_def)
 
