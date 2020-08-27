@@ -1,6 +1,6 @@
-# Tutorial 5: Sensitivity Analysis (SA) Support
+# Tutorial 5: Monte Carlo Simulations and Sensitivity Analysis Support
 
-This tutorial walks through the sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
+This tutorial walks through the Monte Carlo simulation and sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the Monte Carlo and SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
 
 Working through the following tutorial will require:
 
