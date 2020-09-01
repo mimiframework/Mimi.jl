@@ -1,10 +1,10 @@
-# How-to Guide 3: Conduct Sensitivity Analysis
+# How-to Guide 3: Conduct Monte Carlo Simulations and Sensitivity Analysis
 
-Mimi includes a host of routines which support running various sensitivity analysis methods on Mimi models. Tutorial 5: Sensitivity Analysis (SA) Support is a good starting point for learning about these methods.  This how-to guide includes more detail and optionality, covering more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in the tutorial.
+Mimi includes a host of routines which support running Monte Carlo simulations and various sensitivity analysis methods on Mimi models. Tutorial 5: Monte Carlo Simulations and Sensitivity Analysis Support is a good starting point for learning about these methods.  This how-to guide includes more detail and optionality, covering more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in the tutorial.
 
 ## Overview
 
-Running a sensitivity analysis in Mimi can be broken down into three primary user-facing elements:
+Running Monte Carlo simulations, and proximal sensitivity analysis, in Mimi can be broken down into three primary user-facing elements:
 
 1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
