@@ -13,9 +13,7 @@ end
 
 # Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
-    if item_name == :_subcomponent
-        return createspec_subcomponent(m, comp_name)
-    end
+    println("getting spec for comp_name $comp_name, item_name $item_name")
     dims = dim_names(m, comp_name, item_name)
     if length(dims) > 2
         # Drop references to singleton dimensions
@@ -25,13 +23,16 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
     if length(dims) == 0
+        println("length(dims) == 0")
         value = m[comp_name, item_name]
         name = "$comp_name : $item_name = $value"
         spec = createspec_singlevalue(name)
     elseif length(dims) > 2
+        println("length(dims) > 2")
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
+        println("else")
         name = "$comp_name : $item_name"          
         df = getdataframe(m, comp_name, item_name)
         dffields = map(string, names(df))         # convert to string once before creating specs
@@ -106,23 +107,54 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         
 end
 
+function tree_view_values(model::Model)
+    all_subcomps = []
+    for comp_def in compdefs(model)
+        subcomp = tree_view_values(model, nameof(comp_def), comp_def)
+        push!(all_subcomps, subcomp)
+    end
+
+    # Return sorted list so that the UI list of items will be in alphabetical order 
+    return sort(all_subcomps, by = x -> lowercase(x["name"]))
+end
+
+function tree_view_values(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
+    # println(compdef.name)
+    sub_comp_item = _tree_view_node(comp_name)
+    for subcomp in compdefs(comp_def)
+        push!(sub_comp_item["children"], tree_view_values(model, nameof(subcomp), subcomp));
+    end
+    println(sub_comp_item)
+    return sub_comp_item
+end
+
+function _tree_view_node(comp_name::Symbol)
+    return Dict("name" => "$comp_name", "children" => Dict[])
+end
+
 # Create the list of variables and parameters
 function menu_item_list(model::Model)
     all_menuitems = []
-
-    for comp_name in map(nameof, compdefs(model)) 
-        push!(all_menuitems, _menu_item(model, comp_name))
-        items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
-
-        for item_name in items
-            println(item_name)
-            menu_item = _menu_item(model, comp_name, item_name)
-            if menu_item !== nothing
-                push!(all_menuitems, menu_item) 
-            end
-        end
+    for comp_def in compdefs(model)
+        subcomp_values = menu_item_list(model, nameof(comp_def), comp_def)
+        append!(all_menuitems, subcomp_values)
     end
 
+    # Return sorted list so that the UI list of items will be in alphabetical order 
+    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+end
+
+# Create the list of variables and parameters
+function menu_item_list(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
+    all_menuitems = []
+
+    items = vcat(variable_names(comp_def), parameter_names(comp_def))
+    for item_name in items
+        # println(item_name)
+        menu_item = _menu_item(model, comp_name, item_name)
+        push!(all_menuitems, menu_item)
+    end
+    
     # Return sorted list so that the UI list of items will be in alphabetical order 
     return sort(all_menuitems, by = x -> lowercase(x["name"]))
 end
@@ -142,6 +174,7 @@ function menu_item_list(sim_inst::SimulationInstance)
 end
 
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
+    println("making menu item for comp_name $comp_name, item_name $item_name")
     dims = dim_names(m, comp_name, item_name)
     if length(dims) > 2
         # Drop references to singleton dimensions
@@ -149,21 +182,21 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     end
 
     if length(dims) == 0
+        println("length(dims) == 0")
         value = m[comp_name, item_name]
+        println("value = $value")
         name = "$comp_name : $item_name = $value"
     elseif length(dims) > 2
+        println("length(dims) > 2")
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
+        println("else")
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
 
     menu_item = Dict("name" => name, "comp_name" => comp_name, "item_name" => item_name)
     return menu_item
-end
-
-function _menu_item(m::Model, comp_name::Symbol)
-    return Dict("name" => "$comp_name", "comp_name" => "$comp_name", "item_name" => "_subcomponent")
 end
 
 function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbol})
@@ -931,25 +964,6 @@ function createspec_multihistogram_interactive(name, df, dffields)
             ]
         )
     )
-    return spec
-end
-
-# Spec for subcomponents
-
-function createspec_subcomponent(m::Model, comp_name::Symbol)
-    datapart = [];
-    comp_list = components(m, comp_name)
-    spec = Dict(
-        "name" => comp_name, 
-        "type" => "_subcomponent",
-        "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
-            "description" => "contents of  a specific subcomponent",
-            "title" => "$comp_name",
-            "data"  => Dict("values" => comp_list)
-        )
-    )
-    println(spec)
     return spec
 end
 

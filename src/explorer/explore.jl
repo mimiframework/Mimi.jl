@@ -33,19 +33,32 @@ function explore(m::Model; title = "Electron")
     #set async block to process messages
     @async for msg in msgchannel(w)
 
+        println("got a message to get a spec for " + msg["comp_name"] + " : " + msg["item_name"])
         spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
         specJSON = JSON.json(spec)
 
         run(w, "display($specJSON)")
     end
 
+    Electron.toggle_devtools(w)
+
+    run(w, "console.dir('going to render tree')")
+
+
+    #refresh tree view
+    subcomplist = tree_view_values(m)
+    subcomplistJSON = JSON.json(subcomplist)
+
+    result = run(w, "setTreeChildren($subcomplistJSON)")
+
+    run(w, "console.dir('going to render variables')")
+
     #refresh variable list
     menulist = menu_item_list(m)
     menulistJSON = JSON.json(menulist)
     
-    Electron.toggle_devtools(w)
     
-    result = run(w, "setTreeChildren($menulistJSON)")
+    result = run(w, "setVariables($menulistJSON)")
 
     return w
 
