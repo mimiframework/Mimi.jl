@@ -119,12 +119,10 @@ function tree_view_values(model::Model)
 end
 
 function tree_view_values(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
-    # println(compdef.name)
     sub_comp_item = _tree_view_node(comp_name)
     for subcomp in compdefs(comp_def)
         push!(sub_comp_item["children"], tree_view_values(model, nameof(subcomp), subcomp));
     end
-    println(sub_comp_item)
     return sub_comp_item
 end
 
@@ -134,35 +132,40 @@ end
 
 # Create the list of variables and parameters
 function menu_item_list(model::Model)
-    all_menuitems = []
+    var_menuitems = []
+    par_menuitems = []
+
     for comp_def in compdefs(model)
-        subcomp_values = menu_item_list(model, nameof(comp_def), comp_def)
-        append!(all_menuitems, subcomp_values)
+        all_subcomp_values = menu_item_list(model, nameof(comp_def), comp_def)
+        append!(var_menuitems, all_subcomp_values["vars"])
+        append!(par_menuitems, all_subcomp_values["pars"])
     end
 
     # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+    return Dict("vars" => sort(var_menuitems, by = x -> lowercase(x["name"])),"pars" => sort(par_menuitems, by = x -> lowercase(x["name"])))
 end
 
 # Create the list of variables and parameters
 function menu_item_list(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
-    all_menuitems = []
+    var_menuitems = []
+    par_menuitems = []
 
-    items = vcat(variable_names(comp_def), parameter_names(comp_def))
-    for item_name in items
-        # println(item_name)
-        menu_item = _menu_item(model, comp_name, item_name)
-        push!(all_menuitems, menu_item)
+    for var_name in variable_names(comp_def)
+        menu_item = _menu_item(model, comp_name, var_name)
+        push!(var_menuitems, menu_item)
+    end
+    for par_name in parameter_names(comp_def)
+        menu_item = _menu_item(model, comp_name, par_name)
+        push!(par_menuitems, menu_item)
     end
     
     # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+    return Dict("vars" => sort(var_menuitems, by = x -> lowercase(x["name"])),"pars" => sort(par_menuitems, by = x -> lowercase(x["name"])))
 end
 
 function menu_item_list(sim_inst::SimulationInstance)
     all_menuitems = []
     for datum_key in sim_inst.sim_def.savelist
-
         menu_item = _menu_item(sim_inst, datum_key)
         if menu_item !== nothing
             push!(all_menuitems, menu_item) 
@@ -174,7 +177,6 @@ function menu_item_list(sim_inst::SimulationInstance)
 end
 
 function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
-    println("making menu item for comp_name $comp_name, item_name $item_name")
     dims = dim_names(m, comp_name, item_name)
     if length(dims) > 2
         # Drop references to singleton dimensions
@@ -182,16 +184,12 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     end
 
     if length(dims) == 0
-        println("length(dims) == 0")
         value = m[comp_name, item_name]
-        println("value = $value")
         name = "$comp_name : $item_name = $value"
     elseif length(dims) > 2
-        println("length(dims) > 2")
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
-        println("else")
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
 

@@ -30,20 +30,57 @@ function explore(m::Model; title = "Electron")
     windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
     w = Window(app, joinpath(@__PATH__, p"mimiexplorer-app/build/index.html"), options = windowopts)
 
+    function _get_all_paths(m::Model)
+        all_paths = Dict{Symbol, ComponentPath}()
+        for comp in components(m) # iterate over top level ComponentInstances
+            _add_paths(m, comp, all_paths)
+        end
+        return all_paths
+    end
+    
+    # a helper function to perform a preorder traversal of a given top-level component
+    # in model m and add that path, and all sub-component paths, to the paths array
+    function _add_paths(m::Model, comp::Union{CompositeComponentInstance, LeafComponentInstance}, paths::Dict{Symbol, ComponentPath})
+        if isa(comp, CompositeComponentInstance)
+            paths[comp.comp_name] = comp.comp_path     
+            for subcomp in values(comp.comps_dict)
+                _add_paths(m, subcomp, paths)
+            end
+        else # LeafComponentInstance
+            paths[comp.comp_name] = comp.comp_path          
+        end
+        return paths
+    end
+    
+    paths = _get_all_paths(m)
+    
     #set async block to process messages
     @async for msg in msgchannel(w)
-
-        println("got a message to get a spec for " + msg["comp_name"] + " : " + msg["item_name"])
-        spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
-        specJSON = JSON.json(spec)
-
-        run(w, "display($specJSON)")
+        if (msg["cmd"] == "display_spec")
+            println("got a message to get a spec for " + msg["comp_name"] + " : " + msg["item_name"])
+            spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
+            specJSON = JSON.json(spec)
+            run(w, "display($specJSON)")
+        end
+        if (msg["cmd"] == "update_data")
+            comp_name = msg["comp_name"];
+            comp_path = paths[Symbol(comp_name)];
+            comp_def = find_comp(m, comp_path); # returns a ComponentDefinition
+            var_names = variable_names(comp_def);
+            par_names = map(par_name -> Dict("name" => "$comp_name : $par_name", "item_name" => par_name, "comp_name" => comp_name), map(string, parameter_names(comp_def)));
+            compiled_var_names = [];
+            for var_name in var_names
+                dims = dim_names(comp_def, var_name) # only needs the ComponentDefinition
+                values = collect(skipmissing(m[comp_path, var_name])) # uses the comp_path to access the ComponentInstance
+                push!(compiled_var_names, Dict("name" => "$comp_name: $(string(var_name)) : $(string(dims)) : $(values)", "item_name" => string(var_name), "comp_name" => comp_name))
+            end
+            menulist = Dict("vars" => sort(compiled_var_names, by = x -> lowercase(x["name"])), "pars" => sort(par_names, by = x -> lowercase(x["name"])));
+            menulistJSON = JSON.json(menulist);
+            result = run(w, "setData($menulistJSON)");
+        end
     end
 
     Electron.toggle_devtools(w)
-
-    run(w, "console.dir('going to render tree')")
-
 
     #refresh tree view
     subcomplist = tree_view_values(m)
@@ -51,14 +88,10 @@ function explore(m::Model; title = "Electron")
 
     result = run(w, "setTreeChildren($subcomplistJSON)")
 
-    run(w, "console.dir('going to render variables')")
-
-    #refresh variable list
-    menulist = menu_item_list(m)
-    menulistJSON = JSON.json(menulist)
-    
-    
-    result = run(w, "setVariables($menulistJSON)")
+    #refresh data view
+    datalist = menu_item_list(m)
+    datalistJSON = JSON.json(datalist)
+    result = run(w, "setData($datalistJSON)")
 
     return w
 

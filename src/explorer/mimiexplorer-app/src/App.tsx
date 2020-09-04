@@ -1,21 +1,21 @@
 import React from 'react';
 import './App.css';
 import ExplorerTreeView from './ExplorerTreeView'
-import ExplorerVariableView from './ExplorerVariableView'
+import ExplorerDataView from './ExplorerDataView'
 
 function App() {    
   return (
     <div className="App">
       <ExplorerTreeView
-        name="Subcomponents"
+        name="Components"
       ></ExplorerTreeView>
       <br/>
       <hr/>
       <br/>
-      <ExplorerVariableView
-        id="variablelist"
-        name="Values"
-      ></ExplorerVariableView>
+      <ExplorerDataView
+        id="datalist"
+        name="Data"
+      ></ExplorerDataView>
       <div id="vis" className="graphic"></div>
     </div>
   );

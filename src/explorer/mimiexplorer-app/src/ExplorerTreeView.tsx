@@ -27,15 +27,21 @@ export default class ExplorerTreeView extends React.Component<TreeViewProps, Tre
     }
 
     setTreeChildren = (childrenInfo:Array<TreeNodeState>) => {
-        console.dir(childrenInfo)
         this.setState({children: childrenInfo});
     }
 
     renderTree = (node:TreeNodeState) => {
-        console.dir(node.name);
-        return (<TreeItem key={node.name} nodeId={node.name} label={node.name}>
-                     {node.children ? node.children.map((n) => this.renderTree(n)) : null}
-                 </TreeItem>);
+        return (
+            <div>
+                <TreeItem key={node.name} nodeId={node.name} label={node.name} onLabelClick= {(event)=> {
+                    event.preventDefault();
+                    global["sendMessageToJulia"]({cmd: 'update_data', comp_name: node.name})
+                    // sendMessageToJulia({cmd: 'display_spec', comp_name: comp_name, item_name: item_name})
+                }}>
+                    {node.children ? node.children.map((n) => this.renderTree(n)) : null}
+                </TreeItem>
+            </div>
+        );
     }
 
     render = () => {
@@ -45,11 +51,9 @@ export default class ExplorerTreeView extends React.Component<TreeViewProps, Tre
             defaultExpanded={["root"]}
             defaultExpandIcon={<ChevronRight />}
         >
-            {this.renderTree(this.state)}
+            <h4>{this.state.name}</h4>
+            {this.state.children ? this.state.children.map((n) => this.renderTree(n)) : null}
         </TreeView>);
-
-        // console.dir(renderVal)
-
         return renderVal;
     };
 }
