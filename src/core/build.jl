@@ -336,16 +336,21 @@ function _build(md::ModelDef)
     return mi
 end
 
-function build!(m::Model)
-
+function build(m::Model)    
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
     _set_defaults!(md)  # apply defaults to unset parameters in the model instance's copy of the model definition
     
-    m.mi = _build(md)
+    mi = _build(md)
+    return mi
+end
+
+function build!(m::Model)
+    m.mi = build(m)
     m.md.dirty = false
     return nothing
 end
+
 
 """
     create_marginal_model(base::Model, delta::Float64=1.0)
