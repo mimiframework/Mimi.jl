@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi:
     ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
-    CompositeComponentDef, ModelDef, build, time_labels, compdef, find_comp,
+    CompositeComponentDef, ModelDef, time_labels, compdef, find_comp,
     import_params!, CompositeVariableDef, CompositeParameterDef
 
 @defcomp Comp1 begin
@@ -132,7 +132,7 @@ set_param!(m, :foo4, 20)
 
 set_param!(m, :par_1_1, collect(1:length(time_labels(md))))
 
-build(m)
+Mimi.build!(m)
 
 run(m)
 
