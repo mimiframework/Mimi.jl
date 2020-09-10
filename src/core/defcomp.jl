@@ -269,8 +269,7 @@ macro defcomp(comp_name, ex)
             end
 
             @debug "before: datum type is $datum_type, which is of type $(typeof(datum_type))"
-            # datum_type = (datum_type === nothing ? Number : Main.eval(datum_type))
-            datum_type = (datum_type === nothing ? Number : Base.eval(@__MODULE__, datum_type))
+            datum_type = (datum_type === nothing ? Number : Main.eval(datum_type))
             @debug "after: datum type is $datum_type, which is of type $(typeof(datum_type))"
 
             addexpr(_generate_var_or_param(elt_type, name, datum_type, dimensions, dflt, desc, unit))
