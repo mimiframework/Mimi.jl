@@ -22,3 +22,5 @@ function get_model()
 end
 
 end # module
+
+m = brick.get_model()
