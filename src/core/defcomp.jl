@@ -268,6 +268,12 @@ macro defcomp(comp_name, ex)
                 end
             end
 
+            # TODO: We can discuss the problem with Distributions  on Fri. We might just have slightly 
+            # rewrite the expression that gets passed to the Main.eval call, so that in the expression 
+            # tree we don't use a symbol Distributions (which it will then try to resolve in the Main 
+            # module, where Distributions isn't loaded), but instead just put a ref to the Distributions 
+            # module itself into the AST that we pass to eval. I think it should then work without a name 
+            # resolution.
             datum_type = (datum_type === nothing ? Number : Main.eval(datum_type))
             addexpr(_generate_var_or_param(elt_type, name, datum_type, dimensions, dflt, desc, unit))
 
