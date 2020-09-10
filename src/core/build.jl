@@ -336,16 +336,21 @@ function _build(md::ModelDef)
     return mi
 end
 
-function build(m::Model)
-
+function build(m::Model)    
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
     _set_defaults!(md)  # apply defaults to unset parameters in the model instance's copy of the model definition
     
-    m.mi = _build(md)
+    mi = _build(md)
+    return mi
+end
+
+function build!(m::Model)
+    m.mi = build(m)
     m.md.dirty = false
     return nothing
 end
+
 
 """
     create_marginal_model(base::Model, delta::Float64=1.0)
@@ -358,7 +363,7 @@ function create_marginal_model(base::Model, delta::Float64=1.0)
     # Make sure the base has a ModelInstance before we copy since this
     # copies the ModelDef to avoid being affected by later changes.
     if ! is_built(base)
-        build(base)
+        build!(base)
     end
 
     # Create a marginal model, which shares the internal ModelDef between base and marginal
@@ -370,7 +375,7 @@ function Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
     run(mm.modified, ntimesteps=ntimesteps)
 end
 
-function build(mm::MarginalModel)
-    build(mm.base)
-    build(mm.modified)
+function build!(mm::MarginalModel)
+    build!(mm.base)
+    build!(mm.modified)
 end

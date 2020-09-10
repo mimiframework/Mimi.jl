@@ -118,7 +118,7 @@ cd = compdef(m.md, :C)      # Get the component definition in the model
 #@test cd.last === nothing
 
 set_param!(m, :C, :par1, zeros(5))
-Mimi.build(m)               # Build the model
+Mimi.build!(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance
 @test ci.first == 2001      # The component instance's first and last values should match the model's index
 @test ci.last == 2005
@@ -131,7 +131,7 @@ cd = compdef(m.md, :C)       # Get the component definition in the model
 #@test cd.last === nothing
 
 update_param!(m, :par1, zeros(16); update_timesteps=true)
-Mimi.build(m)               # Build the model
+Mimi.build!(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance
 @test ci.first == 2005      # The component instance's first and last values should match the model's index
 @test ci.last == 2020
@@ -157,7 +157,7 @@ cd = compdef(m.md, :C)      # Get the component definition in the model
 set_dimension!(m, :time, 2010:2090)
 
 set_param!(m, :C, :par1, zeros(81))
-Mimi.build(m)               # Build the model
+Mimi.build!(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance
 @test ci.first == 2010      # The component instance's first and last values are the same as in the comp def
 @test ci.last == 2090
@@ -167,7 +167,7 @@ cd = compdef(m.md, :C)      # Get the component definition in the model
 # @test cd.first == 2010      # First and last values should still be the same
 # @test cd.last == 2090
 
-Mimi.build(m)               # Build the model
+Mimi.build!(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance
 # @test ci.first == 2010      # The component instance's first and last values are the same as the comp def
 # @test ci.last == 2090

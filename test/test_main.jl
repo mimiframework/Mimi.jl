@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi: 
     reset_variables,
-    variable, variable_names, external_param, build, 
+    variable, variable_names, external_param,
     compdefs, dimension, compinstance
 
 @defcomp foo1 begin
@@ -48,7 +48,7 @@ set_param!(x1, :foo1, :par2, [true true false; true false false; true true true]
 
 set_param!(x1, :foo1, :par3, [1.0, 2.0, 3.0])
 
-build(x1)
+Mimi.build!(x1)
 
 ci = compinstance(x1, :foo1)
 reset_variables(ci)
