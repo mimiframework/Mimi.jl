@@ -6,7 +6,7 @@ using Test
 using Mimi
 
 import Mimi:
-    connect_param!, unconnected_params, set_dimension!,  build,
+    connect_param!, unconnected_params, set_dimension!,
     get_connections, internal_param_conns, dim_count,  dim_names,
     modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
 
@@ -134,7 +134,7 @@ delete!(m, :A)
 end
 
 add_comp!(m, D)
-@test_throws ErrorException build(m)
+@test_throws ErrorException Mimi.build!(m)
 
 ##########################################
 #   Test init function                   #
