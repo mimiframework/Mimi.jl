@@ -484,7 +484,7 @@ function Base.run(sim_def::SimulationDef{T},
     end
 
     for m in sim_inst.models
-        is_built(m) || build(m)
+        is_built(m) || build!(m)
     end
     
     trials = 1:sim_inst.trials
