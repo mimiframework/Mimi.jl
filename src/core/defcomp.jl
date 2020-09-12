@@ -82,6 +82,11 @@ function add_variable(comp_id::ComponentId, name, datatype, dimensions, descript
 end
 
 function add_parameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
+    if default !== nothing
+        if length(dimensions) != ndims(default)
+            error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
+        end
+    end
     p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
     comp_def[name] = p            # adds to namespace and checks for duplicate
     dirty!(comp_def)
@@ -261,19 +266,8 @@ macro defcomp(comp_name, ex)
 
             @debug "    index $(Tuple(dimensions)), unit '$unit', desc '$desc'"
 
-            if dflt !== nothing
-                dflt = Base.eval(Main, dflt)
-                if length(dimensions) != ndims(dflt)
-                    error("Default value has different number of dimensions ($(ndims(dflt))) than parameter '$name' ($(length(dimensions)))")
-                end
-            end
-
-            @debug "before: datum type is $datum_type, which is of type $(typeof(datum_type))"
             datum_type = (datum_type === nothing ? :Number : datum_type)
-            @debug "after: datum type is $datum_type, which is of type $(typeof(datum_type))"
-
             addexpr(_generate_var_or_param(elt_type, name, datum_type, dimensions, dflt, desc, unit))
-
         else
             error("Unrecognized element type: $elt_type")
         end

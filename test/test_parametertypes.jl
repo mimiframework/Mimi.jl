@@ -17,7 +17,7 @@ expr = :(
         end
     end
 )
-@test_throws LoadError eval(expr)
+@test_throws UndefVarError eval(expr)
 
 expr = :(
     @defcomp BadComp2 begin
@@ -26,7 +26,7 @@ expr = :(
         end
     end
 )
-@test_throws LoadError eval(expr)
+@test_throws UndefVarError eval(expr)
 
 #
 # Test that the old type parameterization syntax errors
