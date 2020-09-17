@@ -134,6 +134,6 @@ delete!(m, :A)
 end
 
 add_comp!(m, D)
-@test_throws ErrorException Mimi.build(m)
+@test_throws ErrorException Mimi.build!(m)
 
 end # module
