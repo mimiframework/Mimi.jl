@@ -59,6 +59,7 @@ reset_variables(ci)
 m = Model()
 set_dimension!(m, :time, 20)
 set_dimension!(m, :index1, 5)
+add_comp!(m, foo1)
 @test :var1 in variable_names(x1, :foo1)
 
 # check the update_param! effect on dirty
