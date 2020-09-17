@@ -72,16 +72,14 @@ set_param!(m, :par1, 6.0)
 set_param!(m, :par2, [true true false; true false false; true true true])
 set_param!(m, :par3, [1.0, 2.0, 3.0])
 
+run(m)
 @test m.md.dirty == false
 update_param!(m, :par1, 7.0)
 @test m.md.dirty == true
+
 run(m)
 @test m.md.dirty == false
 update_param!(m.mi, :par1, 6.0)
 @test m.md.dirty == false
-
-@test :var1 in variable_names(x1, :foo1)
-
-
 
 end # module
