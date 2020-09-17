@@ -56,6 +56,11 @@ reset_variables(ci)
 # Check all variables are defaulted
 @test isnan(get_var_value(ci, :var1))
 
+m = Model()
+set_dimension!(m, :time, 20)
+set_dimension!(m, :index1, 5)
+@test :var1 in variable_names(x1, :foo1)
+
 # check the update_param! effect on dirty
 m = Model()
 set_dimension!(m, :index1, [:r1, :r2, :r3])
