@@ -79,16 +79,16 @@ update_param!(m, :par1, 7.0)
 @test m.md.dirty == true # should dirty the model
 
 run(m)
-@test m.md.dirty == false
+mi = Mimi.build(m)
 par1 = 6.0
 par2 = [false false false; false false false; false false false]
 par3 = [3.0, 2.0, 1.0];
-update_param!(m.mi, :par1, par1)
-update_param!(m.mi, :par2, par2)
-update_param!(m.mi, :par3, par3)
+update_param!(mi, :par1, par1)
+update_param!(mi, :par2, par2)
+update_param!(mi, :par3, par3)
+@test mi[:foo1, :par1] == par1
+@test mi[:foo1, :par2] == par2
+@test mi[:foo1, :par3] == par3
 @test m.md.dirty == false # should not dirty the model
-@test m[:foo1, :par1] == par1
-@test m[:foo1, :par2] == par2
-@test m[:foo1, :par3] == par3
 
 end # module
