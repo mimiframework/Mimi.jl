@@ -74,9 +74,8 @@ close(w)
 #       dim_name::Union{Nothing, Symbol} = nothing)
 items = [:a, :b, :c, :d, :e, :f, :x]
 for item in items
-    p = Mimi.plot(m, :MyComp, item)
     p_type = _is_VegaLite_v3() ? VegaLite.VLSpec : VegaLite.VLSpec{:plot}
-    @test typeof(p) == p_type
+    @test typeof(Mimi.plot(m, :MyComp, item)) == p_type
 end
 
 #6.  errors and warnings
