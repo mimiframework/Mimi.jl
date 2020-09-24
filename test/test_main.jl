@@ -60,7 +60,35 @@ m = Model()
 set_dimension!(m, :time, 20)
 set_dimension!(m, :index1, 5)
 add_comp!(m, foo1)
-
 @test :var1 in variable_names(x1, :foo1)
+
+# check the update_param! functionality
+m = Model()
+set_dimension!(m, :index1, [:r1, :r2, :r3])
+set_dimension!(m, :time, 2010:10:2030)
+set_dimension!(m, :idx3, 1:3)
+set_dimension!(m, :idx4, 1:4)
+add_comp!(m, foo1)
+set_param!(m, :par1, 6.0)
+set_param!(m, :par2, [true true false; true false false; true true true])
+set_param!(m, :par3, [1.0, 2.0, 3.0])
+
+run(m)
+@test m.md.dirty == false
+update_param!(m, :par1, 7.0)
+@test m.md.dirty == true # should dirty the model
+
+run(m)
+mi = Mimi.build(m)
+par1 = 6.0
+par2 = [false false false; false false false; false false false]
+par3 = [3.0, 2.0, 1.0];
+update_param!(mi, :par1, par1)
+update_param!(mi, :par2, par2)
+update_param!(mi, :par3, par3)
+@test mi[:foo1, :par1] == par1
+@test mi[:foo1, :par2] == par2
+@test mi[:foo1, :par3] == par3
+@test m.md.dirty == false # should not dirty the model
 
 end # module
