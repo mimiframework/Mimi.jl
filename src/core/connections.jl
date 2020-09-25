@@ -481,6 +481,20 @@ function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; 
     _update_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps; raise_error = true)
 end
 
+function update_param!(mi::ModelInstance, name::Symbol, value)
+    param = mi.md.external_params[name]
+
+    if param isa ScalarModelParameter
+        param.value = value
+    elseif param.values isa TimestepArray
+        copyto!(param.values.data, value)
+    else
+        copyto!(param.values, value)
+    end
+
+    return nothing
+end
+
 function _update_param!(obj::AbstractCompositeComponentDef,
                         name::Symbol, value, update_timesteps; raise_error = true)
     param = external_param(obj, name, missing_ok=true)
