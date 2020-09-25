@@ -73,7 +73,6 @@ include("mcs/mcs.jl") # need mcs types for explorer and utils
 include("explorer/explore.jl")
 include("utils/getdataframe.jl")
 include("utils/graph.jl")
-include("utils/lint_helper.jl")
 include("utils/misc.jl")
 
 # Load built-in components
