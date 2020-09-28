@@ -36,7 +36,7 @@ function sample!(sim_inst::DeltaSimulationInstance, samplesize::Int)
     end
 end
 
-function analyze(sim_inst::DeltaSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Int = 1_000, conf_level::Number = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where N
+function analyze(sim_inst::DeltaSimulationInstance, model_input::AbstractArray{<:Number, N}, model_output::AbstractArray{<:Number, N}; num_resamples::Int = 1_000, conf_level::Number = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where N
 
     if sim_inst.trials == 0
         error("Cannot analyze simulation with 0 trials.")
@@ -44,6 +44,6 @@ function analyze(sim_inst::DeltaSimulationInstance, model_output::AbstractArray{
     
     payload = create_GSA_payload(sim_inst)
 
-    return GlobalSensitivityAnalysis.analyze(payload, model_output; num_resamples = num_resamples, conf_level = conf_level, N_override = N_override, progress_meter = progress_meter)
+    return GlobalSensitivityAnalysis.analyze(payload, model_input, model_output; num_resamples = num_resamples, conf_level = conf_level, N_override = N_override, progress_meter = progress_meter)
 end
 
