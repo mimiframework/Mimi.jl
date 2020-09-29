@@ -53,7 +53,6 @@ close(w)
 #       dim_name::Union{Nothing, Symbol} = nothing)
 items = [:fooA1, :fooA2, :foo3, :foo4, :var_3_1, :par_1_1]
 for item in items
-    p = Mimi.plot(m, :top, item)
     p_type = _is_VegaLite_v3() ? VegaLite.VLSpec : VegaLite.VLSpec{:plot}
-    @test typeof(p) == p_type
+    @test typeof(Mimi.plot(m, :top, item)) == p_type
 end
