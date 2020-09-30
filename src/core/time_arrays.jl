@@ -452,9 +452,22 @@ end
 #
 # TimestepArray methods
 #
+
+# _dotview_helper TODOs - we should add options for if the arg is a TimestepValue
+# or an array of TimestepIndexes or TimestepValues
+function _dotview_helper(arg)
+	if arg isa AbstractTimestep
+		return arg.t
+	elseif arg isa TimestepIndex
+		return arg.index
+	else
+		return arg
+	end
+end
+
 function Base.dotview(v::Mimi.TimestepArray, args...)
 	# convert any timesteps to their underlying index
-	args = map(arg -> (arg isa AbstractTimestep ? arg.t : arg), args)
+	args = map(_dotview_helper, args)
 	Base.dotview(v.data, args...)
 end
 
