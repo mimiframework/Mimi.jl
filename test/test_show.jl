@@ -90,7 +90,6 @@ Model
             ...
             6: 0.0
           1: time
-    sorted_comps: nothing
     number_type: Float64
   mi: nothing"""   # ignore (most) whitespace
 

@@ -2,9 +2,10 @@ module TestTools
 
 using Test
 using Mimi
+using Logging
 
 import Mimi:
-    getproperty, pretty_string
+    getproperty, pretty_string, set_log_level, log_debug, log_info
 
 #utils: pretty_string
 @test pretty_string("camelCaseBasic") == pretty_string(:camelCaseBasic) == "Camel Case Basic"
@@ -17,5 +18,11 @@ stepsize = 2
 final = 10         
 ts = 10
 @test Mimi.interpolate(collect(0:stepsize:final), ts) == collect(0:stepsize/ts:final)
+
+# utils: logging - toggle back and forth 
+log_debug()
+@test current_logger().min_level == Logging.Debug
+log_info()
+@test current_logger().min_level == Logging.Info
 
 end #module

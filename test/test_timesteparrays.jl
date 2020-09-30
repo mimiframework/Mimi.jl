@@ -663,11 +663,6 @@ set_param!(m, :first, :par1, 1:length(years))
 
 @test_throws MissingException run(m)
 
-# Check broadcast assignment to underlying array
-x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10}, Float64}(zeros(10))
-x[:] .= 10
-@test all(x.data .== 10)
-
 #------------------------------------------------------------------------------
 # 7. Test TimestepArrays with time not as the first dimension
 #------------------------------------------------------------------------------
@@ -717,5 +712,34 @@ run(m)
 @test all(!ismissing, m[:gdp, :gdp])
 @test all(!ismissing, m[:gdp, :pop])
 @test all(!ismissing, m[:gdp, :mat2])
+
+#------------------------------------------------------------------------------
+# 8. Check broadcast assignment to underlying array
+#------------------------------------------------------------------------------
+
+x_arr = zeros(10)
+y_arr = collect(reshape(zeros(8), 4, 2))
+
+x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10}, Float64}(x_arr)
+y = TimestepMatrix{FixedTimestep{2000, 1}, Float64, 1}(y_arr)
+
+# colon and ints
+x[:] .= 10
+y[:] .= 10
+@test all(y.data .== 10)
+@test all(x.data .== 10)
+
+y[:,1] .= 20
+@test all(y.data[:,1] .== 20)
+
+reset_time_val(x, x_arr)
+reset_time_val(y, y_arr)
+
+# TimestepIndex
+y[TimestepIndex(2),:] .= 10
+@test all(y.data[2,:] .== 10)
+
+reset_time_val(x, x_arr)
+reset_time_val(y, y_arr)
 
 end #module
