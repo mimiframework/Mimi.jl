@@ -10,6 +10,11 @@ using CSVFiles
 import Mimi:
     _spec_for_sim_item, menu_item_list, getdataframe, get_sim_results
 
+# Helper function returns true if VegaLite is verison 3 or above, and false otherwise
+function _is_VegaLite_v3()
+    return isdefined(VegaLite, :vlplot) ? true : false
+end
+
 # Get the example
 include("mcs/test-model-2/multi-region-model.jl")
 using .MyModel
@@ -71,7 +76,7 @@ w = explore(si_disk, title="Testing Window", results_output_dir = results_output
 @test typeof(w) == Electron.Window
 close(w)
 
-@test_throws ErrorException w = explore(si_disk) #should error, no in-memory results
+@test_throws ErrorException explore(si_disk) #should error, no in-memory results
 
 ## 3. Plots
 
@@ -94,7 +99,7 @@ plot_type_test(p)
 p = Mimi.plot(si_disk, :emissions, :E_Global; interactive = true, results_output_dir = results_output_dir)
 plot_type_test(p)
 
-@test_throws ErrorException p = Mimi.plot(si_disk, :emissions, :E_Global) #should error, no in-memory results
+@test_throws ErrorException Mimi.plot(si_disk, :emissions, :E_Global) #should error, no in-memory results
 
 # mulitrumpet plot
 p = Mimi.plot(si, :emissions, :E)

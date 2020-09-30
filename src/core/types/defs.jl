@@ -159,9 +159,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
     # Names of external params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
 
-
-    sorted_comps::Union{Nothing, Vector{Symbol}}
-
     function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}=nothing)
         self = new()
         CompositeComponentDef(self, comp_id)
@@ -174,7 +171,6 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
         self.comp_path = ComponentPath(self.name)
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.backups = Vector{Symbol}()
-        self.sorted_comps = nothing
     end
 end
 
