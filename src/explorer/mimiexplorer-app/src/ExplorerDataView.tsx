@@ -46,19 +46,26 @@ export default class ExplorerDataView extends React.Component<DataViewProps, Dat
     }
 
     renderNode = (nodeState: DataNodeState) => {
-        return (<li>{nodeState.name}</li>);
+        return (<li onClick={(event) => {
+            event.preventDefault();
+            global["sendMessageToJulia"]({
+                cmd: 'display_spec',
+                comp_name: nodeState.comp_name,
+                item_name: nodeState.item_name
+            })
+        }}>{nodeState.name}</li>);
     }
 
     render = () => {
         const renderVal = (
-        <div>
+        <div style={{height:'50vh'}}>
             <h4>{this.state.name}</h4>
             <h6>Variables</h6>
-            <ul>
+            <ul style={{height:'50%', overflow: 'auto'}}>
                 {this.state.nodes && this.state.nodes.vars ? this.state.nodes.vars.map((n) => this.renderNode(n)) : null}
             </ul>
             <h6>Parameters</h6>
-            <ul>
+            <ul style={{height:'50%', overflow: 'auto'}}>
                 {this.state.nodes && this.state.nodes.pars ? this.state.nodes.pars.map((n) => this.renderNode(n)) : null}
             </ul>
         </div>

@@ -6,16 +6,15 @@ import ExplorerDataView from './ExplorerDataView'
 function App() {    
   return (
     <div className="App">
-      <ExplorerTreeView
-        name="Components"
-      ></ExplorerTreeView>
-      <br/>
-      <hr/>
-      <br/>
-      <ExplorerDataView
-        id="datalist"
-        name="Data"
-      ></ExplorerDataView>
+      <div className="ExplorerBar">
+          <ExplorerTreeView
+            name="Components"
+          ></ExplorerTreeView>
+          <ExplorerDataView
+            id="datalist"
+            name="Data"
+          ></ExplorerDataView>
+      </div>
       <div id="vis" className="graphic"></div>
     </div>
   );

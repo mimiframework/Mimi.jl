@@ -196,3 +196,26 @@ gensym("ModelDef") names look like Symbol("##ModelDef#123")
 function is_abspath(path::ComponentPath)
     return ! isempty(path) && match(r"^##ModelDef#\d+$", string(path.names[1])) !== nothing
 end
+
+# Returns a dictionary of the paths associated with all components, including composite components
+function _get_all_paths(m::Model)
+    all_paths = Dict{Symbol, ComponentPath}()
+    for comp in components(m) # iterate over top level ComponentInstances
+        _add_paths(m, comp, all_paths)
+    end
+    return all_paths
+end
+
+# a helper function to perform a preorder traversal of a given top-level component
+# in model m and add that path, and all sub-component paths, to the paths array
+function _add_paths(m::Model, comp::Union{CompositeComponentInstance, LeafComponentInstance}, paths::Dict{Symbol, ComponentPath})
+    if isa(comp, CompositeComponentInstance)
+        paths[comp.comp_name] = comp.comp_path     
+        for subcomp in values(comp.comps_dict)
+            _add_paths(m, subcomp, paths)
+        end
+    else # LeafComponentInstance
+        paths[comp.comp_name] = comp.comp_path          
+    end
+    return paths
+end

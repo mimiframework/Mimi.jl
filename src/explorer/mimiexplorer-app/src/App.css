@@ -1,16 +1,6 @@
 .App {
   text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+  overflow: hidden;
 }
 
 .App-header {
@@ -28,11 +18,43 @@
   color: #61dafb;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.ExplorerBar {
+  width: 35%;
+  height: 100vh;
+  float: left;
+}
+
+.ExplorerTreeView {
+  height: 50vh;
+  float: left;
+}
+
+.MuiTreeView-root {
+  height: 30vh;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+}
+
+.ExplorerDataView {
+  height:50vh;
+  float: left;
+  border: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.li {
+  text-align: 'left'
+}
+
+.h4 {
+  margin-top: 0
+}
+
+.graphic {
+  float: right;
+  border: 1px solid #ccc;
+  background-color: #FFFFFF;
+  width: 60%;
+  height: 100%;
+  overflow-y: scroll;
 }

@@ -13,30 +13,28 @@ end
 
 # Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
-    println("getting spec for comp_name $comp_name, item_name $item_name")
     dims = dim_names(m, comp_name, item_name)
     if length(dims) > 2
         # Drop references to singleton dimensions
         dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
     end
-
+    
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
     if length(dims) == 0
-        println("length(dims) == 0")
-        value = m[comp_name, item_name]
+        paths = _get_all_paths(m)
+        comp_path = paths[comp_name];
+        value = m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name]
         name = "$comp_name : $item_name = $value"
         spec = createspec_singlevalue(name)
     elseif length(dims) > 2
-        println("length(dims) > 2")
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         return nothing
     else
-        println("else")
         name = "$comp_name : $item_name"          
         df = getdataframe(m, comp_name, item_name)
         dffields = map(string, names(df))         # convert to string once before creating specs
-
+        
         # a 'time' field necessitates a line plot
         if "time" in dffields
 
@@ -114,7 +112,7 @@ function tree_view_values(model::Model)
         push!(all_subcomps, subcomp)
     end
 
-    # Return sorted list so that the UI list of items will be in alphabetical order 
+    # Return sorted list so that the UI list of items will be in lexicographic order 
     return sort(all_subcomps, by = x -> lowercase(x["name"]))
 end
 
@@ -141,26 +139,17 @@ function menu_item_list(model::Model)
         append!(par_menuitems, all_subcomp_values["pars"])
     end
 
-    # Return sorted list so that the UI list of items will be in alphabetical order 
+    # Return sorted list so that the UI list of items will be in lexicographic order 
     return Dict("vars" => sort(var_menuitems, by = x -> lowercase(x["name"])),"pars" => sort(par_menuitems, by = x -> lowercase(x["name"])))
 end
 
 # Create the list of variables and parameters
-function menu_item_list(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
-    var_menuitems = []
-    par_menuitems = []
-
-    for var_name in variable_names(comp_def)
-        menu_item = _menu_item(model, comp_name, var_name)
-        push!(var_menuitems, menu_item)
-    end
-    for par_name in parameter_names(comp_def)
-        menu_item = _menu_item(model, comp_name, par_name)
-        push!(par_menuitems, menu_item)
-    end
+function menu_item_list(m::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
+    var_menu_items = map(var_name -> _menu_item(m, Symbol(comp_name), var_name), variable_names(comp_def));
+    par_menu_items = map(par_name -> _menu_item(m, Symbol(comp_name), par_name), parameter_names(comp_def));
     
-    # Return sorted list so that the UI list of items will be in alphabetical order 
-    return Dict("vars" => sort(var_menuitems, by = x -> lowercase(x["name"])),"pars" => sort(par_menuitems, by = x -> lowercase(x["name"])))
+    # Return sorted list so that the UI list of items will be in lexicographic order 
+    return Dict("vars" => sort(var_menu_items, by = x -> lowercase(x["name"])),"pars" => sort(par_menu_items, by = x -> lowercase(x["name"])))
 end
 
 function menu_item_list(sim_inst::SimulationInstance)
@@ -172,7 +161,7 @@ function menu_item_list(sim_inst::SimulationInstance)
         end
     end
 
-    # Return sorted list so that the UI list of items will be in alphabetical order 
+    # Return sorted list so that the UI list of items will be in lexicographic order 
     return sort(all_menuitems, by = x -> lowercase(x["name"]))
 end
 
@@ -184,7 +173,9 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     end
 
     if length(dims) == 0
-        value = m[comp_name, item_name]
+        paths = _get_all_paths(m)
+        comp_path = paths[comp_name];
+        value = m[comp_path, item_name]
         name = "$comp_name : $item_name = $value"
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")

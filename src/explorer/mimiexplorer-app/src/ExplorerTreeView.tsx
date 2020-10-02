@@ -36,7 +36,6 @@ export default class ExplorerTreeView extends React.Component<TreeViewProps, Tre
                 <TreeItem key={node.name} nodeId={node.name} label={node.name} onLabelClick= {(event)=> {
                     event.preventDefault();
                     global["sendMessageToJulia"]({cmd: 'update_data', comp_name: node.name})
-                    // sendMessageToJulia({cmd: 'display_spec', comp_name: comp_name, item_name: item_name})
                 }}>
                     {node.children ? node.children.map((n) => this.renderTree(n)) : null}
                 </TreeItem>
@@ -45,15 +44,17 @@ export default class ExplorerTreeView extends React.Component<TreeViewProps, Tre
     }
 
     render = () => {
-        const renderVal = (<TreeView
-            className={"classes.root"}
-            defaultCollapseIcon={<ExpandMore />}
-            defaultExpanded={["root"]}
-            defaultExpandIcon={<ChevronRight />}
-        >
+        const renderVal = (<div>
             <h4>{this.state.name}</h4>
-            {this.state.children ? this.state.children.map((n) => this.renderTree(n)) : null}
-        </TreeView>);
+            <TreeView
+                className={"classes.root"}
+                defaultCollapseIcon={<ExpandMore />}
+                defaultExpanded={["root"]}
+                defaultExpandIcon={<ChevronRight />}
+            >
+                {this.state.children ? this.state.children.map((n) => this.renderTree(n)) : null}
+            </TreeView>
+        </div>);
         return renderVal;
     };
 }
