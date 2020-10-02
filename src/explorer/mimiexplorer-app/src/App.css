@@ -1,53 +1,40 @@
 .App {
-  text-align: center;
-  overflow: hidden;
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
+  text-align: left;
+  margin: 0;
 }
 
 .ExplorerBar {
-  width: 35%;
+  width: 35vh;
   height: 100vh;
   float: left;
+  margin: 0;
+  position: relative;
 }
 
 .ExplorerTreeView {
-  height: 50vh;
-  float: left;
+  height: 48%;
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
 }
 
 .MuiTreeView-root {
-  height: 30vh;
-  overflow-y: auto;
-  border: 1px solid #ccc;
+  overflow-y: scroll;
+  margin: 0;
 }
 
 .ExplorerDataView {
-  height:50vh;
-  float: left;
+  height:48%;
   border: 1px solid #ccc;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
 }
 
-.li {
-  text-align: 'left'
-}
-
-.h4 {
-  margin-top: 0
+ul {
+  overflow-y: scroll;
+  margin: 0;
 }
 
 .graphic {

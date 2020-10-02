@@ -44,7 +44,7 @@ export default class ExplorerTreeView extends React.Component<TreeViewProps, Tre
     }
 
     render = () => {
-        const renderVal = (<div>
+        const renderVal = (<div className="ExplorerTreeView">
             <h4>{this.state.name}</h4>
             <TreeView
                 className={"classes.root"}

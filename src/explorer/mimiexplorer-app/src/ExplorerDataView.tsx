@@ -58,14 +58,14 @@ export default class ExplorerDataView extends React.Component<DataViewProps, Dat
 
     render = () => {
         const renderVal = (
-        <div style={{height:'50vh'}}>
+        <div className="ExplorerDataView">
             <h4>{this.state.name}</h4>
             <h6>Variables</h6>
-            <ul style={{height:'50%', overflow: 'auto'}}>
+            <ul>
                 {this.state.nodes && this.state.nodes.vars ? this.state.nodes.vars.map((n) => this.renderNode(n)) : null}
             </ul>
             <h6>Parameters</h6>
-            <ul style={{height:'50%', overflow: 'auto'}}>
+            <ul>
                 {this.state.nodes && this.state.nodes.pars ? this.state.nodes.pars.map((n) => this.renderNode(n)) : null}
             </ul>
         </div>
