@@ -5,7 +5,7 @@ using Test
 
 import Mimi:
     external_params, external_param, TimestepMatrix, TimestepVector,
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep, build, import_params!
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, import_params!
 
 #
 # Test that parameter type mismatches are caught
@@ -17,7 +17,7 @@ expr = :(
         end
     end
 )
-@test_throws LoadError eval(expr)
+@test_throws ErrorException eval(expr)
 
 expr = :(
     @defcomp BadComp2 begin
@@ -26,7 +26,7 @@ expr = :(
         end
     end
 )
-@test_throws LoadError eval(expr)
+@test_throws ErrorException eval(expr)
 
 #
 # Test that the old type parameterization syntax errors
@@ -73,7 +73,7 @@ set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 set_param!(m, :MyComp, :j, [1,2,3])
 
-build(m)    # applies defaults, creating external params in the model instance's copied definition
+Mimi.build!(m)    # applies defaults, creating external params in the model instance's copied definition
 extpars = external_params(m.mi.md)
 
 @test isa(extpars[:a], ArrayModelParameter)

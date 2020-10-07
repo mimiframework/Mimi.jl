@@ -423,7 +423,7 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
     end
 
     if (rebuild || ! is_built(m))
-        build(m)
+        build!(m)
     end
 
     # println("Running model...")

@@ -27,14 +27,6 @@ compname(obj::AbstractComponentDef)   = compname(obj.comp_id)
 
 compnames() = map(compname, compdefs())
 
-"""
-     is_detached(obj::AbstractComponentDef)
-
-Return true if `obj` is not a ModelDef and it has no parent.
-"""
-is_detached(obj::AbstractComponentDef) = (obj.parent === nothing)
-is_detached(obj::ModelDef) = false     # by definition
-
 dirty(md::ModelDef) = md.dirty
 
 function dirty!(obj::AbstractComponentDef)
@@ -791,16 +783,6 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     dirty!(obj)
 
     nothing
-end
-
-"""
-Return True if time Dimension `outer` contains `inner`.
-"""
-function time_contains(outer::Dimension, inner::Dimension)
-    outer_idx = keys(outer)
-    inner_idx = keys(inner)
-
-    return outer_idx[1] <= inner_idx[1] && outer_idx[end] >= inner_idx[end]
 end
 
 """
