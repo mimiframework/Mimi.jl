@@ -263,14 +263,13 @@ Return the dimension names for the variable or parameter `datum_name`
 in the given component `comp_name` in model `m`.
 """
 function dim_names(m::Model, comp_name::Symbol, datum_name::Symbol)
-    try
-        return dim_names(compdef(m, comp_name), datum_name)
-    catch e
-        paths = _get_all_paths(m)
-        comp_path = paths[comp_name]
-        comp_def = find_comp(m, comp_path)
-        return dim_names(comp_def, datum_name)
-    end
+    # the line below would work if the comp_name is in the top level of components in m's component structure
+    # return dim_names(compdef(m, comp_name), datum_name)
+  
+    paths = _get_all_paths(m)
+    comp_path = paths[comp_name]
+    comp_def = find_comp(m, comp_path)
+    return dim_names(comp_def, datum_name)
 end
 
 dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)

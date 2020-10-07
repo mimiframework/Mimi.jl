@@ -62,8 +62,7 @@ for item in items
 end
 
 s = menu_item_list(m)
-@test typeof(s) == Array{Any, 1}
-@test length(s) == 7
+@test collect(keys(s)) == ["pars", "vars"]
 
 #3.  explore(m::Model, title = "Electron")
 w = explore(m, title = "Testing Window")

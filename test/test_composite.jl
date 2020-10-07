@@ -6,7 +6,8 @@ using Mimi
 import Mimi:
     ComponentId, ComponentPath, ComponentDef, AbstractComponentDef,
     CompositeComponentDef, ModelDef, time_labels, compdef, find_comp,
-    import_params!, CompositeVariableDef, CompositeParameterDef
+    import_params!, CompositeVariableDef, CompositeParameterDef, components,
+    dim_names
 
 @defcomp Comp1 begin
     par_1_1 = Parameter(index=[time])      # external input
@@ -160,6 +161,16 @@ end
 @test m[:top, :fooA1] == 1
 @test m[:top, :foo3] == 10
 @test m[:top, :var_3_1] == collect(6.0:6:96.0)
+
+# test ways to drill down into composites to get information
+@test collect(keys(components(top))) == [:A, :B]
+@test collect(keys(components(m, :top))) == [:A, :B]
+@test collect(keys(components(Comp1))) == []
+@test collect(keys(components(Comp1))) == []
+
+@test dim_names(m, :Comp1, :par_1_1) == [:time]
+@test dim_names(m, :Comp1, :var_1_1) == [:time]
+@test dim_names(m, :A, :var_2_1) == [:time]
 
 # Test joining external params.
 #

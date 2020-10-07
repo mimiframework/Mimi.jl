@@ -100,7 +100,7 @@ istype(T::DataType) = (pair -> pair.second isa T)
 # Namespace filter functions return dicts of values for the given type.
 # N.B. only composites hold other comps in the namespace.
 components(model::Model, comp_name::Symbol) = components(compdef(model, comp_name))
-components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
+components(obj::AbstractComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
 
 param_dict(obj::ComponentDef) = filter(istype(ParameterDef), obj.namespace)
 param_dict(obj::AbstractCompositeComponentDef) = filter(istype(CompositeParameterDef), obj.namespace)
