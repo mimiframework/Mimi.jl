@@ -48,7 +48,7 @@ run(m)
 @test typeof(dataframe_or_scalar(m, :MyComp, :a)) == DataFrame
 @test typeof(dataframe_or_scalar(m, :MyComp, :d)) == Float64
 
-#2.  Specs and menu
+# 2.  Specs and menu
 items = [:a, :b, :c, :d, :e, :f, :x]
 for item in items
     static_spec = _spec_for_item(m, :MyComp, item; interactive = false)
@@ -63,13 +63,15 @@ end
 
 s = menu_item_list(m)
 @test collect(keys(s)) == ["pars", "vars"]
+@test length(collect(keys(s["pars"]))) == 6
+@test length(collect(keys(s["vars"]))) == 1
 
-#3.  explore(m::Model, title = "Electron")
+# 3.  explore(m::Model, title = "Electron")
 w = explore(m, title = "Testing Window")
 @test typeof(w) == Electron.Window
 close(w)
 
-#4.  Mim.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
+# 4.  Mimi.plot(m::Model, comp_name::Symbol, datum_name::Symbol; 
 #       dim_name::Union{Nothing, Symbol} = nothing)
 items = [:a, :b, :c, :d, :e, :f, :x]
 for item in items
@@ -77,7 +79,7 @@ for item in items
     @test typeof(Mimi.plot(m, :MyComp, item)) == p_type
 end
 
-#6.  errors and warnings
+# 5.  errors and warnings
 @defcomp MyComp2 begin
 
     a = Parameter(index = [time, regions, four])
@@ -101,6 +103,9 @@ set_param!(m2, :MyComp2, :a, ones(101, 3, 4))
 run(m2)
 
 #spec creation for MyComp.a should warn because over 2 indexed dimensions
+# TODO it would be better if this could throw the warning and display some default
+# 
+# instead of erroring
 @test_logs (:warn, "MyComp2.a has > 2 indexed dimensions, not yet implemented in explorer") explore(m2)
 @test_logs (:warn, "MyComp2.a has > 2 indexed dimensions, not yet implemented in explorer") _spec_for_item(m2, :MyComp2, :a)
 
@@ -145,5 +150,7 @@ set_leftover_params!(m, Dict{String, Any}([
     "mat" => rand(length(regions), nsteps)
 ]))
 run(m)
+# TODO once again this errors intead of just throwing warnings, would be best
+# to fix that
 w = explore(m)
 close(w)
