@@ -91,4 +91,7 @@ update_param!(mi, :par3, par3)
 @test mi[:foo1, :par3] == par3
 @test m.md.dirty == false # should not dirty the model
 
+# test dim_keys
+@test dim_keys(m, :time) == dim_keys(m.md, :time) == dim_keys(mi, :time)
+
 end # module

@@ -286,6 +286,12 @@ Return keys for dimension `dim-name` in model `m`.
 """
 @delegate dim_keys(m::Model, dim_name::Symbol) => md
 """
+     dim_keys(mi::ModelInstance, dim_name::Symbol)
+
+ Return keys for dimension `dim-name` in model instance `mi`.
+ """
+ @delegate dim_keys(mi::ModelInstance, dim_name::Symbol) => md
+"""
     dim_key_dict(m::Model)
 
 Return a dict of dimension keys for all dimensions in model `m`.
