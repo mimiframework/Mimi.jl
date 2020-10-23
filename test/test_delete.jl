@@ -45,5 +45,5 @@ delete_param!(m3, :p1, delete_connections = false)
 @test length(m3.md.external_param_conns) == 4   # All connections still remain
 delete_param!(m3, :p2_A1, delete_connections = true)
 @test length(m3.md.external_params) == 1
-@test length(m3.md.external_param_conns) == 3   # All connections still remain
+@test length(m3.md.external_param_conns) == 3   # p2_A1 connection was deleted
 end
