@@ -112,7 +112,7 @@ function delete_param!(md::ModelDef, external_param_name::Symbol; delete_connect
     end
     
     if delete_connections
-        epc_filter = x -> x.external_param == external_param_name
+        epc_filter = x -> x.external_param != external_param_name
         filter!(epc_filter, md.external_param_conns)
     end
 end

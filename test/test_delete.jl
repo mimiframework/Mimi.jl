@@ -29,7 +29,7 @@ delete!(m1, :A1)
 @test length(Mimi.components(m1.md)) == 1
 @test length(m1.md.external_param_conns) == 2   # Component A1 deleted, so only two connections left
 @test length(m1.md.external_params) == 3        # but all three external params remain
-@test :p2_A1 in keys(m2.md.external_params)
+@test :p2_A1 in keys(m1.md.external_params)
 
 # Test component deletion that removes unbound component parameters
 m2 = _get_model()
@@ -38,4 +38,12 @@ delete!(m2, :A1, delete_unbound_comp_params = true)
 @test length(m2.md.external_params) == 2        # :p2_A1 has been removed
 @test !(:p2_A1 in keys(m2.md.external_params))
 
+# Test the `delete_param! function on its own
+m3 = _get_model()
+delete_param!(m3, :p1, delete_connections = false)
+@test length(m3.md.external_params) == 2
+@test length(m3.md.external_param_conns) == 4   # All connections still remain
+delete_param!(m3, :p2_A1, delete_connections = true)
+@test length(m3.md.external_params) == 1
+@test length(m3.md.external_param_conns) == 3   # All connections still remain
 end
