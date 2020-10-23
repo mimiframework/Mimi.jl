@@ -84,12 +84,10 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_param
     if delete_unbound_comp_params # Find and delete external_params that were connected only to the deleted component if specified
         # Get all external parameters this component is connected to
         comp_ext_params = map(x -> x.external_param, filter(x -> x.comp_path == comp_path, md.external_param_conns))
-        println(comp_ext_params)
 
         # Identify which ones are not connected to any other components
         unbound_filter = x -> length(filter(epc -> epc.external_param == x, md.external_param_conns)) == 1
         unbound_comp_params = filter(unbound_filter, comp_ext_params)
-        println(unbound_comp_params)
 
         # Delete these parameters (the delete_param! function also deletes the associated external_param_conns)
         [delete_param!(md, param_name, delete_connections=true) for param_name in unbound_comp_params]
