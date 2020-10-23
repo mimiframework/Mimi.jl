@@ -54,5 +54,7 @@ run(m)
 
 # test `update_param!` for references
 refA[:p1] = 10
+run(m)
+@test m[:foo, :p1] == 10
 
 end
