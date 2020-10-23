@@ -24,6 +24,13 @@ mutable struct Model <: AbstractModel
     function Model(m::Model)
         return new(deepcopy(m.md), nothing)
     end
+
+    # Create a model from a ModelInstance (temporary for explore call)
+    function Model(mi::ModelInstance)
+        m =  new(deepcopy(mi.md), deepcopy(mi))
+        m.md.dirty = false; # need this for explore to run, even though mi.md.dirty = true by definition
+        return m
+    end
 end
 
 """
