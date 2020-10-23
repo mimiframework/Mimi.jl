@@ -378,12 +378,12 @@ this component will also be deleted.
 @delegate Base.delete!(m::Model, comp_name::Symbol; delete_unbound_comp_params::Bool=false) => md
 
 """
-    delete_param!(m::Model, external_param_name::Symbol; delete_connections::Bool=true)
+    delete_param!(m::Model, external_param_name::Symbol)
 
-Delete `external_param_name` from a model `m`'s ModelDef's list of external parameters. If `delete_connections=true`,
+Delete `external_param_name` from a model `m`'s ModelDef's list of external parameters, and
 also remove all external parameters connections that were connected to `external_param_name`.
 """
-@delegate delete_param!(m::Model, external_param_name::Symbol; delete_connections::Bool=true) => md
+@delegate delete_param!(m::Model, external_param_name::Symbol) => md
 
 """
     set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing)

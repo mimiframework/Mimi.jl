@@ -44,11 +44,8 @@ delete!(m2, :A1, delete_unbound_comp_params = true)
 # Test the `delete_param! function on its own
 m3 = _get_model()
 run(m3)
-delete_param!(m3, :p1, delete_connections = false)
-@test_throws ErrorException run(m3)     # will error because there are connections that reference p1 
+delete_param!(m3, :p1)
+@test_throws ErrorException run(m3)     # will not be able to run because p1 in both components aren't connected to anything
 @test length(m3.md.external_params) == 2
-@test length(m3.md.external_param_conns) == 4   # All connections still remain
-delete_param!(m3, :p2_A1, delete_connections = true)
-@test length(m3.md.external_params) == 1
-@test length(m3.md.external_param_conns) == 3   # p2_A1 connection was deleted
+@test length(m3.md.external_param_conns) == 2   # The external param connections to p1 have also been removed
 end

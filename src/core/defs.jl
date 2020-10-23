@@ -90,7 +90,7 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_param
         unbound_comp_params = filter(unbound_filter, comp_ext_params)
 
         # Delete these parameters (the delete_param! function also deletes the associated external_param_conns)
-        [delete_param!(md, param_name, delete_connections=true) for param_name in unbound_comp_params]
+        [delete_param!(md, param_name) for param_name in unbound_comp_params]
 
     else # only delete the external connections for this component but leave all external parameters
         epc_filter = x -> x.comp_path != comp_path
@@ -100,22 +100,22 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_param
 end
 
 """
-    delete_param!(md::ModelDef, external_param_name::Symbol; delete_connections::Bool=true)
+    delete_param!(md::ModelDef, external_param_name::Symbol)
 
-Delete `external_param_name` from `md`'s list of external parameters. If `delete_connections=true`,
-also remove all external parameters connections that were connected to `external_param_name`.
+Delete `external_param_name` from `md`'s list of external parameters, and also 
+remove all external parameters connections that were connected to `external_param_name`.
 """
-function delete_param!(md::ModelDef, external_param_name::Symbol; delete_connections::Bool=true)
+function delete_param!(md::ModelDef, external_param_name::Symbol)
     if external_param_name in keys(md.external_params)
         delete!(md.external_params, external_param_name)
     else
         error("Cannot delete $external_param_name, not found in external parameter list.")
     end
     
-    if delete_connections
-        epc_filter = x -> x.external_param != external_param_name
-        filter!(epc_filter, md.external_param_conns)
-    end
+    # Remove external parameter connections
+    epc_filter = x -> x.external_param != external_param_name
+    filter!(epc_filter, md.external_param_conns)
+
     dirty!(md)
 end
 
