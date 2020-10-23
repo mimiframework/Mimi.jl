@@ -35,9 +35,9 @@ function Base.setindex!(ref::ComponentReference, value, name::Symbol)
     compdef = find_comp(ref)
     unique_name = Symbol("$(compdef.name)_$name")
     if has_parameter(parent(ref), unique_name)
-        update_param!(parent(ref), unique_name, value)
+        update_param!(ref, name, value)
     else
-        set_param!(parent(ref), compdef, name, unique_name, value)
+        set_param!(ref, name, value)
     end
 end
 
