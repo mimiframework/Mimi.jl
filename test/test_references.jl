@@ -52,6 +52,7 @@ connect_param!(refC, refA, :v1)
 run(m)
 @test m[:C, :v1] == collect(1:10)
 
-# Test `setindex!` calls to `set_param!` and `update_param!`
+# test `update_param!` for references
+refA[:p1] = 10
 
 end
