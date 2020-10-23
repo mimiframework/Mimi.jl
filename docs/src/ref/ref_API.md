@@ -7,6 +7,7 @@ Model
 add_comp!  
 connect_param!
 create_marginal_model
+delete_param!
 dim_count
 dim_keys
 dim_key_dict
