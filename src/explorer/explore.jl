@@ -52,7 +52,7 @@ function explore(m::Model; title = "Electron")
 
 end
 
-function explore(mi::Modelnstance; title = "Electron")
+function explore(mi::ModelInstance; title = "Electron")
     m = Model(mi);
     m.md.dirty = false; # we need this to get explorer working, but it's a hack and should be temporary!
     explore(Model(m));
