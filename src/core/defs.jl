@@ -96,6 +96,7 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_param
         epc_filter = x -> x.comp_path != comp_path
         filter!(epc_filter, md.external_param_conns)
     end
+    dirty!(md)
 end
 
 """
@@ -115,6 +116,7 @@ function delete_param!(md::ModelDef, external_param_name::Symbol; delete_connect
         epc_filter = x -> x.external_param != external_param_name
         filter!(epc_filter, md.external_param_conns)
     end
+    dirty!(md)
 end
 
 @delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
