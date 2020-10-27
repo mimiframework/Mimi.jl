@@ -58,13 +58,13 @@ find_first_period(comp_def::AbstractComponentDef) = @or(first_period(comp_def), 
 find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), last_period(get_root(comp_def)))
 
 """
-    delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_params::Bool=false)
+    delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 
 Delete a `component` by name from `md`.
-If `delete_unbound_comp_params=true` then any external model parameters connected only to 
+If `deep=true` then any external model parameters connected only to 
 this component will also be deleted.
 """
-function Base.delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_params::Bool=false)
+function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
     if ! has_comp(md, comp_name)
         error("Cannot delete '$comp_name': component does not exist.")
     end
@@ -81,7 +81,7 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; delete_unbound_comp_param
 
     # Remove external parameter connections
 
-    if delete_unbound_comp_params # Find and delete external_params that were connected only to the deleted component if specified
+    if deep # Find and delete external_params that were connected only to the deleted component if specified
         # Get all external parameters this component is connected to
         comp_ext_params = map(x -> x.external_param, filter(x -> x.comp_path == comp_path, md.external_param_conns))
 

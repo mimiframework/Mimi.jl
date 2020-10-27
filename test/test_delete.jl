@@ -1,6 +1,6 @@
 module TestDelete
 
-# Test the behavior of the `delete!` function with and without the `delete_unbound_comp_params` kwarg.
+# Test the behavior of the `delete!` function with and without the `deep` kwarg.
 
 using Mimi
 using Test
@@ -36,7 +36,7 @@ run(m1) # run before and after to test that `delete!` properly "dirties" the mod
 
 # Test component deletion that removes unbound component parameters
 m2 = _get_model()
-delete!(m2, :A1, delete_unbound_comp_params = true)
+delete!(m2, :A1, deep = true)
 @test length(Mimi.components(m2.md)) == 1
 @test length(m2.md.external_params) == 2        # :p2_A1 has been removed
 @test !(:p2_A1 in keys(m2.md.external_params))

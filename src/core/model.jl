@@ -369,13 +369,13 @@ Add a scalar type parameter `name` with value `value` to the model `m`.
 @delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """
-    delete!(m::Model, component::Symbol; delete_unbound_comp_params::Bool=false)
+    delete!(m::Model, component::Symbol; deep::Bool=false)
 
 Delete a `component` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
-If `delete_unbound_comp_params=true` then any external model parameters connected only to 
+If `deep=true` then any external model parameters connected only to 
 this component will also be deleted.
 """
-@delegate Base.delete!(m::Model, comp_name::Symbol; delete_unbound_comp_params::Bool=false) => md
+@delegate Base.delete!(m::Model, comp_name::Symbol; deep::Bool=false) => md
 
 """
     delete_param!(m::Model, external_param_name::Symbol)
