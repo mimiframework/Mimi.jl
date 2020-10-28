@@ -40,6 +40,7 @@ delete!(m2, :A1, deep = true)
 @test length(Mimi.components(m2.md)) == 1
 @test length(m2.md.external_params) == 2        # :p2_A1 has been removed
 @test !(:p2_A1 in keys(m2.md.external_params))
+run(m2)
 
 # Test the `delete_param! function on its own
 m3 = _get_model()
