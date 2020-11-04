@@ -89,13 +89,14 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
         unbound_filter = x -> length(filter(epc -> epc.external_param == x, md.external_param_conns)) == 1
         unbound_comp_params = filter(unbound_filter, comp_ext_params)
 
-        # Delete these parameters (the delete_param! function also deletes the associated external_param_conns)
+        # Delete these parameters
         [delete_param!(md, param_name) for param_name in unbound_comp_params]
+    end        
 
-    else # only delete the external connections for this component but leave all external parameters
-        epc_filter = x -> x.comp_path != comp_path
-        filter!(epc_filter, md.external_param_conns)
-    end
+    # delete any external connections for this component
+    epc_filter = x -> x.comp_path != comp_path
+    filter!(epc_filter, md.external_param_conns)
+
     dirty!(md)
 end
 
