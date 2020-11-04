@@ -347,7 +347,7 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
     end
 end
 
-# rvalue is a Number so we need to deal with broadcasting
+# rvalue is a Number so we might need to deal with broadcasting
 function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
                          trans::TransformSpec, rvalue::Number) where {T, N}
     op = trans.op
@@ -355,7 +355,11 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
     indices = _param_indices(param, md, trans)
 
     if op == :(=)
-        _perturb_param_recurse!(pvalue, indices, rvalue)
+
+        # if there is no time index, we can do a normal broadcast with .= and if not
+        # we will need to loop through and be fancy
+        ti = get_time_index_position(param)
+        isnothing(ti) ? pvalue[indices...] .= rvalue : _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
 
     elseif op == :(*=)
         pvalue[indices...] *= rvalue
@@ -365,28 +369,24 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
     end
 end
 
-# special case of op == :(=) and rvalue is a Number: recurse throught the indices using 
-# two cases (split into methods for speed?):
-#   BASE CASE: the index is not an array
-#   RECURSIVE CASE: the index is an array, need to iterate through it
-#
-# NOTE: currently we have a clumsy try-catch because somestimes an array is appropriate 
-# ie. when there are more than one dimension to the parameter)
-function _perturb_param_recurse!(pvalue, indices, rvalue)
+# special case where we might need to loop through the time indices
+function _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
 
-    if isa(indices, Array)
-        try
-            pvalue[indices...] = rvalue
+    indices1, ts, indices2 = split_indices(indices, ti)
 
-        catch
-            foreach(indices) do i
-                _perturb_param_recurse!(pvalue, i, rvalue)
-            end
+    # if the length of indices is just 1, then we won't need to use the broadcast
+    # operator
+    l = length(indices)
 
+    # array of timestep indices so need to loop through them
+    if isa(ts, Array) 
+        for el in ts
+            l == 1 ? pvalue[indices1..., el, indices2...] = rvalue : pvalue[indices1..., el, indices2...] .= rvalue
         end
-    else
-        pvalue[indices] = rvalue
 
+    # just a single timestep index so proceed as usual
+    else 
+        l == 1 ? pvalue[indices...] = rvalue : pvalue[indices...] .= rvalue
     end
 end
 
