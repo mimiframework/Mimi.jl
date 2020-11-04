@@ -354,16 +354,14 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
     pvalue = value(param)
     indices = _param_indices(param, md, trans)
 
-    if op == :(*=)
-        pvalue[indices...] *= rvalue
-
-    elseif op == :(+=)
-        pvalue[indices...] += rvalue
-
-    else # op is =
+    if op == :(=)
         _perturb_param_recurse!(pvalue, indices, rvalue)
 
-    end
+    elseif op == :(*=)
+        pvalue[indices...] *= rvalue
+
+    else 
+        pvalue[indices...] += rvalue
 
 end
 
