@@ -362,7 +362,7 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
 
     else 
         pvalue[indices...] += rvalue
-
+    end
 end
 
 # special case of op == :(=) and rvalue is a Number: recurse throught the indices using 
