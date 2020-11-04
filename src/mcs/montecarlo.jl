@@ -326,8 +326,11 @@ function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, trans::Tr
     end
 end
 
+# rvalue is an Array so we expect the dims to match and don't need to worry about
+# broadcasting
 function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
-                         trans::TransformSpec, rvalue::Union{Number, Array{<: Number, N}}) where {T, N}
+    trans::TransformSpec, rvalue::Array{<: Number, N}) where {T, N}
+    
     op = trans.op
     pvalue = value(param)
     indices = _param_indices(param, md, trans)
@@ -340,6 +343,52 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
 
     else
         pvalue[indices...] += rvalue
+
+    end
+end
+
+# rvalue is a Number so we need to deal with broadcasting
+function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
+                         trans::TransformSpec, rvalue::Number) where {T, N}
+    op = trans.op
+    pvalue = value(param)
+    indices = _param_indices(param, md, trans)
+
+    if op == :(*=)
+        pvalue[indices...] *= rvalue
+
+    elseif op == :(+=)
+        pvalue[indices...] += rvalue
+
+    else # op is =
+        _perturb_param_recurse!(pvalue, indices, rvalue)
+
+    end
+
+end
+
+# special case of op == :(=) and rvalue is a Number: recurse throught the indices using 
+# two cases (split into methods for speed?):
+#   BASE CASE: the index is not an array
+#   RECURSIVE CASE: the index is an array, need to iterate through it
+#
+# NOTE: currently we have a clumsy try-catch because somestimes an array is appropriate 
+# ie. when there are more than one dimension to the parameter)
+function _perturb_param_recurse!(pvalue, indices, rvalue)
+
+    if isa(indices, Array)
+        try
+            pvalue[indices...] = rvalue
+
+        catch
+            foreach(indices) do i
+                _perturb_param_recurse!(pvalue, i, rvalue)
+            end
+
+        end
+    else
+        pvalue[indices] = rvalue
+
     end
 end
 
