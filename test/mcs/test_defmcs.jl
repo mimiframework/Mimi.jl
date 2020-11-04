@@ -273,7 +273,7 @@ trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 # test broadcasting examples with =
 sd3 = @defsim begin
 
-    # 1 dimension - these work
+    # 1 dimension
     depk[:] = Uniform(0.1, 0.2)
     k0[(Region2, Region3)] = Uniform(20, 30)
     

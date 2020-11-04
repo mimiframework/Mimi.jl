@@ -359,7 +359,16 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
         # if there is no time index, we can do a normal broadcast with .= and if not
         # we will need to loop through and be fancy
         ti = get_time_index_position(param)
-        isnothing(ti) ? pvalue[indices...] .= rvalue : _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
+
+        if isnothing(ti)
+            try 
+                pvalue[indices...] = rvalue
+            catch
+                pvalue[indices...] .= rvalue
+            end
+        else
+            _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
+        end
 
     elseif op == :(*=)
         pvalue[indices...] *= rvalue
@@ -374,19 +383,23 @@ function _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
 
     indices1, ts, indices2 = split_indices(indices, ti)
 
-    # if the length of indices is just 1, then we won't need to use the broadcast
-    # operator
-    l = length(indices)
-
     # array of timestep indices so need to loop through them
     if isa(ts, Array) 
         for el in ts
-            l == 1 ? pvalue[indices1..., el, indices2...] = rvalue : pvalue[indices1..., el, indices2...] .= rvalue
+            try
+                pvalue[indices1..., el, indices2...] = rvalue  
+            catch
+                pvalue[indices1..., el, indices2...] .= rvalue
+            end
         end
 
     # just a single timestep index so proceed as usual
     else 
-        l == 1 ? pvalue[indices...] = rvalue : pvalue[indices...] .= rvalue
+        try
+            pvalue[indices...] = rvalue
+        catch
+            pvalue[indices...] .= rvalue
+        end
     end
 end
 
