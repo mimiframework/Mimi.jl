@@ -203,12 +203,9 @@ sd = @defsim begin
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
 
-    # If using LHS, you can define correlations like this:
+    # Define the sampling strategy, and if you are using LHS, you can define 
+    # correlations like this:
     sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
-
-    # Exclude the sampling() call, since it will default to MCSData, or use the 
-    # following for simple random sampling:
-    sampling(MCSData)
 
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
