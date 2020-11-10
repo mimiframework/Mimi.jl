@@ -211,7 +211,7 @@ sd = @defsim begin
     share = Uniform(0.2, 0.8)
 
     # you can use the *= operator to replace the values in the parameter with the 
-    # product of the previous trial's value and the value of the RV for the current 
+    # product of the original value and the value of the RV for the current 
     # trial (note that in both lines below, all indexed values will be mulitplied by the
     # same draw from the given random parameter (name2 or Uniform(0.8, 1.2))
     sigma[:, Region1] *= name2
