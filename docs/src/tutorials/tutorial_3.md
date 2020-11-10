@@ -108,7 +108,7 @@ set_dimension!(m, :time, years)
 
 ```
 
-Now that you have changed the time dimension, you have a mismatch between the time labels attached to your parameters and the time lables used by the model.  Thus, **you must update at least all parameters with a `:time`** dimension and use the explicit `update_timesteps=true` flag to get the time labels on the parameters to match those in the model. This is required even in cases where you do not want to change the parameter values themselves (see the forum question [here](https://forum.mimiframework.org/t/update-time-index/134/5)) for an in-depth explanation of this case. You may of course also update parameters without a `:time` dimension as desired. 
+Now that you have changed the time dimension, you have a mismatch between the time labels attached to your parameters and the time labels used by the model.  Thus, **you must update at least all parameters with a `:time`** dimension and use the explicit `update_timesteps=true` flag to get the time labels on the parameters to match those in the model. This is required even in cases where you do not want to change the parameter values themselves (see the forum question [here](https://forum.mimiframework.org/t/update-time-index/134/5)) for an in-depth explanation of this case. You may of course also update parameters without a `:time` dimension as desired. 
 
 Create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
 

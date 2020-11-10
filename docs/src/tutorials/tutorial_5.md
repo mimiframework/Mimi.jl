@@ -186,7 +186,7 @@ The second is a shortcut, in which you can directly assign the distribution on t
 ```julia
 param1 = Normal(0, 0.8)
 ```
-**It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the right hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
+**It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
 
 The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a `@defsim` call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
 
