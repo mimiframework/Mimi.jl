@@ -108,7 +108,9 @@ set_dimension!(m, :time, years)
 
 ```
 
-Next, create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
+Now that you have changed the time dimension, you have a mismatch between the time labels attached to your parameters and the time lables used by the model.  Thus, **you must update at least all parameters with a `:time`** dimension and use the special `update_timesteps=true` flag to get the time labels on the parameters to match those in the model. This is required even in cases where you do not want to change the parameter values themselves (see the forum question [here](https://forum.mimiframework.org/t/update-time-index/134/5)) for an in-depth explanation of this case. You may of course also update parameters without a `:time` dimension as desired. 
+
+Create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
 
 ```julia
 params = Dict{Any, Any}()
@@ -126,7 +128,7 @@ update_params!(m, params, update_timesteps=true)
 run(m)
 ```
 
-Note that here we use the `update_timesteps` flag and set it to `true`, because since we have changed the time index we want the time labels on the parameters to change, not simply their values.
+Note again that here we use the `update_timesteps` flag and set it to `true`, because since we have changed the time index we want the time labels on the parameters to change, not simply their values.
 
 ## Component and Structural Modifications: The API
 
