@@ -270,7 +270,7 @@ trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
 
-# test potential broadcasting examples
+# test broadcasting examples
 sd3 = @defsim begin
 
     # 1 dimension

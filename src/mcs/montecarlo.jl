@@ -355,19 +355,30 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
     indices = _param_indices(param, md, trans)
 
     if op == :(=)
-
-        # if there is no time index, we can do a normal broadcast with .= and if not
-        # we will need to loop through and be fancy
+        
+        # first we check for a time index
         ti = get_time_index_position(param)
 
+        # If there is no time index we have all methods needed to broadcast normally
         if isnothing(ti)
-            try 
-                pvalue[indices...] = rvalue
-            catch
-                pvalue[indices...] .= rvalue
-            end
+            broadcast_flag = sum(map(x -> length(x) > 1, indices)) > 0
+            broadcast_flag ? pvalue[indices...] .= rvalue : pvalue[indices...] = rvalue
+        
         else
-            _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
+            indices1, ts, indices2 = split_indices(indices, ti)
+            non_ts_indices = [indices1..., indices2...]
+            broadcast_flag = isempty(non_ts_indices) ? false : sum(map(x -> length(x) > 1, non_ts_indices)) > 0
+            
+            # Loop over the Array of TimestepIndex 
+            if isa(ts, Array) 
+                for el in ts
+                    broadcast_flag ? pvalue[indices1..., el, indices2...] .= rvalue : pvalue[indices1..., el, indices2...] = rvalue
+                end
+
+            # The time is just a single TimestepIndex and we can proceed with broadcast 
+            else     
+                broadcast_flag ? pvalue[indices...] .= rvalue : pvalue[indices...] = rvalue
+            end
         end
 
     elseif op == :(*=)
@@ -375,31 +386,6 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
 
     else 
         pvalue[indices...] += rvalue
-    end
-end
-
-# special case where we might need to loop through the time indices
-function _perturb_param_handle_ti!(pvalue, indices, rvalue, ti)
-
-    indices1, ts, indices2 = split_indices(indices, ti)
-
-    # array of timestep indices so need to loop through them
-    if isa(ts, Array) 
-        for el in ts
-            try
-                pvalue[indices1..., el, indices2...] = rvalue  
-            catch
-                pvalue[indices1..., el, indices2...] .= rvalue
-            end
-        end
-
-    # just a single timestep index so proceed as usual
-    else 
-        try
-            pvalue[indices...] = rvalue
-        catch
-            pvalue[indices...] .= rvalue
-        end
     end
 end
 
