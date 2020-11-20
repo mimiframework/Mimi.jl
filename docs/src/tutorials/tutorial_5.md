@@ -2,6 +2,8 @@
 
 This tutorial walks through the Monte Carlo simulation and sensitivity analysis (SA) functionality of Mimi, including core routines and examples.  We will start with looking at using the Monte Carlo and SA routines with the multi-region Mimi model built in the second half of Tutorial 3, which is also available in the Mimi repository at `examples/tutorial/02-multi-region-model`. Then we will show some more advanced features using a real Integrated Assessment model, [MimiDICE2010](https://github.com/anthofflab/MimiDICE2010.jl).
 
+**For a more complete understanding of the Monte Carlo and SA Support, we recommend following up by reading How-to Guide 3: Conduct Monte Carlo Simulations and Sensitivity Analysis.**
+
 Working through the following tutorial will require:
 
 - [Julia v1.4.0](https://julialang.org/downloads/) or higher
@@ -168,7 +170,8 @@ Mimi.Model
   Built: false
 ```
 
-#### Step 2. Define Random Variables
+#### Step 2. Define the Simulation
+
 The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
 
 There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example. 
@@ -179,19 +182,20 @@ rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the spe
 param1 = rv1                # then assign this random variable "rv1" to the parameter "param1" in the model
 ```
 
-The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a random variable is created under the hood and then assigned to `param1`.
+The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to `param1`.
 ```julia
 param1 = Normal(0, 0.8)
 ```
+**It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
 
-The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. 
-Other options include Latin Hypercube sampling and Sobol sampling.
+The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a `@defsim` call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
 
 ```jldoctest tutorial5; output = false, filter = r".*"s
 using Mimi
 using Distributions 
 
 sd = @defsim begin
+
     # Define random variables. The rv() is only required when defining correlations 
     # or sharing an RV across parameters. Otherwise, you can use the shortcut syntax
     # to assign a distribution to a parameter name.
@@ -199,17 +203,17 @@ sd = @defsim begin
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
 
-    # If using LHS, you can define correlations like this:
+    # Define the sampling strategy, and if you are using LHS, you can define 
+    # correlations like this:
     sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
-
-    # Exclude the sampling() call, or use the following for simple random sampling:
-    # sampling(MCSData)
-
-    # For Sobol sampling, specify N, and calc_second_order, which defaults to true.
-    # sampling(SobolData, N=10000, calc_second_order=true)
 
     # assign RVs to model Parameters
     share = Uniform(0.2, 0.8)
+
+    # you can use the *= operator to replace the values in the parameter with the 
+    # product of the original value and the value of the RV for the current 
+    # trial (note that in both lines below, all indexed values will be mulitplied by the
+    # same draw from the given random parameter (name2 or Uniform(0.8, 1.2))
     sigma[:, Region1] *= name2
     sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
