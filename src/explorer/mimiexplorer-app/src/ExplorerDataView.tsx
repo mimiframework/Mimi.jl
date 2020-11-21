@@ -46,14 +46,14 @@ export default class ExplorerDataView extends React.Component<DataViewProps, Dat
     }
 
     renderNode = (nodeState: DataNodeState) => {
-        return (<li onClick={(event) => {
+        return (<li className="data" onClick={(event) => {
             event.preventDefault();
             global["sendMessageToJulia"]({
                 cmd: 'display_spec',
                 comp_name: nodeState.comp_name,
                 item_name: nodeState.item_name
             })
-        }}>{nodeState.name}</li>);
+        }}>{nodeState.name}</li >);
     }
 
     render = () => {

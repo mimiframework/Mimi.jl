@@ -1,22 +1,40 @@
+/* https://github.com/mui-org/material-ui/blob/master/packages/material-ui-lab/src/TreeItem/TreeItem.js */
+/* https://material-ui.com/customization/palette/ */
+/* https://material-ui.com/api/tree-item/ */
+
+/* option to make scroll bars permanent */
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 5px;
+  height:5px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, .25);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+} 
+ 
 .App {
   text-align: left;
   margin: 0;
 }
 
 .ExplorerBar {
-  width: 35vh;
-  height: 100vh;
+  width: 30vw;
+  height: 95vh;
   float: left;
-  margin: 0;
   position: relative;
+  margin-left: 0px;
+  padding: 10px;
 }
 
 .ExplorerTreeView {
-  height: 48%;
+  height: 45vh;
   border: 1px solid #ccc;
   display: flex;
   flex-direction: column;
-  margin: 0;
+  margin-bottom: 10px;
+  padding: 10px;
 }
 
 .MuiTreeView-root {
@@ -25,23 +43,58 @@
 }
 
 .ExplorerDataView {
-  height:48%;
+  height:45vh;
   border: 1px solid #ccc;
   display: flex;
   flex-direction: column;
-  margin: 0;
+  margin-top: 10px;
+  padding: 10px;
 }
 
 ul {
   overflow-y: scroll;
   margin: 0;
+  padding-left: 0;
+  font-size: 14px;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  cursor: pointer;
+}
+
+li.data:hover {
+  background-color: rgb(0, 0, 0, 0.04);
+}
+
+li.data{
+  padding: 2px;
+  cursor: pointer;
+  list-style-type: none;
 }
 
 .graphic {
   float: right;
-  border: 1px solid #ccc;
+  border: 1px solid rgb(255, 255, 255);
   background-color: #FFFFFF;
-  width: 60%;
-  height: 100%;
-  overflow-y: scroll;
+  width: 60vw;
+  height: 95vh;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  padding: 15px;
+  margin: 0px;
+}
+
+h4 {
+  font-weight: bold;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  color: rgb(0, 48, 136);
+  font-size: 14px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+h6 {
+  font-weight: normal;
+  color: rgb(0, 48, 136);
+  font-size: 14px;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }

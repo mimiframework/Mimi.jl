@@ -224,10 +224,10 @@ function createspec_lineplot_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => "$name (use bottom plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "title" => "$name",
                     # "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "width" => _plot_width,
                     "height" => _plot_height,
@@ -246,6 +246,7 @@ function createspec_lineplot_interactive(name, df, dffields)
                         )
                     )
                 ), Dict(
+                    "title" => "INTERACTIVE PLOT",
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "mark" => Dict("type" => "line", "point" => true),
@@ -311,10 +312,10 @@ function createspec_multilineplot_interactive(name, df, dffields, strmultidims)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => "$name (use bottom plot for interactive selection)",
             "data"  => Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "title" => "$name",
                     # "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "mark" => Dict("type" => "line", "point" => true),
                     "encoding" => Dict(
@@ -336,6 +337,7 @@ function createspec_multilineplot_interactive(name, df, dffields, strmultidims)
                     "width"  => _plot_width,
                     "height" => _plot_height
                 ), Dict(
+                    "title" => "INTERACTIVE PLOT",
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "mark" => Dict("type" => "line", "point" => true),
@@ -498,10 +500,10 @@ function createspec_trumpet_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => "$name (use bottom plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "title" => "$name",
                     "width" => _plot_width,
                     "height" => _plot_height,
                     "encoding" => Dict(
@@ -545,6 +547,7 @@ function createspec_trumpet_interactive(name, df, dffields)
                     ]
                 ),
                 Dict(
+                    "title" => "INTERACTIVE PLOT",
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "encoding" => Dict(
