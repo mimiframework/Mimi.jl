@@ -62,6 +62,28 @@ ul {
   cursor: pointer;
 }
 
+button.data {
+  background-color: transparent;
+  outline: none;
+  border:none;
+  font-size: 12px;
+  width: 100%;
+  padding: 2px;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.data:focus { 
+  background-color: rgb(255, 207, 162) !important;
+}
+button.data:active:focus { 
+  background-color: rgb(255, 207, 162) !important;;
+}
+button.data:hover{ 
+  background-color: rgb(0, 0, 0, 0.04);
+}
+
+/* 
 li.data:hover {
   background-color: rgb(0, 0, 0, 0.04);
 }
@@ -70,7 +92,7 @@ li.data{
   padding: 2px;
   cursor: pointer;
   list-style-type: none;
-}
+} */
 
 .graphic {
   float: right;
