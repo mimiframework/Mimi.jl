@@ -47,6 +47,9 @@ Electron.prep_test_env()
     @info("test_model_structure_variabletimestep.jl")
     @time include("test_model_structure_variabletimestep.jl")
 
+    @info("test_delete.jl")
+    @time include("test_delete.jl")
+
     @info("test_replace_comp.jl")
     @time include("test_replace_comp.jl")
 

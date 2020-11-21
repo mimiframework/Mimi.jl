@@ -295,6 +295,12 @@ Return keys for dimension `dim-name` in model `m`.
 """
 @delegate dim_keys(m::Model, dim_name::Symbol) => md
 """
+     dim_keys(mi::ModelInstance, dim_name::Symbol)
+
+ Return keys for dimension `dim-name` in model instance `mi`.
+ """
+ @delegate dim_keys(mi::ModelInstance, dim_name::Symbol) => md
+"""
     dim_key_dict(m::Model)
 
 Return a dict of dimension keys for all dimensions in model `m`.
@@ -372,11 +378,21 @@ Add a scalar type parameter `name` with value `value` to the model `m`.
 @delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """
-    delete!(m::Model, component::Symbol
+    delete!(m::Model, component::Symbol; deep::Bool=false)
 
-Delete a `component`` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
+Delete a `component` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
+If `deep=true` then any external model parameters connected only to 
+this component will also be deleted.
 """
-@delegate Base.delete!(m::Model, comp_name::Symbol) => md
+@delegate Base.delete!(m::Model, comp_name::Symbol; deep::Bool=false) => md
+
+"""
+    delete_param!(m::Model, external_param_name::Symbol)
+
+Delete `external_param_name` from a model `m`'s ModelDef's list of external parameters, and
+also remove all external parameters connections that were connected to `external_param_name`.
+"""
+@delegate delete_param!(m::Model, external_param_name::Symbol) => md
 
 """
     set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing)

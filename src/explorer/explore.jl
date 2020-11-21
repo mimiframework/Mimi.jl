@@ -65,6 +65,12 @@ function explore(m::Model; title = "Electron")
 
 end
 
+function explore(mi::ModelInstance; title = "Electron")
+    m = Model(mi)
+    m.md.dirty = false # we need this to get explorer working, but it's a hack and should be temporary!
+    explore(m)
+end
+
 """
     explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 
