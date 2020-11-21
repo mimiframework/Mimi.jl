@@ -29,7 +29,8 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         spec = createspec_singlevalue(name)
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
+        spec = createspec_singlevalue(name)
     else
         name = "$comp_name : $item_name"          
         df = getdataframe(m, comp_name, item_name)
@@ -81,7 +82,8 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         spec = createspec_histogram(name, results, dffields; interactive = interactive)
     elseif length(dims) > 2
         @warn("$name has > 2 indexed dimensions, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
+        spec = createspec_singlevalue(name)
     else
 
         # check if there are too many dimensions to map and if so, error
@@ -179,7 +181,7 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
         name = "$comp_name : $item_name = $value"
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
@@ -198,7 +200,7 @@ function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbo
 
     if length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
