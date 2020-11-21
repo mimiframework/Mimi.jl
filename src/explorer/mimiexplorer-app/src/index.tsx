@@ -3,9 +3,24 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+import { withStyles } from "@material-ui/core/styles";
+
+// https://codesandbox.io/s/l48vjmk3om
+
+const styles = theme => ({
+  "@global": {
+    // MUI typography elements use REMs, so you can scale the global
+    // font size by setting the font-size on the <html> element.
+    html: {
+      fontSize: 12
+    }
+  }
+});
+
+const AppStyled = withStyles(styles)(App)
 
 ReactDOM.render(
-  <App />,
+  <AppStyled />,
   document.getElementById('root')
 );
 

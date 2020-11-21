@@ -10,7 +10,7 @@
 }
 ::-webkit-scrollbar-thumb {
   border-radius: 4px;
-  background-color: rgba(0, 0, 0, .25);
+  background-color: rgba(0, 0, 0, .35);
   -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 } 
  
@@ -24,16 +24,17 @@
   height: 95vh;
   float: left;
   position: relative;
-  margin-left: 0px;
+  margin-right: 0px;
   padding: 10px;
 }
 
 .ExplorerTreeView {
-  height: 45vh;
+  height: 43vh;
   border: 1px solid #ccc;
   display: flex;
   flex-direction: column;
   margin-bottom: 10px;
+  margin-top: 10px;
   padding: 10px;
 }
 
@@ -43,10 +44,11 @@
 }
 
 .ExplorerDataView {
-  height:45vh;
+  height:43vh;
   border: 1px solid #ccc;
   display: flex;
   flex-direction: column;
+  margin-bottom: 10px;
   margin-top: 10px;
   padding: 10px;
 }
@@ -55,7 +57,7 @@ ul {
   overflow-y: scroll;
   margin: 0;
   padding-left: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   cursor: pointer;
 }
@@ -85,7 +87,7 @@ h4 {
   font-weight: bold;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   color: rgb(0, 48, 136);
-  font-size: 14px;
+  font-size: 12px;
   margin-top: 10px;
   margin-bottom: 10px;
 }
@@ -93,7 +95,7 @@ h4 {
 h6 {
   font-weight: normal;
   color: rgb(0, 48, 136);
-  font-size: 14px;
+  font-size: 12px;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   margin-top: 10px;
   margin-bottom: 10px;
