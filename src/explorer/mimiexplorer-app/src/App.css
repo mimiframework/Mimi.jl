@@ -74,10 +74,10 @@ button.data {
 }
 
 button.data:focus { 
-  background-color: rgb(255, 207, 162) !important;
+  background-color: rgb(255, 225, 197) !important;
 }
 button.data:active:focus { 
-  background-color: rgb(255, 207, 162) !important;;
+  background-color: rgb(255, 225, 197) !important;;
 }
 button.data:hover{ 
   background-color: rgb(0, 0, 0, 0.04);
