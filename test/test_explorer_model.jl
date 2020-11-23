@@ -66,8 +66,8 @@ s = menu_item_list(m)
 @test length(collect(keys(s["pars"]))) == 6
 @test length(collect(keys(s["vars"]))) == 1
 
-# 3.  explore(m::Model, title = "Electron")
-w = explore(m, title = "Testing Window")
+# 3.  explore(m::Model)
+w = explore(m)
 @test typeof(w) == Electron.Window
 close(w)
 
