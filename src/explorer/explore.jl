@@ -11,11 +11,11 @@ include("buildspecs.jl")
 include("results.jl")
 
 """
-    explore(m::Model; title = "Electron")
+    explore(m::Model)
 
-Produce a UI to explore the parameters and variables of Model `m` in a Window with title `title`.
+Produce a UI to explore the parameters and variables of Model `m` in an independent window.
 """
-function explore(m::Model; title = "Electron")
+function explore(m::Model)
     
     if m.mi === nothing
         error("A model must be run before it can be plotted")
@@ -27,7 +27,7 @@ function explore(m::Model; title = "Electron")
     end
 
     #window options
-    windowopts = Dict("title" => title, "width" => 1000, "height" => 1000)
+    windowopts = Dict("width" => 1000, "height" => 1000)
     w = Window(app, joinpath(@__PATH__, p"mimiexplorer-app/build/index.html"), options = windowopts)
  
     #set async block to process messages
@@ -65,7 +65,7 @@ function explore(m::Model; title = "Electron")
 
 end
 
-function explore(mi::ModelInstance; title = "Electron")
+function explore(mi::ModelInstance)
     m = Model(mi)
     m.md.dirty = false # we need this to get explorer working, but it's a hack and should be temporary!
     explore(m)

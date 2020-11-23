@@ -102,10 +102,7 @@ set_param!(m2, :MyComp2, :a, ones(101, 3, 4))
 
 run(m2)
 
-#spec creation for MyComp.a should warn because over 2 indexed dimensions
-# TODO it would be better if this could throw the warning and display some default
-# 
-# instead of erroring
+# spec creation for MyComp.a should warn because over 2 indexed dimensions
 @test_logs (:warn, "MyComp2.a has > 2 indexed dimensions, not yet implemented in explorer") explore(m2)
 @test_logs (:warn, "MyComp2.a has > 2 indexed dimensions, not yet implemented in explorer") _spec_for_item(m2, :MyComp2, :a)
 
@@ -150,7 +147,5 @@ set_leftover_params!(m, Dict{String, Any}([
     "mat" => rand(length(regions), nsteps)
 ]))
 run(m)
-# TODO once again this errors intead of just throwing warnings, would be best
-# to fix that
 w = explore(m)
 close(w)
