@@ -64,13 +64,13 @@ function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}
         if haskey(results, datum_key)
             results_df = results[datum_key]
         else        
-            types = [typeof(value), Int]
+            cols = [[], []]
             names = [datum_name, :trialnum]
             if has_scen
-                push!(types, String)
+                push!(cols, [])
                 push!(names, :scen)
             end
-            results_df = DataFrame(types, names, 0)
+            results_df = DataFrame(cols, names)
             results[datum_key] = results_df
         end
 

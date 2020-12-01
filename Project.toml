@@ -69,7 +69,7 @@ MacroTools = "0.5"
 FileIO = "1"
 julia = "1.4"
 GlobalSensitivityAnalysis = "1.0"
-DataFrames = "0.19.1, 0.20, 0.21"
+DataFrames = "0.19.1, 0.20, 0.21, 0.22"
 Electron = "1.1, 2.0, 3.0"
 FilePaths = "0.8"
 
