@@ -7,3 +7,9 @@ benchmark/tune.json
 docs/Manifest.toml
 types-old.jl
 .vscode
+src/explorer/mimiexplorer-app/node_modules
+src/explorer/mimiexplorer-app/.pnp
+src/explorer/mimiexplorer-app/.pnp.js
+
+# testing
+src/explorer/mimiexplorer-app/coverage

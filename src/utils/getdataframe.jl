@@ -22,9 +22,10 @@ function _load_dataframe(m::AbstractModel, comp_name::Symbol, item_name::Symbol,
     if num_dims == 0
         error("Cannot create a dataframe for a scalar parameter :$item_name")
     end
-
-    data = deepcopy(m[comp_name, item_name])
-
+    paths = m isa MarginalModel ? _get_all_paths(m.base) : _get_all_paths(m)
+    comp_path = paths[comp_name];
+    data = deepcopy(m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name])
+    
     if num_dims == 1
         dim1name = dims[1]
         dim1 = dimension(md, dim1name)

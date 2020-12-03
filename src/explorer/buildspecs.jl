@@ -18,21 +18,24 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         # Drop references to singleton dimensions
         dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
     end
-
+    
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
     if length(dims) == 0
-        value = m[comp_name, item_name]
+        paths = _get_all_paths(m)
+        comp_path = paths[comp_name];
+        value = m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name]
         name = "$comp_name : $item_name = $value"
         spec = createspec_singlevalue(name)
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
+        spec = createspec_singlevalue(name)
     else
         name = "$comp_name : $item_name"          
         df = getdataframe(m, comp_name, item_name)
         dffields = map(string, names(df))         # convert to string once before creating specs
-
+        
         # a 'time' field necessitates a line plot
         if "time" in dffields
 
@@ -79,7 +82,8 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         spec = createspec_histogram(name, results, dffields; interactive = interactive)
     elseif length(dims) > 2
         @warn("$name has > 2 indexed dimensions, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
+        spec = createspec_singlevalue(name)
     else
 
         # check if there are too many dimensions to map and if so, error
@@ -103,36 +107,63 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         
 end
 
-# Create the list of variables and parameters
-function menu_item_list(model::Model)
-    all_menuitems = []
-
-    for comp_name in map(nameof, compdefs(model)) 
-        items = vcat(variable_names(model, comp_name), parameter_names(model, comp_name))
-
-        for item_name in items
-            menu_item = _menu_item(model, comp_name, item_name)
-            if menu_item !== nothing
-                push!(all_menuitems, menu_item) 
-            end
-        end
+function tree_view_values(model::Model)
+    all_subcomps = []
+    for comp_def in compdefs(model)
+        subcomp = tree_view_values(model, nameof(comp_def), comp_def)
+        push!(all_subcomps, subcomp)
     end
 
-    # Return sorted list so that the UI list of items will be in alphabetical order 
-    return sort(all_menuitems, by = x -> lowercase(x["name"]))
+    # Return sorted list so that the UI list of items will be in lexicographic order 
+    return sort(all_subcomps, by = x -> lowercase(x["name"]))
+end
+
+function tree_view_values(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
+    sub_comp_item = _tree_view_node(comp_name)
+    for subcomp in compdefs(comp_def)
+        push!(sub_comp_item["children"], tree_view_values(model, nameof(subcomp), subcomp));
+    end
+    return sub_comp_item
+end
+
+function _tree_view_node(comp_name::Symbol)
+    return Dict("name" => "$comp_name", "children" => Dict[])
+end
+
+# Create the list of variables and parameters
+function menu_item_list(model::Model)
+    var_menuitems = []
+    par_menuitems = []
+
+    for comp_def in compdefs(model)
+        all_subcomp_values = menu_item_list(model, nameof(comp_def), comp_def)
+        append!(var_menuitems, all_subcomp_values["vars"])
+        append!(par_menuitems, all_subcomp_values["pars"])
+    end
+
+    # Return sorted list so that the UI list of items will be in lexicographic order 
+    return Dict("vars" => sort(var_menuitems, by = x -> lowercase(x["name"])),"pars" => sort(par_menuitems, by = x -> lowercase(x["name"])))
+end
+
+# Create the list of variables and parameters
+function menu_item_list(m::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
+    var_menu_items = map(var_name -> _menu_item(m, Symbol(comp_name), var_name), variable_names(comp_def));
+    par_menu_items = map(par_name -> _menu_item(m, Symbol(comp_name), par_name), parameter_names(comp_def));
+    
+    # Return sorted list so that the UI list of items will be in lexicographic order 
+    return Dict("vars" => sort(var_menu_items, by = x -> lowercase(x["name"])),"pars" => sort(par_menu_items, by = x -> lowercase(x["name"])))
 end
 
 function menu_item_list(sim_inst::SimulationInstance)
     all_menuitems = []
     for datum_key in sim_inst.sim_def.savelist
-
         menu_item = _menu_item(sim_inst, datum_key)
         if menu_item !== nothing
             push!(all_menuitems, menu_item) 
         end
     end
 
-    # Return sorted list so that the UI list of items will be in alphabetical order 
+    # Return sorted list so that the UI list of items will be in lexicographic order 
     return sort(all_menuitems, by = x -> lowercase(x["name"]))
 end
 
@@ -144,11 +175,13 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
     end
 
     if length(dims) == 0
-        value = m[comp_name, item_name]
+        paths = _get_all_paths(m)
+        comp_path = paths[comp_name];
+        value = m[comp_path, item_name]
         name = "$comp_name : $item_name = $value"
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
@@ -167,7 +200,7 @@ function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbo
 
     if length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
-        return nothing
+        name = "$comp_name : $item_name (CANNOT DISPLAY)"
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
@@ -193,10 +226,10 @@ function createspec_lineplot_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => "$name (use bottom plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "title" => "$name",
                     # "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "width" => _plot_width,
                     "height" => _plot_height,
@@ -215,6 +248,7 @@ function createspec_lineplot_interactive(name, df, dffields)
                         )
                     )
                 ), Dict(
+                    "title" => "INTERACTIVE PLOT",
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "mark" => Dict("type" => "line", "point" => true),
@@ -280,10 +314,10 @@ function createspec_multilineplot_interactive(name, df, dffields, strmultidims)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => "$name (use bottom plot for interactive selection)",
             "data"  => Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "title" => "$name",
                     # "transform" => [Dict("filter" => Dict("selection" => "brush"))],
                     "mark" => Dict("type" => "line", "point" => true),
                     "encoding" => Dict(
@@ -305,6 +339,7 @@ function createspec_multilineplot_interactive(name, df, dffields, strmultidims)
                     "width"  => _plot_width,
                     "height" => _plot_height
                 ), Dict(
+                    "title" => "INTERACTIVE PLOT",
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "mark" => Dict("type" => "line", "point" => true),
@@ -467,10 +502,10 @@ function createspec_trumpet_interactive(name, df, dffields)
         "VLspec" => Dict(
             "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
             "description" => "plot for a specific component variable pair",
-            "title" => "$name (use bottom plot for interactive selection)",
             "data"=> Dict("values" => datapart),
             "vconcat" => [
                 Dict(
+                    "title" => "$name",
                     "width" => _plot_width,
                     "height" => _plot_height,
                     "encoding" => Dict(
@@ -514,6 +549,7 @@ function createspec_trumpet_interactive(name, df, dffields)
                     ]
                 ),
                 Dict(
+                    "title" => "INTERACTIVE PLOT",
                     "width" => _plot_width,
                     "height" => _slider_height,
                     "encoding" => Dict(

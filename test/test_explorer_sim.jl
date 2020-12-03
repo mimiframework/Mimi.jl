@@ -72,7 +72,7 @@ w = explore(si, title="Testing Window")
 @test typeof(w) == Electron.Window
 close(w)
 
-w = explore(si_disk, title="Testing Window", results_output_dir = results_output_dir)
+w = explore(si_disk, results_output_dir = results_output_dir)
 @test typeof(w) == Electron.Window
 close(w)
 

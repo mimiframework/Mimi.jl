@@ -24,7 +24,6 @@ end
 si = run(simdef, mm1, 2, post_trial_func = post_trial1, results_in_memory = true)
 @test all(iszero, si.results[1][:emissions, :E_Global][!, :E_Global])   # Test that the marginal emission saved from the MarginalModel are zeros (because there's no difference between mm.base and mm.modified)
 
-
 # Test running a vector of MarginalModels
 
 function post_trial2(si, trialnum, ntimesteps, tup)
