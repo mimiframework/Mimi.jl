@@ -41,11 +41,12 @@ for item in items
 end
 
 s = menu_item_list(m)
-@test typeof(s) == Array{Any, 1}
-@test length(s) == 6
+@test collect(keys(s)) == ["pars", "vars"]
+@test length(collect(keys(s["pars"]))) == 5
+@test length(collect(keys(s["vars"]))) == 1
 
-#3.  explore(m::Model, title = "Electron")
-w = explore(m, title = "Testing Window")
+#3.  explore(m::Model)
+w = explore(m)
 @test typeof(w) == Electron.Window
 close(w)
 
