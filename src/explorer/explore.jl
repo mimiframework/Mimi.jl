@@ -11,11 +11,11 @@ include("buildspecs.jl")
 include("results.jl")
 
 """
-    explore(m::Model; title = "Electron")
+    explore(m::Model)
 
-Produce a UI to explore the parameters and variables of Model `m` in a Window with title `title`.
+Produce a UI to explore the parameters and variables of Model `m` in an independent window.
 """
-function explore(m::Model; title = "Electron")
+function explore(m::Model)
     
     if m.mi === nothing
         error("A model must be run before it can be plotted")
@@ -26,33 +26,46 @@ function explore(m::Model; title = "Electron")
         global app = Application()
     end
 
-    #load main html file
-    mainpath = replace(joinpath(@__DIR__, "assets", "main.html"), "\\" => "/")
-
     #window options
-    windowopts = Dict("title" => title, "width" => 1000, "height" => 700)
-    w = Window(app, URI(joinpath(@__PATH__, "assets", "main.html")), options = windowopts)
-    
+    windowopts = Dict("width" => 1000, "height" => 1000)
+    w = Window(app, joinpath(@__PATH__, p"mimiexplorer-app/build/index.html"), options = windowopts)
+ 
     #set async block to process messages
     @async for msg in msgchannel(w)
-
-        spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
-        specJSON = JSON.json(spec)
-
-        run(w, "display($specJSON)")
+        if (msg["cmd"] == "display_spec")
+            spec = _spec_for_item(m, Symbol(msg["comp_name"]), Symbol(msg["item_name"]))
+            specJSON = JSON.json(spec)
+            run(w, "display($specJSON)")
+        end
+        if (msg["cmd"] == "update_data")
+            comp_name = msg["comp_name"];
+            paths = _get_all_paths(m)
+            comp_path = paths[Symbol(comp_name)];
+            comp_def = find_comp(m, comp_path);
+            menulist = menu_item_list(m, Symbol(comp_name), comp_def)
+            menulistJSON = JSON.json(menulist);
+            result = run(w, "setData($menulistJSON)");
+        end
     end
 
-    #refresh variable list
-    menulist = menu_item_list(m)
-    menulistJSON = JSON.json(menulist)
+    # Electron.toggle_devtools(w)
 
-    result = run(w, "refresh($menulistJSON)")
-    
+    #refresh tree view
+    subcomplist = tree_view_values(m)
+    subcomplistJSON = JSON.json(subcomplist)
+
+    result = run(w, "setTreeChildren($subcomplistJSON)")
+
+    #refresh data view
+    datalist = menu_item_list(m)
+    datalistJSON = JSON.json(datalist)
+    result = run(w, "setData($datalistJSON)")
+
     return w
 
 end
 
-function explore(mi::ModelInstance; title = "Electron")
+function explore(mi::ModelInstance)
     m = Model(mi)
     m.md.dirty = false # we need this to get explorer working, but it's a hack and should be temporary!
     explore(m)

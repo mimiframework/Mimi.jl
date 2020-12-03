@@ -1,0 +1,124 @@
+/* https://github.com/mui-org/material-ui/blob/master/packages/material-ui-lab/src/TreeItem/TreeItem.js */
+/* https://material-ui.com/customization/palette/ */
+/* https://material-ui.com/api/tree-item/ */
+
+/* option to make scroll bars permanent */
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 5px;
+  height:5px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, .35);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+} 
+ 
+.App {
+  text-align: left;
+  margin: 0;
+}
+
+.ExplorerBar {
+  width: 30vw;
+  height: 95vh;
+  float: left;
+  position: relative;
+  margin-right: 0px;
+  padding: 10px;
+}
+
+.ExplorerTreeView {
+  height: 43vh;
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.MuiTreeView-root {
+  overflow-y: scroll;
+  margin: 0;
+}
+
+.ExplorerDataView {
+  height:43vh;
+  border: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+ul {
+  overflow-y: scroll;
+  margin: 0;
+  padding-left: 0;
+  font-size: 12px;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  cursor: pointer;
+}
+
+button.data {
+  background-color: transparent;
+  outline: none;
+  border:none;
+  font-size: 12px;
+  width: 100%;
+  padding: 2px;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.data:focus { 
+  background-color: rgb(255, 225, 197) !important;
+}
+button.data:active:focus { 
+  background-color: rgb(255, 225, 197) !important;;
+}
+button.data:hover{ 
+  background-color: rgb(0, 0, 0, 0.04);
+}
+
+/* 
+li.data:hover {
+  background-color: rgb(0, 0, 0, 0.04);
+}
+
+li.data{
+  padding: 2px;
+  cursor: pointer;
+  list-style-type: none;
+} */
+
+.graphic {
+  float: right;
+  border: 1px solid rgb(255, 255, 255);
+  background-color: #FFFFFF;
+  width: 60vw;
+  height: 95vh;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  padding: 15px;
+  margin: 0px;
+}
+
+h4 {
+  font-weight: bold;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  color: rgb(0, 48, 136);
+  font-size: 12px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+h6 {
+  font-weight: normal;
+  color: rgb(0, 48, 136);
+  font-size: 12px;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}

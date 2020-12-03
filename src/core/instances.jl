@@ -213,6 +213,12 @@ function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)
     _get_datum(mi[key], datum)
 end
 
+function Base.getindex(mi::ModelInstance, comp_path::ComponentPath, datum::Symbol)
+    _get_datum(mi[comp_path], datum)
+end
+
+@delegate Base.getindex(m::Model, comp_path::ComponentPath, datum::Symbol) => mi 
+
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
     ci = obj[comp_name]
     return _get_datum(ci, datum)
