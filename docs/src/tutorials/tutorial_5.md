@@ -287,7 +287,7 @@ Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of ru
 
 The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sd`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 
-```jldoctest tutorial5; output = false
+```julia
 using Mimi
 using MimiDICE2010
 using Distributions
@@ -299,10 +299,6 @@ N = 100
 sd = @defsim begin
     t2xco2 = Truncated(Gamma(6.47815626,0.547629469), 1.0, Inf) # a dummy distribution
 end
-
-# output
-
-MCSData()
 ```
 
 #### Payload object
