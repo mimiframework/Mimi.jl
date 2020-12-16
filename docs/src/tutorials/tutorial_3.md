@@ -54,10 +54,12 @@ You have now successfully downloaded MimiDICE2010 to your local machine.
 
 The next step is to run DICE using the provided API for the package:
 
-```julia
+```jldoctest tutorial2; output = false, filter = r".*"s
 using MimiDICE2010
 m = MimiDICE2010.get_model()
 run(m)
+
+# output
 
 ```
 
@@ -75,26 +77,35 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
 
-```julia
+```jldoctest tutorial2; output = false, filter = r".*"s
 using Mimi
+
+# output
+
 ```
 
 In DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  We can change this value from its default value of `3.200` to `3.000` in both components, using the following code:
 
-```julia
+```jldoctest tutorial2; output = false, filter = r".*"s
 update_param!(m, :fco22x, 3.000)
 run(m)
+
+# output
+
 ```
 
 A more complex example may be a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
 
 First you upate the `time` dimension of the model as follows:
 
-```julia
+```jldoctest tutorial2; output = false, filter = r".*"s
 const ts = 10
 const years = collect(2000:ts:2500)
 nyears = length(years)
 set_dimension!(m, :time, years)
+
+# output
+
 ```
 
 Now that you have changed the time dimension, you have a mismatch between the time labels attached to your parameters and the time labels used by the model.  Thus, **you must update at least all parameters with a `:time`** dimension and use the explicit `update_timesteps=true` flag to get the time labels on the parameters to match those in the model. This is required even in cases where you do not want to change the parameter values themselves (see the forum question [here](https://forum.mimiframework.org/t/update-time-index/134/5)) for an in-depth explanation of this case. You may of course also update parameters without a `:time` dimension as desired. 
