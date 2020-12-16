@@ -1089,10 +1089,11 @@ function trumpet_df_reduce(df, plottype::Symbol)
         i != col_index && push!(groupby_keys,  names(df)[i])
     end
 
-    df_new = by(df, groupby_keys, value = col => minimum)
-    append!(df_new, by(df, groupby_keys, value = col => maximum))
-    append!(df_new, by(df, groupby_keys, value = col => mean))
-    rename!(df_new, :value => col)
+    gd = DataFrames.groupby(df, groupby_keys)
+
+    df_new = rename!(combine(gd, col => maximum), Symbol(col, :_maximum) => col)
+    append!(df_new, rename!(combine(gd, col => minimum), Symbol(col, :_minimum) => col))
+    append!(df_new, rename!(combine(gd, col => mean), Symbol(col, :_mean) => col))
 
     if plottype == :trumpet
         reorder_cols = [groupby_keys[1], col, groupby_keys[2:end]...]
