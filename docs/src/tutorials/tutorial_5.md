@@ -287,7 +287,7 @@ Case: We want to do an SCC calculation with `MimiDICE2010`, which consists of ru
 
 The beginning steps for this case are identical to those above. We first define the typical variables for a simulation, including the number of trials `N` and the simulation definition `sd`.  In this case we only define one random variable, `t2xco2`, but note there could be any number of random variables defined here.
 
-```julia
+```jldoctest tutorial5; output = false, filter = r".*"s
 using Mimi
 using MimiDICE2010
 using Distributions
@@ -299,12 +299,15 @@ N = 100
 sd = @defsim begin
     t2xco2 = Truncated(Gamma(6.47815626,0.547629469), 1.0, Inf) # a dummy distribution
 end
+
+# output
+
 ```
 
 #### Payload object
 Simulation definitions can hold a user-defined payload object which is not used or modified by Mimi. In this example, we will use the payload to hold an array of pre-computed discount factors that we will use in the SCC calculation, as well as a storage array for saving the SCC values.
 
-```julia
+```jldoctest tutorial5; output = false, filter = r".*"s
 # Choose what year to calculate the SCC for
 scc_year = 2015
 year_idx = findfirst(isequal(scc_year), MimiDICE2010.model_years)
@@ -320,6 +323,9 @@ scc_results = zeros(N, length(discount_rates))
 # Set the payload object in the simulation definition
 my_payload_object = (discount_factors, scc_results) # In this case, the payload object is a tuple which holds both both arrays
 Mimi.set_payload!(sd, my_payload_object)  
+
+# output
+
 ```
 
 #### Post-trial function
