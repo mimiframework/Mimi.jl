@@ -269,3 +269,20 @@ trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 
 @test length(trial1) == length(trial2)
 @test trial1 != trial2
+
+# test broadcasting examples
+sd3 = @defsim begin
+
+    # 1 dimension
+    depk[:] = Uniform(0.1, 0.2)
+    k0[(Region2, Region3)] = Uniform(20, 30)
+    
+    # 2 dimensions
+    tfp[:, Region1] = Uniform(0.75, 1.25)
+    sigma[2020:5:2050, (Region2, Region3)] = Uniform(0.8, 1.2)
+    s[2020, Region1] = Uniform(0.2, 0.3)
+     
+end
+
+N = 5
+si3 = run(sd3, m, N)
