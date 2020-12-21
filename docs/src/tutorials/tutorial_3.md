@@ -54,7 +54,7 @@ You have now successfully downloaded MimiDICE2010 to your local machine.
 
 The next step is to run DICE using the provided API for the package:
 
-```julai
+```julia
 using MimiDICE2010
 m = MimiDICE2010.get_model()
 run(m)
