@@ -32,7 +32,7 @@ sd = @defsim begin
             Region2 => Uniform(0.10, 1.50),
             Region3 => Uniform(0.10, 0.20)]
 
-    sampling(SobolData, calc_second_order = false)
+    sampling(DeltaData)
     
     # indicate which parameters to save for each model run. Specify
     # a parameter name or [later] some slice of its data, similar to the
@@ -55,21 +55,21 @@ output_dir = joinpath(tempdir(), "sim")
 si = run(sd, m, N; trials_output_filename=joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
 
 # Test that the proper number of trials were saved
-d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
-@test size(d)[1] == si.trials+1 # extra row for column names
+X = readdlm(joinpath(output_dir, "trialdata.csv"), ',')
+@test size(X)[1] == si.trials+1 # extra row for column names
 
 # Check files saved to disk compared to data saved in memory
-results_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
-results_mem = si.results[1][(:grosseconomy, :K)]
+Y_disk = load(joinpath(output_dir, "grosseconomy_K.csv")) |> DataFrame
+Y_disk[!,2] = Symbol.(Y_disk[!,2])
 
-results_disk[!,2] = Symbol.(results_disk[!,2])
-@test results_disk[:, [1,2,4]] == results_mem[:, [1,2,4]]
-@test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
+Y_mem = si.results[1][(:grosseconomy, :K)]
+@test Y_disk[:, [1,2,4]] == Y_mem[:, [1,2,4]]
+@test Y_disk[:, 3] ≈ Y_disk[:, 3] atol = 1e-9
 
 # do some analysis
 E = CSVFiles.load(joinpath(output_dir, "emissions_E.csv")) |> DataFrame
-results = analyze(si, E[1:60:end, 3]; progress_meter = false, N_override = 100)
-results = analyze(si, E[1:60:end, 3]; progress_meter = false, num_resamples = 10_000, conf_level = 0.95)
+results = analyze(si, Number.(X[2:end, :]), E[1:60:end, 3]; progress_meter = false, N_override = 100)
+results = analyze(si, Number.(X[2:end, :]), E[1:60:end, 3]; progress_meter = false, num_resamples = 500, conf_level = 0.95)
 
 # delete all created directories and files
 rm(output_dir, recursive = true)

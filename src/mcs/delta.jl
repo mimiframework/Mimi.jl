@@ -15,7 +15,7 @@ function create_GSA_payload(sim_inst::DeltaSimulationInstance)
     rv_info = OrderedDict{Symbol, Any}([name => _get_dist(rv) for (name, rv) in sim_inst.sim_def.rvdict])
 
     # create payload
-    return GlobalSensitivityAnalysis.SobolData(params = rv_info, calc_second_order = sim_inst.sim_def.data.calc_second_order, N = sim_inst.trials)
+    return GlobalSensitivityAnalysis.DeltaData(params = rv_info, N = sim_inst.trials)
 end
 
 function sample!(sim_inst::DeltaSimulationInstance, samplesize::Int)
@@ -36,7 +36,7 @@ function sample!(sim_inst::DeltaSimulationInstance, samplesize::Int)
     end
 end
 
-function analyze(sim_inst::DeltaSimulationInstance, model_input::AbstractArray{<:Number, N}, model_output::AbstractArray{<:Number, N}; num_resamples::Int = 1_000, conf_level::Number = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where N
+function analyze(sim_inst::DeltaSimulationInstance, model_input::AbstractArray{<:Number, N1}, model_output::AbstractArray{<:Number, N2}; num_resamples::Int = 1_000, conf_level::Number = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where {N1, N2}
 
     if sim_inst.trials == 0
         error("Cannot analyze simulation with 0 trials.")
