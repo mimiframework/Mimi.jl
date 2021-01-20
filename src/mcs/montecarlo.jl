@@ -64,13 +64,13 @@ function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}
         if haskey(results, datum_key)
             results_df = results[datum_key]
         else        
-            types = [typeof(value), Int]
+            cols = [[], []]
             names = [datum_name, :trialnum]
             if has_scen
-                push!(types, String)
+                push!(cols, [])
                 push!(names, :scen)
             end
-            results_df = DataFrame(types, names, 0)
+            results_df = DataFrame(cols, names)
             results[datum_key] = results_df
         end
 
@@ -326,8 +326,11 @@ function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, trans::Tr
     end
 end
 
+# rvalue is an Array so we expect the dims to match and don't need to worry about
+# broadcasting
 function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
-                         trans::TransformSpec, rvalue::Union{Number, Array{<: Number, N}}) where {T, N}
+    trans::TransformSpec, rvalue::Array{<: Number, N}) where {T, N}
+    
     op = trans.op
     pvalue = value(param)
     indices = _param_indices(param, md, trans)
@@ -339,6 +342,49 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
         pvalue[indices...] *= rvalue
 
     else
+        pvalue[indices...] += rvalue
+
+    end
+end
+
+# rvalue is a Number so we might need to deal with broadcasting
+function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
+                         trans::TransformSpec, rvalue::Number) where {T, N}
+    op = trans.op
+    pvalue = value(param)
+    indices = _param_indices(param, md, trans)
+
+    if op == :(=)
+        
+        # first we check for a time index
+        ti = get_time_index_position(param)
+
+        # If there is no time index we have all methods needed to broadcast normally
+        if isnothing(ti)
+            broadcast_flag = sum(map(x -> length(x) > 1, indices)) > 0
+            broadcast_flag ? pvalue[indices...] .= rvalue : pvalue[indices...] = rvalue
+        
+        else
+            indices1, ts, indices2 = split_indices(indices, ti)
+            non_ts_indices = [indices1..., indices2...]
+            broadcast_flag = isempty(non_ts_indices) ? false : sum(map(x -> length(x) > 1, non_ts_indices)) > 0
+            
+            # Loop over the Array of TimestepIndex 
+            if isa(ts, Array) 
+                for el in ts
+                    broadcast_flag ? pvalue[indices1..., el, indices2...] .= rvalue : pvalue[indices1..., el, indices2...] = rvalue
+                end
+
+            # The time is just a single TimestepIndex and we can proceed with broadcast 
+            else     
+                broadcast_flag ? pvalue[indices...] .= rvalue : pvalue[indices...] = rvalue
+            end
+        end
+
+    elseif op == :(*=)
+        pvalue[indices...] *= rvalue
+
+    else 
         pvalue[indices...] += rvalue
     end
 end

@@ -262,7 +262,16 @@ datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, com
 Return the dimension names for the variable or parameter `datum_name`
 in the given component `comp_name` in model `m`.
 """
-dim_names(m::Model, comp_name::Symbol, datum_name::Symbol) = dim_names(compdef(m, comp_name), datum_name)
+function dim_names(m::Model, comp_name::Symbol, datum_name::Symbol)
+    # the line below would work if the comp_name is in the top level of components in m's component structure
+    # return dim_names(compdef(m, comp_name), datum_name)
+  
+    paths = _get_all_paths(m)
+    comp_path = paths[comp_name]
+    comp_def = find_comp(m, comp_path)
+    return dim_names(comp_def, datum_name)
+end
+
 dim_names(mm::MarginalModel, comp_name::Symbol, datum_name::Symbol) = dim_names(mm.base, comp_name, datum_name)
 
 @delegate dimension(m::Model, dim_name::Symbol) => md
@@ -285,6 +294,12 @@ Return the size of index `dim_name` in model `m`.
 Return keys for dimension `dim-name` in model `m`.
 """
 @delegate dim_keys(m::Model, dim_name::Symbol) => md
+"""
+     dim_keys(mi::ModelInstance, dim_name::Symbol)
+
+ Return keys for dimension `dim-name` in model instance `mi`.
+ """
+ @delegate dim_keys(mi::ModelInstance, dim_name::Symbol) => md
 """
     dim_key_dict(m::Model)
 
@@ -363,11 +378,21 @@ Add a scalar type parameter `name` with value `value` to the model `m`.
 @delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """
-    delete!(m::Model, component::Symbol
+    delete!(m::Model, component::Symbol; deep::Bool=false)
 
-Delete a `component`` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
+Delete a `component` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
+If `deep=true` then any external model parameters connected only to 
+this component will also be deleted.
 """
-@delegate Base.delete!(m::Model, comp_name::Symbol) => md
+@delegate Base.delete!(m::Model, comp_name::Symbol; deep::Bool=false) => md
+
+"""
+    delete_param!(m::Model, external_param_name::Symbol)
+
+Delete `external_param_name` from a model `m`'s ModelDef's list of external parameters, and
+also remove all external parameters connections that were connected to `external_param_name`.
+"""
+@delegate delete_param!(m::Model, external_param_name::Symbol) => md
 
 """
     set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing)

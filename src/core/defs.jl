@@ -58,28 +58,66 @@ find_first_period(comp_def::AbstractComponentDef) = @or(first_period(comp_def), 
 find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), last_period(get_root(comp_def)))
 
 """
-    delete!(obj::AbstractCompositeComponentDef, component::Symbol)
+    delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 
-Delete a `component` by name from composite `ccd`.
+Delete a `component` by name from `md`.
+If `deep=true` then any external model parameters connected only to 
+this component will also be deleted.
 """
-function Base.delete!(ccd::AbstractCompositeComponentDef, comp_name::Symbol)
-    if ! has_comp(ccd, comp_name)
+function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
+    if ! has_comp(md, comp_name)
         error("Cannot delete '$comp_name': component does not exist.")
     end
 
-    comp_def = compdef(ccd, comp_name)
-    delete!(ccd.namespace, comp_name)
+    comp_def = compdef(md, comp_name)
+    delete!(md.namespace, comp_name)
 
     # Remove references to the deleted comp
     comp_path = comp_def.comp_path
 
-    # TBD: find and delete external_params associated with deleted component? Currently no record of this.
-
+    # Remove internal parameter connections 
     ipc_filter = x -> x.src_comp_path != comp_path && x.dst_comp_path != comp_path
-    filter!(ipc_filter, ccd.internal_param_conns)
+    filter!(ipc_filter, md.internal_param_conns)
 
+    # Remove external parameter connections
+
+    if deep # Find and delete external_params that were connected only to the deleted component if specified
+        # Get all external parameters this component is connected to
+        comp_ext_params = map(x -> x.external_param, filter(x -> x.comp_path == comp_path, md.external_param_conns))
+
+        # Identify which ones are not connected to any other components
+        unbound_filter = x -> length(filter(epc -> epc.external_param == x, md.external_param_conns)) == 1
+        unbound_comp_params = filter(unbound_filter, comp_ext_params)
+
+        # Delete these parameters
+        [delete_param!(md, param_name) for param_name in unbound_comp_params]
+    end        
+
+    # delete any external connections for this component
     epc_filter = x -> x.comp_path != comp_path
-    filter!(epc_filter, ccd.external_param_conns)
+    filter!(epc_filter, md.external_param_conns)
+
+    dirty!(md)
+end
+
+"""
+    delete_param!(md::ModelDef, external_param_name::Symbol)
+
+Delete `external_param_name` from `md`'s list of external parameters, and also 
+remove all external parameters connections that were connected to `external_param_name`.
+"""
+function delete_param!(md::ModelDef, external_param_name::Symbol)
+    if external_param_name in keys(md.external_params)
+        delete!(md.external_params, external_param_name)
+    else
+        error("Cannot delete $external_param_name, not found in external parameter list.")
+    end
+    
+    # Remove external parameter connections
+    epc_filter = x -> x.external_param != external_param_name
+    filter!(epc_filter, md.external_param_conns)
+
+    dirty!(md)
 end
 
 @delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
@@ -99,7 +137,8 @@ istype(T::DataType) = (pair -> pair.second isa T)
 
 # Namespace filter functions return dicts of values for the given type.
 # N.B. only composites hold other comps in the namespace.
-components(obj::AbstractCompositeComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
+components(model::Model, comp_name::Symbol) = components(compdef(model, comp_name))
+components(obj::AbstractComponentDef) = filter(istype(AbstractComponentDef), obj.namespace)
 
 param_dict(obj::ComponentDef) = filter(istype(ParameterDef), obj.namespace)
 param_dict(obj::AbstractCompositeComponentDef) = filter(istype(CompositeParameterDef), obj.namespace)

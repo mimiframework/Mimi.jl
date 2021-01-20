@@ -24,6 +24,11 @@ mutable struct Model <: AbstractModel
     function Model(m::Model)
         return new(deepcopy(m.md), nothing)
     end
+
+    # Create a model from a ModelInstance (temporary for explore call)
+    function Model(mi::ModelInstance)
+        return new(deepcopy(mi.md), deepcopy(mi))
+    end
 end
 
 """
@@ -44,6 +49,10 @@ end
 
 function Base.getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
     return (mm.modified[comp_name, name] .- mm.base[comp_name, name]) ./ mm.delta
+end
+
+function Base.getindex(mm::MarginalModel, comp_path::ComponentPath, name::Symbol)
+    return (mm.modified.mi[comp_path, name] .- mm.base.mi[comp_path, name]) ./ mm.delta
 end
 
 # DEPRECATION - EVENTUALLY REMOVE (and go back to default getproperty behavior)
