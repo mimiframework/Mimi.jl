@@ -310,7 +310,7 @@ Import a variable from the given subcomponent
 function _import_var!(obj::AbstractCompositeComponentDef, localname::Symbol,
                       path::ComponentPath, vname::Symbol)
     if haskey(obj, localname)
-        error("Can't import variable; :$localname already exists in component $(obj.comp_id)")
+        error("Cannot import variable; :$localname already exists in component $(obj.comp_id)")
     end
 
     comp = @or(find_comp(obj, path), error("$path not found from component $(obj.comp_id)"))

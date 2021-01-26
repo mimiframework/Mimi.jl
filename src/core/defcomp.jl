@@ -11,7 +11,7 @@ is_builtin(comp_name) = comp_name in built_in_comps
 
 function _generate_run_func(comp_name, module_name, args, body)
     if length(args) != 4
-        error("Can't generate run_timestep; requires 4 arguments but got $args")
+        error("Cannot generate run_timestep; requires 4 arguments but got $args")
     end
 
     (p, v, d, t) = args
@@ -36,7 +36,7 @@ end
 function _generate_init_func(comp_name, module_name, args, body)
 
     if length(args) != 3
-        error("Can't generate init function; requires 3 arguments but got $args")
+        error("Cannot generate init function; requires 3 arguments but got $args")
     end
 
     # add types to the parameters  
