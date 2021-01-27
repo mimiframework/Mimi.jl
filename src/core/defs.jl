@@ -824,18 +824,32 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
-    propagate_time!(obj::AbstractComponentDef, t::Dimension)
+    propagate_time!(obj::AbstractComponentDef, t::Dimension, first::NothingInt=nothing, last::NothingInt=nothing)
 
 Propagate a time dimension down through the comp def tree.
 """
-function propagate_time!(obj::AbstractComponentDef, t::Dimension)
+function propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
     set_dimension!(obj, :time, t)
 
-    obj.first = firstindex(t)
-    obj.last  = lastindex(t)
+    # set first
+    parent_time_keys = [keys(t)...]
+    if isnothing(first)
+        obj.first = firstindex(t)
+    else
+        i = findfirst(isequal(first), parent_time_keys)
+        isnothing(i) ? error("The given first index must exist within the parent's time dimension.") : obj.first = first
+    end
+
+    # set last
+    if isnothing(last)
+        obj.last = lastindex(t)
+    else
+        i = findfirst(isequal(last), parent_time_keys)
+        isnothing(i) ? error("The given last index must exist within the parent's time dimension.") : obj.first = first
+    end
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        propagate_time!(c, t)
+        propagate_time!(c, t, first = first, last = last)
     end
 end
 
@@ -844,6 +858,8 @@ end
         obj::AbstractCompositeComponentDef,
         comp_def::AbstractComponentDef,
         comp_name::Symbol=comp_def.comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -857,6 +873,8 @@ argument `rename` can be a list of pairs indicating `original_name => imported_n
 function add_comp!(obj::AbstractCompositeComponentDef,
                    comp_def::AbstractComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
+                   first::NothingInt=nothing,
+                   last::NothingInt=nothing,
                    before::NothingSymbol=nothing,
                    after::NothingSymbol=nothing,
                    rename::NothingPairList=nothing) # TBD: rename is not yet implemented
@@ -871,7 +889,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     # check time constraints if the time dimension has been set
     if has_dim(obj, :time)
         # error("Cannot add component to composite without first setting time dimension.")
-        propagate_time!(comp_def, dimension(obj, :time))
+        propagate_time!(comp_def, dimension(obj, :time), first=first, last=last)
     end
 
     # Copy the original so we don't step on other uses of this comp
@@ -891,6 +909,8 @@ end
         obj::AbstractCompositeComponentDef,
         comp_id::ComponentId,
         comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
