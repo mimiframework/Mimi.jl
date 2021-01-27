@@ -1,3 +1,5 @@
+module TestNumComponents
+
 using Test
 using Mimi
 
@@ -15,3 +17,5 @@ m = Model()
 # trying to run model with no components
 set_dimension!(m, :time, 1:10)
 @test_throws ErrorException run(m)
+
+end #module
