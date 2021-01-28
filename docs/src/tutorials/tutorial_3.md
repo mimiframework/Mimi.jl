@@ -28,7 +28,7 @@ When the original model calls [`set_param!`](@ref), Mimi creates an external par
 update_param!(mymodel, :parametername, newvalues)
 ```
 
-In the code above, `newvalues` must be the same size and type (or be able to convert to the type) as required by the model dimensions set with `set_dimension!`.
+Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. Also note that it if you have updated the time dimension of the model with `set_dimension!(m, :time, values)` you will need to update all parameters with a `:time` dimension, **even if the values have not changed**, so that the model can update the underlying time labels (ie. year labels) to match your new model time labels (ie. year labels).
 
 If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
 
@@ -93,6 +93,8 @@ const years = collect(2000:ts:2500)
 nyears = length(years)
 set_dimension!(m, :time, years)
 ```
+
+Now you must update at least all parameters with a `:time` dimension, even if the length and values remain the same, so that the underlying time labels (ie. year labels) update to match your new model time labels (ie. year labels).
 
 Create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
 

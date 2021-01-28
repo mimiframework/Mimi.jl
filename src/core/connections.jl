@@ -479,6 +479,12 @@ function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
     _update_param!(obj::AbstractCompositeComponentDef, name, value)
 end
 
+# function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
+    
+#     @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.")
+#     _update_param!(obj::AbstractCompositeComponentDef, name, value)
+# end
+
 function update_param!(mi::ModelInstance, name::Symbol, value)
     param = mi.md.external_params[name]
 
