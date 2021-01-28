@@ -144,4 +144,11 @@ run(m3)
 @test length(keys(m3.md.external_params)) == 4      # The default value was not added to the original md's list
 @test length(keys(m3.mi.md.external_params)) == 5   # Only added to the model instance's definition
 
-end
+#------------------------------------------------------------------------------
+# Test set_param! for parameter that exists in no subcomponent
+
+m1 = get_model()
+err8 = try set_param!(m1, :pDNE, 42) catch err err end
+@test occursin("not found in ModelDef or children", sprint(showerror, err8))
+
+end #module
