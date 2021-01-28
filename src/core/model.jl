@@ -99,25 +99,23 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
-    update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m::Model, name::Symbol, value)
 
 Update the `value` of an external model parameter in model `m`, referenced by
-`name`. Optional boolean argument `update_timesteps` with default value `false`
-indicates whether to update the time keys associated with the parameter values
-to match the model's time index.
+`name`. 
 """
-@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = false) => md
+@delegate update_param!(m::Model, name::Symbol, value) => md
 
 """
-    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_params!(m::Model, parameters::Dict{T, Any}) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!``
-is called to update the external parameter by name k to value v, with optional
-Boolean argument update_timesteps. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the
+is called to update the external parameter by name k to value v.  Each key k 
+must be a symbol or convert to a symbol matching the name of an external parameter t
+hat already exists in the
 model definition.
 """
-@delegate update_params!(m::Model, parameters::Dict; update_timesteps = false) => md
+@delegate update_params!(m::Model, parameters::Dict) => md
 
 """
     add_comp!(

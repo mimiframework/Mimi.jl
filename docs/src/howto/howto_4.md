@@ -101,11 +101,10 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 
 ## Updating an external parameter
 
-When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. If the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
+When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. 
 
 ```julia
-update_param!(m, :ParameterName, newvalues) # update values only 
-update_param!(m, :ParameterName, newvalues, update_timesteps=true) # also update time keys
+update_param!(m, :ParameterName, newvalues)
 ```
 
 Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.

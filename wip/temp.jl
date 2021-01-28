@@ -44,7 +44,7 @@ function construct_model()
 
 	# Order matters here. If the emissions component were defined first, the model would not run.
 	add_comp!(m, grosseconomy)  
-	add_comp!(m, emissions, first = 2020, last = 2105)
+	add_comp!(m, emissions, first = 2020)
 
 	# Set parameters for the grosseconomy component
 	set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
@@ -55,7 +55,7 @@ function construct_model()
 	set_param!(m, :grosseconomy, :share, 0.3)
 
 	# Set parameters for the emissions component
-	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:18])
+	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:19])
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
 	# Note that connect_param! was used here.
 
@@ -68,9 +68,9 @@ run(m)
 set_dimension!(m, :time, collect(2015:5:2115))
 
 # Set parameters for the grosseconomy component
-update_param!(m, :l, [(1. + 0.015)^t *6404 for t in 1:20],update_timesteps=true)
-update_param!(m,  :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20],update_timesteps=true)
+update_param!(m, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+update_param!(m,  :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
 
 # Set parameters for the emissions component
-update_param!(m, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20], update_timesteps=true)
+update_param!(m, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 run(m)

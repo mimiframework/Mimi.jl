@@ -329,7 +329,7 @@ function _build(md::ModelDef)
     t = dimension(md, :time)
     time_bounds = (firstindex(t), lastindex(t))
 
-    propagate_time!(md, t) # why do we need this here?
+    propagate_time!(md, t) # this might not be needed, but is a final propagation to double check everything
 
     ci = _build(md, vdict, pdict, time_bounds)
     mi = ModelInstance(ci, md)

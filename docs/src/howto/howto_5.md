@@ -96,11 +96,9 @@ The full API:
 
 To update an external parameter, use the functions `update_param!` and `udpate_params!` (previously known as `update_external_parameter` and `update_external_parameters`, respectively.)  Their calling signatures are:
 
-*  `update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)`
+*  `update_params!(md::ModelDef, parameters::Dict)`
 
-* `update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)`
-
-For external parameters with a `:time` dimension, passing `update_timesteps=true` indicates that the time _keys_ (i.e., year labels) should also be updated in addition to updating the parameter values.
+* `update_param!(md::ModelDef, name::Symbol, value)`
 
 #### Setting parameters with a dictionary
 

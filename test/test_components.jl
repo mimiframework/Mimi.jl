@@ -130,7 +130,7 @@ cd = compdef(m.md, :C)       # Get the component definition in the model
 #@test cd.first === nothing   # First and last values should still be nothing
 #@test cd.last === nothing
 
-update_param!(m, :par1, zeros(16); update_timesteps=true)
+update_param!(m, :par1, zeros(16))
 Mimi.build!(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance
 @test ci.first == 2005      # The component instance's first and last values should match the model's index

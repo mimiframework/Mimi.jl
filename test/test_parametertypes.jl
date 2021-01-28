@@ -142,18 +142,9 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, 2000:2001)
 
-@test_throws ErrorException update_param!(m, :x, [4, 5, 6], update_timesteps = false) # wrong size
-update_param!(m, :x, [4, 5]; update_timesteps = false)
-x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2000, 1, LAST} where LAST, Union{Missing,Float64}, 1}
-@test x.values.data == [4., 5.]
-run(m) 
-@test m[:MyComp2, :y][1] == 4   # 2000
-@test m[:MyComp2, :y][2] == 5  # 2001
-
 set_dimension!(m, :time, 2001:2002)
 
-update_param!(m, :x, [2, 3], update_timesteps = true)
+update_param!(m, :x, [2, 3])
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, LAST} where LAST, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3.]
@@ -171,13 +162,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, [2005, 2020, 2050])
 
-update_param!(m, :x, [4, 5, 6], update_timesteps = false)
-x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020)}, Union{Missing,Float64}, 1}
-@test x.values.data == [4., 5., 6.]
-@test_throws BoundsError run(m) # can't run the model due to timestep inconsistencies, it is in an invalid state
-
-update_param!(m, :x, [2, 3, 4], update_timesteps = true)
+update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
@@ -195,7 +180,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, [2005, 2020, 2050])
 
-update_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
+update_params!(m, Dict(:x=>[2, 3, 4]))
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
@@ -214,7 +199,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, 1999:2003)     # length 5
 
-update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
+update_param!(m, :x, [2, 3, 4, 5, 6])
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
@@ -240,17 +225,15 @@ set_param!(m, :MyComp3, :y, [10, 20])
 set_param!(m, :MyComp3, :z, 0)
 
 @test_throws ErrorException update_param!(m, :x, [1, 2, 3, 4]) # Will throw an error because size
-@test_throws ErrorException update_param!(m, :y, [10, 15], update_timesteps=true) # Not a timestep array
 update_param!(m, :y, [10, 15])
 @test external_param(m.md, :y).values == [10., 15.]
-@test_throws ErrorException update_param!(m, :z, 1, update_timesteps=true) # Scalar parameter
 update_param!(m, :z, 1)
 @test external_param(m.md, :z).value == 1
 
 # Reset the time dimensions
 set_dimension!(m, :time, 2005:2007)
 
-update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) # Won't error when updating from a dictionary
+update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0)) # Won't error when updating from a dictionary
 
 @test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1},Union{Missing,Float64},1}
 @test external_param(m.md, :x).values.data == [3.,4.,5.]
