@@ -145,7 +145,7 @@ run(m3)
 @test length(keys(m3.mi.md.external_params)) == 5   # Only added to the model instance's definition
 
 #------------------------------------------------------------------------------
-# Test set_param! for parameter that exists in no subcomponent
+# Test set_param! for parameter that exists in neither model definition nor any subcomponent
 
 m1 = get_model()
 err8 = try set_param!(m1, :pDNE, 42) catch err err end
