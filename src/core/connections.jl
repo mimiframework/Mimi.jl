@@ -543,9 +543,14 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
         end
     end
 
-    # Check if the parameter dimensions match the model dimensions
-    curr_dims_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,) # the size of the dimension (might have been updated)
-    size(value) != curr_dims_size ? error("Cannot update parameter $name; expected array of size $curr_dims_size but got array of size $(size(value)).") : nothing
+    # Check if the parameter dimensions match the model dimensions.  Note that we 
+    # previously checked if parameter dimensions matched the dimensions of the 
+    # parameter they were to replace, but given dimensions of a model can be changed,
+    # we now choose to enforce that the new dimensions match the current model state, 
+    # whatever that is.
+
+    expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,) 
+    size(value) != expected_size ? error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).") : nothing
 
     if update_timesteps
         if param.values isa TimestepArray

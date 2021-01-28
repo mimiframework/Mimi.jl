@@ -140,17 +140,18 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 # Can't move last beyond last for a component
 # @test_throws ErrorException set_dimension!(m, :time, 2001:2003)
 
-set_dimension!(m, :time, 2001:2002)
+set_dimension!(m, :time, 2000:2001)
 
-update_param!(m, :x, [4, 5, 6], update_timesteps = false)
+@test_throws ErrorException update_param!(m, :x, [4, 5, 6], update_timesteps = false) # wrong size
+update_param!(m, :x, [4, 5]; update_timesteps = false)
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2000, 1, LAST} where LAST, Union{Missing,Float64}, 1}
-@test x.values.data == [4., 5., 6.]
-# TBD: this fails, but I'm not sure how it's supposed to behave. It says:
-# (ERROR: BoundsError: attempt to access 3-element Array{Float64,1} at index [4])
-# run(m)
-# @test m[:MyComp2, :y][1] == 5   # 2001
-# @test m[:MyComp2, :y][2] == 6   # 2002
+@test x.values.data == [4., 5.]
+run(m) 
+@test m[:MyComp2, :y][1] == 4   # 2000
+@test m[:MyComp2, :y][2] == 5  # 2001
+
+set_dimension!(m, :time, 2001:2002)
 
 update_param!(m, :x, [2, 3], update_timesteps = true)
 x = external_param(m.md, :x)
@@ -174,9 +175,7 @@ update_param!(m, :x, [4, 5, 6], update_timesteps = false)
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020)}, Union{Missing,Float64}, 1}
 @test x.values.data == [4., 5., 6.]
-#run(m)
-#@test m[:MyComp2, :y][1] == 5   # 2005
-#@test m[:MyComp2, :y][2] == 6   # 2020
+@test_throws BoundsError run(m) # can't run the model due to timestep inconsistencies, it is in an invalid state
 
 update_param!(m, :x, [2, 3, 4], update_timesteps = true)
 x = external_param(m.md, :x)
@@ -215,7 +214,6 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, 1999:2003)     # length 5
 
-@test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
 update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Union{Missing,Float64}, 1}
