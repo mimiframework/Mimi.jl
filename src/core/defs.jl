@@ -264,65 +264,6 @@ function datum_size(obj::AbstractCompositeComponentDef, comp_def::ComponentDef, 
     return datum_size
 end
 
-"""
-    _check_run_period(obj::AbstractComponentDef, first, last)
-
-Raise an error if the component has an earlier start than `first` or a later finish than
-`last`. Values of `nothing` are not checked. Composites recurse to check sub-components.
-"""
-function _check_run_period(obj::AbstractComponentDef, new_first, new_last)
-    # @info "_check_run_period($(obj.comp_id), $(printable(new_first)), $(printable(new_last))"
-    old_first = first_period(obj)
-    old_last  = last_period(obj)
-
-    if new_first !== nothing && old_first !== nothing && new_first < old_first
-        error("Attempted to set first period of $(obj.comp_id) to an earlier period ($new_first) than component indicates ($old_first)")
-    end
-
-    if new_last !== nothing && old_last !== nothing && new_last > old_last
-        error("Attempted to set last period of $(obj.comp_id) to a later period ($new_last) than component indicates ($old_last)")
-    end
-
-    # N.B. compdefs() returns an empty list for leaf ComponentDefs
-    for subcomp in compdefs(obj)
-        _check_run_period(subcomp, new_first, new_last)
-    end
-
-    nothing
-end
-
-"""
-    _set_run_period!(obj::AbstractComponentDef, first, last)
-
-Allows user to change the bounds on a AbstractComponentDef's time dimension.
-An error is raised if the new time bounds are outside those of any
-subcomponent, recursively.
-"""
-function _set_run_period!(obj::AbstractComponentDef, first, last)
-    # We've disabled `first` and `last` args to add_comp!, so we don't test bounds
-    # _check_run_period(obj, first, last)
-
-    first_per = first_period(obj)
-    last_per  = last_period(obj)
-    changed = false
-
-    if first !== nothing
-        obj.first = first
-        changed = true
-    end
-
-    if last !== nothing
-        obj.last = last
-        changed = true
-    end
-
-    if changed
-        dirty!(obj)
-    end
-
-    nothing
-end
-
 # helper functions used to determine if the provided time values are
 # a uniform range.
 
@@ -824,32 +765,42 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
-    propagate_time!(obj::AbstractComponentDef, t::Dimension, first::NothingInt=nothing, last::NothingInt=nothing)
+    propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
 
-Propagate a time dimension down through the comp def tree.
+Propagate a time dimension down through the comp def tree. If first and last 
+keyword arguments are included as integers, then the object's first_free and/or
+last_free flags are set to false respectively, these first and last are propagated
+through, and they will not vary freely with the model.
 """
 function propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
+    
     set_dimension!(obj, :time, t)
-
+    
     # set first
     parent_time_keys = [keys(t)...]
-    if isnothing(first)
+    if isnothing(first) && obj.first_free
         obj.first = firstindex(t)
+    elseif isnothing(first) && !obj.first_free
+        # do nothing in this case, must leave first alone it is locked
     else
+        obj.first_free = false
         i = findfirst(isequal(first), parent_time_keys)
         isnothing(i) ? error("The given first index must exist within the parent's time dimension.") : obj.first = first
     end
 
     # set last
-    if isnothing(last)
+    if isnothing(last) && obj.last_free
         obj.last = lastindex(t)
+    elseif isnothing(last) && !obj.last_free
+        # do nothing in this case, must leave last alone it is locked
     else
+        obj.last_free = false
         i = findfirst(isequal(last), parent_time_keys)
-        isnothing(i) ? error("The given last index must exist within the parent's time dimension.") : obj.first = first
+        isnothing(i) ? error("The given last index must exist within the parent's time dimension.") : obj.last = last
     end
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        propagate_time!(c, t, first = first, last = last)
+        propagate_time!(c, t, first=first, last=last)
     end
 end
 
@@ -860,6 +811,8 @@ end
         comp_name::Symbol=comp_def.comp_id.comp_name;
         first::NothingInt=nothing,
         last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -875,6 +828,8 @@ function add_comp!(obj::AbstractCompositeComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
                    first::NothingInt=nothing,
                    last::NothingInt=nothing,
+                   first_free::Bool=true,
+                   last_free::Bool=true,
                    before::NothingSymbol=nothing,
                    after::NothingSymbol=nothing,
                    rename::NothingPairList=nothing) # TBD: rename is not yet implemented
@@ -886,16 +841,19 @@ function add_comp!(obj::AbstractCompositeComponentDef,
         error("Cannot specify both 'before' and 'after' parameters")
     end
 
-    # check time constraints if the time dimension has been set
-    if has_dim(obj, :time)
-        # error("Cannot add component to composite without first setting time dimension.")
-        propagate_time!(comp_def, dimension(obj, :time), first=first, last=last)
-    end
-
     # Copy the original so we don't step on other uses of this comp
     comp_def = deepcopy(comp_def)
     comp_def.name = comp_name
     parent!(comp_def, obj)
+
+    # Handle time dimension for the copy, leave the time unset for the original 
+    # component template
+    if has_dim(obj, :time)
+        propagate_time!(comp_def, dimension(obj, :time), first=first, last=last)
+    else
+        # can't error or composites won't work
+        # error("Cannot add component to composite without first setting time dimension.")
+    end
 
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
@@ -911,6 +869,8 @@ end
         comp_name::Symbol=comp_id.comp_name;
         first::NothingInt=nothing,
         last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing

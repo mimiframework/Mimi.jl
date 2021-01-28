@@ -527,6 +527,7 @@ function _update_scalar_param!(param::ScalarModelParameter, name, value)
 end
 
 function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps, raise_error)
+   
     # Get original parameter
     param = external_param(obj, name)
 
@@ -542,15 +543,9 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
         end
     end
 
-    # Check size of provided parameter
-    if update_timesteps && param.values isa TimestepArray
-        expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,)
-    else
-        expected_size = size(param.values)
-    end
-    if size(value) != expected_size
-        error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).")
-    end
+    # Check if the parameter dimensions match the model dimensions
+    curr_dims_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,) # the size of the dimension (might have been updated)
+    size(value) != curr_dims_size ? error("Cannot update parameter $name; expected array of size $curr_dims_size but got array of size $(size(value)).") : nothing
 
     if update_timesteps
         if param.values isa TimestepArray
