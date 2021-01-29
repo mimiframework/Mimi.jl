@@ -167,8 +167,8 @@ connect_param!(m, :emissions, :YGROSS, :grosseconomy2, :YGROSS)
 
 # this will run!
 run(m)
-@test ismissing(m[:emissions, :E][20])
-@test ismissing(m[:grosseconomy2, :YGROSS][20])
+@test ismissing(m[:emissions, :E][1])
+@test ismissing(m[:grosseconomy2, :YGROSS][1])
 
 
 # Test bounds - both end early
