@@ -107,6 +107,9 @@ Electron.prep_test_env()
     @info("test_connectorcomp.jl")
     @time include("test_connectorcomp.jl")
 
+    @info("test_firstlast.jl")
+    @time include("test_firstlast.jl")
+    
     @info("test_explorer_model.jl")
     @time include("test_explorer_model.jl")
 
