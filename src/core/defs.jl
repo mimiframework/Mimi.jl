@@ -529,8 +529,14 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
             if num_dims == 0
                 values = value
             else
-                # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
-                first = first_period(md, comp_def)
+                # # Use the first from the comp_def if it has it, else use the tree root (usu. a ModelDef)
+                # first = first_period(md, comp_def)
+                
+                # Use the first from the Model def, not the component, since we now say that the
+                # data needs to match the dimensions of the model itself, so we need to allocate
+                # the full time length even if we pad it with missings.
+                first = first_period(md)
+
                 first === nothing && @warn "set_param!: first === nothing"
 
                 if isuniform(md)
@@ -538,7 +544,6 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
                     values = TimestepArray{FixedTimestep{first, stepsize}, T, num_dims, ti}(value)
                 else
                     times = time_labels(md)
-                    # use the first from the comp_def
                     first_index = findfirst(isequal(first), times)
                     values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
                 end

@@ -69,14 +69,15 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol)
             param_length = size(ext_param.values)[i]
-            if dim == :time
-                t = dimension(obj, :time)
-                first = find_first_period(comp_def)
-                last = find_last_period(comp_def)
-                comp_length = t[last] - t[first] + 1
-            else
+            # we are now requiring time lengths to match the model as well
+            # if dim == :time
+            #     t = dimension(obj, :time)
+            #     first = find_first_period(comp_def)
+            #     last = find_last_period(comp_def)
+            #     comp_length = t[last] - t[first] + 1
+            # else
                 comp_length = dim_count(obj, dim)
-            end
+            # end
             if param_length != comp_length
                 error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
             end
@@ -470,20 +471,16 @@ function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
 end
 
 """
-    update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+    update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of an external model parameter in composite `obj`, referenced
-by `name`. 
+by `name`. The update_timesteps keyword argument is deprecated, we keep it here 
+just to provide warnings.
 """
-function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
+    !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
     _update_param!(obj::AbstractCompositeComponentDef, name, value)
 end
-
-# function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
-    
-#     @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.")
-#     _update_param!(obj::AbstractCompositeComponentDef, name, value)
-# end
 
 function update_param!(mi::ModelInstance, name::Symbol, value)
     param = mi.md.external_params[name]

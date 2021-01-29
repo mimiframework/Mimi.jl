@@ -99,27 +99,32 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
-    update_param!(m::Model, name::Symbol, value)
+    update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of an external model parameter in model `m`, referenced by
-`name`. 
+`name`. The update_timesteps keyword argument is deprecated, we keep it here 
+just to provide warnings.
 """
-@delegate update_param!(m::Model, name::Symbol, value) => md
+@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing) => md
 
 """
-    update_params!(m::Model, parameters::Dict{T, Any}) where T
+    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!``
 is called to update the external parameter by name k to value v.  Each key k 
 must be a symbol or convert to a symbol matching the name of an external parameter t
-hat already exists in the
-model definition.
+hat already exists in the model definition. The update_timesteps keyword argument 
+is deprecated, we keep it here just to provide warnings.
 """
 @delegate update_params!(m::Model, parameters::Dict) => md
 
 """
     add_comp!(
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -138,6 +143,10 @@ end
 """
     add_comp!(
         m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
