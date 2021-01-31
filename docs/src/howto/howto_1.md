@@ -73,6 +73,12 @@ add_comp!(m, ComponentA, :GDP)
 
 The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
 
+The `add_comp` function has two more optional keyword arguments, `first` and `last`, which can be used to indicate a fixed start and/or end time (year in this case) that the compnonent should run for (within the bounds of the model's time dimension).  For example, the following sould indicate that `ComponentA` should only run from 1900 to 2000.
+
+```julia
+add_comp!(m, ComponentA; first = 1900, last = 2000)
+```
+
 The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model.
 
 To make an external connection, the syntax is as follows:
