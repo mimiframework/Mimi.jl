@@ -133,12 +133,8 @@ end
 
 m = Model()
 set_dimension!(m, :time, 2000:2002)
-add_comp!(m, MyComp2) # ; first=2000, last=2002)
+add_comp!(m, MyComp2, first=2000, last=2002)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
-
-# N.B. `first` and `last` are now disabled.
-# Can't move last beyond last for a component
-# @test_throws ErrorException set_dimension!(m, :time, 2001:2003)
 
 set_dimension!(m, :time, 2000:2001)
 

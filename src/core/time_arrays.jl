@@ -497,6 +497,11 @@ function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP}, T, N, ti},
 	return arr.data[idxs1..., ts.t, idxs2...]
 end
 
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, idxs::Union{FixedTimestep{FIRST, STEP, LAST}, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
+	idxs1, ts, idxs2 = split_indices(idxs, ti)
+	return arr.data[idxs1..., ts.t, idxs2...]
+end
+
 function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{VariableTimestep{TIMES}, AnyIndex}...) where {T, N, ti, TIMES}
 	idxs1, ts, idxs2 = split_indices(idxs, ti)
 	return arr.data[idxs1..., ts.t, idxs2...]

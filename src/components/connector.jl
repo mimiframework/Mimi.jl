@@ -8,14 +8,14 @@ using Mimi
     first = Parameter() # first year to use the shorter data
     last = Parameter()  # last year to use the shorter data
 
-    function run_timestep(p, v, d, ts)
-        if gettime(ts) >= p.first && gettime(ts) <= p.last
+    function run_timestep(p, v, d, t)
+        if gettime(t) >= p.first && gettime(t) <= p.last
             input = p.input1
         else
             input = p.input2
         end 
 
-        v.output[ts] = @allow_missing(input[ts])
+        v.output[t] = @allow_missing(input[t])
         
     end
 end
@@ -30,16 +30,16 @@ end
     first = Parameter() # first year to use the shorter data
     last = Parameter()  # last year to use the shorter data
 
-    function run_timestep(p, v, d, ts)
+    function run_timestep(p, v, d, t)
 
-        if gettime(ts) >= p.first && gettime(ts) <= p.last
+        if gettime(t) >= p.first && gettime(t) <= p.last
             input = p.input1
         else
             input = p.input2
         end 
 
         for r in d.regions
-            v.output[ts, r] = @allow_missing(input[ts, r])
+            v.output[t, r] = @allow_missing(input[t, r])
         end
     end
 end
@@ -55,14 +55,14 @@ end
 #     output =  Variable(index = [time, ...])
 
 #     # Allow copying of vars/params with arbitrary dimensions
-#     function run_timestep(p, v, d, ts)
+#     function run_timestep(p, v, d, t)
 #         colons = repeat([:], inner=ndims(v.output) - 1)
-#         if hasvalue(p.input1, ts)
-#             v.output[ts, colons...] = p.input1[ts, colons...]
-#         elseif hasvalue(p.input2, ts)
-#             v.output[ts, colons...] = p.input2[ts, colons...]
+#         if hasvalue(p.input1, t)
+#             v.output[t, colons...] = p.input1[t, colons...]
+#         elseif hasvalue(p.input2, t)
+#             v.output[t, colons...] = p.input2[t, colons...]
 #         else
-#             error("Neither of the inputs to ConnectorComp have data for the current timestep: $(gettime(ts)).")
+#             error("Neither of the input to ConnectorComp have data for the current timestep: $(gettime(t)).")
 #         end
 #     end
 # end

@@ -196,4 +196,14 @@ run(m)
 @test ismissing(m[:emissions, :E][20])
 @test ismissing(m[:grosseconomy, :YGROSS][20])
 
+# Test bounds - components starting or ending before/after the model
+#
+
+m = Model()
+set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
+@test_throws ErrorException add_comp!(m, grosseconomy, first = 2000)
+add_comp!(m, grosseconomy)
+@test_throws ErrorException add_comp!(m, emissions, last = 2120)
+
+
 end #module

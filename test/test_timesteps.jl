@@ -138,12 +138,11 @@ first_foo = 2005
 m = Model()
 set_dimension!(m, :time, years)
 
-# first and last disabled
 # test that you can only add components with first/last within model's time index range
-# @test_throws ErrorException add_comp!(m, Foo; first=1900)
-# @test_throws ErrorException add_comp!(m, Foo; last=2100)
+@test_throws ErrorException add_comp!(m, Foo; first=1900)
+@test_throws ErrorException add_comp!(m, Foo; last=2100)
 
-foo = add_comp!(m, Foo) # DISABLED: first=first_foo) # offset for foo
+foo = add_comp!(m, Foo, first=first_foo)
 bar = add_comp!(m, Bar)
 
 set_param!(m, :Foo, :inputF, 5.)
@@ -214,12 +213,9 @@ end
 m2 = Model()
 set_dimension!(m2, :time, years)
 bar = add_comp!(m2, Bar)
-foo2 = add_comp!(m2, Foo2) # , first=first_foo)
+foo2 = add_comp!(m2, Foo2, first = first_foo)
 
 set_param!(m2, :Bar, :inputB, collect(1:length(years)))
-
-# TBD: Connecting components with different "first" times creates a mismatch
-# in understanding how to translate the index back to a year.
 connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
@@ -247,7 +243,7 @@ years = 2000:2010
 m3 = Model()
 
 set_dimension!(m3, :time, years)
-add_comp!(m3, Foo) #, first=2005)
+add_comp!(m3, Foo, first=2005)
 add_comp!(m3, Bar2)
 
 set_param!(m3, :Foo, :inputF, 5.)
