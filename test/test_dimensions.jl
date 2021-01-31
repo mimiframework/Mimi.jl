@@ -13,9 +13,6 @@ dim_range = Dimension(2010:2100)     # AbstractRange
 rangedim = RangeDimension(2010:2100) # RangeDimension type	
 dim_vals = Dimension(4) # Same as 1:4
 
-# RJP: unclear what was intended here, but you cannot instantiate an abstract type...
-# dim_vals_abstract = AbstractDimension(dim_vals) # Abstract
-
 @test key_type(dim_varargs) == Symbol
 @test key_type(dim_vec) == Symbol
 @test key_type(dim_range) == Int
@@ -46,8 +43,6 @@ end
 @test dim_range[:] == [1:91...]
 @test dim_varargs[:bar] == 2
 @test dim_varargs[:] == [1,2,3]
-
-# @test dim_vals_abstract[1:4...]== [1:4...]
 
 # @test rangedim[2011] == 2 # TODO: this errors..
 
@@ -92,23 +87,17 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2100)
 
-# First and last have been disabled...
-#@test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
+@test_throws ErrorException add_comp!(m, foo2; first = 2005, last = 2105)   # Can't add a component longer than a model
 
 foo2_ref = add_comp!(m, foo2)
 
 foo2_ref = ComponentReference(m, :foo2)
 my_foo2 = compdef(foo2_ref)
 
-# First and last have been disabled... 
-# Can't set time more narrowly than components are defined as
-# @test_throws ErrorException set_dimension!(m, :time, 1990:2200)
-# @test first_period(my_foo2) == 2005
-# @test last_period(my_foo2)  == 2095
-
 # Test parameter connections
-# @test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
-# set_param!(m, :foo2, :x, 2005:2095) # Shouldn't throw an error
+@test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
+@test_throws ErrorException set_param!(m, :foo2, :x, 2005:2095) # too short
+set_param!(m, :foo2, :x, 2000:2100) #Shouldn't error
 
 set_dimension!(m, :time, 2010:2050)
 

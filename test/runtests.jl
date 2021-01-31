@@ -13,7 +13,7 @@ using Documenter
 Electron.prep_test_env()
 
 @testset "Mimi" begin
-
+    
     @info("test_main.jl")
     @time include("test_main.jl")
 
@@ -53,8 +53,8 @@ Electron.prep_test_env()
     @info("test_replace_comp.jl")
     @time include("test_replace_comp.jl")
 
-    # @info("test_tools.jl")
-    # @time include("test_tools.jl")
+    @info("test_tools.jl")
+    @time include("test_tools.jl")
 
     @info("test_parameter_labels.jl")
     @time include("test_parameter_labels.jl")
@@ -106,10 +106,12 @@ Electron.prep_test_env()
 
     @info("test_connectorcomp.jl")
     @time include("test_connectorcomp.jl")
-
+    
+    # (temporarily) verbose first and last keyword arguments tests while
+    # reenabling this functionality
     @info("test_firstlast.jl")
     @time include("test_firstlast.jl")
-    
+
     @info("test_explorer_model.jl")
     @time include("test_explorer_model.jl")
 
