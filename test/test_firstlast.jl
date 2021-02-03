@@ -60,7 +60,7 @@ end
 end
 
 #
-# Test first and last for one component
+# Test using first and last for one (the second) component
 #
 
 m = Model()
@@ -68,7 +68,8 @@ set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
 add_comp!(m, grosseconomy)  
 add_comp!(m, emissions, first = 2020, last = 2105)
 
-# check the attributes
+# check that the attributes of the ModelDef and ComponentDef(s) have been set_dimension
+# as expected
 @test collect(2015:5:2110) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
 @test m.md.first == m.md.namespace[:grosseconomy].first 
 @test m.md.last == m.md.namespace[:grosseconomy].last
@@ -84,29 +85,31 @@ set_param!(m, :grosseconomy, :k0, 130.)
 set_param!(m, :grosseconomy, :share, 0.3)
 
 # Set parameters for the emissions component
-@test_throws ErrorException set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:19]) # needs to be length of model
+@test_throws ErrorException set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:19]) # the parameter needs to be length of model
 set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
 
 run(m)
 
-# test that there are missing values in :emissions but not :grosseconomy
+# test that there are missing values in :emissions variables outside of the component's 
+# run period, and no missing values in the :grosseconomy variables
 @test ismissing(m[:emissions, :E][1])
 @test ismissing(m[:emissions, :E][20])
 @test sum(ismissing.(m[:emissions, :E][2:19])) == 0
 @test sum(ismissing.(m[:grosseconomy, :l])) == 0
 
-# change the model dimension
+# change the model dimension (widen it)
 set_dimension!(m, :time, collect(2015:5:2115))
 
-# check that the first, last, and time have been updated properly
+# check that the first, last, and time have been updated properly for both the 
+# ModelDef and ComponentDef(s)
 @test collect(2015:5:2115) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
 @test m.md.first == m.md.namespace[:grosseconomy].first # grosseconomy first and last vary with model limits
 @test m.md.last == m.md.namespace[:grosseconomy].last # grosseconomy first and last vary with model limits
 @test m.md.namespace[:emissions].first == 2020 # emissions first and last are fixed
 @test m.md.namespace[:emissions].last == 2105 # emissions first and last are fixed
 
-# reset parameters with a time dimension
+# reset any parameters that have a time dimension
 update_param!(m, :l, [(1. + 0.015)^t *6404 for t in 1:21])
 update_param!(m,  :tfp, [(1 + 0.065)^t * 3.57 for t in 1:21])
 update_param!(m, :s, ones(21).* 0.22)
@@ -114,7 +117,8 @@ update_param!(m, :sigma, [(1. - 0.05)^t *0.58 for t in 1:21])
 
 run(m)
 
-# test that there are missing values in :emissions but not :grosseconomy
+# test that there are missing values in :emissions variables outside of the component's 
+# run period, and no missing values in the :grosseconomy variables
 @test ismissing(m[:emissions, :E][1])
 @test sum(ismissing.(m[:emissions, :E][20:21])) == 2
 @test sum(ismissing.(m[:emissions, :E][2:19])) == 0
@@ -141,7 +145,8 @@ set_param!(m, :grosseconomy, :share, 0.3)
 set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS) 
 
-# this isn't going to run, because it doesnt set the initial value properly when it uses is_first()
+# this isn't going to run, because it doesnt set the initial value properly when 
+# it uses is_first() ... we will test fixing this problem in the next test
 @test_throws MissingException run(m) 
 
 #
@@ -165,8 +170,11 @@ set_param!(m, :grosseconomy2, :share, 0.3)
 set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy2, :YGROSS) 
 
-# this will run!
+# this will run because we explicitly used `TimestepValue(2020)` instead of 
+# using is_first()
 run(m)
+
+# neither component should have a value for the first timestep
 @test ismissing(m[:emissions, :E][1])
 @test ismissing(m[:grosseconomy2, :YGROSS][1])
 
@@ -196,11 +204,14 @@ run(m)
 @test ismissing(m[:emissions, :E][20])
 @test ismissing(m[:grosseconomy, :YGROSS][20])
 
+#
 # Test bounds - components starting or ending before/after the model
 #
 
 m = Model()
 set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
+
+# components cannot start before or end after the model's time dimension
 @test_throws ErrorException add_comp!(m, grosseconomy, first = 2000)
 add_comp!(m, grosseconomy)
 @test_throws ErrorException add_comp!(m, emissions, last = 2120)
