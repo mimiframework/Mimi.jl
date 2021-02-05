@@ -1,3 +1,5 @@
+module TestComponentsOrdering
+
 using Mimi
 using Test
 
@@ -43,3 +45,5 @@ addcomponent(my_model, testcomp1)
 @test_throws ErrorException addcomponent(my_model, testcomp2, before=:testcomp3)
 
 @test_throws ErrorException addcomponent(my_model, testcomp2, after=:testcomp3)
+
+end #module
