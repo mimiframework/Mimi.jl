@@ -18,10 +18,10 @@ packages_to_test = [
     "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "master"),
     "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "master"),
     "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
-    # "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
-    # "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
-    # "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
-    # "MimiHECTOR" => ("https://github.com/anthofflab/MimiHECTOR.jl", "master")
+    "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
+    "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
+    "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
+    "MimiHECTOR" => ("https://github.com/anthofflab/MimiHector.jl", "master")
 ]
 
 using Pkg
