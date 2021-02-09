@@ -135,13 +135,13 @@ function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
 
     top_dst_path = conn.dst_comp_path
     comp = find_comp(md, top_dst_path)
-    comp !== nothing || error("Can't find $(top_dst_path) from $(md.comp_id)")
+    comp !== nothing || error("Cannot find $(top_dst_path) from $(md.comp_id)")
     par_sub_paths, param_names = _find_paths_and_names(comp, conn.dst_par_name)
     param_paths = [ComponentPath(top_dst_path, sub_path) for sub_path in par_sub_paths]
 
     top_src_path = conn.src_comp_path
     comp = find_comp(md, top_src_path)
-    comp !== nothing || error("Can't find $(top_src_path) from $(md.comp_id)")
+    comp !== nothing || error("Cannot find $(top_src_path) from $(md.comp_id)")
     var_sub_path, var_name = _find_paths_and_names(comp, conn.src_var_name)
     var_path = ComponentPath(top_src_path, var_sub_path[1])
 
@@ -161,7 +161,7 @@ that need to be made under the hood as specified by `epc`.
 function _get_leaf_level_epcs(md::ModelDef, epc::ExternalParameterConnection)
 
     comp = find_comp(md, epc.comp_path)
-    comp !== nothing || error("Can't find $(epc.comp_path) from $(md.comp_id)")
+    comp !== nothing || error("Cannot find $(epc.comp_path) from $(md.comp_id)")
     par_sub_paths, param_names = _find_paths_and_names(comp, epc.param_name)
 
     leaf_epcs = ExternalParameterConnection[]
