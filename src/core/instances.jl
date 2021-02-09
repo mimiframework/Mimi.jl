@@ -278,9 +278,22 @@ end
 
 _runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
 
+function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}    
+    shift = Int((ci.first - FIRST)/STEP)
+    return FixedTimestep{ci.first,STEP,ci.last}(ts.t - shift)
+end
+
+function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
+    idx_start = findfirst(TIMES .== ci.first)
+    idx_end = findfirst(TIMES .== ci.last)
+    shift = idx_start - 1
+
+    return VariableTimestep{TIMES[idx_start:idx_end]}(ts.t - shift)
+end
+
 function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueDict)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
-        ci.run_timestep(parameters(ci), variables(ci), dims, clock.ts)
+        ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts))
     end
 
     return nothing

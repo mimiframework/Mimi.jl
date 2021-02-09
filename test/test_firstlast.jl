@@ -29,26 +29,6 @@ import Mimi: time_labels
 	end
 end
 
-@defcomp grosseconomy2 begin
-	YGROSS	= Variable(index=[time])	# Gross output
-	K	    = Variable(index=[time])	# Capital
-	l	    = Parameter(index=[time])	# Labor
-	tfp	    = Parameter(index=[time])	# Total factor productivity
-	s	    = Parameter(index=[time])	# Savings rate
-	depk	= Parameter()			    # Depreciation rate on capital - Note that it has no time index
-	k0	    = Parameter()			    # Initial level of capital
-	share	= Parameter()			    # Capital share
-
-	function run_timestep(p, v, d, t)
-		if t == TimestepValue(2020)
-			v.K[t] 	= p.k0	
-		else
-			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
-		end
-		v.YGROSS[t] = p.tfp[t] * v.K[t]^p.share * p.l[t]^(1-p.share)
-	end
-end
-
 @defcomp emissions begin
 	E 	    = Variable(index=[time])	# Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	# Emissions output ratio
@@ -145,38 +125,11 @@ set_param!(m, :grosseconomy, :share, 0.3)
 set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS) 
 
-# this isn't going to run, because it doesnt set the initial value properly when 
-# it uses is_first() ... we will test fixing this problem in the next test
-@test_throws MissingException run(m) 
-
-#
-# Test bounds - both start late - without is_first()
-#
-
-m = Model()
-set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
-add_comp!(m, grosseconomy2, first = 2020)
-add_comp!(m, emissions, first = 2020)
-
-# Set parameters for the grosseconomy component
-set_param!(m, :grosseconomy2, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_param!(m, :grosseconomy2, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_param!(m, :grosseconomy2, :s, ones(20).* 0.22)
-set_param!(m, :grosseconomy2, :depk, 0.1)
-set_param!(m, :grosseconomy2, :k0, 130.)
-set_param!(m, :grosseconomy2, :share, 0.3)
-
-# Set parameters for the emissions component
-set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connect_param!(m, :emissions, :YGROSS, :grosseconomy2, :YGROSS) 
-
-# this will run because we explicitly used `TimestepValue(2020)` instead of 
-# using is_first()
-run(m)
+run(m) 
 
 # neither component should have a value for the first timestep
 @test ismissing(m[:emissions, :E][1])
-@test ismissing(m[:grosseconomy2, :YGROSS][1])
+@test ismissing(m[:grosseconomy, :YGROSS][1])
 
 
 # Test bounds - both end early
