@@ -7,8 +7,8 @@ An `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` is a type d
 In the `run_timestep` functions which the user defines, it may be useful to use any of the following functions, where `t` is an `AbstractTimestep` object:
 
 ```julia
-is_first(t) # returns true or false, true if t is the first timestep to be run
-is_last(t) # returns true or false, true if t is the last timestep to be run
+is_first(t) # returns true or false, true if t is the first timestep to be run for the respective component
+is_last(t) # returns true or false, true if t is the last timestep to be run for the respective component
 gettime(t) # returns the year represented by timestep t
 ```
 There are also two helper types `TimestepValue` and `TimestepIndex` that can be used with comparison operators (`==`, `<`, and `>`) to check whether an `AbstractTimestep` `t` during the `run_timestep` function corresponds with a certain year or index number. For example:
