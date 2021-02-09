@@ -98,7 +98,7 @@ Electron.prep_test_env()
     @info("test_timesteparrays.jl")
     @time include("test_timesteparrays.jl")
 
-    @info("test_dimensions")
+    @info("test_dimensions.jl")
     @time include("test_dimensions.jl")
 
     @info("test_datum_storage.jl")

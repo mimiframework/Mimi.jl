@@ -144,7 +144,7 @@ function getdataframe(m::AbstractModel, pairs::Pair{Symbol, Symbol}...)
     for (comp_name, item_name) in pairs[2:end]
         next_dims = dim_names(m, comp_name, item_name)
         if dims != next_dims
-            error("Can't create DataFrame from items with different dimensions ($comp_name1.$item_name1: $dims vs $comp_name.$item_name: $next_dims)")
+            error("Cannot create DataFrame from items with different dimensions ($comp_name1.$item_name1: $dims vs $comp_name.$item_name: $next_dims)")
         end
         result = getdataframe(m, comp_name, item_name)
         df = hcat(df, result[!, [item_name]])      # [[xx]] retrieves a 1 column DataFrame

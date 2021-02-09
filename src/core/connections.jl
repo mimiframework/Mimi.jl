@@ -262,7 +262,7 @@ Split a string of the form "/path/to/component:datum_name" into the component pa
 """
 function split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
     elts = split(s, ":")
-    length(elts) != 2 && error("Can't split datum path '$s' into ComponentPath and datum name")
+    length(elts) != 2 && error("Cannot split datum path '$s' into ComponentPath and datum name")
     return (ComponentPath(obj, elts[1]), Symbol(elts[2]))
 end
 

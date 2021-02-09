@@ -440,7 +440,7 @@ end
 
 function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
     has_parameter(comp_def, param_name) ||
-        error("Can't find parameter :$param_name in component $(pathof(comp_def))")
+        error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
 
     if has_parameter(md, ext_param_name)
         error("Cannot set parameter :$ext_param_name, the model already has an external parameter with this name.", 
@@ -472,7 +472,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     end
 
     if isempty(comps)
-        error("Can't set parameter :$param_name; not found in ModelDef or children")
+        error("Cannot set parameter :$param_name; not found in ModelDef or children")
     end
 
     # which fields to check for collisions in subcomponents
