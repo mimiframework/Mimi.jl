@@ -21,16 +21,16 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 
 ## Models using Mimi
 
-* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl) (currently in beta)
+* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)
 * [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)
 * [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)
 * [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)
-* [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl) (currently in closed beta)
-* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl) (currently in closed beta)
-* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl) (currently in closed beta)
+* [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)
+* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl)
+* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl)
 * [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl) (CH4 parts currently in closed beta)
 * [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl) (CH4 parts currently in closed beta)
-* [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed beta)
-* [Mimi-BRICK.jl](https://github.com/anthofflab/mimi-brick.jl) (currently in closed beta)
+* [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl)
+* [Mimi-BRICK.jl](https://github.com/anthofflab/mimi-brick.jl)
 * [AWASH](http://awashmodel.org/)
 * [PAGE-ICE](https://github.com/openmodels/PAGE-ICE)
