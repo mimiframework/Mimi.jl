@@ -169,5 +169,46 @@ set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
 add_comp!(m, grosseconomy)
 @test_throws ErrorException add_comp!(m, emissions, last = 2120)
 
+#
+# Test is_first and is_last
+#
+
+# is_first and is_last should be equivalent to comparing the timestep to the first
+# and last years provided, and t.t should be 1 when the year is first i.e. the 
+# first year the component actually runs for.
+
+@defcomp MyComp begin
+	a 	= Variable(index=[time])	
+	function run_timestep(p, v, d, t)
+		if t == TimestepValue(2) v.a[t] = -999
+		elseif t == TimestepValue(9) v.a[t] = 999
+		else v.a[t] = t.t
+		end
+	end
+end
+
+@defcomp MyComp2 begin
+	a 	= Variable(index=[time])	
+	function run_timestep(p, v, d, t)
+		if is_first(t) v.a[t] = -999
+		elseif is_last(t) v.a[t] = 999
+		else v.a[t] = t.t
+		end
+	end
+end
+
+m = Model()
+set_dimension!(m, :time, collect(1:10))
+add_comp!(m, MyComp, first = 2, last = 9)
+run(m)
+
+m2 = Model()
+set_dimension!(m2, :time, collect(1:10))
+add_comp!(m2, MyComp, first = 2, last = 9)
+run(m2)
+
+@test ismissing(m[:MyComp, :a][1])
+@test ismissing(m[:MyComp, :a][end])
+@test (m[:MyComp, :a])[2:9] == (m2[:MyComp, :a])[2:9] == [-999., 2., 3., 4., 5., 6., 7., 999.]
 
 end #module
