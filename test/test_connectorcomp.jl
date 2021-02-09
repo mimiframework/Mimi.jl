@@ -55,8 +55,9 @@ x = model1[:Long, :x]
 @test all(iszero, x[1:year_dim[late_start]-1])
 
 # Test the values are right after the late start
+offset = late_start - years[1] 
 @test b[year_dim[late_start]:end] == x[year_dim[late_start]:end]
-@test b[year_dim[late_start]:end] == collect(year_dim[late_start]:year_dim[years[end]]) * 2.0
+@test b[year_dim[late_start]:end] == (collect(year_dim[late_start]:year_dim[years[end]]) .- 5) * 2.0
 
 @test Mimi.datum_size(model1.md, Mimi.compdef(model1.md, :Long), :x) == (length(years),)
 
@@ -154,7 +155,8 @@ late_yr_idxs = year_dim[late_start]:year_dim[end]
 
 @test b[late_yr_idxs, :] == x[year_dim[late_start]:end, :]
 
-@test b[late_yr_idxs, :] == [[i + 1 for i in late_yr_idxs] [i + 2 for i in late_yr_idxs]]
+offset = late_start - years[1]
+@test b[late_yr_idxs, :] == [[i + 1 - offset for i in late_yr_idxs] [i + 2 - offset for i in late_yr_idxs]]
 
 #------------------------------------------------------------------------------
 #  4. Test where the short component starts late and ends early
@@ -189,9 +191,11 @@ x = model4[:Long_multi, :x]
 @test all(iszero, x[year_dim[last]+1:end, :])
 
 # Test the values are right after the late start
+
+offset = first - years[1]
 yr_idxs = year_dim[first]:year_dim[last]
 @test b[yr_idxs, :] == x[yr_idxs, :]
-@test b[yr_idxs, :] == [[i + 1 for i in yr_idxs] [i + 2 for i in yr_idxs]]
+@test b[yr_idxs, :] == [[i + 1 - offset for i in yr_idxs] [i + 2 - offset for i in yr_idxs]]
 
 #------------------------------------------------------------------------------
 #  5. Test errors with backup data

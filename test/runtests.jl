@@ -107,8 +107,6 @@ Electron.prep_test_env()
     @info("test_connectorcomp.jl")
     @time include("test_connectorcomp.jl")
     
-    # (temporarily) verbose first and last keyword arguments tests while
-    # reenabling this functionality
     @info("test_firstlast.jl")
     @time include("test_firstlast.jl")
 

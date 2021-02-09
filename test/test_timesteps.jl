@@ -156,8 +156,10 @@ run(m)
 yr_dim = Mimi.Dimension(years)
 idxs = yr_dim[first_foo]:yr_dim[years[end]]
 foo_output = m[:Foo, :output]
+
+offset = first_foo - years[1]
 for i in idxs
-    @test foo_output[i] == 5+i
+    @test foo_output[i] == 5+(i-offset) # incorporate offset into i now because we set ts.t to match component not model
 end
 
 for i in 1:5
