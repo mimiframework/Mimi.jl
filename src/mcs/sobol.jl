@@ -29,8 +29,15 @@ function _compute_trials(sim_inst::SobolSimulationInstance, N::Int)
     sim_inst.trials = N * (factor * num_rvs + 2)
 end
 
-# Use original distribution when resampling from SampleStore
-_get_dist(rv::RandomVariable) = (rv.dist isa SampleStore ? rv.dist.dist : rv.dist)
+function create_GSA_payload(sim_inst::SobolSimulationInstance)
+    rv_info = OrderedDict{Symbol, Any}([name => _get_dist(rv) for (name, rv) in sim_inst.sim_def.rvdict])
+
+    # back out N
+    N = _compute_N(sim_inst)
+
+    # create payload
+    return GlobalSensitivityAnalysis.SobolData(params = rv_info, calc_second_order = sim_inst.sim_def.data.calc_second_order, N = N)
+end
 
 function sample!(sim_inst::SobolSimulationInstance, samplesize::Int)
     rvdict = sim_inst.sim_def.rvdict
@@ -50,7 +57,7 @@ function sample!(sim_inst::SobolSimulationInstance, samplesize::Int)
     end
 end
 
-function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Union{Nothing, Int} = 10_000, conf_level::Union{Nothing, Number} = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where N
+function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{<:Number, N}; num_resamples::Union{Nothing, Int} = 1_000, conf_level::Union{Nothing, Number} = 0.95, N_override::Union{Nothing, Int}=nothing, progress_meter::Bool = true) where N
 
     if sim_inst.trials == 0
         error("Cannot analyze simulation with 0 trials.")
@@ -59,14 +66,4 @@ function analyze(sim_inst::SobolSimulationInstance, model_output::AbstractArray{
     payload = create_GSA_payload(sim_inst)
 
     return GlobalSensitivityAnalysis.analyze(payload, model_output; num_resamples = num_resamples, conf_level = conf_level, N_override = N_override, progress_meter = progress_meter)
-end
-
-function create_GSA_payload(sim_inst::SobolSimulationInstance)
-    rv_info = OrderedDict{Symbol, Any}([name => _get_dist(rv) for (name, rv) in sim_inst.sim_def.rvdict])
-
-    # back out N
-    N = _compute_N(sim_inst)
-
-    # create payload
-    return GlobalSensitivityAnalysis.SobolData(params = rv_info, calc_second_order = sim_inst.sim_def.data.calc_second_order, N = N)
 end
