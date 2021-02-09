@@ -294,7 +294,7 @@ function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
         # shift the timestep over by the number of timesteps between the model first and the ts first
         idx_start = findfirst(TIMES .== ci.first)
         idx_finish = findfirst(TIMES .== ci.last)
-        return VariableTimestep{TIMES[idx_start:idx_finish]}(ts.t - idx_start - 1)
+        return VariableTimestep{TIMES[idx_start:idx_finish]}(ts.t - idx_start + 1)
     end
 end
 
