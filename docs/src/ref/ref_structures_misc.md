@@ -1,7 +1,8 @@
+# Reference Guide: Structures - Misc
 
-# Reference Guide: Structures
+This document, **along with "Structures: Definitions and Structures: Instances**, describes some of the core data structures used to implement in Mimi 1.0.
 
-This document (along with "structures_2_definitions" and "structures_3_instances") describes the core data structures used to implement in Mimi 1.0.
+## Composites
 
 Prior versions of Mimi supported only "flat" models, i.e., with one level of components. The current version supports mulitple layers of components, with some components being "final" or leaf components, and others being "composite" components which themselves contain other leaf or composite components. This approach allows for a cleaner organization of complex models, and allows the construction of building blocks that can be re-used in multiple models.
 
