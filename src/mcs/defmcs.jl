@@ -188,6 +188,8 @@ Transformations using this RV are deleted, and the Simulation's
 NamedTuple type is updated to reflect the dropped RV.
 """
 function delete_RV!(sim_def::SimulationDef, name::Symbol)
+    name = rv.name
+    haskey(sim_def.rvdict, name) || warn("Simulation def does not have RV :$name. Nothing being deleted.")
     delete_transform!(sim_def, name)
     delete!(sim_def.rvdict, name)
     _update_nt_type!(sim_def)
@@ -222,7 +224,7 @@ Replace the RV with the given `rv`s name in the Simulation definition Sim with
 """
 function replace_RV!(sim_def::SimulationDef, rv::RandomVariable)
     name = rv.name
-    haskey(sim_def.rvdict, name) && error("Simulation def does not have has RV :$name. Use add_RV! to add it.")
+    haskey(sim_def.rvdict, name) || error("Simulation def does not have has RV :$name. Use add_RV! to add it.")
     sim_def.rvdict[rv.name] = rv
     _update_nt_type!(sim_def)
 end
@@ -245,6 +247,7 @@ Simulation definition's NamedTuple type accordingly.
 """
 function delete_transform!(sim_def::SimulationDef, name::Symbol)
     pos = findall(t -> t.rvname == name, sim_def.translist)
+    isempty(pos) && warn("Simulation def does not have and transformations using RV :$name. Nothing being deleted.")
     deleteat!(sim_def.translist, pos)    
     _update_nt_type!(sim_def)
 end
