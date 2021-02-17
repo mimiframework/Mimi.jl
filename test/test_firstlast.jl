@@ -211,4 +211,102 @@ run(m2)
 @test ismissing(m[:MyComp, :a][end])
 @test (m[:MyComp, :a])[2:9] == (m2[:MyComp, :a])[2:9] == [-999., 2., 3., 4., 5., 6., 7., 999.]
 
+#
+# TimestepIndex and TimestepValue
+#
+
+# TimestepIndex: Test Equality - should match up with t.t
+@defcomp MyComp begin
+	a 	= Variable(index=[time])
+	b 	= Variable(index=[time])
+	function run_timestep(p, v, d, t)
+		v.a[t] = t == TimestepIndex(t.t)
+		v.b[t] = 1.
+	end
+end
+
+m = Model()
+set_dimension!(m, :time, collect(1:15))
+add_comp!(m, MyComp, first = 5, last = 10)
+run(m)
+
+for i in collect(1:15)
+	@test m[:MyComp, :a][i] === m[:MyComp, :b][i]
+end
+
+# TimestepValue: Test Equality - should match up with the time index
+@defcomp MyComp begin
+	a 	= Variable(index=[time])
+	b 	= Variable(index=[time])
+	function run_timestep(p, v, d, t)
+		v.a[t] = t == TimestepValue(t.t + 4)
+		v.b[t] = 1.
+	end
+end
+
+m = Model()
+set_dimension!(m, :time, collect(1:15))
+add_comp!(m, MyComp, first = 5, last = 10)
+run(m)
+
+for i in collect(1:15)
+	@test m[:MyComp, :a][i] === m[:MyComp, :b][i]
+end
+
+# TimestepIndex: Test that Get and Set Index are Relative to Component, not Model
+@defcomp MyComp begin
+	a 	= Variable(index=[time])
+	b 	= Variable(index=[time])
+	function run_timestep(p, v, d, t)
+		v.a[t] = t.t
+		v.b[TimestepIndex(t.t)] = t.t
+	end
+end
+
+m = Model()
+set_dimension!(m, :time, collect(1:15))
+add_comp!(m, MyComp, first = 5, last = 10)
+run(m)
+@test m[:MyComp, :a] == m[:MyComp, :b]
+
+@defcomp MyComp begin
+	a 	= Variable(index=[time])
+	function run_timestep(p, v, d, t)
+		if t == TimestepIndex(1)
+			v.a[TimestepIndex(1)] = 1
+		else
+			v.a[t] = 0
+		end
+	end
+end
+
+for year in collect(1995:1999)
+	m = Model()
+	set_dimension!(m, :time, collect(1995:2000))
+	add_comp!(m, MyComp, first = year)
+	run(m)
+	idx = year - 1995 + 1
+	@test m[:MyComp, :a][idx] == 1.0
+end
+
+# TimestepValue: Test that Get and Set Index are Relative to Component, not Model
+@defcomp MyComp begin
+	a 	= Variable(index=[time])
+	function run_timestep(p, v, d, t)
+		if t == TimestepValue(1999)
+			v.a[TimestepValue(1999)] = 1
+		else
+			v.a[t] = 0
+		end
+	end
+end
+
+for year in collect(1995:1999)
+	m = Model()
+	set_dimension!(m, :time, collect(1995:2000))
+	add_comp!(m, MyComp, first = year)
+	run(m)
+	@test m[:MyComp, :a][5] == 1.0
+end
+
 end #module
