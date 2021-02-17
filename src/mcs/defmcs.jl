@@ -221,6 +221,8 @@ Replace the RV with the given `rv`s name in the Simulation definition Sim with
 `rv` and update the Simulation's NamedTuple type accordingly.
 """
 function replace_RV!(sim_def::SimulationDef, rv::RandomVariable)
+    name = rv.name
+    haskey(sim_def.rvdict, name) && error("Simulation def does not have has RV :$name. Use add_RV! to add it.")
     sim_def.rvdict[rv.name] = rv
     _update_nt_type!(sim_def)
 end
@@ -228,7 +230,7 @@ end
 """
     replace_RV!(sim_def::SimulationDef, name::Symbol, dist::Distribution)
 
-Replace the with name `name` in the Simulation definition Sim with a new RV
+Replace the rv with name `name` in the Simulation definition Sim with a new RV
 with `name` and distribution `dist`. Update the Simulation's NamedTuple
 type accordingly.
 """
