@@ -38,7 +38,7 @@ makedocs(
 		],
 		"Explanations" => Any[
 			"Explanations Intro" => "explanations/exp_main.md",
-			"Models as Packages" => "explanations/exp_pkgs"
+			"Models as Packages" => "explanations/exp_pkgs.md"
 		],
 		"FAQ" => "faq.md",
 	],
