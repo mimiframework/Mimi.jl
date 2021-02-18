@@ -1,10 +1,12 @@
 # How-to Guide 1: Construct and Run a Model
 
-This how-to guide pairs nicely with Tutorial 4: Create a Model, serving as an abbreviated, less-detailed version and refresher for those with some experience with Mimi. If this is your first time constructing and running a Mimi model, we recommend you start with Tutorial 4, which will give you more detailed step-by step instructions.
+This how-to guide pairs nicely with Tutorial 4: Create a Model, and serves as a higher-level version and refresher for those with some experience with Mimi. We also present composite components here, which are not used in Tutorial 4. If this is your first time constructing and running a Mimi model, we recommend you start with Tutorial 4, which will give you more detailed step-by step instructions.
 
 ## Defining Components
 
-Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components.
+Any Mimi model is made up of at least one component, so before you construct a model, you need to create your components. Mimi provides two types of components which can intuitively be thought of as Leaf components and Composite components. The simplest types of models, sometimes referred to as "flat models" may contain only one layer of components, and thus only leaf components. Continuing the analogy of a tree data structure, one may consider the Model to be the root.
+
+### Leaf Components
 
 A component can have any number of parameters and variables. Parameters are data values that will be provided to the component as input, and variables are values that the component will calculate in the `run_timestep` function when the model is run. The index of a parameter or variable determines the number of dimensions that parameter or variable has. They can be scalar values and have no index, such as parameter 'c' in the example below. They can be one-dimensional, such as the variable 'A' and the parameters 'd' and 'f' below. They can be two dimensional such as variable 'B' and parameter 'e' below. Note that any index other than 'time' must be declared at the top of the component, as shown by `regions = Index()` below.
 
@@ -45,6 +47,10 @@ The API for using the fourth argument, represented as `t` in this explanation, i
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
 By default, all parameters and variables defined in the `@defcomp` will be allocated storage as scalars or Arrays of type `Float64.` For a description of other data type options, see How-to Guide 4: Work with Timesteps, Parameters, and Variables 
+
+### Composite Components
+
+[TODO]
 
 ## Constructing a Model
 

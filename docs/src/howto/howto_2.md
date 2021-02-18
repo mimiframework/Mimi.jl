@@ -4,7 +4,7 @@ This guide show show to access the numerical values of your results in a usable 
 
 ## Accessing Results
 
-After a model has been run, you can access the results (the calculated variable values in each component) in a few different ways.
+After a model has been run, you can access the results (the calculated variable values in each component) in a few different ways. Note that if you have used composite components and wish to access results deeper than the the Parameters and Variables available in your top-level components you may need the special syntax in the Composite Component Details subsection below.
 
 You can use the `getindex` syntax as follows:
 
@@ -23,6 +23,10 @@ getdataframe(m, :ComponentName=>:Variable) # request one variable from one compo
 getdataframe(m, :ComponentName=>(:Variable1, :Variable2)) # request multiple variables from the same component
 getdataframe(m, :Component1=>:Var1, :Component2=>:Var2) # request variables from different components
 ```
+
+### Composite Component Details
+
+[TODO]
 
 ## Plotting and the Explorer UI
 
