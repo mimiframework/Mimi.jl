@@ -317,3 +317,18 @@ Add to Simulation definition`sim` a "save" instruction for component `comp_name`
 variable `datum_name`. This result will be saved to a CSV file at the end of the simulation.    
 """
 add_save!(sim_def::SimulationDef, comp_name::Symbol, datum_name::Symbol) = add_save!(sim_def, (comp_name, datum_name))
+
+"""
+    get_simdef_rvnames(sim_def::SimulationDef, name::Union{String, Symbol})
+
+A helper function to support finding the keys in a Simulation Definition `sim_def`'s
+rvdict that contain a given `name`. This can be particularly helpful if the random 
+variable was set via the shortcut syntax ie. my_parameter = Normal(0,1) and thus the
+`sim_def` has automatically created a key in the format `:my_parameter!xx`. In this 
+case this function is useful to get the key and carry out modification functions 
+such as `replace_rv!`.
+"""
+function get_simdef_rvnames(sim_def::SimulationDef, name::Union{String, Symbol})
+    names = String.([keys(sim_def.rvdict)...])
+    matches = Symbol.(filter(x -> occursin(String(name), x), names))
+end
