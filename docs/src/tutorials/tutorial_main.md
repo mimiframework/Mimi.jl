@@ -23,4 +23,22 @@ If you find a bug in these tutorials, or have a clarifying question or suggestio
 
 [Tutorial 6: Create a Model Including Composite Components](@ref) expands on Tutorial 4 and explains how to create a model from scratch including the use of composite components.
 
-_Additional AERE Workshop Tutorials: The Mimi developement team recently participated in the 2019 Association of Environmental and Resource Economists (AERE) summer conference during the pre-conference workshop on Advances in Integrated Assessment Models. This included both a presentation and a hands-on session demonstrating various use cases for Mimi. The Github repository [here](https://github.com/davidanthoff/teaching-2019-aere-workshop) contains a) all slides from the workshop and b) all the code from the hands on sessions, which may be of interest to Mimi users. Importantly note that the linked code represents as a snapshot of Mimi at the time of the workshop, and **will not** be updated to reflect new changes._
+## Additional Tutorals
+
+#### AERE Workshop Tutorials: 
+
+The Mimi developement team recently participated in the 2019 Association of Environmental and Resource Economists (AERE) summer conference during the pre-conference workshop on Advances in Integrated Assessment Models. This included both a presentation and a hands-on session demonstrating various use cases for Mimi. The Github repository [here](https://github.com/davidanthoff/teaching-2019-aere-workshop) contains a) all slides from the workshop and b) all the code from the hands on sessions, which may be of interest to Mimi users. Importantly note that the linked code represents as a snapshot of Mimi at the time of the workshop, and **will not** be updated to reflect new changes.
+
+#### Resources for the Future (RFF) Webinar
+
+On February 10, 2021, Resources for the Future (RFF) held a [live webinar](https://www.rff.org/events/rff-live/the-social-cost-of-carbon-key-scientific-and-policy-considerations-for-the-biden-administration/) for over 1,000 participants described on rff.org as follows:
+
+"Over the past four years, the [Social Cost of Carbon Initiative](https://www.rff.org/topics/scc/) at Resources for the Future (RFF) has been a key hub for SCC scholarship to implement the NAS recommendations. On February 10, 2021, RFF held a live webinar that highlighted the latest SCC-related research from RFF scholars and the [Climate Impact Lab](http://www.impactlab.org). The conversation also featured perspectives from decisionmakers using the SCC to inform policy and highlighted key considerations for the Biden administration’s near-term and final updates of the estimates."
+
+This webinar highlighted Mimi as a "free, open-source computing platform allows users to access, run, and modify the social cost of carbon (SCC) models used by the federal Interagency Working Group to estimate the SCC", **and was paired with the [Social Cost of Carbon Computing Platform: Models from the Interagency Working Group](https://www.rff.org/publications/data-tools/social-cost-of-carbon-computing-platform-models-from-the-iwg/) post including an [embedded video](https://www.youtube.com/watch?v=C2rqpHk3Rek&feature=emb_logo) by Professor Anthoff.**
+
+Links: 
+
+[RFF Mimi Post (with link to Mimi Demo )](https://www.rff.org/publications/data-tools/social-cost-of-carbon-computing-platform-models-from-the-iwg/)
+
+[Direct YouTube Link to Mimi Demo](https://www.youtube.com/watch?v=C2rqpHk3Rek&feature=emb_logo)
