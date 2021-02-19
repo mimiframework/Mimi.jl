@@ -71,6 +71,9 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
     names  = Symbol[nameof(def) for def in var_defs]
     values = Any[_instantiate_datum(md, def) for def in var_defs]
+    # TODO Loop over content of values, if an element is a TimestepArray, replace it with a new
+    # TimestepArray that is properly shifted etc, and essentially a view into the original data
+    # that the TSA here had.
     types  = DataType[_instance_datatype(md, def) for def in var_defs]
     paths  = repeat(Any[comp_def.comp_path], length(names))
 
@@ -225,8 +228,11 @@ end
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     # @info "Instantiating params for $(comp_def.comp_path)"
     comp_path = comp_def.comp_path
-    names = parameter_names(comp_def)
+    names = parameter_names(comp_def)    
     vals  = Any[par_dict[(comp_path, name)] for name in names]
+    # TODO Loop over content of vals, if an element is a TimestepArray, replace it with a new
+    # TimestepArray that is properly shifted etc, and essentially a view into the original data
+    # that the TSA here had.
     types = DataType[typeof(val) for val in vals]
     paths = repeat([comp_def.comp_path], length(names))
 
