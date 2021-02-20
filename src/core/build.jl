@@ -1,5 +1,25 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
+# helper function to substitute views for data 
+function _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
+    times = [keys(comp_def.dim_dict[:time])...]
+    first_idx = findfirst(times .== comp_def.first)
+    last_idx = findfirst(times .== comp_def.last)
+    for (i, val) in enumerate(vals)
+        # DESIGN DISCUSSION should we deep copy here or can we just do in-place val.data = _get_view(val, first_idx, last_idx)
+        if val isa TimestepArray
+            new_val = deepcopy(val)
+            new_val.data = _get_view(val, first_idx, last_idx)
+            vals[i] = new_val
+        end
+    end
+end
+
+function _get_view(val::TimestepArray{T_TS, T, N, ti}, first_idx, last_idx) where {T_TS, T, N, ti}
+    idxs  = Array{Any}(fill(:, N))
+    idxs[ti] = first_idx:last_idx
+    return view(val.data, idxs...)
+end
 
 # Return the datatype to use for instance variables/parameters
 function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
@@ -71,9 +91,7 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
     names  = Symbol[nameof(def) for def in var_defs]
     values = Any[_instantiate_datum(md, def) for def in var_defs]
-    # TODO Loop over content of values, if an element is a TimestepArray, replace it with a new
-    # TimestepArray that is properly shifted etc, and essentially a view into the original data
-    # that the TSA here had.
+    _substitute_views!(values, comp_def)
     types  = DataType[_instance_datatype(md, def) for def in var_defs]
     paths  = repeat(Any[comp_def.comp_path], length(names))
 
@@ -230,9 +248,7 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{Compon
     comp_path = comp_def.comp_path
     names = parameter_names(comp_def)    
     vals  = Any[par_dict[(comp_path, name)] for name in names]
-    # TODO Loop over content of vals, if an element is a TimestepArray, replace it with a new
-    # TimestepArray that is properly shifted etc, and essentially a view into the original data
-    # that the TSA here had.
+    _substitute_views!(vals, comp_def)
     types = DataType[typeof(val) for val in vals]
     paths = repeat([comp_def.comp_path], length(names))
 

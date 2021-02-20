@@ -73,9 +73,9 @@ run(m)
 
 # test that there are missing values in :emissions variables outside of the component's 
 # run period, and no missing values in the :grosseconomy variables
-@test ismissing(m[:emissions, :E][1])
-@test ismissing(m[:emissions, :E][20])
-@test sum(ismissing.(m[:emissions, :E][2:19])) == 0
+@test ismissing(m[:emissions, :E].parent[1])
+@test ismissing(m[:emissions, :E].parent[20])
+@test sum(ismissing.(m[:emissions, :E])) == 0
 @test sum(ismissing.(m[:grosseconomy, :l])) == 0
 
 # change the model dimension (widen it)
@@ -99,9 +99,9 @@ run(m)
 
 # test that there are missing values in :emissions variables outside of the component's 
 # run period, and no missing values in the :grosseconomy variables
-@test ismissing(m[:emissions, :E][1])
-@test sum(ismissing.(m[:emissions, :E][20:21])) == 2
-@test sum(ismissing.(m[:emissions, :E][2:19])) == 0
+@test ismissing(m[:emissions, :E].parent[1])
+@test sum(ismissing.(m[:emissions, :E].parent[20:21])) == 2
+@test sum(ismissing.(m[:emissions, :E])) == 0
 @test sum(ismissing.(m[:grosseconomy, :l])) == 0
 
 #
@@ -128,8 +128,8 @@ connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 run(m) 
 
 # neither component should have a value for the first timestep
-@test ismissing(m[:emissions, :E][1])
-@test ismissing(m[:grosseconomy, :YGROSS][1])
+@test ismissing(m[:emissions, :E].parent[1])
+@test ismissing(m[:grosseconomy, :YGROSS].parent[1])
 
 
 # Test bounds - both end early
@@ -154,8 +154,8 @@ connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
 run(m) 
 
-@test ismissing(m[:emissions, :E][20])
-@test ismissing(m[:grosseconomy, :YGROSS][20])
+@test ismissing(m[:emissions, :E].parent[20])
+@test ismissing(m[:grosseconomy, :YGROSS].parent[20])
 
 #
 # Test bounds - components starting or ending before/after the model
@@ -207,9 +207,9 @@ set_dimension!(m2, :time, collect(1:10))
 add_comp!(m2, MyComp, first = 2, last = 9)
 run(m2)
 
-@test ismissing(m[:MyComp, :a][1])
-@test ismissing(m[:MyComp, :a][end])
-@test (m[:MyComp, :a])[2:9] == (m2[:MyComp, :a])[2:9] == [-999., 2., 3., 4., 5., 6., 7., 999.]
+@test ismissing(m[:MyComp, :a].parent[1])
+@test ismissing(m[:MyComp, :a].parent[end])
+@test (m[:MyComp, :a]) == (m2[:MyComp, :a]) == [-999., 2., 3., 4., 5., 6., 7., 999.]
 
 #
 # TimestepIndex and TimestepValue
@@ -231,7 +231,7 @@ add_comp!(m, MyComp, first = 5, last = 10)
 run(m)
 
 for i in collect(1:15)
-	@test m[:MyComp, :a][i] === m[:MyComp, :b][i]
+	@test m[:MyComp, :a].parent[i] === m[:MyComp, :b].parent[i]
 end
 
 # TimestepValue: Test Equality - should match up with the time index
@@ -250,7 +250,7 @@ add_comp!(m, MyComp, first = 5, last = 10)
 run(m)
 
 for i in collect(1:15)
-	@test m[:MyComp, :a][i] === m[:MyComp, :b][i]
+	@test m[:MyComp, :a].parent[i] === m[:MyComp, :b].parent[i]
 end
 
 # TimestepIndex: Test that Get and Set Index are Relative to Component, not Model
@@ -286,7 +286,8 @@ for year in collect(1995:1999)
 	add_comp!(m, MyComp, first = year)
 	run(m)
 	idx = year - 1995 + 1
-	@test m[:MyComp, :a][idx] == 1.0
+	@test m[:MyComp, :a].parent[idx] == 1.0
+	@test m[:MyComp, :a][1] == 1.0
 end
 
 # TimestepValue: Test that Get and Set Index are Relative to Component, not Model
@@ -306,7 +307,7 @@ for year in collect(1995:1999)
 	set_dimension!(m, :time, collect(1995:2000))
 	add_comp!(m, MyComp, first = year)
 	run(m)
-	@test m[:MyComp, :a][5] == 1.0
+	@test m[:MyComp, :a].parent[5] == 1.0
 end
 
 end #module

@@ -137,7 +137,6 @@ ci = compinstance(m, :C) # Get the component instance
 
 m = Model()
 set_dimension!(m, :time, 2000:2100)
-
 add_comp!(m, testcomp1, :C; first = 2010, last = 2090)
 
 cd = compdef(m.md, :C)      # Get the component definition in the model
@@ -145,14 +144,16 @@ cd = compdef(m.md, :C)      # Get the component definition in the model
 @test cd.last == 2090
 
 set_dimension!(m, :time, 2010:2090)
-
 set_param!(m, :C, :par1, zeros(81))
 Mimi.build!(m)               # Build the model
+
 ci = compinstance(m, :C) # Get the component instance
 @test ci.first == 2010      # The component instance's first and last values are the same as in the comp def
 @test ci.last == 2090
 
 set_dimension!(m, :time, 2000:2200) # Reset the time dimension
+update_param!(m, :par1, zeros(201)) # Have to reset the parameter to have the same width as the model time dimension 
+
 cd = compdef(m.md, :C)      # Get the component definition in the model
 @test cd.first == 2010      # First and last values should still be the same
 @test cd.last == 2090

@@ -132,18 +132,17 @@ end
 # 1. Test with Fixed Timesteps
 
 m = Model()
-set_dimension!(m, :time, 2000:2002)
-add_comp!(m, MyComp2, first=2000, last=2002)
-set_param!(m, :MyComp2, :x, [1, 2, 3])
+set_dimension!(m, :time, 2000:2004)
+add_comp!(m, MyComp2, first=2001, last=2003)
+set_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
 
-set_dimension!(m, :time, 2000:2001)
-
-set_dimension!(m, :time, 2001:2002)
-
-update_param!(m, :x, [2, 3])
+@test_throws ErrorException set_dimension!(m, :time, 2002:2004) # model starts after component
+@test_throws ErrorException set_dimension!(m, :time, 2000:2002) # model ends before component
+set_dimension!(m, :time, 2001:2003)
+update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, LAST} where LAST, Union{Missing,Float64}, 1}
-@test x.values.data == [2., 3.]
+@test x.values.data == [2., 3., 4.]
 run(m)
 @test m[:MyComp2, :y][1] == 2   # 2001
 @test m[:MyComp2, :y][2] == 3   # 2002

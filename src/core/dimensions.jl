@@ -94,6 +94,18 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
     dim = Dimension(keys)
 
     if name == :time
+
+        # check to make sure if we are setting time dimension for the Model that
+        # it doesn't start after, or end before, any of the components. Note that
+        # here we can dependent on the invariant that all subcomponents of a composite
+        # component have the same first and last bounds
+        ccd_first = [keys...][1]
+        ccd_last = [keys...][end]
+        for subcomp in compdefs(ccd)
+            subcomp.first_free || ccd_first > subcomp.first && error("Top time dimension must end after or at same time as all it's subcomponents, but $(ccd_first) is after $(subcomp.first).")
+            subcomp.last_free || ccd_last < subcomp.last   && error("Top time dimension must start before or at same time as all it's subcomponents, but $(ccd_last) is before $(subcomp.last).")        
+        end
+
         propagate_time!(ccd, dim)
         set_uniform!(ccd, isuniform(keys))
     end

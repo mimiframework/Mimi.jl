@@ -150,16 +150,18 @@ set_param!(m, :Bar, :inputB, collect(1:length(years)))
 
 run(m)
 
-@test length(m[:Foo, :output]) == length(years)
+@test length(m[:Foo, :output].parent) == length(years)
+@test length(m[:Bar, :output].parent) == length(years)
+
+@test length(m[:Foo, :output]) == length(first_foo:years[end])
 @test length(m[:Bar, :output]) == length(years)
 
 yr_dim = Mimi.Dimension(years)
 idxs = yr_dim[first_foo]:yr_dim[years[end]]
 foo_output = m[:Foo, :output]
 
-offset = first_foo - years[1]
-for i in idxs
-    @test foo_output[i] == 5+(i-offset) # incorporate offset into i now because we set ts.t to match component not model
+for i in 1:5
+    @test foo_output[i] == 5+i 
 end
 
 for i in 1:5
@@ -222,7 +224,7 @@ connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
 
-foo_output2 = m2[:Foo2, :output][yr_dim[first_foo]:yr_dim[years[end]]]
+foo_output2 = m2[:Foo2, :output]
 for i in 1:6
     @test foo_output2[i] == (i+5)^2
 end
