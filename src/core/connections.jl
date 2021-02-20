@@ -69,15 +69,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol)
             param_length = size(ext_param.values)[i]
-            # we are now requiring time lengths to match the model as well
-            # if dim == :time
-            #     t = dimension(obj, :time)
-            #     first = find_first_period(comp_def)
-            #     last = find_last_period(comp_def)
-            #     comp_length = t[last] - t[first] + 1
-            # else
-                comp_length = dim_count(obj, dim)
-            # end
+            comp_length = dim_count(obj, dim)
             if param_length != comp_length
                 error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
             end

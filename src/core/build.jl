@@ -247,7 +247,7 @@ end
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     # @info "Instantiating params for $(comp_def.comp_path)"
     comp_path = comp_def.comp_path
-    names = parameter_names(comp_def)    
+    names = parameter_names(comp_def)   
     vals  = Any[par_dict[(comp_path, name)] for name in names]
     _substitute_views!(vals, comp_def)
     types = DataType[typeof(val) for val in vals]

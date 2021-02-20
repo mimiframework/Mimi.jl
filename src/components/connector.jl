@@ -62,7 +62,7 @@ end
 #         elseif hasvalue(p.input2, t)
 #             v.output[t, colons...] = p.input2[t, colons...]
 #         else
-#             error("Neither of the input to ConnectorComp have data for the current timestep: $(gettime(t)).")
+#             error("Neither of the inputs to ConnectorComp have data for the current timestep: $(gettime(t)).")
 #         end
 #     end
 # end
