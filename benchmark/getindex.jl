@@ -35,7 +35,8 @@ end
 function _get_timesteparray_type(years, num_dims, dtype=Float64)
     if Mimi.isuniform(years)
         first, stepsize = Mimi.first_and_step(years)
-        T = Mimi.TimestepArray{Mimi.FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims}
+        last = years[last]
+        T = Mimi.TimestepArray{Mimi.FixedTimestep{first, stepsize, last}, Union{dtype, Missing}, num_dims}
     else
         T = Mimi.TimestepArray{Mimi.VariableTimestep{(years...,)}, Union{dtype, Missing}, num_dims}
     end

@@ -84,8 +84,8 @@ extpars = external_params(m.mi.md)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
-@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, arrtype}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1}
+@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1, 2100}, arrtype}
 
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
@@ -111,7 +111,7 @@ update_param!(m, :e, [4,5,6,7])
 
 @test length(extpars) == 9          # The old dictionary has the default values that were added during build, so it has more entries
 @test length(new_extpars) == 6
-@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1}
 
 @test typeof(new_extpars[:d].value) == numtype
 @test typeof(new_extpars[:e].values) == Array{arrtype, 1}
@@ -141,7 +141,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
 set_dimension!(m, :time, 2001:2003)
 update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, LAST} where LAST, Union{Missing,Float64}, 1}
+@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, 2003}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
 run(m)
 @test m[:MyComp2, :y][1] == 2   # 2001
@@ -196,7 +196,7 @@ set_dimension!(m, :time, 1999:2003)     # length 5
 
 update_param!(m, :x, [2, 3, 4, 5, 6])
 x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Union{Missing,Float64}, 1}
+@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, 2003}, Union{Missing, Float64}, 1, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
 
 run(m)
@@ -230,7 +230,7 @@ set_dimension!(m, :time, 2005:2007)
 
 update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0)) # Won't error when updating from a dictionary
 
-@test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1},Union{Missing,Float64},1}
+@test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1, 2007},Union{Missing,Float64},1}
 @test external_param(m.md, :x).values.data == [3.,4.,5.]
 @test external_param(m.md, :y).values == [10.,20.]
 @test external_param(m.md, :z).value == 0

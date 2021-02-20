@@ -38,8 +38,9 @@ function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     else
         if isuniform(md)
             first, stepsize = first_and_step(md)
+            last = last_period(md)
             first === nothing && @warn "_instance_datatype: first === nothing"
-            T = TimestepArray{FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims, ti}
+            T = TimestepArray{FixedTimestep{first, stepsize, last}, Union{dtype, Missing}, num_dims, ti}
         else
             times = time_labels(md)
             T = TimestepArray{VariableTimestep{(times...,)}, Union{dtype, Missing}, num_dims, ti}

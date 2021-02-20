@@ -60,8 +60,8 @@ mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
     end
 end
 
-# TDESIGN DISCUSSION: add this for performance?
-# mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti, S<:AbstractArray{T,N}} <: MimiStruct
+# DESIGN DISCUSSION: add this for performance?
+# struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti, S<:AbstractArray{T,N}} <: MimiStruct
 #    data::S
 mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti} <: MimiStruct
 	data::Union{Array{T, N}, SubArray}

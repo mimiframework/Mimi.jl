@@ -81,8 +81,8 @@ Model
         param_name: :x
         external_param: :x
     external_params: Dict{Symbol,ModelParameter}
-      x => ArrayModelParameter{TimestepArray{FixedTimestep{2000,1,LAST} where LAST,Float64,1}}
-        values: TimestepArray{FixedTimestep{2000,1,LAST} where LAST,Float64,1}
+      x => ArrayModelParameter{TimestepArray{FixedTimestep{2000,1,2005},Float64,1}}
+        values: TimestepArray{FixedTimestep{2000,1,2005},Float64,1}
             1: 0.0
             2: 0.0
             3: 0.0
