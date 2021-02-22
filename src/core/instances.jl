@@ -206,7 +206,11 @@ function _get_datum(ci::LeafComponentInstance, datum_name::Symbol)
 
     value = getproperty(which, datum_name)
 
-    return value isa TimestepArray ? value.data : value
+    if value isa TimestepArray
+        return value.data isa SubArray ? parent(value.data) : value.data
+    else
+        return value
+    end
 end
 
 function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)

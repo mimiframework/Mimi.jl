@@ -18,7 +18,9 @@ end
 function _get_view(val::TimestepArray{T_TS, T, N, ti}, first_idx, last_idx) where {T_TS, T, N, ti}
     idxs  = Array{Any}(fill(:, N))
     idxs[ti] = first_idx:last_idx
-    return view(val.data, idxs...)
+    # if we are making a connection, the val.data may already be a view, in which case
+    # we need to return to the parent of that view before taking our new view
+    return val.data isa SubArray ? view(val.data.parent, idxs...) : view(val.data, idxs...)
 end
 
 # Return the datatype to use for instance variables/parameters

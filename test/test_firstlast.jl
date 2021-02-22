@@ -123,7 +123,7 @@ set_param!(m, :grosseconomy, :share, 0.3)
 
 # Set parameters for the emissions component
 set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
-connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS) 
+connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
 run(m) 
 
@@ -267,7 +267,9 @@ m = Model()
 set_dimension!(m, :time, collect(1:15))
 add_comp!(m, MyComp, first = 5, last = 10)
 run(m)
-@test m[:MyComp, :a] == m[:MyComp, :b]
+for (i, element) in enumerate(m[:MyComp, :a])
+	@test element === m[:MyComp, :b][i]
+end
 
 @defcomp MyComp begin
 	a 	= Variable(index=[time])

@@ -104,17 +104,13 @@ function _get_time_value_position(times::Union{Tuple, Array}, ts::TimestepValue{
 	return t_offset
 end
 
-# Helper function to get the array of indices from an Array{TimestepIndex,1}
+# Helper function to get the array of indices from an Array{TimestepIndex,1} or Array{TimestepValue, 1}
 function _get_ts_indices(ts_array::Array{TimestepIndex, 1})
     return [ts.index for ts in ts_array]
 end
 
 function _get_ts_indices(ts_array::Array{TimestepValue{T}, 1}, times::Union{Tuple, Array}) where T
 	return [_get_time_value_position(times, ts) for ts in ts_array]
-end
-
-function _get_ts_indices(arr::Array{Colon, N}) where N
-	return [arr...]
 end
 
 # Base.firstindex and Base.lastindex
