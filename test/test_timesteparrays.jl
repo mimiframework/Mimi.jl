@@ -722,8 +722,8 @@ run(m)
 # 8. Check broadcast assignment to underlying array
 #------------------------------------------------------------------------------
 
-x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10}, Float64}(zeros(10))
-y = TimestepMatrix{FixedTimestep{2000, 1}, Float64, 1}(collect(reshape(zeros(8), 4, 2)))
+x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10,2095}, Float64}(zeros(10))
+y = TimestepMatrix{FixedTimestep{2000, 1, 2003}, Float64, 1}(collect(reshape(zeros(8), 4, 2)))
 
 # colon and ints
 x[:] .= 10
