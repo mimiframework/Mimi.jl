@@ -138,6 +138,15 @@ set_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
 
 @test_throws ErrorException set_dimension!(m, :time, 2002:2004) # model starts after component
 @test_throws ErrorException set_dimension!(m, :time, 2000:2002) # model ends before component
+
+# these tests specifically look for the case of updating a TimestepArray's data 
+# without time labels, thus simply calling param.values.data = new_data ... the addition
+# of SubArray to data's type options made it necessary to convert types explicitly
+# which may be causing a performance hit
+update_param!(m, :x, [2.,3.,4.,5.,6.])
+update_param!(m, :x, zeros(5))
+update_param!(m, :x, [1,2,3,4,5])
+
 set_dimension!(m, :time, 2001:2003)
 update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)

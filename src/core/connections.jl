@@ -545,14 +545,18 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
     # check if updating timestep labels is necessary
     if param.values isa TimestepArray
         time_label_change = time_labels(param.values) != dim_keys(obj, :time)
+        N = ndims(value)
         if time_label_change
             T = eltype(value)
-            N = length(size(value))
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
         else
-            param.values.data = value
+            # DESIGN DISCUSSION - this became necessary when the Array type for 
+            # TimestepArray widened to include SubArray, can check if it's necessary 
+            # using test_parametertypes.jl  around line 141
+            T = eltype(param.values)
+            param.values.data = Array{T,N}(value)
         end
     else
         param.values = value
