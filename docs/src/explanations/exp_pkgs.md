@@ -2,13 +2,13 @@
 
 ## Models as Packages
 
-[Pkg](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) (more detail [here](https://julialang.github.io/Pkg.jl/v1/) is Julia's builtin package manager, and handles operations such as installing, updating and removing packages. It is often convenient to set Mimi models up as julia packages using the steps described [here](https://julialang.github.io/Pkg.jl/v1/creating-packages/). "A package is a project with a `name`, `uuid` and version entry in the `Project.toml` file, and a `src/PackageName.jl` file that defines the module `PackageName`. This file is executed when the package is loaded."
+[Pkg](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html) (more detail [here](https://julialang.github.io/Pkg.jl/v1/))is Julia's builtin package manager, and handles operations such as installing, updating and removing packages. It is often convenient to set Mimi models up as julia packages using the steps described [here](https://julialang.github.io/Pkg.jl/v1/creating-packages/). "A package is a project with a `name`, `uuid` and version entry in the `Project.toml` file, and a `src/PackageName.jl` file that defines the module `PackageName`. This file is executed when the package is loaded."
 
 Models can be registered or unregistered, as described in the next section, but it is **not necessary** to register a package in order to use the `Pkg` interface.
 
 ### Example
 
-The [MimiDICE2016](https://github.com/AlexandrePavlov/MimiDICE2016.jl) model is an unregistered package. As it's README instructs, it can be accessed by:
+The [MimiDICE2016](https://github.com/AlexandrePavlov/MimiDICE2016.jl) model is an unregistered package. As its README instructs, it can be accessed by:
 
 Running the following command at the julia package REPL:
 ```julia
