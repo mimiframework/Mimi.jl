@@ -114,7 +114,7 @@ For each (k, v) in the provided `parameters` dictionary, `update_param!``
 is called to update the external parameter by name k to value v.  Each key k 
 must be a symbol or convert to a symbol matching the name of an external parameter t
 hat already exists in the model definition. The update_timesteps keyword argument 
-is deprecated, we keep it here just to provide warnings.
+is deprecated, but temporarily remains as a dummy argument to allow warning detection.
 """
 @delegate update_params!(m::Model, parameters::Dict) => md
 

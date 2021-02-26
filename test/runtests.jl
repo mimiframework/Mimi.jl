@@ -13,7 +13,7 @@ using Documenter
 Electron.prep_test_env()
 
 @testset "Mimi" begin
-    
+
     @info("test_main.jl")
     @time include("test_main.jl")
 

@@ -286,7 +286,7 @@ function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, 
     if ci.first == FIRST && ci.last == LAST
         return ts
     else
-        # shift the timestep over by (ci.first = FIRST)/STEP
+        # shift the timestep over by (ci.first - FIRST)/STEP
         return FixedTimestep{ci.first,STEP,ci.last}(ts.t - Int((ci.first - FIRST)/STEP))
     end
 end

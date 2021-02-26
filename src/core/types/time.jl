@@ -60,7 +60,11 @@ mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
     end
 end
 
-# DESIGN DISCUSSION: add this for performance?
+# DESIGN DISCUSSION: how should we parameterize this for performance and clarity?
+# One idea is below, and note that if we add parameterization we need to change
+# all instances of the constructor in the codebase, and make sure we are able to
+# construct it in all cases.
+#
 # struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti, S<:AbstractArray{T,N}} <: MimiStruct
 #    data::S
 mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti} <: MimiStruct
