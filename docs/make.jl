@@ -12,7 +12,8 @@ makedocs(
 			"2 Run an Existing Model" => "tutorials/tutorial_2.md",
 			"3 Modify an Existing Model" => "tutorials/tutorial_3.md",
 			"4 Create a Model" => "tutorials/tutorial_4.md",
-			"5 Monte Carlo + Sensitivity Analysis" => "tutorials/tutorial_5.md"
+			"5 Monte Carlo + Sensitivity Analysis" => "tutorials/tutorial_5.md",
+			"6 Create a Model with Composite Components" => "tutorials/tutorial_6.md"
 		],
 		"How-to Guides" => Any[
 			"How-to Guides Intro" => "howto/howto_main.md",
@@ -31,9 +32,13 @@ makedocs(
 		"Reference Guides" => Any[
 			"Reference Guides Intro" => "ref/ref_main.md",
 			"Mimi API" => "ref/ref_API.md",
-			"Structures" => "ref/ref_structures.md", 
+			"Structures: Classes.jl and Types" => "ref/ref_structures_classes_types.md", 
 			"Structures: Definitions" => "ref/ref_structures_definitions.md", 
 			"Structures: Instances" => "ref/ref_structures_instances.md"
+		],
+		"Explanations" => Any[
+			"Explanations Intro" => "explanations/exp_main.md",
+			"Models as Packages" => "explanations/exp_pkgs.md"
 		],
 		"FAQ" => "faq.md",
 	],

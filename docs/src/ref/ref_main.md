@@ -9,11 +9,12 @@ If you find a bug in these reference guides, or have a clarifying question or su
 - [Reference Guide: The Mimi API](@ref) provides a guide to the public API for Mimi, including macros, types, and functions along with their signatures and descriptions.
 
 
-- [Reference Guide: Structures](@ref) describes the core data structures used to implement in Mimi 1.0.
+- [Reference Guide: Structures - Classes.jl and Core Types](@ref) describes the use of Classes.jl in Mimi as well as some of the core Types used to implement Mimi 1.0.
 
 
-- [Reference Guide: Structures - Definitions](@ref) describes the core _definition_ data structures used to implement in Mimi 1.0.
+- [Reference Guide: Structures - Definitions](@ref) describes the core _definition_ data structures used to implement Mimi 1.0.
 
 
-- [Reference Guide: Structures - Instances](@ref) describes the core _instance_ data structures used to implement in Mimi 1.0.
-   
+- [Reference Guide: Structures - Instances](@ref) describes the core _instance_ data structures used to implement Mimi 1.0.
+
+- [Reference Guide: Composite Components](@ref) describes the introduction of composite components in Mimi 1.0.
