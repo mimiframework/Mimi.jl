@@ -84,8 +84,8 @@ extpars = external_params(m.mi.md)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1}
-@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1, 2100}, arrtype}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
+@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1, 2100}, arrtype, Array{arrtype, 1}}
 
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
@@ -111,7 +111,7 @@ update_param!(m, :e, [4,5,6,7])
 
 @test length(extpars) == 9          # The old dictionary has the default values that were added during build, so it has more entries
 @test length(new_extpars) == 6
-@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1}
+@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
 
 @test typeof(new_extpars[:d].value) == numtype
 @test typeof(new_extpars[:e].values) == Array{arrtype, 1}

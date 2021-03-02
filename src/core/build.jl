@@ -6,21 +6,19 @@ function _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
     first_idx = findfirst(times .== comp_def.first)
     last_idx = findfirst(times .== comp_def.last)
     for (i, val) in enumerate(vals)
-        # DESIGN DISCUSSION should we deep copy here or can we just do in-place val.data = _get_view(val, first_idx, last_idx)
         if val isa TimestepArray
-            new_val = deepcopy(val)
-            new_val.data = _get_view(val, first_idx, last_idx)
-            vals[i] = new_val
+            vals[i] = _get_view(val, first_idx, last_idx)
         end
     end
 end
 
-function _get_view(val::TimestepArray{T_TS, T, N, ti}, first_idx, last_idx) where {T_TS, T, N, ti}
+function _get_view(val::TimestepArray{T_TS, T, N, ti, S}, first_idx, last_idx) where {T_TS, T, N, ti, S}
+    
     idxs  = Array{Any}(fill(:, N))
     idxs[ti] = first_idx:last_idx
     # if we are making a connection, the val.data may already be a view, in which case
     # we need to return to the parent of that view before taking our new view
-    return val.data isa SubArray ? view(val.data.parent, idxs...) : view(val.data, idxs...)
+    return TimestepArray{T_TS, T, N, ti}(val.data isa SubArray ? view(val.data.parent, idxs...) : view(val.data, idxs...))
 end
 
 # Return the datatype to use for instance variables/parameters
@@ -95,7 +93,14 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     names  = Symbol[nameof(def) for def in var_defs]
     values = Any[_instantiate_datum(md, def) for def in var_defs]
     _substitute_views!(values, comp_def)
-    types  = DataType[_instance_datatype(md, def) for def in var_defs]
+
+    # this line was replaced with the one below because calling _instance_datatype
+    # does not concretely type the S type parameter (the type of the TimestepArray's
+    # and thus DataType[typeof(val) for val in values] errored when trying to 
+    # convert typeof(val<:TimestepArray) to a DataType
+
+    # types  = DataType[_instance_datatype(md, def) for def in var_defs]
+    types = DataType[typeof(val) for val in values]
     paths  = repeat(Any[comp_def.comp_path], length(names))
 
     return ComponentInstanceVariables(names, types, values, paths)
