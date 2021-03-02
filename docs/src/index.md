@@ -21,16 +21,23 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 
 ## Models using Mimi
 
-* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl) (currently in beta)
-* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)
-* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)
-* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)
-* [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl) (currently in closed beta)
-* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl) (currently in closed beta)
-* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl) (currently in closed beta)
-* [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl) (CH4 parts currently in closed beta)
-* [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl) (CH4 parts currently in closed beta)
-* [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed beta)
-* [Mimi-BRICK.jl](https://github.com/anthofflab/mimi-brick.jl) (currently in closed beta)
+*an asterisk after a model name indicates that this model is registered in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl) as described in Tutorial 1*
+
+* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)*
+* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)*
+* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)*
+* [MimiDICE2016.jl](https://github.com/AlexandrePavlov/MimiDICE2016.jl)*
+* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)*
+* [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)*
+* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
+* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl/)*
+* [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
+* [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
+* [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
+* [Mimi-BRICK.jl](https://github.com/anthofflab/mimi-brick.jl) (currently in closed BETA)
+* [mimi_NICE](https://github.com/fdennig/mimi_NICE)
 * [AWASH](http://awashmodel.org/)
 * [PAGE-ICE](https://github.com/openmodels/PAGE-ICE)
+* [RICE+AIR](https://github.com/Environment-Research/AIR)
+* [Moore-Ag.jl](https://github.com/ckingdon95/MooreAg.jl)*
+* [MimiIWG.jl](https://github.com/rffscghg/MimiIWG.jl)*
