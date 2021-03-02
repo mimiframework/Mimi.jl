@@ -552,11 +552,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
         else
-            # DESIGN DISCUSSION - this became necessary when the Array type for 
-            # TimestepArray widened to include SubArray, can check if it's necessary 
-            # using test_parametertypes.jl  around line 141
-            T = eltype(param.values)
-            param.values.data = Array{T,N}(value)
+            param.values.data = value
         end
     else
         param.values = value
