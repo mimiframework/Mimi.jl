@@ -623,9 +623,10 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # add a connection between ConnectorComp and the external backup data
             add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
-            # TBD: first/last stuff may be deprecated
+            # set the first and last parameters for WITHIN the component which 
+            # decide when backup is used and when connectin is used
             src_comp_def = compdef(obj, conn.src_comp_path)
-            set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def))
+            set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def) + conn.offset)
             set_param!(obj, conn_comp_name, :last, last_period(obj, src_comp_def))
         end
     end
