@@ -251,16 +251,11 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
     end
 end
 
-# TBD: is this needed for composites?
+# we now require the backup data to have the same dimensions as the model, regardless
+# of the time span of the specific component
 function datum_size(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, datum_name::Symbol)
     dims = dim_names(comp_def, datum_name)
-    if dims[1] == :time
-        time_length = getspan(obj, comp_def)[1]
-        rest_dims = filter(x->x!=:time, dims)
-        datum_size = (time_length, dim_counts(obj, rest_dims)...,)
-    else
-        datum_size = (dim_counts(obj, dims)...,)
-    end
+    datum_size = (dim_counts(obj, dims)...,)
     return datum_size
 end
 

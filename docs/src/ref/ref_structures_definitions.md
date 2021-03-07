@@ -122,7 +122,7 @@ dst_comp_path::ComponentPath
 dst_par_name::Symbol
 ignoreunits::Bool
 backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
-offset::Int
+backup_offset::Union{Int, Nothing}
 
 # ExternalParameterConnection  <: AbstractConnection
 comp_path::ComponentPath
