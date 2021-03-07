@@ -252,7 +252,7 @@ function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Ve
 end
 
 # TBD: is this needed for composites?
-function datum_size(obj::AbstractCompositeComponentDef, comp_def::ComponentDef, datum_name::Symbol)
+function datum_size(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, datum_name::Symbol)
     dims = dim_names(comp_def, datum_name)
     if dims[1] == :time
         time_length = getspan(obj, comp_def)[1]
@@ -673,7 +673,7 @@ function getspan(obj::AbstractComponentDef, comp_name::Symbol)
     return getspan(obj, comp_def)
 end
 
-function getspan(obj::AbstractCompositeComponentDef, comp_def::ComponentDef)
+function getspan(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     first = first_period(obj, comp_def)
     last  = last_period(obj, comp_def)
     times = time_labels(obj)
