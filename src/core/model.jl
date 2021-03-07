@@ -99,29 +99,32 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
-    update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of an external model parameter in model `m`, referenced by
-`name`. Optional boolean argument `update_timesteps` with default value `false`
-indicates whether to update the time keys associated with the parameter values
-to match the model's time index.
+`name`. The update_timesteps keyword argument is deprecated, we keep it here 
+just to provide warnings.
 """
-@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = false) => md
+@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing) => md
 
 """
-    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!``
-is called to update the external parameter by name k to value v, with optional
-Boolean argument update_timesteps. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the
-model definition.
+is called to update the external parameter by name k to value v.  Each key k 
+must be a symbol or convert to a symbol matching the name of an external parameter t
+hat already exists in the model definition. The update_timesteps keyword argument 
+is deprecated, but temporarily remains as a dummy argument to allow warning detection.
 """
-@delegate update_params!(m::Model, parameters::Dict; update_timesteps = false) => md
+@delegate update_params!(m::Model, parameters::Dict) => md
 
 """
     add_comp!(
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -130,7 +133,10 @@ model definition.
 Add the component indicated by `comp_id` to the model indicated by `m`. The component is added
 at the end of the list unless one of the keywords `before` or `after` is specified. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
-argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+argument `rename` can be a list of pairs indicating `original_name => imported_name`. The optional 
+arguments `first` and `last` indicate the times bounding the run period for the given component, 
+which must be within the bounds of the model and if explicitly set are fixed.  These default 
+to flexibly changing with the model's `:time` dimension.
 """
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = add_comp!(m.md, comp_id, comp_name; kwargs...)
@@ -140,6 +146,10 @@ end
 """
     add_comp!(
         m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -148,7 +158,10 @@ end
 Add the component `comp_def` to the model indicated by `m`. The component is added at
 the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
-argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+argument `rename` can be a list of pairs indicating `original_name => imported_name`. The optional 
+arguments `first` and `last` indicate the times bounding the run period for the given component, 
+which must be within the bounds of the model and if explicitly set are fixed.  These default 
+to flexibly changing with the model's `:time` dimension.
 """
 function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)

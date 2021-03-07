@@ -62,12 +62,11 @@ run(model1)
 df = getdataframe(model1, :testcomp1=>:var1, :testcomp1=>:par1, :testcomp2=>:var2, :testcomp2=>:par2)
 
 dim = Mimi.dimension(model1, :time)
-@test df.var1 == df.par1 == years
+@test df.var1 == df.par1 == df.par2 == years
 @test all(ismissing, df.var2[1 : dim[late_first]-1])
-#@test all(ismissing, df.par2[1 : dim[late_first]-1])
 @test df.var2[dim[late_first] : dim[early_last]] == df.par2[dim[late_first] : dim[early_last]] == late_first:5:early_last
 @test all(ismissing, df.var2[dim[years[end]] : dim[early_last]])
-@test all(ismissing, df.par2[dim[years[end]] : dim[early_last]])
+@test all(ismissing, df.var2[dim[early_last]+1 : dim[years[end]]])
 
 # Test trying to load an item into an existing dataframe where that item key already exists
 @test_throws UndefVarError _load_dataframe(model1, :testcomp1, :var1, df)

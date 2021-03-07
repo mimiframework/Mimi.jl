@@ -162,6 +162,8 @@ replace!(m, old => new)
 
 *The Mimi Change:* 
 
+**Update: This Functionality has been reenabled, please feel free to use it again, your old code should now be valid again.** 
+
 Through Mimi v0.9.4, the optional keyword arguments `first` and `last` could be used to specify times for components that do not run for the full length of the model, like this: `add_comp!(mymodel, ComponentC; first=2010, last=2100)`. This functionality is still disabled, as it was starting in v0.9.5, and all components must run for the full length of the model's time dimension. This functionality may be re-implemented in a later version of Mimi.
 
 *The User Change:* 

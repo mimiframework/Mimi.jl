@@ -14,7 +14,6 @@ c_f = Clock{FixedTimestep}(1850, 10, 3000)
 advance(c_f)
 @test time_index(c_f) == 2
 
-
 years = Tuple([2000:1:2024; 2025:5:2105])
 t_v = VariableTimestep{years}()
 c_v = Clock{VariableTimestep}(years)

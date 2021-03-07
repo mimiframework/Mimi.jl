@@ -206,7 +206,11 @@ function _get_datum(ci::LeafComponentInstance, datum_name::Symbol)
 
     value = getproperty(which, datum_name)
 
-    return value isa TimestepArray ? value.data : value
+    if value isa TimestepArray
+        return value.data isa SubArray ? parent(value.data) : value.data
+    else
+        return value
+    end
 end
 
 function Base.getindex(mi::ModelInstance, key::AbstractString, datum::Symbol)
@@ -278,9 +282,29 @@ end
 
 _runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
 
+function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}    
+    if ci.first == FIRST && ci.last == LAST
+        return ts
+    else
+        # shift the timestep over by (ci.first - FIRST)/STEP
+        return FixedTimestep{ci.first,STEP,ci.last}(ts.t - Int((ci.first - FIRST)/STEP))
+    end
+end
+
+function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
+    if ci.first == TIMES[1] && ci.last == TIMES[end]
+        return ts
+    else
+        # shift the timestep over by the number of timesteps between the model first and the ts first
+        idx_start = findfirst(TIMES .== ci.first)
+        idx_finish = findfirst(TIMES .== ci.last)
+        return VariableTimestep{TIMES[idx_start:idx_finish]}(ts.t - idx_start + 1)
+    end
+end
+
 function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueDict)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
-        ci.run_timestep(parameters(ci), variables(ci), dims, clock.ts)
+        ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts))
     end
 
     return nothing

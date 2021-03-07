@@ -7,8 +7,8 @@ An `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` is a type d
 In the `run_timestep` functions which the user defines, it may be useful to use any of the following functions, where `t` is an `AbstractTimestep` object:
 
 ```julia
-is_first(t) # returns true or false, true if t is the first timestep to be run
-is_last(t) # returns true or false, true if t is the last timestep to be run
+is_first(t) # returns true or false, true if t is the first timestep to be run for the respective component
+is_last(t) # returns true or false, true if t is the last timestep to be run for the respective component
 gettime(t) # returns the year represented by timestep t
 ```
 There are also two helper types `TimestepValue` and `TimestepIndex` that can be used with comparison operators (`==`, `<`, and `>`) to check whether an `AbstractTimestep` `t` during the `run_timestep` function corresponds with a certain year or index number. For example:
@@ -52,8 +52,7 @@ Indexing into a variable or parameter's `time` dimension with an `Integer` is de
 
 end
 ```
-`TimestepIndex` has one field, `index`, which refers to the absolute index in the parameter or variable array's `time` dimension. Thus, constructing a `TimestepIndex` is done by simply writing `TimestepIndex(index::Int)`. Looking back at our original component example
-one could modify the first line of `run_timestep` to always refer to the first timestep of `p.d` with the following. One may index into the `time` dimension with a single `TimestepIndex`, or an `Array` of them.
+`TimestepIndex` has one field, `index`, which refers to the absolute index in the parameter or variable array's `time` dimension. Thus, constructing a `TimestepIndex` is done by simply writing `TimestepIndex(index::Int)`. Looking back at our original component example, one could modify the first line of `run_timestep` to always refer to the first timestep of `p.d` with the following. One may index into the `time` dimension with a single `TimestepIndex`, or an `Array` of them.
 ```julia
 v.A[t] = p.c + p.d[TimestepIndex(1)]
 ```
@@ -101,14 +100,13 @@ In both of these cases, the parameter's values are stored of as an array (p1 is 
 
 ## Updating an external parameter
 
-When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. If the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
+When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. 
 
 ```julia
-update_param!(m, :ParameterName, newvalues) # update values only 
-update_param!(m, :ParameterName, newvalues, update_timesteps=true) # also update time keys
+update_param!(m, :ParameterName, newvalues)
 ```
 
-Note: `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
+Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. Also note that it if you have updated the time dimension of the model with `set_dimension!(m, :time, values)` you will need to update all parameters with a `:time` dimension, **even if the values have not changed**, so that the model can update the underlying time labels attached to the parameters.
 
 #### Setting parameters with a dictionary
 

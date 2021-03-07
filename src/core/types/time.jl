@@ -60,16 +60,18 @@ mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
     end
 end
 
-mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti} <: MimiStruct
-	data::Array{T, N}
+mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti, S<:AbstractArray{T,N}} <: MimiStruct
+   
+    data::S
 
-    function TimestepArray{T_TS, T, N, ti}(d::Array{T, N}) where {T_TS, T, N, ti}
-		return new(d)
+    function TimestepArray{T_TS, T, N, ti}(d::S) where {T_TS, T, N, ti, S}
+		return new{T_TS, T, N, ti, S}(d)
 	end
 
-    function TimestepArray{T_TS, T, N, ti}(lengths::Int...) where {T_TS, T, N, ti}
-		return new(Array{T, N}(undef, lengths...))
-	end
+end
+
+function TimestepArray{T_TS, T, N, ti}(lengths::Int...) where {T_TS, T, N, ti}
+    return TimestepArray{T_TS, T, N, ti}(Array{T, N}(undef, lengths...))
 end
 
 # Since these are the most common cases, we define methods (in time.jl)

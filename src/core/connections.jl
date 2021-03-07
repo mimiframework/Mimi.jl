@@ -69,14 +69,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol)
             param_length = size(ext_param.values)[i]
-            if dim == :time
-                t = dimension(obj, :time)
-                first = find_first_period(comp_def)
-                last = find_last_period(comp_def)
-                comp_length = t[last] - t[first] + 1
-            else
-                comp_length = dim_count(obj, dim)
-            end
+            comp_length = dim_count(obj, dim)
             if param_length != comp_length
                 error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
             end
@@ -470,15 +463,15 @@ function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
 end
 
 """
-    update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
+    update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of an external model parameter in composite `obj`, referenced
-by `name`. Optional boolean argument `update_timesteps` with default value
-`false` indicates whether to update the time keys associated with the parameter
-values to match the model's time index.
+by `name`. The update_timesteps keyword argument is deprecated, we keep it here 
+just to provide warnings.
 """
-function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = false)
-    _update_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps; raise_error = true)
+function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
+    !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
+    _update_param!(obj::AbstractCompositeComponentDef, name, value)
 end
 
 function update_param!(mi::ModelInstance, name::Symbol, value)
@@ -496,19 +489,16 @@ function update_param!(mi::ModelInstance, name::Symbol, value)
 end
 
 function _update_param!(obj::AbstractCompositeComponentDef,
-                        name::Symbol, value, update_timesteps; raise_error = true)
+                        name::Symbol, value)
     param = external_param(obj, name, missing_ok=true)
     if param === nothing
         error("Cannot update parameter; $name not found in composite's external parameters.")
     end
 
     if param isa ScalarModelParameter
-        if update_timesteps && raise_error
-            error("Cannot update timesteps; parameter $name is a scalar parameter.")
-        end
         _update_scalar_param!(param, name, value)
     else
-        _update_array_param!(obj, name, value, update_timesteps, raise_error)
+        _update_array_param!(obj, name, value)
     end
 
     dirty!(obj)
@@ -526,7 +516,8 @@ function _update_scalar_param!(param::ScalarModelParameter, name, value)
     nothing
 end
 
-function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, update_timesteps, raise_error)
+function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
+   
     # Get original parameter
     param = external_param(obj, name)
 
@@ -542,54 +533,47 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value, u
         end
     end
 
-    # Check size of provided parameter
-    if update_timesteps && param.values isa TimestepArray
-        expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,)
-    else
-        expected_size = size(param.values)
-    end
-    if size(value) != expected_size
-        error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).")
-    end
+    # Check if the parameter dimensions match the model dimensions.  Note that we 
+    # previously checked if parameter dimensions matched the dimensions of the 
+    # parameter they were to replace, but given dimensions of a model can be changed,
+    # we now choose to enforce that the new dimensions match the current model state, 
+    # whatever that is.
 
-    if update_timesteps
-        if param.values isa TimestepArray
+    expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,) 
+    size(value) != expected_size ? error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).") : nothing
+
+    # check if updating timestep labels is necessary
+    if param.values isa TimestepArray
+        time_label_change = time_labels(param.values) != dim_keys(obj, :time)
+        N = ndims(value)
+        if time_label_change
             T = eltype(value)
-            N = length(size(value))
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
-
-        elseif raise_error
-            error("Cannot update timesteps; parameter $name is not a TimestepArray.")
         else
-            param.values = value
+            param.values.data = value
         end
     else
-        if param.values isa TimestepArray
-            param.values.data = value
-        else
-            param.values = value
-        end
+        param.values = value
     end
+
     dirty!(obj)
     nothing
 end
 
 """
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any};
-                   update_timesteps = false) where T
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
-is called to update the external parameter by name k to value v, with optional
-Boolean argument update_timesteps. Each key k must be a symbol or convert to a
+is called to update the external parameter by name k to value v. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the
 component definition.
 """
-function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = false)
+function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict)
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
-        _update_param!(obj, param_name, value, update_timesteps; raise_error = false)
+        _update_param!(obj, param_name, value)
     end
     nothing
 end
@@ -639,9 +623,10 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # add a connection between ConnectorComp and the external backup data
             add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
-            # TBD: first/last stuff may be deprecated
+            # set the first and last parameters for WITHIN the component which 
+            # decide when backup is used and when connectin is used
             src_comp_def = compdef(obj, conn.src_comp_path)
-            set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def))
+            set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def) + conn.offset)
             set_param!(obj, conn_comp_name, :last, last_period(obj, src_comp_def))
         end
     end

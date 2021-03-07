@@ -84,8 +84,8 @@ extpars = external_params(m.mi.md)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
-@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1}, arrtype}
+@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
+@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1, 2100}, arrtype, Array{arrtype, 1}}
 
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
@@ -111,7 +111,7 @@ update_param!(m, :e, [4,5,6,7])
 
 @test length(extpars) == 9          # The old dictionary has the default values that were added during build, so it has more entries
 @test length(new_extpars) == 6
-@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1}, arrtype, 1}
+@test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
 
 @test typeof(new_extpars[:d].value) == numtype
 @test typeof(new_extpars[:e].values) == Array{arrtype, 1}
@@ -132,30 +132,26 @@ end
 # 1. Test with Fixed Timesteps
 
 m = Model()
-set_dimension!(m, :time, 2000:2002)
-add_comp!(m, MyComp2) # ; first=2000, last=2002)
-set_param!(m, :MyComp2, :x, [1, 2, 3])
+set_dimension!(m, :time, 2000:2004)
+add_comp!(m, MyComp2, first=2001, last=2003)
+set_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
 
-# N.B. `first` and `last` are now disabled.
-# Can't move last beyond last for a component
-# @test_throws ErrorException set_dimension!(m, :time, 2001:2003)
+@test_throws ErrorException set_dimension!(m, :time, 2002:2004) # model starts after component
+@test_throws ErrorException set_dimension!(m, :time, 2000:2002) # model ends before component
 
-set_dimension!(m, :time, 2001:2002)
+# these tests specifically look for the case of updating a TimestepArray's data 
+# without time labels, thus simply calling param.values.data = new_data ... the addition
+# of SubArray to data's type options made it necessary to convert types explicitly
+# which may be causing a performance hit
+update_param!(m, :x, [2.,3.,4.,5.,6.])
+update_param!(m, :x, zeros(5))
+update_param!(m, :x, [1,2,3,4,5])
 
-update_param!(m, :x, [4, 5, 6], update_timesteps = false)
+set_dimension!(m, :time, 2001:2003)
+update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2000, 1, LAST} where LAST, Union{Missing,Float64}, 1}
-@test x.values.data == [4., 5., 6.]
-# TBD: this fails, but I'm not sure how it's supposed to behave. It says:
-# (ERROR: BoundsError: attempt to access 3-element Array{Float64,1} at index [4])
-# run(m)
-# @test m[:MyComp2, :y][1] == 5   # 2001
-# @test m[:MyComp2, :y][2] == 6   # 2002
-
-update_param!(m, :x, [2, 3], update_timesteps = true)
-x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, LAST} where LAST, Union{Missing,Float64}, 1}
-@test x.values.data == [2., 3.]
+@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{2001, 1, 2003}, Union{Missing,Float64}, 1}
+@test x.values.data == [2., 3., 4.]
 run(m)
 @test m[:MyComp2, :y][1] == 2   # 2001
 @test m[:MyComp2, :y][2] == 3   # 2002
@@ -170,15 +166,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, [2005, 2020, 2050])
 
-update_param!(m, :x, [4, 5, 6], update_timesteps = false)
-x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020)}, Union{Missing,Float64}, 1}
-@test x.values.data == [4., 5., 6.]
-#run(m)
-#@test m[:MyComp2, :y][1] == 5   # 2005
-#@test m[:MyComp2, :y][2] == 6   # 2020
-
-update_param!(m, :x, [2, 3, 4], update_timesteps = true)
+update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
@@ -196,7 +184,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, [2005, 2020, 2050])
 
-update_params!(m, Dict(:x=>[2, 3, 4]), update_timesteps = true)
+update_params!(m, Dict(:x=>[2, 3, 4]))
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2005, 2020, 2050)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
@@ -215,10 +203,9 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, 1999:2003)     # length 5
 
-@test_throws ErrorException update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = false)
-update_param!(m, :x, [2, 3, 4, 5, 6], update_timesteps = true)
+update_param!(m, :x, [2, 3, 4, 5, 6])
 x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, LAST} where LAST, Union{Missing,Float64}, 1}
+@test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, 2003}, Union{Missing, Float64}, 1, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
 
 run(m)
@@ -242,19 +229,17 @@ set_param!(m, :MyComp3, :y, [10, 20])
 set_param!(m, :MyComp3, :z, 0)
 
 @test_throws ErrorException update_param!(m, :x, [1, 2, 3, 4]) # Will throw an error because size
-@test_throws ErrorException update_param!(m, :y, [10, 15], update_timesteps=true) # Not a timestep array
 update_param!(m, :y, [10, 15])
 @test external_param(m.md, :y).values == [10., 15.]
-@test_throws ErrorException update_param!(m, :z, 1, update_timesteps=true) # Scalar parameter
 update_param!(m, :z, 1)
 @test external_param(m.md, :z).value == 1
 
 # Reset the time dimensions
 set_dimension!(m, :time, 2005:2007)
 
-update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0), update_timesteps=true) # Won't error when updating from a dictionary
+update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0)) # Won't error when updating from a dictionary
 
-@test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1},Union{Missing,Float64},1}
+@test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{2005,1, 2007},Union{Missing,Float64},1}
 @test external_param(m.md, :x).values.data == [3.,4.,5.]
 @test external_param(m.md, :y).values == [10.,20.]
 @test external_param(m.md, :z).value == 0
