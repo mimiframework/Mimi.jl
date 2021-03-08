@@ -147,8 +147,8 @@ run(m3)
 #------------------------------------------------------------------------------
 # Test set_param! for parameter that exists in neither model definition nor any subcomponent
 
-m1 = get_model()
-err8 = try set_param!(m1, :pDNE, 42) catch err err end
-@test occursin("not found in ModelDef or children", sprint(showerror, err8))
+m4 = get_model()
+err9 = try set_param!(m4, :pDNE, 42) catch err err end
+@test occursin("not found in ModelDef or children", sprint(showerror, err9))
 
 end #module
