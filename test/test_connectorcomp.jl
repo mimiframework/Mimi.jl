@@ -51,7 +51,6 @@ x = model1[:Long, :x]
 @test length(x) == length(years)
 
 @test all(ismissing, b[1:year_dim[late_start]-1])
-
 @test all(iszero, x[1:year_dim[late_start]-1])
 
 # Test the values are right after the late start
@@ -64,6 +63,17 @@ offset = late_start - years[1]
 # Test the dataframe size
 b = getdataframe(model1, :Short, :b)
 @test size(b) == (length(years), 2)
+
+# Try connecting using backup_offset
+connect_param!(model1, :Long, :x, :Short, :b, zeros(length(years)), backup_offset = 1)
+run(model1)
+
+b = model1[:Short, :b]
+x = model1[:Long, :x]
+
+@test all(ismissing, b[1:year_dim[late_start]-1])
+@test all(iszero, x[1:year_dim[late_start]]) # one more zero because used backup an extra year
+@test b[year_dim[late_start]+1:end] == x[year_dim[late_start]+1:end] # the rest of the data shoudl match
 
 #------------------------------------------------------------------------------
 #  2. Test with a short component that ends early (and test Variable timesteps)
@@ -217,7 +227,6 @@ set_param!(model5, :Short, :a, 2)
 # B. test no backup data provided
 @test_throws ErrorException connect_param!(model5, :Long=>:x, :Short=>:b)   # Error because no backup data provided
 
-
 #------------------------------------------------------------------------------
 #  6. Test connecting Short component to Long component (does not add a
 #       connector component)
@@ -235,6 +244,7 @@ model6 = Model()
 set_dimension!(model6, :time, years)
 add_comp!(model6, foo, :Long; rename=[:var => :long_foo])
 add_comp!(model6, foo, :Short; rename=[:var => :short_foo],first=late_start)
+@test_throws ErrorException connect_param!(model6, :Short => :par, :Long => :var, backup_offset = 1) # can't use backup_offset without backup
 connect_param!(model6, :Short => :par, :Long => :var)
 set_param!(model6, :Long, :par, years)
 
