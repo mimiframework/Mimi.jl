@@ -411,7 +411,7 @@ set_param!(m, :fooA1, 1)
 set_param!(m, :fooA2, 2)
 set_param!(m, :foo3, 10)
 set_param!(m, :foo4, 20)
-set_param!(m, :par_1_1, collect(1:length(time_labels(md))))
+set_param!(m, :par_1_1, collect(1:length(time_labels(m))))
 
 run(m)
 
@@ -419,7 +419,7 @@ run(m)
 @test m.md.first == m.md.namespace[:top].first == m.md.namespace[:top].namespace[:A].first == m.md.namespace[:top].namespace[:A].namespace[:Comp1].first== 2005
 @test m.md.last ==  m.md.namespace[:top].last == m.md.namespace[:top].namespace[:A].last ==m.md.namespace[:top].namespace[:A].namespace[:Comp1].last == 2020
 
-@test m.md.namespace[:top].namespace[:B].first == m.md.namespace[:top].namespace[:A].namespace[:Comp1].first== 2010
+@test m.md.namespace[:top].namespace[:B].first == m.md.namespace[:top].namespace[:B].namespace[:Comp3].first== 2010
 @test m.md.namespace[:top].namespace[:B].last ==m.md.namespace[:top].namespace[:B].namespace[:Comp3].last == 2015
  
 end #module

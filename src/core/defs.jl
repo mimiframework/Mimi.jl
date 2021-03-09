@@ -785,23 +785,23 @@ function propagate_time!(obj::AbstractComponentDef, t::Dimension; first::Nothing
     parent_time_keys = [keys(t)...]
     if isnothing(first) && obj.first_free
         obj.first = firstindex(t)
-    elseif isnothing(first) && !obj.first_free
-        # do nothing in this case, must leave first alone it is locked
-    else
+    elseif !isnothing(first) && obj.first_free
         obj.first_free = false
         i = findfirst(isequal(first), parent_time_keys)
         isnothing(i) ? error("The given first index must exist within the parent's time dimension.") : obj.first = first
+    else
+        # nothing
     end
 
     # set last
     if isnothing(last) && obj.last_free
         obj.last = lastindex(t)
-    elseif isnothing(last) && !obj.last_free
-        # do nothing in this case, must leave last alone it is locked
-    else
+    elseif !isnothing(last) && obj.last_free
         obj.last_free = false
         i = findfirst(isequal(last), parent_time_keys)
         isnothing(i) ? error("The given last index must exist within the parent's time dimension.") : obj.last = last
+    else
+        # nothing
     end
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
@@ -809,6 +809,50 @@ function propagate_time!(obj::AbstractComponentDef, t::Dimension; first::Nothing
     end
 end
 
+"""
+    propagate_time!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+
+Propagate just first and last through a component def tree, useful when 
+add_comp! (in the macro Composite) is called in the @defcomposite macro with a 
+first and/or last keyword argument.  If first and last keyword arguments are included 
+as integers, then the object's first_free and/or last_free flags are set to false 
+respectively, these first and last are propagated through, and they will not vary 
+freely with the model.
+"""
+function propagate_time!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+        
+    # note we cannot check these first/last against the time dimension yet, since 
+    # it's not set, but we do so in the build step with check_all_times
+
+    # set first
+    if !isnothing(first) && obj.first_free 
+        obj.first_free = false
+        obj.first = first
+    end
+
+    # set first
+    if !isnothing(last) && obj.last_free 
+        obj.last_free = false
+        obj.last = last
+    end
+
+    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
+        propagate_time!(c, first=first, last=last)
+    end
+end
+
+function check_all_times(obj::AbstractComponentDef, parent_time_keys::Array)
+
+    first_index = findfirst(isequal(obj.first), parent_time_keys)
+    isnothing(first_index) ? error("The first index ($(obj.first)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
+
+    last_index = findfirst(isequal(obj.last), parent_time_keys)
+    isnothing(last_index) ? error("The last index ($(obj.last)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
+
+    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
+        check_all_times(c, parent_time_keys[first_index:last_index])
+    end
+end
 """
     add_comp!(
         obj::AbstractCompositeComponentDef,
@@ -855,12 +899,13 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     parent!(comp_def, obj)
 
     # Handle time dimension for the copy, leave the time unset for the original 
-    # component template
+    # component template - note that if dimension(obj, :time) is Nothing we can 
+    # still set first and last, which is useful for calls to Component within 
+    # the @defcomposite macro producing add_comp! calls
     if has_dim(obj, :time)
         propagate_time!(comp_def, dimension(obj, :time), first=first, last=last)
     else
-        # can't error or composites won't work
-        # error("Cannot add component to composite without first setting time dimension.")
+        propagate_time!(comp_def, first=first, last=last)
     end
 
     _add_anonymous_dims!(obj, comp_def)

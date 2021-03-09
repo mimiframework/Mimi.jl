@@ -360,7 +360,8 @@ function _build(md::ModelDef)
     time_bounds = (firstindex(t), lastindex(t))
 
     propagate_time!(md, t) # this might not be needed, but is a final propagation to double check everything
-
+    check_all_times(md, [keys(dimension(md, :time))...])
+    
     ci = _build(md, vdict, pdict, time_bounds)
     mi = ModelInstance(ci, md)
     return mi
