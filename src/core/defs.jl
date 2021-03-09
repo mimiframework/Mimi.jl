@@ -579,6 +579,10 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     nothing
 end
 
+function set_param!(md::ModelDef, comp_names::Array, param_name::Symbol, value)
+    set_param!(md::ModelDef, param_name::Symbol, value; comps=comp_names, ext_param_name=nothing)
+end
+
 #
 # Variables
 #

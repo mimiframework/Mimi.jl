@@ -436,6 +436,7 @@ Set the value of a parameter for the list of components specified, or all compon
 in the model that have a parameter of the specified name if no list of components 
 is specified.
 """
+@delegate set_param!(m::Model, comp_names::Array, param_name::Symbol, value) => md
 @delegate set_param!(m::Model, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing) => md
 
 @delegate import_params!(m::Model) => md
