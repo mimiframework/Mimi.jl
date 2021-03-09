@@ -454,8 +454,9 @@ end
 """
     set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing)
 
-Set the value of a parameter in all components of the model that have a parameter of 
-the specified name.
+Set the value of a parameter for the list of components specified, or all components 
+in the model that have a parameter of the specified name if no list of components 
+is specified.
 
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
@@ -465,14 +466,19 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     # search immediate subcomponents for this parameter
     if comps === nothing
         comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
+        if isempty(comps)
+            error("Cannot set parameter :$param_name; not found in ModelDef or children")
+        end
+    elseif isa(comps, Array{Symbol,1})
+        comps = [comp for (compname, comp) in components(md) if compname in comps]
+        if 0 in has_parameter.(comps, param_name)
+            error("Cannot set parameter :$param_name; not present in all components specified")
+        end
+    else error("Cannot set parameter :$param_name; please set 'comps' to an array of component names or nothing")
     end
 
     if ext_param_name === nothing
         ext_param_name = param_name
-    end
-
-    if isempty(comps)
-        error("Cannot set parameter :$param_name; not found in ModelDef or children")
     end
 
     # which fields to check for collisions in subcomponents

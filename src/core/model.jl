@@ -430,12 +430,13 @@ that they match the model's index labels.
 
 
 """
-    set_param!(m::Model, param_name::Symbol, value; dims=nothing)
+    set_param!(m::Model, param_name::Symbol, value; dims=nothing, comps=nothing)
 
-Set the value of a parameter in all components of the model that have a parameter of 
-the specified name.
+Set the value of a parameter for the list of components specified, or all components 
+in the model that have a parameter of the specified name if no list of components 
+is specified.
 """
-@delegate set_param!(m::Model, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false) => md
+@delegate set_param!(m::Model, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing) => md
 
 @delegate import_params!(m::Model) => md
 
