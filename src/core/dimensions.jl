@@ -106,7 +106,7 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
             subcomp.last_free || ccd_last < subcomp.last   && error("Top time dimension must start before or at same time as all it's subcomponents, but $(ccd_last) is before $(subcomp.last).")        
         end
 
-        propagate_time!(ccd, dim)
+        propagate_time!(ccd, t = dim)
         set_uniform!(ccd, isuniform(keys))
     end
 
