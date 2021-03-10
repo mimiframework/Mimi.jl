@@ -784,17 +784,17 @@ function propagate_time!(obj::AbstractComponentDef; t::Union{Dimension, Nothing}
         _propagate_firstlast!(obj, first=first, last=last)
     end
 
-    # now propagate the actual time dimension through the components, and fill in 
-    # any missing first and lasts as defaulting to the first and last elements of the
-    # time Dimension
     if t !== nothing
+        # propagate the actual time dimension through the components, and fill in 
+        # any missing first and lasts as defaulting to the first and last elements of the
+        # time Dimension
         _propagate_time_dim!(obj, t)
-        _check_times(obj, dim_keys(obj, :time))
+
+        # run over the object and check that first and last are within the time
+        # dimension of the parent
+        _check_times(obj, [keys(t)...])
     end
 
-    # now run over the object and check that first and last are within the time
-    # dimension of the parent
-    
 end
 
 """
@@ -837,8 +837,8 @@ function _propagate_time_dim!(obj::AbstractComponentDef, t::Dimension)
     
     set_dimension!(obj, :time, t)
 
-    obj.first_free && obj.first = firstindex(t)
-    obj.last_free && obj.last = lastindex(t)
+    obj.first_free ? obj.first = firstindex(t) : nothing
+    obj.last_free ? obj.last = lastindex(t) : nothing
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
         _propagate_time_dim!(c, t)
@@ -915,7 +915,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     # set we can still set first and last, which is useful for calls to Component within 
     # the @defcomposite macro producing add_comp! calls
     has_dim(obj, :time) ? t = dimension(obj, :time) : t = nothing 
-    propagate_time!(comp_def, t = first=first, last=last)
+    propagate_time!(comp_def, t = t, first=first, last=last)
 
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
