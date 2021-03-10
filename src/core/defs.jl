@@ -772,58 +772,42 @@ end
 """
     propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
 
-Propagate a time dimension down through the comp def tree. If first and last 
-keyword arguments are included as integers, then the object's first_free and/or
-last_free flags are set to false respectively, these first and last are propagated
-through, and they will not vary freely with the model.
+Propagate a time dimension down through the comp def tree. This consists of two 
+primary functions which first push first and last through the comp def tree, and
+then push the time dimension through, which sets any leftover first and last
+attributes as well.
 """
-function propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
-    
-    set_dimension!(obj, :time, t)
-    
-    # set first
-    parent_time_keys = [keys(t)...]
-    if isnothing(first) && obj.first_free
-        obj.first = firstindex(t)
-    elseif !isnothing(first) && obj.first_free
-        obj.first_free = false
-        i = findfirst(isequal(first), parent_time_keys)
-        isnothing(i) ? error("The given first index must exist within the parent's time dimension.") : obj.first = first
-    else
-        # nothing
+function propagate_time!(obj::AbstractComponentDef; t::Union{Dimension, Nothing}=nothing, first::NothingInt=nothing, last::NothingInt=nothing)
+
+    # the first step is pushing through fist and last, if they are set explicitly
+    if first !== nothing || last!== nothing
+        _propagate_firstlast!(obj, first=first, last=last)
     end
 
-    # set last
-    if isnothing(last) && obj.last_free
-        obj.last = lastindex(t)
-    elseif !isnothing(last) && obj.last_free
-        obj.last_free = false
-        i = findfirst(isequal(last), parent_time_keys)
-        isnothing(i) ? error("The given last index must exist within the parent's time dimension.") : obj.last = last
-    else
-        # nothing
+    # now propagate the actual time dimension through the components, and fill in 
+    # any missing first and lasts as defaulting to the first and last elements of the
+    # time Dimension
+    if t !== nothing
+        _propagate_time_dim!(obj, t)
+        _check_times(obj, dim_keys(obj, :time))
     end
 
-    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        propagate_time!(c, t, first=first, last=last)
-    end
+    # now run over the object and check that first and last are within the time
+    # dimension of the parent
+    
 end
 
 """
-    propagate_time!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+    _propagate_firstlast(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
 
-Propagate just first and last through a component def tree, useful when 
-add_comp! (in the macro Composite) is called in the @defcomposite macro with a 
-first and/or last keyword argument.  If first and last keyword arguments are included 
-as integers, then the object's first_free and/or last_free flags are set to false 
-respectively, these first and last are propagated through, and they will not vary 
-freely with the model.
+Propagate first and last through a component def treeIf first and last keyword 
+arguments are included as integers, then the object's first_free and/or last_free 
+flags are set to false respectively, these first and last are propagated through
+and are immutable for the future (they will not vary freely with the model's 
+time dimension).
 """
-function propagate_time!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+function _propagate_firstlast!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
         
-    # note we cannot check these first/last against the time dimension yet, since 
-    # it's not set, but we do so in the build step with check_all_times
-
     # set first
     if !isnothing(first) && obj.first_free 
         obj.first_free = false
@@ -836,13 +820,40 @@ function propagate_time!(obj::AbstractComponentDef; first::NothingInt=nothing, l
         obj.last = last
     end
 
-    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        propagate_time!(c, first=first, last=last)
+    for c in compdefs(obj)  # N.B. compdefs returns empty list for leaf nodes     
+        _propagate_firstlast!(c, first=first, last=last)
     end
 end
 
-function check_all_times(obj::AbstractComponentDef, parent_time_keys::Array)
+"""
+    _propagate_time_dim!(obj::AbstractComponentDef, t::Dimension)
 
+Propagate a time dimension down through the comp def tree. If first and last 
+keyword arguments are not set in a given comp def they will be set to match the
+time dimension, but first_free and /or last_free flags are left as true so these
+can vary with the model's time dimension in the future. 
+"""
+function _propagate_time_dim!(obj::AbstractComponentDef, t::Dimension)
+    
+    set_dimension!(obj, :time, t)
+
+    obj.first_free && obj.first = firstindex(t)
+    obj.last_free && obj.last = lastindex(t)
+
+    for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
+        _propagate_time_dim!(c, t)
+    end
+
+end
+
+"""
+function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
+
+    Check that all first and last times are properly contained within a comp_def
+    `obj`'s parent time keys `parent_time_keys`.
+"""
+function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
+    
     first_index = findfirst(isequal(obj.first), parent_time_keys)
     isnothing(first_index) ? error("The first index ($(obj.first)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
 
@@ -850,8 +861,9 @@ function check_all_times(obj::AbstractComponentDef, parent_time_keys::Array)
     isnothing(last_index) ? error("The last index ($(obj.last)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
-        check_all_times(c, parent_time_keys[first_index:last_index])
+        _check_times(c, parent_time_keys[first_index:last_index])
     end
+
 end
 """
     add_comp!(
@@ -899,14 +911,11 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     parent!(comp_def, obj)
 
     # Handle time dimension for the copy, leave the time unset for the original 
-    # component template - note that if dimension(obj, :time) is Nothing we can 
-    # still set first and last, which is useful for calls to Component within 
+    # component template - note that if the obj does not yet have a :time dimension
+    # set we can still set first and last, which is useful for calls to Component within 
     # the @defcomposite macro producing add_comp! calls
-    if has_dim(obj, :time)
-        propagate_time!(comp_def, dimension(obj, :time), first=first, last=last)
-    else
-        propagate_time!(comp_def, first=first, last=last)
-    end
+    has_dim(obj, :time) ? t = dimension(obj, :time) : t = nothing 
+    propagate_time!(comp_def, t = first=first, last=last)
 
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
