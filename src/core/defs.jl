@@ -474,7 +474,6 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
         if 0 in has_parameter.(comps, param_name)
             error("Cannot set parameter :$param_name; not present in all components specified")
         end
-    else error("Cannot set parameter :$param_name; please set 'comps' to an array of component names or nothing")
     end
 
     if ext_param_name === nothing
