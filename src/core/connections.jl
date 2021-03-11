@@ -642,8 +642,8 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             param_first = first_period(obj, src_comp_def)
             conn.backup_offset !== nothing ? param_first = param_first + conn.backup_offset : nothing
 
-            set_param!(obj, conn_comp_name, :first, param_first)
-            set_param!(obj, conn_comp_name, :last, param_last)
+            set_param!(obj, conn_comp_name, :first, Symbol(conn_comp_name, "_", :first), param_first)
+            set_param!(obj, conn_comp_name, :last, Symbol(conn_comp_name, "_", :last), param_last)
         end
     end
 
