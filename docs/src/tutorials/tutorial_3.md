@@ -22,15 +22,13 @@ Possible modifications range in complexity, from simply altering parameter value
 
 Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference guide, Reference Guide: The Mimi API.
 
-When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this external parameter.  Note that if the external parameter has a `:time` dimension, use the optional argument `update_timesteps=true` to indicate that the time keys (i.e., year labels) associated with the parameter should be updated in addition to updating the parameter values.
+When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this external parameter. 
 
 ```julia
-update_param!(mymodel, :parametername, newvalues) # update values only 
-
-update_param!(mymodel, :parametername, newvalues, update_timesteps=true) # also update time keys. Only necessary if the time dimension of the model has been changed.
+update_param!(mymodel, :parametername, newvalues)
 ```
 
-In the code above, `newvalues` must be the same size and type (or be able to convert to the type) of the old values stored in that parameter.
+Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. Also note that it if you have updated the time dimension of the model with `set_dimension!(m, :time, values)` you will need to update all parameters with a `:time` dimension, **even if the values have not changed**, so that the model can update the underlying time labels (ie. year labels) to match your new model time labels (ie. year labels).
 
 If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
 
@@ -96,7 +94,7 @@ nyears = length(years)
 set_dimension!(m, :time, years)
 ```
 
-Now that you have changed the time dimension, you have a mismatch between the time labels attached to your parameters and the time labels used by the model.  Thus, **you must update at least all parameters with a `:time`** dimension and use the explicit `update_timesteps=true` flag to get the time labels on the parameters to match those in the model. This is required even in cases where you do not want to change the parameter values themselves (see the forum question [here](https://forum.mimiframework.org/t/update-time-index/134/5)) for an in-depth explanation of this case. You may of course also update parameters without a `:time` dimension as desired. 
+Now you must update at least all parameters with a `:time` dimension, even if the length and values remain the same, so that the underlying time labels (ie. year labels) update to match your new model time labels (ie. year labels).
 
 Create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
 
@@ -112,11 +110,9 @@ params[:S]          = repeat([0.23], nyears)
 Now you simply update the parameters listen in `params` and re-run the model with
 
 ```julia
-update_params!(m, params, update_timesteps=true)
+update_params!(m, params)
 run(m)
 ```
-
-Note again that here we use the `update_timesteps` flag and set it to `true`, because since we have changed the time index we want the time labels on the parameters to change, not simply their values.
 
 ## Component and Structural Modifications: The API
 

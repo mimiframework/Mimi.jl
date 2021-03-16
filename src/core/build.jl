@@ -1,5 +1,25 @@
 connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 
+# helper function to substitute views for data 
+function _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
+    times = [keys(comp_def.dim_dict[:time])...]
+    first_idx = findfirst(times .== comp_def.first)
+    last_idx = findfirst(times .== comp_def.last)
+    for (i, val) in enumerate(vals)
+        if val isa TimestepArray
+            vals[i] = _get_view(val, first_idx, last_idx)
+        end
+    end
+end
+
+function _get_view(val::TimestepArray{T_TS, T, N, ti, S}, first_idx, last_idx) where {T_TS, T, N, ti, S}
+    
+    idxs  = Array{Any}(fill(:, N))
+    idxs[ti] = first_idx:last_idx
+    # if we are making a connection, the val.data may already be a view, in which case
+    # we need to return to the parent of that view before taking our new view
+    return TimestepArray{T_TS, T, N, ti}(val.data isa SubArray ? view(val.data.parent, idxs...) : view(val.data, idxs...))
+end
 
 # Return the datatype to use for instance variables/parameters
 function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
@@ -18,8 +38,9 @@ function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     else
         if isuniform(md)
             first, stepsize = first_and_step(md)
+            last = last_period(md)
             first === nothing && @warn "_instance_datatype: first === nothing"
-            T = TimestepArray{FixedTimestep{first, stepsize}, Union{dtype, Missing}, num_dims, ti}
+            T = TimestepArray{FixedTimestep{first, stepsize, last}, Union{dtype, Missing}, num_dims, ti}
         else
             times = time_labels(md)
             T = TimestepArray{VariableTimestep{(times...,)}, Union{dtype, Missing}, num_dims, ti}
@@ -71,7 +92,15 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
     names  = Symbol[nameof(def) for def in var_defs]
     values = Any[_instantiate_datum(md, def) for def in var_defs]
-    types  = DataType[_instance_datatype(md, def) for def in var_defs]
+    _substitute_views!(values, comp_def)
+
+    # this line was replaced with the one below because calling _instance_datatype
+    # does not concretely type the S type parameter (the type of the TimestepArray's
+    # and thus DataType[typeof(val) for val in values] errored when trying to 
+    # convert typeof(val<:TimestepArray) to a DataType
+
+    # types  = DataType[_instance_datatype(md, def) for def in var_defs]
+    types = DataType[typeof(val) for val in values]
     paths  = repeat(Any[comp_def.comp_path], length(names))
 
     return ComponentInstanceVariables(names, types, values, paths)
@@ -146,7 +175,7 @@ function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
     var_path = ComponentPath(top_src_path, var_sub_path[1])
 
     ipcs = [InternalParameterConnection(var_path, var_name[1], param_path, param_name, 
-        conn.ignoreunits, conn.backup; offset=conn.offset) for (param_path, param_name) in
+        conn.ignoreunits, conn.backup; backup_offset=conn.backup_offset) for (param_path, param_name) in
         zip(param_paths, param_names)]
     return ipcs
 end
@@ -225,8 +254,9 @@ end
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     # @info "Instantiating params for $(comp_def.comp_path)"
     comp_path = comp_def.comp_path
-    names = parameter_names(comp_def)
+    names = parameter_names(comp_def)   
     vals  = Any[par_dict[(comp_path, name)] for name in names]
+    _substitute_views!(vals, comp_def)
     types = DataType[typeof(val) for val in vals]
     paths = repeat([comp_def.comp_path], length(names))
 
@@ -329,8 +359,8 @@ function _build(md::ModelDef)
     t = dimension(md, :time)
     time_bounds = (firstindex(t), lastindex(t))
 
-    propagate_time!(md, t)
-
+    propagate_time!(md, t = t) # this might not be needed, but is a final propagation to double check everything
+    
     ci = _build(md, vdict, pdict, time_bounds)
     mi = ModelInstance(ci, md)
     return mi

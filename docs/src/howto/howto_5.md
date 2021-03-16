@@ -50,7 +50,7 @@ In an effort to standardize the function naming protocol within Mimi, and to str
 |`addcomponent!`            |`add_comp!`                |
 |`connectparameter`         |`connect_param!`           |
 |`setleftoverparameters`    |`set_leftover_params!`     |
-|`setparameter`             |`set_param!`           |
+|`setparameter`             |`set_param!`               |
 |`adddimension`             |`add_dimension!`           |
 |`setindex`                 |`set_dimension!`           |  
 
@@ -98,7 +98,7 @@ To update an external parameter, use the functions `update_param!` and `udpate_p
 
 *  `update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)`
 
-* `update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)`
+*  `update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)`
 
 For external parameters with a `:time` dimension, passing `update_timesteps=true` indicates that the time _keys_ (i.e., year labels) should also be updated in addition to updating the parameter values.
 

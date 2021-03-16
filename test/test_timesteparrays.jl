@@ -42,7 +42,7 @@ idx4 = TimestepIndex(4)
 #1a.  test constructor, lastindex, and length (with both
 # matching years and mismatched years)
 
-x = TimestepVector{FixedTimestep{2000, 1}, Int}([9, 10, 11, 12])
+x = TimestepVector{FixedTimestep{2000, 1, 2003}, Int}([9, 10, 11, 12])
 @test length(x) == 4
 @test lastindex(x) == TimestepIndex(4)
 
@@ -80,21 +80,22 @@ reset_time_val(x, time_dim_val)
 
 # AbstractTimestep Indexing
 t = FixedTimestep{2001, 1, 3000}(1)
-
 @test hasvalue(x, t)
 @test !hasvalue(x, FixedTimestep{2000, 1, 2012}(10))
-@test x[t] == 10
+
+t = FixedTimestep{2000, 1, 3000}(1)
+@test x[t] == 9 # x
 
 t2 = next_timestep(t)
-@test x[t2] == time_dim_val[3]
-x[t2] = temp_dim_val[3]
-@test x[t2] == temp_dim_val[3]
+@test x[t2] == time_dim_val[2]
+x[t2] = temp_dim_val[2]
+@test x[t2] == temp_dim_val[2]
 reset_time_val(x, time_dim_val)
 
-t3 = FixedTimestep{2000, 1, 2003}(1)
-@test x[t3] == time_dim_val[1]
-x[t3] = temp_dim_val[1]
-@test x[t3] == temp_dim_val[1]
+t3 = next_timestep(t2)
+@test x[t3] == time_dim_val[3]
+x[t3] = temp_dim_val[3]
+@test x[t3] == temp_dim_val[3]
 reset_time_val(x, time_dim_val)
 
 # Deprecated int indexing now errors
@@ -148,12 +149,12 @@ t = VariableTimestep{y2}()
 
 @test hasvalue(x, t)
 @test !hasvalue(x, VariableTimestep{years}(time_dim_val[2]))
-@test x[t] == time_dim_val[2]
+@test x[t] == time_dim_val[1]
 
 t2 =  next_timestep(t)
-@test x[t2] == time_dim_val[3]
-x[t2] = temp_dim_val[3]
-@test x[t2] == temp_dim_val[3]
+@test x[t2] == time_dim_val[2]
+x[t2] = temp_dim_val[2]
+@test x[t2] == temp_dim_val[2]
 reset_time_val(x, time_dim_val)
 
 t3 = VariableTimestep{years}()
@@ -176,8 +177,8 @@ for ti = 1:2
     #3a.  test constructor (with both matching years
     # and mismatched years)
 
-    y = TimestepMatrix{FixedTimestep{2000, 1}, Int, ti}(collect(reshape(1:8, 4, 2)))
-    z = TimestepMatrix{FixedTimestep{2000, 2}, Int, ti}(collect(reshape(1:8, 4, 2)))
+    y = TimestepMatrix{FixedTimestep{2000, 1, 2003}, Int, ti}(collect(reshape(1:8, 4, 2)))
+    z = TimestepMatrix{FixedTimestep{2000, 2, 2003}, Int, ti}(collect(reshape(1:8, 4, 2)))
 
     time_dim_val = collect(reshape(1:8, 4, 2))
     temp_dim_val = collect(reshape(100:107, 4, 2))
@@ -239,8 +240,8 @@ for ti = 1:2
         @test y[:, TimestepValue(2001)] == time_dim_val[:,2]
         @test y[1, TimestepValue(2000; offset = 1)] == time_dim_val[1,2]
         @test y[1, TimestepValue(2000) + 1] == time_dim_val[1,2]
-        @test_throws ErrorException y[1, TimestepValue(2003)]
-        @test_throws ErrorException y[1, TimestepValue(2002)+1]
+        @test_throws BoundsError y[1, TimestepValue(2003)]
+        @test_throws BoundsError y[1, TimestepValue(2002)+1]
 
         y[1, TimestepValue(2000)] = temp_dim_val[1]
         @test y[1, TimestepValue(2000)] == temp_dim_val[1]
@@ -248,10 +249,10 @@ for ti = 1:2
     end
 
     # AbstractTimestep Indexing
-    t = FixedTimestep{2001, 1, 3000}(1)
+    t = FixedTimestep{2000, 1, 3000}(1)
     @test hasvalue(y, t, 1)
     @test !hasvalue(y, FixedTimestep{2000, 1, 3000}(10), 1)
-
+    t = next_timestep(t)
     if ti == 1
         @test y[t,1] == time_dim_val[2,1]
         @test y[t,2] == time_dim_val[2,2]
@@ -271,7 +272,7 @@ for ti = 1:2
         reset_time_val(y, time_dim_val)
 
         #3c.  interval wider than 1 using z from above
-        t = FixedTimestep{1980, 2, 3000}(11)
+        t = FixedTimestep{1980, 2, 3000}(1)
 
         @test z[t,1] == time_dim_val[1,1]
         @test z[t,2] == time_dim_val[1,2]
@@ -292,7 +293,7 @@ for ti = 1:2
         reset_time_val(y, time_dim_val)
 
         #3c.  interval wider than 1 using z from above
-        t = FixedTimestep{1980, 2, 3000}(11)
+        t = FixedTimestep{1980, 2, 3000}(1)
 
         @test z[1, t] == time_dim_val[1,1]
         @test z[2, t] == time_dim_val[2,1]
@@ -402,14 +403,16 @@ for ti = 1:2
     if ti == 1
         @test hasvalue(y, t, time_dim_val[1])
         @test !hasvalue(y, VariableTimestep{years}(10))
-        @test y[t,1] == time_dim_val[2,1]
-        @test y[t,2] == time_dim_val[2,2]
 
         t2 = next_timestep(t)
-        @test y[t2,1] == time_dim_val[3,1]
-        @test y[t2,2] == time_dim_val[3,2]
-        y[t2, 1] = temp_dim_val[3,1]
-        @test y[t2, 1] == temp_dim_val[3,1]
+        @test y[t2,1] == time_dim_val[2,1]
+        @test y[t2,2] == time_dim_val[2,2]
+
+        t3 = next_timestep(t2)
+        @test y[t3,1] == time_dim_val[3,1]
+        @test y[t3,2] == time_dim_val[3,2]
+        y[t3, 1] = temp_dim_val[3,1]
+        @test y[t3, 1] == temp_dim_val[3,1]
         reset_time_val(y, time_dim_val)
 
         t3 = VariableTimestep{years}()
@@ -422,8 +425,10 @@ for ti = 1:2
     else
         @test hasvalue(y, t, time_dim_val[1])
         @test !hasvalue(y, VariableTimestep{years}(10))
-        @test y[1,t] == time_dim_val[1,2]
-        @test y[2,t] == time_dim_val[2,2]
+
+        t2 = next_timestep(t)
+        @test y[1,t2] == time_dim_val[1,2]
+        @test y[2,t2] == time_dim_val[2,2]
 
         t3 = VariableTimestep{years}()
         @test y[1, t3] == time_dim_val[1,1]
@@ -446,7 +451,7 @@ end
 for ti = 1:2
 
     years = Tuple([2000:5:2005; 2015:10:2025])
-    arr_fixed = TimestepArray{FixedTimestep{2000, 5}, Int, 3, ti}(collect(reshape(1:64, 4, 4, 4)))
+    arr_fixed = TimestepArray{FixedTimestep{2000, 5, 2020}, Int, 3, ti}(collect(reshape(1:64, 4, 4, 4)))
     arr_variable = TimestepArray{VariableTimestep{years}, Int, 3, ti}(collect(reshape(1:64, 4, 4, 4)))
 
     time_dim_val = collect(reshape(1:64, 4, 4, 4))
@@ -591,8 +596,8 @@ time_dim_val = collect(reshape(1:64, 4, 4, 4))
 x_years = Tuple(2000:5:2015) #fixed
 y_years = Tuple([2000:5:2005; 2015:10:2025]) #variable
 
-x_vec = TimestepVector{FixedTimestep{2000, 5}, Int}(time_dim_val[:,1,1])
-x_mat = TimestepMatrix{FixedTimestep{2000, 5}, Int, 1}(time_dim_val[:,:,1])
+x_vec = TimestepVector{FixedTimestep{2000, 5, 2015}, Int}(time_dim_val[:,1,1])
+x_mat = TimestepMatrix{FixedTimestep{2000, 5, 2015}, Int, 1}(time_dim_val[:,:,1])
 y_vec = TimestepVector{VariableTimestep{y_years}, Int}(time_dim_val[:,2,2])
 y_mat = TimestepMatrix{VariableTimestep{y_years}, Int, 1}(time_dim_val[:,:,2])
 
@@ -717,11 +722,8 @@ run(m)
 # 8. Check broadcast assignment to underlying array
 #------------------------------------------------------------------------------
 
-x_arr = zeros(10)
-y_arr = collect(reshape(zeros(8), 4, 2))
-
-x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10}, Float64}(x_arr)
-y = TimestepMatrix{FixedTimestep{2000, 1}, Float64, 1}(y_arr)
+x = Mimi.TimestepVector{Mimi.FixedTimestep{2005,10,2095}, Float64}(zeros(10))
+y = TimestepMatrix{FixedTimestep{2000, 1, 2003}, Float64, 1}(collect(reshape(zeros(8), 4, 2)))
 
 # colon and ints
 x[:] .= 10
@@ -732,14 +734,14 @@ y[:] .= 10
 y[:,1] .= 20
 @test all(y.data[:,1] .== 20)
 
-reset_time_val(x, x_arr)
-reset_time_val(y, y_arr)
+reset_time_val(x, zeros(10))
+reset_time_val(y, collect(reshape(zeros(8), 4, 2)))
 
 # TimestepIndex
 y[TimestepIndex(2),:] .= 10
 @test all(y.data[2,:] .== 10)
 
-reset_time_val(x, x_arr)
-reset_time_val(y, y_arr)
+reset_time_val(x, zeros(10))
+reset_time_val(y, collect(reshape(zeros(8), 4, 2)))
 
 end #module

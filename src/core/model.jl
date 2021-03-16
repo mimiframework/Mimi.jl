@@ -36,20 +36,22 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 
 """
     connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol, 
-    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, backup_offset::Union{Int, Nothing}=nothing)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `m`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination componentm parameter should only use the source component 
+data for the second timestep and beyond.
 """
 @delegate connect_param!(m::Model,
                          dst_comp_name::Symbol, dst_par_name::Symbol,
                          src_comp_name::Symbol, src_var_name::Symbol,
                          backup::Union{Nothing, Array}=nothing;
-                         ignoreunits::Bool=false, offset::Int=0) => md
+                         ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing) => md
 
 """
     connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
@@ -65,15 +67,17 @@ Bind the parameter `param_name` in the component `comp_name` of model `m` to the
 Bind the parameter `dst[2]` of one component `dst[1]` of model `m`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination componentm parameter should only use the source component 
+data for the second timestep and beyond.
 
 """
 function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
                            backup::Union{Nothing, Array}=nothing;
-                           ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
+                           ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing)
+    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, backup_offset=backup_offset)
 end
 
 """
@@ -99,29 +103,32 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
-    update_param!(m::Model, name::Symbol, value; update_timesteps = false)
+    update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of an external model parameter in model `m`, referenced by
-`name`. Optional boolean argument `update_timesteps` with default value `false`
-indicates whether to update the time keys associated with the parameter values
-to match the model's time index.
+`name`. The update_timesteps keyword argument is deprecated, we keep it here 
+just to provide warnings.
 """
-@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = false) => md
+@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing) => md
 
 """
-    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = false) where T
+    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!``
-is called to update the external parameter by name k to value v, with optional
-Boolean argument update_timesteps. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the
-model definition.
+is called to update the external parameter by name k to value v.  Each key k 
+must be a symbol or convert to a symbol matching the name of an external parameter t
+hat already exists in the model definition. The update_timesteps keyword argument 
+is deprecated, but temporarily remains as a dummy argument to allow warning detection.
 """
-@delegate update_params!(m::Model, parameters::Dict; update_timesteps = false) => md
+@delegate update_params!(m::Model, parameters::Dict) => md
 
 """
     add_comp!(
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -130,7 +137,10 @@ model definition.
 Add the component indicated by `comp_id` to the model indicated by `m`. The component is added
 at the end of the list unless one of the keywords `before` or `after` is specified. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
-argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+argument `rename` can be a list of pairs indicating `original_name => imported_name`. The optional 
+arguments `first` and `last` indicate the times bounding the run period for the given component, 
+which must be within the bounds of the model and if explicitly set are fixed.  These default 
+to flexibly changing with the model's `:time` dimension.
 """
 function add_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
     comp_def = add_comp!(m.md, comp_id, comp_name; kwargs...)
@@ -140,6 +150,10 @@ end
 """
     add_comp!(
         m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;
+        first::NothingInt=nothing,
+        last::NothingInt=nothing,
+        first_free::Bool=true,
+        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -148,7 +162,10 @@ end
 Add the component `comp_def` to the model indicated by `m`. The component is added at
 the end of the list unless one of the keywords, `first`, `last`, `before`, `after`. Note
 that a copy of `comp_id` is made in the composite and assigned the give name. The optional
-argument `rename` can be a list of pairs indicating `original_name => imported_name`.
+argument `rename` can be a list of pairs indicating `original_name => imported_name`. The optional 
+arguments `first` and `last` indicate the times bounding the run period for the given component, 
+which must be within the bounds of the model and if explicitly set are fixed.  These default 
+to flexibly changing with the model's `:time` dimension.
 """
 function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)

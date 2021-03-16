@@ -23,6 +23,8 @@ dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
 namespace::OrderedDict{Symbol, Any}       
 first::Union{Nothing, Int}
 last::Union{Nothing, Int}
+first_free::Bool
+last_free::Bool
 is_uniform::Bool
 ```
 The namespace of a leaf component can hold `ParameterDef`s and `VariableDef`s, both which are subclasses of `DatumDef` (see below for more details on these types).
@@ -120,7 +122,7 @@ dst_comp_path::ComponentPath
 dst_par_name::Symbol
 ignoreunits::Bool
 backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
-offset::Int
+backup_offset::Union{Int, Nothing}
 
 # ExternalParameterConnection  <: AbstractConnection
 comp_path::ComponentPath

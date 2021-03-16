@@ -21,7 +21,7 @@ packages_to_test = [
     "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
     "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
     "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
-    "MimiHECTOR" => ("https://github.com/anthofflab/MimiHector.jl", "master")
+    "MimiHector" => ("https://github.com/anthofflab/MimiHector.jl", "master")
 ]
 
 using Pkg

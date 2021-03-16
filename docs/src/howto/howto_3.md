@@ -10,7 +10,7 @@ Running Monte Carlo simulations, and proximal sensitivity analysis, in Mimi can 
 
 2. The `run` function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run with `set_models!`, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
 
-3. The `analyze` function, which takes a simulation instance, analyzes the results and returns results specific to the type of simulation passed in.  Currently this function is only defined for the `SobolSimulationInstance` subtype of `SimulationInstance`
+3. The `analyze` function, which takes a simulation instance, analyzes the results and returns results specific to the type of simulation passed in. 
 
 The rest of this document will be organized as follows:
 
@@ -27,11 +27,12 @@ The rest of this document will be organized as follows:
 
 The first step in a Mimi sensitivity analysis is using the `@defsim` macro to define and return a `SimulationDef{T}`. This simulation definition contains all the definition information in a form that can be applied at run-time. The `T` in `SimulationDef{T}` is any type that your application would like to live inside the `SimulationDef` struct, and most importantly specifies the sampling strategy to be used in your sensitivity analysis.  
 
-We have implemented three types for `T <: AbstractSimulationData`:
+We have implemented four types for `T <: AbstractSimulationData`:
 
 1. Simple random-sampling Monte Carlo Simulation (`MCSData`),
 2. Latin Hypercube Sampling (`LHSData`)
 3. Sobol sampling and analysis (`SobolData`)
+4. Delta sampling and analysis (`DeltaData`) - **Beta**, we don't recommend use yet
 
 We also define type constants with friendlier names for these parameterized types:
 
@@ -44,6 +45,9 @@ const LatinHypercubeSimulationInstance = SimulationInstance{LHSData}
 
 const SobolSimulationDef = SimulationDef{SobolData}
 const SobolSimulationInstance = SimulationInstance{SobolData}
+
+const DeltaSimulationDef = SimulationDef{DeltaData}
+const DeltaSimulationInstance = SimulationInstance{DeltaData}
 ```
 
 In order to build the information required at run-time, the `@defsim` macro carries out several tasks including the following.
@@ -153,6 +157,7 @@ As previously mentioned and included in the tutorial, the `@defsim` macro uses t
 *Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling.*
 
 3. Sobol sampling and analysis (`SobolData`)
+4. Delta samping and analysis (`DeltaData`) - **Beta**, we don't recommend use yet
 
 ### Include Sampling Strategy-specifc Parameters
 
@@ -294,7 +299,9 @@ By default, all defined models are run. In some cases, you may want to run some 
 
 ## 3. The `analyze` function
 
-[TODO]
+The `analyze` function takes a simulation instance, runs a sensitivity analysis method as determined by the type of simulation instance, and returns the results. It is currenlty defined for a `SobolSimulationInstance` and the `DeltaSimulationInstance` (**Beta**) subtypes of `SimulationInstance`.
+
+This function wraps the `analyze` function in the [GlobalSensitivityAnalysis.jl](https://github.com/lrennels/GlobalSensitivityAnalysis.jl) package, so please view the README of this package for the most up to date information. 
 
 ## 4. Plotting and the Explorer UI
 
