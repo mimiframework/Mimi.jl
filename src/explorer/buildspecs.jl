@@ -53,9 +53,13 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
                 spec = createspec_lineplot(name, df, dffields, interactive=interactive)
             end
         
-        #otherwise we are dealing with a barplot
+        #otherwise we are dealing with a barplot or a scatter plot
         else
-            spec = createspec_barplot(name, df, dffields)
+            if eltypes(df)[1] <: Number 
+                spec = createspec_scatterplot(name, df, dffields)
+            else
+                spec = createspec_barplot(name, df, dffields)
+            end
         end
     end
 
@@ -411,6 +415,28 @@ function createspec_barplot(name, df, dffields)
             "mark" => "bar",
             "encoding" => Dict(
                 "x" => Dict("field" => dffields[1], "type" => "ordinal"),
+                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
+                ),
+            "width"  => _plot_width,
+            "height" => _plot_height 
+        )
+    )
+    return spec
+end
+
+function createspec_scatter(name, df, dffields)
+    datapart = getdatapart(df, dffields, :scatter) #returns JSONtext type     
+    spec = Dict(
+        "name"  => name,
+        "type" => "point",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => "point",
+            "encoding" => Dict(
+                "x" => Dict("field" => dffields[1], "type" => "quantitative"),
                 "y" => Dict("field" => dffields[2], "type" => "quantitative" )
                 ),
             "width"  => _plot_width,
