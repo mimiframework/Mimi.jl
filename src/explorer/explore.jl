@@ -7,7 +7,9 @@ export save
 global app = nothing
 
 #include functions and modules
+include("getdataparts.jl")
 include("buildspecs.jl")
+include("buildmenu.jl")
 include("results.jl")
 
 """
