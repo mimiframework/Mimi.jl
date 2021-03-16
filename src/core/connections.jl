@@ -113,20 +113,22 @@ end
         dst_comp_path::ComponentPath, dst_par_name::Symbol,
         src_comp_path::ComponentPath, src_var_name::Symbol,
         backup::Union{Nothing, Array}=nothing;
-        ignoreunits::Bool=false, offset::Int=0)
+        ignoreunits::Bool=false, backup_offset::Int=0)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_path` of composite `obj` to a
 variable `src_var_name` in another component `src_comp_path` of the same model using
 `backup` to provide default values and the `ignoreunits` flag to indicate the need to
-check match units between the two.  The `offset` argument indicates the offset between
-the destination and the source ie. the value would be `1` if the destination component
-parameter should only be calculated for the second timestep and beyond.
+check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination componentm parameter should only use the source component 
+data for the second timestep and beyond.
 """
 function _connect_param!(obj::AbstractCompositeComponentDef,
                         dst_comp_path::ComponentPath, dst_par_name::Symbol,
                         src_comp_path::ComponentPath, src_var_name::Symbol,
                         backup::Union{Nothing, Array}=nothing;
-                        ignoreunits::Bool=false, offset::Int=0)
+                        ignoreunits::Bool=false, backup_offset::Union{Nothing, Int}=nothing)
 
     dst_comp_def = compdef(obj, dst_comp_path)
     src_comp_def = compdef(obj, src_comp_path)
@@ -152,33 +154,31 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
                   "Expected size $(datum_size(obj, dst_comp_def, dst_par_name)) but got $(size(backup)).")
         end
 
-        # some other check for second dimension??
-        dst_param = parameter(dst_comp_def, dst_par_name)
-        dst_dims  = dim_names(dst_param)
-
         # convert number type and, if it's a NamedArray, convert to Array
         backup = convert(Array{Union{Missing, number_type(obj)}}, backup)
-        first = first_period(obj, dst_comp_def)
 
-        T = eltype(backup)
-
+        dst_param = parameter(dst_comp_def, dst_par_name)
+        dst_dims  = dim_names(dst_param)
         dim_count = length(dst_dims)
 
-        if dim_count == 0
+        ti = get_time_index_position(dst_param)
+
+        if ti === nothing # not time dimension
             values = backup
-        else
-            ti = get_time_index_position(dst_param)
+        else # handle time dimension
+
+            # get first and last of the ModelDef, NOT the ComponentDef
+            first = first_period(obj)
+            last = last_period(obj) 
+
+            T = eltype(backup)
 
             if isuniform(obj)
-                # use the first from the comp_def not the ModelDef
                 stepsize = step_size(obj)
-                last = last_period(obj, dst_comp_def)
                 values = TimestepArray{FixedTimestep{first, stepsize, last}, T, dim_count, ti}(backup)
             else
                 times = time_labels(obj)
-                # use the first from the comp_def
-                first_index = findfirst(isequal(first), times)
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, dim_count, ti}(backup)
+                values = TimestepArray{VariableTimestep{(times...,)}, T, dim_count, ti}(backup)
             end
 
         end
@@ -187,6 +187,11 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
         backup_param_name = dst_par_name
 
     else
+        # cannot use backup_offset keyword argument if there is no backup
+        if backup_offset !== nothing
+            error("Cannot set `backup_offset` keyword argument if `backup` data is not explicitly provided")
+        end
+
         # If backup not provided, make sure the source component covers the span of the destination component
         src_first, src_last = first_and_last(src_comp_def)
         dst_first, dst_last = first_and_last(dst_comp_def)
@@ -212,7 +217,7 @@ Try calling:
     end
 
     conn = InternalParameterConnection(src_comp_path, src_var_name, dst_comp_path, dst_par_name,
-                                       ignoreunits, backup_param_name, offset=offset)
+                                       ignoreunits, backup_param_name, backup_offset=backup_offset)
     add_internal_param_conn!(obj, conn)
 
     return nothing
@@ -221,29 +226,33 @@ end
 function connect_param!(obj::AbstractCompositeComponentDef,
                         dst_comp_name::Symbol, dst_par_name::Symbol,
                         src_comp_name::Symbol, src_var_name::Symbol,
-                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                        backup_offset::Union{Nothing, Int} = nothing)
     _connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name,
                         ComponentPath(obj, src_comp_name), src_var_name,
-                        backup; ignoreunits=ignoreunits, offset=offset)
+                        backup; ignoreunits=ignoreunits, backup_offset=backup_offset)
 end
 
 """
     connect_param!(obj::AbstractCompositeComponentDef,
         dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
         backup::Union{Nothing, Array}=nothing;
-        ignoreunits::Bool=false, offset::Int=0)
+        ignoreunits::Bool=false, backup_offset::Union{Nothing, Int} = nothing)
 
 Bind the parameter `dst[2]` of one component `dst[1]` of composite `obj`
 to a variable `src[2]` in another component `src[1]` of the same composite
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination componentm parameter should only use the source component 
+data for the second timestep and beyond.
 """
 function connect_param!(obj::AbstractCompositeComponentDef,
                         dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
-                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                        backup_offset::Union{Nothing, Int} = nothing)
+    connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, backup_offset=backup_offset)
 end
 
 """
@@ -606,7 +615,9 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             conn_comp_name = connector_comp_name(i) # generate a new name
             i += 1 # increment connector comp counter
 
-            # Add the connector component before the user-defined component that required it
+            # Add the connector component before the user-defined component that 
+            # required it, and for now let the first and last of the component 
+            # be free and thus be set to the same as the model
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             conn_path = conn_comp.comp_path
 
@@ -624,10 +635,15 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
             # set the first and last parameters for WITHIN the component which 
-            # decide when backup is used and when connectin is used
+            # decide when backup is used and when connection is used
             src_comp_def = compdef(obj, conn.src_comp_path)
-            set_param!(obj, conn_comp_name, :first, first_period(obj, src_comp_def) + conn.offset)
-            set_param!(obj, conn_comp_name, :last, last_period(obj, src_comp_def))
+
+            param_last = last_period(obj, src_comp_def)
+            param_first = first_period(obj, src_comp_def)
+            conn.backup_offset !== nothing ? param_first = param_first + conn.backup_offset : nothing
+
+            set_param!(obj, conn_comp_name, :first, Symbol(conn_comp_name, "_", :first), param_first)
+            set_param!(obj, conn_comp_name, :last, Symbol(conn_comp_name, "_", :last), param_last)
         end
     end
 

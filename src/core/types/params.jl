@@ -58,12 +58,13 @@ struct InternalParameterConnection <: AbstractConnection
     dst_par_name::Symbol
     ignoreunits::Bool
     backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
-    offset::Int
+    backup_offset::Union{Int, Nothing}
 
     function InternalParameterConnection(src_path::ComponentPath, src_var::Symbol,
                                          dst_path::ComponentPath, dst_par::Symbol,
-                                         ignoreunits::Bool, backup::Union{Symbol, Nothing}=nothing; offset::Int=0)
-        self = new(src_path, src_var, dst_path, dst_par, ignoreunits, backup, offset)
+                                         ignoreunits::Bool, backup::Union{Symbol, Nothing}=nothing;
+                                         backup_offset::Union{Int, Nothing}=nothing)
+        self = new(src_path, src_var, dst_path, dst_par, ignoreunits, backup, backup_offset)
         return self
     end
 end

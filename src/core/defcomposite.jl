@@ -78,22 +78,39 @@ end
 # Convert @defcomposite "shorthand" statements into Mimi API calls
 #
 function _parse(expr)
-    valid_keys = (:default, :description, :unit)
-    result = nothing
 
-    if @capture(expr, newname_ = Component(compname_)) ||
-       @capture(expr, Component(compname_))
+    result = nothing
+    
+    if @capture(expr, newname_ = Component(compname_, args__)) ||
+        @capture(expr, Component(compname_, args__))
+
+        valid_keys = (:first, :last)
+
         # check newname is nothing or Symbol, compname is Symbol
         _typecheck(compname, Symbol, "Referenced component name")
-
         if newname !== nothing
             _typecheck(newname, Symbol, "Local name for component name")
         end
-
+        
+        #assign newname
         newname = (newname === nothing ? compname : newname)
-        result = :(Mimi.add_comp!(obj, $compname, $(QuoteNode(newname))))
+        
+        # handle keyword arguments
+        keyargs = []        
+        for arg in args
+            @capture(arg, keywd_ = value_) # keyword arguments
+            if keywd in valid_keys
+                push!(keyargs, arg)
+            else
+                error("Unrecognized Component keyword '$keywd'; must be 'first' or 'last")
+            end
+        end
+
+        result = :(Mimi.add_comp!(obj, $compname, $(QuoteNode(newname)); $(keyargs...)))
 
     elseif @capture(expr, localparname_ = Parameter(args__))
+        valid_keys = (:default, :description, :unit)
+
         regargs = []
         keyargs = []
 

@@ -3,7 +3,7 @@ module TestConnectorComp
 using Mimi
 using Test
 
-import Mimi: compdef, compdefs, components
+import Mimi: compdef, compdefs, components, getspan
 
 @defcomp Long begin
     x = Parameter(index=[time])
@@ -51,7 +51,6 @@ x = model1[:Long, :x]
 @test length(x) == length(years)
 
 @test all(ismissing, b[1:year_dim[late_start]-1])
-
 @test all(iszero, x[1:year_dim[late_start]-1])
 
 # Test the values are right after the late start
@@ -64,6 +63,17 @@ offset = late_start - years[1]
 # Test the dataframe size
 b = getdataframe(model1, :Short, :b)
 @test size(b) == (length(years), 2)
+
+# Try connecting using backup_offset
+connect_param!(model1, :Long, :x, :Short, :b, zeros(length(years)), backup_offset = 1)
+run(model1)
+
+b = model1[:Short, :b]
+x = model1[:Long, :x]
+
+@test all(ismissing, b[1:year_dim[late_start]-1])
+@test all(iszero, x[1:year_dim[late_start]]) # one more zero because used backup an extra year
+@test b[year_dim[late_start]+1:end] == x[year_dim[late_start]+1:end] # the rest of the data shoudl match
 
 #------------------------------------------------------------------------------
 #  2. Test with a short component that ends early (and test Variable timesteps)
@@ -206,17 +216,16 @@ late_start_long = 2002
 model5 = Model()
 set_dimension!(model5, :time, years)
 add_comp!(model5, Short; first = late_start)
-add_comp!(model5, Long; first = late_start_long)    # starts later as well, so backup data needs to match this size
+add_comp!(model5, Long; first = late_start_long)    
 set_param!(model5, :Short, :a, 2)
 
-# A. test wrong size (needs to be length of component, not length of model)
-@test_throws ErrorException connect_param!(model5, :Long=>:x, :Short=>:b, zeros(length(years)))
-@test_throws ErrorException connect_param!(model4, :Long_multi=>:x, :Short_multi=>:b, zeros(length(years), length(regions)+1)) # test case with >1 dimension
+# A. test wrong size (needs to be length of model, not length of component)
+@test_throws ErrorException connect_param!(model5, :Long=>:x, :Short=>:b, zeros(getspan(model5, :Long)))
+@test_throws ErrorException connect_param!(model4, :Long_multi=>:x, :Short_multi=>:b, zeros(getspan(model4, :Long_multi)[1], length(regions)+1)) # test case with >1 dimension
 
 
 # B. test no backup data provided
 @test_throws ErrorException connect_param!(model5, :Long=>:x, :Short=>:b)   # Error because no backup data provided
-
 
 #------------------------------------------------------------------------------
 #  6. Test connecting Short component to Long component (does not add a
@@ -235,6 +244,7 @@ model6 = Model()
 set_dimension!(model6, :time, years)
 add_comp!(model6, foo, :Long; rename=[:var => :long_foo])
 add_comp!(model6, foo, :Short; rename=[:var => :short_foo],first=late_start)
+@test_throws ErrorException connect_param!(model6, :Short => :par, :Long => :var, backup_offset = 1) # can't use backup_offset without backup
 connect_param!(model6, :Short => :par, :Long => :var)
 set_param!(model6, :Long, :par, years)
 

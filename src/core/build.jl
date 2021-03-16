@@ -175,7 +175,7 @@ function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
     var_path = ComponentPath(top_src_path, var_sub_path[1])
 
     ipcs = [InternalParameterConnection(var_path, var_name[1], param_path, param_name, 
-        conn.ignoreunits, conn.backup; offset=conn.offset) for (param_path, param_name) in
+        conn.ignoreunits, conn.backup; backup_offset=conn.backup_offset) for (param_path, param_name) in
         zip(param_paths, param_names)]
     return ipcs
 end
@@ -359,8 +359,8 @@ function _build(md::ModelDef)
     t = dimension(md, :time)
     time_bounds = (firstindex(t), lastindex(t))
 
-    propagate_time!(md, t) # this might not be needed, but is a final propagation to double check everything
-
+    propagate_time!(md, t = t) # this might not be needed, but is a final propagation to double check everything
+    
     ci = _build(md, vdict, pdict, time_bounds)
     mi = ModelInstance(ci, md)
     return mi
