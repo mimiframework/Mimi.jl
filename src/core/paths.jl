@@ -56,7 +56,7 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
             conns[i] = InternalParameterConnection(src_path, conn.src_var_name,
                                                    dst_path, conn.dst_par_name,
                                                    conn.ignoreunits, conn.backup;
-                                                   offset=conn.offset)
+                                                   backup_offset=conn.backup_offset)
         end
 
     else

@@ -36,20 +36,22 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 
 """
     connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol, 
-    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, offset::Int=0)
+    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, backup_offset::Union{Int, Nothing}=nothing)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `m`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination componentm parameter should only use the source component 
+data for the second timestep and beyond.
 """
 @delegate connect_param!(m::Model,
                          dst_comp_name::Symbol, dst_par_name::Symbol,
                          src_comp_name::Symbol, src_var_name::Symbol,
                          backup::Union{Nothing, Array}=nothing;
-                         ignoreunits::Bool=false, offset::Int=0) => md
+                         ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing) => md
 
 """
     connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
@@ -65,15 +67,17 @@ Bind the parameter `param_name` in the component `comp_name` of model `m` to the
 Bind the parameter `dst[2]` of one component `dst[1]` of model `m`
 to a variable `src[2]` in another component `src[1]` of the same model
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `offset` argument indicates the offset
-between the destination and the source ie. the value would be `1` if the destination
-component parameter should only be calculated for the second timestep and beyond.
+to check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination componentm parameter should only use the source component 
+data for the second timestep and beyond.
 
 """
 function connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
                            backup::Union{Nothing, Array}=nothing;
-                           ignoreunits::Bool=false, offset::Int=0)
-    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, offset=offset)
+                           ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing)
+    connect_param!(m.md, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, backup_offset=backup_offset)
 end
 
 """
