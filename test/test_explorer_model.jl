@@ -13,13 +13,12 @@ function _is_VegaLite_v3()
 end
 
 @defcomp MyComp begin
-    a = Parameter(index=[time, regions]) # multiline
-    b = Parameter(index=[time]) # line
-    c = Parameter(index=[regions]) # bar
+    a = Parameter(index=[time, regions])
+    b = Parameter(index=[time])
+    c = Parameter(index=[regions])
     d = Parameter()
     e = Parameter(index=[four])
     f = Parameter{Array{Float64, 2}}()
-    g = Parameter(index = [subregions])
 
     x = Variable(index=[time, regions])
     
