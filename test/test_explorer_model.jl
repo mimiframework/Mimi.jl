@@ -19,16 +19,7 @@ end
     d = Parameter()
     e = Parameter(index=[four])
     f = Parameter{Array{Float64, 2}}()
-
-    g = Paramter(index = [subregions])
-    p0 = Parameter(index = [time]) # line plot
-    p1 = Parameter(index = [foo]) # scatter plot
-    p2 = Parameter(index = [baz]) # bar plot
-
-    p3 = Parameter(index = [foo, bar]) # multi-scatter
-    p4 = Parameter(index = [baz, foo]) # multi-bar
-    p5 = Parameter(index = [time, bar]) # multi-line
-    p6 = Parameter(index = [time, baz]) # multi-line
+    g = Parameter(index = [subregions])
 
     x = Variable(index=[time, regions])
     
