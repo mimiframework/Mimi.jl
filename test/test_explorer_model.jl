@@ -13,12 +13,22 @@ function _is_VegaLite_v3()
 end
 
 @defcomp MyComp begin
-    a = Parameter(index=[time, regions])
-    b = Parameter(index=[time])
-    c = Parameter(index=[regions])
+    a = Parameter(index=[time, regions]) # multiline
+    b = Parameter(index=[time]) # line
+    c = Parameter(index=[regions]) # bar
     d = Parameter()
     e = Parameter(index=[four])
     f = Parameter{Array{Float64, 2}}()
+
+    g = Paramter(index = [subregions])
+    p0 = Parameter(index = [time]) # line plot
+    p1 = Parameter(index = [foo]) # scatter plot
+    p2 = Parameter(index = [baz]) # bar plot
+
+    p3 = Parameter(index = [foo, bar]) # multi-scatter
+    p4 = Parameter(index = [baz, foo]) # multi-bar
+    p5 = Parameter(index = [time, bar]) # multi-line
+    p6 = Parameter(index = [time, baz]) # multi-line
 
     x = Variable(index=[time, regions])
     
@@ -156,7 +166,6 @@ close(w)
     p0 = Parameter(index = [time]) # line plot
     p1 = Parameter(index = [foo]) # scatter plot
     p2 = Parameter(index = [baz]) # bar plot
-
     p3 = Parameter(index = [foo, bar]) # multi-scatter
     p4 = Parameter(index = [baz, foo]) # multi-bar
     p5 = Parameter(index = [time, bar]) # multi-line
@@ -188,3 +197,15 @@ set_param!(m, :example, :p6, reshape(1:30, 10, 3))
 
 run(m)
 explore(m)
+
+items = [:p0, :p1, :p2, :p3, :p4, :p5, :p6]
+for item in items
+    static_spec = _spec_for_item(m, :example, item; interactive = false)
+    interactive_spec = _spec_for_item(m, :example, item)
+    if length(dim_names(m, :example, item)) == 0
+        name =  string(:example, " : ", item, " = ", m[:example, item])
+    else
+        name = string(:example, " : ", item)
+    end
+    @test static_spec["name"] == interactive_spec["name"] == name
+end
