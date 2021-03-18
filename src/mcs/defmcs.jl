@@ -183,16 +183,18 @@ end
 """
     delete_RV!(sim_def::SimulationDef, name::Symbol)
 
-Delete the random variable `name` from the Simulation definition `sim`.
+Delete the random variable with name `name` from the Simulation definition `sim`.
 Transformations using this RV are deleted, and the Simulation's
 NamedTuple type is updated to reflect the dropped RV.
 """
 function delete_RV!(sim_def::SimulationDef, name::Symbol)
-    name = rv.name
-    haskey(sim_def.rvdict, name) || warn("Simulation def does not have RV :$name. Nothing being deleted.")
-    delete_transform!(sim_def, name)
-    delete!(sim_def.rvdict, name)
-    _update_nt_type!(sim_def)
+    if !haskey(sim_def.rvdict, name)
+        @warn("Simulation def does not have RV :$name. Nothing being deleted.")
+    else
+        delete_transform!(sim_def, name)
+        delete!(sim_def.rvdict, name)
+        _update_nt_type!(sim_def)
+    end
 end
 
 """
@@ -247,9 +249,12 @@ Simulation definition's NamedTuple type accordingly.
 """
 function delete_transform!(sim_def::SimulationDef, name::Symbol)
     pos = findall(t -> t.rvname == name, sim_def.translist)
-    isempty(pos) && warn("Simulation def does not have and transformations using RV :$name. Nothing being deleted.")
-    deleteat!(sim_def.translist, pos)    
-    _update_nt_type!(sim_def)
+    if isempty(pos)
+        @warn("Simulation def does not have and transformations using RV :$name. Nothing being deleted.")
+    else
+        deleteat!(sim_def.translist, pos)    
+        _update_nt_type!(sim_def)
+    end
 end
 
 """
@@ -285,7 +290,7 @@ longer be saved to a CSV file at the end of the simulation.
 """
 function delete_save!(sim_def::SimulationDef, key::Tuple{Symbol, Symbol})
     pos = findall(isequal(key), sim_def.savelist)
-    deleteat!(sim_def.savelist, pos)
+    isempty(pos) ? @warn("Simulation def doesn't have $key in its save list. Nothing being deleted.") : deleteat!(sim_def.savelist, pos)
 end
 
 """
@@ -305,9 +310,8 @@ component `comp_name` and parameter or variable `datum_name`. This result will
 be saved to a CSV file at the end of the simulation.
 """
 function add_save!(sim_def::SimulationDef, key::Tuple{Symbol, Symbol})
-    delete_save!(sim_def, key) 
-    push!(sim_def.savelist, key)
-    nothing
+    pos = findall(isequal(key), sim_def.savelist)
+    !isempty(pos) ? @warn("Simulation def already has $key in its save list. Nothing being added.") : push!(sim_def.savelist, key)
 end
 
 """

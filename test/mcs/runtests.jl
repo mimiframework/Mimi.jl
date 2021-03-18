@@ -9,6 +9,9 @@ using Test
     @info("test_defmcs.jl")
     include("test_defmcs.jl")
 
+    @info("test_defmcs_modifications.jl")
+    include("test_defmcs_modifications.jl")
+
     @info("test_defmcs_sobol.jl")
     include("test_defmcs_sobol.jl")
 
