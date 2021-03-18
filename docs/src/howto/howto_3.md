@@ -18,7 +18,7 @@ The rest of this document will be organized as follows:
 2. The `run` function
 3. The `analyze` function
 4. Plotting and the Explorer UI
-5. Simulation Modification Functions
+5. Other Useful Functions
 6. Examples
 
 *We will refer separately to two types, `SimulationDef` and `SimulationInstance`.  They are referred to as `sim_def` and `sim_inst` respectively as function arguments, and `sd` and `si` respectively as local variables.*
@@ -338,16 +338,70 @@ plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; intera
 
 ![Plot Simulation Example](../figs/plot_sim_example.png)
 
-## 5. Simulation Modification Functions
+## 5. Other Useful Functions
+
+### Simulation Modification Functions
 
 A small set of unexported functions are available to modify an existing `SimulationDefinition`.  The functions include:
-* `delete_RV!`
-* `add_RV!`
-* `replace_RV!`
-* `delete_transform!`
-* `add_transform!`
-* `delete_save!`
-* `add_save!`
+
+* `delete_RV!(sim_def::SimulationDef, name::Symbol)` - deletes the random variable with name `name` from the Simulation Definition `sim_def`, along with all transformations using that random variable
+* `add_RV!(sim_def::SimulationDef, name::Symbol, dist::Distribution)` - add the random variable with the name `name` from the Simulation Definition `sim_def` 
+* `replace_RV!(sim_def::SimulationDef, name::Symbol, dist::Distribution)` - replace the random variable with name `name` in Simulation Definition with a random variable of the same `name` but with the distribution `Distribution`
+
+* `delete_transform!(sim_def::SimulationDef, name::Symbol)!` - Delete all data transformations in Simulation Definition `sim_def` (i.e., replacement, addition or multiplication) of original data values with values drawn from the random variable named `name`
+* `add_transform!(sim_def::SimulationDef, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector=[])!` - Create a new `TransformSpec` based on `paramname`, `op`, `rvname` and `dims` to the Simulation Definition `sim_def`. The symbol `rvname` must refer to an existing random variable, and `paramname` must refer to an existing parameter. If `dims` are provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
+
+For example, say a user starts off with a SimulationDefinition `MySimDef` with a parameter `MyParameter` drawn from the random variable `MyRV` with distribution `Uniform(0,1)`.  
+
+Case 1: The user wants this random variable to draw from a new distribution, say `Normal(0,1)`, which will affect all parameters with transforms attached to this random variable.
+```
+using Distributions
+using Mimi
+replace_RV!(MySimDef, MyRV, Normal(0,1))
+```
+Case 2: The user parameter `MyParameter` to to take on the value of a random draw from a `Normal(2,0.1)` distribution.  We assume this requires a new random variable, because no random variable has this distribution yet.
+```
+using Distributions
+using Mimi
+add_RV!(MySimDef, :NewRV, Normal(2, 0.1))
+add_transform!(MySimDef, :MyParameter, :=, :NewRV)
+```
+
+* `add_save!(sim_def::SimulationDef, comp_name::Symbol, datum_name::Symbol)` - Add to Simulation Definition`sim_def` a "save" instruction for component `comp_name` and parameter or variable `datum_name`. This result will be saved to a CSV file at the end of the simulation.    
+* `delete_save!(sim_def::SimulationDef, comp_name::Symbol, datum_name::Symbol)` - Delete from Simulation Definition `sim_def` a "save" instruction for component `comp_name` and parameter nor variable `datum_name`. This result will no longer be saved to a CSV file at the end of the simulation.
+
+### Helper Functions
+
+```
+"""
+  get_simdef_rvnames(sim_def::SimulationDef, name::Union{String, Symbol})
+
+A helper function to support finding the keys in a Simulation Definition `sim_def`'s
+rvdict that contain a given `name`. This can be particularly helpful if the random 
+variable was set via the shortcut syntax ie. my_parameter = Normal(0,1) and thus the
+`sim_def` has automatically created a key in the format `:my_parameter!x`. In this 
+case this function is useful to get the key and carry out modification functions 
+such as `replace_rv!`.
+"""
+
+function get_simdef_rvnames(sim_def::SimulationDef, name::Union{String, Symbol})
+    names = String.([keys(sim_def.rvdict)...])
+    matches = Symbol.(filter(x -> occursin(String(name), x), names))
+end
+```
+As shown in the examples below, and described above, parameters can be assigned unique random variables under the hood without explicitly declaring the RV.  Fore example, instead of pairing
+```
+rv(name) = Uniform(0.2, 0.8)
+share = name1
+```
+we can write
+```
+share = Uniform(0.2, 0.8)
+```
+When this is done, Mimi will create a new unique RV with a unique name `share!x` where `x` is an integer determined by internal processes that gaurantee it to be unique in this `sim_def`.  This syntax is therefore not recommended if the user expects to want to reference that random variable using the aforementioned modification functions.  That said, if the user does need to do so we have added a helper function `get_simdef_rvnames(sim_def::SimulationDef, name::Union{String, Symbol})` which will return the unique names of the random variables that start with `name`.  In the case above, for example, `get_simdef_rvnames(sim_def, :share)` would return `[share!x]`.  In a case where share had multiple dimensions, like three regions, it would return `[share!x1, share!x2, share!x3]`.  
+
+### Payload Functions
+
 * `set_payload!`
 * `payload`
 
