@@ -366,8 +366,10 @@ scc_results = Mimi.payload(si)[2]   # Recall that the SCC array was the second o
 
 ```
 
-#### Simulation Modification Functions
-A small set of unexported functions are available to modify an existing `SimulationDef`.  The functions include:
+#### Other Helpful Functions
+
+A small set of unexported functions are available to modify an existing `SimulationDef`.  Please refer to How-to Guide 3: Conduct Monte Carlo Simulations and Sensitivity Analysis for an in depth description of their use cases.  The functions include the following:
+
 * `delete_RV!`
 * `add_RV!`
 * `replace_RV!`
@@ -375,12 +377,13 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `add_transform!`
 * `delete_save!`
 * `add_save!`
+* `get_simdef_rvnames`
 * `set_payload!`
 * `payload`
 
 #### Full list of keyword options for running a simulation
 
-View How-to Guide 3: Conduct Sensitivity Analysis for **critical and useful details on the full signature of this function**, as well as more details and optionality for more advanced use cases.
+View How-to Guide 3: Conduct Monte Carlo Simulations and Sensitivity Analysis for **critical and useful details on the full signature of this function**, as well as more details and optionality for more advanced use cases.
 
 ```julia
 function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
