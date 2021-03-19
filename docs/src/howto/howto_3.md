@@ -62,9 +62,30 @@ If using Latin Hypercube Sampling (LHS) is used, the following function must als
 
   - `quantile(dist, quantiles::Vector{Float64})` which returns values for the given `quantiles` of the distribution.
 
-In addition to the distributions available in the `Distributions` package, Mimi provides:
+In addition to the distributions available in the `Distributions` package, Mimi provides the following options.  Note that these are not exported by default, so they need to either be explicitly imported (ie. `import Mimi: EmpiricalDistribution`) or prefixed with `Mimi.` when implemented (ie. `Mimi.EmpiricalDistribution(vals, probs)`):
 
-- `EmpiricalDistribution`, which takes a vector of values and (optional) vector of probabilities and produces samples from these values using the given probabilities, if provided, or equal probability otherwise.
+- `EmpiricalDistribution`, which takes a vector of values and (optional) vector of probabilities and produces samples from these values using the given probabilities, if provided, or equal probability otherwise. To use this in a `@defsim`, you might do:
+
+  ```julia
+  using CSVFiles
+  using DataFrames
+  using Mimi
+  import Mimi: EmpiricalDistribution # not currently exported so you just need to grab it
+
+  # read in your values
+  values = load("path_to_values_file"; header_exists = false) |> DataFrame
+  # read in your probabilities (optional, if none are provided we assume all equal)
+  # note that the probabilities need to be Float type and should roughly add to 1
+  probs = load("path_to_probabilities_file"; header_exists = false) |> DataFrame
+
+  # create your simulation
+  @defsim  begin
+      ...
+      trc_transientresponse = EmpiricalDistribution(values, probs)
+      ...
+  end
+  ```
+  Note there are many ways to load values, we use DataFrames and CSVFiles above but there might be an easier way depending on what packages you like
 
 - `SampleStore{T}`, which stores a vector of samples that are produced in order by the `rand` function. This allows the user to to store a predefined set of values (useful for regression testing) and it is used by the LHS method, which draws all required samples at once at equal probability intervals and then shuffles the values. It is also used when rank correlations are specified, since this requires re-ordering draws from random variables.
 
