@@ -1,17 +1,14 @@
-## Mimi UI
-using Dates
-using CSVFiles
+# Create individual specs 
 
-function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dim_names(m, comp_name, item_name)
-    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
-end
+# Plot constants
+global const _plot_width  = 450
+global const _plot_height = 410
+global const _slider_height = 90
 
 ##
-## 1. Generate the VegaLite spec for a variable or parameter
+## Primary spec functions
 ##
 
-# Get spec
 function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interactive::Bool=true)
     dims = dim_names(m, comp_name, item_name)
     if length(dims) > 2
@@ -21,22 +18,35 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
     
     # Control flow logic selects the correct plot type based on dimensions
     # and dataframe fields
+
+    ##
+    ## No Plot Clases
+    ##
+
+    # if there are no dimensions we show the values in the label in the menu
     if length(dims) == 0
         paths = _get_all_paths(m)
         comp_path = paths[comp_name];
         value = m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name]
         name = "$comp_name : $item_name = $value"
         spec = createspec_singlevalue(name)
+
+    # we do not support over two indexed dimensions right now
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
         name = "$comp_name : $item_name (CANNOT DISPLAY)"
         spec = createspec_singlevalue(name)
+    
+    ##
+    ## Plot Cases
+    ##
+
     else
         name = "$comp_name : $item_name"          
         df = getdataframe(m, comp_name, item_name)
         dffields = map(string, names(df))         # convert to string once before creating specs
         
-        # a 'time' field necessitates a line plot
+        # Time is a Dimension - line plots
         if "time" in dffields
 
             # need to reorder the df to have 'time' as the first dimension
@@ -52,10 +62,22 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
             else
                 spec = createspec_lineplot(name, df, dffields, interactive=interactive)
             end
-        
-        #otherwise we are dealing with a barplot
+
+        # No Time Dimension and First Dim is a Number Type - scatter plots
+        elseif eltype(df[1]) <: Number 
+            if length(dffields) > 2
+                spec = createspec_multiscatterplot(name, df, dffields)
+            else
+                spec = createspec_scatterplot(name, df, dffields)
+            end
+
+        # No Time Dimension and First Dim is Not a Number Type - bar plots
         else
-            spec = createspec_barplot(name, df, dffields)
+            if length(dffields) > 2
+                spec = createspec_multibarplot(name, df, dffields)
+            else
+                spec = createspec_barplot(name, df, dffields) 
+            end
         end
     end
 
@@ -107,113 +129,10 @@ function _spec_for_sim_item(sim_inst::SimulationInstance, comp_name::Symbol, ite
         
 end
 
-function tree_view_values(model::Model)
-    all_subcomps = []
-    for comp_def in compdefs(model)
-        subcomp = tree_view_values(model, nameof(comp_def), comp_def)
-        push!(all_subcomps, subcomp)
-    end
-
-    # Return sorted list so that the UI list of items will be in lexicographic order 
-    return sort(all_subcomps, by = x -> lowercase(x["name"]))
-end
-
-function tree_view_values(model::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
-    sub_comp_item = _tree_view_node(comp_name)
-    for subcomp in compdefs(comp_def)
-        push!(sub_comp_item["children"], tree_view_values(model, nameof(subcomp), subcomp));
-    end
-    return sub_comp_item
-end
-
-function _tree_view_node(comp_name::Symbol)
-    return Dict("name" => "$comp_name", "children" => Dict[])
-end
-
-# Create the list of variables and parameters
-function menu_item_list(model::Model)
-    var_menuitems = []
-    par_menuitems = []
-
-    for comp_def in compdefs(model)
-        all_subcomp_values = menu_item_list(model, nameof(comp_def), comp_def)
-        append!(var_menuitems, all_subcomp_values["vars"])
-        append!(par_menuitems, all_subcomp_values["pars"])
-    end
-
-    # Return sorted list so that the UI list of items will be in lexicographic order 
-    return Dict("vars" => sort(var_menuitems, by = x -> lowercase(x["name"])),"pars" => sort(par_menuitems, by = x -> lowercase(x["name"])))
-end
-
-# Create the list of variables and parameters
-function menu_item_list(m::Model, comp_name::Symbol, comp_def::AbstractComponentDef)
-    var_menu_items = map(var_name -> _menu_item(m, Symbol(comp_name), var_name), variable_names(comp_def));
-    par_menu_items = map(par_name -> _menu_item(m, Symbol(comp_name), par_name), parameter_names(comp_def));
-    
-    # Return sorted list so that the UI list of items will be in lexicographic order 
-    return Dict("vars" => sort(var_menu_items, by = x -> lowercase(x["name"])),"pars" => sort(par_menu_items, by = x -> lowercase(x["name"])))
-end
-
-function menu_item_list(sim_inst::SimulationInstance)
-    all_menuitems = []
-    for datum_key in sim_inst.sim_def.savelist
-        menu_item = _menu_item(sim_inst, datum_key)
-        if menu_item !== nothing
-            push!(all_menuitems, menu_item) 
-        end
-    end
-
-    # Return sorted list so that the UI list of items will be in lexicographic order 
-    return sort(all_menuitems, by = x -> lowercase(x["name"]))
-end
-
-function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
-    dims = dim_names(m, comp_name, item_name)
-    if length(dims) > 2
-        # Drop references to singleton dimensions
-        dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
-    end
-
-    if length(dims) == 0
-        paths = _get_all_paths(m)
-        comp_path = paths[comp_name];
-        value = m[comp_path, item_name]
-        name = "$comp_name : $item_name = $value"
-    elseif length(dims) > 2
-        @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
-        name = "$comp_name : $item_name (CANNOT DISPLAY)"
-    else
-        name = "$comp_name : $item_name"          # the name is needed for the list label
-    end
-
-    menu_item = Dict("name" => name, "comp_name" => comp_name, "item_name" => item_name)
-    return menu_item
-end
-
-function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbol})
-    (comp_name, item_name) = datum_key
-    dims = dim_names(sim_inst.models[1], comp_name, item_name)
-    if length(dims) > 2
-        # Drop references to singleton dimensions
-        dims = tuple([dim for dim in dims if dim_count(m, dim) != 1]...)
-    end
-
-    if length(dims) > 2
-        @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
-        name = "$comp_name : $item_name (CANNOT DISPLAY)"
-    else
-        name = "$comp_name : $item_name"          # the name is needed for the list label
-    end
-
-    menu_item = Dict("name" => "$item_name", "comp_name" => comp_name, "item_name" => item_name)
-    return menu_item
-end
-
 ##
-## 2. Create individual specs 
+## Methods for explore(m::model)
 ##
 
-# Specs for explore(m::Model)
 function createspec_lineplot(name, df, dffields; interactive::Bool=true)
     interactive ? createspec_lineplot_interactive(name, df, dffields) : createspec_lineplot_static(name, df, dffields)
 end
@@ -420,6 +339,77 @@ function createspec_barplot(name, df, dffields)
     return spec
 end
 
+function createspec_multibarplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :multibar)
+    spec = Dict(
+        "name"  => name,
+        "type" => "bar",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => "bar",
+            "encoding" => Dict(
+                "x" => Dict("field" => dffields[1], "type" => "ordinal"),
+                "y" => Dict("field" => dffields[3], "type" => "quantitative" ),
+                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                            "scale" => Dict("scheme" => "category20"))
+                ),
+            "width"  => _plot_width,
+            "height" => _plot_height 
+        )
+    )
+    return spec
+end
+
+function createspec_scatterplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :scatter) #returns JSONtext type     
+    spec = Dict(
+        "name"  => name,
+        "type" => "point",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => "point",
+            "encoding" => Dict(
+                "x" => Dict("field" => dffields[1], "type" => "quantitative"),
+                "y" => Dict("field" => dffields[2], "type" => "quantitative" )
+                ),
+            "width"  => _plot_width,
+            "height" => _plot_height 
+        )
+    )
+    return spec
+end
+
+function createspec_multiscatterplot(name, df, dffields)
+    datapart = getdatapart(df, dffields, :multiscatter)
+    spec = Dict(
+        "name"  => name,
+        "type" => "point",
+        "VLspec" => Dict(
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "description" => "plot for a specific component variable pair",
+            "title" => name,
+            "data"=> Dict("values" => datapart),
+            "mark" => "point",
+            "encoding" => Dict(
+                "x" => Dict("field" => dffields[1], "type" => "quantitative"),
+                "y" => Dict("field" => dffields[3], "type" => "quantitative" ),
+                "color" => Dict("field" => dffields[2], "type" => "nominal", 
+                            "scale" => Dict("scheme" => "category20"))
+                ),
+            "width"  => _plot_width,
+            "height" => _plot_height 
+        )
+    )
+    return spec
+
+end
+
 function createspec_singlevalue(name)
 
     datapart = [];
@@ -431,7 +421,9 @@ function createspec_singlevalue(name)
     return spec
 end
 
-# Specs for explore(sim_inst::SimulationInstance)
+##
+## Methods for explore(sim_inst::SimulationInstance)
+##
 
 function createspec_trumpet(name, df, dffields; interactive::Bool=true)
     df_reduced = trumpet_df_reduce(df, :trumpet) #reduce the dataframe down to only the data needed for max, min, and mean lines
@@ -961,118 +953,13 @@ function createspec_multihistogram_interactive(name, df, dffields)
     return spec
 end
 
-# Plot constants
-global const _plot_width  = 450
-global const _plot_height = 410
-global const _slider_height = 90
-
 ##
-## Helper functions
+## Helpers
 ##
 
-# Various functions to get the JSONtext of the data
-function getdatapart(df, dffields, plottype::Symbol)
-
-    # start the main string
-    sb = StringBuilder()
-    append!(sb, "[");
-
-    # get the specific string for this type of data
-    datasb = StringBuilder()
-    numrows = length(df[!, 1]);
-
-    # loop over rows and create a dictionary for each row
-    if plottype == :multitrumpet #4D with 3 indices
-        cols = (df[!, 1], df[!, 2], df[!, 3], df[!, 4])
-        datastring = getdatapart_4d(cols, dffields, numrows, datasb)
-    elseif plottype == :multiline || plottype == :trumpet #3D with 2 indices, one of which is time
-        cols = (df[!, 1], df[!, 2], df[!, 3])
-        datastring = getdatapart_3d_time(cols, dffields, numrows, datasb)
-    elseif plottype == :multihistogram #3D with 2 indices, none of which is time
-        cols = (df[!, 1], df[!, 2], df[!, 3])
-        datastring = getdatapart_3d(cols, dffields, numrows, datasb)
-    elseif plottype == :line  #2D with 1 index, one of which is time
-        cols = (df[!, 1], df[!, 2])
-        datastring = getdatapart_2d_time(cols, dffields, numrows, datasb)
-    else # :bar and :histogram
-        cols = (df[!, 1], df[!, 2])
-        datastring = getdatapart_2d(cols, dffields, numrows, datasb)
-    end
-
-    append!(sb, datastring * "]");
-    datapart = String(sb)
-
-    return JSON.JSONText(datapart)
-end
-
-function getdatapart_4d(cols, dffields, numrows, datasb)
-    for i = 1:numrows
-
-        append!(datasb, "{
-            \"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) * "\",
-            \"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",
-            \"" * dffields[3] * "\":\"" * string(cols[3][i]) * "\",
-            \"" * dffields[4] * "\":\"" * string(cols[4][i]) * "\"}")
-        
-        if i != numrows
-            append!(datasb, ",")
-        end  
-    end
-    return String(datasb)
-end
-
-function getdatapart_3d_time(cols, dffields, numrows, datasb)
-    for i = 1:numrows
-
-        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i]))
-            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
-            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
-        
-        if i != numrows
-            append!(datasb, ",")
-        end  
-    end
-    return String(datasb)
-end
-
-function getdatapart_3d(cols, dffields, numrows, datasb)
-    for i = 1:numrows
-
-        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(cols[1][i])
-            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\",\"" 
-            * dffields[3] * "\":\"" * string(cols[3][i]) * "\"}")
-        
-        if i != numrows
-            append!(datasb, ",")
-        end  
-    end
-    return String(datasb)
-end
-
-function getdatapart_2d_time(cols, dffields, numrows, datasb)
-    for i = 1:numrows
-        append!(datasb, "{\"" * dffields[1]  * "\":\"" * string(Date(cols[1][i])) 
-            * "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\"}") 
-
-        if i != numrows
-            append!(datasb, ",")
-        end
-    end
-    
-    return String(datasb)
-end
-
-function getdatapart_2d(cols, dffields, numrows, datasb)
-    for i = 1:numrows
-
-        append!(datasb, "{\"" * dffields[1] * "\":\"" * string(cols[1][i]) *
-            "\",\"" * dffields[2] * "\":\"" * string(cols[2][i]) * "\"}") #end of dictionary
-
-        if i != numrows
-            append!(datasb, ",")
-        end
-    end
-    return String(datasb)
+function dataframe_or_scalar(m::Model, comp_name::Symbol, item_name::Symbol)
+    dims = dim_names(m, comp_name, item_name)
+    return length(dims) > 0 ? getdataframe(m, comp_name, item_name) : m[comp_name, item_name]
 end
 
 function trumpet_df_reduce(df, plottype::Symbol)
