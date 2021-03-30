@@ -149,3 +149,53 @@ set_leftover_params!(m, Dict{String, Any}([
 run(m)
 w = explore(m)
 close(w)
+
+# 8. More plot types
+
+@defcomp example begin
+    p0 = Parameter(index = [time]) # line plot
+    p1 = Parameter(index = [foo]) # scatter plot
+    p2 = Parameter(index = [baz]) # bar plot
+    p3 = Parameter(index = [foo, bar]) # multi-scatter
+    p4 = Parameter(index = [baz, foo]) # multi-bar
+    p5 = Parameter(index = [time, bar]) # multi-line
+    p6 = Parameter(index = [time, baz]) # multi-line
+
+    x = Variable(index = [time])
+    function run_timestep(p,v,d,t)
+        v.x[t] = 0
+    end
+end
+
+m = Model()
+
+set_dimension!(m, :time, 2000:2009)
+set_dimension!(m, :foo, 1:5)
+set_dimension!(m, :bar, 1:3)
+set_dimension!(m, :baz, [:A, :B, :C])
+
+add_comp!(m, example)
+
+set_param!(m, :example, :p0, 1:10)
+set_param!(m, :example, :p1, 6:10)
+set_param!(m, :example, :p2, 4:6)
+
+set_param!(m, :example, :p3, reshape(1:15, 5, 3))
+set_param!(m, :example, :p4, reshape(1:15, 3, 5))
+set_param!(m, :example, :p5, reshape(1:30, 10, 3))
+set_param!(m, :example, :p6, reshape(1:30, 10, 3))
+
+run(m)
+explore(m)
+
+items = [:p0, :p1, :p2, :p3, :p4, :p5, :p6]
+for item in items
+    static_spec = _spec_for_item(m, :example, item; interactive = false)
+    interactive_spec = _spec_for_item(m, :example, item)
+    if length(dim_names(m, :example, item)) == 0
+        name =  string(:example, " : ", item, " = ", m[:example, item])
+    else
+        name = string(:example, " : ", item)
+    end
+    @test static_spec["name"] == interactive_spec["name"] == name
+end
