@@ -765,6 +765,21 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
+    function update_firstlast!(obj::AbstractCompositeComponentDef, comp_name::Symbol; first::NothingInt=nothing,last::NothingInt=nothing)
+
+Set the `first` and/or `last` attributes of model `obj`'s component `comp_name`, 
+after it has been added to the model.  This will propagate the `first` and `last`
+through any subcomponents of `comp_name` as well.  Note that this will override 
+any previous `first` and `last` settings. 
+"""
+function set_firstlast!(obj::Model, comp_name::Symbol; first::NothingInt=nothing,last::NothingInt=nothing)
+    if !has_comp(obj, comp_name)
+        error("Model does not contain a component named $comp_name")
+    end
+    comp_def = compdef(obj, comp_name)
+    _propagate_firstlast!(comp_def, first=first, last=last, override = true)
+end
+"""
     propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
 
 Propagate a time dimension down through the comp def tree. This consists of two 
@@ -793,24 +808,25 @@ function propagate_time!(obj::AbstractComponentDef; t::Union{Dimension, Nothing}
 end
 
 """
-    _propagate_firstlast(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+    _propagate_firstlast(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing; override::Bool = false)
 
 Propagate first and last through a component def treeIf first and last keyword 
 arguments are included as integers, then the object's first_free and/or last_free 
 flags are set to false respectively, these first and last are propagated through
 and are immutable for the future (they will not vary freely with the model's 
-time dimension).
+time dimension). If `override` is set to `true`, `first` and `last` will be set
+even if their `first` and `last` have already been explicitly set.
 """
-function _propagate_firstlast!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+function _propagate_firstlast!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing, override::Bool = false)
         
     # set first
-    if !isnothing(first) && obj.first_free 
+    if !isnothing(first) && (override === true || obj.first_free)
         obj.first_free = false
         obj.first = first
     end
 
     # set first
-    if !isnothing(last) && obj.last_free 
+    if !isnothing(last) && (override === true || obj.last_free )
         obj.last_free = false
         obj.last = last
     end
