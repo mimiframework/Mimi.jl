@@ -3,7 +3,7 @@ module TestFirstLast
 using Mimi 
 using Test
 
-import Mimi: time_labels
+import Mimi: time_labels, set_firstlast!
 
 #
 # Define some Components
@@ -422,4 +422,37 @@ run(m)
 @test m.md.namespace[:top].namespace[:B].first == m.md.namespace[:top].namespace[:B].namespace[:Comp3].first== 2010
 @test m.md.namespace[:top].namespace[:B].last ==m.md.namespace[:top].namespace[:B].namespace[:Comp3].last == 2015
  
+#
+# Test set_firstlast! function 
+#
+
+m = Model()
+set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
+add_comp!(m, grosseconomy)  
+add_comp!(m, emissions)
+
+# check that the attributes of the ModelDef and ComponentDef(s) have been set_dimension
+# as expected
+@test collect(2015:5:2110) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
+@test m.md.first == m.md.namespace[:grosseconomy].first == m.md.namespace[:emissions].first
+@test m.md.last == m.md.namespace[:grosseconomy].last == m.md.namespace[:emissions].last
+
+# now set the emissions first and last and check
+set_firstlast!(m, :emissions, first = 2020, last = 2105)
+
+@test collect(2015:5:2110) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
+@test m.md.first == m.md.namespace[:grosseconomy].first 
+@test m.md.last == m.md.namespace[:grosseconomy].last
+@test m.md.namespace[:emissions].first == 2020
+@test m.md.namespace[:emissions].last == 2105
+
+# make sure setting the time dimension doesn't effect the emissions component now
+set_dimension!(m, :time, collect(2000:5:2200));
+
+@test collect(2000:5:2200) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
+@test m.md.first == m.md.namespace[:grosseconomy].first 
+@test m.md.last == m.md.namespace[:grosseconomy].last
+@test m.md.namespace[:emissions].first == 2020
+@test m.md.namespace[:emissions].last == 2105
+
 end #module
