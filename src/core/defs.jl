@@ -4,7 +4,7 @@ Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
 function compdef(comp_id::ComponentId)
     # @info "compdef: mod=$(comp_id.module_obj) name=$(comp_id.comp_name)"
     return getfield(comp_id.module_obj, comp_id.comp_name)
-end
+    end 
 
 compdef(cr::ComponentReference) = find_comp(cr)
 
@@ -765,7 +765,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
-    function update_firstlast!(obj::AbstractCompositeComponentDef, comp_name::Symbol; first::NothingInt=nothing,last::NothingInt=nothing)
+    function set_firstlast!(obj::AbstractCompositeComponentDef, comp_name::Symbol; first::NothingInt=nothing,last::NothingInt=nothing)
 
 Set the `first` and/or `last` attributes of model `obj`'s component `comp_name`, 
 after it has been added to the model.  This will propagate the `first` and `last`
