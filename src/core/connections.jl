@@ -572,17 +572,17 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
 end
 
 """
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}) where T
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
 is called to update the external parameter by name k to value v. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the
 component definition.
 """
-function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict)
+function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
-        _update_param!(obj, param_name, value)
+        _update_param!(obj, param_name, value; update_timesteps = nothing)
     end
     nothing
 end
