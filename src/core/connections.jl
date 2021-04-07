@@ -561,10 +561,10 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
         else
-            param.values.data = value
+            copyto!(param.values.data, value)
         end
     else
-        param.values = value
+        copyto!(param.values, value)
     end
 
     dirty!(obj)
