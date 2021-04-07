@@ -580,9 +580,10 @@ symbol matching the name of an external parameter that already exists in the
 component definition.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
+    !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
-        _update_param!(obj, param_name, value; update_timesteps = nothing)
+        _update_param!(obj, param_name, value)
     end
     nothing
 end
