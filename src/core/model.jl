@@ -120,7 +120,7 @@ must be a symbol or convert to a symbol matching the name of an external paramet
 hat already exists in the model definition. The update_timesteps keyword argument 
 is deprecated, but temporarily remains as a dummy argument to allow warning detection.
 """
-@delegate update_params!(m::Model, parameters::Dict) => md
+@delegate update_params!(m::Model, parameters::Dict; update_timesteps = nothing) => md
 
 """
     add_comp!(
