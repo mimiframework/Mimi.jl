@@ -561,10 +561,10 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
         else
-            param.values.data = value
+            copyto!(param.values.data, value)
         end
     else
-        param.values = value
+        copyto!(param.values, value)
     end
 
     dirty!(obj)
@@ -572,14 +572,15 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
 end
 
 """
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}) where T
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
 is called to update the external parameter by name k to value v. Each key k must be a symbol or convert to a
 symbol matching the name of an external parameter that already exists in the
 component definition.
 """
-function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict)
+function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
+    !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
     for (param_name, value) in parameters
         _update_param!(obj, param_name, value)
