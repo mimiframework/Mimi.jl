@@ -42,9 +42,9 @@ end
 
 m = Model()
 
-# TBD: This is not necessarily an error with composites.
-# make sure you can't add a component before setting time dimension
-# @test_throws ErrorException add_comp!(m, A)
+# make sure you can't add a component before setting time dimension (only true for
+# adding a component to a model, not adding to a composite component)
+@test_throws ErrorException add_comp!(m, A)
 
 set_dimension!(m, :time, 2015:5:2100)
 

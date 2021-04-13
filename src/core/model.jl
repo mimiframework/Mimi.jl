@@ -127,8 +127,6 @@ is deprecated, but temporarily remains as a dummy argument to allow warning dete
         m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
         first::NothingInt=nothing,
         last::NothingInt=nothing,
-        first_free::Bool=true,
-        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -152,8 +150,6 @@ end
         m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_id.comp_name;
         first::NothingInt=nothing,
         last::NothingInt=nothing,
-        first_free::Bool=true,
-        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing

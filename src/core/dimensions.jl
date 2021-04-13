@@ -86,30 +86,22 @@ Set the values of `ccd` dimension `name` to integers 1 through `count`, if `keys
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
 function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+   
     redefined = has_dim(ccd, name)
-    # if redefined
-    #     @warn "Redefining dimension :$name"
-    # end
-
     dim = Dimension(keys)
 
     if name == :time
 
-        # check to make sure if we are setting time dimension for the Model that
-        # it doesn't start after, or end before, any of the components. Note that
-        # here we can dependent on the invariant that all subcomponents of a composite
-        # component have the same first and last bounds
-        ccd_first = [keys...][1]
-        ccd_last = [keys...][end]
-        for subcomp in compdefs(ccd)
-            subcomp.first_free || ccd_first > subcomp.first && error("Top time dimension must end after or at same time as all it's subcomponents, but $(ccd_first) is after $(subcomp.first).")
-            subcomp.last_free || ccd_last < subcomp.last   && error("Top time dimension must start before or at same time as all it's subcomponents, but $(ccd_last) is before $(subcomp.last).")        
-        end
-
-        propagate_time!(ccd, t = dim)
+        # propagate the time dimension through all sub-components
+        _propagate_time_dim!(ccd, dim)
         set_uniform!(ccd, isuniform(keys))
-    end
+        
+        if redefined
+            
+            # TODO: pad all parameters with a time dimension
 
+        end
+    end
     return set_dimension!(ccd, name, dim)
 end
 

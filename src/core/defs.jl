@@ -765,58 +765,17 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
-    propagate_time!(obj::AbstractComponentDef, t::Dimension; first::NothingInt=nothing, last::NothingInt=nothing)
+    _propagate_first_last(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
 
-Propagate a time dimension down through the comp def tree. This consists of two 
-primary functions which first push first and last through the comp def tree, and
-then push the time dimension through, which sets any leftover first and last
-attributes as well.
+Propagate first and/or last through a component def tree. 
 """
-function propagate_time!(obj::AbstractComponentDef; t::Union{Dimension, Nothing}=nothing, first::NothingInt=nothing, last::NothingInt=nothing)
-
-    # the first step is pushing through fist and last, if they are set explicitly
-    if first !== nothing || last!== nothing
-        _propagate_firstlast!(obj, first=first, last=last)
-    end
-
-    if t !== nothing
-        # propagate the actual time dimension through the components, and fill in 
-        # any missing first and lasts as defaulting to the first and last elements of the
-        # time Dimension
-        _propagate_time_dim!(obj, t)
-
-        # run over the object and check that first and last are within the time
-        # dimension of the parent
-        _check_times(obj, [keys(t)...])
-    end
-
-end
-
-"""
-    _propagate_firstlast(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
-
-Propagate first and last through a component def treeIf first and last keyword 
-arguments are included as integers, then the object's first_free and/or last_free 
-flags are set to false respectively, these first and last are propagated through
-and are immutable for the future (they will not vary freely with the model's 
-time dimension).
-"""
-function _propagate_firstlast!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+function _propagate_first_last!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
         
-    # set first
-    if !isnothing(first) && obj.first_free 
-        obj.first_free = false
-        obj.first = first
-    end
-
-    # set first
-    if !isnothing(last) && obj.last_free 
-        obj.last_free = false
-        obj.last = last
-    end
+    !isnothing(first) ? obj.first = first : nothing
+    !isnothing(last) ? obj.last = last : nothing
 
     for c in compdefs(obj)  # N.B. compdefs returns empty list for leaf nodes     
-        _propagate_firstlast!(c, first=first, last=last)
+        _propagate_first_last!(c, first=first, last=last)
     end
 end
 
@@ -825,20 +784,50 @@ end
 
 Propagate a time dimension down through the comp def tree. If first and last 
 keyword arguments are not set in a given comp def they will be set to match the
-time dimension, but first_free and /or last_free flags are left as true so these
-can vary with the model's time dimension in the future. 
+time dimension. 
 """
 function _propagate_time_dim!(obj::AbstractComponentDef, t::Dimension)
     
     set_dimension!(obj, :time, t)
 
-    obj.first_free ? obj.first = firstindex(t) : nothing
-    obj.last_free ? obj.last = lastindex(t) : nothing
+    t_first = firstindex(t)
+    t_last = lastindex(t)
+    
+    curr_first = obj.first
+    curr_last = obj.last
+
+    # Warnings and Errors
+    if isa(obj, Mimi.ModelDef)
+        !isnothing(curr_first) && t_first > curr_first && error("Cannot redefine the time dimension to start at $t_first because it is after the model's current start $curr_first.") 
+        !isnothing(curr_first) && curr_first > t_last && error("Cannot redefine the time dimension to end at $t_last because it is before the model's current start $curr_first")
+        !isnothing(curr_last) && t_last < curr_last && @warn("Redefining the time dimension to end at $t_last, which is before the model's previous end $curr_last.") 
+    else
+        !isnothing(curr_first) && t_first > curr_first && error("Cannot redefine the time dimension to start at $t_first, because it is after component $(nameof(obj))'s start $curr_first.") 
+        !isnothing(curr_first) && curr_first > t_last && error("Cannot redefine the time dimension to end at $t_last because it is before the component $(nameof(obj))'s current start $curr_first")
+        !isnothing(curr_last) && t_last < curr_last && @warn("Redefining the time dimension to end at $t_last, which is before component $(nameof(obj))'s end $curr_last.") 
+    end
+    
+    # Handle First
+    if isnothing(curr_first) || isa(obj, Mimi.ModelDef) # if we are working with an unset attribute or a ModelDef we always want to set first
+        obj.first = t_first
+    elseif t_first > curr_first # working with a component so we only want to move it if we're moving first forward (currently warns but maybe should be an error)
+        obj.first = t_first
+    end
+
+    # Handle Last
+    if isnothing(curr_last) || isa(obj, Mimi.ModelDef)
+        obj.last = t_last
+    elseif t_last < curr_last  # working with a component so we only want to move it if we're moving last back (currently also warns but maybe should be an error)
+        obj.last = t_last
+    end
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
         _propagate_time_dim!(c, t)
     end
 
+    # run over the object and check that first and last are within the time
+    # dimension of the parent
+    _check_times(obj, [keys(t)...])
 end
 
 """
@@ -850,10 +839,10 @@ function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
 function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
     
     first_index = findfirst(isequal(obj.first), parent_time_keys)
-    isnothing(first_index) ? error("The first index ($(obj.first)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
+    isnothing(first_index) ? error("The first index ($(obj.first)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys. Try explicitly updating component's first and last with `set_first_last!` before redefinint time dimension.") : nothing
 
     last_index = findfirst(isequal(obj.last), parent_time_keys)
-    isnothing(last_index) ? error("The last index ($(obj.last)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
+    isnothing(last_index) ? error("The last index ($(obj.last)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys. Try explicitly updating component's first and last with `set_first_last!` before redefinint time dimension.") : nothing
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
         _check_times(c, parent_time_keys[first_index:last_index])
@@ -867,8 +856,6 @@ end
         comp_name::Symbol=comp_def.comp_id.comp_name;
         first::NothingInt=nothing,
         last::NothingInt=nothing,
-        first_free::Bool=true,
-        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing
@@ -887,8 +874,6 @@ function add_comp!(obj::AbstractCompositeComponentDef,
                    comp_name::Symbol=comp_def.comp_id.comp_name;
                    first::NothingInt=nothing,
                    last::NothingInt=nothing,
-                   first_free::Bool=true,
-                   last_free::Bool=true,
                    before::NothingSymbol=nothing,
                    after::NothingSymbol=nothing,
                    rename::NothingPairList=nothing) # TBD: rename is not yet implemented
@@ -905,13 +890,18 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     comp_def.name = comp_name
     parent!(comp_def, obj)
 
-    # Handle time dimension for the copy, leave the time unset for the original 
-    # component template - note that if the obj does not yet have a :time dimension
-    # set we can still set first and last, which is useful for calls to Component within 
-    # the @defcomposite macro producing add_comp! calls
-    has_dim(obj, :time) ? t = dimension(obj, :time) : t = nothing 
-    propagate_time!(comp_def, t = t, first=first, last=last)
+    # Handle time dimension for the component and leaving the time unset for the
+    # original component template
+    # (1) Propagate the give first and last through the component 
+    # (2) If the obj has a time dimension propgagate this through the component
+    _propagate_first_last!(comp_def; first = first, last = last)
+    isa(obj, ModelDef) && !has_dim(obj, :time) && error("Cannot add a component to a Model without first setting the :time dimension")
+    if has_dim(obj, :time)
+        t = dimension(obj, :time)
+        _propagate_time_dim!(comp_def, t)
+    end
 
+    # Add dims and insert comp
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 
@@ -926,8 +916,6 @@ end
         comp_name::Symbol=comp_id.comp_name;
         first::NothingInt=nothing,
         last::NothingInt=nothing,
-        first_free::Bool=true,
-        last_free::Bool=true,
         before::NothingSymbol=nothing,
         after::NothingSymbol=nothing,
         rename::NothingPairList=nothing

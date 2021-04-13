@@ -23,8 +23,6 @@ dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
 namespace::OrderedDict{Symbol, Any}       
 first::Union{Nothing, Int}
 last::Union{Nothing, Int}
-first_free::Bool
-last_free::Bool
 is_uniform::Bool
 ```
 The namespace of a leaf component can hold `ParameterDef`s and `VariableDef`s, both which are subclasses of `DatumDef` (see below for more details on these types).

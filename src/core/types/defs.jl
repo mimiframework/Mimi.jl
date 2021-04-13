@@ -42,8 +42,6 @@ end
     namespace::OrderedDict{Symbol, Any}
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
-    first_free::Bool
-    last_free::Bool
     is_uniform::Bool
 
     # Store a reference to the AbstractCompositeComponent that contains this comp def.
@@ -75,7 +73,6 @@ end
         self.dim_dict  = OrderedDict{Symbol, Union{Nothing, Dimension}}()
         self.namespace = OrderedDict{Symbol, Any}()
         self.first = self.last = nothing
-        self.first_free = self.last_free = true
         self.is_uniform = true
         self.parent = nothing
         return self
