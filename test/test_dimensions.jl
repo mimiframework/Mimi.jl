@@ -99,9 +99,9 @@ my_foo2 = compdef(foo2_ref)
 @test_throws ErrorException set_param!(m, :foo2, :x, 2005:2095) # too short
 set_param!(m, :foo2, :x, 2000:2100) #Shouldn't error
 
-set_dimension!(m, :time, 2010:2050)
+set_dimension!(m, :time, 1990:2050)
 
-@test first_period(m.md) == 2010
+@test first_period(m.md) == 1990
 @test last_period(m.md)  == 2050
 
 
@@ -128,7 +128,9 @@ add_comp!(m, bar)
 run(m)
 @test m[:bar, :v1] == fixed_years
 
+m = Model()
 set_dimension!(m, :time, variable_years)
+add_comp!(m, bar)
 run(m)
 @test m[:bar, :v1] == variable_years
 

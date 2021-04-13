@@ -5,7 +5,8 @@ using Test
 
 import Mimi:
     external_params, external_param, TimestepMatrix, TimestepVector,
-    ArrayModelParameter, ScalarModelParameter, FixedTimestep, import_params!
+    ArrayModelParameter, ScalarModelParameter, FixedTimestep, import_params!, 
+    set_first_last!
 
 #
 # Test that parameter type mismatches are caught
@@ -104,7 +105,7 @@ set_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from 
 update_param!(m, :d, 5) # should work, will convert to float
 new_extpars = external_params(m)    # Since there are changes since the last build, need to access the updated dictionary in the model definition
 @test extpars[:d].value == 0.5      # The original dictionary still has the old value
-@test new_extpars[:d].value == 5.   # The new dicitonary has the updated value
+@test new_extpars[:d].value == 5.   # The new dictionary has the updated value
 @test_throws ErrorException update_param!(m, :e, 5) # wrong type; should be array
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
@@ -129,13 +130,12 @@ update_param!(m, :e, [4,5,6,7])
     end
 end
 
-# 1. Test with Fixed Timesteps
+# 1. update_param! with Fixed Timesteps
 
 m = Model()
 set_dimension!(m, :time, 2000:2004)
 add_comp!(m, MyComp2, first=2001, last=2003)
 set_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
-
 # Year      x       Model   MyComp2 
 # 2000      1       first   
 # 2001      2               first
@@ -148,13 +148,12 @@ update_param!(m, :x, zeros(5))
 update_param!(m, :x, [1,2,3,4,5])
 
 set_dimension!(m, :time, 1999:2001)
-
+update_param!(m, :x, [2, 3, 4]) # updates the time labels 
 # Year      x       Model   MyComp2 
 # 1999      2       first   
-# 2000      3               first
-# 2001      4       last    last
+# 2000      3               
+# 2001      4       last    first, last
 
-update_param!(m, :x, [2, 3, 4])
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, 2001}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
@@ -163,16 +162,33 @@ run(m)
 @test ismissing(m[:MyComp2, :y][2])  # 2000
 @test m[:MyComp2, :y][3] == 4   # 2001
 
+set_first_last!(m, :MyComp2, first = 1999, last = 2001)
+# Year      x       Model   MyComp2 
+# 1999      2       first   first
+# 2000      3               
+# 2001      4       last    last
+
+run(m)
+@test m[:MyComp2, :y] == [2, 3, 4]
+
 # 2. Test with Variable Timesteps
 
 m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
+# Year      x       Model   MyComp2 
+# 2000      1       first   first
+# 2005      2               
+# 2010      3       last    last
 
 set_dimension!(m, :time, [2000, 2020, 2050])
-
 update_param!(m, :x, [2, 3, 4])
+# Year      x       Model   MyComp2 
+# 2000      1       first   first
+# 2020      2               last
+# 2050      3       last    
+
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2020, 2050)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
@@ -180,6 +196,15 @@ run(m)
 @test m[:MyComp2, :y][1] == 2   # 2000
 @test m[:MyComp2, :y][2] == 3   # 2020
 @test ismissing(m[:MyComp2, :y][3]) # 2050 - past last attribute for component 
+
+set_first_last!(m, :MyComp2, first = 2000, last = 2050)
+# Year      x       Model   MyComp2 
+# 2000      1       first   first
+# 2020      2               
+# 2050      3       last    last
+
+run(m)
+@test m[:MyComp2, :y] == [2., 3., 4.]
 
 # 3. Test updating from a dictionary
 
@@ -200,17 +225,26 @@ run(m)
 @test m[:MyComp2, :y][2] == 3   # 2020
 @test ismissing(m[:MyComp2, :y][3])   # 2050
 
-
 # 4. Test updating the time index to a different length
 
 m = Model()
 set_dimension!(m, :time, 2000:2002)     # length 3
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
+# Year      x       Model   MyComp2 
+# 2000      1       first   first
+# 2001      2               
+# 2002      3       last    last
 
 set_dimension!(m, :time, 1999:2003)     # length 5
-
 update_param!(m, :x, [2, 3, 4, 5, 6])
+# Year      x       Model   MyComp2 
+# 1999      2       first   
+# 2000      3               first
+# 2001      4               
+# 2002      5               last
+# 2003      6       last
+
 x = external_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, 2003}, Union{Missing, Float64}, 1, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
@@ -219,6 +253,19 @@ run(m)
 @test ismissing(m[:MyComp2, :y][1]) 
 @test m[:MyComp2, :y][2:4] == [3., 4., 5.]
 @test ismissing(m[:MyComp2, :y][5]) 
+
+set_first_last!(m, :MyComp2, first = 1999, last = 2001)
+# Year      x       Model   MyComp2 
+# 1999      2       first   first
+# 2000      3               
+# 2001      4               last
+# 2002      5               
+# 2003      6       last
+
+run(m)
+@test ismissing(m[:MyComp2, :y][4])
+@test ismissing(m[:MyComp2, :y][5])
+@test m[:MyComp2, :y][1:3] == [2., 3., 4.]
 
 # 5. Test all the warning and error cases
 
@@ -253,11 +300,18 @@ update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0)) # Won't error when upda
 @test external_param(m.md, :y).values == [10.,20.]
 @test external_param(m.md, :z).value == 0
 
+# time dimension errors
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, MyComp2)
+@test_throws ErrorException set_dimension!(m, :time, 2001:2005) # move model start forward
+@test_throws ErrorException set_dimension!(m, :time, 1800:1810) # model last before component first
+@test_throws ErrorException set_first_last!(m, :MyComp2, first = 1999) # first not in time dim keys
+@test_throws ErrorException set_first_last!(m, :MyComp2, last = 2006) # last not in time dim keys
 
 #------------------------------------------------------------------------------
 # Test the three different set_param! methods for a Symbol type parameter
 #------------------------------------------------------------------------------
-
 
 @defcomp A begin
     p1 = Parameter{Symbol}()

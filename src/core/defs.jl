@@ -839,16 +839,41 @@ function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
 function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
     
     first_index = findfirst(isequal(obj.first), parent_time_keys)
-    isnothing(first_index) ? error("The first index ($(obj.first)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys. Try explicitly updating component's first and last with `set_first_last!` before redefinint time dimension.") : nothing
+    isnothing(first_index) ? error("The first index ($(obj.first)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
 
     last_index = findfirst(isequal(obj.last), parent_time_keys)
-    isnothing(last_index) ? error("The last index ($(obj.last)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys. Try explicitly updating component's first and last with `set_first_last!` before redefinint time dimension.") : nothing
+    isnothing(last_index) ? error("The last index ($(obj.last)) of component $(nameof(obj)) must exist within its model's time dimension $parent_time_keys.") : nothing
 
     for c in compdefs(obj)      # N.B. compdefs returns empty list for leaf nodes
         _check_times(c, parent_time_keys[first_index:last_index])
     end
 
 end
+
+function _check_first_last(obj::Union{Model, ModelDef}; first::NothingInt = nothing, last::NothingInt = nothing)
+    times = time_labels(obj)
+    !isnothing(first) && isnothing(findfirst(isequal(first), times)) && error("The first index ($first) must exist within the model's time dimension $times.")
+    !isnothing(last) && isnothing(findfirst(isequal(last), times)) && error("The last index ($last) must exist within the model's time dimension $times")
+end
+"""
+     function set_first_last!(obj::AbstractCompositeComponentDef, comp_name::Symbol; first::NothingInt=nothing, last::NothingInt=nothing)
+
+ Set the `first` and/or `last` attributes of model `obj`'s component `comp_name`, 
+ after it has been added to the model.  This will propagate the `first` and `last`
+ through any subcomponents of `comp_name` as well.  Note that this will override 
+ any previous `first` and `last` settings. 
+ """
+ function set_first_last!(obj::Model, comp_name::Symbol; first::NothingInt=nothing, last::NothingInt=nothing)
+    !has_comp(obj, comp_name) && error("Model does not contain a component named $comp_name")
+    
+    _check_first_last(obj, first = first, last = last)
+
+    comp_def = compdef(obj, comp_name)
+    _propagate_first_last!(comp_def, first=first, last=last)
+
+    dirty!(comp_def)
+end
+
 """
     add_comp!(
         obj::AbstractCompositeComponentDef,
@@ -892,9 +917,15 @@ function add_comp!(obj::AbstractCompositeComponentDef,
 
     # Handle time dimension for the component and leaving the time unset for the
     # original component template
-    # (1) Propagate the give first and last through the component 
-    # (2) If the obj has a time dimension propgagate this through the component
+
+    # (1) Propagate the first and last from the add_comp! call through the component (default to nothing)
+    if has_dim(obj, :time)
+        _check_first_last(obj, first = first, last = last)
+    end
     _propagate_first_last!(comp_def; first = first, last = last)
+    
+    # (2) If the obj has a time dimension propgagate this through the component, 
+    # which also sets remaining first and last to match the time dimension.
     isa(obj, ModelDef) && !has_dim(obj, :time) && error("Cannot add a component to a Model without first setting the :time dimension")
     if has_dim(obj, :time)
         t = dimension(obj, :time)

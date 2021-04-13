@@ -78,7 +78,7 @@ Electron.prep_test_env()
     @time include("test_getindex_variabletimestep.jl")
 
     @info("test_components.jl")
-    @time include("test_components.jl") # TODO broken
+    @time include("test_components.jl")
 
     @info("test_variables_model_instance.jl")
     @time include("test_variables_model_instance.jl")
