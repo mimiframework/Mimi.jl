@@ -765,9 +765,10 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
-    _propagate_first_last(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
+    _propagate_first_last!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
 
-Propagate first and/or last through a component def tree. 
+Propagate first and/or last through a component def tree. This function will override
+any first and last that have been previously set. 
 """
 function _propagate_first_last!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
         
@@ -810,14 +811,14 @@ function _propagate_time_dim!(obj::AbstractComponentDef, t::Dimension)
     # Handle First
     if isnothing(curr_first) || isa(obj, Mimi.ModelDef) # if we are working with an unset attribute or a ModelDef we always want to set first
         obj.first = t_first
-    elseif t_first > curr_first # working with a component so we only want to move it if we're moving first forward (currently warns but maybe should be an error)
+    elseif t_first > curr_first # working with a component so we only want to move it if we're moving first forward (currently unreachable b/c error caught above)
         obj.first = t_first
     end
 
     # Handle Last
     if isnothing(curr_last) || isa(obj, Mimi.ModelDef)
         obj.last = t_last
-    elseif t_last < curr_last  # working with a component so we only want to move it if we're moving last back (currently also warns but maybe should be an error)
+    elseif t_last < curr_last  # working with a component so we only want to move it if we're moving last back (currently unreachable b/c caught error above)
         obj.last = t_last
     end
 
@@ -833,7 +834,7 @@ end
 """
 function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
 
-    Check that all first and last times are properly contained within a comp_def
+    Check that all first and last times exist within contained within a comp_def
     `obj`'s parent time keys `parent_time_keys`.
 """
 function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
@@ -850,11 +851,18 @@ function _check_times(obj::AbstractComponentDef, parent_time_keys::Array)
 
 end
 
+"""
+function _check_first_last(obj::Union{Model, ModelDef}; first::NothingInt = nothing, last::NothingInt = nothing)
+
+    Check that all first and last times are properly contained within a comp_def
+    `obj`'s time labels.
+"""
 function _check_first_last(obj::Union{Model, ModelDef}; first::NothingInt = nothing, last::NothingInt = nothing)
     times = time_labels(obj)
     !isnothing(first) && isnothing(findfirst(isequal(first), times)) && error("The first index ($first) must exist within the model's time dimension $times.")
     !isnothing(last) && isnothing(findfirst(isequal(last), times)) && error("The last index ($last) must exist within the model's time dimension $times")
 end
+
 """
      function set_first_last!(obj::AbstractCompositeComponentDef, comp_name::Symbol; first::NothingInt=nothing, last::NothingInt=nothing)
 
@@ -920,7 +928,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
 
     # (1) Propagate the first and last from the add_comp! call through the component (default to nothing)
     if has_dim(obj, :time)
-        _check_first_last(obj, first = first, last = last)
+        _check_first_last(obj, first = first, last = last) # check that the first and last fall in the obj's time labels
     end
     _propagate_first_last!(comp_def; first = first, last = last)
     

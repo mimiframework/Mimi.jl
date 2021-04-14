@@ -92,13 +92,13 @@ Electron.prep_test_env()
     @info("test_clock.jl")
     @time include("test_clock.jl")
 
-    @info("test_timesteps.jl") # TODO broken
+    @info("test_timesteps.jl")
     @time include("test_timesteps.jl")
 
     @info("test_timesteparrays.jl")
     @time include("test_timesteparrays.jl")
 
-    @info("test_dimensions.jl") # TODO broken
+    @info("test_dimensions.jl")
     @time include("test_dimensions.jl")
 
     @info("test_datum_storage.jl")
@@ -107,7 +107,7 @@ Electron.prep_test_env()
     @info("test_connectorcomp.jl")
     @time include("test_connectorcomp.jl")
     
-    @info("test_firstlast.jl") # TODO broken
+    @info("test_firstlast.jl")
     @time include("test_firstlast.jl")
 
     @info("test_explorer_model.jl")
