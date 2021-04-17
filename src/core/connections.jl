@@ -666,7 +666,7 @@ function _pad_parameters!(obj::ModelDef)
     end
 end
 
-function _get_padded_data(param::ArrayModelParameter, param_times::Vector{Int64}, model_times::Vector{Int64})
+function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model_times::Vector)
 
     data = param.values.data
     ti = get_time_index_position(param)
