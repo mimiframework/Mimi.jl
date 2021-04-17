@@ -650,3 +650,70 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
 
     return nothing
 end
+
+function _pad_parameters!(obj::ModelDef)
+
+    model_times = time_labels(obj)
+
+    for (name, param) in obj.external_params
+        if (param isa ArrayModelParameter) && (:time in param.dim_names)
+
+           param_times = _get_param_times(param)
+           padded_data = _get_padded_data(param, param_times, model_times)
+           update_param!(obj, name, padded_data)
+
+        end
+    end
+end
+
+function _get_padded_data(param::ArrayModelParameter, param_times::Vector{Int64}, model_times::Vector{Int64})
+
+    data = param.values.data
+    ti = get_time_index_position(param)
+
+    # first handle the back end 
+    model_last = last(model_times)
+    param_last = last(param_times)
+
+    if model_last < param_last # trim down the data
+        
+        trim_idx = findfirst(isequal(last(model_times)), param_times) 
+        idxs = repeat(Any[:], ndims(data))
+        idxs[ti] = 1:trim_idx
+        data = data[idxs...]
+
+    elseif model_last > param_last # pad the data
+
+        pad_length = length(model_times[findfirst(isequal(param_last), model_times)+1:end])
+        dims = [size(data)...]
+        dims[ti] = pad_length
+        end_padding_rows = Array{Union{Missing, Number}}(missing, dims...)
+        data = vcat(data, end_padding_rows)
+
+    end
+
+    # now handle the front end 
+    model_first = first(model_times)
+    param_first = first(param_times)
+
+    # note we do not allow for any trimming off the front end
+    if model_first < param_first
+
+        pad_length = length(model_times[1:findfirst(isequal(param_first), model_times)-1])
+        dims = [size(data)...]
+        dims[ti] = pad_length
+        begin_padding_rows = Array{Union{Missing, Number}}(missing, dims...)
+        data = vcat(begin_padding_rows, data)
+
+    end
+
+    return data 
+end
+
+function _get_param_times(param::ArrayModelParameter{TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti, S}}) where {FIRST, STEP, LAST, T, N, ti, S}
+    return collect(FIRST:STEP:LAST)
+end
+
+function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}}) where {TIMES, T, N, ti, S}
+    return [TIMES...]
+end

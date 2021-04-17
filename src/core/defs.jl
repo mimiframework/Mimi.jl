@@ -439,8 +439,8 @@ function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Sy
 
     if has_parameter(md, ext_param_name)
         error("Cannot set parameter :$ext_param_name, the model already has an external parameter with this name.", 
-        " Use `update_param(m, param_name, value)` to change the value, or use ",
-        "`set_param(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
+        " Use `update_param!(m, param_name, value)` to change the value, or use ",
+        "`set_param!(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
     end
 
     set_param!(md, param_name, value, dims = dims, comps = [comp_def], ext_param_name = ext_param_name)
@@ -797,17 +797,6 @@ function _propagate_time_dim!(obj::AbstractComponentDef, t::Dimension)
     curr_first = obj.first
     curr_last = obj.last
 
-    # Warnings and Errors
-    if isa(obj, Mimi.ModelDef)
-        !isnothing(curr_first) && t_first > curr_first && error("Cannot redefine the time dimension to start at $t_first because it is after the model's current start $curr_first.") 
-        !isnothing(curr_first) && curr_first > t_last && error("Cannot redefine the time dimension to end at $t_last because it is before the model's current start $curr_first")
-        !isnothing(curr_last) && t_last < curr_last && @warn("Redefining the time dimension to end at $t_last, which is before the model's previous end $curr_last.") 
-    else
-        !isnothing(curr_first) && t_first > curr_first && error("Cannot redefine the time dimension to start at $t_first, because it is after component $(nameof(obj))'s start $curr_first.") 
-        !isnothing(curr_first) && curr_first > t_last && error("Cannot redefine the time dimension to end at $t_last because it is before the component $(nameof(obj))'s current start $curr_first")
-        !isnothing(curr_last) && t_last < curr_last && @warn("Redefining the time dimension to end at $t_last, which is before component $(nameof(obj))'s end $curr_last.") 
-    end
-    
     # Handle First
     if isnothing(curr_first) || isa(obj, Mimi.ModelDef) # if we are working with an unset attribute or a ModelDef we always want to set first
         obj.first = t_first
@@ -859,8 +848,8 @@ function _check_first_last(obj::Union{Model, ModelDef}; first::NothingInt = noth
 """
 function _check_first_last(obj::Union{Model, ModelDef}; first::NothingInt = nothing, last::NothingInt = nothing)
     times = time_labels(obj)
-    !isnothing(first) && isnothing(findfirst(isequal(first), times)) && error("The first index ($first) must exist within the model's time dimension $times.")
-    !isnothing(last) && isnothing(findfirst(isequal(last), times)) && error("The last index ($last) must exist within the model's time dimension $times")
+    !isnothing(first) && !(first in times) && error("The first index ($first) must exist within the model's time dimension $times.")
+    !isnothing(last) && !(last in times) && error("The last index ($last) must exist within the model's time dimension $times")
 end
 
 """

@@ -148,7 +148,17 @@ update_param!(m, :x, zeros(5))
 update_param!(m, :x, [1,2,3,4,5])
 
 set_dimension!(m, :time, 1999:2001)
-update_param!(m, :x, [2, 3, 4]) # updates the time labels 
+# Year      x       Model   MyComp2 
+# 1999      missing first
+# 2000      1          
+# 2001      2       last    first, last
+
+x = external_param(m.md, :x) 
+@test ismissing(x.values.data[1])
+@test x.values.data[2:3] == [1.0, 2.0]
+run(m) # should be runnable
+
+update_param!(m, :x, [2, 3, 4]) # change x to match 
 # Year      x       Model   MyComp2 
 # 1999      2       first   
 # 2000      3               
@@ -182,29 +192,42 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 # 2005      2               
 # 2010      3       last    last
 
-set_dimension!(m, :time, [2000, 2020, 2050])
-update_param!(m, :x, [2, 3, 4])
+set_dimension!(m, :time, [2000, 2005, 2020, 2100])
 # Year      x       Model   MyComp2 
 # 2000      1       first   first
-# 2020      2               last
-# 2050      3       last    
+# 2005      2               
+# 2020      3               last
+# 2100      missing last
+
+x = external_param(m.md, :x) 
+@test ismissing(x.values.data[4])
+@test x.values.data[1:3] == [1.0, 2.0, 3.0]
+
+update_param!(m, :x, [2, 3, 4, 5]) # change x to match 
+# Year      x       Model   MyComp2 
+# 2000      2       first   first
+# 2005      3               
+# 2020      4               last
+# 2100      5        last
 
 x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2020, 2050)}, Union{Missing,Float64}, 1}
-@test x.values.data == [2., 3., 4.]
+@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020, 2100)}, Union{Missing,Float64}, 1}
+@test x.values.data == [2., 3., 4., 5.]
 run(m)
 @test m[:MyComp2, :y][1] == 2   # 2000
-@test m[:MyComp2, :y][2] == 3   # 2020
-@test ismissing(m[:MyComp2, :y][3]) # 2050 - past last attribute for component 
+@test m[:MyComp2, :y][2] == 3   # 2005
+@test m[:MyComp2, :y][3] == 4   # 2020
+@test ismissing(m[:MyComp2, :y][4]) # 2100 - past last attribute for component 
 
-set_first_last!(m, :MyComp2, first = 2000, last = 2050)
+set_first_last!(m, :MyComp2, first = 2000, last = 2020)
 # Year      x       Model   MyComp2 
 # 2000      1       first   first
-# 2020      2               
-# 2050      3       last    last
+# 2005      2               
+# 2020      3       last    last
 
 run(m)
-@test m[:MyComp2, :y] == [2., 3., 4.]
+@test m[:MyComp2, :y][1:3] == [2., 3., 4.]
+@test ismissing(m[:MyComp2, :y][4])
 
 # 3. Test updating from a dictionary
 
@@ -213,17 +236,18 @@ set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
 set_param!(m, :MyComp2, :x, [1, 2, 3])
 
-set_dimension!(m, :time, [2000, 2020, 2050])
+set_dimension!(m, :time, [2000, 2005, 2020, 2100])
 
-update_params!(m, Dict(:x=>[2, 3, 4]))
+update_params!(m, Dict(:x=>[2, 3, 4, 5]))
 x = external_param(m.md, :x)
-@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2020, 2050)}, Union{Missing,Float64}, 1}
-@test x.values.data == [2., 3., 4.]
+@test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020, 2100)}, Union{Missing,Float64}, 1}
+@test x.values.data == [2., 3., 4., 5.]
 run(m)
 
-@test m[:MyComp2, :y][1] == 2   # 2005
-@test m[:MyComp2, :y][2] == 3   # 2020
-@test ismissing(m[:MyComp2, :y][3])   # 2050
+@test m[:MyComp2, :y][1] == 2   # 2000
+@test m[:MyComp2, :y][2] == 3   # 2005
+@test m[:MyComp2, :y][3] == 4   # 2020
+@test ismissing(m[:MyComp2, :y][4])   # 2100
 
 # 4. Test updating the time index to a different length
 
@@ -299,15 +323,6 @@ update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0)) # Won't error when upda
 @test external_param(m.md, :x).values.data == [3.,4.,5.]
 @test external_param(m.md, :y).values == [10.,20.]
 @test external_param(m.md, :z).value == 0
-
-# time dimension errors
-m = Model()
-set_dimension!(m, :time, 2000:2005)
-add_comp!(m, MyComp2)
-@test_throws ErrorException set_dimension!(m, :time, 2001:2005) # move model start forward
-@test_throws ErrorException set_dimension!(m, :time, 1800:1810) # model last before component first
-@test_throws ErrorException set_first_last!(m, :MyComp2, first = 1999) # first not in time dim keys
-@test_throws ErrorException set_first_last!(m, :MyComp2, last = 2006) # last not in time dim keys
 
 #------------------------------------------------------------------------------
 # Test the three different set_param! methods for a Symbol type parameter
