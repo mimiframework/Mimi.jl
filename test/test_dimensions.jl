@@ -136,10 +136,8 @@ set_dimension!(m, :time, 2000:2100)
 
 foo2_ref1 = add_comp!(m, foo2)
 foo2_ref2 = ComponentReference(m, :foo2)
-my_foo2 = compdef(foo2_ref)
 @test foo2_ref1 === foo2_ref2
-@test typeof(foo2_ref1) == typeof(foo2_ref2) == ComponentReference
-@test typeof(my_foo2) == ComponentDef
+my_foo2 = compdef(foo2_ref1)
 
 @test first_period(m.md) == first_period(m.md.namespace[:foo2]) == 2000
 @test last_period(m.md) == last_period(m.md.namespace[:foo2]) == 2100
