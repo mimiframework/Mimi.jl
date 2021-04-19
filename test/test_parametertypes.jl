@@ -6,7 +6,7 @@ using Test
 import Mimi:
     external_params, external_param, TimestepMatrix, TimestepVector,
     ArrayModelParameter, ScalarModelParameter, FixedTimestep, import_params!, 
-    set_first_last!
+    set_first_last!, _get_param_times
 
 #
 # Test that parameter type mismatches are caught
@@ -79,6 +79,7 @@ extpars = external_params(m.mi.md)
 
 @test isa(extpars[:a], ArrayModelParameter)
 @test isa(extpars[:b], ArrayModelParameter)
+@test _get_param_times(extpars[:a]) == _get_param_times(extpars[:b]) == 2000:2100
 
 @test isa(extpars[:c], ArrayModelParameter)
 @test isa(extpars[:d], ScalarModelParameter)
@@ -156,6 +157,7 @@ set_dimension!(m, :time, 1999:2001)
 x = external_param(m.md, :x) 
 @test ismissing(x.values.data[1])
 @test x.values.data[2:3] == [1.0, 2.0]
+@test _get_param_times(x) == 1999:2001
 run(m) # should be runnable
 
 update_param!(m, :x, [2, 3, 4]) # change x to match 

@@ -100,7 +100,7 @@ run(m)
 # test that there are missing values in :emissions variables outside of the component's 
 # run period, and no missing values in the :grosseconomy variables
 @test ismissing(m[:emissions, :E][1])
-@test sum(ismissing.(m[:emissions, :E][20:21])) == 2
+@test all(ismissing, m[:emissions, :E][20:21])
 @test sum(ismissing.(m[:emissions, :E][2:19])) == 0
 @test sum(ismissing.(m[:grosseconomy, :l])) == 0
 

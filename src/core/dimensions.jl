@@ -153,13 +153,11 @@ function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Unio
 
     # (1) check that the shift is legal
     if isa(obj, ModelDef)
-        new_first > curr_first && error("Cannot redefine the time dimension to start at $t_first because it is after the model's current start $curr_first.") 
+        new_first > curr_first && error("Cannot redefine the time dimension to start at $new_first because it is after the model's current start $curr_first.") 
         curr_first > new_last && error("Cannot redefine the time dimension to end at $new_last because it is before the model's current start $curr_first")
-        # t_last < curr_last && @warn "Redefining the time dimension to end at $new_last, which is before the model's previous end $curr_last."
     else
         new_first > curr_first && error("Cannot redefine the time dimension to start at $new_first, because it is after component $(nameof(obj))'s start $curr_first.") 
         curr_first > new_last && error("Cannot redefine the time dimension to end at $new_last because it is before the component $(nameof(obj))'s current start $curr_first")
-        # t_last < curr_last && @warn "Redefining the time dimension to end at $new_last, which is before component $(nameof(obj))'s end $curr_last."
     end
     
     # (2) check first and last
