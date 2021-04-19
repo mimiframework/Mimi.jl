@@ -140,6 +140,12 @@ function dim_names(ccd::AbstractCompositeComponentDef)
     return collect(dims)
 end
 
+"""
+    _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange})
+
+Run through all necesssary safety checks for redefining `obj`'s time dimenson to 
+a new dimension with keys `keys`.
+"""
 function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange}) where T
 
     # get useful variables 

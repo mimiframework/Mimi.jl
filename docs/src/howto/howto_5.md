@@ -1,107 +1,41 @@
-# How-to Guide 5: Port to Mimi v0.5.0
+# How-to Guide 5: Work with Dimensions
 
-The release of Mimi v0.5.0 is a breaking release, necessitating the adaptation of existing models' syntax and structure in order for those models to run on this new version.  This guide provides an overview of the steps required to get most models using the v0.4.0 API working with v0.5.0.  It is **not** a comprehensive review of all changes and new functionalities, but a guide to the minimum steps required to port old models between versions.  For complete information on the new version and its functionalities, see the full documentation.
+## Updating the Time Dimension
 
-This guide is organized into six main sections, each descripting an independent set of changes that can be undertaken in any order desired.  
+This section provides some specific details on updating an already set `time` dimension of a model. 
 
-1) Defining components
-2) Constructing a model
-3) Running the model
-4) Accessing results
-5) Plotting
-6) Advanced topics
-
-**A Note on Function Naming**: There has been a general overhaul on function names, especially those in the explicity user-facing API, to be consistent with Julia conventions and the conventions of this Package.  These can be briefly summarized as follows:
-
-- use `_` for readability
-- append all functions with side-effects, i.e., non-pure functions that return a value but leave all else unchanged with a `!`
-- the commonly used terms `component`, `variable`, and `parameter` are shortened to `comp`, `var`, and `param`
-- functions that act upon a `component`, `variable`, or `parameter` are often written in the form `[action]_[comp/var/param]`
-
-## Defining Components
-
-The `run_timestep` function is now contained by the `@defcomp` macro, and takes the parameters `p, v, d, t`, referring to Parameters, Variables, and Dimensions of the component you defined.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`.  Similarly, the optional `init` function is also contained by `@defcomp`, and takes the parameters `p, v, d`.  Thus, as described in the user guide, defining a single component is now done as follows:
-
-In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  The full API as described later in this document in **Advanced Topics:  Timesteps and available functions**.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`
-
-```julia
-@defcomp component1 begin
-
-    # First define the state this component will hold
-    savingsrate = Parameter()
-
-    # Second, define the (optional) init function for the component
-    function init(p, v, d)
-    end
-
-    # Third, define the run_timestep function for the component
-    function run_timestep(p, v, d, t)
-    end
-
-end
+A runnable model necessarily has a `time` dimension, originally set with the following call, but in some cases it may be desireable to alter this dimension.
 ```
+set_dimension!(m, :time, time_keys)
+```
+As a concrete example, one may wish to replace the FUND model's climate module with a different one, say FAIR, and make new conections between the two.  Since the default FUND runs from 1950 to 3000 with 1 year timesteps, and FAIR runs from 1765 to 2500 with 1 year timesteps, our new model will run from 1765 to 2500 with 1 year timesteps, with FAIR running the whole time and FUND only kicking in in 1950 and running to 2500. 
 
-## Constructing a Model
+We start with FUND
+```
+using Mimi
+using MimiFUND
+m = MimiFUND.get_model()
+```
+where `MimiFUND.get_model` includes the call `set_dimension!(m, time, 1950:3000)`.
 
-In an effort to standardize the function naming protocol within Mimi, and to streamline it with the Julia convention, several function names have been changed.  The table below lists a **subset** of these changes, focused on the exported API functions most commonly used in model construction.  
+Now we want to change the `time` dimension to be 1765:3000. Before we do so, note some important rules and precautions. These are in place to avoid unexpected behavior, complications, or incorrect resuts caused by our under-the-hood assumptions:
 
-| Old Syntax                | New Syntax                |
-| ------------------------  |:-------------------------:|
-|`addcomponent!`            |`add_comp!`                |
-|`connectparameter`         |`connect_param!`           |
-|`setleftoverparameters`    |`set_leftover_params!`     |
-|`setparameter`             |`set_param!`               |
-|`adddimension`             |`add_dimension!`           |
-|`setindex`                 |`set_dimension!`           |  
+- The new time dimension start later than the original time dimension.  The complexities and importance of initialization values and steps make it impossible to safely updating the time dimension in this way.
+- The new time dimension cannot end before the start of the original time dimension ie. it cannot completely exclude all times in the original time dimension
+- The timesteps must match.
+- It is possible that an existing model has special behavior that is explicitly tied to a year value.  If that is true, the user will need to account for that.
 
-Changes to various optional keyword arguments:
+We now go ahead and change the `time` dimension to be 1765:2500. 
+```
+set_dimension!(m, :tmie, 1765:2500)
+```
+At this point the model `m` can be run, and will run from it's `first` year of 1765 to it's `last` year of 2500. That said, the components are all associated with FUND, which started in 1950 and ended in 3000, so they will only run in the subset of years 1950 to 2500.  These components have a `first` of 1950 and a `last` of 2500, and all associated external parameters have been padded with `missing` values from 1765 to 1949, so that the value previously associated with 1950 **is still associated with that year**.  To summarize, after the time dimension is reset 
 
-- `add_comp!`:  Through Mimi v0.9.4, the optional keyword arguments `first` and `last` could be used to specify times for components that do not run for the full length of the model, like this: `add_comp!(mymodel, ComponentC; first=2010, last=2100)`. This functionality is currently disabled, and all components must run for the full length of the model's time dimension. This functionality may be re-implemented in a later version of Mimi.
+- The model's `time` dimension labels are updated, as is the `first` and `last` run years for the model.
+- The component's in the model maintain the `first` and `last` years they held before the `time` dimension is reset, and will still run in those years.
+- All external parameters are trimmed if the new time dimension ends earlier than the original one, and padded with `missing`s at the front if the new time dimension starts earlier than the original, and at the end if the new time dimension ends later than the original.
 
-## Running a Model
+In most cases, the above will create the expected, correct behavior, however the following options are available for further modifcations:
 
-## Accessing Results
-
-## Plotting and the Explorer UI
-
-This release of Mimi does not include the plotting functionality previously offered by Mimi.  While the previous files are still included, the functions are not exported as efforts are made to simplify and improve the plotting associated with Mimi.  
-
-The new version does, however, include a new UI tool that can be used to visualize model results.  This `explore` function is described in the User Guide under **Advanced Topics**.
-
-## Advanced Topics
-
-#### Timesteps and available functions
-
-As previously mentioned, some relevant function names have changed.  These changes were made to eliminate ambiguity.  For example, the new naming clarifies that `is_last` returns whether the timestep is on the last valid period to be run, not whether it has run through that period already.  This check can still be achieved with `is_finished`, which retains its name and function.  Below is a subset of such changes related to timesteps and available functions.
-
-| Old Syntax                | New Syntax                |
-| ------------------------  |:-------------------------:|
-|`isstart`                  |`is_first`                 |
-|`isstop`                   |`is_last`                  |    
-
-As mentioned in earlier in this document, the fourth argument in `run_timestep` is an `AbstractTimestep` i.e. a `FixedTimestep` or a `VariableTimestep` and is a type defined within Mimi in "src/time.jl".  In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Defining the `AbstractTimestep` object as `t`, indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`.
-
-The full API:
-
-- you may index into a variable or parameter with `[t]` or `[t +/- x]` as usual
-- to access the time value of `t` (currently a year) as a `Number`, use `gettime(t)`
-- useful functions for commonly used conditionals are `is_first(t)` and `is_last(t)`
-- to access the index value of `t` as a `Number` representing the position in the time array, use `t.t`.  Users are encouraged to avoid this access, and instead use the options listed above or a separate counter variable. each time the function gets called.  
-
-#### Parameter connections between different length components
-
-#### More on parameter indices
-
-#### Updating an external parameter
-
-To update an external parameter, use the functions `update_param!` and `udpate_params!` (previously known as `update_external_parameter` and `update_external_parameters`, respectively.)  Their calling signatures are:
-
-*  `update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)`
-
-*  `update_param!(md::ModelDef, name::Symbol, value; update_timesteps = false)`
-
-For external parameters with a `:time` dimension, passing `update_timesteps=true` indicates that the time _keys_ (i.e., year labels) should also be updated in addition to updating the parameter values.
-
-#### Setting parameters with a dictionary
-
-The function `set_leftover_params!` replaces the function `setleftoverparameters`.
+- If you want to update a component's run period, you may use the (nonexported) function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specific when you want the component to run.
+- You can update external parameters to, for example, have values in place of the assumed `missing`s using the `update_param!(m, :ParameterName, values)` function 

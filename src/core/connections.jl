@@ -651,6 +651,15 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
     return nothing
 end
 
+
+"""
+    _pad_parameters!(obj::ModelDef)
+
+Take each external parameter of the Model Definition `obj` and `update_param!` 
+with new data values that are altered to match a new time dimension by (1) trimming
+the values down if the time dimension has been shortened and (2) padding with missings 
+as necessary.
+"""
 function _pad_parameters!(obj::ModelDef)
 
     model_times = time_labels(obj)
@@ -666,6 +675,14 @@ function _pad_parameters!(obj::ModelDef)
     end
 end
 
+"""
+    _get_padded_data(param::ArrayModelParameter, param_times::Vector, model_times::Vector)
+
+Obtain the new data values for the Array Model Paramter `param` with current 
+time labels `param_times` such that they are altered to match a new time dimension 
+with keys `model_times` by (1) trimming the values down if the time dimension has 
+been shortened and (2) padding with missings as necessary.
+"""
 function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model_times::Vector)
 
     data = param.values.data
@@ -710,10 +727,22 @@ function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model
     return data 
 end
 
+"""
+    _get_param_times(param::ArrayModelParameter{TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti, S}})
+
+Return the time labels that parameterize the `TimestepValue` which in turn parameterizes
+the ArrayModelParameter `param`. 
+"""
 function _get_param_times(param::ArrayModelParameter{TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti, S}}) where {FIRST, STEP, LAST, T, N, ti, S}
     return collect(FIRST:STEP:LAST)
 end
 
+"""
+    _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}})
+
+Return the time labels that parameterize the `TimestepValue` which in turn parameterizes
+the ArrayModelParameter `param`. 
+"""
 function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}}) where {TIMES, T, N, ti, S}
     return [TIMES...]
 end
