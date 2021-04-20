@@ -18,7 +18,7 @@ If you find a bug in these guides, or have a clarifying question or suggestion, 
 [How-to Guide 4: Work with Timesteps, Parameters, and Variables](@ref)
 
 
-[How-to Guide 5: Work with Dimensions](@ref)
+[How-to Guide 5: Update the Time Dimension](@ref)
 
 
 [How-to Guide 6: Port to Mimi v0.5.0](@ref)
