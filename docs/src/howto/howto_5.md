@@ -8,7 +8,7 @@ set_dimension!(m, :time, time_keys)
 ----
 #### For example, one may wish to replace the FUND model's climate module with a different one, such as FAIR:
 
-For the purposes of this guide we focus on the first step of such modification. Since FUND runs yearly from 1950 to 3000 and FAIR yearly from 1765 to 2500, our modified model will need to run yearly from 1950 to 1765.
+For the purposes of this guide we focus on the first step of such modification. Since FUND runs yearly from 1950 to 3000 and FAIR yearly from 1765 to 2500, our modified model will need to run yearly from 1765 to 1950.
 
 We start with FUND
 ```
@@ -32,14 +32,18 @@ Before we do so, note some important rules and precautions. These are in place t
 ```
 set_dimension!(m, :time, 1765:2500)
 ```
-At this point the model `m` can be run, and will run from 1765 to 2500. That said, the components will only run in the subset of years 1950 to 2500.  All associated external parameters with a `time` dimension have been padded with `missing` values from 1765 to 1949, so that the values previously associated with 1950 to 2500 are still associated with those years.  To add detail, after the time dimension is reset the following holds:
+At this point the model `m` can be run, and will run from 1765 to 2500. In fact, we could start adding FAIR components to the model, which would automatically take on the entire model time dimension, ie.
+```
+add_comp(m, FAIR_component) # will run from 1765 to 1950
+```
+**However**, the FUND components will only run in the subset of years 1950 to 2500, using the same parameter values each year was previously associated with, and containing placeholder `missing` values in the parameter value spots from 1765 to 1949. More specifically:
 
-- The model's `time` dimension values are updated, and it will run for each year in that dimension.
+- The model's `time` dimension values are updated, and it will run for each year in the new 1765:1950 dimension.
     ```
     julia> Mimi.time_labels(m)
     736-element Vector{Int64}: [1765, 1766, 1767,  …  2498, 2499, 2500]
     ```
-- The components `time` dimension values are updated, but (1) the components maintain the `first` year as set by the original `time` dimension so the run period start year does not change and (2) they maintain their `last` year as set by the original `time` dimension, unless that year is now later than the model's last year, in which case it is trimmed back to the `time` dimensions last year.  Thus, the components will run for the same run period, or a shorter one if the new time dimension ends before the component used to.
+- The components `time` dimension values are updated, but (1) the components maintain the `first` year as set by the original `time` dimension (1950) so the run period start year does not change and (2) they maintain their `last` year as set by the original `time` dimension, unless that year is now later than the model's last year, in which case it is trimmed back to the `time` dimensions last year (2500).  Thus, the components will run for the same run period, or a shorter one if the new time dimension ends before the component used to (in this case 1950:2500).
     ```
     julia> component = m.md.namespace[:emissions] # get component def, ignore the messy syntax
     julia> component.dim_dict[:time]
@@ -57,8 +61,9 @@ At this point the model `m` can be run, and will run from 1765 to 2500. That sai
     julia> parameter_values[1:(1950-1765),:] # all missing
     julia> parameter_values[(1950-1764),:] # hold set values
     ```
+    
 ----
 #### The following options are now available for further modifcations if this end state is not desireable:
 
-- If you want to update a component's run period, you may use the (nonexported) function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specific when you want the component to run.
-- You can update external parameters to, for example, have values in place of the assumed `missing`s using the `update_param!(m, :ParameterName, values)` function 
+- If you want to update a component's run period, you may use the function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specify when you want the component to run.
+- You can update external parameters to have values in place of the assumed `missing`s using the `update_param!(m, :ParameterName, values)` function 
