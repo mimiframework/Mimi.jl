@@ -4,6 +4,7 @@ A runnable model necessarily has a `time` dimension, originally set with the fol
 ```
 set_dimension!(m, :time, time_keys)
 ```
+
 ----
 #### As a concrete example, one may wish to replace the FUND model's climate module with a different one, say FAIR, and make new conections between the two:
 
@@ -16,6 +17,7 @@ using MimiFUND
 m = MimiFUND.get_model()
 ```
 where `MimiFUND.get_model` includes the call `set_dimension!(m, time, 1950:3000)`.
+
 ----
 #### Now we want to change the `time` dimension to be 1765 to 3000:
 
@@ -26,6 +28,7 @@ Before we do so, note some important rules and precautions. These are in place t
 - The new time dimension must use the same timestep lengths as the original dimension.
 
 It is possible that an existing model has special behavior that is explicitly tied to a year value.  If that is true, the user will need to account for that.
+
 ----
 #### We now go ahead and change the `time` dimension to be 1765 to 2500: 
 ```
@@ -56,6 +59,7 @@ At this point the model `m` can be run, and will run from 1765 to 2500. That sai
     julia> parameter_values[1:(1950-1765),:] # all missing
     julia> parameter_values[(1950-1764),:] # hold set values
     ```
+
 ----
 #### The following options are now available for further modifcations if this end state is not desireable:
 
