@@ -16,7 +16,7 @@ m = MimiFUND.get_model()
 ```
 where `MimiFUND.get_model` includes the call `set_dimension!(m, time, 1950:3000)`.
 
-#### Now we want to change the `time` dimension to be 1765 to 3000:
+### Now we want to change the `time` dimension to be 1765 to 3000:
 
 Before we do so, note some important rules and precautions. These are in place to avoid unexpected behavior, complications, or incorrect results caused by our under-the-hood assumptions, but if a use case arises where they are a problem please get in touch on the [forum](https://forum.mimiframework.org) and we can help you out.
 
@@ -26,7 +26,7 @@ Before we do so, note some important rules and precautions. These are in place t
 
 It is possible that an existing model has special behavior that is explicitly tied to a year value.  If that is true, the user will need to account for that.
 
-#### We now go ahead and change the `time` dimension to be 1765 to 2500: 
+### We now go ahead and change the `time` dimension to be 1765 to 2500: 
 ```
 set_dimension!(m, :time, 1765:2500)
 ```
@@ -55,7 +55,7 @@ At this point the model `m` can be run, and will run from 1765 to 2500. That sai
     julia> parameter_values[1:(1950-1765),:] # all missing
     julia> parameter_values[(1950-1764),:] # hold set values
     ```
-#### The following options are now available for further modifcations if this end state is not desireable:
+### The following options are now available for further modifcations if this end state is not desireable:
 
 - If you want to update a component's run period, you may use the (nonexported) function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specific when you want the component to run.
 - You can update external parameters to, for example, have values in place of the assumed `missing`s using the `update_param!(m, :ParameterName, values)` function 
