@@ -30,12 +30,31 @@ We now go ahead and change the `time` dimension to be 1765 to 2500.
 ```
 set_dimension!(m, :time, 1765:2500)
 ```
-At this point the model `m` can be run, and will run from 1765 to 2500. That said, the components will only run in the subset of years 1950 to 2500.  All associated external parameters with a `:time` dimension have been padded with `missing` values from 1765 to 1949, so that the value previously associated with 1950 is still associated with that year.  To add a bit of detail, after the time dimension is reset the following are true:
+At this point the model `m` can be run, and will run from 1765 to 2500. That said, the components will only run in the subset of years 1950 to 2500.  All associated external parameters with a `time` dimension have been padded with `missing` values from 1765 to 1949, so that the values previously associated with 1950 to 2500 are still associated with those years.  To add a bit of detail, after the time dimension is reset the following holds:
 
 - The model's `time` dimension values are updated, and it will run for each year in that dimension.
-- The components in the model maintain the `first` and `last` years they held before the `time` dimension was reset, and will maintain that run period.
-- All external parameters are trimmed and padded as needed so the model can still run, **but the values are still linked to their original years**.  More specifically, if the new time dimension ends earlier than the original one then the `last` is trimmed back.  If the new time dimension starts earlier than the original, or ends later, the parameter values are padded with `missing`s at the front and/or back.
-
+    ```
+    julia> Mimi.time_labels(m)
+    736-element Vector{Int64}: [1765, 1766, 1767,  …  2498, 2499, 2500]
+    ```
+- The components `time` dimension values are updated, but (1) the components maintain the `first` year as set by the original `time` dimension so the run period start year does not change and (2) they maintain their `last` year as set by the original `time` dimension, unless that year is now later than the model's last year, in which case it is trimmed back to the `time` dimensions last year.  Thus, the components will run for the same run period, or a shorter one if the new time dimension ends before the component used to.
+    ```
+    julia> component = m.md.namespace[:emissions] # get component def, ignore the messy syntax
+    julia> component.first
+    1950
+    julia> component.last
+    2500
+    julia> component.dim_dict[:time]
+    [1765, 1766, 1767,  …  2498, 2499, 2500]
+```
+- All external parameters are trimmed and padded as needed so the model can still run, **and the values are still linked to their original years**.  More specifically, if the new time dimension ends earlier than the original one than the parameter values are trimmed back.  If the new time dimension starts earlier than the original, or ends later, the parameter values are padded with `missing`s at the front and/or back.
+    ```
+    julia> parameter_values = Mimi.external_params(m)[:currtaxn2o].values.data
+    julia> size(parameter_values)
+    (736, 16)
+    julia> parameter_values[1:(1950-1765),:] # all missing
+    julia> parameter_values[(1950-1764),:] # hold set values
+    ```
 In most cases, the above will create the expected, correct behavior, however the following options are available for further modifcations:
 
 - If you want to update a component's run period, you may use the (nonexported) function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specific when you want the component to run.
