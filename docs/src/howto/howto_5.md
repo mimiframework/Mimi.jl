@@ -19,9 +19,9 @@ m = MimiFUND.get_model()
 where `MimiFUND.get_model` includes the call `set_dimension!(m, time, 1950:3000)`.
 
 ----
-#### Now we need to change the `time` dimension to be 1765 to 3000:
+#### Now we need to change the `time` dimension to be 1765 to 2500:
 
-Before we do so, note some important rules and precautions. These are in place to avoid unexpected behavior, complications, or incorrect results caused by our under-the-hood assumptions, but if a use case arises where they are a problem please get in touch on the [forum](https://forum.mimiframework.org) and we can help you out.
+Before we do so, note some important rules and precautions. These are in place to avoid unexpected behavior, complications, or incorrect results caused by our under-the-hood assumptions, but if a use case arises where these are prohibitive please get in touch on the [forum](https://forum.mimiframework.org) and we can help you out.
 
 - The new time dimension cannot start later than the original time dimension.  
 - The new time dimension cannot end before the start of the original time dimension ie. it cannot completely exclude all times in the original time dimension.
