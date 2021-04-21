@@ -158,14 +158,10 @@ function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Unio
     new_last = last(new_keys)
 
     # (1) check that the shift is legal
-    if isa(obj, ModelDef)
-        new_first > curr_first && error("Cannot redefine the time dimension to start at $new_first because it is after the model's current start $curr_first.") 
-        curr_first > new_last && error("Cannot redefine the time dimension to end at $new_last because it is before the model's current start $curr_first")
-    else
-        new_first > curr_first && error("Cannot redefine the time dimension to start at $new_first, because it is after component $(nameof(obj))'s start $curr_first.") 
-        curr_first > new_last && error("Cannot redefine the time dimension to end at $new_last because it is before the component $(nameof(obj))'s current start $curr_first")
-    end
-    
+    isa(obj, ModelDef) ? obj_name = "model" : obj_name = "component $(nameof(obj))"
+    new_first > curr_first && error("Cannot redefine the time dimension to start at $new_first because it is after the $obj_name's current start $curr_first.") 
+    curr_first > new_last && error("Cannot redefine the time dimension to end at $new_last because it is before the $obj_name's current start $curr_first")
+
     # (2) check first and last
     !(curr_first in new_keys) && error("The current first index ($curr_first) must exist within the model's new time dimension $new_keys.") # can be assumed since we cannot move the time forward
     curr_last >= new_last && !(new_last in curr_keys) && error("The new last index ($new_last) must exist within the model's current time dimension $curr_keys, since the time redefinition contracts to an earlier year.")
@@ -178,7 +174,7 @@ function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Unio
         
         else # variable timesteps      
             start_idx = 1 # can be assumed since we cannot move the time forward
-            new_last < curr_last ? end_idx = findfirst(isequal(curr_last), new_keys) : end_idx = length(curr_keys)
+            new_last < curr_last ? end_idx = findfirst(isequal(new_last), curr_keys) : end_idx = length(curr_keys)
             expected_overlap = curr_keys[start_idx:end_idx]
 
             start_idx = findfirst(isequal(curr_first), new_keys)
