@@ -3,7 +3,7 @@ module TestFirstLast
 using Mimi 
 using Test
 
-import Mimi: time_labels
+import Mimi: time_labels, set_first_last!
 
 #
 # Define some Components
@@ -84,10 +84,10 @@ set_dimension!(m, :time, collect(2015:5:2115))
 # check that the first, last, and time have been updated properly for both the 
 # ModelDef and ComponentDef(s)
 @test collect(2015:5:2115) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
-@test m.md.first == m.md.namespace[:grosseconomy].first # grosseconomy first and last vary with model limits
-@test m.md.last == m.md.namespace[:grosseconomy].last # grosseconomy first and last vary with model limits
-@test m.md.namespace[:emissions].first == 2020 # emissions first and last are fixed
-@test m.md.namespace[:emissions].last == 2105 # emissions first and last are fixed
+@test m.md.namespace[:grosseconomy].first == 2015 # same as original model dim
+@test m.md.namespace[:grosseconomy].last == 2110 # same as original model dim
+@test m.md.namespace[:emissions].first == 2020 # explicitly set
+@test m.md.namespace[:emissions].last == 2105 # explicitly set
 
 # reset any parameters that have a time dimension
 update_param!(m, :l, [(1. + 0.015)^t *6404 for t in 1:21])
@@ -100,8 +100,8 @@ run(m)
 # test that there are missing values in :emissions variables outside of the component's 
 # run period, and no missing values in the :grosseconomy variables
 @test ismissing(m[:emissions, :E][1])
- @test sum(ismissing.(m[:emissions, :E][20:21])) == 2
- @test sum(ismissing.(m[:emissions, :E][2:19])) == 0
+@test all(ismissing, m[:emissions, :E][20:21])
+@test sum(ismissing.(m[:emissions, :E][2:19])) == 0
 @test sum(ismissing.(m[:grosseconomy, :l])) == 0
 
 #
@@ -416,10 +416,39 @@ set_param!(m, :par_1_1, collect(1:length(time_labels(m))))
 run(m)
 
 # check that first and last moved through properly
-@test m.md.first == m.md.namespace[:top].first == m.md.namespace[:top].namespace[:A].first == m.md.namespace[:top].namespace[:A].namespace[:Comp1].first== 2005
-@test m.md.last ==  m.md.namespace[:top].last == m.md.namespace[:top].namespace[:A].last ==m.md.namespace[:top].namespace[:A].namespace[:Comp1].last == 2020
+@test m.md.namespace[:top].first == m.md.namespace[:top].namespace[:A].first == m.md.namespace[:top].namespace[:A].namespace[:Comp1].first== 2005
+@test m.md.namespace[:top].last == m.md.namespace[:top].namespace[:A].last ==m.md.namespace[:top].namespace[:A].namespace[:Comp1].last == 2020
 
 @test m.md.namespace[:top].namespace[:B].first == m.md.namespace[:top].namespace[:B].namespace[:Comp3].first== 2010
 @test m.md.namespace[:top].namespace[:B].last ==m.md.namespace[:top].namespace[:B].namespace[:Comp3].last == 2015
  
+
+ #
+ # Test set_first_last! function 
+ #
+
+ m = Model()
+ set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
+ add_comp!(m, grosseconomy)  
+ add_comp!(m, emissions)
+
+ # check that the attributes of the ModelDef and ComponentDef(s) have been set
+ # as expected
+ @test collect(2015:5:2110) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
+ @test m.md.first == m.md.namespace[:grosseconomy].first == m.md.namespace[:emissions].first
+ @test m.md.last == m.md.namespace[:grosseconomy].last == m.md.namespace[:emissions].last
+
+ # now set the emissions first and last and check
+ set_first_last!(m, :emissions, first = 2020, last = 2105)
+
+ @test collect(2015:5:2110) == time_labels(m.md) == [keys(m.md.namespace[:emissions].dim_dict[:time])...] == [keys(m.md.namespace[:grosseconomy].dim_dict[:time])...]
+ @test m.md.first == m.md.namespace[:grosseconomy].first 
+ @test m.md.last == m.md.namespace[:grosseconomy].last
+ @test m.md.namespace[:emissions].first == 2020
+ @test m.md.namespace[:emissions].last == 2105
+
+ # check warnings
+ @test_throws ErrorException set_first_last!(m, :grosseconomy, first = 2000) # too early
+ @test_throws ErrorException set_first_last!(m, :grosseconomy, last = 3000)
+
 end #module
