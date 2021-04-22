@@ -5,7 +5,8 @@ using Test
 
 import Mimi:
     compdefs, compdef, compkeys, has_comp, first_period,
-    last_period, compmodule, compname, compinstance, dim_keys, dim_values
+    last_period, compmodule, compname, compinstance, dim_keys, dim_values,
+    set_first_last!
 
 my_model = Model()
 
@@ -45,6 +46,9 @@ end
         v.var1[t] = p.par1[t]
     end
 end
+
+# Testing that you cannot add a component without a time dimension
+@test_throws ErrorException add_comp!(my_model, testcomp1)
 
 # Start building up the model
 set_dimension!(my_model, :time, 2015:5:2110)
@@ -104,34 +108,34 @@ end
 
 # 1. Test resetting the time dimension without explicit first/last values
 
-cd = testcomp1
-@test cd.first === nothing   # original component definition's first and last values are unset
-@test cd.last === nothing
+comp_def = testcomp1
+@test comp_def.first === nothing   # original component definition's first and last values are unset
+@test comp_def.last === nothing
 
 m = Model()
 set_dimension!(m, :time, 2001:2005)
 add_comp!(m, testcomp1, :C) # Don't set the first and last values here
-cd = compdef(m.md, :C)      # Get the component definition in the model
-@test cd.first === 2001  
-@test cd.last === 2005
+comp_def = compdef(m.md, :C)      # Get the component definition in the model
+@test comp_def.first === 2001  
+@test comp_def.last === 2005
 
 set_param!(m, :C, :par1, zeros(5))
+Mimi.build!(m)              # Build the model
+ci = compinstance(m, :C)    # Get the component instance
+@test ci.first == 2001 && ci.last == 2005      # no change  
+
+set_dimension!(m, :time, 2000:2020) # Reset the time dimension
+comp_def = compdef(m.md, :C)        # Get the component definition in the model
+@test comp_def.first === 2001 && comp_def.last === 2005 # no change
+
+update_param!(m, :par1, zeros(21))
 Mimi.build!(m)               # Build the model
-ci = compinstance(m, :C) # Get the component instance
-@test ci.first == 2001      # The component instance's first and last values should match the model's index
-@test ci.last == 2005
+ci = compinstance(m, :C)    # Get the component instance
+@test ci.first == 2001 && ci.last == 2005 # no change
 
-set_dimension!(m, :time, 2005:2020) # Reset the time dimension
-cd = compdef(m.md, :C)       # Get the component definition in the model
-@test cd.first === 2005 
-@test cd.last === 2020
-
-update_param!(m, :par1, zeros(16))
-Mimi.build!(m)               # Build the model
-ci = compinstance(m, :C) # Get the component instance
-@test ci.first == 2005      # The component instance's first and last values should match the model's index
-@test ci.last == 2020
-
+set_first_last!(m, :C, first = 2000, last = 2020)
+comp_def = compdef(m.md, :C)        # Get the component definition in the model
+@test comp_def.first == 2000 && comp_def.last == 2020 # change!
 
 # 2. Test resetting the time dimension with explicit first/last values
 
@@ -139,24 +143,22 @@ m = Model()
 set_dimension!(m, :time, 2000:2100)
 add_comp!(m, testcomp1, :C; first = 2010, last = 2090)
 
-cd = compdef(m.md, :C)      # Get the component definition in the model
-@test cd.first == 2010      # First and last values are defined in the comp def because they were explicitly given
-@test cd.last == 2090
+comp_def = compdef(m.md, :C)      # Get the component definition in the model
+@test comp_def.first == 2010 && comp_def.last == 2090
 
-set_dimension!(m, :time, 2010:2090)
-set_param!(m, :C, :par1, zeros(81))
+set_dimension!(m, :time, 1950:2090)
+set_param!(m, :C, :par1, zeros(141))
 Mimi.build!(m)               # Build the model
 
 ci = compinstance(m, :C) # Get the component instance
-@test ci.first == 2010      # The component instance's first and last values are the same as in the comp def
-@test ci.last == 2090
+@test ci.first == 2010 && ci.last == 2090 # The component instance's first and last values are the same as in the comp def
 
-set_dimension!(m, :time, 2000:2200) # Reset the time dimension
-update_param!(m, :par1, zeros(201)) # Have to reset the parameter to have the same width as the model time dimension 
+set_dimension!(m, :time, 1940:2200) # Reset the time dimension
+update_param!(m, :par1, zeros(261)) # Have to reset the parameter to have the same width as the model time dimension 
 
-cd = compdef(m.md, :C)      # Get the component definition in the model
-@test cd.first == 2010      # First and last values should still be the same
-@test cd.last == 2090
+comp_def = compdef(m.md, :C)      # Get the component definition in the model
+@test comp_def.first == 2010      # First and last values should still be the same
+@test comp_def.last == 2090
 
 Mimi.build!(m)               # Build the model
 ci = compinstance(m, :C) # Get the component instance

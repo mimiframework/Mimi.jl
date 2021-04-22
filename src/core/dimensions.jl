@@ -86,28 +86,24 @@ Set the values of `ccd` dimension `name` to integers 1 through `count`, if `keys
 an integer; or to the values in the vector or range if `keys` is either of those types.
 """
 function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::Union{Int, Vector, Tuple, AbstractRange})
+   
     redefined = has_dim(ccd, name)
-    # if redefined
-    #     @warn "Redefining dimension :$name"
-    # end
-
     dim = Dimension(keys)
 
     if name == :time
 
-        # check to make sure if we are setting time dimension for the Model that
-        # it doesn't start after, or end before, any of the components. Note that
-        # here we can dependent on the invariant that all subcomponents of a composite
-        # component have the same first and last bounds
-        ccd_first = [keys...][1]
-        ccd_last = [keys...][end]
-        for subcomp in compdefs(ccd)
-            subcomp.first_free || ccd_first > subcomp.first && error("Top time dimension must end after or at same time as all it's subcomponents, but $(ccd_first) is after $(subcomp.first).")
-            subcomp.last_free || ccd_last < subcomp.last   && error("Top time dimension must start before or at same time as all it's subcomponents, but $(ccd_last) is before $(subcomp.last).")        
-        end
+        # if we are redefining the time dimension of a model, the timestep length 
+        # must match the timestep length of the old time dimension
+        redefined && _check_time_redefinition(ccd, keys)   
 
-        propagate_time!(ccd, t = dim)
+        # propagate the time dimension through all sub-components
+        _propagate_time_dim!(ccd, dim)
         set_uniform!(ccd, isuniform(keys))
+        
+        # if we are redefining the time dimension for a Model Definition
+        # pad the time arrays with missings and update their time labels 
+        redefined && (ccd isa ModelDef) && _pad_parameters!(ccd)
+
     end
 
     return set_dimension!(ccd, name, dim)
@@ -144,7 +140,53 @@ function dim_names(ccd::AbstractCompositeComponentDef)
     return collect(dims)
 end
 
+"""
+    _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange})
+
+Run through all necesssary safety checks for redefining `obj`'s time dimenson to 
+a new dimension with keys `keys`.
+"""
+function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange}) where T
+
+    # get useful variables 
+    curr_keys = time_labels(obj)
+    curr_first = obj.first
+    curr_last = obj.last
+    
+    new_keys = [keys...]
+    new_first = first(new_keys)
+    new_last = last(new_keys)
+
+    # (1) check that the shift is legal
+    isa(obj, ModelDef) ? obj_name = "model" : obj_name = "component $(nameof(obj))"
+    new_first > curr_first && error("Cannot redefine the time dimension to start at $new_first because it is after the $obj_name's current start $curr_first.") 
+    curr_first > new_last && error("Cannot redefine the time dimension to end at $new_last because it is before the $obj_name's current start $curr_first")
+
+    # (2) check first and last
+    !(curr_first in new_keys) && error("The current first index ($curr_first) must exist within the model's new time dimension $new_keys.") # can be assumed since we cannot move the time forward
+    curr_last >= new_last && !(new_last in curr_keys) && error("The new last index ($new_last) must exist within the model's current time dimension $curr_keys, since the time redefinition contracts to an earlier year.")
+    curr_last < new_last && !(curr_last in new_keys) && error("The current last index ($curr_last) must exist within the model's redefined time dimension $new_keys, since the time redefinition expands to a later year.")
+
+    # (3) check that the overlap region between the current keys and new keys holds same keys
+    if length(curr_keys) > 1 && length(new_keys) > 1
+        if isuniform(curr_keys) # fixed timesteps
+            step_size(curr_keys) != step_size(new_keys) && error("Cannot redefine the time dimension to have a timestep size of $(step_size(new_keys)), must match the timestep size of current time dimension, $(step_size(curr_keys))")
+        
+        else # variable timesteps      
+            start_idx = 1 # can be assumed since we cannot move the time forward
+            new_last < curr_last ? end_idx = findfirst(isequal(new_last), curr_keys) : end_idx = length(curr_keys)
+            expected_overlap = curr_keys[start_idx:end_idx]
+
+            start_idx = findfirst(isequal(curr_first), new_keys)
+            end_idx = start_idx + length(expected_overlap) - 1
+            observed_overlap = new_keys[start_idx:end_idx]
+
+            expected_overlap != observed_overlap && error("Cannot redefine the time dimension, the overlapping portion of the current and new times must be identical.")
+        end
+    end
+
+end
+
 dim_names(comp_def::AbstractComponentDef, datum_name::Symbol) = dim_names(datumdef(comp_def, datum_name))
 
 dim_count(def::AbstractDatumDef) = length(dim_names(def))
-

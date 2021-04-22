@@ -106,7 +106,7 @@ When `set_param!` is called, it creates an external parameter by the name provid
 update_param!(m, :ParameterName, newvalues)
 ```
 
-Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. Also note that it if you have updated the time dimension of the model with `set_dimension!(m, :time, values)` you will need to update all parameters with a `:time` dimension, **even if the values have not changed**, so that the model can update the underlying time labels attached to the parameters.
+Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. 
 
 #### Setting parameters with a dictionary
 

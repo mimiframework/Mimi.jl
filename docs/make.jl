@@ -21,8 +21,9 @@ makedocs(
 			"2 Explore Results" => "howto/howto_2.md",
 			"3 Monte Carlo + SA" => "howto/howto_3.md",
 			"4 Timesteps, Params, and Vars" => "howto/howto_4.md",
-			"5 Port to v0.5.0" => "howto/howto_5.md",
-			"6 Port to v1.0.0" => "howto/howto_6.md"
+			"5 Update Time Dimension" => "howto/howto_5.md",
+			"6 Port to v0.5.0" => "howto/howto_6.md",
+			"7 Port to v1.0.0" => "howto/howto_7.md"
 		],
 		"Advanced How-to Guides" => Any[
 			"Advanced How-to Guides Intro" => "howto_advanced/howto_adv_main.md",

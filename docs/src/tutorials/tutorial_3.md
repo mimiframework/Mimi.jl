@@ -28,7 +28,7 @@ When the original model calls [`set_param!`](@ref), Mimi creates an external par
 update_param!(mymodel, :parametername, newvalues)
 ```
 
-Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. Also note that it if you have updated the time dimension of the model with `set_dimension!(m, :time, values)` you will need to update all parameters with a `:time` dimension, **even if the values have not changed**, so that the model can update the underlying time labels (ie. year labels) to match your new model time labels (ie. year labels).
+Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate.
 
 If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
 
@@ -83,20 +83,20 @@ update_param!(m, :fco22x, 3.000)
 run(m)
 ```
 
-A more complex example may be a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 2000 to 2500 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
+A more complex example may be a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 1995 to 2505 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
 
 First you upate the `time` dimension of the model as follows:
 
 ```julia
 const ts = 10
-const years = collect(2000:ts:2500)
+const years = collect(1995:ts:2505)
 nyears = length(years)
 set_dimension!(m, :time, years)
 ```
 
-Now you must update at least all parameters with a `:time` dimension, even if the length and values remain the same, so that the underlying time labels (ie. year labels) update to match your new model time labels (ie. year labels).
+At this point all parameters with a `:time` dimension have been slightly modified under the hood, but the original values are still tied to their original years.  In this case, for example, the external parameter has been shorted by 9 values (end from 2595 --> 2505) and padded at the front with a value of `missing` (start from 2005 --> 1995). Since some values, especially initializing values, are not time-agnostic, we maintain the relationship between values and time labels.  If you wish to attach new values, you can use `update_param!` as below.  In this case this is probably necessary, since having a `missing` in the first spot of a parameter with a `:time` dimension will likely cause an error when this value is accessed.
 
-Create a dictionary `params` with one entry `(k, v)` per external parameter by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
+Create a dictionary `params` with one entry `(k, v)` per external parameter you want to update by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
 
 ```julia
 params = Dict{Any, Any}()
