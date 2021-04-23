@@ -5,7 +5,7 @@ using MacroTools
 
 # Store a list of built-in components so we can suppress messages about creating them.
 # TBD: suppress returning these in the list of components at the user level.
-const global built_in_comps = (:adder,  :ConnectorCompVector, :ConnectorCompMatrix)
+const global built_in_comps = (:adder,  :multiplier, :ConnectorCompVector, :ConnectorCompMatrix)
 
 is_builtin(comp_name) = comp_name in built_in_comps
 
