@@ -8,7 +8,7 @@ Working through the following tutorial will require:
 - [Mimi v0.10.0](https://github.com/mimiframework/Mimi.jl) or higher
 - connection of your julia installation with the central Mimi registry of Mimi models
 
-If you have not yet prepared these, go back to the first tutorial to set up your system.
+**If you have not yet prepared these, go back to the first tutorial to set up your system.**
 
 Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
 
@@ -118,9 +118,11 @@ run(m)
 
 Most model modifications will include not only parametric updates, but also structural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace!`](@ref), [`add_comp!`](@ref)** along with **`delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference. 
 
-If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
+If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `multiplier`,`ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 
 * `adder.jl` -- Defines `Mimi.adder`, which simply adds two parameters, `input` and `add` and stores the result in `output`.
+
+* `multiplier.jl` -- Defines `Mimi.multiplier`, which simply multiplies two parameters, `input` and `multiply` and stores the result in `output`.
 
 * `connector.jl` -- Defines a pair of components, `Mimi.ConnectorCompVector` and `Mimi.ConnectorCompMatrix`. These copy the value of parameter `input1`, if available, to the variable `output`, otherwise the value of parameter `input2` is used. It is an error if neither has a value.
 

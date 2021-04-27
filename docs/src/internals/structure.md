@@ -80,4 +80,4 @@ In the new version, all component definitions are represented by one type, `Comp
 
 ## 3. Pre-compilation and built-in components
 
-To get `__precompile__()` to work required moving the creation of "helper" components to an `__init__()` method in Mimi.jl, which is run automatically after Mimi loads. It defines the two "built-in" components, from `adder.jl` and `connector.jl` in the `components` subdirectory.
+To get `__precompile__()` to work required moving the creation of "helper" components to an `__init__()` method in Mimi.jl, which is run automatically after Mimi loads. It defines the three "built-in" components, from `adder.jl`, `multiplier.jl`, and `connector.jl` in the `components` subdirectory.
