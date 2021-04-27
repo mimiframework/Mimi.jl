@@ -71,6 +71,9 @@ Electron.prep_test_env()
     @info("test_adder.jl")
     @time include("test_adder.jl")
 
+    @info("test_multiplier.jl")
+    @time include("test_multiplier.jl")
+
     @info("test_getindex.jl")
     @time include("test_getindex.jl")
 

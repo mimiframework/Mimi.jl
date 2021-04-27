@@ -78,6 +78,7 @@ include("utils/misc.jl")
 
 # Load built-in components
 include("components/adder.jl")
+include("components/multiplier.jl")
 include("components/connector.jl")
 
 end # module
