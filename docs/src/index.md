@@ -4,7 +4,7 @@
 
 Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org).
 
-The documentation is organized into the following four sections, roughly adhering to the [Divio documentation system](https://documentation.divio.com) guidelines. For insights into the goals of each of these documentation categories, please refer to the Divio documentation.
+The documentation is organized into the following four sections, roughly adhering to the [Diátaxis documentation framework](https://diataxis.fr) guidelines. For insights into the goals of each of these documentation categories, please refer to the Diátaxis website.
 
 1. Tutorials
 2. How-to Guides
