@@ -31,6 +31,7 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)*
 * [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
 * [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl/)*
+* [MimiPAGE2020.jl](https://github.com/openmodels/MimiPAGE2020.jl)*
 * [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
 * [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
 * [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
