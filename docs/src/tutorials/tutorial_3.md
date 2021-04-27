@@ -118,9 +118,11 @@ run(m)
 
 Most model modifications will include not only parametric updates, but also structural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace!`](@ref), [`add_comp!`](@ref)** along with **`delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference. 
 
-If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
+If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `multiplier`,`ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 
 * `adder.jl` -- Defines `Mimi.adder`, which simply adds two parameters, `input` and `add` and stores the result in `output`.
+
+* `multiplier.jl` -- Defines `Mimi.multiplier`, which simply multiplies two parameters, `input` and `multiply` and stores the result in `output`.
 
 * `connector.jl` -- Defines a pair of components, `Mimi.ConnectorCompVector` and `Mimi.ConnectorCompMatrix`. These copy the value of parameter `input1`, if available, to the variable `output`, otherwise the value of parameter `input2` is used. It is an error if neither has a value.
 
