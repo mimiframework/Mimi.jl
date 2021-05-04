@@ -4,7 +4,7 @@
 
 Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org).
 
-The documentation is organized into the following four sections, roughly adhering to the [Divio documentation system](https://documentation.divio.com) guidelines. For insights into the goals of each of these documentation categories, please refer to the Divio documentation.
+The documentation is organized into the following four sections, roughly adhering to the [Diátaxis documentation framework](https://diataxis.fr) guidelines. For insights into the goals of each of these documentation categories, please refer to the Diátaxis website.
 
 1. Tutorials
 2. How-to Guides
@@ -26,11 +26,13 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 * [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)*
 * [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)*
 * [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)*
-* [MimiDICE2016.jl](https://github.com/AlexandrePavlov/MimiDICE2016.jl)*
+* [MimiDICE2016.jl](https://github.com/AlexandrePavlov/MimiDICE2016.jl) (version R not R2)
+* [MimiDICE2016R2.jl](https://github.com/anthofflab/MimiDICE2016R2.jl)
 * [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)*
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)*
 * [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
 * [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl/)*
+* [MimiPAGE2020.jl](https://github.com/openmodels/MimiPAGE2020.jl)*
 * [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
 * [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
 * [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
