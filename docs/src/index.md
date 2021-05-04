@@ -15,7 +15,7 @@ The documentation is organized into the following four sections, roughly adherin
 
 We aim to assist users of all different experience levels, starting with first-time users. If this is your first time using Mimi, we recommend you begin with the Tutorials. In addition, looking through the code at the links below to various existing models based on Mimi can be instructive. 
 
-The first step for any user includes installation of julia and Mimi, as well as optionally adding the Mimi Registry. See the first tutorial for instructions on these tasks.
+The **first step** for any user includes installation of julia and Mimi, as well as optionally adding the Mimi Registry. See [Tutorial 1: Install Mimi](@ref) for instructions on these tasks.
 
 Finally, when in doubt, ask your question on the [Mimi Framework forum](https://forum.mimiframework.org) or post an [Issue](https://github.com/mimiframework/Mimi.jl/issues) to the Github repository, the latter being especially pertintent if you have a specific request for the development team.   Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
 
