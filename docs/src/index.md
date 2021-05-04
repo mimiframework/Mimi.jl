@@ -26,7 +26,8 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 * [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)*
 * [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)*
 * [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)*
-* [MimiDICE2016.jl](https://github.com/AlexandrePavlov/MimiDICE2016.jl)* (version R not R2)
+* [MimiDICE2016.jl](https://github.com/AlexandrePavlov/MimiDICE2016.jl) (version R not R2)
+* [MimiDICE2016R2.jl](https://github.com/anthofflab/MimiDICE2016R2.jl)
 * [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)*
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)*
 * [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
