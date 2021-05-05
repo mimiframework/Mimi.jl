@@ -64,7 +64,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
             end
 
         # No Time Dimension and First Dim is a Number Type - scatter plots
-        elseif eltype(df[1]) <: Number 
+        elseif eltype(df[!, 1]) <: Number 
             if length(dffields) > 2
                 spec = createspec_multiscatterplot(name, df, dffields)
             else
