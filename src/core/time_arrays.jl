@@ -116,7 +116,7 @@ end
 # Base.firstindex and Base.lastindex
 function Base.firstindex(arr::TimestepArray{T_TS, T, N, ti}) where {T_TS, T, N, ti}
 	if ti == 1
-		return Mimi.TimestepIndex(1)
+		return TimestepIndex(1)
 	else
 		return 1
 	end
@@ -124,7 +124,7 @@ end
 
 function Base.lastindex(arr::TimestepArray{T_TS, T, N, ti}) where {T_TS, T, N, ti}
 	if ti == length(size(arr.data))
-		return Mimi.TimestepIndex(length(arr.data))
+		return TimestepIndex(length(arr.data))
 	else
 		return length(arr.data)
 	end
@@ -132,7 +132,7 @@ end
 
 function Base.lastindex(arr::TimestepArray{T_TS, T, N, ti}, dim::Int) where {T_TS, T, N, ti}
 	if ti == dim
-		return Mimi.TimestepIndex(size(arr.data, dim))
+		return TimestepIndex(size(arr.data, dim))
 	else
 		return size(arr.data, dim)
 	end
@@ -140,7 +140,7 @@ end
 
 function Base.firstindex(arr::TimestepArray{T_TS, T, N, ti}, dim::Int) where {T_TS, T, N, ti}
 	if ti == dim
-		return Mimi.TimestepIndex(1)
+		return TimestepIndex(1)
 	else
 		return 1
 	end
@@ -395,7 +395,7 @@ function _dotview_helper(arg)
 	end
 end
 
-function Base.dotview(v::Mimi.TimestepArray, args...)
+function Base.dotview(v::TimestepArray, args...)
 	# convert any timesteps to their underlying index
 	args = map(_dotview_helper, args)
 	Base.dotview(v.data, args...)
