@@ -121,7 +121,7 @@ variable `src_var_name` in another component `src_comp_path` of the same model u
 check match units between the two.  The `backup_offset` argument, which is only valid 
 when `backup` data has been set, indicates that the backup data should be used for
 a specified number of timesteps after the source component begins. ie. the value would be 
-`1` if the destination componentm parameter should only use the source component 
+`1` if the destination component parameter should only use the source component 
 data for the second timestep and beyond.
 """
 function _connect_param!(obj::AbstractCompositeComponentDef,
@@ -183,7 +183,7 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
         end
 
-        set_external_array_param!(obj, dst_par_name, values, dst_dims)
+        set_external_array_param!(obj, dst_par_name, values, dst_dims) 
         backup_param_name = dst_par_name
 
     else
@@ -395,22 +395,21 @@ function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnecti
 end
 
 function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
-    # if haskey(obj.external_params, name)
-    #     @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
-    # end
     obj.external_params[name] = value
     dirty!(obj)
     return value
 end
 
 function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
-                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
-    set_external_scalar_param!(obj, name, value)
+                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                             shared::Bool = false)
+    set_external_scalar_param!(obj, name, value, shared)
 end
 
 function set_external_param!(obj::ModelDef, name::Symbol,
                              value::Union{AbstractArray, AbstractRange, Tuple};
-                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
+                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                             shared::Bool = false)
     ti = get_time_index_position(param_dims)
     if ti != nothing
         value = convert(Array{number_type(obj)}, value)
@@ -420,54 +419,64 @@ function set_external_param!(obj::ModelDef, name::Symbol,
         values = value
     end
 
-    set_external_array_param!(obj, name, values, param_dims)
+    set_external_array_param!(obj, name, values, param_dims, shared = shared)
 end
 
 """
     set_external_array_param!(obj::ModelDef,
-                              name::Symbol, value::TimestepVector, dims)
+                                name::Symbol, value::TimestepVector, 
+                                dims; shared::Bool = false)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
-`value` to the composite `obj`.  In this case `dims` must be `[:time]`.
+`value` to the composite `obj`. The `shared` attribute of the ArrayModelParameter
+will default to false. In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(obj::ModelDef,
-                                   name::Symbol, value::TimestepVector, dims)
-    param = ArrayModelParameter(value, [:time])  # must be :time
+                                        name::Symbol, value::TimestepVector, 
+                                        dims; shared::Bool = false)
+    param = ArrayModelParameter(value, [:time], shared)  # must be :time
     set_external_param!(obj, name, param)
 end
 
 """
     set_external_array_param!(obj::ModelDef,
-                              name::Symbol, value::TimestepMatrix, dims)
+                              name::Symbol, value::TimestepMatrix, dims; 
+                              shared::Bool = false)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
-`value` to the composite `obj`.  In this case `dims` must be `[:time]`.
+`value` to the composite `obj`.  The `shared` attribute of the ArrayModelParameter
+will default to false. In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(obj::ModelDef,
-                                   name::Symbol, value::TimestepArray, dims)
-    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
+                                        name::Symbol, value::TimestepArray, dims; 
+                                        shared::Bool = false)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, shared)
     set_external_param!(obj, name, param)
 end
 
 """
     set_external_array_param!(obj::ModelDef,
-                              name::Symbol, value::AbstractArray, dims)
+                              name::Symbol, value::AbstractArray, dims; 
+                              shared::Bool = false)
 
-Add an array type parameter `name` with value `value` and `dims` dimensions to the composite `obj`.
+Add an array type parameter `name` with value `value` and `dims` dimensions to the 
+composite `obj`. The `shared` attribute of the ArrayModelParameter will default to 
+false. 
 """
 function set_external_array_param!(obj::ModelDef,
-                                   name::Symbol, value::AbstractArray, dims)
-    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims)
+                                   name::Symbol, value::AbstractArray, dims; 
+                                   shared::Bool = false)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, shared)
     set_external_param!(obj, name, param)
 end
 
 """
-    set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
+    set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; shared::Bool = false)
 
 Add a scalar type parameter `name` with the value `value` to the composite `obj`.
 """
-function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any)
-    param = ScalarModelParameter(value)
+function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; shared::Bool = false)
+    param = ScalarModelParameter(value, shared)
     set_external_param!(obj, name, param)
 end
 
@@ -559,7 +568,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             T = eltype(value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param)))
+            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), shared = param.shared))
         else
             copyto!(param.values.data, value)
         end

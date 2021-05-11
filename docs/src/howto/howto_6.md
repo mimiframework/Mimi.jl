@@ -94,7 +94,7 @@ The full API:
 
 #### Updating an external parameter
 
-To update an external parameter, use the functions `update_param!` and `udpate_params!` (previously known as `update_external_parameter` and `update_external_parameters`, respectively.)  Their calling signatures are:
+To update an external parameter, use the functions `update_param!` and `update_params!` (previously known as `update_external_parameter` and `update_external_parameters`, respectively.)  Their calling signatures are:
 
 *  `update_params!(md::ModelDef, parameters::Dict; update_timesteps = false)`
 

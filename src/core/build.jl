@@ -318,25 +318,6 @@ function _get_parameters(comp_def::AbstractCompositeComponentDef)
     return parameters
 end
 
-"""
-    _set_defaults!(md::ModelDef)
-
-Look for default values for any unset parameters and set those values. The
-depth-first search starts stores results in a dict, so higher-level settings
-(i.e., closer to ModelDef in the hierarchy) overwrite lower-level ones.
-"""
-function _set_defaults!(md::ModelDef)
-    not_set = unconnected_params(md)
-    isempty(not_set) && return
-
-    for ref in not_set
-        comp_name, par_name = ref.comp_name, ref.datum_name
-        pardef = md[comp_name][par_name]
-        default_value = pardef.default
-        default_value === nothing || set_param!(md, par_name, default_value)
-    end
-end
-
 function _build(md::ModelDef)
 
     # @info "_build(md)"
@@ -369,8 +350,6 @@ end
 function build(m::Model)    
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
-    _set_defaults!(md)  # apply defaults to unset parameters in the model instance's copy of the model definition
-    
     mi = _build(md)
     return mi
 end

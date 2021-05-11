@@ -520,35 +520,28 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
 
         if ti !== nothing   # there is a time dimension
             T = eltype(value)
+            
+            # Use the first from the Model def, not the component, since we now say that the
+            # data needs to match the dimensions of the model itself, so we need to allocate
+            # the full time length even if we pad it with missings.
+            first = first_period(md)
+            last = last_period(md)
 
-            if num_dims == 0
-                values = value
+            if isuniform(md)
+                stepsize = step_size(md)
+                values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
             else
-
-                # Use the first from the Model def, not the component, since we now say that the
-                # data needs to match the dimensions of the model itself, so we need to allocate
-                # the full time length even if we pad it with missings.
-                first = first_period(md)
-                first === nothing && @warn "set_param!: first === nothing"
-
-                last = last_period(md)
-                last === nothing && @warn "set_param!: last === nothing"
-
-                if isuniform(md)
-                    stepsize = step_size(md)
-                    values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
-                else
-                    times = time_labels(md)
-                    first_index = findfirst(isequal(first), times)
-                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
-                end
+                times = time_labels(md)
+                first_index = findfirst(isequal(first), times)
+                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
             end
         else
             values = value
         end
 
-        param = ArrayModelParameter(values, param_dims)
-        # Need to check the dimensions of the parameter data against each component before addeding it to the model's external parameters
+        param = ArrayModelParameter(values, param_dims, true)
+        
+        # Need to check the dimensions of the parameter data against each component before adding it to the model's external parameters
         for comp in comps
             _check_labels(md, comp, param_name, param)
         end
@@ -557,13 +550,13 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
 
     else # scalar parameter case
         value = convert(dtype, value)
-        set_external_scalar_param!(md, ext_param_name, value)
+        set_external_scalar_param!(md, ext_param_name, value, shared = true)
     end
 
     # connect_param! calls dirty! so we don't have to
     for comp in comps
-        # Set check_labels=false because we already checked above before setting the param
-        connect_param!(md, comp, param_name, ext_param_name, check_labels=false)
+        # Set check_labels = false because we already checked above before setting the param
+        connect_param!(md, comp, param_name, ext_param_name, check_labels = false)
     end
     nothing
 end
@@ -765,6 +758,99 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 end
 
 """
+    _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
+
+Add an unshared external parameters to `md` for each parameter in `comp_def`.
+"""
+function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
+    for param_def in parameters(comp_def)
+        
+        # gather info
+        param_name = nameof(param_def)
+        param_dims = param_def.dim_names
+        num_dims = length(param_dims)
+        data_type = param_def.datatype
+        dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
+
+        # create the unshared external parameter
+        ext_param_name = gensym() # unique name
+        value = param_def.default # if the default is nothing then value is nothing
+
+        # no default
+        if isnothing(value)
+            if num_dims > 0 
+                param = ArrayModelParameter(value, param_dims, false)
+            else
+                param = ScalarModelParameter(value, false)
+            end
+            set_external_param!(md, ext_param_name, param)
+            connect_param!(md, comp_def, param_name, ext_param_name, check_labels = false) # don't check the labels because our values are nothing
+
+        # default 
+        else
+            if num_dims > 0 # array parameter case
+                           
+                # check dimensions
+                if value isa NamedArray
+                    dims = dimnames(value)
+                    dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
+                end
+                    
+                # convert the number type and, if NamedArray, convert to Array
+                if dtype <: AbstractArray
+                    value = convert(dtype, value)
+                else
+                    # check that number of dimensions matches
+                    value_dims = length(size(value))
+                    if num_dims != value_dims
+                        error("Mismatched data size for an _initialize_parameters call: dimension :$param_name",
+                            " in has $num_dims dimensions; indicated value",
+                            " has $value_dims dimensions.")
+                    end
+                    value = convert(Array{dtype, num_dims}, value)
+                end
+
+                # create TimestepArray if there is a time dim
+                ti = get_time_index_position(param_dims)
+                if ti !== nothing   # there is a time dimension
+                    T = eltype(value)
+
+                    # Use the first from the Model def, not the component, since we now say that the
+                    # data needs to match the dimensions of the model itself, so we need to allocate
+                    # the full time length even if we pad it with missings.
+                    first = first_period(md)
+                    last = last_period(md)
+        
+                    if isuniform(md)
+                        stepsize = step_size(md)
+                        values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
+                    else
+                        times = time_labels(md)
+                        first_index = findfirst(isequal(first), times)
+                        values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
+                    end
+                
+                else
+                    values = value
+                end
+                 
+                param = ArrayModelParameter(values, param_dims, false)
+                
+                # Need to check the dimensions of the parameter data against component before adding it to the model's external parameters
+                _check_labels(md, comp_def, param_name, param)
+
+            else # scalar parameter case
+                value = convert(dtype, value)
+                param = ScalarModelParameter(value, false)
+            end
+
+            set_external_param!(md, ext_param_name, param)
+            connect_param!(md, comp_def, param_name, ext_param_name)
+        end
+    end
+end
+
+"""
     _propagate_first_last!(obj::AbstractComponentDef; first::NothingInt=nothing, last::NothingInt=nothing)
 
 Propagate first and/or last through a component def tree. This function will override
@@ -913,7 +999,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     parent!(comp_def, obj)
 
     # Handle time dimension for the component and leaving the time unset for the
-    # original component template
+    # original component template using steps (1) and (2)
 
     # (1) Propagate the first and last from the add_comp! call through the component (default to nothing)
     if has_dim(obj, :time)
@@ -932,6 +1018,9 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     # Add dims and insert comp
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
+
+    # Create an unshared external parameter for each of the new component's parameters
+    isa(obj, ModelDef) && _initialize_parameters!(obj, comp_def)
 
     # Return the comp since it's a copy of what was passed in
     return comp_def
