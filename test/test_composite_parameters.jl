@@ -68,7 +68,7 @@ err3 = try eval(fail_expr3) catch err err end
 
 
 #------------------------------------------------------------------------------
-# Test a failure to auto-import a paramter because it's name has already been used
+# Test a failure to auto-import a parameter because it's name has already been used
 
 fail_expr4 = :(
     @defcomposite TestFailComposite begin
@@ -119,20 +119,28 @@ err6 = try set_param!(m1, :p1, 5) catch err err end
 set_param!(m1, :p1, 5, ignoreunits=true)    
 
 err7 = try run(m1) catch err err end
-@test occursin("Cannot build model; the following parameters are not set", sprint(showerror, err7))
+@test occursin("Cannot build model; the following parameters do not have non-nothing values", sprint(showerror, err7))
 
 # Set separate values for p1 in A and B
 m2 = get_model()
-set_param!(m2, :A, :p1, 1)  # Set the value only for component A
-@test length(m2.md.external_param_conns) == 1 # test that only one connection has been made
-@test Mimi.UnnamedReference(:B, :p1) in Mimi.unconnected_params(m2.md)  # and that B.p1 is still unconnected 
+set_param!(m2, :A, :p1, 2)  # Set the value only for component A
+
+# test that the proper connection has been made for :p1 in :A
+@test Mimi.external_param(m2.md, :p1).value == 2 
+@test Mimi.external_param(m2.md, :p1).shared
+# and that B.p1 is still the default value and unshared
+sym = Mimi._get_externalparam_name(m2.md, :B, :p1)
+@test Mimi.external_param(m2.md, sym).value == 3
+@test !(Mimi.external_param(m2.md, sym).shared)
+
 
 err8 = try set_param!(m2, :B, :p1, 2) catch err err end
 @test occursin("the model already has an external parameter with this name", sprint(showerror, err8))
 
 set_param!(m2, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
-@test length(m2.md.external_param_conns) == 2 
-@test Set(keys(m2.md.external_params)) == Set([:p1, :B_p1])
+@test Mimi.external_param(m2.md, :B_p1).value == 2 
+@test Mimi.external_param(m2.md, :B_p1).shared
+@test issubset(Set([:p1, :B_p1]), Set(keys(m2.md.external_params)))
 
 # Test defaults being set properly:
 m3 = get_model()
@@ -141,8 +149,6 @@ set_param!(m3, :p2, 2)
 set_param!(m3, :p3, 3)    
 set_param!(m3, :p4, 1:10)    
 run(m3)
-@test length(keys(m3.md.external_params)) == 4      # The default value was not added to the original md's list
-@test length(keys(m3.mi.md.external_params)) == 5   # Only added to the model instance's definition
 
 #------------------------------------------------------------------------------
 # Test set_param! for parameter that exists in neither model definition nor any subcomponent

@@ -74,27 +74,32 @@ set_param!(m, :MyComp, :e, [1,2,3,4])
 set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 set_param!(m, :MyComp, :j, [1,2,3])
 
-Mimi.build!(m)    # applies defaults, creating external params in the model instance's copied definition
+Mimi.build!(m)
 extpars = external_params(m.mi.md)
 
-@test isa(extpars[:a], ArrayModelParameter)
-@test isa(extpars[:b], ArrayModelParameter)
-@test _get_param_times(extpars[:a]) == _get_param_times(extpars[:b]) == 2000:2100
+a_sym = Mimi._get_externalparam_name(m.mi.md, :MyComp, :a)
+b_sym = Mimi._get_externalparam_name(m.mi.md, :MyComp, :b)
+g_sym = Mimi._get_externalparam_name(m.mi.md, :MyComp, :g)
+h_sym = Mimi._get_externalparam_name(m.mi.md, :MyComp, :h)
+
+@test isa(extpars[a_sym], ArrayModelParameter)
+@test isa(extpars[b_sym], ArrayModelParameter)
+@test _get_param_times(extpars[a_sym]) == _get_param_times(extpars[b_sym]) == 2000:2100
 
 @test isa(extpars[:c], ArrayModelParameter)
 @test isa(extpars[:d], ScalarModelParameter)
 @test isa(extpars[:e], ArrayModelParameter)
 @test isa(extpars[:f], ScalarModelParameter) # note that :f is stored as a scalar parameter even though its values are an array
 
-@test typeof(extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
-@test typeof(extpars[:b].values) == TimestepVector{FixedTimestep{2000, 1, 2100}, arrtype, Array{arrtype, 1}}
+@test typeof(extpars[a_sym].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
+@test typeof(extpars[b_sym].values) == TimestepVector{FixedTimestep{2000, 1, 2100}, arrtype, Array{arrtype, 1}}
 
 @test typeof(extpars[:c].values) == Array{arrtype, 1}
 @test typeof(extpars[:d].value) == numtype
 @test typeof(extpars[:e].values) == Array{arrtype, 1}
 @test typeof(extpars[:f].value) == Array{Float64, 2}
-@test typeof(extpars[:g].value) <: Int
-@test typeof(extpars[:h].value) == numtype
+@test typeof(extpars[g_sym].value) <: Int
+@test typeof(extpars[h_sym].value) == numtype
 
 # test updating parameters
 @test_throws ErrorException update_param!(m, :a, 5) # expects an array
@@ -111,8 +116,8 @@ new_extpars = external_params(m)    # Since there are changes since the last bui
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
 
-@test length(extpars) == 9          # The old dictionary has the default values that were added during build, so it has more entries
-@test length(new_extpars) == 6
+@test length(extpars) == 14          
+@test length(new_extpars) == 15 # adds another parameter for :a, so there is one old unshared defualt one and one new udpated one
 @test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
 
 @test typeof(new_extpars[:d].value) == numtype
@@ -384,6 +389,6 @@ add_comp!(m, A)
 add_comp!(m, B)
 
 @test_throws ErrorException set_param!(m, :p1, 1:5)     # this will error because the provided data is the wrong size
-@test isempty(m.md.external_params)                     # But it should not be added to the model's dictionary
+@test !(:p1 in keys(m.md.external_params))                     # But it should not be added to the model's dictionary
 
 end #module

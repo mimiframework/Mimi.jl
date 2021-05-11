@@ -312,6 +312,46 @@ function connection_refs(obj::ModelDef)
 end
 
 """
+    nothing_params(obj::AbstractCompositeComponentDef)
+
+Return a list of UnnamedReference's to parameters that have a value of nothing 
+and thus need to be assigned a value. This function replaces the use case of  
+`unconnected_params` since there is no notion of unconnected parameters 
+now that everything is connected upon the `add_comp!` call.
+"""
+function nothing_params(obj::AbstractCompositeComponentDef)
+
+    # we only need to look at external parameters here since those are what is 
+    # initialized during `add_comp!` with nothing as the value (unless there is a 
+    # default)
+    refs = UnnamedReference[]
+    for conn in obj.external_param_conns
+        value = external_param(obj, conn.external_param)
+        if _is_nothing_param(value)
+            push!(refs, UnnamedReference(conn.comp_path.names[end], conn.param_name))
+        end
+    end
+    return refs
+end
+
+function _is_nothing_param(param::ScalarModelParameter)
+    return isnothing(param.value)
+end
+
+function _is_nothing_param(param::ArrayModelParameter)
+    return isnothing(param.values)
+end
+ 
+function _get_externalparam_name(obj::AbstractCompositeComponentDef, comp::Symbol, param_name::Symbol)
+    for conn in obj.external_param_conns
+        if comp == conn.comp_path.names[end] && conn.param_name == param_name
+            return conn.external_param
+        end
+    end
+    error("Cannot find an external parameter connection for component $comp's parameter $param_name in external parameter connections vector.")
+end
+
+"""
     unconnected_params(obj::AbstractCompositeComponentDef)
 
 Return a list of UnnamedReference's to parameters that have not been connected
@@ -329,27 +369,24 @@ to some other component to a value from a dictionary `parameters`. This method a
 the dictionary keys are strings that match the names of unset parameters in the model.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-    for param_ref in unconnected_params(md)
+    for param_ref in nothing_params(md)
         param_name = param_ref.datum_name
         comp_name = param_ref.comp_name
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
 
-        # Only set the unconnected parameter if it doesn't have a default
-        if param_def.default === nothing
-            # check whether we need to create the external parameter
-            if external_param(md, param_name, missing_ok=true) === nothing
-                if haskey(parameters, string(param_name))  
-                    value = parameters[string(param_name)]
-                    param_dims = parameter_dimensions(md, comp_name, param_name)
+        # check whether we need to create the external parameter
+        if external_param(md, param_name, missing_ok=true) === nothing
+            if haskey(parameters, string(param_name))  
+                value = parameters[string(param_name)]
+                param_dims = parameter_dimensions(md, comp_name, param_name)
 
-                    set_external_param!(md, param_name, value; param_dims = param_dims)
-                else
-                    error("Cannot set parameter :$param_name, not found in provided dictionary and no default value detected.")
-                end
+                set_external_param!(md, param_name, value; param_dims = param_dims)
+            else
+                error("Cannot set parameter :$param_name, not found in provided dictionary and no default value detected.")
             end
-            connect_param!(md, comp_name, param_name, param_name)
         end
+        connect_param!(md, comp_name, param_name, param_name)
     end
     nothing
 end
@@ -568,7 +605,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             T = eltype(value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), shared = param.shared))
+            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.shared))
         else
             copyto!(param.values.data, value)
         end
@@ -631,6 +668,10 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             conn_path = conn_comp.comp_path
 
+            # remove the connections added in add_comp!
+            disconnect_param!(obj, conn_comp, :input1)
+            disconnect_param!(obj, conn_comp, :input2)
+
             # add a connection between src_component and the ConnectorComp
             add_internal_param_conn!(obj, InternalParameterConnection(conn.src_comp_path, conn.src_var_name,
                                                                       conn_path, :input1,
@@ -674,7 +715,7 @@ function _pad_parameters!(obj::ModelDef)
     model_times = time_labels(obj)
 
     for (name, param) in obj.external_params
-        if (param isa ArrayModelParameter) && (:time in param.dim_names)
+        if (param isa ArrayModelParameter) && (:time in param.dim_names) && !_is_nothing_param(param)
 
            param_times = _get_param_times(param)
            padded_data = _get_padded_data(param, param_times, model_times)

@@ -31,6 +31,7 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 
 @delegate connected_params(m::Model) => md
 @delegate unconnected_params(m::Model) => md
+@delegate nothing_params(m::Model) => md
 
 @delegate add_connector_comps!(m::Model) => md
 

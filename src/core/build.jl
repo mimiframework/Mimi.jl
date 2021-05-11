@@ -324,11 +324,11 @@ function _build(md::ModelDef)
     add_connector_comps!(md)
 
     # check if all parameters are set
-    not_set = unconnected_params(md)
+    nothingparams = nothing_params(md)
 
-    if ! isempty(not_set)
-        params = join([p.datum_name for p in not_set], "\n  ")
-        error("Cannot build model; the following parameters are not set:\n  $params")
+    if ! isempty(nothingparams)
+        params = join([p.datum_name for p in nothingparams], "\n  ")
+        error("Cannot build model; the following parameters do not have non-nothing values:\n  $params")
     end
 
     vdict = _instantiate_vars(md)
