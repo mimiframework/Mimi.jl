@@ -323,12 +323,12 @@ function _build(md::ModelDef)
     # @info "_build(md)"
     add_connector_comps!(md)
 
-    # check if all parameters are set
+    # check if any of the parameters initialized with the value(s) of nothing 
+    # are  still nothing
     nothingparams = nothing_params(md)
-
     if ! isempty(nothingparams)
         params = join([p.datum_name for p in nothingparams], "\n  ")
-        error("Cannot build model; the following parameters do not have non-nothing values:\n  $params")
+        error("Cannot build model; the following parameters still have values of nothing and need to be updated or set:\n  $params")
     end
 
     vdict = _instantiate_vars(md)

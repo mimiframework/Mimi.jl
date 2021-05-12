@@ -464,11 +464,10 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
         comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
     end
     isempty(comps) && error("Cannot set parameter :$param_name; not found in ModelDef or children")
-
    
     # check for collisions
     # which fields to check for collisions in subcomponents
-    fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)  
+    fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)
     collisions = _find_collisions(fields, [comp => param_name for comp in comps])
     if ! isempty(collisions) 
         if :unit in collisions
@@ -482,7 +481,13 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     end
 
     # check dimensions
-    dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
+    if value isa NamedArray
+        dims = dimnames(value)
+    end
+
+    if dims !== nothing
+        check_parameter_dimensions(md, value, dims, param_name)
+    end
 
     # create shared external parameter - since we alread checked that the found 
     # comps have no conflicting fields in their parameter definitions, we can 
@@ -505,9 +510,9 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     set_external_param!(md, ext_param_name, param)
 
     # connect
-    # connect_param! calls dirty! so we don't have to
     for comp in comps
         # Set check_labels = false because we already checked above
+        # connect_param! calls dirty! so we don't have to
         connect_param!(md, comp, param_name, ext_param_name, check_labels = false)
     end
     nothing
@@ -712,7 +717,8 @@ end
 """
     _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
 
-Add an unshared external parameters to `md` for each parameter in `comp_def`.
+Add and connect an unshared external parameter to `md` for each parameter in 
+`comp_def`.
 """
 function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
     for param_def in parameters(comp_def)
@@ -865,7 +871,7 @@ Note that a copy of `comp_id` is made in the composite and assigned the give nam
 argument `rename` can be a list of pairs indicating `original_name => imported_name`. The optional 
 arguments `first` and `last` indicate the times bounding the run period for the given component, 
 which must be within the bounds of the model and if explicitly set are fixed.  These default 
-to flexibly changing with the model's `:time` dimension.
+to flexibly changing with the model's `:time` dimension. 
 """
 function add_comp!(obj::AbstractCompositeComponentDef,
                    comp_def::AbstractComponentDef,
@@ -1041,7 +1047,8 @@ function _replace!(obj::AbstractCompositeComponentDef,
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
         # Delete the old component from composite's namespace only, leaving parameter 
-        # connections and not initializing new connections in the add_comp! phase
+        # connections and not initializing new connections in the add_comp! phase, 
+        # which allows the existing connections to persist.
         delete!(obj.namespace, comp_name)
         return add_comp!(obj, comp_id, comp_name; before=before, after=after, initialize_params = false)
     else

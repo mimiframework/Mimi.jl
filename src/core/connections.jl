@@ -21,14 +21,14 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::Abstrac
 
     if obj isa ModelDef
         
-        # if we are disconnecting an unshared parameter, remove it's unique Symbol
-        # parameter definition from the ModelDef's list of external parameters as well
-        ext_param_name = _get_externalparam_name(obj, nameof(comp_def), param_name)
+        # if disconnecting an unshared parameter, it will become unreachable since
+        # it's name is a random, unique symbol so remove it from the ModelDef's 
+        # list of external parameters
+        ext_param_name = get_external_param_name(obj, nameof(comp_def), param_name; missing_ok = true)
         if !isnothing(ext_param_name) && !(external_param(obj, ext_param_name).is_shared)
             delete!(obj.external_params, ext_param_name);
         end
 
-        # filter the external parameter connections
         filter!(x -> !(x.comp_path == path && x.param_name == param_name), obj.external_param_conns)
     end
     dirty!(obj)
@@ -192,7 +192,7 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
         end
 
-        set_external_array_param!(obj, dst_par_name, values, dst_dims) 
+        set_external_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
 
     else
@@ -323,44 +323,40 @@ end
 """
     nothing_params(obj::AbstractCompositeComponentDef)
 
-Return a list of UnnamedReference's to parameters that have a value of nothing 
-and thus need to be assigned a value. This function replaces the use case of  
-`unconnected_params` since there is no notion of unconnected parameters 
-now that everything is connected upon the `add_comp!` call.
+Return a list of UnnamedReference's to parameters that are connected to a an 
+external parameter with a value of nothing.
 """
 function nothing_params(obj::AbstractCompositeComponentDef)
 
-    # we only need to look at external parameters here since those are what is 
-    # initialized during `add_comp!` with nothing as the value (unless there is a 
-    # default)
     refs = UnnamedReference[]
+
     for conn in obj.external_param_conns
         value = external_param(obj, conn.external_param)
-        if _is_nothing_param(value)
+        if is_nothing_param(value)
             push!(refs, UnnamedReference(conn.comp_path.names[end], conn.param_name))
         end
     end
     return refs
 end
 
-function _is_nothing_param(param::ScalarModelParameter)
+"""
+    is_nothing_param(param::ScalarModelParameter)
+
+Return true if `param`'s value is nothing, and false otherwise.
+"""
+function is_nothing_param(param::ScalarModelParameter)
     return isnothing(param.value)
 end
 
-function _is_nothing_param(param::ArrayModelParameter)
+"""
+    is_nothing_param(param::ArrayModelParameter)
+
+Return true if `param`'s values is nothing, and false otherwise.
+"""
+function is_nothing_param(param::ArrayModelParameter)
     return isnothing(param.values)
 end
  
-function _get_externalparam_name(obj::AbstractCompositeComponentDef, comp::Symbol, param_name::Symbol; error_if_not_found = false)
-    for conn in obj.external_param_conns
-        if comp == conn.comp_path.names[end] && conn.param_name == param_name
-            return conn.external_param
-        end
-    end
-    error_if_not_found && error("Cannot find an external parameter connection for component $comp's parameter $param_name in external parameter connections vector.")
-    return nothing
-end
-
 """
     unconnected_params(obj::AbstractCompositeComponentDef)
 
@@ -393,7 +389,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 
                 set_external_param!(md, param_name, value; param_dims = param_dims)
             else
-                error("Cannot set parameter :$param_name, not found in provided dictionary and no default value detected.")
+                error("Cannot set parameter :$param_name, not found in provided dictionary.")
             end
         end
         connect_param!(md, comp_name, param_name, param_name)
@@ -436,12 +432,35 @@ function external_param(obj::ModelDef, name::Symbol; missing_ok=false)
     error("$name not found in external parameter list")
 end
 
+"""
+    get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+
+Get the external parameter name for the exernal parameter conneceted to $comp_name's
+parameter $param_name.  The keyword argument `missing_ok` defaults to false so
+if no parameter is found an error is thrown, if it is set to true the function will
+return `nothing`.
+"""
+function get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+    for conn in obj.external_param_conns
+        if conn.comp_path.names[end] == comp_name && conn.param_name == param_name
+            return conn.external_param
+        end
+    end
+
+    missing_ok && return nothing
+
+    error("External parameter connected to $comp's parameter $param_name not found in external parameter connections list.")
+end
+
 function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
     dirty!(obj)
 end
 
 function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
+    # if haskey(obj.external_params, name)
+    #     @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
+    # end
     obj.external_params[name] = value
     dirty!(obj)
     return value
@@ -450,7 +469,7 @@ end
 function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                              is_shared::Bool = false)
-    set_external_scalar_param!(obj, name, value, is_shared)
+    set_external_scalar_param!(obj, name, value, is_shared = is_shared)
 end
 
 function set_external_param!(obj::ModelDef, name::Symbol,
@@ -725,7 +744,11 @@ function _pad_parameters!(obj::ModelDef)
     model_times = time_labels(obj)
 
     for (name, param) in obj.external_params
-        if (param isa ArrayModelParameter) && (:time in param.dim_names) && !_is_nothing_param(param)
+        # there is only a chance we only need to pad a parameter if:
+        #   (1) it is an ArrayModelParameter
+        #   (2) it has a time dimension
+        #   (3) it does not have a values attribute of nothing, as assigned on initialization
+        if (param isa ArrayModelParameter) && (:time in param.dim_names) && !is_nothing_param(param)
 
            param_times = _get_param_times(param)
            padded_data = _get_padded_data(param, param_times, model_times)
@@ -807,6 +830,14 @@ function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimes
     return [TIMES...]
 end
 
+"""
+    create_external_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+
+Create a new external parameter to be added to Model Def `md` with specifications
+matching parameter definition `param_def` and with `value`.  The keyword argument
+is_shared defaults to false, and thus an unshared parameter would be created, whereas
+setting `is_shared` to true creates a shared parameter.
+"""
 function create_external_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
     
     # gather info

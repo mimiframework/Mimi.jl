@@ -3,7 +3,7 @@ using Test
 
 @testset "Mimi-SA" begin
 
-    @info("test_empirical.jl") # broken
+    @info("test_empirical.jl")
     include("test_empirical.jl")
 
     @info("test_defmcs.jl")

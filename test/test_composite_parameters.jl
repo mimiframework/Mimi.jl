@@ -119,7 +119,7 @@ err6 = try set_param!(m1, :p1, 5) catch err err end
 set_param!(m1, :p1, 5, ignoreunits=true)    
 
 err7 = try run(m1) catch err err end
-@test occursin("Cannot build model; the following parameters do not have non-nothing values", sprint(showerror, err7))
+@test occursin("Cannot build model; the following parameters still have values of nothing and need to be updated or set:", sprint(showerror, err7))
 
 # Set separate values for p1 in A and B
 m2 = get_model()
@@ -129,7 +129,7 @@ set_param!(m2, :A, :p1, 2)  # Set the value only for component A
 @test Mimi.external_param(m2.md, :p1).value == 2 
 @test Mimi.external_param(m2.md, :p1).is_shared
 # and that B.p1 is still the default value and unshared
-sym = Mimi._get_externalparam_name(m2.md, :B, :p1)
+sym = Mimi.get_external_param_name(m2.md, :B, :p1)
 @test Mimi.external_param(m2.md, sym).value == 3
 @test !(Mimi.external_param(m2.md, sym).is_shared)
 
