@@ -127,11 +127,11 @@ set_param!(m2, :A, :p1, 2)  # Set the value only for component A
 
 # test that the proper connection has been made for :p1 in :A
 @test Mimi.external_param(m2.md, :p1).value == 2 
-@test Mimi.external_param(m2.md, :p1).shared
+@test Mimi.external_param(m2.md, :p1).is_shared
 # and that B.p1 is still the default value and unshared
 sym = Mimi._get_externalparam_name(m2.md, :B, :p1)
 @test Mimi.external_param(m2.md, sym).value == 3
-@test !(Mimi.external_param(m2.md, sym).shared)
+@test !(Mimi.external_param(m2.md, sym).is_shared)
 
 
 err8 = try set_param!(m2, :B, :p1, 2) catch err err end
@@ -139,7 +139,7 @@ err8 = try set_param!(m2, :B, :p1, 2) catch err err end
 
 set_param!(m2, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
 @test Mimi.external_param(m2.md, :B_p1).value == 2 
-@test Mimi.external_param(m2.md, :B_p1).shared
+@test Mimi.external_param(m2.md, :B_p1).is_shared
 @test issubset(Set([:p1, :B_p1]), Set(keys(m2.md.external_params)))
 
 # Test defaults being set properly:

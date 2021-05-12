@@ -5,16 +5,6 @@ module TestDelete
 using Mimi
 using Test
 
-function count_nonnothing_external_params(md)
-    num_params = 0
-    for param in values(md.external_params)
-        if !Mimi._is_nothing_param(param)
-            num_params += 1
-        end
-    end
-    return num_params
-end
-
 @defcomp A begin
     p1 = Parameter()
     p2 = Parameter()
@@ -36,23 +26,20 @@ m1 = _get_model()
 run(m1)
 @test length(Mimi.components(m1)) == 2
 @test length(m1.md.external_param_conns) == 4   # two components with two connections each
-@test length(m1.md.external_params) == 7
-@test count_nonnothing_external_params(m1.md) == 3  # three total non-nothing external params 
+@test length(m1.md.external_params) == 3
 
 delete!(m1, :A1)    
 run(m1) # run before and after to test that `delete!` properly "dirties" the model, and builds a new instance on the next run
 @test length(Mimi.components(m1)) == 1
 @test length(m1.md.external_param_conns) == 2   # Component A1 deleted, so only two connections left
-@test length(m1.md.external_params) == 7
-@test count_nonnothing_external_params(m1.md) == 3  # but all three external params remain
+@test length(m1.md.external_params) == 3
 @test :p2_A1 in keys(m1.md.external_params)
 
 # Test component deletion that removes unbound component parameters
 m2 = _get_model()
 delete!(m2, :A1, deep = true)
 @test length(Mimi.components(m2.md)) == 1
-@test length(m2.md.external_params) == 6
-@test count_nonnothing_external_params(m2.md) == 2  # :p2_A1 has been removed
+@test length(m2.md.external_params) == 2  # :p2_A1 has been removed
 @test !(:p2_A1 in keys(m2.md.external_params))
 run(m2)
 

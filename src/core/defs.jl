@@ -457,21 +457,18 @@ of the dimension names of the provided data, and will be used to check that they
 model's index labels.
 """
 function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing, ext_param_name=nothing)
+    
+    # find components for connection
     # search immediate subcomponents for this parameter
     if comps === nothing
         comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
     end
+    isempty(comps) && error("Cannot set parameter :$param_name; not found in ModelDef or children")
 
-    if ext_param_name === nothing
-        ext_param_name = param_name
-    end
-
-    if isempty(comps)
-        error("Cannot set parameter :$param_name; not found in ModelDef or children")
-    end
-
+   
+    # check for collisions
     # which fields to check for collisions in subcomponents
-    fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)
+    fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)  
     collisions = _find_collisions(fields, [comp => param_name for comp in comps])
     if ! isempty(collisions) 
         if :unit in collisions
@@ -484,78 +481,33 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
         end
     end
 
-    if value isa NamedArray
-        dims = dimnames(value)
-    end
+    # check dimensions
+    dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
 
-    if dims !== nothing
-        check_parameter_dimensions(md, value, dims, param_name)
-    end
-
-    comp_def = comps[1]   # since we alread checked that the found comps have no conflicting fields in their parameter definitions, we can just use the first one for reference below
-    param_def = comp_def[param_name]
-    param_dims = param_def.dim_names
-    num_dims = length(param_dims)
-
-    data_type = param_def.datatype
-    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
-
-    if num_dims > 0
-
-        # convert the number type and, if NamedArray, convert to Array
-        if dtype <: AbstractArray
-            value = convert(dtype, value)
-        else
-            # check that number of dimensions matches
-            value_dims = length(size(value))
-            if num_dims != value_dims
-                error("Mismatched data size for a set parameter call: dimension :$param_name",
-                      " in has $num_dims dimensions; indicated value",
-                      " has $value_dims dimensions.")
-            end
-            value = convert(Array{dtype, num_dims}, value)
-        end
-
-        ti = get_time_index_position(param_dims)
-
-        if ti !== nothing   # there is a time dimension
-            T = eltype(value)
-            
-            # Use the first from the Model def, not the component, since we now say that the
-            # data needs to match the dimensions of the model itself, so we need to allocate
-            # the full time length even if we pad it with missings.
-            first = first_period(md)
-            last = last_period(md)
-
-            if isuniform(md)
-                stepsize = step_size(md)
-                values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
-            else
-                times = time_labels(md)
-                first_index = findfirst(isequal(first), times)
-                values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
-            end
-        else
-            values = value
-        end
-
-        param = ArrayModelParameter(values, param_dims, true)
-        
-        # Need to check the dimensions of the parameter data against each component before adding it to the model's external parameters
+    # create shared external parameter - since we alread checked that the found 
+    # comps have no conflicting fields in their parameter definitions, we can 
+    # just use the first one for reference 
+    param_def = comps[1][param_name]
+    param = create_external_param(md, param_def, value; is_shared = true)
+    
+    # Need to check the dimensions of the parameter data against each component 
+    # before adding it to the model's external parameters
+    if param isa ArrayModelParameter
         for comp in comps
             _check_labels(md, comp, param_name, param)
         end
-        set_external_param!(md, ext_param_name, param)
-
-
-    else # scalar parameter case
-        value = convert(dtype, value)
-        set_external_scalar_param!(md, ext_param_name, value, shared = true)
     end
 
+    # add the shared external parameter to the model def
+    if ext_param_name === nothing
+        ext_param_name = param_name
+    end
+    set_external_param!(md, ext_param_name, param)
+
+    # connect
     # connect_param! calls dirty! so we don't have to
     for comp in comps
-        # Set check_labels = false because we already checked above before setting the param
+        # Set check_labels = false because we already checked above
         connect_param!(md, comp, param_name, ext_param_name, check_labels = false)
     end
     nothing
@@ -765,89 +717,27 @@ Add an unshared external parameters to `md` for each parameter in `comp_def`.
 function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
     for param_def in parameters(comp_def)
         
-        # gather info
+        ext_param_name = gensym()
         param_name = nameof(param_def)
-        param_dims = param_def.dim_names
-        num_dims = length(param_dims)
-        data_type = param_def.datatype
-        dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
+        value = param_def.default
 
-        # create the unshared external parameter
-        ext_param_name = gensym() # unique name
-        value = param_def.default # if the default is nothing then value is nothing
-
-        # no default
-        if isnothing(value)
-            if num_dims > 0 
-                param = ArrayModelParameter(value, param_dims, false)
-            else
-                param = ScalarModelParameter(value, false)
-            end
-            set_external_param!(md, ext_param_name, param)
-            connect_param!(md, comp_def, param_name, ext_param_name, check_labels = false) # don't check the labels because our values are nothing
-
-        # default 
-        else
-            if num_dims > 0 # array parameter case
-                           
-                # check dimensions
-                if value isa NamedArray
-                    dims = dimnames(value)
-                    dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
-                end
-                    
-                # convert the number type and, if NamedArray, convert to Array
-                if dtype <: AbstractArray
-                    value = convert(dtype, value)
-                else
-                    # check that number of dimensions matches
-                    value_dims = length(size(value))
-                    if num_dims != value_dims
-                        error("Mismatched data size for an _initialize_parameters call: dimension :$param_name",
-                            " in has $num_dims dimensions; indicated value",
-                            " has $value_dims dimensions.")
-                    end
-                    value = convert(Array{dtype, num_dims}, value)
-                end
-
-                # create TimestepArray if there is a time dim
-                ti = get_time_index_position(param_dims)
-                if ti !== nothing   # there is a time dimension
-                    T = eltype(value)
-
-                    # Use the first from the Model def, not the component, since we now say that the
-                    # data needs to match the dimensions of the model itself, so we need to allocate
-                    # the full time length even if we pad it with missings.
-                    first = first_period(md)
-                    last = last_period(md)
+        # create the unshared external parameter with a value of param_def.default,
+        # which will be nothing if it not set explicitly
+        param = create_external_param(md, param_def, value)
         
-                    if isuniform(md)
-                        stepsize = step_size(md)
-                        values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
-                    else
-                        times = time_labels(md)
-                        first_index = findfirst(isequal(first), times)
-                        values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
-                    end
-                
-                else
-                    values = value
-                end
-                 
-                param = ArrayModelParameter(values, param_dims, false)
-                
-                # Need to check the dimensions of the parameter data against component before adding it to the model's external parameters
-                _check_labels(md, comp_def, param_name, param)
-
-            else # scalar parameter case
-                value = convert(dtype, value)
-                param = ScalarModelParameter(value, false)
-            end
-
-            set_external_param!(md, ext_param_name, param)
-            connect_param!(md, comp_def, param_name, ext_param_name)
+        # Need to check the dimensions of the parameter data against component 
+        # before adding it to the model's external parameters
+        if param isa ArrayModelParameter && !isnothing(value) 
+            _check_labels(md, comp_def, param_name, param)
         end
+        
+        # add the unshared external parameter to the model def
+        set_external_param!(md, ext_param_name, param)
+
+        # connect - don't need to check labels since did it above
+        connect_param!(md, comp_def, param_name, ext_param_name; check_labels = false)
     end
+    nothing
 end
 
 """
@@ -984,6 +874,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
                    last::NothingInt=nothing,
                    before::NothingSymbol=nothing,
                    after::NothingSymbol=nothing,
+                   initialize_params::Bool = true,
                    rename::NothingPairList=nothing) # TBD: rename is not yet implemented
 
     # Check if component being added already exists
@@ -1020,7 +911,9 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     _insert_comp!(obj, comp_def, before=before, after=after)
 
     # Create an unshared external parameter for each of the new component's parameters
-    isa(obj, ModelDef) && _initialize_parameters!(obj, comp_def)
+    if isa(obj, ModelDef) && initialize_params
+        _initialize_parameters!(obj, comp_def)
+    end
 
     # Return the comp since it's a copy of what was passed in
     return comp_def
@@ -1147,13 +1040,13 @@ function _replace!(obj::AbstractCompositeComponentDef,
         end
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
-        # Delete the old component from composite's namespace only, leaving parameter connections
+        # Delete the old component from composite's namespace only, leaving parameter 
+        # connections and not initializing new connections in the add_comp! phase
         delete!(obj.namespace, comp_name)
+        return add_comp!(obj, comp_id, comp_name; before=before, after=after, initialize_params = false)
     else
         # Delete the old component and all its internal and external parameter connections
         delete!(obj, comp_name)
+        return add_comp!(obj, comp_id, comp_name; before=before, after=after)
     end
-
-    # Re-add
-    return add_comp!(obj, comp_id, comp_name; before=before, after=after)
 end

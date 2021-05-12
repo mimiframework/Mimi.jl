@@ -50,7 +50,7 @@ Electron.prep_test_env()
     @info("test_delete.jl")
     @time include("test_delete.jl")
 
-    @info("test_replace_comp.jl") # broken
+    @info("test_replace_comp.jl")
     @time include("test_replace_comp.jl")
 
     @info("test_tools.jl")

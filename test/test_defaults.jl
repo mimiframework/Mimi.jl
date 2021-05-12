@@ -16,7 +16,7 @@ set_param!(m, :p2, 2)
 
 # So far only :p2 is in the model definition's dictionary
 @test :p2 in keys(m.md.external_params) 
-@test length(m.md.external_params) == 3 # two initial unshared defaults + shared :p2
+@test length(m.md.external_params) == 2 
 
 run(m)
 

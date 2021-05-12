@@ -116,8 +116,7 @@ new_extpars = external_params(m)    # Since there are changes since the last bui
 @test_throws ErrorException update_param!(m, :e, ones(10)) # wrong size
 update_param!(m, :e, [4,5,6,7])
 
-@test length(extpars) == 14          
-@test length(new_extpars) == 15 # adds another parameter for :a, so there is one old unshared defualt one and one new udpated one
+@test length(extpars) == length(new_extpars) == 9 # we replaced the unshared default for :a with a shared for :a       
 @test typeof(new_extpars[:a].values) == TimestepMatrix{FixedTimestep{2000, 1, 2100}, arrtype, 1, Array{arrtype, 2}}
 
 @test typeof(new_extpars[:d].value) == numtype

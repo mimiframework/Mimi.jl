@@ -6,19 +6,19 @@ abstract type ModelParameter <: MimiStruct end
 
 mutable struct ScalarModelParameter{T} <: ModelParameter
     value::T
-    shared::Bool
+    is_shared::Bool
 
-    function ScalarModelParameter{T}(value::T; shared::Bool = false) where T
-        new(value, shared)
+    function ScalarModelParameter{T}(value::T; is_shared::Bool = false) where T
+        new(value, is_shared)
     end
 
-    function ScalarModelParameter{T}(value::T, shared::Bool) where T
-        new(value, shared)
+    function ScalarModelParameter{T}(value::T, is_shared::Bool) where T
+        new(value, is_shared)
     end
 
-    function ScalarModelParameter{T1}(value::T2; shared::Bool = false) where {T1, T2}
+    function ScalarModelParameter{T1}(value::T2; is_shared::Bool = false) where {T1, T2}
         try
-            new(T1(value), shared)
+            new(T1(value), is_shared)
         catch err
             error("Failed to convert $value::$T2 to $T1")
         end
@@ -28,38 +28,38 @@ end
 mutable struct ArrayModelParameter{T} <: ModelParameter
     values::T
     dim_names::Vector{Symbol} # if empty, we don't have the dimensions' name information
-    shared::Bool
+    is_shared::Bool
 
-    function ArrayModelParameter{T}(values::T, dims::Vector{Symbol}; shared::Bool = false) where T
-        new(values, dims, shared)
+    function ArrayModelParameter{T}(values::T, dims::Vector{Symbol}; is_shared::Bool = false) where T
+        new(values, dims, is_shared)
     end
 
-    function ArrayModelParameter{T}(values::T, dims::Vector{Symbol}, shared::Bool) where T
-        new(values, dims, shared)
+    function ArrayModelParameter{T}(values::T, dims::Vector{Symbol}, is_shared::Bool) where T
+        new(values, dims, is_shared)
     end
 end
 
 ScalarModelParameter(value) = ScalarModelParameter{typeof(value)}(value)
-ScalarModelParameter(value, shared) = ScalarModelParameter{typeof(value)}(value, shared)
+ScalarModelParameter(value, is_shared) = ScalarModelParameter{typeof(value)}(value, is_shared)
 
 Base.convert(::Type{ScalarModelParameter{T}}, value::Number) where {T} = ScalarModelParameter{T}(T(value))
 Base.convert(::Type{T}, s::ScalarModelParameter{T}) where {T} = T(s.value)
 
 ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(value)}(value, dims)
-ArrayModelParameter(value, dims::Vector{Symbol}, shared::Bool) = ArrayModelParameter{typeof(value)}(value, dims, shared)
+ArrayModelParameter(value, dims::Vector{Symbol}, is_shared::Bool) = ArrayModelParameter{typeof(value)}(value, dims, is_shared)
 
 # Allow values to be obtained from either parameter type using one method name.
 value(param::ArrayModelParameter)  = param.values
 value(param::ScalarModelParameter) = param.value
 
-Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter(obj.value, obj.shared)
-Base.copy(obj::ArrayModelParameter{T}) where T = ArrayModelParameter(obj.values, obj.dim_names, obj.shared)
+Base.copy(obj::ScalarModelParameter{T}) where T = ScalarModelParameter(obj.value, obj.is_shared)
+Base.copy(obj::ArrayModelParameter{T}) where T = ArrayModelParameter(obj.values, obj.dim_names, obj.is_shared)
 
 dim_names(obj::ArrayModelParameter) = obj.dim_names
 dim_names(obj::ScalarModelParameter) = []
 
-is_shared(obj::ArrayModelParameter) = obj.shared
-is_shared(obj::ScalarModelParameter) = obj.shared
+is_is_shared(obj::ArrayModelParameter) = obj.is_shared
+is_is_shared(obj::ScalarModelParameter) = obj.is_shared
 
 abstract type AbstractConnection <: MimiStruct end
 

@@ -20,6 +20,15 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::Abstrac
     filter!(x -> !(x.dst_comp_path == path && x.dst_par_name == param_name), obj.internal_param_conns)
 
     if obj isa ModelDef
+        
+        # if we are disconnecting an unshared parameter, remove it's unique Symbol
+        # parameter definition from the ModelDef's list of external parameters as well
+        ext_param_name = _get_externalparam_name(obj, nameof(comp_def), param_name)
+        if !isnothing(ext_param_name) && !(external_param(obj, ext_param_name).is_shared)
+            delete!(obj.external_params, ext_param_name);
+        end
+
+        # filter the external parameter connections
         filter!(x -> !(x.comp_path == path && x.param_name == param_name), obj.external_param_conns)
     end
     dirty!(obj)
@@ -342,13 +351,14 @@ function _is_nothing_param(param::ArrayModelParameter)
     return isnothing(param.values)
 end
  
-function _get_externalparam_name(obj::AbstractCompositeComponentDef, comp::Symbol, param_name::Symbol)
+function _get_externalparam_name(obj::AbstractCompositeComponentDef, comp::Symbol, param_name::Symbol; error_if_not_found = false)
     for conn in obj.external_param_conns
         if comp == conn.comp_path.names[end] && conn.param_name == param_name
             return conn.external_param
         end
     end
-    error("Cannot find an external parameter connection for component $comp's parameter $param_name in external parameter connections vector.")
+    error_if_not_found && error("Cannot find an external parameter connection for component $comp's parameter $param_name in external parameter connections vector.")
+    return nothing
 end
 
 """
@@ -439,14 +449,14 @@ end
 
 function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
-                             shared::Bool = false)
-    set_external_scalar_param!(obj, name, value, shared)
+                             is_shared::Bool = false)
+    set_external_scalar_param!(obj, name, value, is_shared)
 end
 
 function set_external_param!(obj::ModelDef, name::Symbol,
                              value::Union{AbstractArray, AbstractRange, Tuple};
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
-                             shared::Bool = false)
+                             is_shared::Bool = false)
     ti = get_time_index_position(param_dims)
     if ti != nothing
         value = convert(Array{number_type(obj)}, value)
@@ -456,64 +466,64 @@ function set_external_param!(obj::ModelDef, name::Symbol,
         values = value
     end
 
-    set_external_array_param!(obj, name, values, param_dims, shared = shared)
+    set_external_array_param!(obj, name, values, param_dims, is_shared = is_shared)
 end
 
 """
     set_external_array_param!(obj::ModelDef,
                                 name::Symbol, value::TimestepVector, 
-                                dims; shared::Bool = false)
+                                dims; is_shared::Bool = false)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
-`value` to the composite `obj`. The `shared` attribute of the ArrayModelParameter
+`value` to the composite `obj`. The `is_shared` attribute of the ArrayModelParameter
 will default to false. In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(obj::ModelDef,
                                         name::Symbol, value::TimestepVector, 
-                                        dims; shared::Bool = false)
-    param = ArrayModelParameter(value, [:time], shared)  # must be :time
+                                        dims; is_shared::Bool = false)
+    param = ArrayModelParameter(value, [:time], is_shared)  # must be :time
     set_external_param!(obj, name, param)
 end
 
 """
     set_external_array_param!(obj::ModelDef,
                               name::Symbol, value::TimestepMatrix, dims; 
-                              shared::Bool = false)
+                              is_shared::Bool = false)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
-`value` to the composite `obj`.  The `shared` attribute of the ArrayModelParameter
+`value` to the composite `obj`.  The `is_shared` attribute of the ArrayModelParameter
 will default to false. In this case `dims` must be `[:time]`.
 """
 function set_external_array_param!(obj::ModelDef,
                                         name::Symbol, value::TimestepArray, dims; 
-                                        shared::Bool = false)
-    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, shared)
+                                        is_shared::Bool = false)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
     set_external_param!(obj, name, param)
 end
 
 """
     set_external_array_param!(obj::ModelDef,
                               name::Symbol, value::AbstractArray, dims; 
-                              shared::Bool = false)
+                              is_shared::Bool = false)
 
 Add an array type parameter `name` with value `value` and `dims` dimensions to the 
-composite `obj`. The `shared` attribute of the ArrayModelParameter will default to 
+composite `obj`. The `is_shared` attribute of the ArrayModelParameter will default to 
 false. 
 """
 function set_external_array_param!(obj::ModelDef,
                                    name::Symbol, value::AbstractArray, dims; 
-                                   shared::Bool = false)
-    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, shared)
+                                   is_shared::Bool = false)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
     set_external_param!(obj, name, param)
 end
 
 """
-    set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; shared::Bool = false)
+    set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
 
 Add a scalar type parameter `name` with the value `value` to the composite `obj`.
 """
-function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; shared::Bool = false)
-    param = ScalarModelParameter(value, shared)
+function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
+    param = ScalarModelParameter(value, is_shared)
     set_external_param!(obj, name, param)
 end
 
@@ -605,7 +615,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             T = eltype(value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.shared))
+            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else
             copyto!(param.values.data, value)
         end
@@ -795,4 +805,79 @@ the ArrayModelParameter `param`.
 """
 function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}}) where {TIMES, T, N, ti, S}
     return [TIMES...]
+end
+
+function create_external_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+    
+    # gather info
+    param_name = nameof(param_def)
+    param_dims = param_def.dim_names
+    num_dims = length(param_dims)
+    data_type = param_def.datatype
+    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
+
+    # create a sentinal unshared parameter
+    if isnothing(value)
+        if num_dims > 0 
+            param = ArrayModelParameter(value, param_dims, is_shared)
+        else
+            param = ScalarModelParameter(value, is_shared)
+        end
+
+    # have a value - in the initiliazation of parameters case this is a default
+    else
+        if num_dims > 0 # array parameter case
+                           
+            # check dimensions
+            if value isa NamedArray
+                dims = dimnames(value)
+                dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
+            end
+                
+            # convert the number type and, if NamedArray, convert to Array
+            if dtype <: AbstractArray
+                value = convert(dtype, value)
+            else
+                # check that number of dimensions matches
+                value_dims = length(size(value))
+                if num_dims != value_dims
+                    error("Mismatched data size for an _initialize_parameters call: dimension :$param_name",
+                        " in has $num_dims dimensions; indicated value",
+                        " has $value_dims dimensions.")
+                end
+                value = convert(Array{dtype, num_dims}, value)
+            end
+
+            # create TimestepArray if there is a time dim
+            ti = get_time_index_position(param_dims)
+            if ti !== nothing   # there is a time dimension
+                T = eltype(value)
+
+                # Use the first from the Model def, not the component, since we now say that the
+                # data needs to match the dimensions of the model itself, so we need to allocate
+                # the full time length even if we pad it with missings.
+                first = first_period(md)
+                last = last_period(md)
+    
+                if isuniform(md)
+                    stepsize = step_size(md)
+                    values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
+                else
+                    times = time_labels(md)
+                    first_index = findfirst(isequal(first), times)
+                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
+                end
+            
+            else
+                values = value
+            end
+             
+            param = ArrayModelParameter(values, param_dims, is_shared)
+
+        else # scalar parameter case
+            value = convert(dtype, value)
+            param = ScalarModelParameter(value, is_shared)
+        end
+    end
+    return param
 end
