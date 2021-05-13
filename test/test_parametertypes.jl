@@ -388,6 +388,6 @@ add_comp!(m, A)
 add_comp!(m, B)
 
 @test_throws ErrorException set_param!(m, :p1, 1:5)     # this will error because the provided data is the wrong size
-@test !(:p1 in keys(m.md.external_params))                     # But it should not be added to the model's dictionary
+@test !(:p1 in keys(external_params(m)))                     # But it should not be added to the model's dictionary
 
 end #module

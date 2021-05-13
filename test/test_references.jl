@@ -3,6 +3,8 @@ module TestReferences
 using Test
 using Mimi
 
+import Mimi: external_params
+
 @defcomp A begin
     p1 = Parameter()
     v1 = Variable(index = [time])
@@ -23,12 +25,12 @@ refB = add_comp!(m, B)
 
 refA[:p1] = 3   # creates a parameter specific to this component, with name "foo_p1"
 @test Mimi.get_external_param_name(m.md, :foo, :p1) == :foo_p1
-@test :foo_p1 in keys(m.md.external_params)
+@test :foo_p1 in keys(external_params(m))
 @test Mimi.UnnamedReference(:B, :p1) in Mimi.nothing_params(m.md)
 
 refB[:p1] = 5
 @test Mimi.get_external_param_name(m.md, :B, :p1) == :B_p1
-@test :B_p1 in keys(m.md.external_params)
+@test :B_p1 in keys(external_params(m))
 
 # Use the ComponentReferences to make an internal connection
 refB[:p2] = refA[:v1]

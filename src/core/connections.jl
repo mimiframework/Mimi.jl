@@ -435,8 +435,8 @@ end
 """
     get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
 
-Get the external parameter name for the exernal parameter conneceted to $comp_name's
-parameter $param_name.  The keyword argument `missing_ok` defaults to false so
+Get the external parameter name for the exernal parameter conneceted to comp_name's
+parameter param_name.  The keyword argument `missing_ok` defaults to false so
 if no parameter is found an error is thrown, if it is set to true the function will
 return `nothing`.
 """
@@ -449,7 +449,19 @@ function get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::S
 
     missing_ok && return nothing
 
-    error("External parameter connected to $comp's parameter $param_name not found in external parameter connections list.")
+    error("External parameter connected to $comp_name's parameter $param_name not found in external parameter connections list.")
+end
+
+"""
+    get_external_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+
+Get the external parameter name for the exernal parameter conneceted to comp_name's
+parameter param_name.  The keyword argument `missing_ok` defaults to false so
+if no parameter is found an error is thrown, if it is set to true the function will
+return `nothing`.
+"""
+function get_external_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+    get_external_param_name(obj.md, comp_name, param_name; missing_ok = missing_ok)
 end
 
 function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)

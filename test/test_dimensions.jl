@@ -5,7 +5,7 @@ using Test
 
 import Mimi:
     compdef, AbstractDimension, RangeDimension, Dimension, key_type, first_period, last_period,
-    ComponentReference, ComponentPath, ComponentDef, time_labels
+    ComponentReference, ComponentPath, ComponentDef, time_labels, external_params
 
 ## 
 ## Constants
@@ -161,7 +161,7 @@ set_dimension!(m, :time, 1990:2050)
 @test last_period(m.md.namespace[:foo2]) == 2050 # trimmed with model
 
 # check that parameters were padded properly
-new_x_vals = m.md.external_params[:x].values.data
+new_x_vals = external_params(m)[:x].values.data
 @test length(new_x_vals) == length(time_labels(m))
 @test new_x_vals[11:end] == original_x_vals[1:51]
 @test all(ismissing, new_x_vals[1:10])
@@ -170,7 +170,7 @@ run(m) # should still run because parameters were adjusted under the hood
 
 # reset again with late end
 set_dimension!(m, :time, 1990:2200)
-new_x_vals = m.md.external_params[:x].values.data
+new_x_vals = external_params(m)[:x].values.data
 @test length(new_x_vals) == length(time_labels(m))
 @test all(ismissing, new_x_vals[1:10])
 @test new_x_vals[11:61] == original_x_vals[1:51]

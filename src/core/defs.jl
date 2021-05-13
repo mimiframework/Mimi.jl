@@ -723,25 +723,31 @@ Add and connect an unshared external parameter to `md` for each parameter in
 function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
     for param_def in parameters(comp_def)
         
-        ext_param_name = gensym()
-        param_name = nameof(param_def)
-        value = param_def.default
+        # check if the parameter is already created and connected, which may be
+        # the case if we are using replace! with the default reconnect = true
+        curr_ext_param_name = get_external_param_name(md, nameof(comp_def), nameof(param_def); missing_ok = true)
 
-        # create the unshared external parameter with a value of param_def.default,
-        # which will be nothing if it not set explicitly
-        param = create_external_param(md, param_def, value)
-        
-        # Need to check the dimensions of the parameter data against component 
-        # before adding it to the model's external parameters
-        if param isa ArrayModelParameter && !isnothing(value) 
-            _check_labels(md, comp_def, param_name, param)
+        if isnothing(curr_ext_param_name)
+            ext_param_name = gensym()
+            param_name = nameof(param_def)
+            value = param_def.default
+
+            # create the unshared external parameter with a value of param_def.default,
+            # which will be nothing if it not set explicitly
+            param = create_external_param(md, param_def, value)
+            
+            # Need to check the dimensions of the parameter data against component 
+            # before adding it to the model's external parameters
+            if param isa ArrayModelParameter && !isnothing(value) 
+                _check_labels(md, comp_def, param_name, param)
+            end
+            
+            # add the unshared external parameter to the model def
+            set_external_param!(md, ext_param_name, param)
+
+            # connect - don't need to check labels since did it above
+            connect_param!(md, comp_def, param_name, ext_param_name; check_labels = false)
         end
-        
-        # add the unshared external parameter to the model def
-        set_external_param!(md, ext_param_name, param)
-
-        # connect - don't need to check labels since did it above
-        connect_param!(md, comp_def, param_name, ext_param_name; check_labels = false)
     end
     nothing
 end
@@ -880,7 +886,6 @@ function add_comp!(obj::AbstractCompositeComponentDef,
                    last::NothingInt=nothing,
                    before::NothingSymbol=nothing,
                    after::NothingSymbol=nothing,
-                   initialize_params::Bool = true,
                    rename::NothingPairList=nothing) # TBD: rename is not yet implemented
 
     # Check if component being added already exists
@@ -917,9 +922,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     _insert_comp!(obj, comp_def, before=before, after=after)
 
     # Create an unshared external parameter for each of the new component's parameters
-    if isa(obj, ModelDef) && initialize_params
-        _initialize_parameters!(obj, comp_def)
-    end
+    isa(obj, ModelDef) && _initialize_parameters!(obj, comp_def)
 
     # Return the comp since it's a copy of what was passed in
     return comp_def
@@ -1047,13 +1050,12 @@ function _replace!(obj::AbstractCompositeComponentDef,
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
         # Delete the old component from composite's namespace only, leaving parameter 
-        # connections and not initializing new connections in the add_comp! phase, 
-        # which allows the existing connections to persist.
+        # connections
         delete!(obj.namespace, comp_name)
-        return add_comp!(obj, comp_id, comp_name; before=before, after=after, initialize_params = false)
     else
         # Delete the old component and all its internal and external parameter connections
         delete!(obj, comp_name)
-        return add_comp!(obj, comp_id, comp_name; before=before, after=after)
     end
+    return add_comp!(obj, comp_id, comp_name; before=before, after=after)
+
 end

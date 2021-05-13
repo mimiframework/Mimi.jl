@@ -3,6 +3,8 @@ module TestCompositeParameters
 using Mimi
 using Test 
 
+import Mimi: external_params
+
 @defcomp A begin
     p1 = Parameter(unit = "\$", default=3)
     p2 = Parameter()
@@ -133,6 +135,13 @@ sym = Mimi.get_external_param_name(m2.md, :B, :p1)
 @test Mimi.external_param(m2.md, sym).value == 3
 @test !(Mimi.external_param(m2.md, sym).is_shared)
 
+# test defaults
+m3 = get_model()
+set_param!(m3, :p1, 1, ignoreunits=true)    # Need to set parameter values for all except :p5, which has a default
+set_param!(m3, :p2, 2)    
+set_param!(m3, :p3, 3)    
+set_param!(m3, :p4, 1:10)    
+run(m3)
 
 err8 = try set_param!(m2, :B, :p1, 2) catch err err end
 @test occursin("the model already has an external parameter with this name", sprint(showerror, err8))
@@ -142,13 +151,90 @@ set_param!(m2, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
 @test Mimi.external_param(m2.md, :B_p1).is_shared
 @test issubset(Set([:p1, :B_p1]), Set(keys(m2.md.external_params)))
 
-# Test defaults being set properly:
-m3 = get_model()
-set_param!(m3, :p1, 1, ignoreunits=true)    # Need to set parameter values for all except :p5, which has a default
-set_param!(m3, :p2, 2)    
-set_param!(m3, :p3, 3)    
-set_param!(m3, :p4, 1:10)    
-run(m3)
+#------------------------------------------------------------------------------
+# Unit tests on default behavior
+
+# different default and override 
+@defcomp A begin
+    p1 = Parameter(default=3)
+end
+@defcomp B begin
+    p1 = Parameter(default=2)
+end
+
+@defcomposite top begin
+    Component(A)
+    Component(B)
+    superp1 = Parameter(A.p1, B.p1, default = nothing) # override default collision with nothing
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, top);
+@test length(external_params(m)) == 1
+ext_param_name = Mimi.get_external_param_name(m.md, :top, :superp1)
+@test Mimi.is_nothing_param(external_params(m)[ext_param_name])
+@test !external_params(m)[ext_param_name].is_shared
+
+@defcomposite top begin
+    Component(A)
+    Component(B)
+    superp1 = Parameter(A.p1, B.p1, default = 8.0) # override default collision with value
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, top);
+@test length(external_params(m)) == 1
+ext_param_name = Mimi.get_external_param_name(m.md, :top, :superp1)
+@test external_params(m)[ext_param_name].value == 8.0
+@test !external_params(m)[ext_param_name].is_shared
+
+# same default and no override
+@defcomp A begin
+    p1 = Parameter(default=2)
+end
+@defcomp B begin
+    p1 = Parameter(default=2)
+end
+
+@defcomposite top begin
+    Component(A)
+    Component(B)
+    superp1 = Parameter(A.p1, B.p1) 
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, top);
+@test length(external_params(m)) == 1
+ext_param_name = Mimi.get_external_param_name(m.md, :top, :superp1)
+@test external_params(m)[ext_param_name].value == 2
+@test !external_params(m)[ext_param_name].is_shared
+
+# simple case with no super parameter
+@defcomp A begin
+    p1 = Parameter(default=2)
+end
+@defcomp B begin
+    p2 = Parameter(default=3)
+end
+
+@defcomposite top begin
+    Component(A)
+    Component(B)
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, top);
+@test length(external_params(m)) == 2
+ext_param_name = Mimi.get_external_param_name(m.md, :top, :p1)
+@test external_params(m)[ext_param_name].value == 2
+@test !external_params(m)[ext_param_name].is_shared
+ext_param_name = Mimi.get_external_param_name(m.md, :top, :p2)
+@test external_params(m)[ext_param_name].value == 3
+@test !external_params(m)[ext_param_name].is_shared
 
 #------------------------------------------------------------------------------
 # Test set_param! for parameter that exists in neither model definition nor any subcomponent
