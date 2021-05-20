@@ -58,8 +58,8 @@ Base.copy(obj::ArrayModelParameter{T}) where T = ArrayModelParameter(obj.values,
 dim_names(obj::ArrayModelParameter) = obj.dim_names
 dim_names(obj::ScalarModelParameter) = []
 
-is_is_shared(obj::ArrayModelParameter) = obj.is_shared
-is_is_shared(obj::ScalarModelParameter) = obj.is_shared
+is_shared(obj::ArrayModelParameter) = obj.is_shared
+is_shared(obj::ScalarModelParameter) = obj.is_shared
 
 abstract type AbstractConnection <: MimiStruct end
 
