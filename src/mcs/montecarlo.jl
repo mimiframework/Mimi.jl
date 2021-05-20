@@ -678,23 +678,41 @@ resolution can be assumed, update the `translist` of `sim_inst`.
 """
 function _resolve_translist_extparams!(sim_inst) where T <: AbstractSimulationData
 
+    flat_model_list = []
+    flat_model_list_names = []
+
+    for (i, m) in enumerate(sim_inst.models)
+        if m isa MarginalModel
+            push!(flat_model_list, m.base)
+            push!(flat_model_list_names, Symbol("Model$(i)_Base"))
+            push!(flat_model_list, m.modified)
+            push!(flat_model_list_names, Symbol("Model$(i)_Modified"))
+
+        else
+            push!(flat_model_list, m)
+            push!(flat_model_list_names, Symbol("Model$(i)"))
+        end
+    end
+
     for (trans_idx, trans) in enumerate(sim_inst.sim_def.translist)
         
         paramname = trans.paramname
         suggestion_string = "use the `ComponentName.ParameterName` syntax in your SimulationDefinition to explicitly define this transform ie. `ComponentName.$paramname = RandomVariable`"
 
-        unshared_paramnames = []  # name of the unshared model parameters
-        unshared_compnames  = []  # name of the component connected to the unshared model parameters
-        unshared_modelidxs  = []  # idxs of models where paramname not found
+        unshared_paramnames = []    # name of the unshared model parameters
+        unshared_compnames = []     # name of the component connected to the unshared model parameters
+        unshared_modelnames = []    # names of models where paramname not found
         
-        for (model_idx, m) in enumerate(sim_inst.models)
+        for (model_idx, m) in enumerate(flat_model_list)
+
+            model_name = flat_model_list_names[model_idx]
 
             if !has_parameter(m.md, paramname)
                 unshared_paramname = nothing
                 unshared_compname = nothing 
                 
                 # warn about attempt to resolve missing paramter
-                @warn "Parameter name $paramname not found in model $model_idx's shared parameter list, will attempt to resolve."
+                @warn "Parameter name $paramname not found in $model_name's shared parameter list, will attempt to resolve."
                 
                 for (compname, compdef) in components(m.md)
                     if has_parameter(compdef, paramname)
@@ -703,38 +721,38 @@ function _resolve_translist_extparams!(sim_inst) where T <: AbstractSimulationDa
                             unshared_compname = compname
                         else
                             # error because parameter found in more than one component  
-                            error("Cannot resolve because parameter name $paramname found in more than one component of model $model_idx, including $unshared_compname and $compname. Please $suggestion_string.")
+                            error("Cannot resolve because parameter name $paramname found in more than one component of $model_name, including $unshared_compname and $compname. Please $suggestion_string.")
                         end
                     end
 
                     if isnothing(unshared_paramname)
-                        # error because parameter not found in any of teh model components
-                        error("Cannot resolve because $paramname not found in any of the components of model $model_idx.  Please $suggestion_string.")
+                        # error because parameter not found in any of the model components
+                        error("Cannot resolve because $paramname not found in any of the components of $model_name.  Please $suggestion_string.")
                     else
                         push!(unshared_paramnames, unshared_paramname)
                         push!(unshared_compnames, unshared_compname)
-                        push!(unshared_modelidxs, model_idx) 
+                        push!(unshared_modelnames, model_name)
                     end
                 end
             end
         end
 
         # return if found in all models
-        if isempty(unshared_modelidxs)
+        if isempty(unshared_modelnames)
             return
 
         # error because found in some models but not others, so the names of the model parameters will not match
-        elseif length(unshared_modelidxs) !== length(sim_inst.models)
-            error("Cannot resolve because $paramname is not a shared parameter in model $([unshared_modelidxs...]), but is a shared parameter in the other models in sim_inst.models list.  Please $suggestion_string.")
+        elseif length(unshared_modelnames) !== length(sim_inst.models)
+            error("Cannot resolve because $paramname is not a shared parameter in models $unshared_modelnames, but is a shared parameter in the other models in sim_inst.models list.  Please $suggestion_string.")
         
         # error because the parameter name has different model parameter names in different models
         elseif !all(unshared_paramnames[1] .== unshared_paramnames)
-            error("Cannot resolve because model parameter connected to $paramname has different names in different models, with the names $([unshared_paramnames...]) for models in idxs $([unshared_modelidxs...]) of the sim_inst.models respectively. Please $suggestion_string.")
+            error("Cannot resolve because model parameter connected to $paramname has different names in different models, with the names $([unshared_paramnames...]) for models $unshared_modelnames respectively. Please $suggestion_string.")
 
         # can safely rename
         else
             new_paramname = unshared_paramnames[1] # just use the first one
-            @warn("Parameter name $paramname found in model components $([unshared_compnames...]) for models in idxs $([unshared_modelidxs...]) of sim_inst.models respectively. We will assume these were the intended parameters for transformation assignment. In the future we suggest you $suggestion_string.")
+            @warn("Parameter name $paramname found in model components $unshared_compnames for models $unshared_modelnames respectively. We will assume these were the intended parameters for transformation assignment. In the future we suggest you $suggestion_string.")
             sim_inst.sim_def.translist[trans_idx] = TransformSpec(new_paramname, trans.op, trans.rvname, trans.dims)
         end
     end

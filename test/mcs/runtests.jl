@@ -26,4 +26,7 @@ using Test
 
     @info("test_marginalmodel.jl")
     include("test_marginalmodel.jl")
+
+    @info("test_resolve_translist_extparams.jl")
+    include("test_resolve_translist_extparams.jl")
 end
