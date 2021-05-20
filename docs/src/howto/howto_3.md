@@ -429,7 +429,7 @@ When this is done, Mimi will create a new unique RV with a unique name `share!x`
 
 ## 6. Examples
 
-The following example is derived from `"Mimi.jl/test/mcs/test_defsim.jl"`.
+The following example is derived from `"Mimi.jl/test/mcs/test_defmcs.jl"`.
 
 ```julia
 using Mimi
