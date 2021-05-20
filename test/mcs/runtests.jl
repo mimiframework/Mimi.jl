@@ -7,16 +7,16 @@ using Test
     include("test_empirical.jl")
 
     @info("test_defsim.jl")
-    include("test_defsim.jl")
+    include("test_defmcs.jl")
 
     @info("test_defsim_modifications.jl")
-    include("test_defsim_modifications.jl")
+    include("test_defmcs_modifications.jl")
 
     @info("test_defsim_sobol.jl")
-    include("test_defsim_sobol.jl")
+    include("test_defmcs_sobol.jl")
 
     @info("test_defsim_delta.jl")
-    include("test_defsim_delta.jl")
+    include("test_defmcs_delta.jl")
 
     @info("test_reshaping.jl")
     include("test_reshaping.jl")

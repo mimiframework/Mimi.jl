@@ -12,7 +12,7 @@ include("EmpiricalDistribution.jl")
 include("montecarlo.jl")
 include("lhs.jl")
 include("sobol.jl")
-include("defsim.jl")
+include("defmcs.jl")
 include("delta.jl")
 
 export 

@@ -33,6 +33,7 @@ end
 
 function Base.show(io::IO, sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
     println("SimulationInstance{$T}")
+    print_nonempty("translist for external_params", sim_inst.translist_externalparams)
     
     Base.show(io, sim_inst.sim_def)
 
@@ -228,7 +229,6 @@ function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSi
 
     # If there is a MarginalModel, need to copy the params for both the base and marginal modeldefs separately
     flat_model_list = _get_flat_model_list(sim_inst)
-
     param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(flat_model_list))
 
     for (i, m) in enumerate(flat_model_list)
@@ -241,6 +241,7 @@ end
 
 function _restore_sim_params!(sim_inst::SimulationInstance{T}, 
                               param_vec::Vector{Dict{Symbol, ModelParameter}}) where T <: AbstractSimulationData
+    
     # Need to flatten the list of models so that if there is a MarginalModel,
     # both its base and marginal models will have their separate params restored
     flat_model_list = _get_flat_model_list(sim_inst)
@@ -651,7 +652,7 @@ function _get_flat_model_list(sim_inst::SimulationInstance{T}) where T <: Abstra
 end
 
 """
-    _get_flat_model_list(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+    _get_flat_model_list_names(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
 
 Return a vector of names referring to a flattened vector of models, splatting out 
 the base and modified models of a MarginalModel.

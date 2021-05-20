@@ -84,7 +84,7 @@ si = run(sd, m, num_trials;
     scenario_args = scenario_args,
     scenario_func = scenario_func, 
     post_trial_func = post_trial_func
-    )
+)
 
 for rv in values(si.sim_def.rvdict)
     @test rv.dist isa Mimi.SampleStore

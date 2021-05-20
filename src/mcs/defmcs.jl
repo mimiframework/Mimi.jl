@@ -121,17 +121,11 @@ macro defsim(expr)
                 end
 
                 op = elt.head
-                if @capture(extvar, comp_.datum_[args__])
-                    dims = _make_dims(args)
-                    expr = :(TransformSpec($(QuoteNode(comp)), $(QuoteNode(datum)), $(QuoteNode(op)), $(QuoteNode(rvname)), [$(dims...)]))
-                elseif @capture(extvar, comp_.datum_)
-                    expr = :(TransformSpec($(QuoteNode(comp)), $(QuoteNode(datum)), $(QuoteNode(op)), $(QuoteNode(rvname))))
-                elseif @capture(extvar, name_[args__])
-                    # println("Ref:  $name, $args")        
-                    # Meta.show_sexpr(extvar)
-                    # println("")
-
-                    # if extvar.head == :ref, extvar.args must be one of:
+                # println("Ref:  $name, $args")        
+                # Meta.show_sexpr(extvar)
+                # println("")
+                # if extvar.head == :ref, extvar.args must be one of the following, 
+                # where the extvar could be paramname or compname.paramname:
                     # - a scalar value, e.g., name[2050] => (:ref, :name, 2050)
                     #   convert to tuple of dimension specifiers (:name, 2050)
                     # - a slice expression, e.g., name[2010:2050] => (:ref, :name, (:(:), 2010, 2050))
@@ -140,7 +134,14 @@ macro defsim(expr)
                     #   convert to (:name, (:US, :CHI))
                     # - combinations of these, e.g., name[2010:2050, (US, CHI)] => (:ref, :name, (:(:), 2010, 2050), (:tuple, :US, :CHI))
                     #   convert to (:name, 2010:2050, (:US, :CHI))
-
+                    
+                if @capture(extvar, compname_.name_[args__])
+                    dims = _make_dims(args)
+                    expr = :(TransformSpec($(QuoteNode(compname)), $(QuoteNode(name)), $(QuoteNode(op)), $(QuoteNode(rvname)), [$(dims...)]))
+                elseif @capture(extvar, compname_.name_)
+                    expr = :(TransformSpec($(QuoteNode(compname)), $(QuoteNode(name)), $(QuoteNode(op)), $(QuoteNode(rvname))))
+                
+                elseif @capture(extvar, name_[args__])
                     dims = _make_dims(args)
                     expr = :(TransformSpec($(QuoteNode(name)), $(QuoteNode(op)), $(QuoteNode(rvname)), [$(dims...)]))
                 else
@@ -178,6 +179,7 @@ end
 #
 # Simulation Definition update methods
 #
+
 function _update_nt_type!(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
     names = (keys(sim_def.rvdict)...,)
     types = [eltype(fld) for fld in values(sim_def.rvdict)]
@@ -280,7 +282,7 @@ end
 Create a new TransformSpec based on `paramname`, `op`, `rvname` and `dims` to the 
 Simulation definition `sim_def`, and update the Simulation's NamedTuple type. 
 The symbol `rvname` must refer to an existing random variable, and `paramname` 
-must refer to an existing shared external parameter that can thus be accessed by that 
+must refer to an existing shared external parameter that can be accessed by that 
 name. Use the  signature that includes `compname` if your `paramname` 
 is an unshared external parameter specific to a component. If `dims` are
 provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, 
@@ -295,9 +297,9 @@ end
 
 Create a new TransformSpec based on `compname`, `paramname`, `op`, `rvname` and `dims` to the 
 Simulation definition `sim_def`, and update the Simulation's NamedTuple type. The symbol 
-`rvname` must refer to an existing RV, and `compname` and `paramname` must holding an 
-existing component and parameter. If `dims` are provided, these must be legal subscripts 
-of `paramname`. Op must be one of :+=, :*=, or :(=).
+`rvname` must refer to an existing RV, and `compname` and `paramname` must refer to
+an existing parameter for a given component, parameter pair. If `dims` are provided, 
+these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
 """
 function add_transform!(sim_def::SimulationDef, compname::Symbol, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
     add_transform!(sim_def, TransformSpec(compname, paramname, op, rvname, dims))

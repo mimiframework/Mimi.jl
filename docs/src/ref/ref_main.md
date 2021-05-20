@@ -17,4 +17,5 @@ If you find a bug in these reference guides, or have a clarifying question or su
 
 - [Reference Guide: Structures - Instances](@ref) describes the core _instance_ data structures used to implement Mimi 1.0.
 
+
 - [Reference Guide: Composite Components](@ref) describes the introduction of composite components in Mimi 1.0.

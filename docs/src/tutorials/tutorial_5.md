@@ -182,7 +182,7 @@ rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the spe
 param1 = rv1                # then assign this random variable "rv1" to the parameter "param1" in the model
 ```
 
-The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to `param1`.
+The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to our shared external parameter `param1`.
 ```julia
 param1 = Normal(0, 0.8)
 ```

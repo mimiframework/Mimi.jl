@@ -183,7 +183,7 @@ mutable struct SimulationInstance{T}
     models::Vector{M} where M <: AbstractModel
     results::Vector{Dict{Tuple, DataFrame}}
     payload::Any
-    translist_externalparams::Vector{TransformSpec_ExternalParams}
+    translist_externalparams::Vector{TransformSpec_ExternalParams} 
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
@@ -192,6 +192,12 @@ mutable struct SimulationInstance{T}
         self.current_data = nothing
         self.sim_def = deepcopy(sim_def)
         self.payload = deepcopy(self.sim_def.payload)
+
+        # This will mirror self.sim_def.translist, but can only be created after 
+        # models are added because it looks for the actual external parameter 
+        # names for unshared parameters used in the statements, and tries to resolve
+        # ones written as shared parameters but which may in actuality be unshared
+        # ie. defaults
         self.translist_externalparams = Vector{TransformSpec_ExternalParams}(undef, 0)
 
         # These are parallel arrays; each model has a corresponding results dict
