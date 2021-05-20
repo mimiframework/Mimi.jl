@@ -82,17 +82,27 @@ Base.iterate(ss::SampleStore{T}) where T = iterate(ss.values)
 Base.iterate(ss::SampleStore{T}, idx) where T = iterate(ss.values, idx)
 
 struct TransformSpec
+    compname::Union{Nothing, Symbol} # if this is not given we assume the paramname is a shared model parameter
     paramname::Symbol
     op::Symbol
     rvname::Symbol
     dims::Vector{Any}
+    sharedparamname::Union{Nothing, Symbol} # when there is no component given, and thus we assume a shared model parameter, we set this to paramname, otherwise we set it to nothing
 
-    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[], sharedparamname::Union{Nothing, Symbol}=paramname) where T
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
    
-        return new(paramname, op, rvname, dims)
+        return new(nothing, paramname, op, rvname, dims, sharedparamname)
+    end 
+
+    function TransformSpec(compname::Symbol, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[], sharedparamname::Union{Nothing, Symbol}=nothing) where T
+        if ! (op in (:(=), :(+=), :(*=)))
+            error("Valid operators are =, +=, and *= (got $op)")
+        end
+   
+        return new(compname, paramname, op, rvname, dims, sharedparamname)
     end 
 end
 

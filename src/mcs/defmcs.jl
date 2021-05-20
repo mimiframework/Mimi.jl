@@ -121,7 +121,12 @@ macro defsim(expr)
                 end
 
                 op = elt.head
-                if @capture(extvar, name_[args__])
+                if @capture(extvar, comp_.datum_[args__])
+                    dims = _make_dims(args)
+                    expr = :(TransformSpec($(QuoteNode(comp)), $(QuoteNode(datum)), $(QuoteNode(op)), $(QuoteNode(rvname)), [$(dims...)]))
+                elseif @capture(extvar, comp_.datum_)
+                    expr = :(TransformSpec($(QuoteNode(comp)), $(QuoteNode(datum)), $(QuoteNode(op)), $(QuoteNode(rvname))))
+                elseif @capture(extvar, name_[args__])
                     # println("Ref:  $name, $args")        
                     # Meta.show_sexpr(extvar)
                     # println("")
@@ -273,12 +278,30 @@ end
     add_transform!(sim_def::SimulationDef, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
 
 Create a new TransformSpec based on `paramname`, `op`, `rvname` and `dims` to the 
-Simulation definition `sim_def`, and update the Simulation's NamedTuple type. The symbol `rvname` must
-refer to an existing RV, and `paramname` must refer to an existing parameter. If `dims` are
-provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
+Simulation definition `sim_def`, and update the Simulation's NamedTuple type. 
+
+The symbol `rvname` must refer to an existing random variable, and `paramname` 
+must refer to an existing shared model parameter that can thus be accessed by that 
+name. Use the  signature with the `compname_paramname` pair argument if your `paramname` 
+is an unshared model parameter specific to a component. If `dims` are
+provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, 
+or :(=).
 """
 function add_transform!(sim_def::SimulationDef, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
     add_transform!(sim_def, TransformSpec(paramname, op, rvname, dims))
+end
+
+"""
+    add_transform!(sim_def::SimulationDef, compname_paramname::Tuple{Symbol, Symbol}, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+
+Create a new TransformSpec based on `compname`, `paramname`, `op`, `rvname` and `dims` to the 
+Simulation definition `sim_def`, and update the Simulation's NamedTuple type. The symbol 
+`rvname` must refer to an existing RV, and `compname` and `paramname` must holding an 
+existing component and parameter. If `dims` are provided, these must be legal subscripts 
+of `paramname`. Op must be one of :+=, :*=, or :(=).
+"""
+function add_transform!(sim_def::SimulationDef, compname::Symbol, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+    add_transform!(sim_def, TransformSpec(compname, paramname, op, rvname, dims))
 end
 
 """
