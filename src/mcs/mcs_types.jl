@@ -82,27 +82,38 @@ Base.iterate(ss::SampleStore{T}) where T = iterate(ss.values)
 Base.iterate(ss::SampleStore{T}, idx) where T = iterate(ss.values, idx)
 
 struct TransformSpec
-    compname::Union{Nothing, Symbol} # if this is not given we assume the paramname is a shared model parameter
+    compname::Union{Nothing, Symbol} # if this is not nothing we assume the paramname is a shared model parameter
     paramname::Symbol
     op::Symbol
     rvname::Symbol
     dims::Vector{Any}
-    sharedparamname::Union{Nothing, Symbol} # when there is no component given, and thus we assume a shared model parameter, we set this to paramname, otherwise we set it to nothing
 
-    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[], sharedparamname::Union{Nothing, Symbol}=paramname) where T
+    function TransformSpec(paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
-   
-        return new(nothing, paramname, op, rvname, dims, sharedparamname)
+        return new(nothing, paramname, op, rvname, dims)
     end 
 
-    function TransformSpec(compname::Symbol, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[], sharedparamname::Union{Nothing, Symbol}=nothing) where T
+    function TransformSpec(compname::Union{Nothing, Symbol}, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
-   
-        return new(compname, paramname, op, rvname, dims, sharedparamname)
+        return new(compname, paramname, op, rvname, dims)
+    end 
+end
+
+struct TransformSpec_ExternalParams
+    paramnames::Vector{Symbol}
+    op::Symbol
+    rvname::Symbol
+    dims::Vector{Any}
+
+    function TransformSpec_ExternalParams(paramnames::Vector{Symbol}, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+        if ! (op in (:(=), :(+=), :(*=)))
+            error("Valid operators are =, +=, and *= (got $op)")
+        end
+        return new(paramnames, op, rvname, dims)
     end 
 end
 
@@ -172,6 +183,7 @@ mutable struct SimulationInstance{T}
     models::Vector{M} where M <: AbstractModel
     results::Vector{Dict{Tuple, DataFrame}}
     payload::Any
+    translist_externalparams::Vector{TransformSpec_ExternalParams}
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
@@ -180,6 +192,7 @@ mutable struct SimulationInstance{T}
         self.current_data = nothing
         self.sim_def = deepcopy(sim_def)
         self.payload = deepcopy(self.sim_def.payload)
+        self.translist_externalparams = Vector{TransformSpec_ExternalParams}(undef, 0)
 
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{AbstractModel}(undef, 0)

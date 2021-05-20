@@ -279,16 +279,15 @@ end
 
 Create a new TransformSpec based on `paramname`, `op`, `rvname` and `dims` to the 
 Simulation definition `sim_def`, and update the Simulation's NamedTuple type. 
-
 The symbol `rvname` must refer to an existing random variable, and `paramname` 
-must refer to an existing shared model parameter that can thus be accessed by that 
-name. Use the  signature with the `compname_paramname` pair argument if your `paramname` 
-is an unshared model parameter specific to a component. If `dims` are
+must refer to an existing shared external parameter that can thus be accessed by that 
+name. Use the  signature that includes `compname` if your `paramname` 
+is an unshared external parameter specific to a component. If `dims` are
 provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, 
 or :(=).
 """
 function add_transform!(sim_def::SimulationDef, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
-    add_transform!(sim_def, TransformSpec(paramname, op, rvname, dims))
+    add_transform!(sim_def, TransformSpec(nothing, paramname, op, rvname, dims))
 end
 
 """

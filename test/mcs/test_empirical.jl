@@ -52,7 +52,7 @@ _probs = 0.1 * ones(10)
 
 sd = @defsim begin
     sampling(LHSData)
-    p = EmpiricalDistribution(_values, _probs)
+    test.p = EmpiricalDistribution(_values, _probs)
 end 
 
 @defcomp test begin
