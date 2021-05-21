@@ -9,6 +9,26 @@ import Mimi:
     set_first_last!, _get_param_times
 
 #
+# Test that simple constructors don't error
+#
+
+values = [1,2,3]
+dim_names = [:time]
+shared = true
+p1 = ArrayModelParameter(values, dim_names, shared)
+p2 = ArrayModelParameter(values, dim_names)
+@test p1.values == p2.values == values
+@test p1.dim_names == p2.dim_names == dim_names
+@test p1.is_shared && !p2.is_shared
+@test Mimi.is_shared(p1) && Mimi.is_shared(p2)
+
+p3 = ScalarModelParameter(3, shared)
+p4 = ScalarModelParameter(3)
+@test p3.value == p4.value == 3
+@test p3.is_shared && !p4.shared
+@test Mimi.is_shared(p3) && !Mimi.is_shared(p4)
+
+#
 # Test that parameter type mismatches are caught
 #
 expr = :(

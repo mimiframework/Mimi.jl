@@ -35,7 +35,7 @@ run(sd, m, N; trials_output_filename = joinpath(output_dir, "trialdata.csv"), re
 
 # test modification functions
 
-# add_RV! (calls add_transform!)
+# add_RV!
 @test_throws ErrorException add_RV!(sd, :name1, Normal(1,0))
 add_RV!(sd, :new_RV, Normal(0, 1))
 @test sd.rvdict[:new_RV].dist == Normal(0, 1)

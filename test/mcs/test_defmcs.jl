@@ -18,7 +18,9 @@ m = construct_MyModel()
 
 N = 100
 
-sd = @defsim begin
+# just use this for the check that the sd can be defined, then use simpler version
+# below
+sd_complex = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
     # to an external parameter. This makes the (less common) naming of an
@@ -37,6 +39,39 @@ sd = @defsim begin
             Region2 => Uniform(0.10, 1.50),
             Region3 => Uniform(0.10, 0.20)]
 
+    grosseconomy.tfp[2020, Region1] = Uniform(3.39, 3.40)
+
+    grosseconomy.k0 = [Region1 => Uniform(50.5, 50.6),
+                        Region2 => Uniform(22., 23.),
+                        Region3 => Uniform(33.5, 33.6)]
+    
+    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
+    
+    # indicate which parameters to save for each model run. Specify
+    # a parameter name or [later] some slice of its data, similar to the
+    # assignment of RVs, above.
+    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, grosseconomy.share_var, grosseconomy.depk_var)
+end
+
+sd = @defsim begin
+    # Define random variables. The rv() is required to disambiguate an
+    # RV definition name = Dist(args...) from application of a distribution
+    # to an external parameter. This makes the (less common) naming of an
+    # RV slightly more burdensome, but it's only required when defining
+    # correlations or sharing an RV across parameters.
+    rv(name1) = Normal(1, 0.2)
+    rv(name2) = Uniform(0.75, 1.25)
+    rv(name3) = LogNormal(20, 4)
+
+    # assign RVs to model Parameters
+    share = Uniform(0.2, 0.8)
+    sigma[:, Region1] *= name2
+    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+
+    depk = [Region1 => Uniform(0.08, 0.14),
+            Region2 => Uniform(0.10, 1.50),
+            Region3 => Uniform(0.10, 0.20)]
+    
     sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
     
     # indicate which parameters to save for each model run. Specify
