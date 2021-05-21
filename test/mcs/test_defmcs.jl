@@ -12,46 +12,65 @@ using Mimi: modelinstance, compinstance, get_var_value, OUTER, INNER, ReshapedDi
 
 using CSVFiles: load
 
-include("test-model-2/multi-region-model.jl")
-using .MyModel
-m = construct_MyModel()
+# Toy @defsim 
 
-N = 100
+@defcomp test begin
+    regions = Index()                           
 
-# just use this for the check that the sd can be defined, then use simpler version
-# below
-sd_complex = @defsim begin
-    # Define random variables. The rv() is required to disambiguate an
-    # RV definition name = Dist(args...) from application of a distribution
-    # to an external parameter. This makes the (less common) naming of an
-    # RV slightly more burdensome, but it's only required when defining
-    # correlations or sharing an RV across parameters.
+    p_shared1   = Parameter()
+    p_shared2   = Parameter(index = [time])
+    p_shared3   = Parameter(index=[time, regions])
+    p_shared4   = Parameter(index = [regions])
+
+    p_unshared1   = Parameter(default = 5.0)
+    p_unshared2   = Parameter(index = [time], default = collect(1:20))
+    p_unshared3   = Parameter(index=[time, regions], default = fill(10,20,3))
+    p_unshared4   = Parameter(index = [regions], default = collect(1:3))
+
+    function run_timestep(p, v, d, t)
+    end
+end
+
+sd_toy = @defsim begin
+    
     rv(name1) = Normal(1, 0.2)
     rv(name2) = Uniform(0.75, 1.25)
     rv(name3) = LogNormal(20, 4)
 
-    # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
-    sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    # shared parameters
+    p_shared1 = name1
+    p_shared2[2015] *= name2
+    p_shared3[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    p_shared4 = [Region1 => Uniform(0.08, 0.14),
+                Region2 => Uniform(0.10, 1.50),
+                Region3 => Uniform(0.10, 0.20)]
 
-    depk = [Region1 => Uniform(0.08, 0.14),
-            Region2 => Uniform(0.10, 1.50),
-            Region3 => Uniform(0.10, 0.20)]
+    # unshared parameters
+    test.p_unshared1 = name1
+    test.p_unshared2[2015] *= name2
+    test.p_unshared3[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    test.p_unshared4 = [Region1 => Uniform(0.08, 0.14),
+                Region2 => Uniform(0.10, 1.50),
+                Region3 => Uniform(0.10, 0.20)]
 
-    grosseconomy.tfp[2020, Region1] = Uniform(3.39, 3.40)
-
-    grosseconomy.k0 = [Region1 => Uniform(50.5, 50.6),
-                        Region2 => Uniform(22., 23.),
-                        Region3 => Uniform(33.5, 33.6)]
-    
-    sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
-    
-    # indicate which parameters to save for each model run. Specify
-    # a parameter name or [later] some slice of its data, similar to the
-    # assignment of RVs, above.
-    save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global, grosseconomy.share_var, grosseconomy.depk_var)
 end
+
+m = Model()
+set_dimension!(m, :time, 2015:5:2110)
+set_dimension!(m, :regions, [:Region1, :Region2, :Region3])
+add_comp!(m, test)
+set_param!(m, :p_shared1, -5)
+set_param!(m, :p_shared2, -collect(1:20))
+set_param!(m, :p_shared3, -fill(10,20,3))
+set_param!(m, :p_shared4, -collect(1:3))
+run(sd_toy, m, 10)
+
+# More Complex/Realistic @defsim
+
+include("test-model-2/multi-region-model.jl")
+using .MyModel
+m = construct_MyModel()
+N = 100
 
 sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an

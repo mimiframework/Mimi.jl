@@ -120,8 +120,8 @@ m = Model()
 set_dimension!(m, :time, 2000:10:2050)
 add_comp!(m, test2)
 fail_expr = :(run(sd, m, 100))
-err = try eval(fail_expr) catch err err end 
-@test occursin("Component test1 does not exist in Model1.", sprint(showerror, err))
+err4 = try eval(fail_expr) catch err err end 
+@test occursin("Component test1 does not exist in Model1.", sprint(showerror, err4))
 
 m1 = Model()
 set_dimension!(m1, :time, 2000:10:2050)
@@ -130,8 +130,8 @@ m2 = Model()
 set_dimension!(m2, :time, 2000:10:2050)
 add_comp!(m2, test1)
 fail_expr = :(run(sd, [m1, m2], 100))
-err = try eval(fail_expr) catch err err end 
-@test occursin("Component test1 does not exist in Model1.", sprint(showerror, err))
+err5 = try eval(fail_expr) catch err err end 
+@test occursin("Component test1 does not exist in Model1.", sprint(showerror, err5))
 
 # transform used only for one of the component's parameters p
 m = Model()
