@@ -753,6 +753,7 @@ function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T 
                     if isnothing(unshared_paramname)
                         error("Cannot resolve because $paramname not found in any of the components of $model_name.  Please $suggestion_string.")
                     else
+                        @warn("Found $paramname in $unshared_compname with external parameter name $unshared_paramname. Will use this external parameter, but in the future we suggest you $suggestion_string")
                         external_parameters_vec[model_idx] = unshared_paramname 
                     end
                 end

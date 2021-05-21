@@ -10,14 +10,18 @@
 #   julia --color=yes test_all_models.jl
 #
 
+# should locally also test 
+#    - MimiIWG (can't pass on CI because of local registry)
+#    - MimiDICE2016R2 (not all tests pass, but check for new failures)
 
 packages_to_test = [
     "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "master"),
     "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "master"),
+    "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
     "MimiRICE2010" => ("https://github.com/anthofflab/MimiRICE2010.jl", "master"),
     "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "master"),
     "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "master"),
-    "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
+    "MimiPAGE2020" => ("https://github.com/anthofflab/MimiPAGE2020.jl", "master"),
     "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
     "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
     "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
