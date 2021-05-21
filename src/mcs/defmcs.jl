@@ -99,7 +99,11 @@ macro defsim(expr)
                         rvname = _make_rvname(extvar)
                         saverv(rvname, distname, distargs)
 
-                        expr = :(TransformSpec($(QuoteNode(extvar)), :(=), $(QuoteNode(rvname)), [$(dims...)]))
+                        if @capture(extvar, compname_.name_)
+                            expr = :(TransformSpec($(QuoteNode(compname)), $(QuoteNode(name)), :(=), $(QuoteNode(rvname)), [$(dims...)]))
+                        else
+                            expr = :(TransformSpec($(QuoteNode(extvar)), :(=), $(QuoteNode(rvname)), [$(dims...)]))
+                        end
                         push!(_transforms, esc(expr))
                     end
                 end
