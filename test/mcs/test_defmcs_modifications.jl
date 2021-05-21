@@ -66,6 +66,20 @@ pos = findall(isequal((:grosseconomy, :K)), sd.savelist)
 @test length(pos) == 1
 run(sd, m, N; trials_output_filename = joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
 
+# add_transform!
+rvs = get_simdef_rvnames(sd, :share)
+delete_RV!(sd, rvs[1])
+add_RV!(sd, :new_RV, Uniform(0.2, 0.8))
+add_transform!(sd, :share, :(=), :new_RV)
+@test :new_RV in map(i->i.rvname, sd.translist)
+run(sd, m, N; trials_output_filename = joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
+
+delete_RV!(sd, :new_RV)
+add_RV!(sd, :new_RV, Uniform(0.2, 0.8))
+add_transform!(sd, :grosseconomy, :share, :(=), :new_RV) # should work with the component name too even though it is shared
+@test :new_RV in map(i->i.rvname, sd.translist)
+run(sd, m, N; trials_output_filename = joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
+
 # get_simdef_rvnames
 rvs = get_simdef_rvnames(sd, :depk)
 @test length(rvs) == 3
