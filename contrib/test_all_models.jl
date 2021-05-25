@@ -15,13 +15,13 @@
 #    - MimiDICE2016R2 (not all tests pass, but check for new failures)
 
 packages_to_test = [
-    "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "master"),
-    "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "master"),
+    "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "master"), # fails because need to use new DataFrames syngax
+    "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "master"), # fails because need to use new DataFrames syngax
     "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
-    "MimiRICE2010" => ("https://github.com/anthofflab/MimiRICE2010.jl", "master"),
-    "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "master"),
-    "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "master"),
-    "MimiPAGE2020" => ("https://github.com/anthofflab/MimiPAGE2020.jl", "master"),
+    "MimiRICE2010" => ("https://github.com/anthofflab/MimiRICE2010.jl", "master"), 
+    "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "mcs"), # note here we use the mcs branch 
+    "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "mcs"), # note here we use the mcs branch 
+    "MimiPAGE2020" => ("https://github.com/lrennels/MimiPAGE2020.jl", "mcs"), # note using lrennels fork mcs branch, and testing this takes a LONG time :) 
     "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
     "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
     "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),

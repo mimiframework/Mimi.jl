@@ -723,13 +723,23 @@ Add and connect an unshared external parameter to `md` for each parameter in
 function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
     for param_def in parameters(comp_def)
         
-        # check if the parameter is already created and connected, which may be
-        # the case if we are using replace! with the default reconnect = true
-        curr_ext_param_name = get_external_param_name(md, nameof(comp_def), nameof(param_def); missing_ok = true)
+        param_name = nameof(param_def)
+        comp_name = nameof(comp_def)
 
-        if isnothing(curr_ext_param_name)
+        # Make some checks to see if the parameter needs to be created, specifically
+        # tends to be the case if we are using replace! with the default reconnect 
+        # = true.  The parameter could be:
+
+        # (1) externally created and connected, as checked with unconnected_params
+        # or alternatively by checking !isnothing(get_external_param_name(md, nameof(comp_def), nameof(param_def); missing_ok = true))
+
+        # (2) internally connected and thus the old shared parameter has been 
+        # deleted, as checked by unconnected_params
+
+        connected = UnnamedReference(comp_name, param_name) in connection_refs(md)
+        
+        if !connected 
             ext_param_name = gensym()
-            param_name = nameof(param_def)
             value = param_def.default
 
             # create the unshared external parameter with a value of param_def.default,
@@ -1056,6 +1066,9 @@ function _replace!(obj::AbstractCompositeComponentDef,
         # Delete the old component and all its internal and external parameter connections
         delete!(obj, comp_name)
     end
-    return add_comp!(obj, comp_id, comp_name; before=before, after=after)
 
+    ref = add_comp!(obj, comp_id, comp_name; before=before, after=after)
+
+    # 
+    return ref
 end
