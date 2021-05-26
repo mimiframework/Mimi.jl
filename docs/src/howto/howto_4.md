@@ -116,7 +116,7 @@ In larger models it can be beneficial to set some of the external parameters usi
 set_leftover_params!(m, parameters)
 ```
 
-Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters.
+Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters, and all resulting new external parameters will be shared parameters. 
 
 ## Using NamedArrays for setting parameters
 

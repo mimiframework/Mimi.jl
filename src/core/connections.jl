@@ -372,7 +372,8 @@ end
 
 Set all of the parameters in model `m` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are strings that match the names of unset parameters in the model.
+the dictionary keys are strings that match the names of unset parameters in the model,
+and all resulting new external parameters will be shared parameters.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     for param_ref in nothing_params(md)
@@ -387,7 +388,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
                 value = parameters[string(param_name)]
                 param_dims = parameter_dimensions(md, comp_name, param_name)
 
-                set_external_param!(md, param_name, value; param_dims = param_dims)
+                set_external_param!(md, param_name, value; param_dims = param_dims, is_shared = true)
             else
                 error("Cannot set parameter :$param_name, not found in provided dictionary.")
             end
