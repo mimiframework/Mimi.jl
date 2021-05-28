@@ -83,11 +83,11 @@ sd = @defsim begin
     rv(name3) = LogNormal(20, 4)
 
     # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
-    sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    grosseconomy.share = Uniform(0.2, 0.8)
+    emissions.sigma[:, Region1] *= name2
+    emissions.sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    depk = [Region1 => Uniform(0.08, 0.14),
+    grosseconomy.depk = [Region1 => Uniform(0.08, 0.14),
             Region2 => Uniform(0.10, 1.50),
             Region3 => Uniform(0.10, 0.20)]
     
@@ -300,11 +300,11 @@ sd2 = @defsim begin
     rv(name3) = LogNormal(20, 4)
 
     # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
-    sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    grosseconomy.share = Uniform(0.2, 0.8)
+    emissions.sigma[:, Region1] *= name2
+    emissions.sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
-    depk = [Region1 => Uniform(0.08, 0.14),
+    grosseconomy.depk = [Region1 => Uniform(0.08, 0.14),
             Region2 => Uniform(0.10, 1.50),
             Region3 => Uniform(0.10, 0.20)]
 
@@ -328,13 +328,13 @@ trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 sd3 = @defsim begin
 
     # 1 dimension
-    depk[:] = Uniform(0.1, 0.2)
-    k0[(Region2, Region3)] = Uniform(20, 30)
+    grosseconomy.depk[:] = Uniform(0.1, 0.2)
+    grosseconomy.k0[(Region2, Region3)] = Uniform(20, 30)
     
     # 2 dimensions
-    tfp[:, Region1] = Uniform(0.75, 1.25)
-    sigma[2020:5:2050, (Region2, Region3)] = Uniform(0.8, 1.2)
-    s[2020, Region1] = Uniform(0.2, 0.3)
+    grosseconomy.tfp[:, Region1] = Uniform(0.75, 1.25)
+    emissions.sigma[2020:5:2050, (Region2, Region3)] = Uniform(0.8, 1.2)
+    grosseconomy.s[2020, Region1] = Uniform(0.2, 0.3)
      
 end
 

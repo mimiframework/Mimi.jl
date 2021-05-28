@@ -10,8 +10,6 @@ Working through the following tutorial will require:
 
 **If you have not yet prepared these, go back to the first tutorial to set up your system.**
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
-
 #### Step 1. Download FUND
 
 The first step in this process is downloading the FUND model, which is now made easy with the Mimi registry. Assuming you have already done the one-time run of the following command to connect your julia installation with the central Mimi registry of Mimi models, as instructed in the first tutorial,

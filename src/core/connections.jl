@@ -653,28 +653,29 @@ Update the `value` of the unshared model parameter in Model Def `md` connected t
 """
 function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
 
-    # first check if we need to create an unshared model parameter, which may happen 
-    # in the case of a previously unshared parameter being connected internally
     model_param_name = get_model_param_name(md, comp_name, param_name; missing_ok = true)
 
-    # create an unshared parameter
-    if isnothing(model_param_name) 
-        comp_def = find_comp(md, comp_name)
-        param_def = comp_def[param_name]
-        param = create_model_param(md, param_def, value; is_shared = false)
-        add_model_param!(md, model_param_name, param)
-        name = get_model_param_name
+    # check if we need a new parameter, maybe because it was previously a nothing
+    # parameter that got disconnected
+    if isnothing(model_param_name)
+        
+        model_param_name = gensym()
+        add_model_param!(md, model_param_name, value; is_shared = false)
+        connect_param!(md, comp_name, param_name, model_param_name)
+        dirty!(md)
 
-    # make sure the model parameter is unshared
-    elseif model_param(md, name).is_shared
-        error("Parameter $param_name is a shared model parameter, to safely update",
-            "please call `update_param!(m, param_name, value)` to explicitly update",
-            "a shared parameter that may be connected to several components")
+    # update existing parameter
+    else
+        # make sure the model parameter is unshared
+        if model_param(md, model_param_name).is_shared
+            error("Parameter $param_name is a shared model parameter, to safely update",
+                "please call `update_param!(m, param_name, value)` to explicitly update",
+                "a shared parameter that may be connected to several components")
+        end 
+
+        # update the parameter
+        _update_param!(md, model_param_name, value)
     end
-
-    # update the parameter
-    update_param!(md, model_param_name, value)
-
 end
 
 """
@@ -688,12 +689,16 @@ function _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
         error("Cannot update parameter; $name not found in composite's model parameters.")
     end
 
-    if param isa ScalarModelParameter
-        _update_scalar_param!(param, name, value)
+    # handle nothing params
+    if is_nothing_param(param)
+        _update_nothing_param!(obj, name, value)
     else
-        _update_array_param!(obj, name, value)
+        if param isa ScalarModelParameter
+            _update_scalar_param!(param, name, value)
+        else
+            _update_array_param!(obj, name, value)
+        end
     end
-
     dirty!(obj)
 end
 
@@ -766,16 +771,59 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
 end
 
 """
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}; update_timesteps = nothing) where T
+    _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+
+Update the `value` of the model parameter `name` in object `obj` where the model
+parameter has an initial value of nothing likely from instanitate during `add_comp!`.
+"""
+function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+
+    # get the component def and param def
+    conn = filter(i -> i.model_param_name == name, obj.external_param_conns)[1]
+    param_name = conn.param_name
+    comp_def = find_comp(obj, conn.comp_path)
+    param_def = comp_def.namespace[param_name]
+
+    # create the unshared model parameter
+    param = Mimi.create_model_param(obj, param_def, value)
+    
+    # Need to check the dimensions of the parameter data against component 
+    # before adding it to the model's parameter list
+    if param isa ArrayModelParameter && !isnothing(value) 
+        _check_labels(obj, comp_def, param_name, param)
+    end
+    
+    # add the unshared model parameter to the model def, which will replace the
+    # old one and thus keep the connection in tact
+    add_model_param!(obj, name, param)
+end
+"""
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
-is called to update the model parameter by name k to value v. Each key k must be a symbol or convert to a
-symbol matching the name of an model parameter that already exists in the
-component definition.
+is called to update the model parameter by name k to value v. Each key k must be a 
+symbol or convert to a symbol matching the name of a shared model parameter that
+already exists in the component definition.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
     !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
     parameters = Dict(Symbol(k) => v for (k, v) in parameters)
+    for (param_name, value) in parameters
+        _update_param!(obj, param_name, value)
+    end
+    nothing
+end
+
+"""
+    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{Tuple, Any})
+
+For each (k, v) in the provided `parameters` dictionary, `update_param!`
+is called to update the model parameter by name k to value v. Each key k must be a 
+Tuple matching the name of a component in `obj` and the name of an parameter in
+that component.
+"""
+function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{Tuple, Any})
+    parameters = Dict(get_model_param_name(obj, first(k), last(k)) => v for (k, v) in parameters)
     for (param_name, value) in parameters
         _update_param!(obj, param_name, value)
     end
@@ -955,14 +1003,14 @@ function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimes
 end
 
 """
-    add_shared_parameter(md::ModelDef, name::Symbol, value::Any; 
+    add_shared_param!(md::ModelDef, name::Symbol, value::Any; 
                         param_dims::Union{Nothing,Array{Symbol}} = nothing)
 
 User-facing API function to add a shared parameter to Model Def `md` with name
 `name` and value `value`, and optional dimensions `param_dims`.  The `is_shared` 
 attribute of the added Model Parameter will be `true`.
 """
-function add_shared_parameter(md::ModelDef, name::Symbol, value::Any; 
+function add_shared_param!(md::ModelDef, name::Symbol, value::Any; 
                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
     
     has_parameter(md, name) && error("Cannot set parameter :$name, the model already has a shared parameter with this name.")

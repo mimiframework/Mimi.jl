@@ -188,13 +188,23 @@ to component `comp_name`'s parameter `param_name`.
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
-For each (k, v) in the provided `parameters` dictionary, `update_param!``
-is called to update the model parameter by name k to value v.  Each key k 
-must be a symbol or convert to a symbol matching the name of an model parameter t
-hat already exists in the model definition. The update_timesteps keyword argument 
-is deprecated, but temporarily remains as a dummy argument to allow warning detection.
+For each (k, v) in the provided `parameters` dictionary, `update_param!`
+is called to update the model parameter by name k to value v. Each key k must be a 
+symbol or convert to a symbol matching the name of a shared model parameter that
+already exists in the component definition.
 """
 @delegate update_params!(m::Model, parameters::Dict; update_timesteps = nothing) => md
+
+"""
+    update_params!(m::Model, parameters::Dict{Tuple, Any})
+
+For each (k, v) in the provided `parameters` dictionary, `update_param!`
+is called to update the model parameter by name k to value v. Each key k must be a 
+Tuple matching the name of a component in `obj` and the name of an parameter in
+that component.
+"""
+@delegate update_params!(m::Model, parameters::Dict{Tuple, Any}) => md
+
 
 """
     add_comp!(
@@ -419,14 +429,14 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    add_shared_parameter(m::Model, name::Symbol, value::Any; 
+    add_shared_param!(m::Model, name::Symbol, value::Any; 
                         param_dims::Union{Nothing,Array{Symbol}} = nothing)
 
 User-facing API function to add a shared parameter to Model `m`'s ModelDef` with name
 `name` and value `value`, and optional dimensions `param_dims`.  The `is_shared` 
 attribute of the added Model Parameter will be `true`.
 """
-@delegate add_shared_parameter(m::Model, name::Symbol, value::Any; 
+@delegate add_shared_param!(m::Model, name::Symbol, value::Any; 
                                 param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
                                 
 """

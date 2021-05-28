@@ -16,6 +16,7 @@ export
     MarginalModel,
     Model,
     add_comp!,
+    add_shared_param!,
     # components,
     connect_param!,
     create_marginal_model,

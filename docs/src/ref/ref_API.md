@@ -4,7 +4,8 @@
 @defcomp
 MarginalModel
 Model
-add_comp!  
+add_comp! 
+add_shared_param! 
 connect_param!
 create_marginal_model
 delete_param!
