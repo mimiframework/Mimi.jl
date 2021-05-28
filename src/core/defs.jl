@@ -1076,6 +1076,5 @@ function _replace!(obj::AbstractCompositeComponentDef,
 
     ref = add_comp!(obj, comp_id, comp_name; before=before, after=after)
 
-    # 
     return ref
 end

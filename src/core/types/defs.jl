@@ -263,7 +263,7 @@ function Base.getproperty(md::ModelDef, field::Symbol)
         @warn "ModelDef's `external_params` field is renamed to `model_params`, please change code accordingly."
         field = :model_params
     end
-    return getfield(etc, field)
+    return getfield(md, field)
 end
 
 @deprecate external_params(md::ModelDef) model_params(md)
