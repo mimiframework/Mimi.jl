@@ -96,6 +96,12 @@ Remove any parameter connections for a given parameter `param_name` in a given c
                               value::Union{Number, AbstractArray, AbstractRange, Tuple};
                               param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
 
+@delegate add_model_param!(m::Model, name::Symbol, value::ModelParameter) => md
+
+@delegate add_model_param!(m::Model, name::Symbol,
+                            value::Union{Number, AbstractArray, AbstractRange, Tuple};
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
 
 # @delegate doesn't handle the 'where T' currently. This is the only instance of it for now...
@@ -111,6 +117,14 @@ Update the `value` of an external parameter in model `m`, referenced by
 just to provide warnings.
 """
 @delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing) => md
+
+"""
+    update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value)
+
+Update the `value` of the unshared model parameter in Model `m`'s Model Def connected
+to component `comp_name`'s parameter `param_name`. 
+"""
+@delegate update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value) => md
 
 """
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
@@ -377,18 +391,31 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
+    add_shared_parameter(m::Model, name::Symbol, value::Any; 
+                        param_dims::Union{Nothing,Array{Symbol}} = nothing)
+
+User-facing API function to add a shared parameter to Model `m`'s ModelDef` with name
+`name` and value `value`, and optional dimensions `param_dims`.  The `is_shared` 
+attribute of the added Model Parameter will be `true`.
+"""
+@delegate add_shared_parameter(m::Model, name::Symbol, value::Any; 
+                                param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+                                
+"""
+    add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 
 Add a one or two dimensional (optionally, time-indexed) array parameter `name`
 with value `value` to the model `m`.
 """
+@delegate add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
 @delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
 
 """
-    set_external_scalar_param!(m::Model, name::Symbol, value::Any)
+    add_model_scalar_param!(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter `name` with value `value` to the model `m`.
 """
+@delegate add_model_scalar_param!(m::Model, name::Symbol, value::Any) => md
 @delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """

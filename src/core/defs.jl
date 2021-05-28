@@ -110,7 +110,7 @@ function delete_param!(md::ModelDef, external_param_name::Symbol)
     if external_param_name in keys(md.external_params)
         delete!(md.external_params, external_param_name)
     else
-        error("Cannot delete $external_param_name, not found in external parameter list.")
+        error("Cannot delete $external_param_name, not found in model's parameter list.")
     end
     
     # Remove external parameter connections
@@ -438,9 +438,14 @@ function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Sy
         error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
 
     if has_parameter(md, ext_param_name)
-        error("Cannot set parameter :$ext_param_name, the model already has an external parameter with this name.", 
-        " Use `update_param!(m, param_name, value)` to change the value, or use ",
-        "`set_param!(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
+
+        error("Cannot set parameter :$ext_param_name, the model already has a parameter with this name.",
+        " IF you wish to change the name of unshared parameter :$param_name connected to component :$(nameof(compdef))", 
+        " use `update_param!(m, comp_name, param_name, value)", 
+        " IF you wish to change the value of the existing shared parameter :$ext_param_name, ",
+        " use `update_param!(m, param_name, value)` to change the value of the shared parameter.",
+        " IF you wish to create a new shared parameter connected to component :$(nameof(compdef)), use ",
+        "`set_param!(m, comp_name, param_name, unique_param_name, value)`.")
     end
 
     set_param!(md, param_name, value, dims = dims, comps = [comp_def], ext_param_name = ext_param_name)
@@ -471,12 +476,14 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     collisions = _find_collisions(fields, [comp => param_name for comp in comps])
     if ! isempty(collisions) 
         if :unit in collisions
-            error("Cannot set parameter :$param_name in the model, components have conflicting values for the :unit field of this parameter. ", 
-            "Call `set_param!` with optional keyword argument `ignoreunits = true` to override.")
+            error("Cannot set shared parameter :$param_name in the model, components have conflicting values for the :unit field of this parameter. ", 
+            "IF you wish to set a shared parameter, call `set_param!` with optional keyword argument `ignoreunits = true` to override.",
+            "IF you wish to leave these parameters as unshared parameters and just update values, update them with separate calls to `update_param!(m, comp_name, param_name, value)`.")
         else
             spec = join(collisions, " and ")
-            error("Cannot set parameter :$param_name in the model, components have conflicting values for the $spec of this parameter. ",
-            "Set these parameters with separate calls to `set_param!(m, comp_name, param_name, unique_param_name, value)`.")
+            error("Cannot set shared parameter :$param_name in the model, components have conflicting values for the $spec of this parameter. ",
+            "IF you wish to set a shared parameter for each component, set these parameters with separate calls to `set_param!(m, comp_name, param_name, unique_param_name, value)`.",
+            "IF you wish to leave these parameters as unshared parameters and just update values, update them with separate calls to `update_param!(m, comp_name, param_name, value)`.")
         end
     end
 
@@ -507,7 +514,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     if ext_param_name === nothing
         ext_param_name = param_name
     end
-    set_external_param!(md, ext_param_name, param)
+    add_model_param!(md, ext_param_name, param)
 
     # connect
     for comp in comps
@@ -731,7 +738,7 @@ function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
         # = true.  The parameter could be:
 
         # (1) externally created and connected, as checked with unconnected_params
-        # or alternatively by checking !isnothing(get_external_param_name(md, nameof(comp_def), nameof(param_def); missing_ok = true))
+        # or alternatively by checking !isnothing(get_model_param_name(md, nameof(comp_def), nameof(param_def); missing_ok = true))
 
         # (2) internally connected and thus the old shared parameter has been 
         # deleted, as checked by unconnected_params
@@ -753,7 +760,7 @@ function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
             end
             
             # add the unshared external parameter to the model def
-            set_external_param!(md, ext_param_name, param)
+            add_model_param!(md, ext_param_name, param)
 
             # connect - don't need to check labels since did it above
             connect_param!(md, comp_def, param_name, ext_param_name; check_labels = false)

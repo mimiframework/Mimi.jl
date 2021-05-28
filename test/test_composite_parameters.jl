@@ -131,7 +131,7 @@ set_param!(m2, :A, :p1, 2)  # Set the value only for component A
 @test Mimi.external_param(m2.md, :p1).value == 2 
 @test Mimi.external_param(m2.md, :p1).is_shared
 # and that B.p1 is still the default value and unshared
-sym = Mimi.get_external_param_name(m2.md, :B, :p1)
+sym = Mimi.get_model_param_name(m2.md, :B, :p1)
 @test Mimi.external_param(m2.md, sym).value == 3
 @test !(Mimi.external_param(m2.md, sym).is_shared)
 
@@ -143,13 +143,13 @@ set_param!(m3, :p3, 3)
 set_param!(m3, :p4, 1:10)    
 run(m3)
 
-err8 = try set_param!(m2, :B, :p1, 2) catch err err end
-@test occursin("the model already has an external parameter with this name", sprint(showerror, err8))
+err8 = try set_param!(m3, :B, :p1, 2) catch err err end
+@test occursin("the model already has a parameter with this name", sprint(showerror, err8))
 
-set_param!(m2, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
-@test Mimi.external_param(m2.md, :B_p1).value == 2 
-@test Mimi.external_param(m2.md, :B_p1).is_shared
-@test issubset(Set([:p1, :B_p1]), Set(keys(m2.md.external_params)))
+set_param!(m3, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
+@test Mimi.external_param(m3.md, :B_p1).value == 2 
+@test Mimi.external_param(m3.md, :B_p1).is_shared
+@test issubset(Set([:p1, :B_p1]), Set(keys(m3.md.external_params)))
 
 #------------------------------------------------------------------------------
 # Unit tests on default behavior
@@ -172,7 +172,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
 @test length(external_params(m)) == 1
-ext_param_name = Mimi.get_external_param_name(m.md, :top, :superp1)
+ext_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
 @test Mimi.is_nothing_param(external_params(m)[ext_param_name])
 @test !external_params(m)[ext_param_name].is_shared
 
@@ -186,7 +186,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
 @test length(external_params(m)) == 1
-ext_param_name = Mimi.get_external_param_name(m.md, :top, :superp1)
+ext_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
 @test external_params(m)[ext_param_name].value == 8.0
 @test !external_params(m)[ext_param_name].is_shared
 
@@ -208,7 +208,7 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
 @test length(external_params(m)) == 1
-ext_param_name = Mimi.get_external_param_name(m.md, :top, :superp1)
+ext_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
 @test external_params(m)[ext_param_name].value == 2
 @test !external_params(m)[ext_param_name].is_shared
 
@@ -229,10 +229,10 @@ m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
 @test length(external_params(m)) == 2
-ext_param_name = Mimi.get_external_param_name(m.md, :top, :p1)
+ext_param_name = Mimi.get_model_param_name(m.md, :top, :p1)
 @test external_params(m)[ext_param_name].value == 2
 @test !external_params(m)[ext_param_name].is_shared
-ext_param_name = Mimi.get_external_param_name(m.md, :top, :p2)
+ext_param_name = Mimi.get_model_param_name(m.md, :top, :p2)
 @test external_params(m)[ext_param_name].value == 3
 @test !external_params(m)[ext_param_name].is_shared
 

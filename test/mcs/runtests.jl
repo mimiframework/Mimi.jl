@@ -1,7 +1,7 @@
 using Mimi
 using Test
 
-@testset "Mimi-SA" begin
+@testset "Mimi-MCS" begin
 
     @info("test_empirical.jl")
     include("test_empirical.jl")

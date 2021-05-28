@@ -24,7 +24,7 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::Abstrac
         # if disconnecting an unshared parameter, it will become unreachable since
         # it's name is a random, unique symbol so remove it from the ModelDef's 
         # list of external parameters
-        ext_param_name = get_external_param_name(obj, nameof(comp_def), param_name; missing_ok = true)
+        ext_param_name = get_model_param_name(obj, nameof(comp_def), param_name; missing_ok = true)
         if !isnothing(ext_param_name) && !(external_param(obj, ext_param_name).is_shared)
             delete!(obj.external_params, ext_param_name);
         end
@@ -192,7 +192,7 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
         end
 
-        set_external_array_param!(obj, dst_par_name, values, dst_dims)
+        add_model_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
 
     else
@@ -382,13 +382,13 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
 
-        # check whether we need to create the external parameter
+        # check whether we need to add the external parameter to the ModelDef
         if external_param(md, param_name, missing_ok=true) === nothing
             if haskey(parameters, string(param_name))  
                 value = parameters[string(param_name)]
                 param_dims = parameter_dimensions(md, comp_name, param_name)
 
-                set_external_param!(md, param_name, value; param_dims = param_dims, is_shared = true)
+                add_model_param!(md, param_name, value; param_dims = param_dims, is_shared = true)
             else
                 error("Cannot set parameter :$param_name, not found in provided dictionary.")
             end
@@ -434,14 +434,14 @@ function external_param(obj::ModelDef, name::Symbol; missing_ok=false)
 end
 
 """
-    get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+    get_model_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
 
 Get the external parameter name for the exernal parameter conneceted to comp_name's
 parameter param_name.  The keyword argument `missing_ok` defaults to false so
 if no parameter is found an error is thrown, if it is set to true the function will
 return `nothing`.
 """
-function get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+function get_model_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
     for conn in obj.external_param_conns
         if conn.comp_path.names[end] == comp_name && conn.param_name == param_name
             return conn.external_param
@@ -454,15 +454,15 @@ function get_external_param_name(obj::ModelDef, comp_name::Symbol, param_name::S
 end
 
 """
-    get_external_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+    get_model_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
 
 Get the external parameter name for the exernal parameter conneceted to comp_name's
 parameter param_name.  The keyword argument `missing_ok` defaults to false so
 if no parameter is found an error is thrown, if it is set to true the function will
 return `nothing`.
 """
-function get_external_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
-    get_external_param_name(obj.md, comp_name, param_name; missing_ok = missing_ok)
+function get_model_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
+    get_model_param_name(obj.md, comp_name, param_name; missing_ok = missing_ok)
 end
 
 function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
@@ -470,93 +470,165 @@ function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnecti
     dirty!(obj)
 end
 
-function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
+"""
+    add_model_param!(md::ModelDef, name::Symbol, value::ModelParameter)
+
+Add an external parameter with name `name` and Model Parameter `value` to ModelDef `md`.
+"""
+function add_model_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     # if haskey(obj.external_params, name)
     #     @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
     # end
-    obj.external_params[name] = value
-    dirty!(obj)
+    md.external_params[name] = value
+    dirty!(md)
     return value
 end
+# deprecated version of above
+function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
+    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
+    add_model_param!(obj, name, value)
+end
 
+"""
+    add_model_param!(md::ModelDef, name::Symbol, value::Number;
+                        param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                        is_shared::Bool = false)
+
+Create and add an external parameter with name `name` and Model Parameter `value` 
+to ModelDef `md`. The Model Parameter will be created with value `value`, dimensions
+`param_dims` which can be left to be created automatically from the Model Def, and 
+an is_shared attribute `is_shared` which defaults to false.
+"""
+function add_model_param!(md::ModelDef, name::Symbol, value::Number;
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                            is_shared::Bool = false)
+    add_model_scalar_param!(md, name, value, is_shared = is_shared)
+end
+# deprecated version of above
 function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                              is_shared::Bool = false)
-    set_external_scalar_param!(obj, name, value, is_shared = is_shared)
+    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
+    add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
 end
 
-function set_external_param!(obj::ModelDef, name::Symbol,
+"""
+    add_model_param!(md::ModelDef, name::Symbol, value::Number;
+                        param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                        is_shared::Bool = false)
+
+Create and add an external parameter with name `name` and Model Parameter `value` 
+to ModelDef `md`. The Model Parameter will be created with value `value`, dimensions
+`param_dims` which can be left to be created automatically from the Model Def, and 
+an is_shared attribute `is_shared` which defaults to false.
+"""
+function add_model_param!(md::ModelDef, name::Symbol,
                              value::Union{AbstractArray, AbstractRange, Tuple};
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                              is_shared::Bool = false)
+
     ti = get_time_index_position(param_dims)
     if ti != nothing
-        value = convert(Array{number_type(obj)}, value)
+        value = convert(Array{number_type(md)}, value)
         num_dims = length(param_dims)
-        values = get_timestep_array(obj, eltype(value), num_dims, ti, value)
+        values = get_timestep_array(md, eltype(value), num_dims, ti, value)
     else
         values = value
     end
 
-    set_external_array_param!(obj, name, values, param_dims, is_shared = is_shared)
+    add_model_array_param!(md, name, values, param_dims, is_shared = is_shared)
+end
+# deprecated version of above
+function set_external_param!(obj::ModelDef, name::Symbol,
+                            value::Union{AbstractArray, AbstractRange, Tuple};
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                            is_shared::Bool = false)
+    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
+    add_model_param!(obj, name, value; param_dims, is_shared = is_shared)
 end
 
 """
-    set_external_array_param!(obj::ModelDef,
+    add_model_array_param!(md::ModelDef,
                                 name::Symbol, value::TimestepVector, 
                                 dims; is_shared::Bool = false)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
-`value` to the composite `obj`. The `is_shared` attribute of the ArrayModelParameter
+`value` to the Model Def `md`. The `is_shared` attribute of the ArrayModelParameter
 will default to false. In this case `dims` must be `[:time]`.
 """
-function set_external_array_param!(obj::ModelDef,
-                                        name::Symbol, value::TimestepVector, 
-                                        dims; is_shared::Bool = false)
+function add_model_array_param!(md::ModelDef,
+                                    name::Symbol, value::TimestepVector, 
+                                    dims; is_shared::Bool = false)
     param = ArrayModelParameter(value, [:time], is_shared)  # must be :time
-    set_external_param!(obj, name, param)
+    add_model_param!(md, name, param)
+end
+# deprecated version of above
+function set_external_array_param!(obj::ModelDef,
+                                name::Symbol, value::TimestepVector, 
+                                dims; is_shared::Bool = false)
+    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_external_array_param` with the same arguments."
+    add_model_array_param!(obj, name, value, dims; is_shared = is_shared)
 end
 
 """
-    set_external_array_param!(obj::ModelDef,
+    add_model_array_param!(md::ModelDef,
                               name::Symbol, value::TimestepMatrix, dims; 
                               is_shared::Bool = false)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
-`value` to the composite `obj`.  The `is_shared` attribute of the ArrayModelParameter
+`value` to the Model Def `md`.  The `is_shared` attribute of the ArrayModelParameter
 will default to false. In this case `dims` must be `[:time]`.
 """
+function add_model_array_param!(md::ModelDef,
+                                name::Symbol, value::TimestepArray, dims; 
+                                is_shared::Bool = false)
+    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
+    add_model_param!(md, name, param)
+end
+# deprecated version of above
 function set_external_array_param!(obj::ModelDef,
                                         name::Symbol, value::TimestepArray, dims; 
                                         is_shared::Bool = false)
-    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
-    set_external_param!(obj, name, param)
+    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_external_array_param` with the same arguments."
+    add_external_array_param(obj, name, value, dims; is_shared = is_shared)
 end
 
 """
-    set_external_array_param!(obj::ModelDef,
+    add_model_array_param!(md::ModelDef,
                               name::Symbol, value::AbstractArray, dims; 
                               is_shared::Bool = false)
 
 Add an array type parameter `name` with value `value` and `dims` dimensions to the 
-composite `obj`. The `is_shared` attribute of the ArrayModelParameter will default to 
+Model Def `md`. The `is_shared` attribute of the ArrayModelParameter will default to 
 false. 
 """
-function set_external_array_param!(obj::ModelDef,
+function add_model_array_param!(md::ModelDef,
                                    name::Symbol, value::AbstractArray, dims; 
                                    is_shared::Bool = false)
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
-    set_external_param!(obj, name, param)
+    add_model_param!(md, name, param)
+end
+# deprecated version of above
+function set_external_array_param!(obj::ModelDef,
+                                   name::Symbol, value::AbstractArray, dims; 
+                                   is_shared::Bool = false)
+    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_external_array_param` with the same arguments."
+    add_external_array_param(obj, name, value, dims; is_shared = is_shared)
 end
 
 """
-    set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
+    add_model_scalar_param!(md::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
 
-Add a scalar type parameter `name` with the value `value` to the composite `obj`.
+Add a scalar type parameter `name` with the value `value` to the Model Def `md`.
 """
-function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
+function add_model_scalar_param!(md::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
     param = ScalarModelParameter(value, is_shared)
-    set_external_param!(obj, name, param)
+    add_model_param!(md, name, param)
+end
+# deprecated version of above
+function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
+    @warn "`set_external_scalar_param! is deprecated and will be removed in the future, please use `add_external_scalar_param` with the same arguments."
+    add_external_scalar_param(obj, name, value; is_shared = is_shared)
 end
 
 """
@@ -583,6 +655,38 @@ function update_param!(mi::ModelInstance, name::Symbol, value)
     end
 
     return nothing
+end
+
+"""
+    update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
+
+Update the `value` of the unshared model parameter in Model Def `md` connected to component 
+`comp_name`'s parameter `param_name`. 
+"""
+function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
+
+    # first check if we need to create an unshared model parameter, which may happen 
+    # in the case of a previously unshared parameter being connected internally
+    model_param_name = get_model_param_name(md, comp_name, param_name; missing_ok = true)
+
+    # create an unshared parameter
+    if isnothing(model_param_name) 
+        comp_def = find_comp(md, comp_name)
+        param_def = comp_def[param_name]
+        param = create_external_param(md, param_def, value; is_shared = false)
+        add_model_param!(md, model_param_name, param)
+        name = get_model_param_name
+
+    # make sure the model parameter is unshared
+    elseif external_param(md, name).is_shared
+        error("Parameter $param_name is a shared model parameter, to safely update",
+            "please call `update_param!(m, param_name, value)` to explicitly update",
+            "a shared parameter that may be connected to several components")
+    end
+
+    # update the parameter
+    _update_param!(md, model_param_name, value)
+
 end
 
 function _update_param!(obj::AbstractCompositeComponentDef,
@@ -647,7 +751,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             T = eltype(value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            set_external_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
+            add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else
             copyto!(param.values.data, value)
         end
@@ -841,6 +945,23 @@ the ArrayModelParameter `param`.
 """
 function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}}) where {TIMES, T, N, ti, S}
     return [TIMES...]
+end
+
+"""
+    add_shared_parameter(md::ModelDef, name::Symbol, value::Any; 
+                        param_dims::Union{Nothing,Array{Symbol}} = nothing)
+
+User-facing API function to add a shared parameter to Model Def `md` with name
+`name` and value `value`, and optional dimensions `param_dims`.  The `is_shared` 
+attribute of the added Model Parameter will be `true`.
+"""
+function add_shared_parameter(md::ModelDef, name::Symbol, value::Any; 
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing)
+    
+    has_parameter(md, name) && error("Cannot set parameter :$name, the model already has a shared parameter with this name.")
+
+    # check to make sure the parameter doesn't already exist
+    add_model_param!(md, name, value; param_dims = param_dims, is_shared = true)
 end
 
 """

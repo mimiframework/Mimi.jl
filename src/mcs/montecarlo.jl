@@ -718,7 +718,7 @@ function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T 
                 # check for component in the model
                 compname in keys(components(m.md)) || error("Component $compname does not exist in $(flat_model_list_names[model_idx]).")
 
-                external_parameters_vec[model_idx] = get_external_param_name(m.md, compname, trans.paramname)
+                external_parameters_vec[model_idx] = get_model_param_name(m.md, compname, trans.paramname)
             end
 
         # no component, so this should be referring to a shared parameter ... but 
@@ -743,7 +743,7 @@ function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T 
                     for (compname, compdef) in components(m.md)
                         if has_parameter(compdef, paramname)
                             if isnothing(unshared_paramname) # first time the parameter was found in a component
-                                unshared_paramname = get_external_param_name(m.md, compname, paramname) # NB might not need to use m.mi.md here could be m.md
+                                unshared_paramname = get_model_param_name(m.md, compname, paramname) # NB might not need to use m.mi.md here could be m.md
                                 unshared_compname = compname
                             else # already found in a previous component
                                 error("Cannot resolve because parameter name $paramname found in more than one component of $model_name, including $unshared_compname and $compname. Please $suggestion_string.")
