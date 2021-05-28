@@ -544,7 +544,7 @@ function set_external_param!(obj::ModelDef, name::Symbol,
                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                             is_shared::Bool = false)
     @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
-    add_model_param!(obj, name, value; param_dims, is_shared = is_shared)
+    add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
 end
 
 """
