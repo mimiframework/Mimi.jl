@@ -11,11 +11,33 @@ Return the `ModelDef` contained by Model `m`.
 """
 modeldef(m::Model) = m.md
 
+"""
+    modelinstance(m::Model)
+
+Return the `ModelInstance` contained by Model `m`.
+"""
 modelinstance(m::Model) = m.mi
+
+"""
+    modelinstance_def(m::Model)
+
+Return the `ModelDef` of the `ModelInstance` contained by Model `m`.
+"""
 modelinstance_def(m::Model) = modeldef(modelinstance(m))
 
+"""
+    is_built(m::Model)
+
+Return true if Model `m` is built, otherwise return false.
+"""
 is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 
+"""
+    is_built(mm::MarginalModel)
+
+Return true if `MarginalModel` `mm` is built, meaning both its `base` and `modified`
+`Model`s are built, otherwise return false.
+"""
 is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 
 @delegate compinstance(m::Model, name::Symbol) => mi
@@ -36,8 +58,10 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 @delegate add_connector_comps!(m::Model) => md
 
 """
-    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol, 
-    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, backup_offset::Union{Int, Nothing}=nothing)
+    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
+                    src_comp_name::Symbol, src_var_name::Symbol, 
+                    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                    backup_offset::Union{Int, Nothing}=nothing)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `m`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
@@ -48,11 +72,10 @@ a specified number of timesteps after the source component begins. ie. the value
 `1` if the destination componentm parameter should only use the source component 
 data for the second timestep and beyond.
 """
-@delegate connect_param!(m::Model,
-                         dst_comp_name::Symbol, dst_par_name::Symbol,
-                         src_comp_name::Symbol, src_var_name::Symbol,
-                         backup::Union{Nothing, Array}=nothing;
-                         ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing) => md
+@delegate connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol,
+                        src_comp_name::Symbol, src_var_name::Symbol,
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                        backup_offset::Union{Nothing, Int} = nothing) => md
 
 """
     connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol)
@@ -89,15 +112,58 @@ Remove any parameter connections for a given parameter `param_name` in a given c
 """
 @delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
+"""
+    add_model_param!(m::Model, name::Symbol, value::ModelParameter)
+
+Add an model parameter with name `name` and Model Parameter `value` to Model `m`.
+"""
 @delegate add_model_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
+"""
+    add_model_param!(m: Model, name::Symbol, value::Number;
+                    param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                    is_shared::Bool = false)
+
+Create and add a model parameter with name `name` and Model Parameter `value` 
+to Model `m`. The Model Parameter will be created with value `value`, dimensions
+`param_dims` which can be left to be created automatically from the Model Def, and 
+an is_shared attribute `is_shared` which defaults to false.
+"""
 @delegate add_model_param!(m::Model, name::Symbol,
                             value::Union{Number, AbstractArray, AbstractRange, Tuple};
                             param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+"""
+    add_model_param!(m::Model, name::Symbol,
+                    value::Union{AbstractArray, AbstractRange, Tuple};
+                    param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                    is_shared::Bool = false)
 
+Create and add a model parameter with name `name` and Model Parameter `value` 
+to Model `m`. The Model Parameter will be created with value `value`, dimensions
+`param_dims` which can be left to be created automatically from the Model Def, and 
+an is_shared attribute `is_shared` which defaults to false.
+"""
+@delegate add_model_param!(m::Model, name::Symbol,
+                            value::Union{AbstractArray, AbstractRange, Tuple};
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                            is_shared::Bool = false) => md
+"""
+    add_internal_param_conn(m::Model, conn::InternalParameterConnection)
+
+Add internal parameter connection `conn` to model `m`.
+"""
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
 
+
 # @delegate doesn't handle the 'where T' currently. This is the only instance of it for now...
+"""
+    set_leftover_params!(m::Model, parameters::Dict)
+
+Set all of the parameters in model `m` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are strings that match the names of unset parameters in the model,
+and all resulting new model parameters will be shared parameters.
+"""
 function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
     set_leftover_params!(m.md, parameters)
 end
@@ -216,7 +282,11 @@ Return an iterator on the components in a model's model instance.
 
 @delegate time_labels(m::Model) => md
 
-# Return the number of timesteps a given component in a model will run for.
+"""
+    getspan(m::Model, comp_name::Symbol)
+
+Return the number of timesteps a given component in a model will run for.
+"""
 @delegate getspan(m::Model, comp_name::Symbol) => md
 
 """
@@ -235,6 +305,11 @@ function datumdef(comp_def::AbstractComponentDef, item::Symbol)
     end
 end
 
+"""
+    datumdef(m::Model, comp_name::Symbol, item::Symbol)
+
+Return a DatumDef for `item` in the given component `comp_name` of model `m`.
+"""
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
 """

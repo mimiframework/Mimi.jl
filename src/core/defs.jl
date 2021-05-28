@@ -1,23 +1,35 @@
-Base.length(obj::AbstractComponentDef) = 0   # no sub-components
-Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
+# 
+# Components 
+#
 
+
+# `compdef` methods to obtain component definitions using various arguments
+
+"""
+    function compdef(comp_id::ComponentId)
+
+Return the component definition with ComponentId `comp_id`.
+"""
 function compdef(comp_id::ComponentId)
     # @info "compdef: mod=$(comp_id.module_obj) name=$(comp_id.comp_name)"
     return getfield(comp_id.module_obj, comp_id.comp_name)
 end
 
 compdef(cr::ComponentReference) = find_comp(cr)
-
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
-
 compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = components(obj)[comp_name]
+compdefs(obj::AbstractCompositeComponentDef) = values(components(obj))
+compdefs(c::ComponentDef) = [] # Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
+
+# other helper functions
 
 has_comp(obj::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(components(obj), comp_name)
-compdefs(obj::AbstractCompositeComponentDef) = values(components(obj))
 compkeys(obj::AbstractCompositeComponentDef) = keys(components(obj))
 
-# Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
-compdefs(c::ComponentDef) = []
+Base.length(obj::AbstractComponentDef) = 0   # no sub-components
+Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
+Base.getindex(comp::AbstractComponentDef, key::Symbol) = comp.namespace[key]
+@delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
 
 compmodule(comp_id::ComponentId) = comp_id.module_obj
 compname(comp_id::ComponentId)   = comp_id.comp_name
@@ -26,6 +38,10 @@ compmodule(obj::AbstractComponentDef) = compmodule(obj.comp_id)
 compname(obj::AbstractComponentDef)   = compname(obj.comp_id)
 
 compnames() = map(compname, compdefs())
+
+#
+# Helper Functions with methods for multiple Def types
+#
 
 dirty(md::ModelDef) = md.dirty
 
@@ -56,6 +72,10 @@ last_period(root::AbstractCompositeComponentDef,  comp::AbstractComponentDef) = 
 
 find_first_period(comp_def::AbstractComponentDef) = @or(first_period(comp_def), first_period(get_root(comp_def)))
 find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), last_period(get_root(comp_def)))
+
+#
+# Models
+#
 
 """
     delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
@@ -120,13 +140,10 @@ function delete_param!(md::ModelDef, model_param_name::Symbol)
     dirty!(md)
 end
 
-@delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
-
-Base.getindex(comp::AbstractComponentDef, key::Symbol) = comp.namespace[key]
-
 #
 # Component namespaces
 #
+
 """
     istype(T::DataType)
 
@@ -167,6 +184,8 @@ variables(obj::AbstractCompositeComponentDef) = values(filter(istype(CompositeVa
 variables(comp_id::ComponentId)  = variables(compdef(comp_id))
 
 """
+    _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
+
 Return true if the component namespace has an item `name` that isa `T`
 """
 function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
@@ -174,6 +193,8 @@ function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
 end
 
 """
+    _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
+
 Get a named element from the namespace of `obj` and verify its type.
 """
 function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
@@ -186,6 +207,8 @@ function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
 end
 
 """
+    _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)
+
 Save a value to a component's namespace. Allow replacement of existing values for a key
 only with items of the same type; otherwise an error is thrown.
 """
@@ -212,27 +235,62 @@ end
 # Dimensions
 #
 
+"""
+    step_size(values::Vector{Int})
+
+Return the step size for vector of `values`, where the vector is assumed to be uniform.
+"""
 step_size(values::Vector{Int}) = (length(values) > 1 ? values[2] - values[1] : 1)
 
-#
-# TBD: should these be defined as methods of CompositeComponentDef, i.e., not for leaf comps
-#
+"""
+    step_size(obj::AbstractComponentDef)
+
+Return the step size of the time dimension labels of `obj`.
+"""
 function step_size(obj::AbstractComponentDef)
     keys = time_labels(obj)
     return step_size(keys)
 end
 
+"""
+    first_and_step(obj::AbstractComponentDef)
+
+Return the step size and first value of the time dimension labels of `obj`.
+"""
 function first_and_step(obj::AbstractComponentDef)
     keys = time_labels(obj)
     return first_and_step(keys)
 end
 
+"""
+    first_and_step(values::Vector{Int}) 
+
+Return the step size and first value of the vector of `values`, where the vector
+is assumed to be uniform.
+"""
 first_and_step(values::Vector{Int}) = (values[1], step_size(values))
 
+"""
+    first_and_last(obj::AbstractComponentDef)
+
+Return the first and last time labels of `obj`.
+"""
 first_and_last(obj::AbstractComponentDef) = (obj.first, obj.last)
 
+"""
+    time_labels(obj::AbstractComponentDef)
+
+Return the time labels of `obj`, defined as the keys of the `:time` 
+dimension
+"""
 time_labels(obj::AbstractComponentDef) = dim_keys(obj, :time)
 
+"""
+    check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
+    
+Check to make sure that the labels for dimensions `dims` in parameter `name` match
+Model Def `md`'s index values `value`.
+"""
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
         if has_dim(md, dim)
@@ -323,8 +381,9 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
-
 """
+    find_params(obj::AbstractCompositeComponentDef, param_name::Symbol)
+
 Find and return a vector of tuples containing references to a ComponentDef and
 a ParameterDef for all instances of parameters with name `param_name`, below the
 composite `obj`. If none are found, an empty vector is returned.
@@ -394,8 +453,11 @@ function recurse(obj::ComponentDef, f::Function, args...;
     composite_only || f(obj, args...)
     nothing
 end
+"""
+    subcomp_params(obj::AbstractComponentDef)
 
-# return UnnamedReference's for all subcomponents' parameters
+Return UnnamedReference's for all parameters of the subcomponents of `obj`.
+"""
 function subcomp_params(obj::AbstractCompositeComponentDef)
     params = UnnamedReference[]
     for (name, sub_obj) in obj.namespace
@@ -423,16 +485,51 @@ function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, An
     end
 end
 
+"""
+    set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
+
+Set the value of parameter `param_name` in component `comp_name` of Model Def `md` 
+to `value`.  This will create a shared model parameter with name `param_name` 
+and connect `comp_name`'s parameter `param_name` to it.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+"""
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
     set_param!(md, comp_name, param_name, param_name, value, dims=dims)
 end
 
+"""
+    set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, 
+                value; dims=nothing)
+
+Set the value of parameter `param_name` in component `comp_name` of Model Def `md` 
+to `value`.  This will create a shared model parameter with name `model_param_name` 
+and connect `comp_name`'s parameter `param_name` to it.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+"""
 function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
     comp_def = compdef(md, comp_name)
     @or(comp_def, error("Top-level component with name $comp_name not found"))
     set_param!(md, comp_def, param_name, model_param_name, value, dims=dims)
 end
 
+"""
+    set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, 
+                model_param_name::Symbol, value; dims=nothing)
+
+Set the value of parameter `param_name` in component `comp_def` of Model Def `md` 
+to `value`.  This will create a shared model parameter with name `model_param_name` 
+and connect `comp_name`'s parameter `param_name` to it.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+"""
 function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
     has_parameter(comp_def, param_name) ||
         error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
@@ -441,11 +538,11 @@ function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Sy
 
         error("Cannot set parameter :$model_param_name, the model already has a parameter with this name.",
         " IF you wish to change the name of unshared parameter :$param_name connected to component :$(nameof(compdef))", 
-        " use `update_param!(m, comp_name, param_name, value)", 
+        " use `update_param!(m, comp_name, param_name, value).", 
         " IF you wish to change the value of the existing shared parameter :$model_param_name, ",
         " use `update_param!(m, param_name, value)` to change the value of the shared parameter.",
         " IF you wish to create a new shared parameter connected to component :$(nameof(compdef)), use ",
-        "`set_param!(m, comp_name, param_name, unique_param_name, value)`.")
+        "`create_shared_param` paired with `connect_param!`.")
     end
 
     set_param!(md, param_name, value, dims = dims, comps = [comp_def], model_param_name = model_param_name)
@@ -454,8 +551,10 @@ end
 """
     set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing)
 
-Set the value of a parameter in all components of the model that have a parameter of 
-the specified name.
+Set the value of parameter `param_name in all components of the Model Def `md`
+that have a parameter of the specified name to `value`.  This will create a shared
+model parameter with name `param_name` and connect all component parameters with
+that name to it.
 
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
@@ -528,6 +627,8 @@ end
 #
 # Variables
 #
+
+# `variable` methods to get variable given various arguments
 variable(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, VariableDef)
 
 variable(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, CompositeVariableDef)
@@ -541,8 +642,18 @@ function variable(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, 
     return variable(comp_def, var_name)
 end
 
+"""
+    has_variable(comp_def::ComponentDef, name::Symbol)
+
+Return `true` if component `comp_def` has a variable `name`, otherwise return false.
+"""
 has_variable(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDef)
 
+"""
+    has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol)
+
+Return `true` if component `comp_def` has a variable `name`, otherwise return false.
+"""
 has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, CompositeVariableDef)
 
 """
@@ -552,8 +663,12 @@ Return a list of all variable names for a given component `comp_name` in a model
 """
 variable_names(obj::AbstractCompositeComponentDef, comp_name::Symbol) = variable_names(compdef(obj, comp_name))
 
-variable_names(comp_def::AbstractComponentDef) = [nameof(var) for var in variables(comp_def)]
+"""
+    variable_names(comp_def::AbstractComponentDef)
 
+Return a list of all variable names for a given component `comp_def`.
+"""
+variable_names(comp_def::AbstractComponentDef) = [nameof(var) for var in variables(comp_def)]
 
 function variable_unit(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
@@ -619,12 +734,21 @@ end
 # Other
 #
 
-# Return the number of timesteps a given component in a model will run for.
+"""
+    function getspan(obj::AbstractComponentDef, comp_name::Symbol)
+
+Return the number of timesteps a given component `comp_name` in `obj` will run for.
+"""
 function getspan(obj::AbstractComponentDef, comp_name::Symbol)
     comp_def = compdef(obj, comp_name)
     return getspan(obj, comp_def)
 end
 
+"""
+    function getspan(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
+
+Return the number of timesteps a given component `comp_def` in `obj` will run for.
+"""
 function getspan(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     first = first_period(obj, comp_def)
     last  = last_period(obj, comp_def)

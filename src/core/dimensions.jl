@@ -109,6 +109,11 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
     return set_dimension!(ccd, name, dim)
 end
 
+"""
+    set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
+
+Set the dimension `name` in `obj` to `dim`.
+"""
 function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
     dirty!(obj)
     obj.dim_dict[name] = dim
@@ -121,6 +126,13 @@ function set_dimension!(obj::AbstractComponentDef, name::Symbol, dim::Dimension)
     return dim
 end
 
+"""
+    function add_dimension!(comp::AbstractComponentDef, name)
+
+Add a dimension of name `name` to `comp`, where the dimension will be `nothing` 
+unless `name` is an Int in which case we create an "anonymouse" dimension on 
+the fly with keys `1` through `count` where `count` = `name`.
+"""
 function add_dimension!(comp::AbstractComponentDef, name)
     # generally, we add dimension name with nothing instead of a Dimension instance,
     # but in the case of an Int name, we create the "anonymous" dimension on the fly.
@@ -131,6 +143,11 @@ end
 # Note that this operates on the registered comp, not one added to a composite
 add_dimension!(comp_id::ComponentId, name) = add_dimension!(compdef(comp_id), name)
 
+"""
+    dim_names(ccd::AbstractCompositeComponentDef)
+
+Return a list of the dimension names of `ccd`.
+"""
 function dim_names(ccd::AbstractCompositeComponentDef)
     dims = OrderedSet{Symbol}()             # use a set to eliminate duplicates
     for cd in compdefs(ccd)
@@ -139,6 +156,20 @@ function dim_names(ccd::AbstractCompositeComponentDef)
 
     return collect(dims)
 end
+
+"""
+    dim_names(comp_def::AbstractComponentDef, datum_name::Symbol)
+
+Return a list of the dimension names of datum `datum_name` in `comp_def`.
+"""
+dim_names(comp_def::AbstractComponentDef, datum_name::Symbol) = dim_names(datumdef(comp_def, datum_name))
+
+"""
+    dim_count(def::AbstractDatumDef)
+
+Return number of dimensions in `def`.
+"""
+dim_count(def::AbstractDatumDef) = length(dim_names(def))
 
 """
     _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange})
@@ -186,7 +217,3 @@ function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Unio
     end
 
 end
-
-dim_names(comp_def::AbstractComponentDef, datum_name::Symbol) = dim_names(datumdef(comp_def, datum_name))
-
-dim_count(def::AbstractDatumDef) = length(dim_names(def))

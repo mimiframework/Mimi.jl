@@ -49,9 +49,17 @@ function Base.show(obj::T) where T <: AbstractSimulationData
     nothing
 end
 
-# Store results for a single parameter and return the dataframe for this particular
-# trial/scenario 
-function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
+"""
+    _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+                        trialnum::Int, scen_name::Union{Nothing, String}, 
+                        results::Dict{Tuple, DataFrame})
+
+Store `results` for a single parameter `datum_key` in model `m` and return the 
+dataframe for this particular `trial_num`/`scen_name` combination.
+"""
+function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+                            trialnum::Int, scen_name::Union{Nothing, String}, 
+                            results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
@@ -99,7 +107,17 @@ function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}
     return trial_df
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+"""
+    _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
+                        scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, 
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+
+Save the stored simulation results ` from trial `trialnum` and scenario `scen_name`
+to files in the directory `output_dir`
+"""
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
+                                scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, 
+                                streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
     model_index = 1
@@ -132,9 +150,11 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, sc
 end
 
 """
-    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
+    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, 
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
 
-Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
+Save the stored simulation results in `trial_df` from trial `trialnum` to files 
+in the directory `output_dir`
 """
 function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
     filename = joinpath(output_dir, "$datum_name.csv")
@@ -145,6 +165,11 @@ function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir
     end
 end
 
+"""
+    save_trial_inputs(sim_inst::SimulationInstance, filename::String)
+
+Save the trial inputs for `sim_inst` to `filename`.
+"""
 function save_trial_inputs(sim_inst::SimulationInstance, filename::String)
     mkpath(dirname(filename), mode=0o750)   # ensure that the specified path exists
     save(filename, sim_inst)

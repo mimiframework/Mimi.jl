@@ -109,8 +109,18 @@ function get_var_value(ci::AbstractComponentInstance, name::Symbol)
     end
 end
 
+"""
+    set_param_value(ci::AbstractComponentInstance, name::Symbol, value)
+
+Set the value of parameter `name` in component `ci` to `value`.
+"""
 set_param_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
 
+"""
+    set_var_value(ci::AbstractComponentInstance, name::Symbol, value)
+
+Set the value of variable `name` in component `ci` to `value`.
+"""
 set_var_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.variables, name, value)
 
 """

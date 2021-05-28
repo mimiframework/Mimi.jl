@@ -13,4 +13,3 @@ using Mimi
         v.output[t] = @allow_missing(p.input[t]) + p.add[t]
     end
 end
-

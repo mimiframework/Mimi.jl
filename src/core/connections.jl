@@ -49,6 +49,15 @@ end
 # Default string, string unit check function
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
+"""
+    _check_labels(obj::AbstractCompositeComponentDef,
+                comp_def::AbstractComponentDef, param_name::Symbol, 
+                mod_param::ArrayModelParameter)
+
+Check that the labels of the ArrayModelParameter `mod_param` match the labels
+of the model parameter `param_name` in component `comp_def` of object `obj`, 
+including datatype and dimensions. 
+"""
 function _check_labels(obj::AbstractCompositeComponentDef,
                        comp_def::AbstractComponentDef, param_name::Symbol, mod_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
@@ -100,6 +109,13 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
     connect_param!(obj, comp_def, param_name, model_param_name, check_labels=check_labels)
 end
 
+"""
+    connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
+                    param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true)
+
+Connect a parameter `param_name` in the component `comp_def` of composite `obj` to
+the model parameter `model_param_name`.
+"""
 function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                         param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true)
     mod_param = model_param(obj, model_param_name)
@@ -231,6 +247,23 @@ Try calling:
 
     return nothing
 end
+
+"""
+    connect_param!(obj::AbstractCompositeComponentDef,
+                    dst_comp_name::Symbol, dst_par_name::Symbol,
+                    src_comp_name::Symbol, src_var_name::Symbol,
+                    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                    backup_offset::Union{Nothing, Int} = nothing)
+
+Bind the parameter `dst_par_name` of one component `dst_comp_name` of composite `obj` to a
+variable `src_var_name` in another component `src_comp_name` of the same model using
+`backup` to provide default values and the `ignoreunits` flag to indicate the need to
+check match units between the two.  The `backup_offset` argument, which is only valid 
+when `backup` data has been set, indicates that the backup data should be used for
+a specified number of timesteps after the source component begins. ie. the value would be 
+`1` if the destination component parameter should only use the source component 
+data for the second timestep and beyond.
+"""
 
 function connect_param!(obj::AbstractCompositeComponentDef,
                         dst_comp_name::Symbol, dst_par_name::Symbol,
@@ -368,9 +401,9 @@ function unconnected_params(obj::AbstractCompositeComponentDef)
 end
 
 """
-    set_leftover_params!(m::Model, parameters::Dict)
+    set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) 
 
-Set all of the parameters in model `m` that don't have a value and are not connected
+Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
 the dictionary keys are strings that match the names of unset parameters in the model,
 and all resulting new model parameters will be shared parameters.
@@ -644,8 +677,12 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
 
 end
 
-function _update_param!(obj::AbstractCompositeComponentDef,
-                        name::Symbol, value)
+"""
+    _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+
+Update the `value` of the model parameter `name` in Model Def `md`.
+"""
+function _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
     param = model_param(obj, name, missing_ok=true)
     if param === nothing
         error("Cannot update parameter; $name not found in composite's model parameters.")
@@ -660,6 +697,11 @@ function _update_param!(obj::AbstractCompositeComponentDef,
     dirty!(obj)
 end
 
+"""
+    _update_scalar_param!(param::ScalarModelParameter, name, value)
+
+Update the `value` of the scalar model parameter `param`.
+"""
 function _update_scalar_param!(param::ScalarModelParameter, name, value)
     if ! (value isa typeof(param.value))
         try
@@ -672,6 +714,11 @@ function _update_scalar_param!(param::ScalarModelParameter, name, value)
     nothing
 end
 
+"""
+    _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
+
+Update the `value` of the array model parameter `name` in object `obj`.
+"""
 function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
    
     # Get original parameter
@@ -735,6 +782,11 @@ function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; up
     nothing
 end
 
+"""
+    add_connector_comps!(obj::AbstractCompositeComponentDef)
+
+Add all the needed Mimi connector components to object `obj`.
+"""
 function add_connector_comps!(obj::AbstractCompositeComponentDef)
     conns = internal_param_conns(obj)
     i = 1 # counter to track the number of connector comps added

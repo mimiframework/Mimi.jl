@@ -48,14 +48,31 @@ function is_last(ts::VariableTimestep{TIMES}) where {TIMES}
 	return gettime(ts) == TIMES[end]
 end
 
+"""
+	finished(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
+
+Return true if `ts` has finished running, ie. the current time is after the 
+`LAST` of `ts`, otherwise return false.
+"""
 function finished(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	return gettime(ts) > LAST
 end
 
+"""
+	finished(ts::VariableTimestep{TIMES}) where {TIMES}
+
+Return true if `ts` has finished running, ie. the current time is after the 
+last member of `TIMES` of `ts`, otherwise return false.
+"""
 function finished(ts::VariableTimestep{TIMES}) where {TIMES}
 	return gettime(ts) > TIMES[end]
 end
 
+"""
+	next_timestep(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
+
+Return the subsequent timestep of `ts`.
+"""
 function next_timestep(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
 	if finished(ts)
 		error("Cannot get next timestep, this is last timestep.")
@@ -63,12 +80,19 @@ function next_timestep(ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP,
 	return FixedTimestep{FIRST, STEP, LAST}(ts.t + 1)
 end
 
+"""
+	next_timestep(ts::VariableTimestep{TIMES}) where {TIMES}
+
+Return the subsequent timestep of `ts`.
+"""
 function next_timestep(ts::VariableTimestep{TIMES}) where {TIMES}
 	if finished(ts)
 		error("Cannot get next timestep, this is last timestep.")
 	end
 	return VariableTimestep{TIMES}(ts.t + 1)		
 end
+
+# extend Base with arithmetic methods for timesteps
 
 function Base.:-(ts::FixedTimestep{FIRST, STEP, LAST}, val::Int) where {FIRST, STEP, LAST}
 	if val != 0 && is_first(ts)
@@ -155,6 +179,7 @@ function Base.:<(tv::TimestepValue, ts::AbstractTimestep)
 end
 
 # Colon support
+
 function Base.:(:)(start::T, step::Int, stop::T) where {T<:TimestepIndex}
 	indices = [start.index:step:stop.index...]
 	return TimestepIndex.(indices)
@@ -168,6 +193,11 @@ end
 #  CLOCK
 #
 
+"""
+	Clock(time_keys::Vector{Int})
+
+Return a `Clock` object with times `time_keys`.
+"""
 function Clock(time_keys::Vector{Int})
     last = time_keys[end]
 
@@ -181,10 +211,20 @@ function Clock(time_keys::Vector{Int})
     end
 end
 
+"""
+	timestep(c::Clock)
+
+Return `Clock` `c`'s current timestep.
+"""
 function timestep(c::Clock)
 	return c.ts
 end
 
+"""
+	time_index(c::Clock)
+
+Return `Clock` `c`'s time index.
+"""
 function time_index(c::Clock)
 	return c.ts.t
 end
@@ -192,17 +232,27 @@ end
 """
 	gettime(c::Clock)
 
-Return the current time of the timestep held by the `c` clock.
+Return the time of the timestep held by the `c` clock.
 """
 function gettime(c::Clock)
 	return gettime(c.ts)
 end
 
+"""
+	advance(c::Clock)
+
+Advance `Clock` `c` to the next timestep.
+"""
 function advance(c::Clock)
 	c.ts = next_timestep(c.ts)
 	nothing
 end
 
+"""
+	advance(c::Clock)
+
+Return true if the timestep `ts` of `Clock` `c` has finished running.
+"""
 function finished(c::Clock)
 	return finished(c.ts)
 end
@@ -212,6 +262,11 @@ function Base.reset(c::Clock)
 	nothing
 end
 
+"""
+	timesteps(c::Clock)
+
+Return the timesteps held by `Clock` `c`.
+"""
 function timesteps(c::Clock)
 	c = deepcopy(c)
 	timesteps = AbstractTimestep[]
