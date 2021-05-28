@@ -4,7 +4,7 @@ using Mimi
 using Test
 
 import Mimi:
-    external_params, external_param, TimestepMatrix, TimestepVector,
+    model_params, model_param, TimestepMatrix, TimestepVector,
     ArrayModelParameter, ScalarModelParameter, FixedTimestep, import_params!, 
     set_first_last!, _get_param_times
 
@@ -93,7 +93,7 @@ set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
 set_param!(m, :MyComp, :j, [1,2,3])
 
 Mimi.build!(m)
-extpars = external_params(m.mi.md)
+extpars = model_params(m.mi.md)
 
 a_sym = Mimi.get_model_param_name(m.mi.md, :MyComp, :a)
 b_sym = Mimi.get_model_param_name(m.mi.md, :MyComp, :b)
@@ -127,7 +127,7 @@ h_sym = Mimi.get_model_param_name(m.mi.md, :MyComp, :h)
 set_param!(m, :a, Array{Int,2}(zeros(101, 3))) # should be able to convert from Int to Float
 @test_throws ErrorException update_param!(m, :d, ones(5)) # wrong type; should be scalar
 update_param!(m, :d, 5) # should work, will convert to float
-new_extpars = external_params(m)    # Since there are changes since the last build, need to access the updated dictionary in the model definition
+new_extpars = model_params(m)    # Since there are changes since the last build, need to access the updated dictionary in the model definition
 @test extpars[:d].value == 0.5      # The original dictionary still has the old value
 @test new_extpars[:d].value == 5.   # The new dictionary has the updated value
 @test_throws ErrorException update_param!(m, :e, 5) # wrong type; should be array
@@ -176,7 +176,7 @@ set_dimension!(m, :time, 1999:2001)
 # 2000      1          
 # 2001      2       last    first, last
 
-x = external_param(m.md, :x) 
+x = model_param(m.md, :x) 
 @test ismissing(x.values.data[1])
 @test x.values.data[2:3] == [1.0, 2.0]
 @test _get_param_times(x) == 1999:2001
@@ -188,7 +188,7 @@ update_param!(m, :x, [2, 3, 4]) # change x to match
 # 2000      3               
 # 2001      4       last    first, last
 
-x = external_param(m.md, :x)
+x = model_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, 2001}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4.]
 run(m)
@@ -223,7 +223,7 @@ set_dimension!(m, :time, [2000, 2005, 2020, 2100])
 # 2020      3               last
 # 2100      missing last
 
-x = external_param(m.md, :x) 
+x = model_param(m.md, :x) 
 @test ismissing(x.values.data[4])
 @test x.values.data[1:3] == [1.0, 2.0, 3.0]
 
@@ -234,7 +234,7 @@ update_param!(m, :x, [2, 3, 4, 5]) # change x to match
 # 2020      4               last
 # 2100      5        last
 
-x = external_param(m.md, :x)
+x = model_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020, 2100)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4., 5.]
 run(m)
@@ -263,7 +263,7 @@ set_param!(m, :MyComp2, :x, [1, 2, 3])
 set_dimension!(m, :time, [2000, 2005, 2020, 2100])
 
 update_params!(m, Dict(:x=>[2, 3, 4, 5]))
-x = external_param(m.md, :x)
+x = model_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.VariableTimestep{(2000, 2005, 2020, 2100)}, Union{Missing,Float64}, 1}
 @test x.values.data == [2., 3., 4., 5.]
 run(m)
@@ -293,7 +293,7 @@ update_param!(m, :x, [2, 3, 4, 5, 6])
 # 2002      5               last
 # 2003      6       last
 
-x = external_param(m.md, :x)
+x = model_param(m.md, :x)
 @test x.values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999, 1, 2003}, Union{Missing, Float64}, 1, 1}
 @test x.values.data == [2., 3., 4., 5., 6.]
 
@@ -334,19 +334,19 @@ set_param!(m, :MyComp3, :z, 0)
 
 @test_throws ErrorException update_param!(m, :x, [1, 2, 3, 4]) # Will throw an error because size
 update_param!(m, :y, [10, 15])
-@test external_param(m.md, :y).values == [10., 15.]
+@test model_param(m.md, :y).values == [10., 15.]
 update_param!(m, :z, 1)
-@test external_param(m.md, :z).value == 1
+@test model_param(m.md, :z).value == 1
 
 # Reset the time dimensions
 set_dimension!(m, :time, 1999:2001)
 
 update_params!(m, Dict(:x=>[3,4,5], :y=>[10,20], :z=>0)) # Won't error when updating from a dictionary
 
-@test external_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999,1, 2001},Union{Missing,Float64},1}
-@test external_param(m.md, :x).values.data == [3.,4.,5.]
-@test external_param(m.md, :y).values == [10.,20.]
-@test external_param(m.md, :z).value == 0
+@test model_param(m.md, :x).values isa Mimi.TimestepArray{Mimi.FixedTimestep{1999,1, 2001},Union{Missing,Float64},1}
+@test model_param(m.md, :x).values.data == [3.,4.,5.]
+@test model_param(m.md, :y).values == [10.,20.]
+@test model_param(m.md, :z).value == 0
 
 #------------------------------------------------------------------------------
 # Test the three different set_param! methods for a Symbol type parameter
@@ -406,6 +406,6 @@ add_comp!(m, A)
 add_comp!(m, B)
 
 @test_throws ErrorException set_param!(m, :p1, 1:5)     # this will error because the provided data is the wrong size
-@test !(:p1 in keys(external_params(m)))                     # But it should not be added to the model's dictionary
+@test !(:p1 in keys(model_params(m)))                     # But it should not be added to the model's dictionary
 
 end #module

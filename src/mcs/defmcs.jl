@@ -117,7 +117,7 @@ macro defsim(expr)
                     @capture(elt, extvar_ *= distname_(distargs__)))
 
                 # For "anonymous" RVs, e.g., ext_var2[2010:2100, :] *= Uniform(0.8, 1.2), we
-                # gensym a name based on the external var name and process it as a named RV.
+                # gensym a name based on the model parameter name and process it as a named RV.
                 if rvname === nothing
                     param_name = @capture(extvar, name_[args__]) ? name : extvar
                     rvname = _make_rvname(param_name)
@@ -286,9 +286,9 @@ end
 Create a new TransformSpec based on `paramname`, `op`, `rvname` and `dims` to the 
 Simulation definition `sim_def`, and update the Simulation's NamedTuple type. 
 The symbol `rvname` must refer to an existing random variable, and `paramname` 
-must refer to an existing shared external parameter that can be accessed by that 
+must refer to an existing shared model parameter that can be accessed by that 
 name. Use the  signature that includes `compname` if your `paramname` 
-is an unshared external parameter specific to a component. If `dims` are
+is an unshared model parameter specific to a component. If `dims` are
 provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, 
 or :(=).
 """

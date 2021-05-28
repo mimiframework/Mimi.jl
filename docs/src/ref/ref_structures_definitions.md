@@ -79,20 +79,17 @@ datum_name::Symbol  # name of the parameter or variable in the subcomponent's na
 
 ## ModelDef
 
-A `ModelDef` is a top-level composite that also stores external parameters and a list of external parameter connections. It contains the following additional fields:
+A `ModelDef` is a top-level composite that also stores model parameters and a list of model parameter connections. It contains the following additional fields:
 ```
 # ModelDef <: CompositeComponentDef
 external_param_conns::Vector{ExternalParameterConnection}
-external_params::Dict{Symbol, ModelParameter}
+model_params::Dict{Symbol, ModelParameter}
 number_type::DataType
 dirty::Bool
 ```
 Note: a ModelDef's namespace will only hold `AbstractComponentDef`s. 
 
 ## Parameter Connections
-
-Parameters hold values defined exogneously to the model ("external" parameters) or to the
-component ("internal" parameters).
 
 `InternalParameterConnection`
 Internal parameters are defined by connecting a parameter in one component to a variable
@@ -102,7 +99,7 @@ internal parameter connections result in direct references from the parameter to
 storage allocated for the variable.
 
 `ExternalParameterConnection`
-Values that are exogenous to the model are defined in external parameters whose values are
+Values that are exogenous to the model are defined in model parameters whose values are
 assigned using the public API function `set_param!()`, or by setting default values in
 `@defcomp` or `@defcomposite`, in which case, the default values are assigned via an
 internal call to `set_param!()`.
@@ -119,13 +116,13 @@ src_var_name::Symbol
 dst_comp_path::ComponentPath
 dst_par_name::Symbol
 ignoreunits::Bool
-backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
+backup::Union{Symbol, Nothing} # a Symbol identifying the model param providing backup data, or nothing
 backup_offset::Union{Int, Nothing}
 
 # ExternalParameterConnection  <: AbstractConnection
 comp_path::ComponentPath
 param_name::Symbol      # name of the parameter in the component
-external_param::Symbol  # name of the parameter stored in the model's external_params
+model_param_name::Symbol  # name of the parameter stored in the model's model_params
 ```
 
 ## Model parameters 
@@ -133,4 +130,4 @@ external_param::Symbol  # name of the parameter stored in the model's external_p
 `ModelParameter`
 This is an abstract type that is the supertype of both `ScalarModelParameter{T}` and
 `ArrayModelParameter{T}`. These two parameterized types are used to store values set
-for external model parameters.
+for model parameters.

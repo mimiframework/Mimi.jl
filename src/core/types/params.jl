@@ -69,7 +69,7 @@ struct InternalParameterConnection <: AbstractConnection
     dst_comp_path::ComponentPath
     dst_par_name::Symbol
     ignoreunits::Bool
-    backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
+    backup::Union{Symbol, Nothing} # a Symbol identifying the model param providing backup data, or nothing
     backup_offset::Union{Int, Nothing}
 
     function InternalParameterConnection(src_path::ComponentPath, src_var::Symbol,
@@ -84,12 +84,12 @@ end
 struct ExternalParameterConnection  <: AbstractConnection
     comp_path::ComponentPath
     param_name::Symbol      # name of the parameter in the component
-    external_param::Symbol  # name of the parameter stored in external_params
+    model_param_name::Symbol  # name of the parameter stored in model_params
 end
 
 # Converts symbol to component path
-function ExternalParameterConnection(comp_name::Symbol, param_name::Symbol, external_param::Symbol)
-    return ExternalParameterConnection(ComponentPath(comp_name), param_name, external_param)
+function ExternalParameterConnection(comp_name::Symbol, param_name::Symbol, model_param_name::Symbol)
+    return ExternalParameterConnection(ComponentPath(comp_name), param_name, model_param_name)
 end
 
 Base.pathof(obj::ExternalParameterConnection) = obj.comp_path

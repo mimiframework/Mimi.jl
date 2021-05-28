@@ -156,7 +156,7 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
 @class mutable CompositeComponentDef <: ComponentDef begin
     internal_param_conns::Vector{InternalParameterConnection}
 
-    # Names of external params that the ConnectorComps will use as their :input2 parameters.
+    # Names of model params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
 
     function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}=nothing)
@@ -206,7 +206,7 @@ ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentP
 
 @class mutable ModelDef <: CompositeComponentDef begin
     external_param_conns::Vector{ExternalParameterConnection}
-    external_params::Dict{Symbol, ModelParameter}
+    model_params::Dict{Symbol, ModelParameter}
 
     number_type::DataType
     dirty::Bool
@@ -216,16 +216,16 @@ ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentP
         CompositeComponentDef(self)  # call super's initializer
 
         ext_conns  = Vector{ExternalParameterConnection}()
-        ext_params = Dict{Symbol, ModelParameter}()
+        model_params = Dict{Symbol, ModelParameter}()
 
         # N.B. @class-generated method
-        return ModelDef(self, ext_conns, ext_params, number_type, false)
+        return ModelDef(self, ext_conns, model_params, number_type, false)
     end
 end
 
 external_param_conns(md::ModelDef) = md.external_param_conns
 
-external_params(md::ModelDef) = md.external_params
+model_params(md::ModelDef) = md.model_params
 
 #
 # Reference types offer a more convenient syntax for interrogating Components.

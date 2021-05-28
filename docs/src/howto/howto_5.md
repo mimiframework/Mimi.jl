@@ -53,9 +53,9 @@ add_comp!(m, FAIR_component) # will run from 1765 to 1950
     julia> component.last
     2500
     ```
-- All external parameters are trimmed and padded as needed so the model can still run, **and the values are still linked to their original years**.  More specifically, if the new time dimension ends earlier than the original one than the parameter value vector/matrix is trimmed at the end.  If the new time dimension starts earlier than the original, or ends later, the parameter values are padded with `missing`s at the front and/or back respectively.
+- All model parameters are trimmed and padded as needed so the model can still run, **and the values are still linked to their original years**.  More specifically, if the new time dimension ends earlier than the original one than the parameter value vector/matrix is trimmed at the end.  If the new time dimension starts earlier than the original, or ends later, the parameter values are padded with `missing`s at the front and/or back respectively.
     ```
-    julia> parameter_values = Mimi.external_params(m)[:currtaxn2o].values.data # get param values for use in next run (ignore messy internals syntax)
+    julia> parameter_values = Mimi.model_params(m)[:currtaxn2o].values.data # get param values for use in next run (ignore messy internals syntax)
     julia> size(parameter_values)
     (736, 16)
     julia> parameter_values[1:(1950-1765),:] # all missing
@@ -66,4 +66,4 @@ add_comp!(m, FAIR_component) # will run from 1765 to 1950
 #### The following options are now available for further modifcations if this end state is not desireable:
 
 - If you want to update a component's run period, you may use the function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specify when you want the component to run.
-- You can update external parameters to have values in place of the assumed `missing`s using the `update_param!(m, :ParameterName, values)` function 
+- You can update shared model parameters to have values in place of the assumed `missing`s using the `update_param!(m, :ParameterName, values)` function 

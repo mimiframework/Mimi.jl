@@ -26,21 +26,21 @@ m1 = _get_model()
 run(m1)
 @test length(Mimi.components(m1)) == 2
 @test length(m1.md.external_param_conns) == 4   # two components with two connections each
-@test length(m1.md.external_params) == 3
+@test length(m1.md.model_params) == 3
 
 delete!(m1, :A1)    
 run(m1) # run before and after to test that `delete!` properly "dirties" the model, and builds a new instance on the next run
 @test length(Mimi.components(m1)) == 1
 @test length(m1.md.external_param_conns) == 2   # Component A1 deleted, so only two connections left
-@test length(m1.md.external_params) == 3
-@test :p2_A1 in keys(m1.md.external_params)
+@test length(m1.md.model_params) == 3
+@test :p2_A1 in keys(m1.md.model_params)
 
 # Test component deletion that removes unbound component parameters
 m2 = _get_model()
 delete!(m2, :A1, deep = true)
 @test length(Mimi.components(m2.md)) == 1
-@test length(m2.md.external_params) == 2  # :p2_A1 has been removed
-@test !(:p2_A1 in keys(m2.md.external_params))
+@test length(m2.md.model_params) == 2  # :p2_A1 has been removed
+@test !(:p2_A1 in keys(m2.md.model_params))
 run(m2)
 
 # Test the `delete_param! function on its own

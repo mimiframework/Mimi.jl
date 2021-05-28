@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi: 
     reset_variables,
-    variable, variable_names, external_param,
+    variable, variable_names, model_param,
     compdefs, dimension, compinstance
 
 @defcomp foo1 begin
@@ -35,11 +35,11 @@ set_param!(x1, :foo1, :par1, 5.0)
 
 @test length(dimension(x1.md, :index1)) == 3
 
-par1 = external_param(x1, :par1)
+par1 = model_param(x1, :par1)
 @test par1.value == 5.0
 
 update_param!(x1, :par1, 6.0)
-par1 = external_param(x1, :par1)
+par1 = model_param(x1, :par1)
 @test par1.value == 6.0
 
 set_param!(x1, :foo1, :par2, [true true false; true false false; true true true])

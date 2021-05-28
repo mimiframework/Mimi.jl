@@ -103,13 +103,13 @@ struct TransformSpec
     end 
 end
 
-struct TransformSpec_ExternalParams
+struct TransformSpec_ModelParams
     paramnames::Vector{Symbol}
     op::Symbol
     rvname::Symbol
     dims::Vector{Any}
 
-    function TransformSpec_ExternalParams(paramnames::Vector{Symbol}, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+    function TransformSpec_ModelParams(paramnames::Vector{Symbol}, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
@@ -183,7 +183,7 @@ mutable struct SimulationInstance{T}
     models::Vector{M} where M <: AbstractModel
     results::Vector{Dict{Tuple, DataFrame}}
     payload::Any
-    translist_externalparams::Vector{TransformSpec_ExternalParams} 
+    translist_modelparams::Vector{TransformSpec_ModelParams} 
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
@@ -194,11 +194,11 @@ mutable struct SimulationInstance{T}
         self.payload = deepcopy(self.sim_def.payload)
 
         # This will mirror self.sim_def.translist, but can only be created after 
-        # models are added because it looks for the actual external parameter 
+        # models are added because it looks for the actual model parameter 
         # names for unshared parameters used in the statements, and tries to resolve
         # ones written as shared parameters but which may in actuality be unshared
         # ie. defaults
-        self.translist_externalparams = Vector{TransformSpec_ExternalParams}(undef, 0)
+        self.translist_modelparams = Vector{TransformSpec_ModelParams}(undef, 0)
 
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{AbstractModel}(undef, 0)

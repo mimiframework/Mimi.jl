@@ -98,9 +98,9 @@ end
 
 In both of these cases, the parameter's values are stored of as an array (p1 is one dimensional, and p2 is two dimensional). But with respect to the model, they are considered "scalar" parameters, simply because they do not use any of the model's indices (namely 'time', or 'regions').
 
-## Updating an external parameter
+## Updating a model parameter
 
-When `set_param!` is called, it creates an external parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. 
+When `set_param!` is called, it creates a shared model parameter by the name provided, and stores the provided scalar or array value. It is possible to later change the value associated with that parameter name using the functions described below. 
 
 ```julia
 update_param!(m, :ParameterName, newvalues)
@@ -110,13 +110,13 @@ Note here that `newvalues` must be the same type (or be able to convert to the t
 
 #### Setting parameters with a dictionary
 
-In larger models it can be beneficial to set some of the external parameters using a dictionary of values. To do this, use the following function:
+In larger models it can be beneficial to set some of the shared model parameters using a dictionary of values. To do this, use the following function:
 
 ```julia
 set_leftover_params!(m, parameters)
 ```
 
-Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters, and all resulting new external parameters will be shared parameters. 
+Where `parameters` is a dictionary of type `Dict{String, Any}` where the keys are strings that match the names of the unset parameters in the model, and the values are the values to use for those parameters, noting that all resulting model parameters will be shared parameters. 
 
 ## Using NamedArrays for setting parameters
 

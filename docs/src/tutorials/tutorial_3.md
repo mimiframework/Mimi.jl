@@ -22,7 +22,7 @@ Possible modifications range in complexity, from simply altering parameter value
 
 Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference guide, Reference Guide: The Mimi API.
 
-When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this external parameter. 
+When the original model calls [`set_param!`](@ref), Mimi creates an shared model parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this shared model parameter. 
 
 ```julia
 update_param!(mymodel, :parametername, newvalues)
@@ -94,9 +94,9 @@ nyears = length(years)
 set_dimension!(m, :time, years)
 ```
 
-At this point all parameters with a `:time` dimension have been slightly modified under the hood, but the original values are still tied to their original years.  In this case, for example, the external parameter has been shorted by 9 values (end from 2595 --> 2505) and padded at the front with a value of `missing` (start from 2005 --> 1995). Since some values, especially initializing values, are not time-agnostic, we maintain the relationship between values and time labels.  If you wish to attach new values, you can use `update_param!` as below.  In this case this is probably necessary, since having a `missing` in the first spot of a parameter with a `:time` dimension will likely cause an error when this value is accessed.
+At this point all parameters with a `:time` dimension have been slightly modified under the hood, but the original values are still tied to their original years.  In this case, for example, the model parameter has been shorted by 9 values (end from 2595 --> 2505) and padded at the front with a value of `missing` (start from 2005 --> 1995). Since some values, especially initializing values, are not time-agnostic, we maintain the relationship between values and time labels.  If you wish to attach new values, you can use `update_param!` as below.  In this case this is probably necessary, since having a `missing` in the first spot of a parameter with a `:time` dimension will likely cause an error when this value is accessed.
 
-Create a dictionary `params` with one entry `(k, v)` per external parameter you want to update by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
+Create a dictionary `params` with one entry `(k, v)` per model parameter you want to update by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of a shared model parameter that already exists in the model definition.  Part of this dictionary may look like:
 
 ```julia
 params = Dict{Any, Any}()

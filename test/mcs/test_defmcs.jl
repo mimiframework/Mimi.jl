@@ -75,7 +75,7 @@ N = 100
 sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
-    # to an external parameter. This makes the (less common) naming of an
+    # to an model parameter. This makes the (less common) naming of an
     # RV slightly more burdensome, but it's only required when defining
     # correlations or sharing an RV across parameters.
     rv(name1) = Normal(1, 0.2)
@@ -292,7 +292,7 @@ trial2 = copy(si2.sim_def.rvdict[:name1].dist.values)
 sd2 = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
-    # to an external parameter. This makes the (less common) naming of an
+    # to an model parameter. This makes the (less common) naming of an
     # RV slightly more burdensome, but it's only required when defining
     # correlations or sharing an RV across parameters.
     rv(name1) = Normal(1, 0.2)

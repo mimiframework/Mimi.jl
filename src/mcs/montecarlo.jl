@@ -33,7 +33,7 @@ end
 
 function Base.show(io::IO, sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
     println("SimulationInstance{$T}")
-    print_nonempty("translist for external_params", sim_inst.translist_externalparams)
+    print_nonempty("translist for model params", sim_inst.translist_modelparams)
     
     Base.show(io, sim_inst.sim_def)
 
@@ -233,7 +233,7 @@ function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSi
 
     for (i, m) in enumerate(flat_model_list)
         md = modelinstance_def(m)
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramnames[i] => copy(external_param(md, trans.paramnames[i])) for trans in sim_inst.translist_externalparams)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramnames[i] => copy(model_param(md, trans.paramnames[i])) for trans in sim_inst.translist_modelparams)
     end
 
     return param_vec
@@ -249,7 +249,7 @@ function _restore_sim_params!(sim_inst::SimulationInstance{T},
     for (i, m) in enumerate(flat_model_list)
         params = param_vec[i]
         md = m.mi.md
-        for trans in sim_inst.translist_externalparams
+        for trans in sim_inst.translist_modelparams
             name = trans.paramnames[i]
             param = params[name]
             _restore_param!(param, name, md, i, trans)
@@ -259,18 +259,18 @@ function _restore_sim_params!(sim_inst::SimulationInstance{T},
     return nothing
 end
 
-function _restore_param!(param::ScalarModelParameter{T}, name::Symbol, md::ModelDef, i::Int, trans::TransformSpec_ExternalParams) where T
-    md_param = external_param(md, name)
+function _restore_param!(param::ScalarModelParameter{T}, name::Symbol, md::ModelDef, i::Int, trans::TransformSpec_ModelParams) where T
+    md_param = model_param(md, name)
     md_param.value = param.value
 end
 
-function _restore_param!(param::ArrayModelParameter{T}, name::Symbol, md::ModelDef, i::Int, trans::TransformSpec_ExternalParams) where T
-    md_param = external_param(md, name)
+function _restore_param!(param::ArrayModelParameter{T}, name::Symbol, md::ModelDef, i::Int, trans::TransformSpec_ModelParams) where T
+    md_param = model_param(md, name)
     indices = _param_indices(param, md, i, trans)
     md_param.values[indices...] = param.values[indices...]
 end
 
-function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, i::Int, trans::TransformSpec_ExternalParams) where T
+function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, i::Int, trans::TransformSpec_ModelParams) where T
     pdims = dim_names(param)   # returns [] for scalar parameters
     num_pdims = length(pdims)
 
@@ -285,7 +285,7 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, i::Int, tra
 
     if num_pdims != num_dims
         pname = trans.paramnames[i]
-        error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions ($pdims); Sim has $num_dims")
+        error("Dimension mismatch: model parameter :$pname has $num_pdims dimensions ($pdims); Sim has $num_dims")
     end
 
     indices = Vector()
@@ -299,7 +299,7 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, i::Int, tra
     return indices
 end
 
-function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, i::Int, trans::TransformSpec_ExternalParams, rvalue::Number) where T
+function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, i::Int, trans::TransformSpec_ModelParams, rvalue::Number) where T
     op = trans.op
 
     if op == :(=)
@@ -316,7 +316,7 @@ end
 # rvalue is an Array so we expect the dims to match and don't need to worry about
 # broadcasting
 function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
-    trans::TransformSpec_ExternalParams, rvalue::Array{<: Number, N}) where {T, N}
+    trans::TransformSpec_ModelParams, rvalue::Array{<: Number, N}) where {T, N}
     
     op = trans.op
     pvalue = value(param)
@@ -336,7 +336,7 @@ end
 
 # rvalue is a Number so we might need to deal with broadcasting
 function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
-                         trans::TransformSpec_ExternalParams, rvalue::Number) where {T, N}
+                         trans::TransformSpec_ModelParams, rvalue::Number) where {T, N}
     op = trans.op
     pvalue = value(param)
     indices = _param_indices(param, md, i, trans)
@@ -392,8 +392,8 @@ function _perturb_params!(sim_inst::SimulationInstance{T}, trialnum::Int) where 
     # If it's a MarginalModel, need to perturb the params in both the base and marginal modeldefs
     flat_model_list = _get_flat_model_list(sim_inst)
     for (i, m) in enumerate(flat_model_list)
-        for trans in sim_inst.translist_externalparams       
-            param = external_param(m.mi.md, trans.paramnames[i])
+        for trans in sim_inst.translist_modelparams       
+            param = model_param(m.mi.md, trans.paramnames[i])
             rvalue = getfield(trialdata, trans.rvname)
             _perturb_param!(param, m.mi.md, i, trans, rvalue)
         end
@@ -509,7 +509,7 @@ function Base.run(sim_def::SimulationDef{T},
     sim_inst = SimulationInstance{typeof(sim_def.data)}(sim_def)
     set_models!(sim_inst, models)
     generate_trials!(sim_inst, samplesize; filename=trials_output_filename)
-    set_translist_externalparams!(sim_inst) # should this use m.md or m.mi.md (after building below)?
+    set_translist_modelparams!(sim_inst) # should this use m.md or m.mi.md (after building below)?
 
     if (scenario_func === nothing) != (scenario_args === nothing)
         error("run: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
@@ -691,24 +691,24 @@ Set the model `m` to be used by the Simulation held by `sim_inst`.
 set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
 
 """
-    set_translist_externalparams!(sim_inst::SimulationInstance{T})
+    set_translist_modelparams!(sim_inst::SimulationInstance{T})
 
 Create the transform spec list for the simulation instance, finding the matching
-external parameter names for each transform spec parameter for each model.
+model parameter names for each transform spec parameter for each model.
 """
-function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+function set_translist_modelparams!(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
 
     # build flat model list that splats out the base and modified models of MarginalModel
     flat_model_list = _get_flat_model_list(sim_inst)
     flat_model_list_names = _get_flat_model_list_names(sim_inst)
 
     # allocate simulation instance translist
-    sim_inst.translist_externalparams = Vector{TransformSpec_ExternalParams}(undef, length(sim_inst.sim_def.translist))
+    sim_inst.translist_modelparams = Vector{TransformSpec_ModelParams}(undef, length(sim_inst.sim_def.translist))
 
     for (trans_idx, trans) in enumerate(sim_inst.sim_def.translist)
         
-        # initialize the vector of external parameters
-        external_parameters_vec = Vector{Symbol}(undef, length(flat_model_list))
+        # initialize the vector of model parameters
+        model_parameters_vec = Vector{Symbol}(undef, length(flat_model_list))
 
         # handling an unshared parameter specific to a component/parameter pair
         compname = trans.compname
@@ -718,7 +718,7 @@ function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T 
                 # check for component in the model
                 compname in keys(components(m.md)) || error("Component $compname does not exist in $(flat_model_list_names[model_idx]).")
 
-                external_parameters_vec[model_idx] = get_model_param_name(m.md, compname, trans.paramname)
+                model_parameters_vec[model_idx] = get_model_param_name(m.md, compname, trans.paramname)
             end
 
         # no component, so this should be referring to a shared parameter ... but 
@@ -732,7 +732,7 @@ function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T 
 
                 # found the shared parameter
                 if has_parameter(m.md, paramname)
-                    external_parameters_vec[model_idx] = paramname 
+                    model_parameters_vec[model_idx] = paramname 
 
                 # didn't find the shared parameter, will try to resolve
                 else
@@ -753,14 +753,14 @@ function set_translist_externalparams!(sim_inst::SimulationInstance{T}) where T 
                     if isnothing(unshared_paramname)
                         error("Cannot resolve because $paramname not found in any of the components of $model_name.  Please $suggestion_string.")
                     else
-                        @warn("Found $paramname in $unshared_compname with external parameter name $unshared_paramname. Will use this external parameter, but in the future we suggest you $suggestion_string")
-                        external_parameters_vec[model_idx] = unshared_paramname 
+                        @warn("Found $paramname in $unshared_compname with model parameter name $unshared_paramname. Will use this model parameter, but in the future we suggest you $suggestion_string")
+                        model_parameters_vec[model_idx] = unshared_paramname 
                     end
                 end
             end
         end
-        new_trans = TransformSpec_ExternalParams(external_parameters_vec, trans.op, trans.rvname, trans.dims)
-        sim_inst.translist_externalparams[trans_idx] = new_trans
+        new_trans = TransformSpec_ModelParams(model_parameters_vec, trans.op, trans.rvname, trans.dims)
+        sim_inst.translist_modelparams[trans_idx] = new_trans
     end
 end
             

@@ -194,13 +194,13 @@ function _get_leaf_level_epcs(md::ModelDef, epc::ExternalParameterConnection)
     par_sub_paths, param_names = _find_paths_and_names(comp, epc.param_name)
 
     leaf_epcs = ExternalParameterConnection[]
-    external_param_name = epc.external_param
+    model_param_name = epc.model_param_name
 
     top_path = epc.comp_path
 
     for (par_sub_path, param_name) in zip(par_sub_paths, param_names)
         param_path = ComponentPath(top_path, par_sub_path)
-        epc = ExternalParameterConnection(param_path, param_name, external_param_name)
+        epc = ExternalParameterConnection(param_path, param_name, model_param_name)
         push!(leaf_epcs, epc)
     end
 
@@ -228,7 +228,7 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
     end
 
     for epc in external_param_conns(md)
-        param = external_param(md, epc.external_param)
+        param = model_param(md, epc.model_param_name)
         leaf_level_epcs = _get_leaf_level_epcs(md, epc)
         for leaf_epc in leaf_level_epcs
             pdict[(leaf_epc.comp_path, leaf_epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
@@ -244,7 +244,7 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
         conn_comp = compdef(md, connector_comp_name(i))
         conn_path = conn_comp.comp_path
 
-        param = external_param(md, backup)
+        param = model_param(md, backup)
         pdict[(conn_path, :input2)] = (param isa ScalarModelParameter ? param : value(param))
     end
 

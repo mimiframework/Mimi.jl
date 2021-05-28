@@ -61,7 +61,7 @@ find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), la
     delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 
 Delete a `component` by name from `md`.
-If `deep=true` then any external model parameters connected only to 
+If `deep=true` then any model parameters connected only to 
 this component will also be deleted.
 """
 function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
@@ -81,13 +81,13 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 
     # Remove external parameter connections
 
-    if deep # Find and delete external_params that were connected only to the deleted component if specified
-        # Get all external parameters this component is connected to
-        comp_ext_params = map(x -> x.external_param, filter(x -> x.comp_path == comp_path, md.external_param_conns))
+    if deep # Find and delete model_params that were connected only to the deleted component if specified
+        # Get all model parameters this component is connected to
+        comp_model_params = map(x -> x.model_param_name, filter(x -> x.comp_path == comp_path, md.external_param_conns))
 
         # Identify which ones are not connected to any other components
-        unbound_filter = x -> length(filter(epc -> epc.external_param == x, md.external_param_conns)) == 1
-        unbound_comp_params = filter(unbound_filter, comp_ext_params)
+        unbound_filter = x -> length(filter(epc -> epc.model_param_name == x, md.external_param_conns)) == 1
+        unbound_comp_params = filter(unbound_filter, comp_model_params)
 
         # Delete these parameters
         [delete_param!(md, param_name) for param_name in unbound_comp_params]
@@ -101,20 +101,20 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 end
 
 """
-    delete_param!(md::ModelDef, external_param_name::Symbol)
+    delete_param!(md::ModelDef, model_param_name::Symbol)
 
-Delete `external_param_name` from `md`'s list of external parameters, and also 
-remove all external parameters connections that were connected to `external_param_name`.
+Delete `model_param_name` from `md`'s list of model parameters, and also 
+remove all external parameters connections that were connected to `model_param_name`.
 """
-function delete_param!(md::ModelDef, external_param_name::Symbol)
-    if external_param_name in keys(md.external_params)
-        delete!(md.external_params, external_param_name)
+function delete_param!(md::ModelDef, model_param_name::Symbol)
+    if model_param_name in keys(md.model_params)
+        delete!(md.model_params, model_param_name)
     else
-        error("Cannot delete $external_param_name, not found in model's parameter list.")
+        error("Cannot delete $model_param_name, not found in model's parameter list.")
     end
     
-    # Remove external parameter connections
-    epc_filter = x -> x.external_param != external_param_name
+    # Remove model parameter connections
+    epc_filter = x -> x.model_param_name != model_param_name
     filter!(epc_filter, md.external_param_conns)
 
     dirty!(md)
@@ -291,7 +291,7 @@ parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol,
           param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
 
 has_parameter(comp_def::AbstractComponentDef, name::Symbol) = _ns_has(comp_def, name, AbstractParameterDef)
-has_parameter(md::ModelDef, name::Symbol) = haskey(md.external_params, name)
+has_parameter(md::ModelDef, name::Symbol) = haskey(md.model_params, name)
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -427,28 +427,28 @@ function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; 
     set_param!(md, comp_name, param_name, param_name, value, dims=dims)
 end
 
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
     comp_def = compdef(md, comp_name)
     @or(comp_def, error("Top-level component with name $comp_name not found"))
-    set_param!(md, comp_def, param_name, ext_param_name, value, dims=dims)
+    set_param!(md, comp_def, param_name, model_param_name, value, dims=dims)
 end
 
-function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
+function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
     has_parameter(comp_def, param_name) ||
         error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
 
-    if has_parameter(md, ext_param_name)
+    if has_parameter(md, model_param_name)
 
-        error("Cannot set parameter :$ext_param_name, the model already has a parameter with this name.",
+        error("Cannot set parameter :$model_param_name, the model already has a parameter with this name.",
         " IF you wish to change the name of unshared parameter :$param_name connected to component :$(nameof(compdef))", 
         " use `update_param!(m, comp_name, param_name, value)", 
-        " IF you wish to change the value of the existing shared parameter :$ext_param_name, ",
+        " IF you wish to change the value of the existing shared parameter :$model_param_name, ",
         " use `update_param!(m, param_name, value)` to change the value of the shared parameter.",
         " IF you wish to create a new shared parameter connected to component :$(nameof(compdef)), use ",
         "`set_param!(m, comp_name, param_name, unique_param_name, value)`.")
     end
 
-    set_param!(md, param_name, value, dims = dims, comps = [comp_def], ext_param_name = ext_param_name)
+    set_param!(md, param_name, value, dims = dims, comps = [comp_def], model_param_name = model_param_name)
 end
 
 """
@@ -461,7 +461,7 @@ The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.
 """
-function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing, ext_param_name=nothing)
+function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing, model_param_name=nothing)
     
     # find components for connection
     # search immediate subcomponents for this parameter
@@ -496,31 +496,31 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    # create shared external parameter - since we alread checked that the found 
+    # create shared model parameter - since we alread checked that the found 
     # comps have no conflicting fields in their parameter definitions, we can 
     # just use the first one for reference 
     param_def = comps[1][param_name]
-    param = create_external_param(md, param_def, value; is_shared = true)
+    param = create_model_param(md, param_def, value; is_shared = true)
     
     # Need to check the dimensions of the parameter data against each component 
-    # before adding it to the model's external parameters
+    # before adding it to the model's model parameters
     if param isa ArrayModelParameter
         for comp in comps
             _check_labels(md, comp, param_name, param)
         end
     end
 
-    # add the shared external parameter to the model def
-    if ext_param_name === nothing
-        ext_param_name = param_name
+    # add the shared model parameter to the model def
+    if model_param_name === nothing
+        model_param_name = param_name
     end
-    add_model_param!(md, ext_param_name, param)
+    add_model_param!(md, model_param_name, param)
 
     # connect
     for comp in comps
         # Set check_labels = false because we already checked above
         # connect_param! calls dirty! so we don't have to
-        connect_param!(md, comp, param_name, ext_param_name, check_labels = false)
+        connect_param!(md, comp, param_name, model_param_name, check_labels = false)
     end
     nothing
 end
@@ -724,7 +724,7 @@ end
 """
     _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
 
-Add and connect an unshared external parameter to `md` for each parameter in 
+Add and connect an unshared model parameter to `md` for each parameter in 
 `comp_def`.
 """
 function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
@@ -746,24 +746,24 @@ function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
         connected = UnnamedReference(comp_name, param_name) in connection_refs(md)
         
         if !connected 
-            ext_param_name = gensym()
+            model_param_name = gensym()
             value = param_def.default
 
-            # create the unshared external parameter with a value of param_def.default,
+            # create the unshared model parameter with a value of param_def.default,
             # which will be nothing if it not set explicitly
-            param = create_external_param(md, param_def, value)
+            param = create_model_param(md, param_def, value)
             
             # Need to check the dimensions of the parameter data against component 
-            # before adding it to the model's external parameters
+            # before adding it to the model's parameter list
             if param isa ArrayModelParameter && !isnothing(value) 
                 _check_labels(md, comp_def, param_name, param)
             end
             
-            # add the unshared external parameter to the model def
-            add_model_param!(md, ext_param_name, param)
+            # add the unshared model parameter to the model def
+            add_model_param!(md, model_param_name, param)
 
             # connect - don't need to check labels since did it above
-            connect_param!(md, comp_def, param_name, ext_param_name; check_labels = false)
+            connect_param!(md, comp_def, param_name, model_param_name; check_labels = false)
         end
     end
     nothing
@@ -938,7 +938,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
 
-    # Create an unshared external parameter for each of the new component's parameters
+    # Create an unshared model parameter for each of the new component's parameters
     isa(obj, ModelDef) && _initialize_parameters!(obj, comp_def)
 
     # Return the comp since it's a copy of what was passed in
@@ -1046,7 +1046,7 @@ function _replace!(obj::AbstractCompositeComponentDef,
             error("Cannot replace and reconnect; new component does not contain the necessary variables.")
         end
 
-        # Check external parameter connections
+        # Check model parameter connections
         remove = []
         for epc in external_param_conns(obj, comp_name)
             param_name = epc.param_name

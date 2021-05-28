@@ -18,7 +18,7 @@ end
 end
 
 ##
-## Tests for set_translist_externalparams
+## Tests for set_translist_modelparams
 ##
 
 sd = @defsim begin
@@ -101,7 +101,7 @@ add_comp!(m2, test2)
 run(sd, [m1, m2], 100)
 
 ##
-## Tests for set_translist_externalparams with a default (not shared)
+## Tests for set_translist_modelparams with a default (not shared)
 ##
 
 sd = @defsim begin

@@ -160,6 +160,6 @@ Variable dicts are keyed by a string of the form `"$component_name:$variable_nam
   
 #### Parameter dict
 
-Parameter dicts are keyed by "external" names (symbols), with values represented in the same format as shown above for Variable dicts.
+Parameter dicts are keyed by model parameter names (symbols), with values represented in the same format as shown above for Variable dicts.
 
 

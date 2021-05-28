@@ -3,7 +3,7 @@ module TestReplaceComp
 using Test
 using Mimi
 import Mimi:
-    compdefs, compname, compdef, components, comp_id, external_param_conns, external_params
+    compdefs, compname, compdef, components, comp_id, external_param_conns, model_params
 
 @defcomp X begin
     x = Parameter(index = [time])
@@ -93,12 +93,12 @@ first = compdef(m, :first)
 @test first.comp_id.comp_name == :bad2                   # Successfully replaced
 
 
-# 4. Test bad external parameter name
+# 4. Test bad model parameter name
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
-set_param!(m, :X, :x, zeros(6))                     # Set external parameter for :x
+set_param!(m, :X, :x, zeros(6))                     # Set model parameter for :x
 
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs(
@@ -108,25 +108,25 @@ set_param!(m, :X, :x, zeros(6))                     # Set external parameter for
 
 @test compname(compdef(m, :X)) == :bad3            # The replacement was still successful
 @test length(external_param_conns(m)) == 1         # The external parameter connection was removed, so just :z is there
-@test length(external_params(m)) == 2              # The external parameter still exists for both :x and :z
+@test length(model_params(m)) == 2              # The model parameter still exists for both :x and :z
 
 
-# 5. Test bad external parameter dimensions
-
-m = Model()
-set_dimension!(m, :time, 2000:2005)
-add_comp!(m, X)
-set_param!(m, :X, :x, zeros(6))                         # Set external parameter for :x
-@test_throws ErrorException replace!(m, :X => bad1)     # Cannot reconnect external parameter, :x in bad1 has different dimensions
-
-
-# 6. Test bad external parameter datatype
+# 5. Test bad model parameter dimensions
 
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
-set_param!(m, :X, :x, zeros(6))                         # Set external parameter for :x
-@test_throws ErrorException replace!(m, :X => bad4)  # Cannot reconnect external parameter, :x in bad4 has different datatype
+set_param!(m, :X, :x, zeros(6))                         # Set model parameter for :x
+@test_throws ErrorException replace!(m, :X => bad1)     # Cannot reconnect model parameter, :x in bad1 has different dimensions
+
+
+# 6. Test bad model parameter datatype
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+add_comp!(m, X)
+set_param!(m, :X, :x, zeros(6))                         # Set model parameter for :x
+@test_throws ErrorException replace!(m, :X => bad4)  # Cannot reconnect model parameter, :x in bad4 has different datatype
 
 
 # 7. Test component name that doesn't exist
@@ -177,7 +177,7 @@ set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
 set_param!(m, :X, :x, zeros(6))
 replace!(m, :X => X_repl_extraparams)               # Replace X with X_repl_extraparams
-@test length(external_params(m)) == 3 # should have two new parameters in the external parameters list
+@test length(model_params(m)) == 3 # should have two new parameters in the model parameters list
 set_param!(m, :X, :b, 8.0) # need to set b since it doesn't have a default, a will have a default
 run(m)
 @test length(components(m)) == 1        # Only one component exists in the model

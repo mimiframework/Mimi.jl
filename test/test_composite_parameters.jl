@@ -3,7 +3,7 @@ module TestCompositeParameters
 using Mimi
 using Test 
 
-import Mimi: external_params
+import Mimi: model_params
 
 @defcomp A begin
     p1 = Parameter(unit = "\$", default=3)
@@ -128,12 +128,12 @@ m2 = get_model()
 set_param!(m2, :A, :p1, 2)  # Set the value only for component A
 
 # test that the proper connection has been made for :p1 in :A
-@test Mimi.external_param(m2.md, :p1).value == 2 
-@test Mimi.external_param(m2.md, :p1).is_shared
+@test Mimi.model_param(m2.md, :p1).value == 2 
+@test Mimi.model_param(m2.md, :p1).is_shared
 # and that B.p1 is still the default value and unshared
 sym = Mimi.get_model_param_name(m2.md, :B, :p1)
-@test Mimi.external_param(m2.md, sym).value == 3
-@test !(Mimi.external_param(m2.md, sym).is_shared)
+@test Mimi.model_param(m2.md, sym).value == 3
+@test !(Mimi.model_param(m2.md, sym).is_shared)
 
 # test defaults
 m3 = get_model()
@@ -147,9 +147,9 @@ err8 = try set_param!(m3, :B, :p1, 2) catch err err end
 @test occursin("the model already has a parameter with this name", sprint(showerror, err8))
 
 set_param!(m3, :B, :p1, :B_p1, 2)   # Use a unique name to set B.p1
-@test Mimi.external_param(m3.md, :B_p1).value == 2 
-@test Mimi.external_param(m3.md, :B_p1).is_shared
-@test issubset(Set([:p1, :B_p1]), Set(keys(m3.md.external_params)))
+@test Mimi.model_param(m3.md, :B_p1).value == 2 
+@test Mimi.model_param(m3.md, :B_p1).is_shared
+@test issubset(Set([:p1, :B_p1]), Set(keys(m3.md.model_params)))
 
 #------------------------------------------------------------------------------
 # Unit tests on default behavior
@@ -171,10 +171,10 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
-@test length(external_params(m)) == 1
-ext_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
-@test Mimi.is_nothing_param(external_params(m)[ext_param_name])
-@test !external_params(m)[ext_param_name].is_shared
+@test length(model_params(m)) == 1
+model_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
+@test Mimi.is_nothing_param(model_params(m)[model_param_name])
+@test !model_params(m)[model_param_name].is_shared
 
 @defcomposite top begin
     Component(A)
@@ -185,10 +185,10 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
-@test length(external_params(m)) == 1
-ext_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
-@test external_params(m)[ext_param_name].value == 8.0
-@test !external_params(m)[ext_param_name].is_shared
+@test length(model_params(m)) == 1
+model_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
+@test model_params(m)[model_param_name].value == 8.0
+@test !model_params(m)[model_param_name].is_shared
 
 # same default and no override
 @defcomp A begin
@@ -207,10 +207,10 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
-@test length(external_params(m)) == 1
-ext_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
-@test external_params(m)[ext_param_name].value == 2
-@test !external_params(m)[ext_param_name].is_shared
+@test length(model_params(m)) == 1
+model_param_name = Mimi.get_model_param_name(m.md, :top, :superp1)
+@test model_params(m)[model_param_name].value == 2
+@test !model_params(m)[model_param_name].is_shared
 
 # simple case with no super parameter
 @defcomp A begin
@@ -228,13 +228,13 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, top);
-@test length(external_params(m)) == 2
-ext_param_name = Mimi.get_model_param_name(m.md, :top, :p1)
-@test external_params(m)[ext_param_name].value == 2
-@test !external_params(m)[ext_param_name].is_shared
-ext_param_name = Mimi.get_model_param_name(m.md, :top, :p2)
-@test external_params(m)[ext_param_name].value == 3
-@test !external_params(m)[ext_param_name].is_shared
+@test length(model_params(m)) == 2
+model_param_name = Mimi.get_model_param_name(m.md, :top, :p1)
+@test model_params(m)[model_param_name].value == 2
+@test !model_params(m)[model_param_name].is_shared
+model_param_name = Mimi.get_model_param_name(m.md, :top, :p2)
+@test model_params(m)[model_param_name].value == 3
+@test !model_params(m)[model_param_name].is_shared
 
 #------------------------------------------------------------------------------
 # Test set_param! for parameter that exists in neither model definition nor any subcomponent

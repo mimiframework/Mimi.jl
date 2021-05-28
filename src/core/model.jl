@@ -26,8 +26,8 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 @delegate internal_param_conns(m::Model) => md
 @delegate external_param_conns(m::Model) => md
 
-@delegate external_params(m::Model) => md
-@delegate external_param(m::Model, name::Symbol; missing_ok=false) => md
+@delegate model_params(m::Model) => md
+@delegate model_param(m::Model, name::Symbol; missing_ok=false) => md
 
 @delegate connected_params(m::Model) => md
 @delegate unconnected_params(m::Model) => md
@@ -55,12 +55,12 @@ data for the second timestep and beyond.
                          ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing) => md
 
 """
-    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol)
 
-Bind the parameter `param_name` in the component `comp_name` of model `m` to the external parameter 
-`ext_param_name` already present in the model's list of external parameters.
+Bind the parameter `param_name` in the component `comp_name` of model `m` to the model parameter 
+`model_param_name` already present in the model's list of model parameters.
 """
-@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
+@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol) => md
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -112,7 +112,7 @@ end
 """
     update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
 
-Update the `value` of an external parameter in model `m`, referenced by
+Update the `value` of an model parameter in model `m`, referenced by
 `name`. The update_timesteps keyword argument is deprecated, we keep it here 
 just to provide warnings.
 """
@@ -130,8 +130,8 @@ to component `comp_name`'s parameter `param_name`.
     update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!``
-is called to update the external parameter by name k to value v.  Each key k 
-must be a symbol or convert to a symbol matching the name of an external parameter t
+is called to update the model parameter by name k to value v.  Each key k 
+must be a symbol or convert to a symbol matching the name of an model parameter t
 hat already exists in the model definition. The update_timesteps keyword argument 
 is deprecated, but temporarily remains as a dummy argument to allow warning detection.
 """
@@ -422,18 +422,18 @@ Add a scalar type parameter `name` with value `value` to the model `m`.
     delete!(m::Model, component::Symbol; deep::Bool=false)
 
 Delete a `component` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
-If `deep=true` then any external model parameters connected only to 
+If `deep=true` then any model model parameters connected only to 
 this component will also be deleted.
 """
 @delegate Base.delete!(m::Model, comp_name::Symbol; deep::Bool=false) => md
 
 """
-    delete_param!(m::Model, external_param_name::Symbol)
+    delete_param!(m::Model, model_param_name::Symbol)
 
-Delete `external_param_name` from a model `m`'s ModelDef's list of external parameters, and
-also remove all external parameters connections that were connected to `external_param_name`.
+Delete `model_param_name` from a model `m`'s ModelDef's list of model parameters, and
+also remove all external parameters connections that were connected to `model_param_name`.
 """
-@delegate delete_param!(m::Model, external_param_name::Symbol) => md
+@delegate delete_param!(m::Model, model_param_name::Symbol) => md
 
 """
     set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
@@ -446,15 +446,15 @@ that they match the model's index labels.
 @delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing) => md
 
 """
-    set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
+    set_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
 
 Set the parameter `param_name` of a component `comp_name` in a model `m` to a given `value`, 
-storing the value in the model's external parameter list by the provided name `ext_param_name`.
+storing the value in the model's parameter list by the provided name `model_param_name`.
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims'
 is a list of the dimension names of the provided data, and will be used to check
 that they match the model's index labels.
 """
-@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing) => md
+@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing) => md
 
 
 """

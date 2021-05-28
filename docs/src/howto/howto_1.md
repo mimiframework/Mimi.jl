@@ -105,7 +105,7 @@ end
 
 The `connect` calls are responsible for making internal connections between any two components held by a composite component, similar to `connect_param!` described in the Model section below. 
 
-As mentioned above, conflict resolution refers to cases where two subcomponents have identically named parameters, and thus the user needs to explicitly demonstrate that they are aware of this and create a new external parameter that will point to all subcomponent parameters with that name.  For example, given leaf components `A` and `B`: 
+As mentioned above, conflict resolution refers to cases where two subcomponents have identically named parameters, and thus the user needs to explicitly demonstrate that they are aware of this and create a new shared model parameter that will point to all subcomponent parameters with that name.  For example, given leaf components `A` and `B`: 
 
 ```julia
 @defcomp Leaf1 begin

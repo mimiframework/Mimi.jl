@@ -182,7 +182,7 @@ rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the spe
 param1 = rv1                # then assign this random variable "rv1" to the parameter "param1" in the model
 ```
 
-The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to our shared external parameter `param1`.
+The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to our shared model parameter `param1`.
 ```julia
 param1 = Normal(0, 0.8)
 ```
@@ -237,7 +237,7 @@ end
 
 Next, use the `run` function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the `run` function**.
 
-In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
+In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's model parameters that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
 ```jldoctest tutorial5; output = false, filter = r".*"s
 # Run 100 trials, and optionally save results to the indicated directories

@@ -23,10 +23,10 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::Abstrac
         
         # if disconnecting an unshared parameter, it will become unreachable since
         # it's name is a random, unique symbol so remove it from the ModelDef's 
-        # list of external parameters
-        ext_param_name = get_model_param_name(obj, nameof(comp_def), param_name; missing_ok = true)
-        if !isnothing(ext_param_name) && !(external_param(obj, ext_param_name).is_shared)
-            delete!(obj.external_params, ext_param_name);
+        # list of model parameters
+        model_param_name = get_model_param_name(obj, nameof(comp_def), param_name; missing_ok = true)
+        if !isnothing(model_param_name) && !(model_param(obj, model_param_name).is_shared)
+            delete!(obj.model_params, model_param_name);
         end
 
         filter!(x -> !(x.comp_path == path && x.param_name == param_name), obj.external_param_conns)
@@ -50,17 +50,17 @@ end
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
 function _check_labels(obj::AbstractCompositeComponentDef,
-                       comp_def::AbstractComponentDef, param_name::Symbol, ext_param::ArrayModelParameter)
+                       comp_def::AbstractComponentDef, param_name::Symbol, mod_param::ArrayModelParameter)
     param_def = parameter(comp_def, param_name)
 
-    t1 = eltype(ext_param.values)
+    t1 = eltype(mod_param.values)
     t2 = eltype(param_def.datatype)
     if !(t1 <: Union{Missing, t2})
         error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
     end
 
     comp_dims  = dim_names(param_def)
-    param_dims = dim_names(ext_param)
+    param_dims = dim_names(mod_param)
 
     if ! isempty(param_dims) && size(param_dims) != size(comp_dims)
         d1 = size(comp_dims)
@@ -77,42 +77,42 @@ function _check_labels(obj::AbstractCompositeComponentDef,
 
     for (i, dim) in enumerate(comp_dims)
         if isa(dim, Symbol)
-            param_length = size(ext_param.values)[i]
+            param_length = size(mod_param.values)[i]
             comp_length = dim_count(obj, dim)
             if param_length != comp_length
-                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; external parameter :$param_name has $param_length elements.")
+                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; model parameter :$param_name has $param_length elements.")
             end
         end
     end
 end
 
 """
-    connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol;
+    connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
                    check_labels::Bool=true)
 
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
-the external parameter `ext_param_name`.
+the model parameter `model_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
-                        param_name::Symbol, ext_param_name::Symbol;
+                        param_name::Symbol, model_param_name::Symbol;
                         check_labels::Bool=true)
     comp_def = compdef(obj, comp_name)
-    connect_param!(obj, comp_def, param_name, ext_param_name, check_labels=check_labels)
+    connect_param!(obj, comp_def, param_name, model_param_name, check_labels=check_labels)
 end
 
 function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                        param_name::Symbol, ext_param_name::Symbol; check_labels::Bool=true)
-    ext_param = external_param(obj, ext_param_name)
+                        param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true)
+    mod_param = model_param(obj, model_param_name)
 
-    if ext_param isa ArrayModelParameter && check_labels
-        _check_labels(obj, comp_def, param_name, ext_param)
+    if mod_param isa ArrayModelParameter && check_labels
+        _check_labels(obj, comp_def, param_name, mod_param)
     end
 
     disconnect_param!(obj, comp_def, param_name)    # calls dirty!()
 
     comp_path = @or(comp_def.comp_path, ComponentPath(obj.comp_path, comp_def.name))
-    conn = ExternalParameterConnection(comp_path, param_name, ext_param_name)
-    add_external_param_conn!(obj, conn)
+    conn = ExternalParameterConnection(comp_path, param_name, model_param_name)
+    add_model_param_conn!(obj, conn)
 
     return nothing
 end
@@ -304,7 +304,7 @@ end
     connection_refs(obj::ModelDef)
 
 Return a vector of UnnamedReference's to parameters from subcomponents that are either found in
-internal connections or that have been already connected to external parameter values.
+internal connections or that have been already connected to model parameter values.
 """
 function connection_refs(obj::ModelDef)
     refs = UnnamedReference[]
@@ -323,15 +323,15 @@ end
 """
     nothing_params(obj::AbstractCompositeComponentDef)
 
-Return a list of UnnamedReference's to parameters that are connected to a an 
-external parameter with a value of nothing.
+Return a list of UnnamedReference's to parameters that are connected to a model
+parameter with a value of nothing.
 """
 function nothing_params(obj::AbstractCompositeComponentDef)
 
     refs = UnnamedReference[]
 
     for conn in obj.external_param_conns
-        value = external_param(obj, conn.external_param)
+        value = model_param(obj, conn.model_param_name)
         if is_nothing_param(value)
             push!(refs, UnnamedReference(conn.comp_path.names[end], conn.param_name))
         end
@@ -373,7 +373,7 @@ end
 Set all of the parameters in model `m` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
 the dictionary keys are strings that match the names of unset parameters in the model,
-and all resulting new external parameters will be shared parameters.
+and all resulting new model parameters will be shared parameters.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     for param_ref in nothing_params(md)
@@ -382,8 +382,8 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
 
-        # check whether we need to add the external parameter to the ModelDef
-        if external_param(md, param_name, missing_ok=true) === nothing
+        # check whether we need to add the model parameter to the ModelDef
+        if model_param(md, param_name, missing_ok=true) === nothing
             if haskey(parameters, string(param_name))  
                 value = parameters[string(param_name)]
                 param_dims = parameter_dimensions(md, comp_name, param_name)
@@ -425,18 +425,18 @@ function external_param_conns(obj::ModelDef, comp_name::Symbol)
     return external_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
-function external_param(obj::ModelDef, name::Symbol; missing_ok=false)
-    haskey(obj.external_params, name) && return obj.external_params[name]
+function model_param(obj::ModelDef, name::Symbol; missing_ok=false)
+    haskey(obj.model_params, name) && return obj.model_params[name]
 
     missing_ok && return nothing
 
-    error("$name not found in external parameter list")
+    error("$name not found in model parameter list")
 end
 
 """
     get_model_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
 
-Get the external parameter name for the exernal parameter conneceted to comp_name's
+Get the model parameter name for the exernal parameter conneceted to comp_name's
 parameter param_name.  The keyword argument `missing_ok` defaults to false so
 if no parameter is found an error is thrown, if it is set to true the function will
 return `nothing`.
@@ -444,19 +444,19 @@ return `nothing`.
 function get_model_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
     for conn in obj.external_param_conns
         if conn.comp_path.names[end] == comp_name && conn.param_name == param_name
-            return conn.external_param
+            return conn.model_param_name
         end
     end
 
     missing_ok && return nothing
 
-    error("External parameter connected to $comp_name's parameter $param_name not found in external parameter connections list.")
+    error("Model parameter connected to $comp_name's parameter $param_name not found in model's parameter connections list.")
 end
 
 """
     get_model_param_name(obj::Model, comp_name::Symbol, param_name::Symbol; missing_ok=false)
 
-Get the external parameter name for the exernal parameter conneceted to comp_name's
+Get the model parameter name for the exernal parameter connected to comp_name's
 parameter param_name.  The keyword argument `missing_ok` defaults to false so
 if no parameter is found an error is thrown, if it is set to true the function will
 return `nothing`.
@@ -465,7 +465,7 @@ function get_model_param_name(obj::Model, comp_name::Symbol, param_name::Symbol;
     get_model_param_name(obj.md, comp_name, param_name; missing_ok = missing_ok)
 end
 
-function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
+function add_model_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
     dirty!(obj)
 end
@@ -473,19 +473,19 @@ end
 """
     add_model_param!(md::ModelDef, name::Symbol, value::ModelParameter)
 
-Add an external parameter with name `name` and Model Parameter `value` to ModelDef `md`.
+Add an model parameter with name `name` and Model Parameter `value` to ModelDef `md`.
 """
 function add_model_param!(md::ModelDef, name::Symbol, value::ModelParameter)
-    # if haskey(obj.external_params, name)
-    #     @warn "Redefining external param :$name in $(obj.comp_path) from $(obj.external_params[name]) to $value"
+    # if haskey(obj.model_params, name)
+    #     @warn "Redefining model param :$name in $(obj.comp_path) from $(obj.model_params[name]) to $value"
     # end
-    md.external_params[name] = value
+    md.model_params[name] = value
     dirty!(md)
     return value
 end
 # deprecated version of above
 function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
-    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
+    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_model_param` with the same arguments."
     add_model_param!(obj, name, value)
 end
 
@@ -494,7 +494,7 @@ end
                         param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                         is_shared::Bool = false)
 
-Create and add an external parameter with name `name` and Model Parameter `value` 
+Create and add a model parameter with name `name` and Model Parameter `value` 
 to ModelDef `md`. The Model Parameter will be created with value `value`, dimensions
 `param_dims` which can be left to be created automatically from the Model Def, and 
 an is_shared attribute `is_shared` which defaults to false.
@@ -508,7 +508,7 @@ end
 function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                              is_shared::Bool = false)
-    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
+    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_model_param` with the same arguments."
     add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
 end
 
@@ -517,7 +517,7 @@ end
                         param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                         is_shared::Bool = false)
 
-Create and add an external parameter with name `name` and Model Parameter `value` 
+Create and add a model parameter with name `name` and Model Parameter `value` 
 to ModelDef `md`. The Model Parameter will be created with value `value`, dimensions
 `param_dims` which can be left to be created automatically from the Model Def, and 
 an is_shared attribute `is_shared` which defaults to false.
@@ -543,7 +543,7 @@ function set_external_param!(obj::ModelDef, name::Symbol,
                             value::Union{AbstractArray, AbstractRange, Tuple};
                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                             is_shared::Bool = false)
-    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_external_param` with the same arguments."
+    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_model_param` with the same arguments."
     add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
 end
 
@@ -566,7 +566,7 @@ end
 function set_external_array_param!(obj::ModelDef,
                                 name::Symbol, value::TimestepVector, 
                                 dims; is_shared::Bool = false)
-    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_external_array_param` with the same arguments."
+    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_model_array_param` with the same arguments."
     add_model_array_param!(obj, name, value, dims; is_shared = is_shared)
 end
 
@@ -589,8 +589,8 @@ end
 function set_external_array_param!(obj::ModelDef,
                                         name::Symbol, value::TimestepArray, dims; 
                                         is_shared::Bool = false)
-    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_external_array_param` with the same arguments."
-    add_external_array_param(obj, name, value, dims; is_shared = is_shared)
+    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_model_array_param` with the same arguments."
+    add_model_array_param(obj, name, value, dims; is_shared = is_shared)
 end
 
 """
@@ -612,8 +612,8 @@ end
 function set_external_array_param!(obj::ModelDef,
                                    name::Symbol, value::AbstractArray, dims; 
                                    is_shared::Bool = false)
-    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_external_array_param` with the same arguments."
-    add_external_array_param(obj, name, value, dims; is_shared = is_shared)
+    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_model_array_param` with the same arguments."
+    add_model_array_param(obj, name, value, dims; is_shared = is_shared)
 end
 
 """
@@ -627,14 +627,14 @@ function add_model_scalar_param!(md::ModelDef, name::Symbol, value::Any; is_shar
 end
 # deprecated version of above
 function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
-    @warn "`set_external_scalar_param! is deprecated and will be removed in the future, please use `add_external_scalar_param` with the same arguments."
-    add_external_scalar_param(obj, name, value; is_shared = is_shared)
+    @warn "`set_external_scalar_param! is deprecated and will be removed in the future, please use `add_model_scalar_param` with the same arguments."
+    add_model_scalar_param(obj, name, value; is_shared = is_shared)
 end
 
 """
     update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
 
-Update the `value` of an external model parameter in composite `obj`, referenced
+Update the `value` of a model parameter in composite `obj`, referenced
 by `name`. The update_timesteps keyword argument is deprecated, we keep it here 
 just to provide warnings.
 """
@@ -644,7 +644,7 @@ function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; 
 end
 
 function update_param!(mi::ModelInstance, name::Symbol, value)
-    param = mi.md.external_params[name]
+    param = mi.md.model_params[name]
 
     if param isa ScalarModelParameter
         param.value = value
@@ -673,27 +673,27 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
     if isnothing(model_param_name) 
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
-        param = create_external_param(md, param_def, value; is_shared = false)
+        param = create_model_param(md, param_def, value; is_shared = false)
         add_model_param!(md, model_param_name, param)
         name = get_model_param_name
 
     # make sure the model parameter is unshared
-    elseif external_param(md, name).is_shared
+    elseif model_param(md, name).is_shared
         error("Parameter $param_name is a shared model parameter, to safely update",
             "please call `update_param!(m, param_name, value)` to explicitly update",
             "a shared parameter that may be connected to several components")
     end
 
     # update the parameter
-    _update_param!(md, model_param_name, value)
+    update_param!(md, model_param_name, value)
 
 end
 
 function _update_param!(obj::AbstractCompositeComponentDef,
                         name::Symbol, value)
-    param = external_param(obj, name, missing_ok=true)
+    param = model_param(obj, name, missing_ok=true)
     if param === nothing
-        error("Cannot update parameter; $name not found in composite's external parameters.")
+        error("Cannot update parameter; $name not found in composite's model parameters.")
     end
 
     if param isa ScalarModelParameter
@@ -720,7 +720,7 @@ end
 function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
    
     # Get original parameter
-    param = external_param(obj, name)
+    param = model_param(obj, name)
 
     # Check type of provided parameter
     if !(typeof(value) <: AbstractArray)
@@ -767,8 +767,8 @@ end
     update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{T, Any}; update_timesteps = nothing) where T
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
-is called to update the external parameter by name k to value v. Each key k must be a symbol or convert to a
-symbol matching the name of an external parameter that already exists in the
+is called to update the model parameter by name k to value v. Each key k must be a symbol or convert to a
+symbol matching the name of an model parameter that already exists in the
 component definition.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
@@ -797,7 +797,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
         for conn in need_conn_comps
             add_backup!(obj, conn.backup)
 
-            num_dims = length(size(external_param(obj, conn.backup).values))
+            num_dims = length(size(model_param(obj, conn.backup).values))
 
             if ! (num_dims in (1, 2))
                 error("Connector components for parameters with > 2 dimensions are not implemented.")
@@ -829,7 +829,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
-            add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
+            add_model_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
             # set the first and last parameters for WITHIN the component which 
             # decide when backup is used and when connection is used
@@ -851,7 +851,7 @@ end
 """
     _pad_parameters!(obj::ModelDef)
 
-Take each external parameter of the Model Definition `obj` and `update_param!` 
+Take each model parameter of the Model Definition `obj` and `update_param!` 
 with new data values that are altered to match a new time dimension by (1) trimming
 the values down if the time dimension has been shortened and (2) padding with missings 
 as necessary.
@@ -860,7 +860,7 @@ function _pad_parameters!(obj::ModelDef)
 
     model_times = time_labels(obj)
 
-    for (name, param) in obj.external_params
+    for (name, param) in obj.model_params
         # there is only a chance we only need to pad a parameter if:
         #   (1) it is an ArrayModelParameter
         #   (2) it has a time dimension
@@ -965,14 +965,14 @@ function add_shared_parameter(md::ModelDef, name::Symbol, value::Any;
 end
 
 """
-    create_external_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+    create_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
 
-Create a new external parameter to be added to Model Def `md` with specifications
+Create a new model parameter to be added to Model Def `md` with specifications
 matching parameter definition `param_def` and with `value`.  The keyword argument
 is_shared defaults to false, and thus an unshared parameter would be created, whereas
 setting `is_shared` to true creates a shared parameter.
 """
-function create_external_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+function create_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
     
     # gather info
     param_name = nameof(param_def)

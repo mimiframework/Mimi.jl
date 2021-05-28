@@ -79,8 +79,8 @@ Model
       1: ExternalParameterConnection
         comp_name: :X
         param_name: :x
-        external_param: :x
-    external_params: Dict{Symbol,ModelParameter}
+        model_param_name: :x
+    model_params: Dict{Symbol,ModelParameter}
       x => ArrayModelParameter{TimestepArray{FixedTimestep{2000,1,2005},Float64,1}}
         values: TimestepArray{FixedTimestep{2000,1,2005},Float64,1}
             1: 0.0
