@@ -89,13 +89,6 @@ Remove any parameter connections for a given parameter `param_name` in a given c
 """
 @delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-# TBD: these may not be needed as delegators
-@delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
-
-@delegate set_external_param!(m::Model, name::Symbol,
-                              value::Union{Number, AbstractArray, AbstractRange, Tuple};
-                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
-
 @delegate add_model_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
 @delegate add_model_param!(m::Model, name::Symbol,
@@ -180,46 +173,6 @@ to flexibly changing with the model's `:time` dimension.
 """
 function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
-end
-
-# DEPRECATION - EVENTUALLY REMOVE
-"""
-    replace_comp!(
-        m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing,
-        after::NothingSymbol=nothing,
-        reconnect::Bool=true
-    )
-
-Deprecated function for replacing the component with name `comp_name` in model `m` with the 
-new component specified by `comp_id`. Use the following syntax instead:
-
-`replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)`
-
-See docstring for `replace!` for further description of available functionality.
-"""
-function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
-    error("Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead.")
-end
-
-# DEPRECATION - EVENTUALLY REMOVE
-"""
-    replace_comp!(
-        m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing,
-        after::NothingSymbol=nothing,
-        reconnect::Bool=true
-    )
-
-Deprecated function for replacing the component with name `comp_name` in model `m` with the 
-new component specified by `comp_def`. Use the following syntax instead:
-
-`replace!(m, comp_name => comp_def; kwargs...)`
-
-See docstring for `replace!` for further description of available functionality.
-"""
-function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
-    error("Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead.")
 end
 
 """
@@ -408,7 +361,6 @@ Add a one or two dimensional (optionally, time-indexed) array parameter `name`
 with value `value` to the model `m`.
 """
 @delegate add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
-@delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
 
 """
     add_model_scalar_param!(m::Model, name::Symbol, value::Any)
@@ -416,7 +368,6 @@ with value `value` to the model `m`.
 Add a scalar type parameter `name` with value `value` to the model `m`.
 """
 @delegate add_model_scalar_param!(m::Model, name::Symbol, value::Any) => md
-@delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """
     delete!(m::Model, component::Symbol; deep::Bool=false)
@@ -487,3 +438,59 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
     run(mi, ntimesteps, dim_keys)
     nothing
 end
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors -- 
+
+"""
+    replace_comp!(
+        m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
+        reconnect::Bool=true
+    )
+
+Deprecated function for replacing the component with name `comp_name` in model `m` with the 
+new component specified by `comp_def`. Use the following syntax instead:
+
+`replace!(m, comp_name => comp_def; kwargs...)`
+
+See docstring for `replace!` for further description of available functionality.
+"""
+function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+    error("Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead.")
+end
+
+"""
+    replace_comp!(
+        m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
+        reconnect::Bool=true
+    )
+
+Deprecated function for replacing the component with name `comp_name` in model `m` with the 
+new component specified by `comp_id`. Use the following syntax instead:
+
+`replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)`
+
+See docstring for `replace!` for further description of available functionality.
+"""
+function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
+    error("Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead.")
+end
+
+# -- throw warnings --
+
+@delegate set_external_param!(m::Model, name::Symbol,
+                              value::Union{Number, AbstractArray, AbstractRange, Tuple};
+                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+
+@delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
+@delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
+@delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
+@delegate external_params(m::Model) => md
+@delegate external_param(m::Model, name::Symbol; missing_ok=false) => md

@@ -112,7 +112,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractCo
 
     comp_path = @or(comp_def.comp_path, ComponentPath(obj.comp_path, comp_def.name))
     conn = ExternalParameterConnection(comp_path, param_name, model_param_name)
-    add_model_param_conn!(obj, conn)
+    add_external_param_conn!(obj, conn)
 
     return nothing
 end
@@ -465,7 +465,7 @@ function get_model_param_name(obj::Model, comp_name::Symbol, param_name::Symbol;
     get_model_param_name(obj.md, comp_name, param_name; missing_ok = missing_ok)
 end
 
-function add_model_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
+function add_external_param_conn!(obj::ModelDef, conn::ExternalParameterConnection)
     push!(obj.external_param_conns, conn)
     dirty!(obj)
 end
@@ -483,11 +483,7 @@ function add_model_param!(md::ModelDef, name::Symbol, value::ModelParameter)
     dirty!(md)
     return value
 end
-# deprecated version of above
-function set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter)
-    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_model_param` with the same arguments."
-    add_model_param!(obj, name, value)
-end
+
 
 """
     add_model_param!(md::ModelDef, name::Symbol, value::Number;
@@ -503,13 +499,6 @@ function add_model_param!(md::ModelDef, name::Symbol, value::Number;
                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                             is_shared::Bool = false)
     add_model_scalar_param!(md, name, value, is_shared = is_shared)
-end
-# deprecated version of above
-function set_external_param!(obj::ModelDef, name::Symbol, value::Number;
-                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
-                             is_shared::Bool = false)
-    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_model_param` with the same arguments."
-    add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
 end
 
 """
@@ -538,14 +527,6 @@ function add_model_param!(md::ModelDef, name::Symbol,
 
     add_model_array_param!(md, name, values, param_dims, is_shared = is_shared)
 end
-# deprecated version of above
-function set_external_param!(obj::ModelDef, name::Symbol,
-                            value::Union{AbstractArray, AbstractRange, Tuple};
-                            param_dims::Union{Nothing,Array{Symbol}} = nothing, 
-                            is_shared::Bool = false)
-    @warn "`set_external_param! is deprecated and will be removed in the future, please use `add_model_param` with the same arguments."
-    add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
-end
 
 """
     add_model_array_param!(md::ModelDef,
@@ -561,13 +542,6 @@ function add_model_array_param!(md::ModelDef,
                                     dims; is_shared::Bool = false)
     param = ArrayModelParameter(value, [:time], is_shared)  # must be :time
     add_model_param!(md, name, param)
-end
-# deprecated version of above
-function set_external_array_param!(obj::ModelDef,
-                                name::Symbol, value::TimestepVector, 
-                                dims; is_shared::Bool = false)
-    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_model_array_param` with the same arguments."
-    add_model_array_param!(obj, name, value, dims; is_shared = is_shared)
 end
 
 """
@@ -585,13 +559,6 @@ function add_model_array_param!(md::ModelDef,
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
     add_model_param!(md, name, param)
 end
-# deprecated version of above
-function set_external_array_param!(obj::ModelDef,
-                                        name::Symbol, value::TimestepArray, dims; 
-                                        is_shared::Bool = false)
-    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_model_array_param` with the same arguments."
-    add_model_array_param(obj, name, value, dims; is_shared = is_shared)
-end
 
 """
     add_model_array_param!(md::ModelDef,
@@ -608,13 +575,6 @@ function add_model_array_param!(md::ModelDef,
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
     add_model_param!(md, name, param)
 end
-# deprecated version of above
-function set_external_array_param!(obj::ModelDef,
-                                   name::Symbol, value::AbstractArray, dims; 
-                                   is_shared::Bool = false)
-    @warn "`set_external_array_param! is deprecated and will be removed in the future, please use `add_model_array_param` with the same arguments."
-    add_model_array_param(obj, name, value, dims; is_shared = is_shared)
-end
 
 """
     add_model_scalar_param!(md::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
@@ -624,11 +584,6 @@ Add a scalar type parameter `name` with the value `value` to the Model Def `md`.
 function add_model_scalar_param!(md::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
     param = ScalarModelParameter(value, is_shared)
     add_model_param!(md, name, param)
-end
-# deprecated version of above
-function set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false)
-    @warn "`set_external_scalar_param! is deprecated and will be removed in the future, please use `add_model_scalar_param` with the same arguments."
-    add_model_scalar_param(obj, name, value; is_shared = is_shared)
 end
 
 """
@@ -829,7 +784,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
                                                                       conn.ignoreunits))
 
             # add a connection between ConnectorComp and the external backup data
-            add_model_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
+            add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
             # set the first and last parameters for WITHIN the component which 
             # decide when backup is used and when connection is used
@@ -1046,3 +1001,23 @@ function create_model_param(md::ModelDef, param_def::AbstractParameterDef, value
     end
     return param
 end
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors -- 
+
+# -- throw warnings -- 
+
+@deprecate external_param(obj::ModelDef, name::Symbol; missing_ok=false) model_param(obj, name,; missing_ok = missing_ok)
+
+@deprecate set_external_param!(obj::ModelDef, name::Symbol, value::ModelParameter) add_model_param!(obj, name, value)
+@deprecate set_external_param!(obj::ModelDef, name::Symbol, value::Number; param_dims::Union{Nothing,Array{Symbol}} = nothing, is_shared::Bool = false) add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
+@deprecate set_external_param!(obj::ModelDef, name::Symbol, value::Union{AbstractArray, AbstractRange, Tuple}; param_dims::Union{Nothing,Array{Symbol}} = nothing, is_shared::Bool = false) add_model_param!(obj, name, value; param_dims = param_dims, is_shared = is_shared)
+
+@deprecate set_external_array_param!(obj::ModelDef, name::Symbol, value::TimestepVector, dims; is_shared::Bool = false) add_model_array_param!(obj, name, value, dims; is_shared = is_shared)
+@deprecate set_external_array_param!(obj::ModelDef, name::Symbol, value::TimestepArray, dims;  is_shared::Bool = false) add_model_array_param(obj, name, value, dims; is_shared = is_shared)
+@deprecate set_external_array_param!(obj::ModelDef, name::Symbol, value::AbstractArray, dims; is_shared::Bool = false) add_model_array_param(obj, name, value, dims; is_shared = is_shared)
+
+@deprecate set_external_scalar_param!(obj::ModelDef, name::Symbol, value::Any; is_shared::Bool = false) add_model_scalar_param(obj, name, value; is_shared = is_shared)

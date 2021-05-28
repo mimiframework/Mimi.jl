@@ -94,3 +94,15 @@ end
 
 Base.pathof(obj::ExternalParameterConnection) = obj.comp_path
 Base.nameof(obj::ExternalParameterConnection) = obj.param_name
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+function Base.getproperty(etc::ExternalParameterConnection, field::Symbol)
+    if field == :external_param
+        @warn "ExternalParameterConnection's `external_param` field is renamed to `model_param_name`, please change code accordingly."
+        field = :model_param_name
+    end
+    return getfield(etc, field)
+end

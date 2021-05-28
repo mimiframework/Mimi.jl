@@ -14,9 +14,6 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, and `
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
-# Deprecate old definition in favor of standard name
-@deprecate name(obj::AbstractNamedObj) nameof(obj)
-
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
     comp_path::Union{Nothing, ComponentPath}
@@ -252,3 +249,24 @@ end
 end
 
 var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors --
+
+# -- throw warnings --
+
+function Base.getproperty(md::ModelDef, field::Symbol)
+    if field == :external_params
+        @warn "ModelDef's `external_params` field is renamed to `model_params`, please change code accordingly."
+        field = :model_params
+    end
+    return getfield(etc, field)
+end
+
+@deprecate external_params(md::ModelDef) model_params(md)
+
+# Deprecate old definition in favor of standard name
+@deprecate name(obj::AbstractNamedObj) nameof(obj)
