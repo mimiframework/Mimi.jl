@@ -474,8 +474,10 @@ and all resulting new model parameters will be shared parameters.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     for param_ref in nothing_params(md)
+
         param_name = param_ref.datum_name
         comp_name = param_ref.comp_name
+
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
 
@@ -754,7 +756,9 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
     # parameter that got disconnected
     if isnothing(model_param_name)
         
-        param_def = parameter(compdef(md, comp_name), param_name)
+        comp_def = find_comp(md, comp_name)
+        param_def = comp_def[param_name]
+
         param = create_model_param(md, param_def, value; is_shared = false)
 
         model_param_name = gensym()
@@ -885,8 +889,9 @@ function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol
     # get the component def and param def
     conn = filter(i -> i.model_param_name == name, obj.external_param_conns)[1]
     param_name = conn.param_name
+
     comp_def = find_comp(obj, conn.comp_path)
-    param_def = comp_def.namespace[param_name]
+    param_def = comp_def[param_name]
 
     # create the unshared model parameter
     param = create_model_param(obj, param_def, value)
