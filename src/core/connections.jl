@@ -110,12 +110,27 @@ function _check_labels(obj::AbstractCompositeComponentDef,
 
     # check datatype conversion
     parameter_datatype = parameter(comp_def, param_name).datatype
+    model_parameter_dataype = typeof(mod_param.value)
+
+    # if the parameter_datatype is Number (the default), we just need our value
+    # to be a subtype of Number
+    if parameter_datatype == Number && !(model_parameter_dataype <: Number)
+        error("Cannot connect $(nameof(compdef)):$param_name, with datatype $parameter_datatype, ", 
+        "to shared model parameter $(nameof(model_param)) with datatype $model_parameter_dataype ",
+        "because of $model_parameter_dataype is not a subtype of $parameter_datatype.")
+    
+    # if the parameter_datatype is not Number, it was specified exactly and needs
+    # an error
+    elseif parameter_datatype !== Number && parameter_datatype!== (typeof(mod_param.value))
+        error("Cannot connect $(nameof(compdef)):$param_name, with datatype $parameter_datatype, " ,
+        "to shared model parameter $(nameof(model_param)) with datatype $model_parameter_dataype because ",
+        "the two should match.")
+    end
+
     parameter_datatype = Union{Nothing, Missing, (parameter_datatype == Number ? number_type(obj) : parameter_datatype)}
 
     try convert(parameter_datatype, mod_param.value) catch;
-        error("Cannot connect $(nameof(compdef)):$param_name, with datatype 
-                $parameter_datatype, to shared model parameter $model_param_name 
-                with datatype $(typeof(mod_param.value)) because of type incompatibilty.")
+        
     end
 end
 
