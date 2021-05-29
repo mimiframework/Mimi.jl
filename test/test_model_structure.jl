@@ -166,8 +166,8 @@ m = Model()
 set_dimension!(m, :time, 2015:5:2100)
 
 add_comp!(m, E)
-set_param!(m, :E, :parE1, 1)
-set_param!(m, :E, :parE2, 10)
+update_param!(m, :E, :parE1, 1)
+update_param!(m, :E, :parE2, 10)
 
 run(m)
 @test m[:E, :varE] == 10

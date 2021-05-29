@@ -664,7 +664,7 @@ set_dimension!(m, :time, years)
 add_comp!(m, foo, :first)
 add_comp!(m, bar, :second)
 connect_param!(m, :second => :par2, :first => :var1)
-set_param!(m, :first, :par1, 1:length(years))
+update_param!(m, :first, :par1, 1:length(years))
 
 @test_throws MissingException run(m)
 

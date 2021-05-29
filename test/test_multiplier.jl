@@ -14,8 +14,8 @@ add_comp!(model1, Mimi.multiplier)
 x = collect(1:10)
 y = collect(2:2:20)
 
-set_param!(model1, :multiplier, :input, x)
-set_param!(model1, :multiplier, :multiply, y)
+update_param!(model1, :multiplier, :input, x)
+update_param!(model1, :multiplier, :multiply, y)
 
 run(model1)
 
@@ -28,8 +28,8 @@ run(model1)
 model2 = Model()
 set_dimension!(model2, :time, 1:10)
 add_comp!(model2, Mimi.multiplier, :compA)
-set_param!(model2, :compA, :input, x)
-set_param!(model2, :compA, :multiply, y)
+update_param!(model2, :compA, :input, x)
+update_param!(model2, :compA, :multiply, y)
 run(model2)
 
 @test model2[:compA, :output] == x.*y

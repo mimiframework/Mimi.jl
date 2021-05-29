@@ -466,6 +466,19 @@ function model_param(obj::ModelDef, name::Symbol; missing_ok=false)
     error("$name not found in model parameter list")
 end
 
+function model_param(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok = false)
+
+    model_param_name = get_model_param_name(obj, comp_name, param_name; missing_ok = true)
+
+    if isnothing(model_param_name)
+        missing_ok && return nothing
+        error("Model parameter connected to $comp_name's parameter $param_name not found in model's parameter connections list.")
+    else
+        return model_param(obj, model_param_name)
+    end
+
+end
+
 """
     get_model_param_name(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok=false)
 
@@ -1013,9 +1026,9 @@ attribute of the added Model Parameter will be `true`.
 function add_shared_param!(md::ModelDef, name::Symbol, value::Any; 
                             param_dims::Union{Nothing,Array{Symbol}} = nothing)
     
-    has_parameter(md, name) && error("Cannot set parameter :$name, the model already has a shared parameter with this name.")
+                            # check to make sure the parameter doesn't already exist
+    has_parameter(md, name) && error("Cannot add parameter :$name, the model already has a shared parameter with this name.")
 
-    # check to make sure the parameter doesn't already exist
     add_model_param!(md, name, value; param_dims = param_dims, is_shared = true)
 end
 

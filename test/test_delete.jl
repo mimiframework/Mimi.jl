@@ -11,13 +11,22 @@ using Test
 end
 
 function _get_model()
+    
     m = Model()
     set_dimension!(m, :time, 1:2)
     add_comp!(m, A, :A1)
     add_comp!(m, A, :A2)
-    set_param!(m, :p1, 1)
-    set_param!(m, :A1, :p2, :p2_A1, 21)
-    set_param!(m, :A2, :p2, :p2_A2, 22)
+
+    add_shared_param!(m, :p1, 1)
+    connect_param!(m, :A1, :p1, :p1)
+    connect_param!(m, :A2, :p1, :p1)
+
+    add_shared_param!(m, :p2_A1, 21)
+    connect_param!(m, :A1, :p2, :p2_A1)
+    
+    add_shared_param!(m, :p2_A2, 22)
+    connect_param!(m, :A2, :p2, :p2_A2)
+
     return m
 end
 

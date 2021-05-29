@@ -86,7 +86,9 @@ m1 = Model()
 set_dimension!(m1, :time, 2000:10:2050)
 add_comp!(m1, test1)
 add_comp!(m1, test2)
-set_param!(m1, :p, 5)
+add_shared_param!(m1, :model_p, 5)
+connect_param!(m1, :test1, :p, :model_p)
+connect_param!(m1, :test2, :p, :model_p)
 run(sd, m, 100)
 
 # unshared parameter in both models with different names

@@ -49,6 +49,7 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 @delegate external_param_conns(m::Model) => md
 
 @delegate model_params(m::Model) => md
+@delegate model_param(m::Model, comp_name::Symbol, param_name::Symbol; missing_ok = false) => md
 @delegate model_param(m::Model, name::Symbol; missing_ok=false) => md
 
 @delegate connected_params(m::Model) => md

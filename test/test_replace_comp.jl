@@ -58,7 +58,7 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
-set_param!(m, :X, :x, zeros(6))
+update_param!(m, :X, :x, zeros(6))
 @test_throws ErrorException replace_comp!(m, X_repl, :X) # test that the old function name now errors
 replace!(m, :X => X_repl)               # Replace X with X_repl
 run(m)
@@ -98,7 +98,7 @@ first = compdef(m, :first)
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
-set_param!(m, :X, :x, zeros(6))                     # Set model parameter for :x
+update_param!(m, :X, :x, zeros(6))                     # Set model parameter for :x
 
 # Replaces with bad3, but warns that there is no parameter by the same name :x
 @test_logs(
@@ -116,7 +116,7 @@ set_param!(m, :X, :x, zeros(6))                     # Set model parameter for :x
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
-set_param!(m, :X, :x, zeros(6))                         # Set model parameter for :x
+update_param!(m, :X, :x, zeros(6))                         # Set model parameter for :x
 @test_throws ErrorException replace!(m, :X => bad1)     # Cannot reconnect model parameter, :x in bad1 has different dimensions
 
 
@@ -125,7 +125,7 @@ set_param!(m, :X, :x, zeros(6))                         # Set model parameter fo
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)
-set_param!(m, :X, :x, zeros(6))                         # Set model parameter for :x
+update_param!(m, :X, :x, zeros(6))                         # Set model parameter for :x
 @test_throws ErrorException replace!(m, :X => bad4)  # Cannot reconnect model parameter, :x in bad4 has different datatype
 
 
@@ -165,7 +165,7 @@ end
 m = Model()
 set_dimension!(m, :time, 10)
 add_comp!(m, A)
-set_param!(m, :A, :p1, 3)
+update_param!(m, :A, :p1, 3)
 replace!(m, :A => B)
 run(m)
 @test m[:A, :p1] == 3
@@ -175,10 +175,10 @@ run(m)
 m = Model()
 set_dimension!(m, :time, 2000:2005)
 add_comp!(m, X)                         # Original component X
-set_param!(m, :X, :x, zeros(6))
+update_param!(m, :X, :x, zeros(6))
 replace!(m, :X => X_repl_extraparams)               # Replace X with X_repl_extraparams
 @test length(model_params(m)) == 3 # should have two new parameters in the model parameters list
-set_param!(m, :X, :b, 8.0) # need to set b since it doesn't have a default, a will have a default
+update_param!(m, :X, :b, 8.0) # need to set b since it doesn't have a default, a will have a default
 run(m)
 @test length(components(m)) == 1        # Only one component exists in the model
 @test m[:X, :y] == 2 * ones(6)          # Successfully ran the run_timestep function from X_repl
