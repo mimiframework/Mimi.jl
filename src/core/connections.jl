@@ -97,31 +97,58 @@ end
 
 """
     connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
-                   check_labels::Bool=true)
+                   check_labels::Bool=true, ignoreunits::Bool=false))
 
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
 the model parameter `model_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
                         param_name::Symbol, model_param_name::Symbol;
-                        check_labels::Bool=true)
+                        check_labels::Bool=true, ignoreunits::Bool = false)
     comp_def = compdef(obj, comp_name)
-    connect_param!(obj, comp_def, param_name, model_param_name, check_labels=check_labels)
+    connect_param!(obj, comp_def, param_name, model_param_name, check_labels=check_labels, ignoreunits = ignoreunits)
 end
 
 """
     connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                    param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true)
+                    param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true,
+                    ignoreunits::Bool = false)
 
 Connect a parameter `param_name` in the component `comp_def` of composite `obj` to
 the model parameter `model_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                        param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true)
+                        param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true,
+                        ignoreunits::Bool = false)
     mod_param = model_param(obj, model_param_name)
 
     if mod_param isa ArrayModelParameter && check_labels
         _check_labels(obj, comp_def, param_name, mod_param)
+    end
+
+    if is_shared(mod_param) && !ignoreunits
+        
+        param_units = parameter_unit(comp_def, param_name)
+        units_match = true
+        errorstring = string("Units of $(nameof(compdef)):$param_name ($param_units) do not match ", 
+                        "the following other parameters connected to the same shared ",
+                        "model parameter $model_param_name.  To override this error and connect anyways, ",
+                        "set the `ignoreunits` flag to true: `connect_param!(m, comp_def, param_name, ",
+                        "model_param_name; ignoreunits = true)`. MISMATCHES OCCUR WITH: ")
+
+        for conn in filter(i -> i.model_param_name == model_param_name, external_param_conns(obj))
+            conn_comp_def = compdef(obj, conn.comp_path)
+            conn_comp_name = nameof(conn_comp_def)
+            conn_param_name = conn.param_name
+            conn_units =  parameter_unit(conn_comp_def, conn_param_name)
+            
+            if ! verify_units(param_units, conn_units)
+                units_match = false
+                errorstring = string(errorstring, "[$conn_comp_name:$conn_param_name with units $conn_units]  ")
+            end
+        end
+
+        units_match || error(errorstring)
     end
 
     disconnect_param!(obj, comp_def, param_name)    # calls dirty!()
@@ -563,7 +590,7 @@ function add_model_param!(md::ModelDef, name::Symbol,
                              is_shared::Bool = false)
 
     ti = get_time_index_position(param_dims)
-    if ti != nothing
+    if !isnothing(ti)
         value = convert(Array{number_type(md)}, value)
         num_dims = length(param_dims)
         values = get_timestep_array(md, eltype(value), num_dims, ti, value)
@@ -597,12 +624,13 @@ end
 
 Add a multi-dimensional time-indexed array parameter `name` with value
 `value` to the Model Def `md`.  The `is_shared` attribute of the ArrayModelParameter
-will default to false. In this case `dims` must be `[:time]`.
+will default to false. In this case `dims` must contain `[:time]`.
 """
 function add_model_array_param!(md::ModelDef,
                                 name::Symbol, value::TimestepArray, dims; 
                                 is_shared::Bool = false)
-    param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
+    !(:time in dims) && error("When adding an `ArrayModelParameter` the dimensions array must include `:time`, but here it is $dims.")
+    param = ArrayModelParameter(value, dims, is_shared)
     add_model_param!(md, name, param)
 end
 
@@ -658,6 +686,20 @@ function update_param!(mi::ModelInstance, name::Symbol, value)
     return nothing
 end
 
+function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
+    param = mi.md.model_params[get_model_param_name(mi.md, comp_name, param_name)]
+
+    if param isa ScalarModelParameter
+        param.value = value
+    elseif param.values isa TimestepArray
+        copyto!(param.values.data, value)
+    else
+        copyto!(param.values, value)
+    end
+
+    return nothing
+end
+
 """
     update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
 
@@ -681,7 +723,7 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
     else
         # make sure the model parameter is unshared
         if model_param(md, model_param_name).is_shared
-            error("Parameter $param_name is a shared model parameter, to safely update",
+            error("Parameter $param_name is a shared model parameter, to safely update ",
                 "please call `update_param!(m, param_name, value)` to explicitly update",
                 "a shared parameter that may be connected to several components")
         end 
@@ -1016,20 +1058,56 @@ function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimes
 end
 
 """
-    add_shared_param!(md::ModelDef, name::Symbol, value::Any; 
-                        param_dims::Union{Nothing,Array{Symbol}} = nothing)
+function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
 
 User-facing API function to add a shared parameter to Model Def `md` with name
-`name` and value `value`, and optional dimensions `param_dims`.  The `is_shared` 
-attribute of the added Model Parameter will be `true`.
+`name` and value `value`, and an array of dimension names `dims` which dfaults to 
+an empty vector.  The `is_shared` attribute of the added Model Parameter will be `true`.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.  This must be included if the `value` is not a scalar, and defaults
+to an empty vector.
 """
-function add_shared_param!(md::ModelDef, name::Symbol, value::Any; 
-                            param_dims::Union{Nothing,Array{Symbol}} = nothing)
+function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
     
-                            # check to make sure the parameter doesn't already exist
+    # check to make sure the parameter doesn't already exist
     has_parameter(md, name) && error("Cannot add parameter :$name, the model already has a shared parameter with this name.")
 
-    add_model_param!(md, name, value; param_dims = param_dims, is_shared = true)
+    # check dimensions
+    if value isa NamedArray
+        dims = dimnames(value)
+    end
+
+    if ndims(value) != length(dims)
+        error("Please provide $(ndims(value)) dimension names for value, $(length(dims))",
+        " were given but value is $value. This is done with the `dims` keyword argument ",
+        " ie. : `add_shared_param!(md, name, value; dims = [:time])")
+    end
+    
+    # create a parameter def
+    param_def = ParameterDef(name, nothing, md.number_type, dims, "", "", nothing)
+    
+    # create shared model parameter
+    param = create_model_param(md, param_def, value; is_shared = true)
+    
+    # check dimensions
+    model_dims = dim_names(md) 
+    param_dims = dim_names(param_def)
+
+    for (i, dim) in enumerate(param_dims)
+        if isa(dim, Symbol)
+            param_length = size(param.values)[i]
+            model_length = dim_count(md, dim)
+            if param_length != model_length
+                error("Mismatched data size for new shared param: dimension :$dim in model has $model_length elements; parameter :$name value $param_length elements.")
+            end
+        end
+    end
+
+    # add the shared model parameter to the model def
+    add_model_param!(md, name, param)
+    
 end
 
 """

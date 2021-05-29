@@ -86,11 +86,11 @@ set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
 add_comp!(m, MyComp)
-set_param!(m, :MyComp, :c, [4,5,6])
-set_param!(m, :MyComp, :d, 0.5)   # 32-bit float constant
-set_param!(m, :MyComp, :e, [1,2,3,4])
-set_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
-set_param!(m, :MyComp, :j, [1,2,3])
+update_param!(m, :MyComp, :c, [4,5,6])
+update_param!(m, :MyComp, :d, 0.5)   # 32-bit float constant
+update_param!(m, :MyComp, :e, [1,2,3,4])
+update_param!(m, :MyComp, :f, reshape(1:16, 4, 4))
+update_param!(m, :MyComp, :j, [1,2,3])
 
 Mimi.build!(m)
 extpars = model_params(m.mi.md)
@@ -158,7 +158,7 @@ end
 m = Model()
 set_dimension!(m, :time, 2000:2004)
 add_comp!(m, MyComp2, first=2001, last=2003)
-set_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
+update_param!(m, :MyComp2, :x, [1, 2, 3, 4, 5])
 # Year      x       Model   MyComp2 
 # 2000      1       first   
 # 2001      2               first
@@ -210,7 +210,7 @@ run(m)
 m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
-set_param!(m, :MyComp2, :x, [1, 2, 3])
+update_param!(m, :MyComp2, :x, [1, 2, 3])
 # Year      x       Model   MyComp2 
 # 2000      1       first   first
 # 2005      2               
@@ -258,7 +258,7 @@ run(m)
 m = Model()
 set_dimension!(m, :time, [2000, 2005, 2020])
 add_comp!(m, MyComp2)
-set_param!(m, :MyComp2, :x, [1, 2, 3])
+update_param!(m, :MyComp2, :x, [1, 2, 3])
 
 set_dimension!(m, :time, [2000, 2005, 2020, 2100])
 
@@ -278,7 +278,7 @@ run(m)
 m = Model()
 set_dimension!(m, :time, 2000:2002)     # length 3
 add_comp!(m, MyComp2)
-set_param!(m, :MyComp2, :x, [1, 2, 3])
+update_param!(m, :MyComp2, :x, [1, 2, 3])
 # Year      x       Model   MyComp2 
 # 2000      1       first   first
 # 2001      2               
@@ -328,9 +328,9 @@ m = Model()                             # Build the model
 set_dimension!(m, :time, 2000:2002)     # Set the time dimension
 set_dimension!(m, :regions, [:A, :B])
 add_comp!(m, MyComp3)
-set_param!(m, :MyComp3, :x, [1, 2, 3])
-set_param!(m, :MyComp3, :y, [10, 20])
-set_param!(m, :MyComp3, :z, 0)
+update_param!(m, :MyComp3, :x, [1, 2, 3])
+update_param!(m, :MyComp3, :y, [10, 20])
+update_param!(m, :MyComp3, :z, 0)
 
 @test_throws ErrorException update_param!(m, :x, [1, 2, 3, 4]) # Will throw an error because size
 update_param!(m, :y, [10, 15])

@@ -12,8 +12,8 @@ import Mimi:
 ##
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
-dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
-dim_range = Dimension(2010:2100)     # AbstractRange	
+dim_vec = Dimension([:foo, :bar, :baz]) # Vector	
+dim_range = Dimension(2010:2100)     # AbstractRange
 rangedim = RangeDimension(2010:2100) # RangeDimension type	
 dim_vals = Dimension(4) # Same as 1:4
 
@@ -144,9 +144,11 @@ my_foo2 = compdef(foo2_ref1)
 
 # Set Parameters
 original_x_vals = collect(2000:2100)
-@test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
-@test_throws ErrorException set_param!(m, :foo2, :x, 2005:2095) # too short
-set_param!(m, :foo2, :x, original_x_vals) 
+@test_throws ErrorException update_param!(m, :foo2, :x, 1990:2200) # too long
+@test_throws ErrorException update_param!(m, :foo2, :x, 2005:2095) # too short
+
+add_shared_param!(m, :x, original_x_vals, dims = [:time])
+connect_param!(m, :foo2, :x, :x)
 
 run(m)
 

@@ -619,7 +619,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     for comp in comps
         # Set check_labels = false because we already checked above
         # connect_param! calls dirty! so we don't have to
-        connect_param!(md, comp, param_name, model_param_name, check_labels = false)
+        connect_param!(md, comp, param_name, model_param_name, check_labels = false, ignoreunits = ignoreunits)
     end
     nothing
 end

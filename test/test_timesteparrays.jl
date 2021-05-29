@@ -704,8 +704,8 @@ set_dimension!(m, :time, time_index)
 set_dimension!(m, :regions, regions)
 set_dimension!(m, :foo, 3)
 add_comp!(m, gdp)
-set_param!(m, :gdp, :gdp0, [3; 7] .* ones(length(regions), 3, 2))
-set_param!(m, :gdp, :growth, [0.02; 0.03] .* ones(length(regions), 3, nsteps, 2))
+update_param!(m, :gdp, :gdp0, [3; 7] .* ones(length(regions), 3, 2))
+update_param!(m, :gdp, :growth, [0.02; 0.03] .* ones(length(regions), 3, nsteps, 2))
 set_leftover_params!(m, Dict{String, Any}([
     "pgrowth" => ones(length(regions), 3, nsteps),
     "mat" => rand(length(regions), nsteps)

@@ -46,15 +46,19 @@ end
 end
 
 m = Model()
-md = m.md
-
 set_dimension!(m, :time, 2005:2020)
-
 add_comp!(m, Top)
+update_param!(m, :Top, :fooA1, 10)
+update_param!(m, :Top, :par_1_1, 1:16) # unshared
+run(m)
 
-set_param!(m, :Top, :fooA1, 10)
-set_param!(m, :par_1_1, 1:16)
-
+m = Model()
+set_dimension!(m, :time, 2005:2020)
+add_comp!(m, Top)
+update_param!(m, :Top, :fooA1, 10)
+@test_throws ErrorException add_shared_param!(m, :par_1_1, 1:16) # need to give indices
+add_shared_param!(m, :par_1_1, 1:16, dims = [:time]) # shared
+connect_param!(m, :Top, :par_1_1, :par_1_1)
 run(m)
 
 end

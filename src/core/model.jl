@@ -78,13 +78,16 @@ data for the second timestep and beyond.
                         backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
                         backup_offset::Union{Nothing, Int} = nothing) => md
 
-"""
-    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol)
 
-Bind the parameter `param_name` in the component `comp_name` of model `m` to the model parameter 
-`model_param_name` already present in the model's list of model parameters.
 """
-@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol) => md
+    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
+                   check_labels::Bool=true, ignoreunits::Bool=false))
+
+Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
+the model parameter `model_param_name`.
+"""
+@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
+                        check_labels::Bool=true, ignoreunits::Bool = false) => md
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -430,16 +433,19 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    add_shared_param!(m::Model, name::Symbol, value::Any; 
-                        param_dims::Union{Nothing,Array{Symbol}} = nothing)
+function add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
 
-User-facing API function to add a shared parameter to Model `m`'s ModelDef` with name
-`name` and value `value`, and optional dimensions `param_dims`.  The `is_shared` 
-attribute of the added Model Parameter will be `true`.
+User-facing API function to add a shared parameter to Model `m` with name
+`name` and value `value`, and an array of dimension names `dims` which dfaults to 
+an empty vector.  The `is_shared` attribute of the added Model Parameter will be `true`.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.  This must be included if the `value` is not a scalar, and defaults
+to an empty vector.
 """
-@delegate add_shared_param!(m::Model, name::Symbol, value::Any; 
-                                param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
-                                
+@delegate add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[]) => md
+                    
 """
     add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 

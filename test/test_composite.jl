@@ -122,16 +122,15 @@ c2 = md[:top][:A][:Comp2]
 c3 = find_comp(md, "/top/B/Comp3")
 @test c3.comp_id == Comp3.comp_id
 
-set_param!(m, :fooA1, 1)
-set_param!(m, :fooA2, 2)
+add_shared_param!(m, :model_fooA1, 1)
+connect_param!(m, :top, :fooA1, :model_fooA1)
 
-# TBD: default values set in @defcomp are not working...
-# Also, external_parameters are stored in the parent, so both of the
-# following set parameter :foo in "/top/B", with 2nd overwriting 1st.
-set_param!(m, :foo3, 10)
-set_param!(m, :foo4, 20)
+add_shared_param!(m, :model_fooA2, 2)
+connect_param!(m, :top, :fooA2, :model_fooA2)
 
-set_param!(m, :par_1_1, collect(1:length(time_labels(md))))
+@test_throws ErrorException add_shared_param!(m, :model_par_1_1, collect(1:length(time_labels(md)))) # need to give index
+add_shared_param!(m, :model_par_1_1, collect(1:length(time_labels(md))), dims = [:time])
+connect_param!(m, :top, :par_1_1, :model_par_1_1)
 
 Mimi.build!(m)
 
@@ -159,7 +158,7 @@ end
 @test mi["/top/B/Comp4", :par_4_1] == collect(6.0:6:96.0)
 
 @test m[:top, :fooA1] == 1
-@test m[:top, :foo3] == 10
+@test m[:top, :foo3] == 30.
 @test m[:top, :var_3_1] == collect(6.0:6:96.0)
 
 # test ways to drill down into composites to get information
