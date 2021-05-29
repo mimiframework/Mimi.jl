@@ -23,7 +23,7 @@ end
 
 sd = @defsim begin
     sampling(LHSData)
-    p = Normal(0, 1) # should be shared, but was set with default so have to find it
+    p = Normal(0, 1)
 end
 
 #------------------------------------------------------------------------------

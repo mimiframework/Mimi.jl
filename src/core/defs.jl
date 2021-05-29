@@ -603,10 +603,8 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     
     # Need to check the dimensions of the parameter data against each component 
     # before adding it to the model's model parameters
-    if param isa ArrayModelParameter
-        for comp in comps
-            _check_labels(md, comp, param_name, param)
-        end
+    for comp in comps
+        _check_labels(md, comp, param_name, param)
     end
 
     # add the shared model parameter to the model def
@@ -857,40 +855,51 @@ function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
         param_name = nameof(param_def)
         comp_name = nameof(comp_def)
 
-        # Make some checks to see if the parameter needs to be created, specifically
-        # tends to be the case if we are using replace! with the default reconnect 
-        # = true.  The parameter could be:
+        # Make some checks to see if the parameter needs to be created, because it was either:
 
         # (1) externally created and connected, as checked with unconnected_params
-        # or alternatively by checking !isnothing(get_model_param_name(md, nameof(comp_def), nameof(param_def); missing_ok = true))
-
+        # or alternatively by checking !isnothing(get_model_param_name(md, nameof(comp_def), 
+        # nameof(param_def); missing_ok = true))
         # (2) internally connected and thus the old shared parameter has been 
         # deleted, as checked by unconnected_params
 
         connected = UnnamedReference(comp_name, param_name) in connection_refs(md)
-        
-        if !connected 
-            model_param_name = gensym()
-            value = param_def.default
+        !connected && _initialize_parameter!(md, comp_def, param_def)
 
-            # create the unshared model parameter with a value of param_def.default,
-            # which will be nothing if it not set explicitly
-            param = create_model_param(md, param_def, value)
-            
-            # Need to check the dimensions of the parameter data against component 
-            # before adding it to the model's parameter list
-            if param isa ArrayModelParameter && !isnothing(value) 
-                _check_labels(md, comp_def, param_name, param)
-            end
-            
-            # add the unshared model parameter to the model def
-            add_model_param!(md, model_param_name, param)
-
-            # connect - don't need to check labels since did it above
-            connect_param!(md, comp_def, param_name, model_param_name; check_labels = false)
-        end
     end
     nothing
+end
+
+"""
+    _initialize_parameter!(md::ModelDef, comp_def::AbstractComponentDef, param_def::AbstractParameterDef)
+
+Add and connect an unshared model parameter to `md` for parameter `param_def` in 
+`comp_def`.
+"""
+function _initialize_parameter!(md::ModelDef, comp_def::AbstractComponentDef, param_def::AbstractParameterDef)
+
+    param_name = nameof(param_def)
+    comp_name = nameof(comp_def)
+
+    model_param_name = gensym()
+    value = param_def.default
+
+    # create the unshared model parameter with a value of param_def.default,
+    # which will be nothing if it not set explicitly
+    param = create_model_param(md, param_def, value)
+    
+    # Need to check the dimensions of the parameter data against component 
+    # before adding it to the model's parameter list
+    if !is_nothing_param(param)
+        _check_labels(md, comp_def, param_name, param)
+    end
+    
+    # add the unshared model parameter to the model def
+    add_model_param!(md, model_param_name, param)
+
+    # connect - don't need to check labels since did it above
+    connect_param!(md, comp_def, param_name, model_param_name; check_labels = false)
+
 end
 
 """

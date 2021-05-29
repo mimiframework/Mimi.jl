@@ -7,14 +7,14 @@ import Mimi: model_params
 
 @defcomp A begin
     p1 = Parameter(default = 1)
-    p2 = Parameter()
+    p2 = Parameter{Symbol}()
 end
 
 m = Model()
 set_dimension!(m, :time, 1:10)
 add_comp!(m, A)
 
-add_shared_param!(m, :p2, 2)
+add_shared_param!(m, :p2, :hello)
 connect_param!(m, :A, :p2, :p2)
 
 # So far only :p2 is in the model definition's dictionary
