@@ -96,6 +96,30 @@ function _check_labels(obj::AbstractCompositeComponentDef,
 end
 
 """
+    _check_labels(obj::AbstractCompositeComponentDef,
+                comp_def::AbstractComponentDef, param_name::Symbol, 
+                mod_param::ScalarModelParameter)
+
+Check that the labels of the ScalarModelParameter `mod_param` match the labels
+of the model parameter `param_name` in component `comp_def` of object `obj`, 
+including datatype. 
+"""
+function _check_labels(obj::AbstractCompositeComponentDef,
+                        comp_def::AbstractComponentDef, param_name::Symbol, 
+                        mod_param::ScalarModelParameter)
+
+    # check datatype conversion
+    parameter_datatype = parameter(comp_def, param_name).datatype
+    parameter_datatype = Union{Nothing, Missing, (parameter_datatype == Number ? number_type(obj) : parameter_datatype)}
+
+    try convert(parameter_datatype, mod_param.value) catch;
+        error("Cannot connect $(nameof(compdef)):$param_name, with datatype 
+                $parameter_datatype, to shared model parameter $model_param_name 
+                with datatype $(typeof(mod_param.value)) because of type incompatibilty.")
+    end
+end
+
+"""
     connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
                    check_labels::Bool=true, ignoreunits::Bool=false))
 
@@ -120,9 +144,11 @@ the model parameter `model_param_name`.
 function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                         param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true,
                         ignoreunits::Bool = false)
+    
     mod_param = model_param(obj, model_param_name)
 
-    if mod_param isa ArrayModelParameter && check_labels
+    # check the labels 
+    if check_labels
         _check_labels(obj, comp_def, param_name, mod_param)
     end
 
@@ -852,35 +878,29 @@ function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol
     # old one and thus keep the connection in tact
     add_model_param!(obj, name, param)
 end
+
 """
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
+    update_params!(m::Model, parameters::Dict; update_timesteps = nothing)
 
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
-is called to update the model parameter by name k to value v. Each key k must be a 
-symbol or convert to a symbol matching the name of a shared model parameter that
-already exists in the component definition.
+is called to update the model parameter identified by k to value v.
+
+For updating unshared parameters, each key k must be a Tuple matching the name of a 
+component in `obj` and the name of an parameter in that component.
+
+For updating shared parameters, each key k must be a symbol or convert to a symbol 
+matching the name of a shared model parameter that already exists in the component definition.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
     !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
-    parameters = Dict(Symbol(k) => v for (k, v) in parameters)
-    for (param_name, value) in parameters
-        _update_param!(obj, param_name, value)
-    end
-    nothing
-end
-
-"""
-    update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{Tuple, Any})
-
-For each (k, v) in the provided `parameters` dictionary, `update_param!`
-is called to update the model parameter by name k to value v. Each key k must be a 
-Tuple matching the name of a component in `obj` and the name of an parameter in
-that component.
-"""
-function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict{Tuple, Any})
-    parameters = Dict(get_model_param_name(obj, first(k), last(k)) => v for (k, v) in parameters)
-    for (param_name, value) in parameters
-        _update_param!(obj, param_name, value)
+    
+    for (k, v) in parameters
+        if k isa Tuple
+            model_param_name = get_model_param_name(obj, first(k), last(k))
+        else
+            model_param_name = Symbol(k)
+        end 
+        _update_param!(obj, model_param_name, v)
     end
     nothing
 end
@@ -1058,7 +1078,7 @@ function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimes
 end
 
 """
-function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
+    add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
 
 User-facing API function to add a shared parameter to Model Def `md` with name
 `name` and value `value`, and an array of dimension names `dims` which dfaults to 
@@ -1074,21 +1094,26 @@ function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{S
     # check to make sure the parameter doesn't already exist
     has_parameter(md, name) && error("Cannot add parameter :$name, the model already has a shared parameter with this name.")
 
-    # check dimensions
+    # make sure all parameter dims are in model and have the appropriate number of elements
     if value isa NamedArray
         dims = dimnames(value)
     end
 
-    if ndims(value) != length(dims)
+    for dim in dims
+        isa(dim, Symbol) && !has_dim(md, dim) && error("Model doesn't have dimension :$dim indicated in the dims of added shared parameter, $dims.")
+    end
+
+    if value isa AbstractArray && ndims(value) != length(dims)
         error("Please provide $(ndims(value)) dimension names for value, $(length(dims))",
         " were given but value is $value. This is done with the `dims` keyword argument ",
         " ie. : `add_shared_param!(md, name, value; dims = [:time])")
     end
     
-    # create a parameter def
-    param_def = ParameterDef(name, nothing, md.number_type, dims, "", "", nothing)
-    
-    # create shared model parameter
+    # create shared model parameter with a ParameterDef, which takes advantage of
+    # the checks and parameterization etc. in `check_model_param`
+    data_type = value isa AbstractArray ? eltype(value) : typeof(value)
+    data_type = data_type <: Number ? Number : data_type # raise any Number type to Number to avoid small errors
+    param_def = ParameterDef(name, nothing, data_type, dims, "", "", nothing)
     param = create_model_param(md, param_def, value; is_shared = true)
     
     # check dimensions

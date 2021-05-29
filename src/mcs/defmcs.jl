@@ -334,6 +334,7 @@ longer be saved to a CSV file at the end of the simulation.
 function delete_save!(sim_def::SimulationDef, key::Tuple{Symbol, Symbol})
     pos = findall(isequal(key), sim_def.savelist)
     isempty(pos) ? @warn("Simulation def doesn't have $key in its save list. Nothing being deleted.") : deleteat!(sim_def.savelist, pos)
+    _update_nt_type!(sim_def)
 end
 
 """

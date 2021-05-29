@@ -60,18 +60,18 @@ set_dimension!(m, :time, 2015:5:2110)
 set_dimension!(m, :regions, [:Region1, :Region2, :Region3])
 add_comp!(m, test)
 
-add_shared_param!(m, :p_shared1, -5)
+add_shared_param!(m, :p_shared1, 5)
 connect_param!(m, :test, :p_shared1, :p_shared1)
 
-@test_throws ErrorException add_shared_param!(m, :p_shared2, -collect(1:20)) # need dimensions
-add_shared_param!(m, :p_shared2, -collect(1:20), dims = [:time])
+@test_throws ErrorException add_shared_param!(m, :p_shared2, collect(1:20)) # need dimensions
+add_shared_param!(m, :p_shared2, collect(1:20), dims = [:time])
 connect_param!(m, :test, :p_shared2, :p_shared2)
 
-@test_throws ErrorException add_shared_param!(m, :p_shared3, -fill(10,20,3), dims = [:time]) # need 2 dimensions
-add_shared_param!(m, :p_shared3, -fill(10,20,3), dims = [:time, :regions])
+@test_throws ErrorException add_shared_param!(m, :p_shared3, fill(10,20,3), dims = [:time]) # need 2 dimensions
+add_shared_param!(m, :p_shared3, fill(10,20,3), dims = [:time, :regions])
 connect_param!(m, :test, :p_shared3, :p_shared3)
 
-add_shared_param!(m, :p_shared4, -collect(1:3), dims = [:regions])
+add_shared_param!(m, :p_shared4, collect(1:3), dims = [:regions])
 connect_param!(m, :test, :p_shared4, :p_shared4)
 
 run(sd_toy, m, 10)
