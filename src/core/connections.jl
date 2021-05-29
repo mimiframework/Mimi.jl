@@ -124,7 +124,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     elseif parameter_datatype !== Number && parameter_datatype!== (typeof(mod_param.value))
         error("Cannot connect $(nameof(compdef)):$param_name, with datatype $parameter_datatype, " ,
         "to shared model parameter $(nameof(model_param)) with datatype $model_parameter_dataype because ",
-        "the two should match.")
+        "the two types should match.")
     end
 end
 
@@ -769,8 +769,8 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
 
     # update existing parameter
     else
-        # make sure the model parameter is unshared
-        if model_param(md, model_param_name).is_shared
+        # make sure the original model parameter name is not shared
+        if model_param_name == param_name && model_param(md, model_param_name).is_shared
             error("Parameter $param_name is a shared model parameter, to safely update ",
                 "please call `update_param!(m, param_name, value)` to explicitly update ",
                 "a shared parameter that may be connected to several components. If you wish ", 
@@ -1206,7 +1206,7 @@ function create_model_param(md::ModelDef, param_def::AbstractParameterDef, value
                 # check that number of dimensions matches
                 value_dims = length(size(value))
                 if num_dims != value_dims
-                    error("Mismatched data size for an _initialize_parameters call: dimension :$param_name",
+                    error("Mismatched data size: dimension :$param_name",
                         " in has $num_dims dimensions; indicated value",
                         " has $value_dims dimensions.")
                 end

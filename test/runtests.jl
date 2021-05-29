@@ -62,6 +62,9 @@ Electron.prep_test_env()
     @info("test_parametertypes.jl")
     @time include("test_parametertypes.jl")
 
+    @info("test_new_parameterAPI.jl")
+    @time include("test_new_paramAPI.jl")
+
     @info("test_defaults.jl")
     @time include("test_defaults.jl")
 
