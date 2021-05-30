@@ -37,7 +37,7 @@ update_param!(m, :A, :p1, 10)
 add_shared_param!(m, :model_p1, 20)
 connect_param!(m, :A, :p1, :model_p1)
 
-# Now there is a :model p1 in the model definition's dictionary but not :pq
+# Now there is a :model_p1 in the model definition's dictionary but not :p1
 @test !(:p1 in keys(model_params(m)))
 @test :model_p1 in keys(model_params(m))
 
@@ -46,8 +46,16 @@ run(m)
 
 # Now we can use update_param! but only for the model parameter name and exclusively as a shared parameter
 @test_throws ErrorException update_param!(m, :p1, 11)
-@test_throws ErrorException update_param!(m, :A, :p1, 11)
-update_param!(m, :model_p1, 11)   
+update_param!(m, :model_p1, 30)   
+run(m)
+@test m[:A, :p1] == 30
 
+# convert explicitly back to being unshared
+@test_throws ErrorException update_param!(m, :A, :p1, 40)
+disconnect_param!(m, :A, :p1)
+update_param!(m, :A, :p1, 40)
+run(m)
+@test m[:A, :p1] == 40
+@test Mimi.model_param(m, :model_p1).value == 30
 
 end

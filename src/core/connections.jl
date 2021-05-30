@@ -769,15 +769,15 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
 
     # update existing parameter
     else
-        # make sure the original model parameter name is not shared
-        if model_param_name == param_name && model_param(md, model_param_name).is_shared
-            error("Parameter $param_name is a shared model parameter, to safely update ",
-                "please call `update_param!(m, param_name, value)` to explicitly update ",
-                "a shared parameter that may be connected to several components. If you wish ", 
-                "to disconnect from the shared model parameter and use an unshared ", 
+        mod_param = model_param(md, model_param_name)
+        is_shared(mod_param) && error("$comp_name:$param_name is connected to a ",
+                "a shared model parameter with name $model_param_name in the model, ",
+                "to update the shared model parameter please call `update_param!(m, param_name, value)` ", 
+                "to explicitly update a shared parameter that may be connected to ", 
+                "several components. If you want to disconnect $comp_name:$param_name ",
+                "from the shared model parameter and connect it to it's own unshared ",
                 "model parameter, first use `disconnect_param!` and then you can use this same ", 
                 "call to `update_param!`.")
-        end 
 
         # update the parameter
         _update_param!(md, model_param_name, value)

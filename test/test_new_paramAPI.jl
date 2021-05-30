@@ -55,10 +55,14 @@ connect_param!(m, :A, :p2, :shared_param)
 connect_param!(m, :A, :p3, :shared_param)
 @test model_param(m, :A, :p2).value == model_param(m, :A, :p3).value == 100
 
-# we don't have to disconnect first because they have their own names, not :shared_param
-update_param!(m, :A, :p2, 1)
-update_param!(m, :A, :p3, 2)
+# still error because they are connected to a shared parameter
+@test_throws ErrorException update_param!(m, :A, :p2, 1)
+@test_throws ErrorException update_param!(m, :A, :p3, 2)
 
+disconnect_param!(m, :A, :p2)
+update_param!(m, :A, :p2, 1)
+model_param(m, :A, :p2).value == 1
+model_param(m, :A, :p3).value == model_param(m, :shared_param).value == 100
 
 # Units, Shared vs. Unshared
 m = _get_model()
