@@ -134,15 +134,14 @@ function construct_MyModel()
 	add_comp!(m, grosseconomy)
 	add_comp!(m, emissions)
 
-	set_param!(m, :grosseconomy, :l, l)
-	set_param!(m, :grosseconomy, :tfp, tfp)
-	set_param!(m, :grosseconomy, :s, s)
-	set_param!(m, :grosseconomy, :depk,depk)
-	set_param!(m, :grosseconomy, :k0, k0)
-	set_param!(m, :grosseconomy, :share, 0.3)
+	update_param!(m, :grosseconomy, :l, l)
+	update_param!(m, :grosseconomy, :tfp, tfp)
+	update_param!(m, :grosseconomy, :s, s)
+	update_param!(m, :grosseconomy, :depk,depk)
+	update_param!(m, :grosseconomy, :k0, k0)
+	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# set parameters for emissions component
-	set_param!(m, :emissions, :sigma, sigma)
+	update_param!(m, :emissions, :sigma, sigma)
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     return m
@@ -177,13 +176,18 @@ There are two ways of assigning random variables to model parameters in the `@de
 The first is the following:
 ```julia
 rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the specified distribution
-param1 = rv1                # then assign this random variable "rv1" to the parameter "param1" in the model
+param1 = rv1                # then assign this random variable "rv1" to the shared model parameter "param1" in the model
+comp1.param2 = rv1          # then assign this random variable "rv1" to the unshared model parameter "param2" in component `comp1`
 ```
 
-The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to our shared model parameter `param1`.
+The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to our shared model parameter `param1` and unshared model parameter `param2`.
 ```julia
 param1 = Normal(0, 0.8)
+comp1.param2 = Normal(1,0)
 ```
+
+Note here that if we have a shared model parameter we can assign based on it's name, but if we have an unshared model parameter specific to one component/parameter pair we need to specify both.  If the component is not specified Mimi will throw a warning and try to resolve under the hood with assumptions, proceeding if possible and erroring if not.
+
 **It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
 
 The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a `@defsim` call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
@@ -206,18 +210,18 @@ sd = @defsim begin
     sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
 
     # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
+    grosseconomy.share = Uniform(0.2, 0.8)
 
     # you can use the *= operator to replace the values in the parameter with the 
     # product of the original value and the value of the RV for the current 
     # trial (note that in both lines below, all indexed values will be mulitplied by the
     # same draw from the given random parameter (name2 or Uniform(0.8, 1.2))
-    sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    emissions.sigma[:, Region1] *= name2
+    emissions.sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
     # For parameters that have a region dimension, you can assign an array of distributions, 
     # keyed by region label, which must match the region labels in the model
-    depk = [Region1 => Uniform(0.7, .9),
+    grosseconomy.depk = [Region1 => Uniform(0.7, .9),
             Region2 => Uniform(0.8, 1.),
             Region3 => Truncated(Normal(), 0, 1)]
 

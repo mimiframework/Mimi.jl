@@ -18,9 +18,9 @@ Possible modifications range in complexity, from simply altering parameter value
 
 ## Parametric Modifications: The API
 
-Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference guide, Reference Guide: The Mimi API.
+Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), [`add_shared_param`](@ref) and [`connect_param!`](@ref)**.  For detail on these functions see the How To Guide 5: Parameters and Variables and the API reference guide, Reference Guide: The Mimi API.
 
-The parameters in the original model receive their values either from exogenously set model parameters through external parameter connections, or from another component's variable through an internal parameter connection.
+The parameters in the original model receive their values either from exogenously set model parameters (shared or unshared as described in How To Guide 5) through external parameter connections, or from another component's variable through an internal parameter connection.
 
 The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with a model parameter. If the model parameter is shared, obtain the shared model parameter name (often this will be the same as the parameter name by default) and use the following to update it:
 ```julia
@@ -34,7 +34,9 @@ update_param!(mymodel, :comp_name, :param_name newvalues)
 
 Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate.
 
-The functions [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used to  to alter or add connections within an existing model. These two can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themselves, as discussed in the next subsection.
+The functions [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used to alter or add connections within an existing model. These two can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themselves, as discussed in the next subsection.
+
+**Once again, for specific instructions and details on various cases of updating and changing parameters, and their connections, please view How To Guide 5.  We do not repeat all information here for brevity and to avoid duplication.**
 
 ## Parametric Modifications: DICE Example
 
@@ -74,13 +76,13 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 #### Step 3. Altering Parameters
 
-In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
+In the case that you wish to alter an parameter retrieving an exogenously set value from a model parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
 
 ```julia
 using Mimi
 ```
 
-In DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and is a shared model parameter with the same name that is connected to components `climatedynamics` and `radiativeforcing`.  We can change this value from its default value of `3.200` to `3.000` in both components, using the following code:
+In DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and is a shared model parameter (named `fco22x`) and connected to component parameters with the same name, `fco22x`, in components `climatedynamics` and `radiativeforcing`.  We can change this value from its default value of `3.200` to `3.000` in both components, using the following code:
 
 ```julia
 update_param!(m, :fco22x, 3.000)
@@ -121,6 +123,7 @@ params[(:comp1, :a2)]         = 0.00204626
 params[(:comp2, :S)]          = repeat([0.23], nyears)
 ...
 ```
+Finally, you can combine these two dictionaries and Mimi will recognize and resolve the two different key types under the hood. 
 
 Now you simply update the parameters listen in `params` and re-run the model with
 
