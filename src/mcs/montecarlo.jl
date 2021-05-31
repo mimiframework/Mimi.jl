@@ -455,9 +455,9 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run(sim_def::SimulationDef{T}, 
-            models::Union{Vector{M <: AbstractModel}, AbstractModel}, 
-            samplesize::Int; 
+    Base.run(sim_def::SimulationDef{T}, 
+            models::Union{Vector{M}, AbstractModel}, 
+            samplesize::Int;
             ntimesteps::Int=typemax(Int), 
             trials_output_filename::Union{Nothing, AbstractString}=nothing, 
             results_output_dir::Union{Nothing, AbstractString}=nothing, 
@@ -466,7 +466,7 @@ end
             scenario_func::Union{Nothing, Function}=nothing,
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing,
-            results_in_memory::Bool=true)
+            results_in_memory::Bool=true) where {T <: AbstractSimulationData, M <: AbstractModel}
 
 Run the simulation definition `sim_def` for the `models` using `samplesize` samples.
 
@@ -698,8 +698,8 @@ function _get_flat_model_list_names(sim_inst::SimulationInstance{T}) where T <: 
 end
 
 # Set models
-""" 
-	set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{M <: AbstractModel}})
+"""
+    set_models!(sim_inst::SimulationInstance{T}, models::Vector{M}) where {T <: AbstractSimulationData, M <: AbstractModel}
 	
 Set the `models` to be used by the SimulationDef held by `sim_inst`. 
 """
@@ -708,8 +708,8 @@ function set_models!(sim_inst::SimulationInstance{T}, models::Vector{M}) where {
     _reset_results!(sim_inst)    # sets results vector to same length
 end
 
-""" 
-    set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)
+"""
+    set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)  where T <: AbstractSimulationData
 	
 Set the model `m` to be used by the Simulation held by `sim_inst`.
 """

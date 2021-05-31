@@ -48,7 +48,7 @@ The API for using the fourth argument, represented as `t` in this explanation, i
 
 To access the data in a parameter or to assign a value to a variable, you must use the appropriate index or indices (in this example, either the Timestep or region or both).
 
-By default, all parameters and variables defined in the `@defcomp` will be allocated storage as scalars or Arrays of type `Float64.` For a description of other data type options, see How-to Guide 4: Work with Timesteps, Parameters, and Variables 
+By default, all parameters and variables defined in the [`@defcomp`](@ref) will be allocated storage as scalars or Arrays of type `Float64.` For a description of other data type options, see How-to Guide 5: Work with Parameters and Variables 
 
 ### Composite Components
 
@@ -103,7 +103,7 @@ Now we construct a composite component `MyCompositeComponent` which holds the tw
 end
 ```
 
-The `connect` calls are responsible for making internal connections between any two components held by a composite component, similar to `connect_param!` described in the Model section below. 
+The `connect` calls are responsible for making internal connections between any two components held by a composite component, similar to [`connect_param!`](@ref) described in the Model section below. 
 
 As mentioned above, conflict resolution refers to cases where two subcomponents have identically named parameters, and thus the user needs to explicitly demonstrate that they are aware of this and create a new shared model parameter that will point to all subcomponent parameters with that name.  For example, given leaf components `A` and `B`: 
 
@@ -161,9 +161,9 @@ add_comp!(m, ComponentA)
 add_comp!(m, ComponentA, :GDP)
 ```
 
-The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by `@defcomp`. If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
+The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by [`@defcomp`](@ref). If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
 
-The `add_comp` function has two more optional keyword arguments, `first` and `last`, which can be used to indicate a fixed start and/or end time (year in this case) that the compnonent should run for (within the bounds of the model's time dimension).  For example, the following indicates that `ComponentA` should only run from 1900 to 2000.
+The [`add_comp!`](@ref) function has two more optional keyword arguments, `first` and `last`, which can be used to indicate a fixed start and/or end time (year in this case) that the compnonent should run for (within the bounds of the model's time dimension).  For example, the following indicates that `ComponentA` should only run from 1900 to 2000.
 
 ```julia
 add_comp!(m, ComponentA; first = 1900, last = 2000)
@@ -308,4 +308,4 @@ set_param!(m, :foo4, 20)
 set_param!(m, :par_1_1, collect(1:length(2005:2020)))
 run(m)
 ```
-Take a look at what you've created now using `explore(m)`, a peek into what you can learn in How To Guide 2!
+Take a look at what you've created now using [`explore(m)`](@ref), a peek into what you can learn in How To Guide 2!

@@ -218,7 +218,7 @@ function SimulationDef{T}() where T <: AbstractSimulationData
 end
 
 """
-    set_payload!(sim_def::SimulationDef, payload) 
+    set_payload!(sim_def::SimulationDef, payload)
 
 Attach a user's `payload` to the `SimulationDef`. A copy of the payload object
 will be stored in the `SimulationInstance` at run time so it can be

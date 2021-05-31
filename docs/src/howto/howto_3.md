@@ -2,13 +2,13 @@
 
 Mimi includes a host of routines which support running Monte Carlo simulations and various sensitivity analysis methods on Mimi models. Tutorial 5: Monte Carlo Simulations and Sensitivity Analysis Support is a good starting point for learning about these methods.  This how-to guide includes more detail and optionality, covering more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in the tutorial.
 
-## Overview
+## Overview 
 
 Running Monte Carlo simulations, and proximal sensitivity analysis, in Mimi can be broken down into three primary user-facing elements:
 
 1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
-2. The `run` function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run with `set_models!`, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
+2. The `run` function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run within that`, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
 
 3. The `analyze` function, which takes a simulation instance, analyzes the results and returns results specific to the type of simulation passed in. 
 
@@ -114,7 +114,7 @@ Options for applying distributions to array slices is accomplished using
 array access syntax on the left-hand side of an assignment. The assignment
 may use any of these assignment operators: `=`, `*=`, or `+=`, as described
 above. Slices can be indicated using a variety of specifications. Assume we
-define two parameters in `@defcomp` as
+define two parameters in [`@defcomp`](@ref) as
 ```
   foo = Parameter(index=[regions])
   bar = Parameter(index=[time, regions])
@@ -328,14 +328,14 @@ This function wraps the `analyze` function in the [GlobalSensitivityAnalysis.jl]
 
 As described in the User Guide, Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI and `Mimi.plot` function. These functions not only work for `Model`s, but for `SimulationInstance`s as well. 
 
-In order to invoke the explorer UI and explore all of the saved variables from the `save` list of a `SimulationInstance`, simply call the function `explore` with the simulation as the required argument as shown below.  This will produce a new browser window containing a selectable list of variables, each of which produces a graphic.
+In order to invoke the explorer UI and explore all of the saved variables from the `save` list of a `SimulationInstance`, simply call the function [`explore`](@ref) with the simulation as the required argument as shown below.  This will produce a new browser window containing a selectable list of variables, each of which produces a graphic.
  
 ```julia
 run(sim_inst)
 explore(sim_inst)
 ```
 
-There are several optional keyword arguments for the `explore` method, as shown by the full function signature:
+There are several optional keyword arguments for the [`explore`](@ref) method, as shown by the full function signature:
 ```julia
 explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
@@ -352,7 +352,7 @@ p = Mimi.plot(sim_inst, :component1, :parameter1)
 save("figure.svg", p)
 ```
 
-Note the function signature below, which has the same keyword arguments and requirements as the aforementioned `explore` method, save for `title`.
+Note the function signature below, which has the same keyword arguments and requirements as the aforementioned [`explore`](@ref) method, save for `title`.
 ```julia
 plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```

@@ -329,6 +329,12 @@ function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dim
     return nothing
 end
 
+"""
+    Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
+            dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+            
+Run the `ModelInstance` `mi` once with `ntimesteps` and dimension keys `dimkeys`.
+"""
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
 

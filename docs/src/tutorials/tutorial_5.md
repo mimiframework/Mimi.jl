@@ -255,7 +255,7 @@ E_results = getdataframe(si, :emissions, :E)
 ```
 #### Step 4. Explore and Plot Results
 
-As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
+As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both [`explore`](@ref) and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
 
 To view your results in an interactive application viewer, simply call:
 
@@ -269,7 +269,7 @@ If desired, you may also include a `title` for your application window. If more 
 explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name here since we have no scenarios
 ```
 
-To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
+To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as [`explore`](@ref) (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
 
 ```julia
 Mimi.plot(si, :grosseconomy, :K)
@@ -381,7 +381,7 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `add_save!`
 * `get_simdef_rvnames`
 * `set_payload!`
-* `payload`
+* `payload`]
 
 #### Full list of keyword options for running a simulation
 

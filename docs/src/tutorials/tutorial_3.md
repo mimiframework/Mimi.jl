@@ -18,7 +18,7 @@ Possible modifications range in complexity, from simply altering parameter value
 
 ## Parametric Modifications: The API
 
-Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), [`add_shared_param`](@ref) and [`connect_param!`](@ref)**.  For detail on these functions see the How To Guide 5: Parameters and Variables and the API reference guide, Reference Guide: The Mimi API.
+Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`add_shared_param!`](@ref), [`disconnect_param!`](@ref) and [`connect_param!`](@ref)**.  For detail on these functions see the How To Guide 5: Work with Parameters and Variables and the API reference guide, Reference Guide: The Mimi API.
 
 The parameters in the original model receive their values either from exogenously set model parameters (shared or unshared as described in How To Guide 5) through external parameter connections, or from another component's variable through an internal parameter connection.
 

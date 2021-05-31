@@ -369,7 +369,7 @@ Split a string of the form "/path/to/component:datum_name" into the component pa
 """
 function split_datum_path(obj::AbstractCompositeComponentDef, s::AbstractString)
     elts = split(s, ":")
-    length(elts) != 2 && error("Cannot split datum path '$s' into ComponentPath and datum name")
+    length(elts) != 2 && error("Cannot split datum path '$s' into ComponentPath and datum name.")
     return (ComponentPath(obj, elts[1]), Symbol(elts[2]))
 end
 
@@ -464,17 +464,15 @@ function unconnected_params(obj::AbstractCompositeComponentDef)
     return setdiff(subcomp_params(obj), connection_refs(obj))
 end
 
-# TODO enhance to work for unshared mode parameters, similar to how update_params!
-# works and turn into update_leftover_params!
 """
-    set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) 
+    update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 
-Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
+Update all of the parameters in `ModelDef` `md` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
 the dictionary keys are strings that match the names of unset parameters in the model,
 and all resulting new model parameters will be shared parameters.
 """
-function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
+function update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     for param_ref in nothing_params(md)
 
         param_name = param_ref.datum_name
@@ -498,15 +496,41 @@ function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     nothing
 end
 
-# Find internal param conns to a given destination component
+"""
+    set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) 
+
+Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are strings that match the names of unset parameters in the model,
+and all resulting new model parameters will be shared parameters.
+"""
+function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
+    @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with the same arguments."
+    update_leftover_params(!md, parameters)
+end
+"""
+    internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
+
+Return internal param conns to a given destination component on `dst_comp_path` in `obj`.  
+"""
 function internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
     return filter(x->x.dst_comp_path == dst_comp_path, internal_param_conns(obj))
 end
 
+"""
+    internal_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
+
+Return internal param conns to a given destination component `comp_name` in `obj`.  
+"""
 function internal_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
     return internal_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
+"""
+    add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
+
+Add an internal param conns `conn` to the internal parameter connection lists of `obj`.
+"""
 function add_internal_param_conn!(obj::AbstractCompositeComponentDef, conn::InternalParameterConnection)
     push!(obj.internal_param_conns, conn)
     dirty!(obj)
@@ -516,23 +540,45 @@ end
 # These should all take ModelDef instead of AbstractCompositeComponentDef as 1st argument
 #
 
-# Find external param conns for a given comp
+"""
+    external_param_conns(obj::ModelDef, comp_path::ComponentPath)
+
+Find external param conns for a given comp on path `comp_path` in `obj`.
+"""
 function external_param_conns(obj::ModelDef, comp_path::ComponentPath)
     return filter(x -> x.comp_path == comp_path, external_param_conns(obj))
 end
 
+"""
+    external_param_conns(obj::ModelDef, comp_name::Symbol)
+
+Find external param conns for a given comp `comp_name` in `obj`.
+"""
 function external_param_conns(obj::ModelDef, comp_name::Symbol)
     return external_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
 end
 
+"""
+    model_param(obj::ModelDef, name::Symbol; missing_ok=false)
+
+Return the ModelParameter in `obj` with name `name`.  If `missing_ok` is set 
+to `true`, return nothing if parameter is not found, otherwise error.
+"""
 function model_param(obj::ModelDef, name::Symbol; missing_ok=false)
     haskey(obj.model_params, name) && return obj.model_params[name]
 
     missing_ok && return nothing
 
-    error("$name not found in model parameter list")
+    error("$name not found in model parameter list.")
 end
 
+"""
+    model_param(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok = false)
+
+Return the ModelParameter in `obj` connected to component `comp_name`'s parameter
+`param_name`. If `missing_ok` is set to `true`, return nothing if parameter is not 
+found, otherwise error.
+"""
 function model_param(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok = false)
 
     model_param_name = get_model_param_name(obj, comp_name, param_name; missing_ok = true)
@@ -716,6 +762,13 @@ function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; 
     _update_param!(obj::AbstractCompositeComponentDef, name, value)
 end
 
+"""
+    update_param!(mi::ModelInstance, name::Symbol, value)
+
+Update the `value` of a model parameter in `ModelInstance` `mi`, referenced
+by `name`.  This is an UNSAFE updat as it does not dirty the model, and should 
+be used carefully and specifically for things like our MCS work.
+"""
 function update_param!(mi::ModelInstance, name::Symbol, value)
     param = mi.md.model_params[name]
 
@@ -730,6 +783,14 @@ function update_param!(mi::ModelInstance, name::Symbol, value)
     return nothing
 end
 
+"""
+    update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
+
+Update the `value` of a model parameter in `ModelInstance` `mi`, connected to 
+component `comp_name`'s parameter `param_name`. This is an UNSAFE updat as it does 
+not dirty the model, and should  be used carefully and specifically for things like 
+our MCS work.
+"""
 function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
     param = mi.md.model_params[get_model_param_name(mi.md, comp_name, param_name)]
 

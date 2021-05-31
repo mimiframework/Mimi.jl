@@ -15,7 +15,7 @@ Working through the following tutorial will require:
 
 In this example, we construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy involves creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
 
-There are two main steps to creating a component, both within the  `@defcomp` macro which defines a component:
+There are two main steps to creating a component, both within the  [`@defcomp`](@ref) macro which defines a component:
 
 * List the parameters and variables.
 * Use the `run_timestep` function `run_timestep(p, v, d, t)` to set the equations of that component.
@@ -80,7 +80,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 
 * Once the model is defined, [`set_dimension!`](@ref) is used to set the length and interval of the time step.
 * We then use [`add_comp!`](@ref) to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component. One can also use the optional `first` and `last` keyword arguments to indicate a subset of the model's time dimension when the component should start and end.
-* Next, [`update_param!`](@ref) is used to assign values each component parameter with an external connection to an unshared model parameter. If _population_ was a parameter for two different components, it must be assigned to each one using [`update_param!`](@ref) two different times. The syntax is `update_param!(model_name, :component_name, :parameter_name, value)`.  Alternatively if these parameters are always meant to use the same value, one could use [`add_shared_parameter`](@ref) to create a shared model parameter and add it to the model, and then use [`connect_param!`](@ref) to connect both. This syntax would use `add_shared_param!(model_name, :shared_param_name, value)` followed by `connect_param!(model_name, :component_name, :parameter_name, :shared_param_name)` twice, once for each component.
+* Next, [`update_param!`](@ref) is used to assign values each component parameter with an external connection to an unshared model parameter. If _population_ was a parameter for two different components, it must be assigned to each one using [`update_param!`](@ref) two different times. The syntax is `update_param!(model_name, :component_name, :parameter_name, value)`.  Alternatively if these parameters are always meant to use the same value, one could use [`add_shared_param!`](@ref) to create a shared model parameter and add it to the model, and then use [`connect_param!`](@ref) to connect both. This syntax would use `add_shared_param!(model_name, :shared_param_name, value)` followed by `connect_param!(model_name, :component_name, :parameter_name, :shared_param_name)` twice, once for each component.
 * If any variables of one component are parameters for another, [`connect_param!`](@ref) is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
 * Finally, the model can be run using the command `run(model_name)`.
 * To access model results, use `model_name[:component, :variable_name]`.
@@ -122,7 +122,7 @@ construct_model (generic function with 1 method)
 
 ```
 
-Note that as an alternative to using many of the `update_param!` calls above, one may use the `default` keyword argument in `@defcomp` when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
+Note that as an alternative to using many of the [`update_param!`](@ref) calls above, one may use the `default` keyword argument in [`@defcomp`](@ref) when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
 
 Now we can run the model and examine the results:
 

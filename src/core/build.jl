@@ -358,6 +358,12 @@ function _build(comp_def::AbstractCompositeComponentDef,
     return CompositeComponentInstance(comps, comp_def, time_bounds, variables, parameters)
 end
 
+"""
+    _get_variables(comp_def::AbstractCompositeComponentDef)
+
+Return a vector of NamedTuples for all variables in the CompositeComponentInstance
+`comp_def`.
+"""
 # helper functions for to create the variables and parameters NamedTuples for a 
 # CompositeComponentInstance
 function _get_variables(comp_def::AbstractCompositeComponentDef)
@@ -371,6 +377,12 @@ function _get_variables(comp_def::AbstractCompositeComponentDef)
     return variables
 end
 
+"""
+    _get_parameters(comp_def::AbstractCompositeComponentDef)
+
+Return a vector of NamedTuples for all parameters in the CompositeComponentInstance
+`comp_def`.
+"""
 function _get_parameters(comp_def::AbstractCompositeComponentDef)
 
     namespace = comp_def.namespace
@@ -458,6 +470,11 @@ function create_marginal_model(base::Model, delta::Float64=1.0)
     mm = MarginalModel(base, delta)
 end
 
+"""
+    Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
+
+Run the marginal model `mm` once with `ntimesteps`.
+"""
 function Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
     run(mm.base, ntimesteps=ntimesteps)
     run(mm.modified, ntimesteps=ntimesteps)

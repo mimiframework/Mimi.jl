@@ -99,7 +99,7 @@ add_shared_param!(m, :y, fill(1, 5, 3), dims = [:time, :regions])
 @test_throws ErrorException connect_param!(m, :A, :p7, :y) # wrong dimensions, flipped around
 
 #
-# Section 2. set_leftover_params!
+# Section 2. update_leftover_params!
 #
 
 # TODO

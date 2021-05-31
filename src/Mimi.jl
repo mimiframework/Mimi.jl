@@ -48,6 +48,7 @@ export
     TimestepValue,
     update_param!,
     update_params!,
+    update_leftover_params!,
     # variables,
     variable_dimensions,
     variable_names

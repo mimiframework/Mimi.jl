@@ -65,11 +65,11 @@ function _make_dims(args)
 end
 
 """
-    defsim(expr)
+    defsim(expr::Expr)
 
 Define a Mimi `SimulationDef` with the expressions in `expr`.  
 """
-macro defsim(expr)
+macro defsim(expr::Expr)
     let # to make vars local to each macro invocation
         local _rvs        = []
         local _transforms = []

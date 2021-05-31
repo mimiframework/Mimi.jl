@@ -2,7 +2,7 @@
 
 ## Model Definition
 
-Models are composed of two separate structures, which we refer to as the "definition" side and the "instance" or "instantiated" side. The definition side is operated on by the user via the `@defcomp` and `@defcomposite` macros, and the public API (`add_comp!`, `set_param!`, `connect_param!`, etc.).
+Models are composed of two separate structures, which we refer to as the "definition" side and the "instance" or "instantiated" side. The definition side is operated on by the user via the `@defcomp` and `@defcomposite` macros, and the public API (`add_comp!`, `update_param!`, `connect_param!`, etc.).
 
 The instantiated model can be thought of as a "compiled" version of the model definition, with its data structures oriented toward run-time efficiency. It is constructed by Mimi in the `build()` function, which is called by the `run()` function.
 

@@ -13,7 +13,7 @@ In the next few subsections we will present the API for setting, connecting, and
 
 along with the useful functions for batch setting:
 - [`update_params!`](@ref)
-- [`set_leftover_params!`](@ref)
+- `update_leftover_params!`
 
 ### Creating a Model
 
@@ -65,13 +65,13 @@ update_param!(m, :B, :p3, 5)
 ```
 The dimensions and datatype of the `value` set above will need to match those designated for the component's parameter, or corresponding appropriate error messages will be thrown. 
 
-In the second case, we will explicitly create and add a shared model parameter with [`add_shared_param!`](@ref)) and then connect the parameters with [`connect_param`](@ref) ie.
+In the second case, we will explicitly create and add a shared model parameter with [`add_shared_param!`](@ref)) and then connect the parameters with [`connect_param!`](@ref) ie.
 ```julia
 add_shared_param!(m, :shared_param, [1,2,3,4,5,6], dims = [:time])
 connect_param!(m, :A, :p2, :shared_param)
 connect_param!(m, :B, :p4, :shared_param)
 ```
-The shared model parameter can have any name, including the same name as one of the component parameters, without any namespace collision with those ... although for clarity we suggest using a unique name.  Note the `dims` argument above. When you add a shared model parameter that will be connected to non-scalar parameters like above, you need to specify the dimensions in a similar fashion to what is done in the `@defcomp` call so that appropriate allocation and checks can be made.  This is not necessary for parameters without (named) dimensions. Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize if you try to connect a parameter to a shared model parameter that does not have the right data size.  As above, checks on data types will also be performed.
+The shared model parameter can have any name, including the same name as one of the component parameters, without any namespace collision with those ... although for clarity we suggest using a unique name.  Note the `dims` argument above. When you add a shared model parameter that will be connected to non-scalar parameters like above, you need to specify the dimensions in a similar fashion to what is done in the [`@defcomp`](@ref) call so that appropriate allocation and checks can be made.  This is not necessary for parameters without (named) dimensions. Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize if you try to connect a parameter to a shared model parameter that does not have the right data size.  As above, checks on data types will also be performed.
 
 In the third case we want to connect `B`'s `p5` to `A`'s `v1`, and we can do so with:
 ```julia
@@ -92,7 +92,7 @@ To **update a parameter connected to an unshared model parameter**, use the same
 update_param!(m, :A, :p1, 5)
 ```
 
-To **update parameters connected to a shared model parameter**, use [`update_param`](@ref)  with different arguments, specifying the shared model parameter name:
+To **update parameters connected to a shared model parameter**, use [`update_param!`](@ref)  with different arguments, specifying the shared model parameter name:
 ```julia
 update_param!(m, :shared_param, [10,11,12,13,14,15])
 ```
@@ -158,13 +158,11 @@ You can batch update a set of parameters using a `Dict` and the function [`updat
 ```julia
 update_params!(m::Model, parameters::Dict)
 ```
-For each (k, v) pair in the provided `parameters` dictionary, `update_param!` is called to update the model parameter identified by the key to value v. For updating unshared parameters, each key k must be a Tuple matching the name of a component in `m` and the name of an parameter in that component. For updating shared parameters, each key k must be a symbol or convert to a symbol  matching the name of a shared model parameter that already exists in the model.
+For each (k, v) pair in the provided `parameters` dictionary, [`update_param!`](@ref) is called to update the model parameter identified by the key to value v. For updating unshared parameters, each key k must be a Tuple matching the name of a component in `m` and the name of an parameter in that component. For updating shared parameters, each key k must be a symbol or convert to a symbol  matching the name of a shared model parameter that already exists in the model.
 
 For example, given a model `m` with a shared model parameter `shared_param` connected to several component parameters, and two unshared model parameters `p1` and `p2` in a component `A`:
 ```julia
-
 # update shared model parameters and unshared model parameters seprately
-
 shared_dict = Dict(:shared_param => 1)
 unshared_dict = Dict((:A, :p5) => 2, (:A, :p6) => 3)
 update_params!(m, shared_dict)
