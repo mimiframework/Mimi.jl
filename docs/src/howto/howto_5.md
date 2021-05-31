@@ -148,7 +148,7 @@ As you see in the error message, if you want to override this error, you can use
 ```julia
 connect_param!(m, :B, :p2, :shared_param, ignoreunits=true)
 ```
-#### Setting Parameters with a Dictionary with `set_leftover_params!`
+#### Setting Parameters with a Dictionary with `update_leftover_params!`
 
 [TODO]
 

@@ -270,7 +270,7 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
         end
 
-        # TODO: potentially unsafe way to add parameter, advise using create_model_param!
+        # NB: potentially unsafe way to add parameter, advise using create_model_param!
         # and add_model_param! combo if possible ... but would need a specific ParameterDef
         add_model_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
@@ -464,6 +464,8 @@ function unconnected_params(obj::AbstractCompositeComponentDef)
     return setdiff(subcomp_params(obj), connection_refs(obj))
 end
 
+# TODO enhance to work for unshared mode parameters, similar to how update_params!
+# works and turn into update_leftover_params!
 """
     set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) 
 
@@ -864,7 +866,7 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             T = eltype(value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            # TODO: potentially unsafe way to add parameter, advise using create_model_param!
+            # NB: potentially unsafe way to add parameter, advise using create_model_param!
             # and add_model_param! combo if possible ... but would need a specific ParameterDef
             add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else

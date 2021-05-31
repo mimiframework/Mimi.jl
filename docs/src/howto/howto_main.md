@@ -28,3 +28,6 @@ If you find a bug in these guides, or have a clarifying question or suggestion, 
 
 
 [How-to Guide 8: Port from (>=) Mimi v0.5.0 to Mimi v1.0.0](@ref)
+
+
+[How-to Guide 9: Port to New Parameter API](@ref)
