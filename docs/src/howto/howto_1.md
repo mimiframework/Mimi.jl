@@ -54,7 +54,7 @@ By default, all parameters and variables defined in the [`@defcomp`](@ref) will 
 
 Composite components can contain any number of subcomponents, **which can be either leaf components or more composite components**. To the degree possible, composite components are designed to operate in the same way as leaf components, although there are a few necessary differences:
 
-- Leaf components are defined using the macro `@defcomp`, while Composite components are defined using `@defcomposite`. Each macro supports syntax and semantics specific to the type of component.
+- Leaf components are defined using the macro [`@defcomp`](@ref), while Composite components are defined using [`@defcomposite`](@ref). Each macro supports syntax and semantics specific to the type of component.
 
 - Leaf components support user-defined `run_timestep()` functions, whereas composites have a built-in `run_timestep()` function that iterates over its subcomponents and calls their `run_timestep()` function.
 
@@ -161,7 +161,7 @@ add_comp!(m, ComponentA)
 add_comp!(m, ComponentA, :GDP)
 ```
 
-The first argument to `add_comp!` is the model, the second is the name of the ComponentId defined by [`@defcomp`](@ref). If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
+The first argument to [`add_comp!`](@ref) is the model, the second is the name of the ComponentId defined by [`@defcomp`](@ref). If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
 
 The [`add_comp!`](@ref) function has two more optional keyword arguments, `first` and `last`, which can be used to indicate a fixed start and/or end time (year in this case) that the compnonent should run for (within the bounds of the model's time dimension).  For example, the following indicates that `ComponentA` should only run from 1900 to 2000.
 
@@ -308,4 +308,4 @@ set_param!(m, :foo4, 20)
 set_param!(m, :par_1_1, collect(1:length(2005:2020)))
 run(m)
 ```
-Take a look at what you've created now using [`explore(m)`](@ref), a peek into what you can learn in How To Guide 2!
+Take a look at what you've created now using `explore(m)`, a peek into what you can learn in How To Guide 2!

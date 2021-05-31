@@ -497,7 +497,7 @@ function update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 end
 
 """
-    set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) 
+    set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 
 Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
@@ -506,7 +506,7 @@ and all resulting new model parameters will be shared parameters.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with the same arguments."
-    update_leftover_params(!md, parameters)
+    update_leftover_params(md, parameters)
 end
 """
     internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)

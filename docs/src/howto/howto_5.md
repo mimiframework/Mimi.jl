@@ -13,7 +13,7 @@ In the next few subsections we will present the API for setting, connecting, and
 
 along with the useful functions for batch setting:
 - [`update_params!`](@ref)
-- `update_leftover_params!`
+- [`update_leftover_params!`](@ref)
 
 ### Creating a Model
 
@@ -192,7 +192,7 @@ When a user sets a parameter, Mimi checks that the size and dimensions match wha
 
 ## Variables
 
-[PLACEHOLDER for requested details on Variables]
+[TODO]
 
 ## DataType specification of Parameters and Variables 
 
@@ -200,7 +200,7 @@ By default, the Parameters and Variables defined by a user will be allocated sto
 ```
 m = Model(Int64)    # creates a model with default number type Int64
 ```
-But you can also specify individual Parameters or Variables to have different data types with the following syntax in a `@defcomp` macro:
+But you can also specify individual Parameters or Variables to have different data types with the following syntax in a [`@defcomp`](@ref) macro:
 ```
 @defcomp example begin
   p1 = Parameter{Bool}()                         # ScalarModelParameter that is a Bool

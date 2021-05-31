@@ -125,7 +125,7 @@ end
 
 # TBD: finish documenting this!
 """
-    defcomposite(cc_name::Symbol, ex::Expr)
+    defcomposite(cc_name, ex)
 
 Define a Mimi CompositeComponentDef `cc_name` with the expressions in `ex`. Expressions
 are all shorthand for longer-winded API calls, and include the following:

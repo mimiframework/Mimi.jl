@@ -40,6 +40,7 @@ export
     # parameters,
     parameter_dimensions,
     parameter_names,
+    replace!,
     replace_comp!,
     set_dimension!,
     set_leftover_params!,

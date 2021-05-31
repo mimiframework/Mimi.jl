@@ -169,9 +169,9 @@ Mimi.Model
 
 #### Step 2. Define the Simulation
 
-The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
+The [`@defsim`](@ref) macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
 
-There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example. 
+There are two ways of assigning random variables to model parameters in the [`@defsim`](@ref) macro. Notice that both of the following syntaxes are used in the following example. 
  
 The first is the following:
 ```julia
@@ -190,7 +190,7 @@ Note here that if we have a shared model parameter we can assign based on it's n
 
 **It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
 
-The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a `@defsim` call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
+The [`@defsim`](@ref) macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a [`@defsim`](@ref) call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
 
 ```jldoctest tutorial5; output = false, filter = r".*"s
 using Mimi
@@ -381,7 +381,7 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `add_save!`
 * `get_simdef_rvnames`
 * `set_payload!`
-* `payload`]
+* `payload`
 
 #### Full list of keyword options for running a simulation
 

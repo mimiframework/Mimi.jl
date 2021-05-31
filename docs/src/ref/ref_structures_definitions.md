@@ -2,7 +2,7 @@
 
 ## Model Definition
 
-Models are composed of two separate structures, which we refer to as the "definition" side and the "instance" or "instantiated" side. The definition side is operated on by the user via the `@defcomp` and `@defcomposite` macros, and the public API (`add_comp!`, `update_param!`, `connect_param!`, etc.).
+Models are composed of two separate structures, which we refer to as the "definition" side and the "instance" or "instantiated" side. The definition side is operated on by the user via the [`@defcomp`](@ref) and [`@defcomposite`](@ref) macros, and the public API ([`add_comp!`](@ref), [`update_param!`](@ref), [`connect_param!`](@ref), etc.).
 
 The instantiated model can be thought of as a "compiled" version of the model definition, with its data structures oriented toward run-time efficiency. It is constructed by Mimi in the `build()` function, which is called by the `run()` function.
 
@@ -29,7 +29,7 @@ The namespace of a leaf component can hold `ParameterDef`s and `VariableDef`s, b
 
 ## Composite components
 
-Composite components are defined using the `@defcomposite` macro which generates a composite component definition of the type `CompositeComponentDef` which has the following fields, in addition to the fields of a `ComponentDef`:
+Composite components are defined using the [`@defcomposite`](@ref) macro which generates a composite component definition of the type `CompositeComponentDef` which has the following fields, in addition to the fields of a `ComponentDef`:
 ```
 # CompositeComponentDef <: ComponentDef 
 internal_param_conns::Vector{InternalParameterConnection}   
@@ -41,7 +41,7 @@ The namespace of a composite component can hold `CompositeParameterDef`s and`Com
 
 Note: we use "datum" to refer collectively to parameters and variables. Parameters are values that are fed into a component, and variables are values calculated by a component's `run_timestep` function.
 
-Datum are defined with the `@defcomp` and `@defcomposite` macros, and have the following fields:
+Datum are defined with the [`@defcomp`](@ref) and [`@defcomposite`](@ref) macros, and have the following fields:
 ```
 # DatumDef
 name::Symbol
@@ -100,9 +100,9 @@ storage allocated for the variable.
 
 `ExternalParameterConnection`
 Values that are exogenous to the model are defined in model parameters whose values are
-assigned using the public API function `set_param!()`, or by setting default values in
-`@defcomp` or `@defcomposite`, in which case, the default values are assigned via an
-internal call to `set_param!()`.
+assigned using the public API function [`update_param!()`](@ref), or by setting default values in
+[`@defcomp`](@ref) or [`@defcomposite`](@ref), in which case, the default values are assigned via an
+internal call to [`update_param!()`](@ref).
 
 External connections are stored in the `ModelDef`, along with the actual `ModelParameter`s,
 which may be scalar values or arrays, as described below.

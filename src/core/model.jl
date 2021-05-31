@@ -173,6 +173,18 @@ function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
 end
 
 """
+    update_leftover_params!(m::Model, parameters::Dict)
+
+Set all of the parameters in model `m` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are strings that match the names of unset parameters in the model,
+and all resulting new model parameters will be shared parameters.
+"""
+function update_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
+    update_leftover_params!(m.md, parameters)
+end
+
+"""
     update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of an model parameter in model `m`, referenced by
