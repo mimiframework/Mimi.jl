@@ -506,7 +506,7 @@ and all resulting new model parameters will be shared parameters.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
     @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with the same arguments."
-    update_leftover_params(md, parameters)
+    update_leftover_params!(md, parameters)
 end
 """
     internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
