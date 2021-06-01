@@ -15,7 +15,7 @@ along with the useful functions for batch setting:
 - [`update_params!`](@ref)
 - [`update_leftover_params!`](@ref)
 
-### Creating a Model
+### Parameters when Creating a Model
 
 Take the example case of a user starting out building a two-component toy model.
 ```julia
@@ -51,29 +51,32 @@ After the calls to [`add_comp!`](@ref), all four parameters are connected to a r
 At this point, you cannot `run(m)`, you will encounter:
 ```julia
 run(m)
-ERROR: Cannot build model; the following parameters still have values of nothing and need to be updated or set:
+ERROR: Cannot build model; the following parameters still have values of nothing 
+and need to be updated or set:
   p2
   p3
   p4
   p5
 ```
-Per the above, we need to connect all parameters to values.  We have three cases here, (1) we want to update the value of an unshared parameter from `nothing` to a value or (2) we want to add a shared parameter and connect one or, more commonly, several component parameters to it (3) we want to connect a parameter to another component's variable.
+Per the above, we need to update these parameters so that they are connected to a non-`nothing` value.  We have three cases here, (1) we want to update the value of an unshared parameter from `nothing` to a value, (2) we want to add a shared parameter and connect one or, more commonly, several component parameters to it, or (3) we want to connect a parameter to another component's variable.
 
-In the first case, we simply call [`update_param!`](@ref) ie.
+**Case 1:** In the first case, we simply call [`update_param!`](@ref) ie.
 ```julia
 update_param!(m, :B, :p3, 5)
 ```
 The dimensions and datatype of the `value` set above will need to match those designated for the component's parameter, or corresponding appropriate error messages will be thrown. 
 
-In the second case, we will explicitly create and add a shared model parameter with [`add_shared_param!`](@ref)) and then connect the parameters with [`connect_param!`](@ref) ie.
+**Case 2:** In the second case, we will explicitly create and add a shared model parameter with [`add_shared_param!`](@ref) and then connect the parameters with [`connect_param!`](@ref) ie.
 ```julia
 add_shared_param!(m, :shared_param, [1,2,3,4,5,6], dims = [:time])
 connect_param!(m, :A, :p2, :shared_param)
 connect_param!(m, :B, :p4, :shared_param)
 ```
-The shared model parameter can have any name, including the same name as one of the component parameters, without any namespace collision with those ... although for clarity we suggest using a unique name.  Note the `dims` argument above. When you add a shared model parameter that will be connected to non-scalar parameters like above, you need to specify the dimensions in a similar fashion to what is done in the [`@defcomp`](@ref) call so that appropriate allocation and checks can be made.  This is not necessary for parameters without (named) dimensions. Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize if you try to connect a parameter to a shared model parameter that does not have the right data size.  As above, checks on data types will also be performed.
+The shared model parameter can have any name, including the same name as one of the component parameters, without any namespace collision with those, although for clarity we suggest using a unique name.  
 
-In the third case we want to connect `B`'s `p5` to `A`'s `v1`, and we can do so with:
+Also note the `dims` argument above. When you add a shared model parameter that will be connected to non-scalar parameters like above, you need to specify the dimensions in a similar fashion to what is done in the [`@defcomp`](@ref) block so that appropriate allocation and checks can be made.  This is not necessary for parameters without (named) dimensions. Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize if you try to connect a parameter to a shared model parameter that does not have the right data size.  As above, checks on data types will also be performed.
+
+**Case 3.:** In the third case we want to connect `B`'s `p5` to `A`'s `v1`, and we can do so with:
 ```julia
 connect_param!(m, :B, :p5, :A, :v1)
 ```
@@ -83,35 +86,36 @@ Now all your parameters are properly connected and you may run your model.
 run(m)
 ```
 
-### Modifying a Model
+### Parameters when Modifying a Model
 
-Now say we have been given our model `m` above and we want to make some changes. Below we use some explicit examples, that put togther should outline how to make any changes you need.  If something is not covered here that would be a useful case for us to explicitly explain, **don't hesitate to reach out**. We have also aimed to include useful warnings and error messages to point you in the right direction.
+Now say we have been given our model `m` above and we want to make some changes. Below we use some explicit examples that  together should cover quite a few general cases.  If something is not covered here that would be a useful case for us to explicitly explain, **don't hesitate to reach out**. We have also aimed to include useful warnings and error messages to point you in the right direction.
 
 To **update a parameter connected to an unshared model parameter**, use the same [`update_param!`](@ref) function as above:
 ```julia
 update_param!(m, :A, :p1, 5)
 ```
+Trying this call when `A`'s parameter `p1` is connected to a shared parameter will error, and instruct you on the steps to use to either update the shared model parameter, or disconnect `A`'s `p1` from that shared model parameter and then proceed, both as explained below.
 
 To **update parameters connected to a shared model parameter**, use [`update_param!`](@ref)  with different arguments, specifying the shared model parameter name:
 ```julia
-update_param!(m, :shared_param, [10,11,12,13,14,15])
+update_param!(m, :shared_param, 5)
 ```
 
-To **connect a parameter to another component's variable**, the below will disconnect the connection to the model parameter and make the internal parameter connection: 
+To **connect a parameter to another component's variable**, the below will disconnect any existing connections from `B`'s `p3` ([`disconnect_param!`](@ref) under the hood) and make the internal parameter connection to `A`'s `v1`: 
 ```julia
 connect_param!(m, :B, :p3, :A, :v1)
 ```
-while a call to [`update_param!`](@ref)  would remove the internal connection and connect instead to an unshared model parameter as was done in the original `m`:
+Symmetrically, a subsequent call to [`update_param!`](@ref) would remove the internal connection and connect instead to an unshared model parameter as was done in the original `m`:
 ```julia
 update_param!(m, :B, :p3, 10)
 ```
 
-To **move from connection to a shared model parameter to an unshared model parameter** use [`disconnect_param!`](@ref)  followed by [`update_param!`](@ref) :
+To **move from an external connection to a shared model parameter to an external connection to an unshared model parameter** use [`disconnect_param!`](@ref) followed by [`update_param!`](@ref) :
 ```julia
 disconnect_param!(m, :A, :p2)
 update_param!(m, :A, :p2, [101, 102, 103, 104, 105, 106])
 ```
-noting that this last call could also be a [`connect_param!`](@ref)  to another parameter or variable etc., it is now free to be reset in any way you want.
+noting that this last call could also be a [`connect_param!`](@ref) to another parameter or variable etc., `A`'s `p2` is now free to be reset in any way you want.
 
 ### Other Details
 
@@ -142,15 +146,21 @@ add_shared_param!(m, :shared_param, 100)
 connect_param!(m, :A, :p1, :shared_param) # no error here
 connect_param!(m, :B, :p2, :shared_param)
 
-ERROR: Units of compdef:p2 (thousands of $) do not match the following other parameters connected to the same shared model parameter shared_param.  To override this error and connect anyways, set the `ignoreunits` flag to true: `connect_param!(m, comp_def, param_name, model_param_name; ignoreunits = true)`. MISMATCHES OCCUR WITH: [A:p1 with units $]  
+ERROR: Units of compdef:p2 (thousands of $) do not match the following other 
+parameters connected to the same shared model parameter shared_param.  To override 
+this error and connect anyways, set the `ignoreunits` flag to true: 
+`connect_param!(m, comp_def, param_name, model_param_name; ignoreunits = true)`. 
+MISMATCHES OCCUR WITH: [A:p1 with units $]  
 ```
 As you see in the error message, if you want to override this error, you can use the `ignoreunits` flag:
 ```julia
 connect_param!(m, :B, :p2, :shared_param, ignoreunits=true)
 ```
-#### Batch Update Unset Parameters with a Dictionary with `update_leftover_params!`
+#### Batch Update all Unset Parameters with a Dictionary
 
-It may be helpful to use a dictionary to batch update all parameters in a model `m` that have not been explicitly updated, and thus still hold the a unusable value sentinal `nothing` from intialization.  In some cases, users may create this dictionary from exogenous `csv` files for ease of use.  The [`update_leftover_params!`](@ref) updates the values of the sentinal `nothing` model parameters by searching for its `(component_name, parameter_name)` pair in the provided dictionary with entries `k => v`, where `k` is a Tuple of Strings or Symbols `(component_name, parameter_name)`.  The signature for this function is
+When building up a model, you may end up with several parameters that have not been explicitly updated that you want to batch update with pre-computer and saved values (ie. in a `csv` file). Before this update, the values still hold the a unusable sentinal value of `nothing` from intialization. A model with such parameters is not runnable.
+
+The [`update_leftover_params!`](@ref) call takes a model and dictionary and updates the values of each the sentinal `nothing` model parameters by searching for their corresponding `(component_name, parameter_name)` pair in the provided dictionary with entries `k => v`, where `k` is a Tuple of Strings or Symbols `(component_name, parameter_name)`.  The signature for this function is
 ```
 update_leftover_params!(m::Model, parameters::Dict)
 ```
@@ -161,9 +171,9 @@ update_leftover_params!(m, parameeters)
 ```
 Note that your dictionary `parameters` **must include all leftover parameters that need to be set**, not just a subset of them, or it will error when it cannot find a desired key.
 
-#### Batch Updating Parameters with `update_params!`
+#### Batch Update Specified Parameters with a Dictionary
 
-You can batch update a set of parameters using a `Dict` and the function [`update_params!`](@ref).  You can do so for any set of unshared or shared model parameters.  The signature for this function is:
+You can batch update a defined set of parameters using a `Dict` and the function [`update_params!`](@ref).  You can do so for any set of unshared or shared model parameters.  The signature for this function is:
 ```julia
 update_params!(m::Model, parameters::Dict)
 ```
@@ -206,11 +216,11 @@ When a user sets a parameter, Mimi checks that the size and dimensions match wha
 ## DataType specification of Parameters and Variables 
 
 By default, the Parameters and Variables defined by a user will be allocated storage arrays of type `Float64` when a model is constructed. This default "number_type" can be overriden when a model is created, with the following syntax:
-```
+```julia
 m = Model(Int64)    # creates a model with default number type Int64
 ```
 But you can also specify individual Parameters or Variables to have different data types with the following syntax in a [`@defcomp`](@ref) macro:
-```
+```julia
 @defcomp example begin
   p1 = Parameter{Bool}()                         # ScalarModelParameter that is a Bool
   p2 = Parameter{Bool}(index = [regions])        # ArrayModelParameter with one dimension whose eltype is Bool

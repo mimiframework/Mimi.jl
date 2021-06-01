@@ -186,7 +186,7 @@ param1 = Normal(0, 0.8)
 comp1.param2 = Normal(1,0)
 ```
 
-Note here that if we have a shared model parameter we can assign based on it's name, but if we have an unshared model parameter specific to one component/parameter pair we need to specify both.  If the component is not specified Mimi will throw a warning and try to resolve under the hood with assumptions, proceeding if possible and erroring if not.
+Note here that if we have a shared model parameter we can assign based on its name, but if we have an unshared model parameter specific to one component/parameter pair we need to specify both.  If the component is not specified Mimi will throw a warning and try to resolve under the hood with assumptions, proceeding if possible and erroring if not.
 
 **It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
 
@@ -237,9 +237,9 @@ end
 
 #### Step 3. Run Simulation
 
-Next, use the `run` function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the `run` function**.
+Next, use the [`run`](@ref) function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the [`run`](@ref) function**.
 
-In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's model parameters that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
+In its simplest use, the [`run`](@ref) function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's model parameters that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
 ```jldoctest tutorial5; output = false, filter = r".*"s
 # Run 100 trials, and optionally save results to the indicated directories

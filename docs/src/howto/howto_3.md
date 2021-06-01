@@ -8,14 +8,14 @@ Running Monte Carlo simulations, and proximal sensitivity analysis, in Mimi can 
 
 1. The [`@defsim`](@ref) macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
-2. The `run` function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run within that, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
+2. The [`run`](@ref) function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run within that, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
 
 3. The `analyze` function, which takes a simulation instance, analyzes the results and returns results specific to the type of simulation passed in. 
 
 The rest of this document will be organized as follows:
 
 1. The [`@defsim`](@ref) macro
-2. The `run` function
+2. The [`run`](@ref) function
 3. The `analyze` function
 4. Plotting and the Explorer UI
 5. Other Useful Functions
@@ -50,7 +50,7 @@ const DeltaSimulationDef = SimulationDef{DeltaData}
 const DeltaSimulationInstance = SimulationInstance{DeltaData}
 ```
 
-In order to build the information required at run-time, the `@defsim` macro carries out several tasks including the following.
+In order to build the information required at run-time, the [`@defsim`](@ref) macro carries out several tasks including the following.
 
 ### Define Random Variables (RVs)
 
@@ -188,13 +188,13 @@ Certain sampling strategies support (or necessitate) further customization. Thes
 - extra parameters (Sobol): Sobol sampling allows specification of the sample size N and whether or not one wishes to calculate second-order effects.
 
 
-## 2. The `run` function
+## 2. The [`run`](@ref) function
 
-In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's model parameters, based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the [`run`](@ref) function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's model parameters, based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
-The full signature for the `run` is:
+The full signature for the [`run`](@ref) is:
 
 ```
 function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
@@ -213,7 +213,7 @@ Using this function allows a user to run the simulation definition `sim_def` for
 
 Optionally the user may run the `models` for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial data are applied to all the associated models even when running only a portion of them.   
 
-If provided, the generated trials and results will be saved in the indicated `trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set to false, then results will be cleared from memory and only stored in the `results_output_dir`. After `run`, the results of a `SimulationInstance` can be accessed using the `getdataframe` function with the following signature, which returns a `DataFrame`. 
+If provided, the generated trials and results will be saved in the indicated `trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set to false, then results will be cleared from memory and only stored in the `results_output_dir`. After [`run`](@ref), the results of a `SimulationInstance` can be accessed using the `getdataframe` function with the following signature, which returns a `DataFrame`. 
 
 ```
 getdataframe(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
@@ -232,15 +232,15 @@ scenario_func(sim_inst::SimulationInstance, tup::Tuple)
 
 By default, the scenario loop encloses the simulation loop, but the scenario loop can be placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER`  is specified, the `scenario_func` is called after any `pre_trial_func` but before the model is run.
 
-Finally, `run` returns the type `SimulationInstance` that contains a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`.
+Finally, [`run`](@ref) returns the type `SimulationInstance` that contains a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`.
 
-### Internal Functions to `run`
+### Internal Functions to [`run`](@ref)
 
-The following functions are internal to `run`, and do not need to be understood by users but may be interesting to understand.
+The following functions are internal to [`run`](@ref), and do not need to be understood by users but may be interesting to understand.
 
 #### The set_models! function
 
-The `run` function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationInstance` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `SimulationDef`:
+The [`run`](@ref) function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationInstance` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `SimulationDef`:
 	
 ```
 set_models!(sim_inst::SimulationInstance, models::Vector{Model})
@@ -262,7 +262,7 @@ Also note that if the `filename` argument is used, all random variable draws are
 
 ### Non-stochastic Scenarios
 
-In many cases, scenarios (which we define as a choice of values from a discrete set for one or more parameters) need to be considered in addition to the stochastic parameter variation. To support scenarios, `run` also offers iteration over discrete scenario values, which are passed to `run` via the keyword parameter `scenario_args::Dict{Symbol, Vector}`. For example, to iterate over scenario values "a", and "b", as well as, say, discount rates `0.025, 0.05, 0.07`, you could provide the argument:
+In many cases, scenarios (which we define as a choice of values from a discrete set for one or more parameters) need to be considered in addition to the stochastic parameter variation. To support scenarios, [`run`](@ref) also offers iteration over discrete scenario values, which are passed to [`run`](@ref) via the keyword parameter `scenario_args::Dict{Symbol, Vector}`. For example, to iterate over scenario values "a", and "b", as well as, say, discount rates `0.025, 0.05, 0.07`, you could provide the argument:
 
 `scenario_args=Dict([:name => ["a", "b"], :rate => [0.025, 0.05, 0.07]])`
 
@@ -339,7 +339,7 @@ There are several optional keyword arguments for the [`explore`](@ref) method, a
 ```julia
 explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
-The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to `run` you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument. Finally, if you have saved the results of your simulation to disk and cleared them from memory using `run`'s `results_in_memory` keyword argument flag set to `false`, you **must** provide a `results_output_dir` which indicates the parent folder for all outputs and potential subdirectories, identical to that passed to `run`.
+The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to [`run`](@ref) you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument. Finally, if you have saved the results of your simulation to disk and cleared them from memory using [`run`](@ref)'s `results_in_memory` keyword argument flag set to `false`, you **must** provide a `results_output_dir` which indicates the parent folder for all outputs and potential subdirectories, identical to that passed to [`run`](@ref).
 
 ![Explorer Simulation Example](../figs/explorer_sim_example.png)
 

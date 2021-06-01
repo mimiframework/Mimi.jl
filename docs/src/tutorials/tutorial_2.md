@@ -36,7 +36,7 @@ using MimiFUND
 # output
 
 ```
-Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the `run` function to run it.
+Now we can access the public API of FUND, including the function `MimiFUND.get_model`. This function returns a copy of the default FUND model. Here we will first get the model, and then use the [`run`](@ref) function to run it.
 
 ```jldoctest tutorial2; output = false, filter = r".*"s
 m = MimiFUND.get_model()

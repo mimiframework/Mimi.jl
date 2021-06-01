@@ -31,18 +31,19 @@ using Mimi # start by importing the Mimi package to your space
 
 @defcomp grosseconomy begin
 	YGROSS	= Variable(index=[time])	# Gross output
-	K	    = Variable(index=[time])	# Capital
-	l	    = Parameter(index=[time])	# Labor
-	tfp	    = Parameter(index=[time])	# Total factor productivity
-	s	    = Parameter(index=[time])	# Savings rate
-	depk	= Parameter()			    # Depreciation rate on capital - Note that it has no time index
-	k0	    = Parameter()			    # Initial level of capital
-	share	= Parameter()			    # Capital share
+	K	= Variable(index=[time])	# Capital
+	l	= Parameter(index=[time])	# Labor
+	tfp	= Parameter(index=[time])	# Total factor productivity
+	s	= Parameter(index=[time])	# Savings rate
+	depk	= Parameter()			# Depreciation rate on capital - Note that it has no time index
+	k0	= Parameter()			# Initial level of capital
+	share	= Parameter()			# Capital share
 
 	function run_timestep(p, v, d, t)
 		# Define an equation for K
 		if is_first(t)
-			# Note the use of v. and p. to distinguish between variables and parameters
+			# Note the use of v. and p. to distinguish between variables and 
+			# parameters
 			v.K[t] 	= p.k0	
 		else
 			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
@@ -61,14 +62,14 @@ Next, the component for greenhouse gas emissions must be created.  Although the 
 
 ```jldoctest tutorial4; output = false
 @defcomp emissions begin
-	E 	    = Variable(index=[time])	# Total greenhouse gas emissions
+	E	= Variable(index=[time])	# Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	# Emissions output ratio
 	YGROSS	= Parameter(index=[time])	# Gross output - Note that YGROSS is now a parameter
 
 	function run_timestep(p, v, d, t)
 
-		# Define an equation for E
-		v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
+	# Define an equation for E
+	v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
 	end
 end
 
@@ -80,7 +81,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 
 * Once the model is defined, [`set_dimension!`](@ref) is used to set the length and interval of the time step.
 * We then use [`add_comp!`](@ref) to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component. One can also use the optional `first` and `last` keyword arguments to indicate a subset of the model's time dimension when the component should start and end.
-* Next, [`update_param!`](@ref) is used to assign values each component parameter with an external connection to an unshared model parameter. If _population_ was a parameter for two different components, it must be assigned to each one using [`update_param!`](@ref) two different times. The syntax is `update_param!(model_name, :component_name, :parameter_name, value)`.  Alternatively if these parameters are always meant to use the same value, one could use [`add_shared_param!`](@ref) to create a shared model parameter and add it to the model, and then use [`connect_param!`](@ref) to connect both. This syntax would use `add_shared_param!(model_name, :shared_param_name, value)` followed by `connect_param!(model_name, :component_name, :parameter_name, :shared_param_name)` twice, once for each component.
+* Next, [`update_param!`](@ref) is used to assign values each component parameter with an external connection to an unshared model parameter. If _population_ was a parameter for two different components, it must be assigned to each one using [`update_param!`](@ref) two different times. The syntax is `update_param!(model_name, :component_name, :parameter_name, value)`.  Alternatively if these parameters are always meant to use the same value, one could use [`add_shared_param!`](@ref) to create a shared model parameter and add it to the model, and then use [`connect_param!`](@ref) to connect both. This syntax would use `add_shared_param!(model_name, :model_param_name, value)` followed by `connect_param!(model_name, :component_name, :parameter_name, :model_param_name)` twice, once for each component.
 * If any variables of one component are parameters for another, [`connect_param!`](@ref) is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
 * Finally, the model can be run using the command `run(model_name)`.
 * To access model results, use `model_name[:component, :variable_name]`.
@@ -107,10 +108,11 @@ function construct_model()
 	update_param!(m, :grosseconomy, :k0, 130.)
 	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# Update and connect parameters for the emissions component
+	# Update parameters for the emissions component
 	update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	
+	# connect parameters for the emissions component
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-	# Note that connect_param! was used here.
 
 	return m
 

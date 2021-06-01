@@ -440,7 +440,7 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-function add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
+    add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
 
 User-facing API function to add a shared parameter to Model `m` with name
 `name` and value `value`, and an array of dimension names `dims` which dfaults to 
