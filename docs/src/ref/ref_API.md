@@ -12,7 +12,7 @@ connect_param!
 create_marginal_model
 delete_param!
 dim_count
-dim_key
+dim_keys
 dim_key_dict
 disconnect_param!
 explore
@@ -26,7 +26,7 @@ is_last
 is_time
 is_timestep
 modeldef
-name
+nameof
 parameter_dimensions
 parameter_names
 replace!
@@ -39,7 +39,6 @@ TimestepValue
 update_param!
 update_params!
 update_leftover_params!
-# variables
 variable_dimensions
 variable_names
 ```

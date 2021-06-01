@@ -54,7 +54,7 @@ Electron.prep_test_env()
     @time include("test_replace_comp.jl")
 
     @info("test_tools.jl")
-    # @time include("test_tools.jl")
+    @time include("test_tools.jl")
 
     @info("test_parameter_labels.jl")
     @time include("test_parameter_labels.jl")

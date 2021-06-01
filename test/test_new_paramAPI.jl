@@ -99,10 +99,132 @@ add_shared_param!(m, :y, fill(1, 5, 3), dims = [:time, :regions])
 @test_throws ErrorException connect_param!(m, :A, :p7, :y) # wrong dimensions, flipped around
 
 #
-# Section 2. update_leftover_params!
+# Section 2. update_leftover_params! and set_leftover_params!
 #
 
-# TODO
+@defcomp A begin
+
+    p1 = Parameter{Symbol}()
+    p2 = Parameter(default = 100)
+    p3 = Parameter()
+
+    function run_timestep(p,v,d,t)
+    end
+end
+
+@defcomp B begin
+
+    p1 = Parameter{Symbol}()
+    p2 = Parameter()
+    p3 = Parameter()
+    p4 = Parameter()
+    function run_timestep(p,v,d,t)
+    end
+end
+
+function _get_model()
+    m = Model()
+    set_dimension!(m, :time, 1:5);
+    add_comp!(m, A)
+    add_comp!(m, B)
+    return m
+end
+
+#
+# set_leftover_params!
+#
+
+m = _get_model()
+
+# wrong type (p1 must be a Symbol)
+m = _get_model()
+parameters = Dict("p1" => 1, "p2" => 2, "p3" => 3, "p4" => 4)
+fail_expr1 = :(set_leftover_params!(m, parameters))
+err1 = try eval(fail_expr1) catch err err end 
+@test occursin("Cannot `convert`", sprint(showerror, err1))
+
+# missing entry (missing p4)
+m = _get_model()
+parameters = Dict("p1" => :foo, "p2" => 2, "p3" => 3)
+fail_expr2 = :(set_leftover_params!(m, parameters))
+err2 = try eval(fail_expr2) catch err err end 
+@test occursin("not found in provided dictionary", sprint(showerror, err2))
+
+# successful calls
+m = _get_model()
+parameters = Dict(:p1 => :foo, "p2" => 2, :p3 => 3, "p4" => 4) # keys can be Symbols or Strings
+set_leftover_params!(m, parameters)
+run(m)
+@test m[:A, :p1] == m[:B, :p1] == :foo
+@test model_param(m, :p1).is_shared
+
+@test m[:A, :p2] == 100 # remained default value
+@test !model_param(m, :A, :p2).is_shared # remains its default so is not shared
+
+@test m[:B, :p2] == 2 # took on shared value
+@test model_param(m, :p2).is_shared
+
+@test m[:A, :p3] == m[:B, :p3] == 3
+@test model_param(m, :p3).is_shared
+
+@test m[:B, :p4] == 4
+@test model_param(m, :p4).is_shared
+
+
+#
+# update_leftover_params!
+#
+
+# wrong type (p1 must be a Symbol)
+m = _get_model()
+parameters = Dict(  (:A, :p1) => 1, (:B, :p1) => 10, 
+                    (:B, :p2) => 20, 
+                    (:A, :p3) => 3, (:B, :p3) => 30,
+                    (:A, :p4) => 4, (:B, :p4) => 40
+                ) 
+fail_expr3 = :(update_leftover_params!(m, parameters))
+err3 = try eval(fail_expr3) catch err err end 
+@test occursin("Cannot `convert`", sprint(showerror, err3))
+
+# missing entry (missing B's p4)
+m = _get_model()
+parameters = Dict(  (:A, :p1) => :foo, (:B, :p1) => :bar, 
+                    (:B, :p2) => 20, 
+                    (:A, :p3) => 3, (:B, :p3) => 30,
+                    (:A, :p4) => 4
+                )
+fail_expr4 = :(update_leftover_params!(m, parameters))
+err4 = try eval(fail_expr4) catch err err end 
+@test occursin("not found in provided dictionary", sprint(showerror, err4))
+
+# successful calls
+m = _get_model()
+parameters = Dict(  (:A, :p1) => :foo, (:B, "p1") => :bar, 
+                    (:B, :p2) => 20, 
+                    (:A, :p3) => 3, (:B, :p3) => 30,
+                    (:A, "p4") => 4, (:B, :p4) => 40
+                ) 
+update_leftover_params!(m, parameters)
+run(m)
+@test m[:A, :p1] == :foo && m[:B, :p1] == :bar
+@test !model_param(m, :A, :p1).is_shared && !model_param(m, :B, :p1).is_shared
+@test isnothing(model_param(m, :p1, missing_ok = true)) # no shared model parameter created
+
+@test m[:A, :p2] == 100 # remained default value
+@test !model_param(m, :A, :p2).is_shared # remains its default so is not shared
+
+@test m[:B, :p2] == 20 # took on shared value
+@test !model_param(m, :B, :p2).is_shared
+
+@test isnothing(model_param(m, :p2, missing_ok = true)) # no shared model parameter created
+
+@test m[:A, :p3] == 3 && m[:B, :p3] == 30
+@test !model_param(m, :A, :p3).is_shared && !model_param(m, :B, :p3).is_shared
+@test isnothing(model_param(m, :p3, missing_ok = true)) # no shared model parameter created
+
+@test m[:B, :p4] == 40
+@test !model_param(m, :B, :p4).is_shared
+@test isnothing(model_param(m, :p4, missing_ok = true)) # no shared model parameter created
 
 #
 # Section 3. update_params!

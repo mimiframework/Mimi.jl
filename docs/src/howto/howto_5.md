@@ -148,9 +148,18 @@ As you see in the error message, if you want to override this error, you can use
 ```julia
 connect_param!(m, :B, :p2, :shared_param, ignoreunits=true)
 ```
-#### Setting Parameters with a Dictionary with `update_leftover_params!`
+#### Batch Update Unset Parameters with a Dictionary with `update_leftover_params!`
 
-[TODO]
+It may be helpful to use a dictionary to batch update all parameters in a model `m` that have not been explicitly updated, and thus still hold the a unusable value sentinal `nothing` from intialization.  In some cases, users may create this dictionary from exogenous `csv` files for ease of use.  The [`update_leftover_params!`](@ref) updates the values of the sentinal `nothing` model parameters by searching for its `(component_name, parameter_name)` pair in the provided dictionary with entries `k => v`, where `k` is a Tuple of Strings or Symbols `(component_name, parameter_name)`.  The signature for this function is
+```
+update_leftover_params!(m::Model, parameters::Dict)
+```
+For example, given a model `m` with with component `A`'s parameters `p1` and `p2` which have not been updated from `nothing`, along with component `B`'s parameter `p1` that has not been updated.  In this case the following will update those parameters and make the model runnable:
+```
+parameters = Dict((:A, :p1) => 1, (:A, :p2) => :foo, (:B, :p1) => 100)
+update_leftover_params!(m, parameeters)
+```
+Note that your dictionary `parameters` **must include all leftover parameters that need to be set**, not just a subset of them, or it will error when it cannot find a desired key.
 
 #### Batch Updating Parameters with `update_params!`
 

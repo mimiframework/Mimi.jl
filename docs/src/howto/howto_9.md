@@ -150,7 +150,16 @@ Current calls to [`update_params!`](@ref) will still work as long as the keys ar
 
 ### `update_leftover_params!`
 
-[TODO]
+*The Mimi Change*
+
+Previously, one could batch set all unset parameters in a model using a `Dict` and the function [`set_leftover_params!`](@ref), which you passed a model `m` and a dictionary `parameters` with entries `k => v` where the key `k` was a Symbol or String matching the name of a shared model parameter and `v` the desired value.  This will still work, and will always create a new shared model parameter for each key.
+
+We have added a new function [`update_leftover_params!`](@ref) that does the same high-level operation, but updates the values of the already created unshared model parameters for each provided key entry `k => v`, where `k` is a Tuple of Strings or Symbols `(component_name, parameter_name)`. This avoids creation of undesired shared model parameters, and the connection of more than one component-parameter pair to the same shared model parameter without explicit direction from the user.
+
+*The User Change*
+
+We recommend moving to use of `update_leftover_params!` by changing your dictionary keys to be `(component_name, parameter_name)`.  If previous calls to `set_leftover_params!` created shared model parameters with multiple connected component-parameter pairs **and you want to maintain this behavior**, you should do this explicitly with the aforementioned combination of `add_shared_param!` and a series of calls to `connect_param!`.
+
 
 ### Monte Carlo Simulations with `@defsim`
 

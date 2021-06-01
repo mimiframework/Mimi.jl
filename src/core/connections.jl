@@ -455,14 +455,48 @@ function unconnected_params(obj::AbstractCompositeComponentDef)
 end
 
 """
-    update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
+    update_leftover_params!(md::ModelDef, parameters::Dict)
 
 Update all of the parameters in `ModelDef` `md` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are strings that match the names of unset parameters in the model,
-and all resulting new model parameters will be shared parameters.
+the dictionary keys are Tuples of Symbols (or convertible to Symbols ie. Strings) 
+of (comp_name, param_name) that match the component-parameter pair of 
+unset parameters in the model.  All resulting connected model parameters will be 
+unshared model parameters.
 """
-function update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
+function update_leftover_params!(md::ModelDef, parameters)
+    parameters = Dict(Symbol.(k) => v for (k, v) in parameters)
+    for param_ref in nothing_params(md)
+
+        param_name = param_ref.datum_name
+        comp_name = param_ref.comp_name
+        key = (comp_name, param_name)
+        if haskey(parameters, key)
+            value = parameters[key]
+            update_param!(md, comp_name, param_name, value)
+        else
+            error("Cannot set parameter (:$comp_name, :$param_name), not found in provided dictionary.")
+        end
+    end
+    nothing
+end
+
+"""
+    set_leftover_params!(md::ModelDef, parameters::Dict)
+
+Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are Symbols (or convertible into Symbols ie. Strings) that 
+match the names of unset parameters in the model. All resulting connected model 
+parameters will be shared model parameters.
+
+Note that this function `set_leftover_params! has been deprecated, and uses should
+be transitioned to using `update_leftover_params!` with keys specific to component-parameter 
+pairs i.e. (comp_name, param_name) => value in the dictionary.
+"""
+function set_leftover_params!(md::ModelDef, parameters::Dict) where T
+    # @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with keys specific to component, parameter pairs i.e. (comp_name, param_name) => value in the dictionary.")
+    parameters = Dict(Symbol.(k) => v for (k, v) in parameters)
     for param_ref in nothing_params(md)
 
         param_name = param_ref.datum_name
@@ -473,8 +507,8 @@ function update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
 
         # check whether we need to add the model parameter to the ModelDef
         if isnothing(model_param(md, param_name, missing_ok=true))
-            if haskey(parameters, string(param_name))  
-                value = parameters[string(param_name)]
+            if haskey(parameters, param_name)  
+                value = parameters[param_name]
                 param = create_model_param(md, param_def, value; is_shared = true)
                 add_model_param!(md, param_name, param)
             else
@@ -484,22 +518,6 @@ function update_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
         connect_param!(md, comp_name, param_name, param_name)
     end
     nothing
-end
-
-"""
-    set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-
-Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
-to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are strings that match the names of unset parameters in the model,
-and all resulting new model parameters will be shared parameters.
-
-This function has been deprecated for use of `use_leftover_params!` with the same
-arguments.
-"""
-function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-    # @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with the same arguments."
-    update_leftover_params!(md, parameters)
 end
 """
     internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
@@ -977,12 +995,12 @@ matching the name of a shared model parameter that already exists in the model.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
     !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
-    
+    parameters = Dict(Symbol.(k) => v for (k, v) in parameters)
     for (k, v) in parameters
         if k isa Tuple
             model_param_name = get_model_param_name(obj, first(k), last(k))
         else
-            model_param_name = Symbol(k)
+            model_param_name = k
         end 
         _update_param!(obj, model_param_name, v)
     end

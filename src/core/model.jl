@@ -158,31 +158,33 @@ Add internal parameter connection `conn` to model `m`.
 """
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
 
-
-# @delegate doesn't handle the 'where T' currently. This is the only instance of it for now...
 """
     set_leftover_params!(m::Model, parameters::Dict)
 
-Set all of the parameters in model `m` that don't have a value and are not connected
+Set all of the parameters in `Model` `m` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are strings that match the names of unset parameters in the model,
-and all resulting new model parameters will be shared parameters.
+the dictionary keys are strings (or convertible into Strings ie. Symbols) that 
+match the names of unset parameters in the model, and all resulting new model 
+parameters will be shared parameters.
+
+Note that this function `set_leftover_params! has been deprecated, and uses should
+be transitioned to using `update_leftover_params!` with keys specific to component-parameter 
+pairs i.e. (comp_name, param_name) => value in the dictionary.
 """
-function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
-    set_leftover_params!(m.md, parameters)
-end
+@delegate set_leftover_params!(m::Model, parameters) => md
 
 """
     update_leftover_params!(m::Model, parameters::Dict)
 
-Set all of the parameters in model `m` that don't have a value and are not connected
+Update all of the parameters in `Model` `m` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are strings that match the names of unset parameters in the model,
-and all resulting new model parameters will be shared parameters.
+the dictionary keys are Tuples of Symbols (or convertible to Symbols ie. Strings) 
+of (comp_name, param_name) that match the component-parameter pair of 
+unset parameters in the model.  All resulting connected model parameters will be 
+unshared model parameters.
 """
-function update_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
-    update_leftover_params!(m.md, parameters)
-end
+@delegate update_leftover_params!(m::Model, parameters) => md
+
 
 """
     update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
