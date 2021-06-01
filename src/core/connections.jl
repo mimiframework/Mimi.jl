@@ -165,7 +165,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractCo
         
         param_units = parameter_unit(comp_def, param_name)
         units_match = true
-        errorstring = string("Units of $(nameof(compdef)):$param_name ($param_units) do not match ", 
+        errorstring = string("Units of $(nameof(comp_def)):$param_name ($param_units) do not match ", 
                         "the following other parameters connected to the same shared ",
                         "model parameter $model_param_name.  To override this error and connect anyways, ",
                         "set the `ignoreunits` flag to true: `connect_param!(m, comp_def, param_name, ",
