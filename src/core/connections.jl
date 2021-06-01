@@ -65,7 +65,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     t1 = eltype(mod_param.values)
     t2 = eltype(param_def.datatype)
     if !(t1 <: Union{Missing, t2})
-        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) ($t1), Parameter: $param_name ($t2)")
+        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) Parameter: $param_name ($t1) to Model Parameter ($t2).")
     end
 
     comp_dims  = dim_names(param_def)
@@ -74,7 +74,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
     if ! isempty(param_dims) && size(param_dims) != size(comp_dims)
         d1 = size(comp_dims)
         d2 = size(param_dims)
-        error("Mismatched dimensions of parameter connection: Component: $(comp_def.comp_id) ($d1), Parameter: $param_name ($d2)")
+        error("Mismatched dimensions of parameter connection: Component: $(comp_def.comp_id) Parameter: $param_name ($d1) to Model Parameter ($d2).")
     end
 
     # Don't check sizes for ConnectorComps since they won't match.
@@ -89,7 +89,7 @@ function _check_labels(obj::AbstractCompositeComponentDef,
             param_length = size(mod_param.values)[i]
             comp_length = dim_count(obj, dim)
             if param_length != comp_length
-                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id) has $comp_length elements; model parameter :$param_name has $param_length elements.")
+                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id)'s parameter $param_name has $comp_length elements; model parameter has $param_length elements.")
             end
         end
     end
@@ -108,24 +108,14 @@ function _check_labels(obj::AbstractCompositeComponentDef,
                         comp_def::AbstractComponentDef, param_name::Symbol, 
                         mod_param::ScalarModelParameter)
 
-    # check datatype conversion
-    parameter_datatype = parameter(comp_def, param_name).datatype
-    model_parameter_dataype = typeof(mod_param.value)
+    param_def = parameter(comp_def, param_name)
+    t1 = typeof(mod_param.value)
+    t2 = param_def.datatype
 
-    # if the parameter_datatype is Number (the default), we just need our value
-    # to be a subtype of Number
-    if parameter_datatype == Number && !(model_parameter_dataype <: Number)
-        error("Cannot connect $(nameof(compdef)):$param_name, with datatype $parameter_datatype, ", 
-        "to shared model parameter $(nameof(model_param)) with datatype $model_parameter_dataype ",
-        "because of $model_parameter_dataype is not a subtype of $parameter_datatype.")
-    
-    # if the parameter_datatype is not Number, it was specified exactly and needs
-    # an error
-    elseif parameter_datatype !== Number && parameter_datatype!== (typeof(mod_param.value))
-        error("Cannot connect $(nameof(compdef)):$param_name, with datatype $parameter_datatype, " ,
-        "to shared model parameter $(nameof(model_param)) with datatype $model_parameter_dataype because ",
-        "the two types should match.")
+    if !(t1 <: Union{Missing, Nothing, t2})
+        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) Parameter: $param_name ($t1) to Model Parameter with type ($t2).")
     end
+
 end
 
 """
@@ -503,9 +493,12 @@ Set all of the parameters in `ModelDef` `md` that don't have a value and are not
 to some other component to a value from a dictionary `parameters`. This method assumes
 the dictionary keys are strings that match the names of unset parameters in the model,
 and all resulting new model parameters will be shared parameters.
+
+This function has been deprecated for use of `use_leftover_params!` with the same
+arguments.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict{T, Any}) where T
-    @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with the same arguments."
+    # @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with the same arguments."
     update_leftover_params!(md, parameters)
 end
 """

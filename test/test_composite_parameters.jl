@@ -168,7 +168,7 @@ m1 = get_model()
 add_shared_param!(m1, :p1, 5)
 connect_param!(m1, :A, :p1, :p1) # no conflict
 err9 = try connect_param!(m1, :B, :p1, :p1) catch err err end
-@test occursin("Units of compdef:p1 (thous \$) do not match the following", sprint(showerror, err9))
+@test occursin("Units of B:p1 (thous \$) do not match the following", sprint(showerror, err9))
 
 # use ignoreunits flag
 connect_param!(m1, :B, :p1, :p1, ignoreunits=true)    

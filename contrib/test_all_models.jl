@@ -10,25 +10,25 @@
 #   julia --color=yes test_all_models.jl
 #
 
-packages_to_test = [
-    "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "df"), # note here we use the df branch 
-    "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "df"), # note here we use the df branch 
-    "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
-    ## "MimiDICE2016R2" => ("https://github.com/AlexandrePavlov/MimiDICE2016R2.jl", "master"), # doesn't pass in repo, just look for new failures
-    "MimiRICE2010" => ("https://github.com/anthofflab/MimiRICE2010.jl", "master"), 
-    "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "mcs"), # note here we use the mcs branch 
-    "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "mcs"), # note here we use the mcs branch 
-    "MimiPAGE2020" => ("https://github.com/lrennels/MimiPAGE2020.jl", "mcs"), # note using lrennels fork mcs branch, and testing this takes a LONG time :) 
-    "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
-    "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
-    "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
-    "MimiHector" => ("https://github.com/anthofflab/MimiHector.jl", "master"),
-]
+# packages_to_test = [
+#     "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "df"), # note here we use the df branch 
+#     "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "df"), # note here we use the df branch 
+#     "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
+#     ## "MimiDICE2016R2" => ("https://github.com/AlexandrePavlov/MimiDICE2016R2.jl", "master"), # doesn't pass in repo, just look for new failures
+#     "MimiRICE2010" => ("https://github.com/anthofflab/MimiRICE2010.jl", "master"), 
+#     "MimiFUND" => ("https://github.com/fund-model/MimiFUND.jl", "mcs"), # note here we use the mcs branch 
+#     "MimiPAGE2009" => ("https://github.com/anthofflab/MimiPAGE2009.jl", "mcs"), # note here we use the mcs branch 
+#     "MimiPAGE2020" => ("https://github.com/lrennels/MimiPAGE2020.jl", "mcs"), # note using lrennels fork mcs branch, and testing this takes a LONG time :) 
+#     "MimiSNEASY" => ("https://github.com/anthofflab/MimiSNEASY.jl", "master"),
+#     "MimiFAIR" => ("https://github.com/anthofflab/MimiFAIR.jl", "master"),
+#     "MimiMAGICC" => ("https://github.com/anthofflab/MimiMAGICC.jl", "master"),
+#     "MimiHector" => ("https://github.com/anthofflab/MimiHector.jl", "master"),
+# ]
 
 # test separately because needs MimiFUND 3.8.6
-# packages_to_test = [
-#    "MimiIWG" => ("https://github.com/rffscghg/MimiIWG.jl", "mcs") # note here we use the mcs branch
-# ]
+packages_to_test = [
+   "MimiIWG" => ("https://github.com/rffscghg/MimiIWG.jl", "mcs") # note here we use the mcs branch
+]
 
 using Pkg
 
