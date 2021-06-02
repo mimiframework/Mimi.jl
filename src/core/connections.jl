@@ -50,31 +50,37 @@ end
 verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
 """
-    _check_labels(obj::AbstractCompositeComponentDef,
+    _check_attributes(obj::AbstractCompositeComponentDef,
                 comp_def::AbstractComponentDef, param_name::Symbol, 
                 mod_param::ArrayModelParameter)
 
-Check that the labels of the ArrayModelParameter `mod_param` match the labels
+Check that the attributes of the ArrayModelParameter `mod_param` match the attributes
 of the model parameter `param_name` in component `comp_def` of object `obj`, 
 including datatype and dimensions. 
 """
-function _check_labels(obj::AbstractCompositeComponentDef,
+function _check_attributes(obj::AbstractCompositeComponentDef,
                        comp_def::AbstractComponentDef, param_name::Symbol, mod_param::ArrayModelParameter)
+
+    is_nothing_param(mod_param) && return 
+
     param_def = parameter(comp_def, param_name)
 
     t1 = eltype(mod_param.values)
     t2 = eltype(param_def.datatype)
     if !(t1 <: Union{Missing, t2})
-        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) Parameter: $param_name ($t1) to Model Parameter ($t2).")
+        error("Mismatched datatype of parameter connection: Component: $(nameof(comp_def)) ",
+        "Parameter: $param_name ($t2) to Model Parameter ($t1). If you are using ",
+        "`add_shared_param!` try using the `data_type` keyword argument to specifiy ",
+        "data_type = $(eltype(param_def.datatype))")
     end
 
-    comp_dims  = dim_names(param_def)
-    param_dims = dim_names(mod_param)
+    param_dims = dim_names(param_def)
+    model_dims = dim_names(mod_param)
 
-    if ! isempty(param_dims) && size(param_dims) != size(comp_dims)
-        d1 = size(comp_dims)
+    if ! isempty(param_dims) && size(param_dims) != size(model_dims)
+        d1 = size(model_dims)
         d2 = size(param_dims)
-        error("Mismatched dimensions of parameter connection: Component: $(comp_def.comp_id) Parameter: $param_name ($d1) to Model Parameter ($d2).")
+        error("Mismatched dimensions of parameter connection: Component: $(nameof(comp_def)) Parameter: $param_name ($d2) to Model Parameter ($d1)")
     end
 
     # Don't check sizes for ConnectorComps since they won't match.
@@ -84,96 +90,102 @@ function _check_labels(obj::AbstractCompositeComponentDef,
 
     # index_values = indexvalues(obj)
 
-    for (i, dim) in enumerate(comp_dims)
+    for (i, dim) in enumerate(param_dims)
         if isa(dim, Symbol)
             param_length = size(mod_param.values)[i]
             comp_length = dim_count(obj, dim)
             if param_length != comp_length
-                error("Mismatched data size for a parameter connection: dimension :$dim in $(comp_def.comp_id)'s parameter $param_name has $comp_length elements; model parameter has $param_length elements.")
+                error("Mismatched data size for a parameter connection: dimension :$dim in $(nameof(comp_def))'s parameter $param_name has $comp_length elements; model parameter has $param_length elements")
             end
         end
     end
 end
 
 """
-    _check_labels(obj::AbstractCompositeComponentDef,
+    _check_attributes(obj::AbstractCompositeComponentDef,
                 comp_def::AbstractComponentDef, param_name::Symbol, 
                 mod_param::ScalarModelParameter)
 
-Check that the labels of the ScalarModelParameter `mod_param` match the labels
+Check that the attributes of the ScalarModelParameter `mod_param` match the attributes
 of the model parameter `param_name` in component `comp_def` of object `obj`, 
 including datatype. 
 """
-function _check_labels(obj::AbstractCompositeComponentDef,
+function _check_attributes(obj::AbstractCompositeComponentDef,
                         comp_def::AbstractComponentDef, param_name::Symbol, 
                         mod_param::ScalarModelParameter)
+    
+                        is_nothing_param(mod_param) && return 
 
     param_def = parameter(comp_def, param_name)
     t1 = typeof(mod_param.value)
     t2 = param_def.datatype
 
-    if !(t1 <: Union{Missing, Nothing, t2})
-        error("Mismatched datatype of parameter connection: Component: $(comp_def.comp_id) Parameter: $param_name ($t1) to Model Parameter with type ($t2).")
+    if !(t1 <: Union{Missing, t2})
+        error("Mismatched datatype of parameter connection: Component: $(nameof(comp_def)) ",
+        "Parameter: $param_name ($t2) to Model Parameter with type ($t1). If you are using ",
+        "`add_shared_param`! try using the `data_type` keyword argument to specifiy ",
+        "data_type = $(param_def.datatype).")
     end
 
 end
 
 """
     connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
-                   check_labels::Bool=true, ignoreunits::Bool=false))
+                   check_attributes::Bool=true, ignoreunits::Bool=false))
 
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
 the model parameter `model_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_name::Symbol,
                         param_name::Symbol, model_param_name::Symbol;
-                        check_labels::Bool=true, ignoreunits::Bool = false)
+                        check_attributes::Bool=true, ignoreunits::Bool = false)
     comp_def = compdef(obj, comp_name)
-    connect_param!(obj, comp_def, param_name, model_param_name, check_labels=check_labels, ignoreunits = ignoreunits)
+    connect_param!(obj, comp_def, param_name, model_param_name, check_attributes=check_attributes, ignoreunits = ignoreunits)
 end
 
 """
     connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                    param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true,
+                    param_name::Symbol, model_param_name::Symbol; check_attributes::Bool=true,
                     ignoreunits::Bool = false)
 
 Connect a parameter `param_name` in the component `comp_def` of composite `obj` to
 the model parameter `model_param_name`.
 """
 function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
-                        param_name::Symbol, model_param_name::Symbol; check_labels::Bool=true,
+                        param_name::Symbol, model_param_name::Symbol; check_attributes::Bool=true,
                         ignoreunits::Bool = false)
     
     mod_param = model_param(obj, model_param_name)
 
-    # check the labels 
-    if check_labels && !is_nothing_param(mod_param)
-        _check_labels(obj, comp_def, param_name, mod_param)
-    end
+    # check the attributes between the shared model parameter and the component parameter
+    check_attributes && _check_attributes(obj, comp_def, param_name, mod_param)
 
-    if is_shared(mod_param) && !ignoreunits
-        
-        param_units = parameter_unit(comp_def, param_name)
-        units_match = true
-        errorstring = string("Units of $(nameof(comp_def)):$param_name ($param_units) do not match ", 
-                        "the following other parameters connected to the same shared ",
-                        "model parameter $model_param_name.  To override this error and connect anyways, ",
-                        "set the `ignoreunits` flag to true: `connect_param!(m, comp_def, param_name, ",
-                        "model_param_name; ignoreunits = true)`. MISMATCHES OCCUR WITH: ")
+    # check for collisions 
+    if is_shared(mod_param)
+        conns = filter(i -> i.model_param_name == model_param_name, external_param_conns(obj))
+        if !(isempty(conns)) # need to check collisions
+            pairs = [compdef(obj, conn.comp_path) => conn.param_name for conn in conns]
+            push!(pairs, comp_def => param_name)
 
-        for conn in filter(i -> i.model_param_name == model_param_name, external_param_conns(obj))
-            conn_comp_def = compdef(obj, conn.comp_path)
-            conn_comp_name = nameof(conn_comp_def)
-            conn_param_name = conn.param_name
-            conn_units =  parameter_unit(conn_comp_def, conn_param_name)
+            # which fields to check for collisions in subcomponents
+            fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)
+            collisions = _find_collisions(fields, Vector(pairs))
             
-            if ! verify_units(param_units, conn_units)
-                units_match = false
-                errorstring = string(errorstring, "[$conn_comp_name:$conn_param_name with units $conn_units]  ")
+            if ! isempty(collisions) 
+                if :unit in collisions
+                    error("Cannot connect $(nameof(comp_def)):$(param_name) to shared model ",
+                            "parameter $model_param_name, it has a conflicting ",
+                            ":unit value ($(parameter_unit(comp_def, param_name))) with ",
+                            "other parameters connected to this shared model parameter. To ignore ",
+                            "this set the `ignoreunits` flag in `connect_param!` to false.")
+                else
+                    spec = join(collisions, " and ")
+                    error("Cannot connect $(nameof(comp_def)):$(param_name) to shared model parameter ",
+                        "$model_param_name, it has conflicting values for the $spec of other ",
+                        "parameters connected to this shared model parameter.") 
+                end
             end
         end
-
-        units_match || error(errorstring)
     end
 
     disconnect_param!(obj, comp_def, param_name)    # calls dirty!()
@@ -260,8 +272,8 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
         end
 
-        # NB: potentially unsafe way to add parameter, advise using create_model_param!
-        # and add_model_param! combo if possible ... but would need a specific ParameterDef
+        # NB: potentially unsafe way to add parameter/might be duplicating work so
+        # advise shifting to create_model_param!
         add_model_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
 
@@ -512,7 +524,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict) where T
                 param = create_model_param(md, param_def, value; is_shared = true)
                 add_model_param!(md, param_name, param)
             else
-                error("Cannot set parameter :$param_name, not found in provided dictionary.")
+                error("Cannot set shared model parameter :$param_name, not found in provided dictionary.")
             end
         end
         connect_param!(md, comp_name, param_name, param_name)
@@ -667,7 +679,7 @@ an is_shared attribute `is_shared` which defaults to false.
 
 WARNING: this has been mostly replaced by combining create_model_param with add_model_param
 method using the paramdef ... certain checks are not done here ... should be careful 
-using it and only do so under the hood?
+using it and only do so under the hood.
 """
 function add_model_param!(md::ModelDef, name::Symbol, value::Number;
                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
@@ -866,7 +878,7 @@ Update the `value` of the model parameter `name` in Model Def `md`.
 function _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
     param = model_param(obj, name, missing_ok=true)
     if param === nothing
-        error("Cannot update parameter; $name not found in composite's model parameters.")
+        error("Cannot update parameter $name; $name not found in composite's model parameters.")
     end
 
     # handle nothing params
@@ -938,8 +950,9 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             T = eltype(value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            # NB: potentially unsafe way to add parameter, advise using create_model_param!
-            # and add_model_param! combo if possible ... but would need a specific ParameterDef
+            # NB: potentially unsafe way to add parameter/might be duplicating work so
+            # advise shifting to create_model_param! ... but here we are updating
+            # a ParameterDef instead of creating one
             add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else
             copyto!(param.values.data, value)
@@ -972,9 +985,7 @@ function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol
     
     # Need to check the dimensions of the parameter data against component 
     # before adding it to the model's parameter list
-    if !is_nothing_param(param) # shouldn't be a nothing param since we're updating to non-nothing!
-        _check_labels(obj, comp_def, param_name, param)
-    end
+    _check_attributes(obj, comp_def, param_name, param)
     
     # add the unshared model parameter to the model def, which will replace the
     # old one and thus keep the connection in tact
@@ -1188,40 +1199,75 @@ an empty vector.  The `is_shared` attribute of the added Model Parameter will be
 
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
-model's index labels.  This must be included if the `value` is not a scalar, and defaults
-to an empty vector.
+model's index labels. Optional keyword argument `datatype` allows user to specify a datatype
+to use for the shared model parameter.
 """
-function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
+function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing)
     
-    # check to make sure the parameter doesn't already exist
+    # Check provided name: make sure shared model parameter name does not exist already
     has_parameter(md, name) && error("Cannot add parameter :$name, the model already has a shared parameter with this name.")
 
-    # make sure all parameter dims are in model and have the appropriate number of elements
-    if value isa NamedArray
+    # Check provided dims: 
+    #   (1) handle NamedArray
+    #   (2) make sure provided dims names exist in the model
+    #   (3) make sure number of provided dims matches value
+
+    if value isa NamedArray 
+        !isempty(dims) && dims !== dimnames(value) && @warn "Provided dims are $dims, provided NamedArray value has dims $(dimnames(value)), will use value dims $(dimnames(value))."
         dims = dimnames(value)
     end
-
+    
     for dim in dims
         isa(dim, Symbol) && !has_dim(md, dim) && error("Model doesn't have dimension :$dim indicated in the dims of added shared parameter, $dims.")
     end
 
     if value isa AbstractArray && ndims(value) != length(dims)
         error("Please provide $(ndims(value)) dimension names for value, $(length(dims))",
-        " were given but value is $value. This is done with the `dims` keyword argument ",
+        " were given but provided value has $(ndims(value)). This is done with the `dims` keyword argument ",
         " ie. : `add_shared_param!(md, name, value; dims = [:time])")
     end
     
-    # create shared model parameter with a ParameterDef, which takes advantage of
-    # the checks and parameterization etc. in `check_model_param`
-    data_type = value isa AbstractArray ? eltype(value) : typeof(value)
-    data_type = data_type <: Number ? Number : data_type # raise any Number type to Number to avoid small errors
-    param_def = ParameterDef(name, nothing, data_type, dims, "", "", nothing)
-    param = create_model_param(md, param_def, value; is_shared = true)
-    
-    # check dimensions
-    model_dims = dim_names(md) 
-    param_dims = dim_names(param_def)
+    # get the data type to use to create ParameterDef
+    value_data_type = value isa AbstractArray ? eltype(value) : typeof(value)
 
+    if data_type == Nothing # if a data_type is not provided get it from `value`
+        data_type = value_data_type
+
+        # if it is not a DataType, try manually converting first ...
+        !(data_type isa DataType) && try convert(DataType, data_type) catch; end 
+        # if it is still not a DataType, try converting it to the model's datatype
+        !(data_type isa DataType) && try convert(Number, value) catch ; end
+        data_type = eltype(value)
+        # if it still isn't a datatype, then just go with Any
+        if !(data_type isa DataType)
+            data_type = Any 
+        end
+        # raise to Number to lower the constraints
+        if data_type <: Number
+            data_type = Number
+        end
+
+    else # otherwise check it against value to be sure and convert
+        if value_data_type != data_type
+            try value = convert.(data_type, value)
+            catch
+                if value isa AbstractArray
+                    error("Mismatched datatypes: elements of provided `value` have DataType $value_data_type and cannot be converted to provided `data_type` argument is $data_type.")
+                else
+                    error("Mismatched datatypes: provided `value` has DataType $value_data_type and cannot be converted to provided `data_type` argument is $data_type.")
+                end
+            end
+        end
+    end
+            
+    # create the ParameterDef
+    param_def = ParameterDef(name, nothing, data_type, dims, "", "", nothing)
+
+    # create the model parameter
+    param = create_model_param(md, param_def, value; is_shared = true)
+
+    # double check the dimensions between the model and the created parameter
+    param_dims = dim_names(param_def)
     for (i, dim) in enumerate(param_dims)
         if isa(dim, Symbol)
             param_length = size(param.values)[i]
@@ -1246,63 +1292,104 @@ is_shared defaults to false, and thus an unshared parameter would be created, wh
 setting `is_shared` to true creates a shared parameter.
 """
 function create_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
-    
+    if dim_count(param_def) > 0
+        return create_array_model_param(md, param_def, value; is_shared = is_shared)
+    else
+        return create_scalar_model_param(md, param_def, value; is_shared = is_shared)
+    end
+end
+
+"""
+    create_array_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+
+Create a new array model parameter to be added to Model Def `md` with specifications
+matching parameter definition `param_def` and with `value`.  The keyword argument
+is_shared defaults to false, and thus an unshared parameter would be created, whereas
+setting `is_shared` to true creates a shared parameter.
+"""
+function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+
     # gather info
     param_name = nameof(param_def)
-    param_dims = param_def.dim_names
-    num_dims = length(param_dims)
+    param_dims = dim_names(param_def)
+    num_dims = dim_count(param_def)
     data_type = param_def.datatype
+
+    # data type
     dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
 
     # create a sentinal unshared parameter
     if isnothing(value)
-        if num_dims > 0 
-            param = ArrayModelParameter(value, param_dims, is_shared)
-        else
-            param = ScalarModelParameter(value, is_shared)
+        param = ArrayModelParameter(value, param_dims, is_shared)
+    
+    # have a value - in the initiliazation of parameters case this is a default
+    # value set in defcomp
+    else
+              
+        # check dimensions
+        if value isa NamedArray
+            dims = dimnames(value)
+            dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
         end
+                
+        # convert the number type and, if NamedArray, convert to Array
+        if dtype <: AbstractArray
+            value = convert(dtype, value)
+        else
+            # check that number of dimensions matches
+            value_dims = length(size(value))
+            if num_dims != value_dims
+                error("Mismatched data size: dimension :$param_name",
+                    " in has $num_dims dimensions; indicated value",
+                    " has $value_dims dimensions.")
+            end
+            value = convert(Array{dtype, num_dims}, value)
+        end
+
+        # create TimestepArray if there is a time dim
+        ti = get_time_index_position(param_dims)
+        if ti !== nothing   # there is a time dimension
+            T = eltype(value)
+            values = get_timestep_array(md, T, num_dims, ti, value)            
+        else
+            values = value
+        end
+             
+        param = ArrayModelParameter(values, param_dims, is_shared)
+    end
+    return param
+end
+
+"""
+    create_scalar_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+
+Create a new scalar model parameter to be added to Model Def `md` with specifications
+matching parameter definition `param_def` and with `value`.  The keyword argument
+is_shared defaults to false, and thus an unshared parameter would be created, whereas
+setting `is_shared` to true creates a shared parameter.
+"""
+function create_scalar_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+
+    # gather info
+    param_name = nameof(param_def)
+    param_dims = dim_names(param_def)
+    num_dims = dim_count(param_def)
+    data_type = param_def.datatype
+
+    # get data type
+    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
+
+    # create a sentinal unshared parameter
+    if isnothing(value)
+        param = ScalarModelParameter(value, is_shared)
 
     # have a value - in the initiliazation of parameters case this is a default
     # value set in defcomp
     else
-        if num_dims > 0 # array parameter case
-                           
-            # check dimensions
-            if value isa NamedArray
-                dims = dimnames(value)
-                dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
-            end
-                
-            # convert the number type and, if NamedArray, convert to Array
-            if dtype <: AbstractArray
-                value = convert(dtype, value)
-            else
-                # check that number of dimensions matches
-                value_dims = length(size(value))
-                if num_dims != value_dims
-                    error("Mismatched data size: dimension :$param_name",
-                        " in has $num_dims dimensions; indicated value",
-                        " has $value_dims dimensions.")
-                end
-                value = convert(Array{dtype, num_dims}, value)
-            end
-
-            # create TimestepArray if there is a time dim
-            ti = get_time_index_position(param_dims)
-            if ti !== nothing   # there is a time dimension
-                T = eltype(value)
-                values = get_timestep_array(md, T, num_dims, ti, value)            
-            else
-                values = value
-            end
-             
-            param = ArrayModelParameter(values, param_dims, is_shared)
-
-        else # scalar parameter case
-            value = convert(dtype, value)
-            param = ScalarModelParameter(value, is_shared)
-        end
+        value = convert(dtype, value)
+        param = ScalarModelParameter(value, is_shared)
     end
+    
     return param
 end
 

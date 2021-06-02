@@ -86,7 +86,7 @@ this component will also be deleted.
 """
 function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
     if ! has_comp(md, comp_name)
-        error("Cannot delete '$comp_name': component does not exist.")
+        error("Cannot delete '$comp_name': component does not exist in model.")
     end
 
     comp_def = compdef(md, comp_name)
@@ -531,18 +531,21 @@ of the dimension names of the provided data, and will be used to check that they
 model's index labels.
 """
 function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
-    has_parameter(comp_def, param_name) ||
+    
+    # error if cannot find the parameter in the component
+    if !has_parameter(comp_def, param_name)
         error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
 
-    if has_parameter(md, model_param_name)
+    # error if the model_param_name is already found in the model
+    elseif has_parameter(md, model_param_name)
 
         error("Cannot set parameter :$model_param_name, the model already has a parameter with this name.",
-        " IF you wish to change the name of unshared parameter :$param_name connected to component :$(nameof(compdef))", 
+        " IF you wish to change the value of unshared parameter :$param_name connected to component :$(nameof(compdef))", 
         " use `update_param!(m, comp_name, param_name, value).", 
         " IF you wish to change the value of the existing shared parameter :$model_param_name, ",
         " use `update_param!(m, param_name, value)` to change the value of the shared parameter.",
         " IF you wish to create a new shared parameter connected to component :$(nameof(compdef)), use ",
-        "`create_shared_param` paired with `connect_param!`.")
+        "`add_shared_param` paired with `connect_param!`.")
     end
 
     set_param!(md, param_name, value, dims = dims, comps = [comp_def], model_param_name = model_param_name)
@@ -604,7 +607,7 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
     # Need to check the dimensions of the parameter data against each component 
     # before adding it to the model's model parameters
     for comp in comps
-        _check_labels(md, comp, param_name, param)
+        _check_attributes(md, comp, param_name, param)
     end
 
     # add the shared model parameter to the model def
@@ -615,9 +618,9 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
 
     # connect
     for comp in comps
-        # Set check_labels = false because we already checked above
+        # Set check_attributes = false because we already checked above
         # connect_param! calls dirty! so we don't have to
-        connect_param!(md, comp, param_name, model_param_name, check_labels = false, ignoreunits = ignoreunits)
+        connect_param!(md, comp, param_name, model_param_name, check_attributes = false, ignoreunits = ignoreunits)
     end
     nothing
 end
@@ -890,15 +893,13 @@ function _initialize_parameter!(md::ModelDef, comp_def::AbstractComponentDef, pa
     
     # Need to check the dimensions of the parameter data against component 
     # before adding it to the model's parameter list
-    if !is_nothing_param(param)
-        _check_labels(md, comp_def, param_name, param)
-    end
+    _check_attributes(md, comp_def, param_name, param)
     
     # add the unshared model parameter to the model def
     add_model_param!(md, model_param_name, param)
 
-    # connect - don't need to check labels since did it above
-    connect_param!(md, comp_def, param_name, model_param_name; check_labels = false)
+    # connect - don't need to check attributes since did it above
+    connect_param!(md, comp_def, param_name, model_param_name; check_attributes = false)
 
 end
 

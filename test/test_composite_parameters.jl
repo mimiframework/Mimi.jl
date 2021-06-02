@@ -121,7 +121,7 @@ err6 = try set_param!(m1, :p1, 5) catch err err end
 set_param!(m1, :p1, 5, ignoreunits=true)    
 
 err7 = try run(m1) catch err err end
-@test occursin("Cannot build model; the following parameters still have values of nothing and need to be updated or set:", sprint(showerror, err7))
+@test occursin("Cannot build model; the following parameters still have values of `nothing` and need to be updated:", sprint(showerror, err7))
 
 # Set separate values for p1 in A and B
 m2 = get_model()
@@ -168,13 +168,13 @@ m1 = get_model()
 add_shared_param!(m1, :p1, 5)
 connect_param!(m1, :A, :p1, :p1) # no conflict
 err9 = try connect_param!(m1, :B, :p1, :p1) catch err err end
-@test occursin("Units of B:p1 (thous \$) do not match the following", sprint(showerror, err9))
+@test occursin("Cannot connect B:p1 to shared model parameter", sprint(showerror, err9))
 
 # use ignoreunits flag
 connect_param!(m1, :B, :p1, :p1, ignoreunits=true)    
 
 err10 = try run(m1) catch err err end
-@test occursin("Cannot build model; the following parameters still have values of nothing and need to be updated or set:", sprint(showerror, err10))
+@test occursin("Cannot build model; the following parameters still have values of `nothing` and need to be updated:", sprint(showerror, err10))
 
 # Set separate values for p1 in A and B
 m2 = get_model()

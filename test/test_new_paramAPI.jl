@@ -28,7 +28,7 @@ function _get_model()
     return m
 end
 
-# DataType, Shared vs. Unshared 
+# General
 m = _get_model()
 
 @test_throws MethodError update_param!(m, :A, :p1, 3) # can't convert
@@ -97,6 +97,60 @@ add_shared_param!(m, :x, 1:5, dims = [:time])
 add_shared_param!(m, :y, fill(1, 5, 3), dims = [:time, :regions])
 
 @test_throws ErrorException connect_param!(m, :A, :p7, :y) # wrong dimensions, flipped around
+
+# DataTypes
+@defcomp A begin
+    pA1 = Parameter{Symbol}()   # type will by Symbol
+    pA2 = Parameter()           # type will be Number
+    function run_timestep(p,v,d,t)
+    end
+end
+
+@defcomp B begin
+    pB1 = Parameter{Number}()   # type will be Number
+    pB2 = Parameter{Int64}()    # type will be Int64
+    function run_timestep(p,v,d,t)
+    end
+end
+
+function _get_model()
+    m = Model()
+    set_dimension!(m, :time, 1:5);
+    add_comp!(m, A)
+    add_comp!(m, B)
+    return m
+end
+
+# no data_type argument in add_shared_param!
+m = _get_model() # number_type(m) == Float64
+add_shared_param!(m, :myparam, 5)
+@test model_param(m, :myparam) isa Mimi.ScalarModelParameter{Float64}
+
+exp = :(connect_param!(m, :A, :pA1, :myparam)) # pA1 should have a specified parameter type of Symbol and !(Float64 <: Symbol)
+myerr1 = try eval(exp) catch err err end 
+@test occursin("Mismatched datatype of parameter connection", sprint(showerror, myerr1))
+
+connect_param!(m, :A, :pA2, :myparam) # pA2 should have a specified parameter type of Number by default and Float64 <: Number
+connect_param!(m, :B, :pB1, :myparam) # pB1 should have a specified parameter type of Number and Float64 <: Number
+
+exp = :(connect_param!(m, :B, :pB2, :myparam)) # pA1 should have a specified parameter type of Symbol and !(Float64 <: Symbol)
+myerr2 = try eval(exp) catch err err end 
+@test occursin("Mismatched datatype of parameter connection", sprint(showerror, myerr2))
+
+# try data_type keyword argument
+m = _get_model() # number_type(m) == Float64
+
+exp = :(add_shared_param!(m, :myparam, :foo; data_type = Int64))
+myerr3 = try eval(exp) catch err err end 
+@test occursin("Mismatched datatypes:", sprint(showerror, myerr3))
+add_shared_param!(m, :myparam, 5; data_type = Int64)
+@test model_param(m, :myparam) isa Mimi.ScalarModelParameter{Int64}
+
+connect_param!(m, :B, :pB2, :myparam)
+
+exp = :(connect_param!(m, :A, :pA2, :myparam)) # can't connect this one it conflicts with :pB2
+myerr4 = try eval(exp) catch err err end 
+@test occursin("Cannot connect A:pA2 to shared model parameter myparam, it has conflicting values for the datatype of other parameters connected to this shared model parameter", sprint(showerror, myerr4))
 
 #
 # Section 2. update_leftover_params! and set_leftover_params!

@@ -409,7 +409,7 @@ function _build(md::ModelDef)
     nothingparams = nothing_params(md)
     if ! isempty(nothingparams)
         params = join([p.datum_name for p in nothingparams], "\n  ")
-        error("Cannot build model; the following parameters still have values of nothing and need to be updated or set:\n  $params")
+        error("Cannot build model; the following parameters still have values of `nothing` and need to be updated:\n  $params")
     end
 
     vdict = _instantiate_vars(md)

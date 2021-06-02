@@ -81,13 +81,13 @@ data for the second timestep and beyond.
 
 """
     connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
-                   check_labels::Bool=true, ignoreunits::Bool=false))
+                   check_attributes::Bool=true, ignoreunits::Bool=false))
 
 Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
 the model parameter `model_param_name`.
 """
 @delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
-                        check_labels::Bool=true, ignoreunits::Bool = false) => md
+                        check_attributes::Bool=true, ignoreunits::Bool = false) => md
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -440,7 +440,7 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
+    add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], datatype::DataType=Nothing)
 
 User-facing API function to add a shared parameter to Model `m` with name
 `name` and value `value`, and an array of dimension names `dims` which dfaults to 
@@ -449,9 +449,10 @@ an empty vector.  The `is_shared` attribute of the added Model Parameter will be
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.  This must be included if the `value` is not a scalar, and defaults
-to an empty vector.
+to an empty vector. Optional keyword argument `datatype` allows user to specify a datatype
+to use for the shared model parameter.
 """
-@delegate add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[]) => md
+@delegate add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing) => md
                     
 """
     add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)

@@ -74,7 +74,9 @@ connect_param!(m, :B, :p4, :shared_param)
 ```
 The shared model parameter can have any name, including the same name as one of the component parameters, without any namespace collision with those, although for clarity we suggest using a unique name.  
 
-Also note the `dims` argument above. When you add a shared model parameter that will be connected to non-scalar parameters like above, you need to specify the dimensions in a similar fashion to what is done in the [`@defcomp`](@ref) block so that appropriate allocation and checks can be made.  This is not necessary for parameters without (named) dimensions. Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize if you try to connect a parameter to a shared model parameter that does not have the right data size.  As above, checks on data types will also be performed.
+Note that there are two optional keyword arguments for `add_shared_param!`:
+- **dims::Vector{Symbol}**: When you add a shared model parameter that will be connected to non-scalar parameters like above, you need to specify the dimensions in a similar fashion to what is done in the [`@defcomp`](@ref) block so that appropriate allocation and checks can be made.  This is not necessary for parameters without (named) dimensions. Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize if you try to connect a parameter to a shared model parameter that does not have the right data size.  As above, checks on data types will also be performed.
+- **data_type::DataType**: In some more advanced cases, such as when you specifify a `DataType` for a specific Parameter, you may need to specify the `DataType` of your `value` (the element `DataType` if it is an array or value `DataType` if it is Scalar) to pass later checks when connecting parameter with constrained `DataType` specifications.
 
 **Case 3.:** In the third case we want to connect `B`'s `p5` to `A`'s `v1`, and we can do so with:
 ```julia
@@ -229,3 +231,6 @@ But you can also specify individual Parameters or Variables to have different da
 end
 ```
 If there are "index"s listed in the Parameter definition, then it will be an `ArrayModelParameter` whose `eltype` is the type specified in the curly brackets. If there are no "index"s listed, then the type specified in the curly brackets is the actual type of the parameter value, and it will be represent by Mimi as a `ScalarModelParameter`.
+
+If you use this functionality and then `connect_param!` these Parameters to model parameters, you may need to 
+use the `data_type` keyword argument to specifiy the desired `DataType` of your connected parameter.
