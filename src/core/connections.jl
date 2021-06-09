@@ -69,9 +69,10 @@ function _check_attributes(obj::AbstractCompositeComponentDef,
     t2 = eltype(param_def.datatype)
     if !(t1 <: Union{Missing, t2})
         error("Mismatched datatype of parameter connection: Component: $(nameof(comp_def)) ",
-        "Parameter: $param_name ($t2) to Model Parameter ($t1). If you are using ",
-        "`add_shared_param!` try using the `data_type` keyword argument to specifiy ",
-        "data_type = $(eltype(param_def.datatype))")
+        "Parameter: $param_name ($t2) to Model Parameter ($t1). Mimi requires that ",
+        "the model parameter type be a subtype of the component parameter type (Unioned with Missing for arrays) ",
+        "($t1 <: Union{Missing, $t2}) If you are using `add_shared_param!` try ",
+        "using the `data_type` keyword argument to specifiy data_type = $(eltype(param_def.datatype))")
     end
 
     param_dims = dim_names(param_def)
@@ -114,7 +115,7 @@ function _check_attributes(obj::AbstractCompositeComponentDef,
                         comp_def::AbstractComponentDef, param_name::Symbol, 
                         mod_param::ScalarModelParameter)
     
-                        is_nothing_param(mod_param) && return 
+    is_nothing_param(mod_param) && return 
 
     param_def = parameter(comp_def, param_name)
     t1 = typeof(mod_param.value)
@@ -168,7 +169,12 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractCo
             push!(pairs, comp_def => param_name)
 
             # which fields to check for collisions in subcomponents
-            fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)
+            # NB: we don't need the types of the parameters to connected to 
+            # exactly match, if they both satisfy _check_attributes above with the 
+            # model parameter that is good enough --> we take :datatype out of the
+            # fields list below
+            fields = ignoreunits ? [:dim_names] : [:dim_names, :unit]
+
             collisions = _find_collisions(fields, Vector(pairs))
             
             if ! isempty(collisions) 
@@ -273,7 +279,7 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
         end
 
         # NB: potentially unsafe way to add parameter/might be duplicating work so
-        # advise shifting to create_model_param!
+        # advise shifting to create_model_param ... but leaving it as is for now
         add_model_array_param!(obj, dst_par_name, values, dst_dims)
         backup_param_name = dst_par_name
 
@@ -951,8 +957,8 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             ti = get_time_index_position(param)
             new_timestep_array = get_timestep_array(obj, T, N, ti, value)
             # NB: potentially unsafe way to add parameter/might be duplicating work so
-            # advise shifting to create_model_param! ... but here we are updating
-            # a ParameterDef instead of creating one
+            # advise shifting to create_model_param ... but leaving it as is for now
+            # since this is a special case of replacing an existing model param
             add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else
             copyto!(param.values.data, value)
@@ -1227,40 +1233,17 @@ function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{S
         " ie. : `add_shared_param!(md, name, value; dims = [:time])")
     end
     
-    # get the data type to use to create ParameterDef
-    value_data_type = value isa AbstractArray ? eltype(value) : typeof(value)
-
-    if data_type == Nothing # if a data_type is not provided get it from `value`
-        data_type = value_data_type
-
-        # if it is not a DataType, try manually converting first ...
-        !(data_type isa DataType) && try convert(DataType, data_type) catch; end 
-        # if it is still not a DataType, try converting it to the model's datatype
-        !(data_type isa DataType) && try convert(Number, value) catch ; end
-        data_type = eltype(value)
-        # if it still isn't a datatype, then just go with Any
-        if !(data_type isa DataType)
-            data_type = Any 
-        end
-        # raise to Number to lower the constraints
-        if data_type <: Number
-            data_type = Number
-        end
-
-    else # otherwise check it against value to be sure and convert
-        if value_data_type != data_type
-            try value = convert.(data_type, value)
-            catch
-                if value isa AbstractArray
-                    error("Mismatched datatypes: elements of provided `value` have DataType $value_data_type and cannot be converted to provided `data_type` argument is $data_type.")
-                else
-                    error("Mismatched datatypes: provided `value` has DataType $value_data_type and cannot be converted to provided `data_type` argument is $data_type.")
-                end
-            end
-        end
-    end
+    # get the data type to use to create ParameterDef, which we either get from 
+    # the data_type argument and just check against provided data in `value`, or we 
+    # infer from the provided data in `value` with the caveat that any number
+    # type will be raised to number_type(md) for now (except Bools)
+    value, data_type = _resolve_datatype(md, value, data_type)
             
     # create the ParameterDef
+
+    # note here that this will take our `data_type` and provide some logic including
+    # if data_type == Number it will create a ParameterDef with datatype md.number_type
+    # which is also what we do above
     param_def = ParameterDef(name, nothing, data_type, dims, "", "", nothing)
 
     # create the model parameter
@@ -1281,6 +1264,86 @@ function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{S
     # add the shared model parameter to the model def
     add_model_param!(md, name, param)
     
+end
+
+# helper functions to return the data_type and (maybe converted) value to use
+# in creation of ParameterDef that will parameterize our new added shared model
+# parameter
+
+function _resolve_datatype(md::ModelDef, value::Any, data_type::DataType)
+    
+    # if a data_type is not provided get it from `value`
+    if data_type <: Nothing
+        value, data_type = _resolve_datatype_nothing(md, value, data_type)
+    
+    # otherwise check data_type against DataType of `value ``
+    else
+        value, data_type = _resolve_datatype_value(md, value, data_type)
+    end
+
+    return value, data_type
+end
+
+function _resolve_datatype_nothing(md::ModelDef, value::Any, data_type::DataType)
+
+    value_data_type = value isa AbstractArray ? eltype(value) : typeof(value)
+
+    # if it is not a DataType, try manually converting first ...
+    if !(value_data_type isa DataType)
+        try  value = convert(DataType, value_data_type)
+        catch; end
+    end
+
+    # if it is still not a DataType, try converting it to a Number and if 
+    # successful convert the values and update the data_type
+    if !(value_data_type isa DataType)
+        try value = convert.(Number, value)
+        catch; end
+        value_data_type = eltype(value) 
+    end
+
+    # if it still isn't a datatype, then I give up just go with Any
+    if !(value_data_type isa DataType)
+        value_data_type = Any 
+    end
+
+    # raise to Number to lower the constraints, except for a Boolean make a
+    # corner case exception
+    if value_data_type <: Number && !(value_data_type <: Bool)
+        value_data_type = number_type(md)
+    end
+
+    return value, value_data_type
+end
+
+function _resolve_datatype_value(md::ModelDef, value::Any, data_type::DataType)
+
+    value_data_type = value isa AbstractArray ? eltype(value) : typeof(value)
+    if value_data_type != data_type
+
+        # mirrors what we do in _update_param!
+        if value isa AbstractArray
+            try  
+                value = convert(Array{data_type}, value) 
+            catch e
+                error("Mismatched datatypes: elements of provided `value` have a ",
+                "DataType ($value_data_type) and cannot be converted to the provided ",
+                "DataType in `data_type` argument ($data_type). Please resolve by ", 
+                "converting the data you provided or changing the `data_type` argument.")
+            end
+        else
+            try 
+                value = convert(data_type, value)
+            catch e
+                error("Mismatched datatypes: `value` has a ",
+                "DataType ($value_data_type) and do not match the provided ",
+                "DataType in `data_type` argument ($data_type). Please resolve by ", 
+                "converting the data you provided or changing the `data_type` argument.")
+            end
+        end
+    end
+
+    return value, data_type
 end
 
 """

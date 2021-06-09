@@ -84,6 +84,14 @@ update_param!(m, comp_name, param_name, value)
 ```
 which will update the unshared model parameter externally connected to `comp_name`'s `param_name` to `value`. If `comp_name`'s `param_name` is connected to a shared model parameter, this call will error and present specific suggestions for either updating the shared model parameter or explicitly disconnecting your desired parameter before proceeding.
 
+Finally, [`add_shared_param!`](@ref) has two optional keyword arguments, `dims` and `data_type`, which mirror specifications you gave in your [`@defcomp`](@ref) parameter definition and might be needed. Again we include error messages to alert you of this.  Specifically:
+
+- **dims::Vector{Symbol}:** If your shared model parameter will be connected to parameters with dimensions, like one defined in [`@defcomp`](@ref) with `p = Parameter(index = [time])`, you'll need to specify dimensions with `add_shared_param!(m, :model_param_name, value; dims = [time])`.  
+- **data_type::DataType:** If your shared model parameter will be connected to parameters with dimensions, like one defined in [`@defcomp`](@ref) with `p = Parameter{Int64}()`, you *may* need to specify dimensions with `add_shared_param!(m, :model_param_name, value; data_type = Int64)` although we will try to interpret this under the hood for you.
+
+Appropriate error messages will instruct you to designate these if you forget to do so, and also recognize related problems with connections to parameters.
+
+
 *The User Change*
 
 Taking a look at your code, if you see a call to [`set_param!`](@ref), first decide if this is a case where you want to create a shared model parameter that can be connected to several component/parameter pairs. In many cases you will see a call to [`set_param!`](@ref) with four arguments:

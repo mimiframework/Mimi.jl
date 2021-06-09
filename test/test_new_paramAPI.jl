@@ -28,7 +28,7 @@ function _get_model()
     return m
 end
 
-# General
+# General Functionality
 m = _get_model()
 
 @test_throws MethodError update_param!(m, :A, :p1, 3) # can't convert
@@ -64,20 +64,7 @@ update_param!(m, :A, :p2, 1)
 model_param(m, :A, :p2).value == 1
 model_param(m, :A, :p3).value == model_param(m, :shared_param).value == 100
 
-# Units, Shared vs. Unshared
-m = _get_model()
-
-add_shared_param!(m, :myparam, 100)
-connect_param!(m, :A, :p3, :myparam)
-@test_throws ErrorException connect_param!(m, :A, :p4, :myparam) # units error
-connect_param!(m, :A, :p4, :myparam; ignoreunits = true)
-@test model_param(m, :A, :p3).value == model_param(m, :A, :p4).value == 100
-@test_throws ErrorException update_param!(m, :myparam, :boo) # cannot convert
-update_param!(m, :myparam, 200)
-@test model_param(m, :A, :p3).value == model_param(m, :A, :p4).value == 200
-@test_throws ErrorException connect_param!(m, :A, :p3, :myparam) # units error
-
-# Default
+# Defaults
 m = _get_model()
 
 @test model_param(m, :A, :p2).value == 2
@@ -85,7 +72,7 @@ m = _get_model()
 update_param!(m, :A, :p2, 100)
 @test !(is_shared(model_param(m, :A, :p2)))
 
-# arrays and dimensions
+# Dimensions
 m = _get_model()
 
 @test_throws ErrorException add_shared_param!(m, :x, [1:10]) # need dimensions to be specified
@@ -98,7 +85,23 @@ add_shared_param!(m, :y, fill(1, 5, 3), dims = [:time, :regions])
 
 @test_throws ErrorException connect_param!(m, :A, :p7, :y) # wrong dimensions, flipped around
 
-# DataTypes
+# Units and Datatypes
+m = _get_model()
+
+add_shared_param!(m, :myparam, 100)
+connect_param!(m, :A, :p3, :myparam)
+@test_throws ErrorException connect_param!(m, :A, :p4, :myparam) # units error
+connect_param!(m, :A, :p4, :myparam; ignoreunits = true)
+@test model_param(m, :A, :p3).value == model_param(m, :A, :p4).value == 100
+@test_throws ErrorException update_param!(m, :myparam, :boo) # cannot convert
+update_param!(m, :myparam, 200)
+@test model_param(m, :A, :p3).value == model_param(m, :A, :p4).value == 200
+@test_throws ErrorException connect_param!(m, :A, :p3, :myparam) # units error
+
+#
+# Section 2. add_shared_param! defaults
+#
+
 @defcomp A begin
     pA1 = Parameter{Symbol}()   # type will by Symbol
     pA2 = Parameter()           # type will be Number
@@ -121,36 +124,34 @@ function _get_model()
     return m
 end
 
-# no data_type argument in add_shared_param!
-m = _get_model() # number_type(m) == Float64
+# typical behavior
+m = _get_model()
 add_shared_param!(m, :myparam, 5)
-@test model_param(m, :myparam) isa Mimi.ScalarModelParameter{Float64}
+@test model_param(m, :myparam) isa Mimi.ScalarModelParameter{Float64} # by default same as model, which defaults to number_type(m) == Float64
 
 exp = :(connect_param!(m, :A, :pA1, :myparam)) # pA1 should have a specified parameter type of Symbol and !(Float64 <: Symbol)
 myerr1 = try eval(exp) catch err err end 
 @test occursin("Mismatched datatype of parameter connection", sprint(showerror, myerr1))
 
-connect_param!(m, :A, :pA2, :myparam) # pA2 should have a specified parameter type of Number by default and Float64 <: Number
+connect_param!(m, :A, :pA2, :myparam) # pA2 should have a parameter type of Number by default and Float64 <: Number
 connect_param!(m, :B, :pB1, :myparam) # pB1 should have a specified parameter type of Number and Float64 <: Number
 
-exp = :(connect_param!(m, :B, :pB2, :myparam)) # pA1 should have a specified parameter type of Symbol and !(Float64 <: Symbol)
+exp = :(connect_param!(m, :B, :pB2, :myparam)) # pB2 should have a specified parameter type of Int64 and !(Float64 <: Int64)
 myerr2 = try eval(exp) catch err err end 
 @test occursin("Mismatched datatype of parameter connection", sprint(showerror, myerr2))
 
 # try data_type keyword argument
 m = _get_model() # number_type(m) == Float64
 
-exp = :(add_shared_param!(m, :myparam, :foo; data_type = Int64))
+exp = :(add_shared_param!(m, :myparam, :foo; data_type = Int64)) # !(:foo isa Int64)
 myerr3 = try eval(exp) catch err err end 
 @test occursin("Mismatched datatypes:", sprint(showerror, myerr3))
+
 add_shared_param!(m, :myparam, 5; data_type = Int64)
-@test model_param(m, :myparam) isa Mimi.ScalarModelParameter{Int64}
+@test model_param(m, :myparam) isa Mimi.ScalarModelParameter{Int64} # 5 is convertible to Int64
 
-connect_param!(m, :B, :pB2, :myparam)
-
-exp = :(connect_param!(m, :A, :pA2, :myparam)) # can't connect this one it conflicts with :pB2
-myerr4 = try eval(exp) catch err err end 
-@test occursin("Cannot connect A:pA2 to shared model parameter myparam, it has conflicting values for the datatype of other parameters connected to this shared model parameter", sprint(showerror, myerr4))
+connect_param!(m, :B, :pB2, :myparam) # pB2 should have a specified parameter type of Int64 and Int64 <: Int64
+connect_param!(m, :A, :pA2, :myparam) # we allow pB2 and pA2 types to conflict as long as they both passed compatibilty with the model parameter
 
 #
 # Section 2. update_leftover_params! and set_leftover_params!

@@ -10,6 +10,10 @@
 #   julia --color=yes test_all_models.jl
 #
 
+using Pkg
+pkg_that_errored = []
+
+# first set of packages to test
 packages_to_test = [
     "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "df"), # note here we use the df branch 
     "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "df"), # note here we use the df branch 
@@ -25,10 +29,8 @@ packages_to_test = [
     "MimiHector" => ("https://github.com/anthofflab/MimiHector.jl", "master"),
 ]
 
-using Pkg
-
 mktempdir() do folder_name
-    pkg_that_errored = []
+
     Pkg.activate(folder_name)
 
     Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..")))
@@ -55,17 +57,15 @@ mktempdir() do folder_name
     for p in pkg_that_errored
         println(p)
     end
-    
 end
 
 # test separately because needs MimiFUND 3.8.6
-
 packages_to_test = [
    "MimiIWG" => ("https://github.com/rffscghg/MimiIWG.jl", "mcs") # note here we use the mcs branch
 ]
 
 mktempdir() do folder_name
-    pkg_that_errored = []
+
     Pkg.activate(folder_name)
 
     Pkg.develop(PackageSpec(path=joinpath(@__DIR__, "..")))
@@ -83,14 +83,13 @@ mktempdir() do folder_name
             push!(pkg_that_errored, pkg)
         end
     end
+end
 
-    println()
-    println()
-    println()
+println()
+println()
+println()
 
-    println("The following packages errored:")
-    for p in pkg_that_errored
-        println(p)
-    end
-    
+println("The following packages errored:")
+for p in pkg_that_errored
+    println(p)
 end

@@ -258,14 +258,6 @@ var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)
 
 # -- throw warnings --
 
-function Base.getproperty(md::ModelDef, field::Symbol)
-    if field == :external_params
-        @warn "ModelDef's `external_params` field is renamed to `model_params`, please change code accordingly."
-        field = :model_params
-    end
-    return getfield(md, field)
-end
-
 @deprecate external_params(md::ModelDef) model_params(md)
 
 # Deprecate old definition in favor of standard name
