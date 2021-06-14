@@ -86,13 +86,14 @@ end
 
 # model
 m = Model()
+
 md = m.md
 set_dimension!(m, :time, 2005:2020)
 add_comp!(m, top, nameof(top))
 
-set_param!(m, :fooA1, 1)
-set_param!(m, :fooA2, 2)
-set_param!(m, :foo3, 10)
-set_param!(m, :foo4, 20)
-set_param!(m, :par_1_1, collect(1:length(time_labels(md))))
+update_param!(m, :top, :fooA1, 1)
+update_param!(m, :top, :fooA2, 2)
+update_param!(m, :top, :foo3, 10)
+update_param!(m, :top, :foo4, 20)
+update_param!(m, :top, :par_1_1, collect(1:length(Mimi.time_labels(md))))
 run(m)

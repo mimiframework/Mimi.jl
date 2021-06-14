@@ -1,42 +1,5 @@
 using MacroTools
 
-# From 1/16/2020 meeting
-#
-# c1 = Component(A)
-# Component(B) # equiv B = Component(B)
-#
-# x3 = Parameter(a.p1, a.p2, b.p3, default=3, description="asflijasef", visibility=:private)
-#
-# This creates external param x3, and connects b.p3 and ANY parameter in any child named p1 to it
-# AND now no p1 in any child can be connected to anything else. Use Not from the next if you want
-# an exception for that
-# x3 = Parameter(p1, b.p3, default=3, description="asflijasef", visibility=:private)
-#
-# x3 = Parameter(p1, p2, Not(c3.p1), b.p3, default=3, description="asflijasef", visibility=:private)
-#
-# connect(B.p2, c1.v4)
-# connect(B.p3, c1.v4)
-#
-# x2 = Parameter(c2.x2, default=35)
-#
-# BUBBLE UP PHASE
-#
-# for p in unique(unbound_parameters)
-#   x1 = Parameter(c1.x1)
-# end
-#
-# if any(unbound_parameter) then error("THIS IS WRONG")
-#
-#
-# Expressions to parse in @defcomposite:
-#
-# 1. name_ = Component(compname_)
-# 2. Component(compname_) => (compname = Component(compname_))
-# 3. pname_ = Parameter(args__) # args can be: pname, comp.pname, or keyword=value
-# 4. connect(a.param, b.var)
-#
-#
-
  # splitarg produces a tuple for each arg of the form (arg_name, arg_type, slurp, default)
 _arg_name(arg_tup) = arg_tup[1]
 _arg_type(arg_tup) = arg_tup[2]
@@ -162,7 +125,7 @@ end
 
 # TBD: finish documenting this!
 """
-    defcomposite(cc_name::Symbol, ex::Expr)
+    defcomposite(cc_name, ex)
 
 Define a Mimi CompositeComponentDef `cc_name` with the expressions in `ex`. Expressions
 are all shorthand for longer-winded API calls, and include the following:

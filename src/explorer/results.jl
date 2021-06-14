@@ -4,8 +4,6 @@ using DataFrames
 
 function get_sim_results(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model_index::Int = 1, scen_name::Union{Nothing, String} = nothing)
     
-    multiple_results = (length(sim_inst.results) > 1)
-
     key = (comp_name, datum_name)
     df = (sim_inst.results[model_index])[key]
     if scen_name !== nothing

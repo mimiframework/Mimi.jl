@@ -2,20 +2,20 @@
 
 Mimi includes a host of routines which support running Monte Carlo simulations and various sensitivity analysis methods on Mimi models. Tutorial 5: Monte Carlo Simulations and Sensitivity Analysis Support is a good starting point for learning about these methods.  This how-to guide includes more detail and optionality, covering more advanced options such as non-stochastic scenarios and running multiple models, which are not yet included in the tutorial.
 
-## Overview
+## Overview 
 
 Running Monte Carlo simulations, and proximal sensitivity analysis, in Mimi can be broken down into three primary user-facing elements:
 
-1. The `@defsim` macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
+1. The [`@defsim`](@ref) macro, which defines random variables (RVs) which are assigned distributions and associated with model parameters, and override the default (random) sampling method.
 
-2. The `run` function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run with `set_models!`, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
+2. The [`run`](@ref) function, which runs a simulation instance, setting the model(s) on which a simulation definition can be run within that, generates all trial data with `generate_trials!`, and has several with optional parameters and optional callback functions to customize simulation behavior. 
 
 3. The `analyze` function, which takes a simulation instance, analyzes the results and returns results specific to the type of simulation passed in. 
 
 The rest of this document will be organized as follows:
 
-1. The `@defsim` macro
-2. The `run` function
+1. The [`@defsim`](@ref) macro
+2. The [`run`](@ref) function
 3. The `analyze` function
 4. Plotting and the Explorer UI
 5. Other Useful Functions
@@ -25,7 +25,7 @@ The rest of this document will be organized as follows:
 
 ## 1. The `@defsim` macro
 
-The first step in a Mimi sensitivity analysis is using the `@defsim` macro to define and return a `SimulationDef{T}`. This simulation definition contains all the definition information in a form that can be applied at run-time. The `T` in `SimulationDef{T}` is any type that your application would like to live inside the `SimulationDef` struct, and most importantly specifies the sampling strategy to be used in your sensitivity analysis.  
+The first step in a Mimi sensitivity analysis is using the [`@defsim`](@ref) macro to define and return a `SimulationDef{T}`. This simulation definition contains all the definition information in a form that can be applied at run-time. The `T` in `SimulationDef{T}` is any type that your application would like to live inside the `SimulationDef` struct, and most importantly specifies the sampling strategy to be used in your sensitivity analysis.  
 
 We have implemented four types for `T <: AbstractSimulationData`:
 
@@ -50,7 +50,7 @@ const DeltaSimulationDef = SimulationDef{DeltaData}
 const DeltaSimulationInstance = SimulationInstance{DeltaData}
 ```
 
-In order to build the information required at run-time, the `@defsim` macro carries out several tasks including the following.
+In order to build the information required at run-time, the [`@defsim`](@ref) macro carries out several tasks including the following.
 
 ### Define Random Variables (RVs)
 
@@ -64,7 +64,7 @@ If using Latin Hypercube Sampling (LHS) is used, the following function must als
 
 In addition to the distributions available in the `Distributions` package, Mimi provides the following options.  Note that these are not exported by default, so they need to either be explicitly imported (ie. `import Mimi: EmpiricalDistribution`) or prefixed with `Mimi.` when implemented (ie. `Mimi.EmpiricalDistribution(vals, probs)`):
 
-- `EmpiricalDistribution`, which takes a vector of values and (optional) vector of probabilities and produces samples from these values using the given probabilities, if provided, or equal probability otherwise. To use this in a `@defsim`, you might do:
+- `EmpiricalDistribution`, which takes a vector of values and (optional) vector of probabilities and produces samples from these values using the given probabilities, if provided, or equal probability otherwise. To use this in a [`@defsim`](@ref), you might do:
 
   ```julia
   using CSVFiles
@@ -81,7 +81,7 @@ In addition to the distributions available in the `Distributions` package, Mimi 
   # create your simulation
   @defsim  begin
       ...
-      trc_transientresponse = EmpiricalDistribution(values, probs)
+      RandomVariable1 = EmpiricalDistribution(values, probs)
       ...
   end
   ```
@@ -89,7 +89,7 @@ In addition to the distributions available in the `Distributions` package, Mimi 
 
 - `SampleStore{T}`, which stores a vector of samples that are produced in order by the `rand` function. This allows the user to to store a predefined set of values (useful for regression testing) and it is used by the LHS method, which draws all required samples at once at equal probability intervals and then shuffles the values. It is also used when rank correlations are specified, since this requires re-ordering draws from random variables.
 
-- `ReshapedDistribution`, which supports use of vector-valued distributions, i.e., those that generate   vectors of values for each single draw. An example (that motivated this addition) is the `Dirichlet` distribution, which produces a vector of values that sum to 1. To use this in `@defsim`, you might do:
+- `ReshapedDistribution`, which supports use of vector-valued distributions, i.e., those that generate   vectors of values for each single draw. An example (that motivated this addition) is the `Dirichlet` distribution, which produces a vector of values that sum to 1. To use this in [`@defsim`](@ref), you might do:
 
   ```julia
     rd = ReshapedDistribution([5, 5], Dirichlet(25,1))
@@ -100,13 +100,13 @@ In addition to the distributions available in the `Distributions` package, Mimi 
 
 **For all applications in this section, it is important to note that for each trial, a random variable on the right hand side of an assignment  will take on the value of a *single* draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution.**
 
-The macro next defines how to apply the values generated by each RV to model parameters based on a pseudo-assignment operator:
+The macro next defines how to apply the values generated by each RV to model parameters based on a pseudo-assignment operator. The left hand side of these assignments can be either a `param`, which must refer to a shared model parameter, or `comp.param` which refers to an unshared model parameter specific to a component.
 
-- `param = RV` replaces the values in the parameter with the value of the RV for the current trial.
-- `param += RV` replaces the values in the parameter with the sum of the original value and the value of the RV for the current trial.
-- `param *= RV` replaces the values in the parameter with the product of the original value and the value of the RV for the current trial.
+- `param = RV` or `comp.param = RV` replaces the values in the parameter with the value of the RV for the current trial.
+- `param += RV` or `comp.param += RV` replaces the values in the parameter with the sum of the original value and the value of the RV for the current trial.
+- `param *= RV` or `comp.param *= RV` replaces the values in the parameter with the product of the original value and the value of the RV for the current trial.
 
-As described below, in `@defsim`, you can apply distributions to specific slices of array parameters, and you can "bulk assign" distributions to elements of a vector or matrix using a more condensed syntax. Note that these relationship assignments are referred to as **transforms**, and are referred to later in this documentation in the `add_transform!` and `delete_transform!` helper functions.
+As described below, in [`@defsim`](@ref), you can apply distributions to specific slices of array parameters, and you can "bulk assign" distributions to elements of a vector or matrix using a more condensed syntax. Note that these relationship assignments are referred to as **transforms**, and are referred to later in this documentation in the `add_transform!` and `delete_transform!` helper functions.
 
 #### Apply RVs to model parameters: Assigning to array slices
 
@@ -114,7 +114,7 @@ Options for applying distributions to array slices is accomplished using
 array access syntax on the left-hand side of an assignment. The assignment
 may use any of these assignment operators: `=`, `*=`, or `+=`, as described
 above. Slices can be indicated using a variety of specifications. Assume we
-define two parameters in `@defcomp` as
+define two parameters in [`@defcomp`](@ref) as
 ```
   foo = Parameter(index=[regions])
   bar = Parameter(index=[time, regions])
@@ -170,7 +170,7 @@ of RV value, i.e., you cannot combine this with the `*=` or `+=` operators.
 
 ### Specify a Sampling Strategies 
 
-As previously mentioned and included in the tutorial, the `@defsim` macro uses the call to `sampling` to type-parameterize the `SimulationDef` with one of three types, which in turn direct the sampling strategy of the simulation. This is done with the `sampling` line of the macro.
+As previously mentioned and included in the tutorial, the [`@defsim`](@ref) macro uses the call to `sampling` to type-parameterize the `SimulationDef` with one of three types, which in turn direct the sampling strategy of the simulation. This is done with the `sampling` line of the macro.
 
 1. Simple random-sampling Monte Carlo Simulation (`MCSData`),
 2. Latin Hypercube Sampling (`LHSData`)
@@ -188,13 +188,13 @@ Certain sampling strategies support (or necessitate) further customization. Thes
 - extra parameters (Sobol): Sobol sampling allows specification of the sample size N and whether or not one wishes to calculate second-order effects.
 
 
-## 2. The `run` function
+## 2. The [`run`](@ref) function
 
-In it's simplest use, the `run` function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's "external parameters", based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
+In it's simplest use, the [`run`](@ref) function generates and iterates over generated trial data, perturbing a chosen subset of Mimi's model parameters, based on the defined distributions, and then runs the given Mimi model(s). The function retuns an instance of `SimulationInstance`, holding a copy of the original `SimulationDef` with additional trial information as well as a list of references ot the models and the results. Optionally, trial values and/or model results are saved to CSV files.
 
 ### Function signature
 
-The full signature for the `run` is:
+The full signature for the [`run`](@ref) is:
 
 ```
 function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}, samplesize::Int;
@@ -213,7 +213,7 @@ Using this function allows a user to run the simulation definition `sim_def` for
 
 Optionally the user may run the `models` for `ntimesteps`, if specified, else to the maximum defined time period. Note that trial data are applied to all the associated models even when running only a portion of them.   
 
-If provided, the generated trials and results will be saved in the indicated `trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set to false, then results will be cleared from memory and only stored in the `results_output_dir`. After `run`, the results of a `SimulationInstance` can be accessed using the `getdataframe` function with the following signature, which returns a `DataFrame`. 
+If provided, the generated trials and results will be saved in the indicated `trials_output_filename` and `results_output_dir` respectively. If `results_in_memory` is set to false, then results will be cleared from memory and only stored in the `results_output_dir`. After [`run`](@ref), the results of a `SimulationInstance` can be accessed using the `getdataframe` function with the following signature, which returns a `DataFrame`. 
 
 ```
 getdataframe(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; model::Int = 1)
@@ -232,15 +232,15 @@ scenario_func(sim_inst::SimulationInstance, tup::Tuple)
 
 By default, the scenario loop encloses the simulation loop, but the scenario loop can be placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER`  is specified, the `scenario_func` is called after any `pre_trial_func` but before the model is run.
 
-Finally, `run` returns the type `SimulationInstance` that contains a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`.
+Finally, [`run`](@ref) returns the type `SimulationInstance` that contains a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`.
 
-### Internal Functions to `run`
+### Internal Functions to [`run`](@ref)
 
-The following functions are internal to `run`, and do not need to be understood by users but may be interesting to understand.
+The following functions are internal to [`run`](@ref), and do not need to be understood by users but may be interesting to understand.
 
 #### The set_models! function
 
-The `run` function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationInstance` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `SimulationDef`:
+The [`run`](@ref) function sets the model or models to run using `set_models!` function and saving references to these in the `SimulationInstance` instance.  The `set_models!` function has several methods for associating the model(s) to run with the `SimulationDef`:
 	
 ```
 set_models!(sim_inst::SimulationInstance, models::Vector{Model})
@@ -262,7 +262,7 @@ Also note that if the `filename` argument is used, all random variable draws are
 
 ### Non-stochastic Scenarios
 
-In many cases, scenarios (which we define as a choice of values from a discrete set for one or more parameters) need to be considered in addition to the stochastic parameter variation. To support scenarios, `run` also offers iteration over discrete scenario values, which are passed to `run` via the keyword parameter `scenario_args::Dict{Symbol, Vector}`. For example, to iterate over scenario values "a", and "b", as well as, say, discount rates `0.025, 0.05, 0.07`, you could provide the argument:
+In many cases, scenarios (which we define as a choice of values from a discrete set for one or more parameters) need to be considered in addition to the stochastic parameter variation. To support scenarios, [`run`](@ref) also offers iteration over discrete scenario values, which are passed to [`run`](@ref) via the keyword parameter `scenario_args::Dict{Symbol, Vector}`. For example, to iterate over scenario values "a", and "b", as well as, say, discount rates `0.025, 0.05, 0.07`, you could provide the argument:
 
 `scenario_args=Dict([:name => ["a", "b"], :rate => [0.025, 0.05, 0.07]])`
 
@@ -328,18 +328,18 @@ This function wraps the `analyze` function in the [GlobalSensitivityAnalysis.jl]
 
 As described in the User Guide, Mimi provides support for plotting using [VegaLite](https://github.com/vega/vega-lite) and [VegaLite.jl](https://github.com/fredo-dedup/VegaLite.jl) within the Mimi Explorer UI and `Mimi.plot` function. These functions not only work for `Model`s, but for `SimulationInstance`s as well. 
 
-In order to invoke the explorer UI and explore all of the saved variables from the `save` list of a `SimulationInstance`, simply call the function `explore` with the simulation as the required argument as shown below.  This will produce a new browser window containing a selectable list of variables, each of which produces a graphic.
+In order to invoke the explorer UI and explore all of the saved variables from the `save` list of a `SimulationInstance`, simply call the function [`explore`](@ref) with the simulation as the required argument as shown below.  This will produce a new browser window containing a selectable list of variables, each of which produces a graphic.
  
 ```julia
 run(sim_inst)
 explore(sim_inst)
 ```
 
-There are several optional keyword arguments for the `explore` method, as shown by the full function signature:
+There are several optional keyword arguments for the [`explore`](@ref) method, as shown by the full function signature:
 ```julia
 explore(sim_inst::SimulationInstance; title="Electron", model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
-The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to `run` you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument. Finally, if you have saved the results of your simulation to disk and cleared them from memory using `run`'s `results_in_memory` keyword argument flag set to `false`, you **must** provide a `results_output_dir` which indicates the parent folder for all outputs and potential subdirectories, identical to that passed to `run`.
+The `title` is the optional title of the application window, the `model_index` defines which model in your list of `models` passed to [`run`](@ref) you would like to explore (defaults to 1), and `scen_name` is the name of the specific scenario you would like to explore if there is a scenario dimension to your simulation.  Note that if there are multiple scenarios, this is a **required** argument. Finally, if you have saved the results of your simulation to disk and cleared them from memory using [`run`](@ref)'s `results_in_memory` keyword argument flag set to `false`, you **must** provide a `results_output_dir` which indicates the parent folder for all outputs and potential subdirectories, identical to that passed to [`run`](@ref).
 
 ![Explorer Simulation Example](../figs/explorer_sim_example.png)
 
@@ -352,7 +352,7 @@ p = Mimi.plot(sim_inst, :component1, :parameter1)
 save("figure.svg", p)
 ```
 
-Note the function signature below, which has the same keyword arguments and requirements as the aforementioned `explore` method, save for `title`.
+Note the function signature below, which has the same keyword arguments and requirements as the aforementioned [`explore`](@ref) method, save for `title`.
 ```julia
 plot(sim_inst::SimulationInstance, comp_name::Symbol, datum_name::Symbol; interactive::Bool = false, model_index::Int = 1, scen_name::Union{Nothing, String} = nothing, results_output_dir::Union{Nothing, String} = nothing)
 ```
@@ -370,7 +370,8 @@ A small set of unexported functions are available to modify an existing `Simulat
 * `replace_RV!(sim_def::SimulationDef, name::Symbol, dist::Distribution)` - replace the random variable with name `name` in Simulation Definition with a random variable of the same `name` but with the distribution `Distribution`
 
 * `delete_transform!(sim_def::SimulationDef, name::Symbol)!` - Delete all data transformations in Simulation Definition `sim_def` (i.e., replacement, addition or multiplication) of original data values with values drawn from the random variable named `name`
-* `add_transform!(sim_def::SimulationDef, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector=[])!` - Create a new `TransformSpec` based on `paramname`, `op`, `rvname` and `dims` to the Simulation Definition `sim_def`. The symbol `rvname` must refer to an existing random variable, and `paramname` must refer to an existing parameter. If `dims` are provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
+* `add_transform!(sim_def::SimulationDef, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector=[])!` - Create a new `TransformSpec` based on `paramname`, `op`, `rvname` and `dims` to the Simulation Definition `sim_def`. The symbol `rvname` must refer to an existing random variable, and `paramname` must refer to an existing shared model parameter that can thus be accessed by that name. Use the following signature if your `paramname` is an unshared model parameter specific to a component. If `dims` are provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
+* `add_transform!(sim_def::SimulationDef, compname::Symbol, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector=[])!` - Create a new TransformSpec based on `compname`, `paramname`, `op`, `rvname` and `dims` to the Simulation definition `sim_def`, and update the Simulation's NamedTuple type. The symbol `rvname` must refer to an existing RV, and `compname` and `paramname` must holding an existing component and parameter. If `dims` are provided, these must be legal subscripts of `paramname`. Op must be one of :+=, :*=, or :(=).
 
 For example, say a user starts off with a SimulationDefinition `MySimDef` with a parameter `MyParameter` drawn from the random variable `MyRV` with distribution `Uniform(0,1)`.  
 
@@ -439,7 +440,7 @@ N = 100
 sd = @defsim begin
     # Define random variables. The rv() is required to disambiguate an
     # RV definition name = Dist(args...) from application of a distribution
-    # to an external parameter. This makes the (less common) naming of an
+    # to a model parameter. This makes the (less common) naming of an
     # RV slightly more burdensome, but it's only required when defining
     # correlations or sharing an RV across parameters.
     rv(name1) = Normal(1, 0.2)

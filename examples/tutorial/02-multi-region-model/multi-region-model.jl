@@ -19,15 +19,16 @@ function construct_MyModel()
 	add_comp!(m, grosseconomy)
 	add_comp!(m, emissions)
 
-	set_param!(m, :grosseconomy, :l, l)
-	set_param!(m, :grosseconomy, :tfp, tfp)
-	set_param!(m, :grosseconomy, :s, s)
-	set_param!(m, :grosseconomy, :depk, depk)
-	set_param!(m, :grosseconomy, :k0, k0)
-	set_param!(m, :grosseconomy, :share, 0.3)
+	# update parameters for grosseconomy component
+	update_param!(m, :grosseconomy, :l, l)
+	update_param!(m, :grosseconomy, :tfp, tfp)
+	update_param!(m, :grosseconomy, :s, s)
+	update_param!(m, :grosseconomy, :depk, depk)
+	update_param!(m, :grosseconomy, :k0, k0)
+	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# set parameters for emissions component
-	set_param!(m, :emissions, :sigma, sigma)
+	# update and connect parameters for emissions component
+	update_param!(m, :emissions, :sigma, sigma)
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     return m

@@ -2,6 +2,8 @@
 
 ## Classes.jl
 
+**NOTE: We plan to soon phase out use of Classes.jl for simplicity**
+
 Most of the core data structures are defined using the `Classes.jl` package, which was developed for Mimi, but separated out as a generally useful julia package. The main features of `Classes` are:
 
 1. Classes can subclass other classes, thereby inheriting the same list of fields as a starting point, which can then be extended with further fields.

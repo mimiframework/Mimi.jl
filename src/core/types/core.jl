@@ -1,6 +1,10 @@
 using Classes
 using DataStructures
 
+#
+# General
+#
+
 """
     @or(args...)
 
@@ -22,6 +26,10 @@ abstract type MimiStruct end
 @class MimiClass <: Class
 
 const AbstractMimiType = Union{MimiStruct, AbstractMimiClass}
+
+#
+# Components
+#
 
 # To identify components, @defcomp creates a variable with the name of
 # the component whose value is an instance of this type.
@@ -90,6 +98,7 @@ end
 # Unclear whether this is really any better than simply using
 # a dict for all cases. Might scrap this in the end.
 #
+
 mutable struct RangeDimension{T <: DimensionRangeTypes} <: AbstractDimension
     range::T
  end

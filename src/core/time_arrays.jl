@@ -29,8 +29,6 @@ function get_time_index_position(obj::AbstractCompositeComponentDef, comp_name::
 end
 
 const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
-# DEPRECATION - EVENTUALLY REMOVE
-const AnyIndex_NonColon = Union{Int, Vector{Int}, Tuple, OrdinalRange}
 
 # Helper function for getindex; throws a MissingException if data is missing, otherwise returns data
 function _missing_data_check(data, t)
@@ -57,18 +55,6 @@ function _single_index_check(data, idxs)
 	if num_idxs < num_dims
 		error("Not enough indices provided to index into TimestepArray, $num_idxs provided, $num_dims required")
 	end
-end
-
-# DEPRECATION - EVENTUALLY REMOVE
-# Helper function for getindex; throws an error if one indexes into a TimestepArray with an integer
-function _throw_int_getindex_error()
-	error("Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
-end
-
-# DEPRECATION - EVENTUALLY REMOVE
-# Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
-function _throw_int_setindex_error()
-	error("Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
 end
 
 # Helper macro used by connector
@@ -232,18 +218,6 @@ function Base.setindex!(v::TimestepVector, val, ts::TimestepIndex)
 	setindex!(v.data, val, ts.index)
 end
 
-# DEPRECATION - EVENTUALLY REMOVE
-# int indexing version supports old-style components and internal functions, not
-# part of the public API
-
- function Base.getindex(v::TimestepVector, i::AnyIndex_NonColon)
-	_throw_int_getindex_error()
-end
-
-function Base.setindex!(v::TimestepVector, val, i::AnyIndex_NonColon)
-	_throw_int_setindex_error()
-end
-
 #
 # c. TimestepMatrix
 #
@@ -365,19 +339,6 @@ end
 function Base.setindex!(mat::TimestepMatrix, val, ts::TimestepIndex, idx::AnyIndex)
 	setindex!(mat.data, val, ts.index, idx)
 end
-
-# DEPRECATION - EVENTUALLY REMOVE
-# int indexing version supports old-style components and internal functions, not
-# part of the public API
-
-function Base.getindex(mat::TimestepMatrix, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon)
-	_throw_int_getindex_error()
-end
-
-function Base.setindex!(mat::TimestepMatrix, val, idx1::Int, idx2::Int)
-	_throw_int_setindex_error()
-end
-
 
 #
 # TimestepArray methods
@@ -504,28 +465,6 @@ function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, v
 	setindex!(arr.data, val, idxs1..., ts.index, idxs2...)
 end
 
-# DEPRECATION - EVENTUALLY REMOVE
-# Colon support - this allows the time dimension to be indexed with a colon
- function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, idxs::AnyIndex...) where {FIRST, STEP, LAST, T, N, ti}
-	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_error() : nothing
-	return arr.data[idxs...]
-end
-
-function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::AnyIndex...) where {TIMES, T, N, ti}
-	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_error() : nothing
-	return arr.data[idxs...]
-end
-
-function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, val, idxs::AnyIndex...) where {FIRST, STEP, LAST, T, N, ti}
-	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_setindex_error() : nothing
-	setindex!(arr.data, val, idxs...)
-end
-
-function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::AnyIndex...) where {TIMES, T, N, ti}
-	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_setindex_error() : nothing
-	setindex!(arr.data, val, idxs...)
-end
-
 # Indexing with arrays of TimestepIndexes or TimestepValues
 function Base.getindex(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}
 	idxs1, ts_array, idxs2 = split_indices(idxs, ti)
@@ -611,4 +550,66 @@ function hasvalue(arr::TimestepArray{VariableTimestep{A_TIMES}, T, N, ti},
 	idxs::Int...) where {T, N, ti, A_TIMES, T_TIMES}
 
 	return A_TIMES[1] <= gettime(ts) <= last_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
+end
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors --
+
+const AnyIndex_NonColon = Union{Int, Vector{Int}, Tuple, OrdinalRange}
+
+# Helper function for getindex; throws an error if one indexes into a TimestepArray with an integer
+function _throw_int_getindex_error()
+	error("Indexing with getindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
+end
+
+# Helper function for setindex; throws an error if one indexes into a TimestepArray with an integer
+function _throw_int_setindex_error()
+	error("Indexing with setindex into a TimestepArray with Integer(s) is deprecated, please index with a TimestepIndex(index::Int) instead ie. instead of t[2] use t[TimestepIndex(2)]")
+end
+
+# int indexing version supports old-style components and internal functions, not
+# part of the public API
+
+function Base.getindex(v::TimestepVector, i::AnyIndex_NonColon)
+	_throw_int_getindex_error()
+end
+
+function Base.setindex!(v::TimestepVector, val, i::AnyIndex_NonColon)
+	_throw_int_setindex_error()
+end
+
+# int indexing version supports old-style components and internal functions, not
+# part of the public API
+
+function Base.getindex(mat::TimestepMatrix, idx1::AnyIndex_NonColon, idx2::AnyIndex_NonColon)
+	_throw_int_getindex_error()
+end
+
+function Base.setindex!(mat::TimestepMatrix, val, idx1::Int, idx2::Int)
+	_throw_int_setindex_error()
+end
+
+# Colon support - this allows the time dimension to be indexed with a colon
+
+function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, idxs::AnyIndex...) where {FIRST, STEP, LAST, T, N, ti}
+	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_error() : nothing
+	return arr.data[idxs...]
+end
+
+function Base.getindex(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::AnyIndex...) where {TIMES, T, N, ti}
+	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_getindex_error() : nothing
+	return arr.data[idxs...]
+end
+
+function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, val, idxs::AnyIndex...) where {FIRST, STEP, LAST, T, N, ti}
+	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_setindex_error() : nothing
+	setindex!(arr.data, val, idxs...)
+end
+
+function Base.setindex!(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, val, idxs::AnyIndex...) where {TIMES, T, N, ti}
+	isa(idxs[ti], AnyIndex_NonColon) ? _throw_int_setindex_error() : nothing
+	setindex!(arr.data, val, idxs...)
 end

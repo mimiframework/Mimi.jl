@@ -10,27 +10,33 @@ Working through the following tutorial will require:
 
 **If you have not yet prepared these, go back to the first tutorial to set up your system.**
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
-
 ## Introduction
 
-There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the existing model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model you are modifying. Thus, it is easy to keep up with any external updates or improvements made to that model.
+There are various ways to modify an existing model, and this tutorial aims to introduce the Mimi API relevant to this broad category of tasks.  It is important to note that regardless of the goals and complexities of your modifications, the API aims to allow for modification **without alteration of the original code for the model being modified**.  Instead, you will download and run the existing model, and then use API calls to modify it. This means that in practice, you should not need to alter the source code of the model you are modifying. This should make it simple to keep up with any external updates or improvements made to that model. 
 
 Possible modifications range in complexity, from simply altering parameter values, to adjusting an existing component, to adding a brand new component.
 
 ## Parametric Modifications: The API
 
-Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely **[`update_param!`](@ref)/[`update_params!`](@ref), [`disconnect_param!`](@ref), and [`connect_param!`](@ref)**.  For detail on these functions see the API reference guide, Reference Guide: The Mimi API.
+Several types of changes to models revolve around the parameters themselves, and may include updating the values of parameters and changing parameter connections without altering the elements of the components themselves or changing the general component structure of the model.  The most useful functions of the common API in these cases are likely [`update_param!`](@ref)/[`update_params!`](@ref), [`add_shared_param!`](@ref), [`disconnect_param!`](@ref) and [`connect_param!`](@ref).  For detail on these functions see the [How-to Guide 5: Work with Parameters and Variables](@ref) and the API reference guide, [Reference Guide: The Mimi API](@ref).
 
-When the original model calls [`set_param!`](@ref), Mimi creates an external parameter by the name provided, and stores the provided scalar or array value. The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with this external parameter. 
+By the Mimi structure, the parameters in a model you start with receive their values either from an exogenously set model parameters (shared or unshared as described in How To Guide 5) through an external parameter connection, or from another component's variable through an internal parameter connection.
 
+The functions [`update_param!`](@ref) and [`update_params!`](@ref) allow you to change the value associated with a given model parameter, and thus value connected to the respective component-parameter pair(s) connected to it. If the model parameter is a shared model parameter you can use the following to update it:
 ```julia
-update_param!(mymodel, :parametername, newvalues)
+update_param!(mymodel, :model_parameter_name, newvalues)
 ```
+If the model parameter is unshared, and thus the value can only be connected to one component/parameter pair, you can use the following to update it:
+```julia
+update_param!(mymodel, :comp_name, :param_name, newvalues)
+```
+Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate. 
 
-Note here that `newvalues` must be the same type (or be able to convert to the type) of the old values stored in that parameter, and the same size as the model dimensions indicate.
+**If you are unsure whether the component-parameter pair you wish to update is connected to a shared or unshared model parameter** use the latter, four argument call above and an error message will give you specific instructions on how to proceed. As described in How To Guide 5, parameters default to being unshared.
 
-If you wish to alter connections within an existing model, [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themslves, as discussed in the next subsection.
+The functions [`disconnect_param!`](@ref) and [`connect_param!`](@ref) can be used to alter or add connections within an existing model. These two can be used in conjunction with each other to update the connections within the model, although this is more likely to be done as part of larger changes involving components themselves, as discussed in the next subsection.
+
+**Once again, for specific instructions and details on various cases of updating and changing parameters, and their connections, please view [How-to Guide 5: Work with Parameters and Variables](@ref).  We do not repeat all information here for brevity and to avoid duplication.**
 
 ## Parametric Modifications: DICE Example
 
@@ -70,13 +76,13 @@ Thus there are no required arguments, although the user can input `params`, a di
 
 #### Step 3. Altering Parameters
 
-In the case that you wish to alter an exogenous parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
+In the case that you wish to alter an parameter retrieving an exogenously set value from a model parameter, you may use the [`update_param!`](@ref) function.  Per usual, you will start by importing the Mimi package to your space with 
 
 ```julia
 using Mimi
 ```
 
-In DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and exists in the components `climatedynamics` and `radiativeforcing`.  We can change this value from its default value of `3.200` to `3.000` in both components, using the following code:
+In DICE the parameter `fco22x` is the forcings of equilibrium CO2 doubling in watts per square meter, and is a shared model parameter (named `fco22x`) and connected to component parameters with the same name, `fco22x`, in components `climatedynamics` and `radiativeforcing`.  We can change this value from its default value of `3.200` to `3.000` in both components, using the following code:
 
 ```julia
 update_param!(m, :fco22x, 3.000)
@@ -85,7 +91,7 @@ run(m)
 
 A more complex example may be a situation where you want to update several parameters, including some with a `:time` dimension, in conjunction with altering the time index of the model itself. DICE uses a default time horizon of 2005 to 2595 with 10 year increment timesteps.  If you wish to change this, say, to 1995 to 2505 by 10 year increment timesteps and use parameters that match this time, you could use the following code:
 
-First you upate the `time` dimension of the model as follows:
+First you update the `time` dimension of the model as follows:
 
 ```julia
 const ts = 10
@@ -94,9 +100,11 @@ nyears = length(years)
 set_dimension!(m, :time, years)
 ```
 
-At this point all parameters with a `:time` dimension have been slightly modified under the hood, but the original values are still tied to their original years.  In this case, for example, the external parameter has been shorted by 9 values (end from 2595 --> 2505) and padded at the front with a value of `missing` (start from 2005 --> 1995). Since some values, especially initializing values, are not time-agnostic, we maintain the relationship between values and time labels.  If you wish to attach new values, you can use `update_param!` as below.  In this case this is probably necessary, since having a `missing` in the first spot of a parameter with a `:time` dimension will likely cause an error when this value is accessed.
+At this point all parameters with a `:time` dimension have been slightly modified under the hood, but the original values are still tied to their original years.  In this case, for example, the model parameter has been shorted by 9 values (end from 2595 --> 2505) and padded at the front with a value of `missing` (start from 2005 --> 1995). Since some values, especially initializing values, are not time-agnostic, we maintain the relationship between values and time labels.  If you wish to attach new values, you can use [`update_param!`](@ref) as below.  In this case this is probably necessary, since having a `missing` in the first spot of a parameter with a `:time` dimension will likely cause an error when this value is accessed.
 
-Create a dictionary `params` with one entry `(k, v)` per external parameter you want to update by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of an external parameter that already exists in the model definition.  Part of this dictionary may look like:
+Updating the `:time` dimension can be tricky, depending on your use case, so **we recommend reading [How-to Guide 6: Update the Time Dimension](@ref)** if you plan to do this often in your work.
+
+To batch update **shared** model parameters, create a dictionary `params` with one entry `(k, v)` per model parameter you want to update by name `k` to value `v`. Each key `k` must be a symbol or convert to a symbol matching the name of a shared model parameter that already exists in the model definition.  Part of this dictionary may look like:
 
 ```julia
 params = Dict{Any, Any}()
@@ -107,13 +115,24 @@ params[:S]          = repeat([0.23], nyears)
 ...
 ```
 
+To batch update **unshared** model parameters, follow a similar pattern but use tuples (:comp_name, :param_name) as your dictionary keys, which might look like:
+
+```julia
+params = Dict{Any, Any}()
+params[(:comp1, :a1)]         = 0.00008162
+params[(:comp1, :a2)]         = 0.00204626
+...
+params[(:comp2, :S)]          = repeat([0.23], nyears)
+...
+```
+Finally, you can combine these two dictionaries and Mimi will recognize and resolve the two different key types under the hood. 
+
 Now you simply update the parameters listen in `params` and re-run the model with
 
 ```julia
 update_params!(m, params)
 run(m)
 ```
-
 ## Component and Structural Modifications: The API
 
 Most model modifications will include not only parametric updates, but also structural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace!`](@ref), [`add_comp!`](@ref)** along with **`delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference. 

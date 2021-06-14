@@ -39,7 +39,7 @@ add_comp!(my_model, testcomp1)
 
 par = collect(2015:5:2110)
 
-set_param!(my_model, :testcomp1, :par1, par)
+update_param!(my_model, :testcomp1, :par1, par)
 run(my_model)
 
 # Regular get index

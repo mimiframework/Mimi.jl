@@ -56,17 +56,17 @@ add_comp!(m, emissions, first = 2020, last = 2105)
 @test m.md.namespace[:emissions].first == 2020
 @test m.md.namespace[:emissions].last == 2105
 
-# Set parameters for the grosseconomy component
-set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
-set_param!(m, :grosseconomy, :depk, 0.1)
-set_param!(m, :grosseconomy, :k0, 130.)
-set_param!(m, :grosseconomy, :share, 0.3)
+# update parameters for the grosseconomy component
+update_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+update_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+update_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+update_param!(m, :grosseconomy, :depk, 0.1)
+update_param!(m, :grosseconomy, :k0, 130.)
+update_param!(m, :grosseconomy, :share, 0.3)
 
-# Set parameters for the emissions component
-@test_throws ErrorException set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:19]) # the parameter needs to be length of model
-set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+# update and connect parameters for the emissions component
+@test_throws ErrorException update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:19]) # the parameter needs to be length of model
+update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
 
 run(m)
@@ -90,10 +90,10 @@ set_dimension!(m, :time, collect(2015:5:2115))
 @test m.md.namespace[:emissions].last == 2105 # explicitly set
 
 # reset any parameters that have a time dimension
-update_param!(m, :l, [(1. + 0.015)^t *6404 for t in 1:21])
-update_param!(m,  :tfp, [(1 + 0.065)^t * 3.57 for t in 1:21])
-update_param!(m, :s, ones(21).* 0.22)
-update_param!(m, :sigma, [(1. - 0.05)^t *0.58 for t in 1:21])
+update_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:21])
+update_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:21])
+update_param!(m, :grosseconomy, :s, ones(21).* 0.22)
+update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:21])
 
 run(m)
 
@@ -113,16 +113,16 @@ set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
 add_comp!(m, grosseconomy, first = 2020)
 add_comp!(m, emissions, first = 2020)
 
-# Set parameters for the grosseconomy component
-set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
-set_param!(m, :grosseconomy, :depk, 0.1)
-set_param!(m, :grosseconomy, :k0, 130.)
-set_param!(m, :grosseconomy, :share, 0.3)
+# update parameters for the grosseconomy component
+update_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+update_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+update_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+update_param!(m, :grosseconomy, :depk, 0.1)
+update_param!(m, :grosseconomy, :k0, 130.)
+update_param!(m, :grosseconomy, :share, 0.3)
 
-# Set parameters for the emissions component
-set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+# update and connect the parameters for the emissions component
+update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
 run(m) 
@@ -140,16 +140,16 @@ set_dimension!(m, :time, collect(2015:5:2110)) # 20 timesteps
 add_comp!(m, grosseconomy, last = 2105)
 add_comp!(m, emissions, last = 2105)
 
-# Set parameters for the grosseconomy component
-set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
-set_param!(m, :grosseconomy, :depk, 0.1)
-set_param!(m, :grosseconomy, :k0, 130.)
-set_param!(m, :grosseconomy, :share, 0.3)
+# update parameters for the grosseconomy component
+update_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+update_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+update_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+update_param!(m, :grosseconomy, :depk, 0.1)
+update_param!(m, :grosseconomy, :k0, 130.)
+update_param!(m, :grosseconomy, :share, 0.3)
 
-# Set parameters for the emissions component
-set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+# update and connect parameters for the emissions component
+update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS) 
 
 run(m) 
@@ -407,11 +407,11 @@ m = Model()
 set_dimension!(m, :time, 2005:2020)
 add_comp!(m, top, nameof(top))
 
-set_param!(m, :fooA1, 1)
-set_param!(m, :fooA2, 2)
-set_param!(m, :foo3, 10)
-set_param!(m, :foo4, 20)
-set_param!(m, :par_1_1, collect(1:length(time_labels(m))))
+update_param!(m, :top, :fooA1, 1)
+update_param!(m, :top, :fooA2, 2)
+update_param!(m, :top, :foo3, 10)
+update_param!(m, :top, :foo4, 20)
+update_param!(m, :top, :par_1_1, collect(1:length(time_labels(m))))
 
 run(m)
 

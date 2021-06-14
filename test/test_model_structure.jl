@@ -8,7 +8,8 @@ using Mimi
 import Mimi:
     connect_param!, unconnected_params, set_dimension!,
     get_connections, internal_param_conns, dim_count,  dim_names,
-    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, compdefs
+    modeldef, modelinstance, compdef, getproperty, setproperty!, dimension, 
+    nothing_params, compdefs
 
 @defcomp A begin
     varA = Variable{Int}(index=[time])
@@ -56,11 +57,15 @@ add_comp!(m, C, after=:B)
 connect_param!(m, :A, :parA, :C, :varC)
 
 unconns = unconnected_params(m)
-@test length(unconns) == 1
+@test length(unconns) == 0
+
+nothingparams = nothing_params(m)
+@test length(nothingparams) == 1
+
 c = compdef(m, :C)
-uconn = unconns[1]
-@test uconn.comp_name == :C
-@test uconn.datum_name == :parC
+nothingparam = nothingparams[1]
+@test nothingparam.comp_name == :C
+@test nothingparam.datum_name == :parC
 
 connect_param!(m, :C => :parC, :B => :varB)
 
@@ -76,8 +81,7 @@ c = compdef(m, :C)
 @test get_connections(m, :B, :outgoing)[1].dst_comp_path == c.comp_path
 
 @test length(get_connections(m, :A, :all)) == 1
-
-@test length(unconnected_params(m)) == 0
+@test length(nothing_params(m)) == 0
 
 run(m)
 
@@ -162,8 +166,8 @@ m = Model()
 set_dimension!(m, :time, 2015:5:2100)
 
 add_comp!(m, E)
-set_param!(m, :E, :parE1, 1)
-set_param!(m, :E, :parE2, 10)
+update_param!(m, :E, :parE1, 1)
+update_param!(m, :E, :parE2, 10)
 
 run(m)
 @test m[:E, :varE] == 10

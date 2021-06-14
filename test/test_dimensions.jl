@@ -5,15 +5,15 @@ using Test
 
 import Mimi:
     compdef, AbstractDimension, RangeDimension, Dimension, key_type, first_period, last_period,
-    ComponentReference, ComponentPath, ComponentDef, time_labels
+    ComponentReference, ComponentPath, ComponentDef, time_labels, model_params
 
 ## 
 ## Constants
 ##
 
 dim_varargs = Dimension(:foo, :bar, :baz)   # varargs
-dim_vec = Dimension([:foo, :bar, :baz]) # Vector		
-dim_range = Dimension(2010:2100)     # AbstractRange	
+dim_vec = Dimension([:foo, :bar, :baz]) # Vector	
+dim_range = Dimension(2010:2100)     # AbstractRange
 rangedim = RangeDimension(2010:2100) # RangeDimension type	
 dim_vals = Dimension(4) # Same as 1:4
 
@@ -144,9 +144,11 @@ my_foo2 = compdef(foo2_ref1)
 
 # Set Parameters
 original_x_vals = collect(2000:2100)
-@test_throws ErrorException set_param!(m, :foo2, :x, 1990:2200) # too long
-@test_throws ErrorException set_param!(m, :foo2, :x, 2005:2095) # too short
-set_param!(m, :foo2, :x, original_x_vals) 
+@test_throws ErrorException update_param!(m, :foo2, :x, 1990:2200) # too long
+@test_throws ErrorException update_param!(m, :foo2, :x, 2005:2095) # too short
+
+add_shared_param!(m, :x, original_x_vals, dims = [:time])
+connect_param!(m, :foo2, :x, :x)
 
 run(m)
 
@@ -161,7 +163,7 @@ set_dimension!(m, :time, 1990:2050)
 @test last_period(m.md.namespace[:foo2]) == 2050 # trimmed with model
 
 # check that parameters were padded properly
-new_x_vals = m.md.external_params[:x].values.data
+new_x_vals = model_params(m)[:x].values.data
 @test length(new_x_vals) == length(time_labels(m))
 @test new_x_vals[11:end] == original_x_vals[1:51]
 @test all(ismissing, new_x_vals[1:10])
@@ -170,7 +172,7 @@ run(m) # should still run because parameters were adjusted under the hood
 
 # reset again with late end
 set_dimension!(m, :time, 1990:2200)
-new_x_vals = m.md.external_params[:x].values.data
+new_x_vals = model_params(m)[:x].values.data
 @test length(new_x_vals) == length(time_labels(m))
 @test all(ismissing, new_x_vals[1:10])
 @test new_x_vals[11:61] == original_x_vals[1:51]

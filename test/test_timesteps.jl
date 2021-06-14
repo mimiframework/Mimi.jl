@@ -145,8 +145,8 @@ set_dimension!(m, :time, years)
 foo = add_comp!(m, Foo, first=first_foo)
 bar = add_comp!(m, Bar)
 
-set_param!(m, :Foo, :inputF, 5.)
-set_param!(m, :Bar, :inputB, collect(1:length(years)))
+update_param!(m, :Foo, :inputF, 5.)
+update_param!(m, :Bar, :inputB, collect(1:length(years)))
 
 run(m)
 
@@ -217,7 +217,7 @@ set_dimension!(m2, :time, years)
 bar = add_comp!(m2, Bar)
 foo2 = add_comp!(m2, Foo2, first = first_foo)
 
-set_param!(m2, :Bar, :inputB, collect(1:length(years)))
+update_param!(m2, :Bar, :inputB, collect(1:length(years)))
 connect_param!(m2, :Foo2, :inputF, :Bar, :output)
 
 run(m2)
@@ -248,7 +248,7 @@ set_dimension!(m3, :time, years)
 add_comp!(m3, Foo, first=2005)
 add_comp!(m3, Bar2)
 
-set_param!(m3, :Foo, :inputF, 5.)
+update_param!(m3, :Foo, :inputF, 5.)
 connect_param!(m3, :Bar2, :inputB, :Foo, :output, zeros(length(years)))
 
 run(m3)

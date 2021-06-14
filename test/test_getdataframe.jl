@@ -37,14 +37,14 @@ years = collect(2015:5:2110)
 
 set_dimension!(model1, :time, years)
 add_comp!(model1, testcomp1)
-set_param!(model1, :testcomp1, :par1, years)
-set_param!(model1, :testcomp1, :par_scalar, 5.)
+update_param!(model1, :testcomp1, :par1, years)
+update_param!(model1, :testcomp1, :par_scalar, 5.)
 
 add_comp!(model1, testcomp2)
 
-@test_throws ErrorException set_param!(model1, :testcomp2, :par2, late_first:5:early_last)
-@test ! (:par2 in keys(model1.md.external_params))  # Test that after the previous error, the :par2 didn't stay in the model's parameter list
-set_param!(model1, :testcomp2, :par2, years)
+@test_throws ErrorException update_param!(model1, :testcomp2, :par2, late_first:5:early_last)
+@test ! (:par2 in keys(model1.md.model_params))  # Test that after the previous error, the :par2 didn't stay in the model's parameter list
+update_param!(model1, :testcomp2, :par2, years)
 
 # Test running before model built
 @test_throws ErrorException df = getdataframe(model1, :testcomp1, :var1)
@@ -101,7 +101,7 @@ data = Array{Int}(undef, nyears, nregions, nrates)
 data[:] = 1:(nyears * nregions * nrates)
 
 add_comp!(model2, testcomp3)
-set_param!(model2, :testcomp3, :par3, data)
+update_param!(model2, :testcomp3, :par3, data)
 
 run(model2)
 
@@ -136,7 +136,7 @@ par3 = Array{Union{Missing,Float64}}(undef, nyears, nregions, nrates)
 par3[:] .= missing
 
 par3[valid_indices, :, :] = 1:(nindices * nregions * nrates)
-set_param!(model3, :testcomp3, :par3, par3)
+update_param!(model3, :testcomp3, :par3, par3)
 run(model3)
 
 df3 = getdataframe(model3, :testcomp3 => :par3)

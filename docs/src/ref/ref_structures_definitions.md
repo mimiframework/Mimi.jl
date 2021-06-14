@@ -2,7 +2,7 @@
 
 ## Model Definition
 
-Models are composed of two separate structures, which we refer to as the "definition" side and the "instance" or "instantiated" side. The definition side is operated on by the user via the `@defcomp` and `@defcomposite` macros, and the public API (`add_comp!`, `set_param!`, `connect_param!`, etc.).
+Models are composed of two separate structures, which we refer to as the "definition" side and the "instance" or "instantiated" side. The definition side is operated on by the user via the [`@defcomp`](@ref) and [`@defcomposite`](@ref) macros, and the public API ([`add_comp!`](@ref), [`update_param!`](@ref), [`connect_param!`](@ref), etc.).
 
 The instantiated model can be thought of as a "compiled" version of the model definition, with its data structures oriented toward run-time efficiency. It is constructed by Mimi in the `build()` function, which is called by the `run()` function.
 
@@ -29,7 +29,7 @@ The namespace of a leaf component can hold `ParameterDef`s and `VariableDef`s, b
 
 ## Composite components
 
-Composite components are defined using the `@defcomposite` macro which generates a composite component definition of the type `CompositeComponentDef` which has the following fields, in addition to the fields of a `ComponentDef`:
+Composite components are defined using the [`@defcomposite`](@ref) macro which generates a composite component definition of the type `CompositeComponentDef` which has the following fields, in addition to the fields of a `ComponentDef`:
 ```
 # CompositeComponentDef <: ComponentDef 
 internal_param_conns::Vector{InternalParameterConnection}   
@@ -41,7 +41,7 @@ The namespace of a composite component can hold `CompositeParameterDef`s and`Com
 
 Note: we use "datum" to refer collectively to parameters and variables. Parameters are values that are fed into a component, and variables are values calculated by a component's `run_timestep` function.
 
-Datum are defined with the `@defcomp` and `@defcomposite` macros, and have the following fields:
+Datum are defined with the [`@defcomp`](@ref) and [`@defcomposite`](@ref) macros, and have the following fields:
 ```
 # DatumDef
 name::Symbol
@@ -79,20 +79,17 @@ datum_name::Symbol  # name of the parameter or variable in the subcomponent's na
 
 ## ModelDef
 
-A `ModelDef` is a top-level composite that also stores external parameters and a list of external parameter connections. It contains the following additional fields:
+A `ModelDef` is a top-level composite that also stores model parameters and a list of model parameter connections. It contains the following additional fields:
 ```
 # ModelDef <: CompositeComponentDef
 external_param_conns::Vector{ExternalParameterConnection}
-external_params::Dict{Symbol, ModelParameter}
+model_params::Dict{Symbol, ModelParameter}
 number_type::DataType
 dirty::Bool
 ```
 Note: a ModelDef's namespace will only hold `AbstractComponentDef`s. 
 
 ## Parameter Connections
-
-Parameters hold values defined exogneously to the model ("external" parameters) or to the
-component ("internal" parameters).
 
 `InternalParameterConnection`
 Internal parameters are defined by connecting a parameter in one component to a variable
@@ -102,10 +99,10 @@ internal parameter connections result in direct references from the parameter to
 storage allocated for the variable.
 
 `ExternalParameterConnection`
-Values that are exogenous to the model are defined in external parameters whose values are
-assigned using the public API function `set_param!()`, or by setting default values in
-`@defcomp` or `@defcomposite`, in which case, the default values are assigned via an
-internal call to `set_param!()`.
+Values that are exogenous to the model are defined in model parameters whose values are
+assigned using the public API function [`update_param!()`](@ref), or by setting default values in
+[`@defcomp`](@ref) or [`@defcomposite`](@ref), in which case, the default values are assigned via an
+internal call to [`update_param!()`](@ref).
 
 External connections are stored in the `ModelDef`, along with the actual `ModelParameter`s,
 which may be scalar values or arrays, as described below.
@@ -119,13 +116,13 @@ src_var_name::Symbol
 dst_comp_path::ComponentPath
 dst_par_name::Symbol
 ignoreunits::Bool
-backup::Union{Symbol, Nothing} # a Symbol identifying the external param providing backup data, or nothing
+backup::Union{Symbol, Nothing} # a Symbol identifying the model param providing backup data, or nothing
 backup_offset::Union{Int, Nothing}
 
 # ExternalParameterConnection  <: AbstractConnection
 comp_path::ComponentPath
 param_name::Symbol      # name of the parameter in the component
-external_param::Symbol  # name of the parameter stored in the model's external_params
+model_param_name::Symbol  # name of the parameter stored in the model's model_params
 ```
 
 ## Model parameters 
@@ -133,4 +130,4 @@ external_param::Symbol  # name of the parameter stored in the model's external_p
 `ModelParameter`
 This is an abstract type that is the supertype of both `ScalarModelParameter{T}` and
 `ArrayModelParameter{T}`. These two parameterized types are used to store values set
-for external model parameters.
+for model parameters.

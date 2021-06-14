@@ -16,6 +16,7 @@ export
     MarginalModel,
     Model,
     add_comp!,
+    add_shared_param!,
     # components,
     connect_param!,
     create_marginal_model,
@@ -47,6 +48,7 @@ export
     TimestepValue,
     update_param!,
     update_params!,
+    update_leftover_params!,
     # variables,
     variable_dimensions,
     variable_names

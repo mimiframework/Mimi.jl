@@ -109,8 +109,18 @@ function get_var_value(ci::AbstractComponentInstance, name::Symbol)
     end
 end
 
+"""
+    set_param_value(ci::AbstractComponentInstance, name::Symbol, value)
+
+Set the value of parameter `name` in component `ci` to `value`.
+"""
 set_param_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.parameters, name, value)
 
+"""
+    set_var_value(ci::AbstractComponentInstance, name::Symbol, value)
+
+Set the value of variable `name` in component `ci` to `value`.
+"""
 set_var_value(ci::AbstractComponentInstance, name::Symbol, value) = setproperty!(ci.variables, name, value)
 
 """
@@ -319,6 +329,12 @@ function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dim
     return nothing
 end
 
+"""
+    Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
+            dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+            
+Run the `ModelInstance` `mi` once with `ntimesteps` and dimension keys `dimkeys`.
+"""
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
                   dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
 

@@ -10,7 +10,7 @@ mm1 = create_marginal_model(create_model())
 mm2 = create_marginal_model(create_model())
 
 simdef = @defsim begin
-    share = Uniform(0, 1)
+    grosseconomy.share = Uniform(0, 1)
     save(emissions.E_Global)
 end
 

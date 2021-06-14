@@ -11,11 +11,33 @@ Return the `ModelDef` contained by Model `m`.
 """
 modeldef(m::Model) = m.md
 
+"""
+    modelinstance(m::Model)
+
+Return the `ModelInstance` contained by Model `m`.
+"""
 modelinstance(m::Model) = m.mi
+
+"""
+    modelinstance_def(m::Model)
+
+Return the `ModelDef` of the `ModelInstance` contained by Model `m`.
+"""
 modelinstance_def(m::Model) = modeldef(modelinstance(m))
 
+"""
+    is_built(m::Model)
+
+Return true if Model `m` is built, otherwise return false.
+"""
 is_built(m::Model) = !(dirty(m.md) || modelinstance(m) === nothing)
 
+"""
+    is_built(mm::MarginalModel)
+
+Return true if `MarginalModel` `mm` is built, meaning both its `base` and `modified`
+`Model`s are built, otherwise return false.
+"""
 is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 
 @delegate compinstance(m::Model, name::Symbol) => mi
@@ -26,17 +48,21 @@ is_built(mm::MarginalModel) = (is_built(mm.base) && is_built(mm.modified))
 @delegate internal_param_conns(m::Model) => md
 @delegate external_param_conns(m::Model) => md
 
-@delegate external_params(m::Model) => md
-@delegate external_param(m::Model, name::Symbol; missing_ok=false) => md
+@delegate model_params(m::Model) => md
+@delegate model_param(m::Model, comp_name::Symbol, param_name::Symbol; missing_ok = false) => md
+@delegate model_param(m::Model, name::Symbol; missing_ok=false) => md
 
 @delegate connected_params(m::Model) => md
 @delegate unconnected_params(m::Model) => md
+@delegate nothing_params(m::Model) => md
 
 @delegate add_connector_comps!(m::Model) => md
 
 """
-    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, src_comp_name::Symbol, src_var_name::Symbol, 
-    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, backup_offset::Union{Int, Nothing}=nothing)
+    connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol, 
+                    src_comp_name::Symbol, src_var_name::Symbol, 
+                    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                    backup_offset::Union{Int, Nothing}=nothing)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of model `m`
 to a variable `src_var_name` in another component `src_comp_name` of the same model
@@ -47,19 +73,21 @@ a specified number of timesteps after the source component begins. ie. the value
 `1` if the destination componentm parameter should only use the source component 
 data for the second timestep and beyond.
 """
-@delegate connect_param!(m::Model,
-                         dst_comp_name::Symbol, dst_par_name::Symbol,
-                         src_comp_name::Symbol, src_var_name::Symbol,
-                         backup::Union{Nothing, Array}=nothing;
-                         ignoreunits::Bool=false, backup_offset::Union{Int, Nothing} = nothing) => md
+@delegate connect_param!(m::Model, dst_comp_name::Symbol, dst_par_name::Symbol,
+                        src_comp_name::Symbol, src_var_name::Symbol,
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                        backup_offset::Union{Nothing, Int} = nothing) => md
+
 
 """
-    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol)
+    connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
+                   check_attributes::Bool=true, ignoreunits::Bool=false))
 
-Bind the parameter `param_name` in the component `comp_name` of model `m` to the external parameter 
-`ext_param_name` already present in the model's list of external parameters.
+Connect a parameter `param_name` in the component `comp_name` of composite `obj` to
+the model parameter `model_param_name`.
 """
-@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol) => md
+@delegate connect_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol;
+                        check_attributes::Bool=true, ignoreunits::Bool = false) => md
 
 """
     connect_param!(m::Model, dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol}, backup::Array; ignoreunits::Bool=false)
@@ -88,37 +116,104 @@ Remove any parameter connections for a given parameter `param_name` in a given c
 """
 @delegate disconnect_param!(m::Model, comp_name::Symbol, param_name::Symbol) => md
 
-# TBD: these may not be needed as delegators
-@delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
+"""
+    add_model_param!(m::Model, name::Symbol, value::ModelParameter)
 
-@delegate set_external_param!(m::Model, name::Symbol,
-                              value::Union{Number, AbstractArray, AbstractRange, Tuple};
-                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+Add an model parameter with name `name` and Model Parameter `value` to Model `m`.
+"""
+@delegate add_model_param!(m::Model, name::Symbol, value::ModelParameter) => md
 
+"""
+    add_model_param!(m: Model, name::Symbol, value::Number;
+                    param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                    is_shared::Bool = false)
+
+Create and add a model parameter with name `name` and Model Parameter `value` 
+to Model `m`. The Model Parameter will be created with value `value`, dimensions
+`param_dims` which can be left to be created automatically from the Model Def, and 
+an is_shared attribute `is_shared` which defaults to false.
+"""
+@delegate add_model_param!(m::Model, name::Symbol,
+                            value::Union{Number, AbstractArray, AbstractRange, Tuple};
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+"""
+    add_model_param!(m::Model, name::Symbol,
+                    value::Union{AbstractArray, AbstractRange, Tuple};
+                    param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                    is_shared::Bool = false)
+
+Create and add a model parameter with name `name` and Model Parameter `value` 
+to Model `m`. The Model Parameter will be created with value `value`, dimensions
+`param_dims` which can be left to be created automatically from the Model Def, and 
+an is_shared attribute `is_shared` which defaults to false.
+"""
+@delegate add_model_param!(m::Model, name::Symbol,
+                            value::Union{AbstractArray, AbstractRange, Tuple};
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                            is_shared::Bool = false) => md
+"""
+    add_internal_param_conn(m::Model, conn::InternalParameterConnection)
+
+Add internal parameter connection `conn` to model `m`.
+"""
 @delegate add_internal_param_conn!(m::Model, conn::InternalParameterConnection) => md
 
-# @delegate doesn't handle the 'where T' currently. This is the only instance of it for now...
-function set_leftover_params!(m::Model, parameters::Dict{T, Any}) where T
-    set_leftover_params!(m.md, parameters)
-end
+"""
+    set_leftover_params!(m::Model, parameters::Dict)
+
+Set all of the parameters in `Model` `m` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are strings (or convertible into Strings ie. Symbols) that 
+match the names of unset parameters in the model, and all resulting new model 
+parameters will be shared parameters.
+
+Note that this function `set_leftover_params! has been deprecated, and uses should
+be transitioned to using `update_leftover_params!` with keys specific to component-parameter 
+pairs i.e. (comp_name, param_name) => value in the dictionary.
+"""
+@delegate set_leftover_params!(m::Model, parameters) => md
+
+"""
+    update_leftover_params!(m::Model, parameters::Dict)
+
+Update all of the parameters in `Model` `m` that don't have a value and are not connected
+to some other component to a value from a dictionary `parameters`. This method assumes
+the dictionary keys are Tuples of Symbols (or convertible to Symbols ie. Strings) 
+of (comp_name, param_name) that match the component-parameter pair of 
+unset parameters in the model.  All resulting connected model parameters will be 
+unshared model parameters.
+"""
+@delegate update_leftover_params!(m::Model, parameters) => md
+
 
 """
     update_param!(m::Model, name::Symbol, value; update_timesteps = nothing)
 
-Update the `value` of an external model parameter in model `m`, referenced by
+Update the `value` of an model parameter in model `m`, referenced by
 `name`. The update_timesteps keyword argument is deprecated, we keep it here 
 just to provide warnings.
 """
 @delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing) => md
 
 """
-    update_params!(m::Model, parameters::Dict{T, Any}; update_timesteps = nothing) where T
+    update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value)
 
-For each (k, v) in the provided `parameters` dictionary, `update_param!``
-is called to update the external parameter by name k to value v.  Each key k 
-must be a symbol or convert to a symbol matching the name of an external parameter t
-hat already exists in the model definition. The update_timesteps keyword argument 
-is deprecated, but temporarily remains as a dummy argument to allow warning detection.
+Update the `value` of the unshared model parameter in Model `m`'s Model Def connected
+to component `comp_name`'s parameter `param_name`. 
+"""
+@delegate update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value) => md
+
+"""
+    update_params!(m::Model, parameters::Dict; update_timesteps = nothing)
+
+For each (k, v) in the provided `parameters` dictionary, `update_param!`
+is called to update the model parameter identified by k to value v.
+
+For updating unshared parameters, each key k must be a Tuple matching the name of a 
+component in `obj` and the name of an parameter in that component.
+
+For updating shared parameters, each key k must be a symbol or convert to a symbol 
+matching the name of a shared model parameter that already exists in the model.
 """
 @delegate update_params!(m::Model, parameters::Dict; update_timesteps = nothing) => md
 
@@ -167,46 +262,6 @@ function add_comp!(m::Model, comp_def::AbstractComponentDef, comp_name::Symbol=c
     return add_comp!(m, comp_def.comp_id, comp_name; kwargs...)
 end
 
-# DEPRECATION - EVENTUALLY REMOVE
-"""
-    replace_comp!(
-        m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing,
-        after::NothingSymbol=nothing,
-        reconnect::Bool=true
-    )
-
-Deprecated function for replacing the component with name `comp_name` in model `m` with the 
-new component specified by `comp_id`. Use the following syntax instead:
-
-`replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)`
-
-See docstring for `replace!` for further description of available functionality.
-"""
-function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
-    error("Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead.")
-end
-
-# DEPRECATION - EVENTUALLY REMOVE
-"""
-    replace_comp!(
-        m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_id.comp_name;
-        before::NothingSymbol=nothing,
-        after::NothingSymbol=nothing,
-        reconnect::Bool=true
-    )
-
-Deprecated function for replacing the component with name `comp_name` in model `m` with the 
-new component specified by `comp_def`. Use the following syntax instead:
-
-`replace!(m, comp_name => comp_def; kwargs...)`
-
-See docstring for `replace!` for further description of available functionality.
-"""
-function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
-    error("Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead.")
-end
-
 """
     replace!(
         m::Model,
@@ -248,7 +303,11 @@ Return an iterator on the components in a model's model instance.
 
 @delegate time_labels(m::Model) => md
 
-# Return the number of timesteps a given component in a model will run for.
+"""
+    getspan(m::Model, comp_name::Symbol)
+
+Return the number of timesteps a given component in a model will run for.
+"""
 @delegate getspan(m::Model, comp_name::Symbol) => md
 
 """
@@ -267,6 +326,11 @@ function datumdef(comp_def::AbstractComponentDef, item::Symbol)
     end
 end
 
+"""
+    datumdef(m::Model, comp_name::Symbol, item::Symbol)
+
+Return a DatumDef for `item` in the given component `comp_name` of model `m`.
+"""
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 
 """
@@ -376,36 +440,51 @@ variables(m::Model, comp_name::Symbol) = variables(compdef(m, comp_name))
 @delegate variable_names(m::Model, comp_name::Symbol) => md
 
 """
-    set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
+    add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], datatype::DataType=Nothing)
+
+User-facing API function to add a shared parameter to Model `m` with name
+`name` and value `value`, and an array of dimension names `dims` which dfaults to 
+an empty vector.  The `is_shared` attribute of the added Model Parameter will be `true`.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.  This must be included if the `value` is not a scalar, and defaults
+to an empty vector. Optional keyword argument `datatype` allows user to specify a datatype
+to use for the shared model parameter.
+"""
+@delegate add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing) => md
+                    
+"""
+    add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
 
 Add a one or two dimensional (optionally, time-indexed) array parameter `name`
 with value `value` to the model `m`.
 """
-@delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
+@delegate add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
 
 """
-    set_external_scalar_param!(m::Model, name::Symbol, value::Any)
+    add_model_scalar_param!(m::Model, name::Symbol, value::Any)
 
 Add a scalar type parameter `name` with value `value` to the model `m`.
 """
-@delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
+@delegate add_model_scalar_param!(m::Model, name::Symbol, value::Any) => md
 
 """
     delete!(m::Model, component::Symbol; deep::Bool=false)
 
 Delete a `component` by name from a model `m`'s ModelDef, and nullify the ModelInstance.
-If `deep=true` then any external model parameters connected only to 
+If `deep=true` then any model model parameters connected only to 
 this component will also be deleted.
 """
 @delegate Base.delete!(m::Model, comp_name::Symbol; deep::Bool=false) => md
 
 """
-    delete_param!(m::Model, external_param_name::Symbol)
+    delete_param!(m::Model, model_param_name::Symbol)
 
-Delete `external_param_name` from a model `m`'s ModelDef's list of external parameters, and
-also remove all external parameters connections that were connected to `external_param_name`.
+Delete `model_param_name` from a model `m`'s ModelDef's list of model parameters, and
+also remove all external parameters connections that were connected to `model_param_name`.
 """
-@delegate delete_param!(m::Model, external_param_name::Symbol) => md
+@delegate delete_param!(m::Model, model_param_name::Symbol) => md
 
 """
     set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
@@ -418,15 +497,15 @@ that they match the model's index labels.
 @delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; dims=nothing) => md
 
 """
-    set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
+    set_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
 
 Set the parameter `param_name` of a component `comp_name` in a model `m` to a given `value`, 
-storing the value in the model's external parameter list by the provided name `ext_param_name`.
+storing the value in the model's parameter list by the provided name `model_param_name`.
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims'
 is a list of the dimension names of the provided data, and will be used to check
 that they match the model's index labels.
 """
-@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing) => md
+@delegate set_param!(m::Model, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing) => md
 
 
 """
@@ -440,7 +519,8 @@ the specified name.
 @delegate import_params!(m::Model) => md
 
 """
-    run(m::Model)
+    Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
+            dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
 
 Run model `m` once.
 """
@@ -459,3 +539,59 @@ function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
     run(mi, ntimesteps, dim_keys)
     nothing
 end
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors -- 
+
+"""
+    replace_comp!(
+        m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
+        reconnect::Bool=true
+    )
+
+Deprecated function for replacing the component with name `comp_name` in model `m` with the 
+new component specified by `comp_def`. Use the following syntax instead:
+
+`replace!(m, comp_name => comp_def; kwargs...)`
+
+See docstring for `replace!` for further description of available functionality.
+"""
+function replace_comp!(m::Model, comp_def::ComponentDef, comp_name::Symbol=comp_def.comp_id.comp_name; kwargs...)
+    error("Function `replace_comp!(m, comp_def, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => comp_def; kwargs...)` instead.")
+end
+
+"""
+    replace_comp!(
+        m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name;
+        before::NothingSymbol=nothing,
+        after::NothingSymbol=nothing,
+        reconnect::Bool=true
+    )
+
+Deprecated function for replacing the component with name `comp_name` in model `m` with the 
+new component specified by `comp_id`. Use the following syntax instead:
+
+`replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)`
+
+See docstring for `replace!` for further description of available functionality.
+"""
+function replace_comp!(m::Model, comp_id::ComponentId, comp_name::Symbol=comp_id.comp_name; kwargs...)
+    error("Function `replace_comp!(m, comp_id, comp_name; kwargs...)` has been deprecated. Use `replace!(m, comp_name => Mimi.compdef(comp_id); kwargs...)` instead.")
+end
+
+# -- throw warnings --
+
+@delegate set_external_param!(m::Model, name::Symbol,
+                              value::Union{Number, AbstractArray, AbstractRange, Tuple};
+                              param_dims::Union{Nothing,Array{Symbol}} = nothing) => md
+
+@delegate set_external_param!(m::Model, name::Symbol, value::ModelParameter) => md
+@delegate set_external_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims) => md
+@delegate set_external_scalar_param!(m::Model, name::Symbol, value::Any) => md
+@delegate external_params(m::Model) => md
+@delegate external_param(m::Model, name::Symbol; missing_ok=false) => md

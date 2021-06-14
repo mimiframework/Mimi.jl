@@ -200,7 +200,7 @@ macro defcomp(comp_name, ex)
             continue
         end
 
-        # DEPRECATION - EVENTUALLY REMOVE
+        # DEPRECATION
         if @capture(elt, name_::datum_type_ = elt_type_(args__))
             error("The following syntax has been deprecated in @defcomp: \"$name::$datum_type = $elt_type(...)\". Use curly bracket syntax instead: \"$name = $elt_type{$datum_type}(...)\"")
         elseif ! @capture(elt, name_ = (elt_type_{datum_type_}(args__) | elt_type_(args__)))
