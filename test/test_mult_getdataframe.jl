@@ -103,15 +103,15 @@ function run_my_model()
     add_comp!(my_model, grosseconomy)
     add_comp!(my_model, emissions)
 
-    set_param!(my_model, :grosseconomy, :l, l)
-    set_param!(my_model, :grosseconomy, :tfp, tfp)
-    set_param!(my_model, :grosseconomy, :s, s)
-    set_param!(my_model, :grosseconomy, :depk,depk)
-    set_param!(my_model, :grosseconomy, :k0, k0)
-    set_param!(my_model, :grosseconomy, :share, 0.3)
+    update_param!(my_model, :grosseconomy, :l, l)
+    update_param!(my_model, :grosseconomy, :tfp, tfp)
+    update_param!(my_model, :grosseconomy, :s, s)
+    update_param!(my_model, :grosseconomy, :depk,depk)
+    update_param!(my_model, :grosseconomy, :k0, k0)
+    update_param!(my_model, :grosseconomy, :share, 0.3)
 
     #set parameters for emissions component
-    set_param!(my_model, :emissions, :sigma, sigma2)
+    update_param!(my_model, :emissions, :sigma, sigma2)
     connect_param!(my_model, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     run(my_model)
@@ -186,7 +186,7 @@ end
 par = collect(2015:5:2110)
 add_comp!(my_model, testcomp1)
 
-set_param!(my_model, :testcomp1, :par1, par)
+update_param!(my_model, :testcomp1, :par1, par)
 run(my_model)
 
 #Regular getdataframe

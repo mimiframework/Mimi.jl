@@ -1,23 +1,35 @@
-Base.length(obj::AbstractComponentDef) = 0   # no sub-components
-Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
+# 
+# Components 
+#
 
+
+# `compdef` methods to obtain component definitions using various arguments
+
+"""
+    function compdef(comp_id::ComponentId)
+
+Return the component definition with ComponentId `comp_id`.
+"""
 function compdef(comp_id::ComponentId)
     # @info "compdef: mod=$(comp_id.module_obj) name=$(comp_id.comp_name)"
     return getfield(comp_id.module_obj, comp_id.comp_name)
 end
 
 compdef(cr::ComponentReference) = find_comp(cr)
-
 compdef(obj::AbstractCompositeComponentDef, path::ComponentPath) = find_comp(obj, path)
-
 compdef(obj::AbstractCompositeComponentDef, comp_name::Symbol) = components(obj)[comp_name]
+compdefs(obj::AbstractCompositeComponentDef) = values(components(obj))
+compdefs(c::ComponentDef) = [] # Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
+
+# other helper functions
 
 has_comp(obj::AbstractCompositeComponentDef, comp_name::Symbol) = haskey(components(obj), comp_name)
-compdefs(obj::AbstractCompositeComponentDef) = values(components(obj))
 compkeys(obj::AbstractCompositeComponentDef) = keys(components(obj))
 
-# Allows method to be called harmlessly on leaf component defs, which simplifies recursive funcs.
-compdefs(c::ComponentDef) = []
+Base.length(obj::AbstractComponentDef) = 0   # no sub-components
+Base.length(obj::AbstractCompositeComponentDef) = length(components(obj))
+Base.getindex(comp::AbstractComponentDef, key::Symbol) = comp.namespace[key]
+@delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
 
 compmodule(comp_id::ComponentId) = comp_id.module_obj
 compname(comp_id::ComponentId)   = comp_id.comp_name
@@ -26,6 +38,10 @@ compmodule(obj::AbstractComponentDef) = compmodule(obj.comp_id)
 compname(obj::AbstractComponentDef)   = compname(obj.comp_id)
 
 compnames() = map(compname, compdefs())
+
+#
+# Helper Functions with methods for multiple Def types
+#
 
 dirty(md::ModelDef) = md.dirty
 
@@ -57,16 +73,20 @@ last_period(root::AbstractCompositeComponentDef,  comp::AbstractComponentDef) = 
 find_first_period(comp_def::AbstractComponentDef) = @or(first_period(comp_def), first_period(get_root(comp_def)))
 find_last_period(comp_def::AbstractComponentDef) = @or(last_period(comp_def), last_period(get_root(comp_def)))
 
+#
+# Models
+#
+
 """
     delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 
 Delete a `component` by name from `md`.
-If `deep=true` then any external model parameters connected only to 
+If `deep=true` then any model parameters connected only to 
 this component will also be deleted.
 """
 function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
     if ! has_comp(md, comp_name)
-        error("Cannot delete '$comp_name': component does not exist.")
+        error("Cannot delete '$comp_name': component does not exist in model.")
     end
 
     comp_def = compdef(md, comp_name)
@@ -81,13 +101,13 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 
     # Remove external parameter connections
 
-    if deep # Find and delete external_params that were connected only to the deleted component if specified
-        # Get all external parameters this component is connected to
-        comp_ext_params = map(x -> x.external_param, filter(x -> x.comp_path == comp_path, md.external_param_conns))
+    if deep # Find and delete model_params that were connected only to the deleted component if specified
+        # Get all model parameters this component is connected to
+        comp_model_params = map(x -> x.model_param_name, filter(x -> x.comp_path == comp_path, md.external_param_conns))
 
         # Identify which ones are not connected to any other components
-        unbound_filter = x -> length(filter(epc -> epc.external_param == x, md.external_param_conns)) == 1
-        unbound_comp_params = filter(unbound_filter, comp_ext_params)
+        unbound_filter = x -> length(filter(epc -> epc.model_param_name == x, md.external_param_conns)) == 1
+        unbound_comp_params = filter(unbound_filter, comp_model_params)
 
         # Delete these parameters
         [delete_param!(md, param_name) for param_name in unbound_comp_params]
@@ -101,32 +121,29 @@ function Base.delete!(md::ModelDef, comp_name::Symbol; deep::Bool=false)
 end
 
 """
-    delete_param!(md::ModelDef, external_param_name::Symbol)
+    delete_param!(md::ModelDef, model_param_name::Symbol)
 
-Delete `external_param_name` from `md`'s list of external parameters, and also 
-remove all external parameters connections that were connected to `external_param_name`.
+Delete `model_param_name` from `md`'s list of model parameters, and also 
+remove all external parameters connections that were connected to `model_param_name`.
 """
-function delete_param!(md::ModelDef, external_param_name::Symbol)
-    if external_param_name in keys(md.external_params)
-        delete!(md.external_params, external_param_name)
+function delete_param!(md::ModelDef, model_param_name::Symbol)
+    if model_param_name in keys(md.model_params)
+        delete!(md.model_params, model_param_name)
     else
-        error("Cannot delete $external_param_name, not found in external parameter list.")
+        error("Cannot delete $model_param_name, not found in model's parameter list.")
     end
     
-    # Remove external parameter connections
-    epc_filter = x -> x.external_param != external_param_name
+    # Remove model parameter connections
+    epc_filter = x -> x.model_param_name != model_param_name
     filter!(epc_filter, md.external_param_conns)
 
     dirty!(md)
 end
 
-@delegate Base.haskey(comp::AbstractComponentDef, key::Symbol) => namespace
-
-Base.getindex(comp::AbstractComponentDef, key::Symbol) = comp.namespace[key]
-
 #
 # Component namespaces
 #
+
 """
     istype(T::DataType)
 
@@ -167,6 +184,8 @@ variables(obj::AbstractCompositeComponentDef) = values(filter(istype(CompositeVa
 variables(comp_id::ComponentId)  = variables(compdef(comp_id))
 
 """
+    _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
+
 Return true if the component namespace has an item `name` that isa `T`
 """
 function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
@@ -174,6 +193,8 @@ function _ns_has(comp_def::AbstractComponentDef, name::Symbol, T::DataType)
 end
 
 """
+    _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
+
 Get a named element from the namespace of `obj` and verify its type.
 """
 function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
@@ -186,6 +207,8 @@ function _ns_get(obj::AbstractComponentDef, name::Symbol, T::DataType)
 end
 
 """
+    _save_to_namespace(comp::AbstractComponentDef, key::Symbol, value::NamespaceElement)
+
 Save a value to a component's namespace. Allow replacement of existing values for a key
 only with items of the same type; otherwise an error is thrown.
 """
@@ -212,27 +235,62 @@ end
 # Dimensions
 #
 
+"""
+    step_size(values::Vector{Int})
+
+Return the step size for vector of `values`, where the vector is assumed to be uniform.
+"""
 step_size(values::Vector{Int}) = (length(values) > 1 ? values[2] - values[1] : 1)
 
-#
-# TBD: should these be defined as methods of CompositeComponentDef, i.e., not for leaf comps
-#
+"""
+    step_size(obj::AbstractComponentDef)
+
+Return the step size of the time dimension labels of `obj`.
+"""
 function step_size(obj::AbstractComponentDef)
     keys = time_labels(obj)
     return step_size(keys)
 end
 
+"""
+    first_and_step(obj::AbstractComponentDef)
+
+Return the step size and first value of the time dimension labels of `obj`.
+"""
 function first_and_step(obj::AbstractComponentDef)
     keys = time_labels(obj)
     return first_and_step(keys)
 end
 
+"""
+    first_and_step(values::Vector{Int}) 
+
+Return the step size and first value of the vector of `values`, where the vector
+is assumed to be uniform.
+"""
 first_and_step(values::Vector{Int}) = (values[1], step_size(values))
 
+"""
+    first_and_last(obj::AbstractComponentDef)
+
+Return the first and last time labels of `obj`.
+"""
 first_and_last(obj::AbstractComponentDef) = (obj.first, obj.last)
 
+"""
+    time_labels(obj::AbstractComponentDef)
+
+Return the time labels of `obj`, defined as the keys of the `:time` 
+dimension
+"""
 time_labels(obj::AbstractComponentDef) = dim_keys(obj, :time)
 
+"""
+    check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
+    
+Check to make sure that the labels for dimensions `dims` in parameter `name` match
+Model Def `md`'s index values `value`.
+"""
 function check_parameter_dimensions(md::ModelDef, value::AbstractArray, dims::Vector, name::Symbol)
     for dim in dims
         if has_dim(md, dim)
@@ -291,7 +349,7 @@ parameter(obj::AbstractCompositeComponentDef, comp_name::Symbol,
           param_name::Symbol) = parameter(compdef(obj, comp_name), param_name)
 
 has_parameter(comp_def::AbstractComponentDef, name::Symbol) = _ns_has(comp_def, name, AbstractParameterDef)
-has_parameter(md::ModelDef, name::Symbol) = haskey(md.external_params, name)
+has_parameter(md::ModelDef, name::Symbol) = haskey(md.model_params, name)
 
 function parameter_unit(obj::AbstractComponentDef, param_name::Symbol)
     param = parameter(obj, param_name)
@@ -323,8 +381,9 @@ function parameter_dimensions(obj::AbstractComponentDef, comp_name::Symbol, para
     return parameter_dimensions(compdef(obj, comp_name), param_name)
 end
 
-
 """
+    find_params(obj::AbstractCompositeComponentDef, param_name::Symbol)
+
 Find and return a vector of tuples containing references to a ComponentDef and
 a ParameterDef for all instances of parameters with name `param_name`, below the
 composite `obj`. If none are found, an empty vector is returned.
@@ -394,8 +453,11 @@ function recurse(obj::ComponentDef, f::Function, args...;
     composite_only || f(obj, args...)
     nothing
 end
+"""
+    subcomp_params(obj::AbstractComponentDef)
 
-# return UnnamedReference's for all subcomponents' parameters
+Return UnnamedReference's for all parameters of the subcomponents of `obj`.
+"""
 function subcomp_params(obj::AbstractCompositeComponentDef)
     params = UnnamedReference[]
     for (name, sub_obj) in obj.namespace
@@ -423,67 +485,111 @@ function set_param!(md::ModelDef, comp_name::Symbol, value_dict::Dict{Symbol, An
     end
 end
 
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
-    set_param!(md, comp_name, param_name, param_name, value, dims=dims)
-end
-
-function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
-    comp_def = compdef(md, comp_name)
-    @or(comp_def, error("Top-level component with name $comp_name not found"))
-    set_param!(md, comp_def, param_name, ext_param_name, value, dims=dims)
-end
-
-function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, ext_param_name::Symbol, value; dims=nothing)
-    has_parameter(comp_def, param_name) ||
-        error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
-
-    if has_parameter(md, ext_param_name)
-        error("Cannot set parameter :$ext_param_name, the model already has an external parameter with this name.", 
-        " Use `update_param!(m, param_name, value)` to change the value, or use ",
-        "`set_param!(m, comp_name, param_name, unique_param_name, value)` to set a value for only this component.")
-    end
-
-    set_param!(md, param_name, value, dims = dims, comps = [comp_def], ext_param_name = ext_param_name)
-end
-
 """
-    set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing)
+    set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
 
-Set the value of a parameter in all components of the model that have a parameter of 
-the specified name.
+Set the value of parameter `param_name` in component `comp_name` of Model Def `md` 
+to `value`.  This will create a shared model parameter with name `param_name` 
+and connect `comp_name`'s parameter `param_name` to it.
 
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
 of the dimension names of the provided data, and will be used to check that they match the
 model's index labels.
 """
-function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing, ext_param_name=nothing)
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; dims=nothing)
+    set_param!(md, comp_name, param_name, param_name, value, dims=dims)
+end
+
+"""
+    set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, 
+                value; dims=nothing)
+
+Set the value of parameter `param_name` in component `comp_name` of Model Def `md` 
+to `value`.  This will create a shared model parameter with name `model_param_name` 
+and connect `comp_name`'s parameter `param_name` to it.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+"""
+function set_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
+    comp_def = compdef(md, comp_name)
+    @or(comp_def, error("Top-level component with name $comp_name not found"))
+    set_param!(md, comp_def, param_name, model_param_name, value, dims=dims)
+end
+
+"""
+    set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, 
+                model_param_name::Symbol, value; dims=nothing)
+
+Set the value of parameter `param_name` in component `comp_def` of Model Def `md` 
+to `value`.  This will create a shared model parameter with name `model_param_name` 
+and connect `comp_name`'s parameter `param_name` to it.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+"""
+function set_param!(md::ModelDef, comp_def::AbstractComponentDef, param_name::Symbol, model_param_name::Symbol, value; dims=nothing)
+    
+    # error if cannot find the parameter in the component
+    if !has_parameter(comp_def, param_name)
+        error("Cannot find parameter :$param_name in component $(pathof(comp_def))")
+
+    # error if the model_param_name is already found in the model
+    elseif has_parameter(md, model_param_name)
+
+        error("Cannot set parameter :$model_param_name, the model already has a parameter with this name.",
+        " IF you wish to change the value of unshared parameter :$param_name connected to component :$(nameof(compdef))", 
+        " use `update_param!(m, comp_name, param_name, value).", 
+        " IF you wish to change the value of the existing shared parameter :$model_param_name, ",
+        " use `update_param!(m, param_name, value)` to change the value of the shared parameter.",
+        " IF you wish to create a new shared parameter connected to component :$(nameof(compdef)), use ",
+        "`add_shared_param` paired with `connect_param!`.")
+    end
+
+    set_param!(md, param_name, value, dims = dims, comps = [comp_def], model_param_name = model_param_name)
+end
+
+"""
+    set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing)
+
+Set the value of parameter `param_name in all components of the Model Def `md`
+that have a parameter of the specified name to `value`.  This will create a shared
+model parameter with name `param_name` and connect all component parameters with
+that name to it.
+
+The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
+of the dimension names of the provided data, and will be used to check that they match the
+model's index labels.
+"""
+function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignoreunits::Bool=false, comps=nothing, model_param_name=nothing)
+    
+    # find components for connection
     # search immediate subcomponents for this parameter
     if comps === nothing
         comps = [comp for (compname, comp) in components(md) if has_parameter(comp, param_name)]
     end
-
-    if ext_param_name === nothing
-        ext_param_name = param_name
-    end
-
-    if isempty(comps)
-        error("Cannot set parameter :$param_name; not found in ModelDef or children")
-    end
-
+    isempty(comps) && error("Cannot set parameter :$param_name; not found in ModelDef or children")
+   
+    # check for collisions
     # which fields to check for collisions in subcomponents
-    fields = ignoreunits ? (:dim_names, :datatype) : (:dim_names, :datatype, :unit)
+    fields = ignoreunits ? [:dim_names, :datatype] : [:dim_names, :datatype, :unit]
     collisions = _find_collisions(fields, [comp => param_name for comp in comps])
     if ! isempty(collisions) 
         if :unit in collisions
-            error("Cannot set parameter :$param_name in the model, components have conflicting values for the :unit field of this parameter. ", 
-            "Call `set_param!` with optional keyword argument `ignoreunits = true` to override.")
+            error("Cannot set shared parameter :$param_name in the model, components have conflicting values for the :unit field of this parameter. ", 
+            "IF you wish to set a shared parameter, call `set_param!` with optional keyword argument `ignoreunits = true` to override.",
+            "IF you wish to leave these parameters as unshared parameters and just update values, update them with separate calls to `update_param!(m, comp_name, param_name, value)`.")
         else
             spec = join(collisions, " and ")
-            error("Cannot set parameter :$param_name in the model, components have conflicting values for the $spec of this parameter. ",
-            "Set these parameters with separate calls to `set_param!(m, comp_name, param_name, unique_param_name, value)`.")
+            error("Cannot set shared parameter :$param_name in the model, components have conflicting values for the $spec of this parameter. ",
+            "IF you wish to set a shared parameter for each component, set these parameters with separate calls to `set_param!(m, comp_name, param_name, unique_param_name, value)`.",
+            "IF you wish to leave these parameters as unshared parameters and just update values, update them with separate calls to `update_param!(m, comp_name, param_name, value)`.")
         end
     end
 
+    # check dimensions
     if value isa NamedArray
         dims = dimnames(value)
     end
@@ -492,78 +598,29 @@ function set_param!(md::ModelDef, param_name::Symbol, value; dims=nothing, ignor
         check_parameter_dimensions(md, value, dims, param_name)
     end
 
-    comp_def = comps[1]   # since we alread checked that the found comps have no conflicting fields in their parameter definitions, we can just use the first one for reference below
-    param_def = comp_def[param_name]
-    param_dims = param_def.dim_names
-    num_dims = length(param_dims)
-
-    data_type = param_def.datatype
-    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
-
-    if num_dims > 0
-
-        # convert the number type and, if NamedArray, convert to Array
-        if dtype <: AbstractArray
-            value = convert(dtype, value)
-        else
-            # check that number of dimensions matches
-            value_dims = length(size(value))
-            if num_dims != value_dims
-                error("Mismatched data size for a set parameter call: dimension :$param_name",
-                      " in has $num_dims dimensions; indicated value",
-                      " has $value_dims dimensions.")
-            end
-            value = convert(Array{dtype, num_dims}, value)
-        end
-
-        ti = get_time_index_position(param_dims)
-
-        if ti !== nothing   # there is a time dimension
-            T = eltype(value)
-
-            if num_dims == 0
-                values = value
-            else
-
-                # Use the first from the Model def, not the component, since we now say that the
-                # data needs to match the dimensions of the model itself, so we need to allocate
-                # the full time length even if we pad it with missings.
-                first = first_period(md)
-                first === nothing && @warn "set_param!: first === nothing"
-
-                last = last_period(md)
-                last === nothing && @warn "set_param!: last === nothing"
-
-                if isuniform(md)
-                    stepsize = step_size(md)
-                    values = TimestepArray{FixedTimestep{first, stepsize, last}, T, num_dims, ti}(value)
-                else
-                    times = time_labels(md)
-                    first_index = findfirst(isequal(first), times)
-                    values = TimestepArray{VariableTimestep{(times[first_index:end]...,)}, T, num_dims, ti}(value)
-                end
-            end
-        else
-            values = value
-        end
-
-        param = ArrayModelParameter(values, param_dims)
-        # Need to check the dimensions of the parameter data against each component before addeding it to the model's external parameters
-        for comp in comps
-            _check_labels(md, comp, param_name, param)
-        end
-        set_external_param!(md, ext_param_name, param)
-
-
-    else # scalar parameter case
-        value = convert(dtype, value)
-        set_external_scalar_param!(md, ext_param_name, value)
+    # create shared model parameter - since we alread checked that the found 
+    # comps have no conflicting fields in their parameter definitions, we can 
+    # just use the first one for reference 
+    param_def = comps[1][param_name]
+    param = create_model_param(md, param_def, value; is_shared = true)
+    
+    # Need to check the dimensions of the parameter data against each component 
+    # before adding it to the model's model parameters
+    for comp in comps
+        _check_attributes(md, comp, param_name, param)
     end
 
-    # connect_param! calls dirty! so we don't have to
+    # add the shared model parameter to the model def
+    if model_param_name === nothing
+        model_param_name = param_name
+    end
+    add_model_param!(md, model_param_name, param)
+
+    # connect
     for comp in comps
-        # Set check_labels=false because we already checked above before setting the param
-        connect_param!(md, comp, param_name, ext_param_name, check_labels=false)
+        # Set check_attributes = false because we already checked above
+        # connect_param! calls dirty! so we don't have to
+        connect_param!(md, comp, param_name, model_param_name, check_attributes = false, ignoreunits = ignoreunits)
     end
     nothing
 end
@@ -571,6 +628,8 @@ end
 #
 # Variables
 #
+
+# `variable` methods to get variable given various arguments
 variable(obj::ComponentDef, name::Symbol) = _ns_get(obj, name, VariableDef)
 
 variable(obj::AbstractCompositeComponentDef, name::Symbol) = _ns_get(obj, name, CompositeVariableDef)
@@ -584,8 +643,18 @@ function variable(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, 
     return variable(comp_def, var_name)
 end
 
+"""
+    has_variable(comp_def::ComponentDef, name::Symbol)
+
+Return `true` if component `comp_def` has a variable `name`, otherwise return false.
+"""
 has_variable(comp_def::ComponentDef, name::Symbol) = _ns_has(comp_def, name, VariableDef)
 
+"""
+    has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol)
+
+Return `true` if component `comp_def` has a variable `name`, otherwise return false.
+"""
 has_variable(comp_def::AbstractCompositeComponentDef, name::Symbol) = _ns_has(comp_def, name, CompositeVariableDef)
 
 """
@@ -595,8 +664,12 @@ Return a list of all variable names for a given component `comp_name` in a model
 """
 variable_names(obj::AbstractCompositeComponentDef, comp_name::Symbol) = variable_names(compdef(obj, comp_name))
 
-variable_names(comp_def::AbstractComponentDef) = [nameof(var) for var in variables(comp_def)]
+"""
+    variable_names(comp_def::AbstractComponentDef)
 
+Return a list of all variable names for a given component `comp_def`.
+"""
+variable_names(comp_def::AbstractComponentDef) = [nameof(var) for var in variables(comp_def)]
 
 function variable_unit(obj::AbstractCompositeComponentDef, comp_path::ComponentPath, var_name::Symbol)
     var = variable(obj, comp_path, var_name)
@@ -662,12 +735,21 @@ end
 # Other
 #
 
-# Return the number of timesteps a given component in a model will run for.
+"""
+    function getspan(obj::AbstractComponentDef, comp_name::Symbol)
+
+Return the number of timesteps a given component `comp_name` in `obj` will run for.
+"""
 function getspan(obj::AbstractComponentDef, comp_name::Symbol)
     comp_def = compdef(obj, comp_name)
     return getspan(obj, comp_def)
 end
 
+"""
+    function getspan(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
+
+Return the number of timesteps a given component `comp_def` in `obj` will run for.
+"""
 function getspan(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef)
     first = first_period(obj, comp_def)
     last  = last_period(obj, comp_def)
@@ -762,6 +844,63 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
     dirty!(obj)
 
     nothing
+end
+
+"""
+    _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
+
+Add and connect an unshared model parameter to `md` for each parameter in 
+`comp_def`.
+"""
+function _initialize_parameters!(md::ModelDef, comp_def::AbstractComponentDef)
+    for param_def in parameters(comp_def)
+        
+        param_name = nameof(param_def)
+        comp_name = nameof(comp_def)
+
+        # Make some checks to see if the parameter needs to be created, because it was either:
+
+        # (1) externally created and connected, as checked with unconnected_params
+        # or alternatively by checking !isnothing(get_model_param_name(md, nameof(comp_def), 
+        # nameof(param_def); missing_ok = true))
+        # (2) internally connected and thus the old shared parameter has been 
+        # deleted, as checked by unconnected_params
+
+        connected = UnnamedReference(comp_name, param_name) in connection_refs(md)
+        !connected && _initialize_parameter!(md, comp_def, param_def)
+
+    end
+    nothing
+end
+
+"""
+    _initialize_parameter!(md::ModelDef, comp_def::AbstractComponentDef, param_def::AbstractParameterDef)
+
+Add and connect an unshared model parameter to `md` for parameter `param_def` in 
+`comp_def`.
+"""
+function _initialize_parameter!(md::ModelDef, comp_def::AbstractComponentDef, param_def::AbstractParameterDef)
+
+    param_name = nameof(param_def)
+    comp_name = nameof(comp_def)
+
+    model_param_name = gensym()
+    value = param_def.default
+
+    # create the unshared model parameter with a value of param_def.default,
+    # which will be nothing if it not set explicitly
+    param = create_model_param(md, param_def, value)
+    
+    # Need to check the dimensions of the parameter data against component 
+    # before adding it to the model's parameter list
+    _check_attributes(md, comp_def, param_name, param)
+    
+    # add the unshared model parameter to the model def
+    add_model_param!(md, model_param_name, param)
+
+    # connect - don't need to check attributes since did it above
+    connect_param!(md, comp_def, param_name, model_param_name; check_attributes = false)
+
 end
 
 """
@@ -889,7 +1028,7 @@ Note that a copy of `comp_id` is made in the composite and assigned the give nam
 argument `rename` can be a list of pairs indicating `original_name => imported_name`. The optional 
 arguments `first` and `last` indicate the times bounding the run period for the given component, 
 which must be within the bounds of the model and if explicitly set are fixed.  These default 
-to flexibly changing with the model's `:time` dimension.
+to flexibly changing with the model's `:time` dimension. 
 """
 function add_comp!(obj::AbstractCompositeComponentDef,
                    comp_def::AbstractComponentDef,
@@ -913,7 +1052,7 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     parent!(comp_def, obj)
 
     # Handle time dimension for the component and leaving the time unset for the
-    # original component template
+    # original component template using steps (1) and (2)
 
     # (1) Propagate the first and last from the add_comp! call through the component (default to nothing)
     if has_dim(obj, :time)
@@ -932,6 +1071,9 @@ function add_comp!(obj::AbstractCompositeComponentDef,
     # Add dims and insert comp
     _add_anonymous_dims!(obj, comp_def)
     _insert_comp!(obj, comp_def, before=before, after=after)
+
+    # Create an unshared model parameter for each of the new component's parameters
+    isa(obj, ModelDef) && _initialize_parameters!(obj, comp_def)
 
     # Return the comp since it's a copy of what was passed in
     return comp_def
@@ -1038,7 +1180,7 @@ function _replace!(obj::AbstractCompositeComponentDef,
             error("Cannot replace and reconnect; new component does not contain the necessary variables.")
         end
 
-        # Check external parameter connections
+        # Check model parameter connections
         remove = []
         for epc in external_param_conns(obj, comp_name)
             param_name = epc.param_name
@@ -1058,13 +1200,15 @@ function _replace!(obj::AbstractCompositeComponentDef,
         end
         filter!(epc -> !(epc in remove), external_param_conns(obj))
 
-        # Delete the old component from composite's namespace only, leaving parameter connections
+        # Delete the old component from composite's namespace only, leaving parameter 
+        # connections
         delete!(obj.namespace, comp_name)
     else
         # Delete the old component and all its internal and external parameter connections
         delete!(obj, comp_name)
     end
 
-    # Re-add
-    return add_comp!(obj, comp_id, comp_name; before=before, after=after)
+    ref = add_comp!(obj, comp_id, comp_name; before=before, after=after)
+
+    return ref
 end

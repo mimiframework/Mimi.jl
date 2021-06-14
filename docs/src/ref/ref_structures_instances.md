@@ -35,7 +35,7 @@ md::ModelDef
 nt::NamedTuple{Tuple{Symbol}, Tuple{Type}}    # Type is either ScalarModelParameter (for scalar parameters) or TimestepArray (for array parameters)
 comp_paths::Vector{ComponentPath}
 ```
-Note: In the `ComponentInstanceParameters`, the values stored in the named tuple point to the actual variable arrays in the other components for things that are internally connected, or to the actual value stored in the mi.md.external_params dictionary if it's an external parameter.
+Note: In the `ComponentInstanceParameters`, the values stored in the named tuple point to the actual variable arrays in the other components for things that are internally connected, or to the actual value stored in the mi.md.model_params dictionary if it's a model parameter.
 ```
 # ComponentInstanceVariables (only exist in leaf component instances)
 nt::NamedTuple{Tuple{Symbol}, Tuple{Type}}  # Type is either ScalarModelParameter (for scalar variables) or TimestepArray (for array variables)

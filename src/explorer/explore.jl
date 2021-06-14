@@ -67,6 +67,11 @@ function explore(m::Model)
 
 end
 
+"""
+    explore(mi::ModelInstance)
+
+Produce a UI to explore the parameters and variables of `ModelInstance` `mi` in an independent window.
+"""
 function explore(mi::ModelInstance)
     m = Model(mi)
     m.md.dirty = false # we need this to get explorer working, but it's a hack and should be temporary!

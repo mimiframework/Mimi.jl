@@ -8,7 +8,8 @@ using Mimi
 import Mimi:
     connect_param!, unconnected_params, set_dimension!, has_comp,
     get_connections, internal_param_conns, dim_count,
-    dim_names, compdef, getproperty, setproperty!, dimension, compdefs
+    dim_names, compdef, getproperty, setproperty!, dimension, compdefs,
+    nothing_params
 
 @defcomp A begin
     varA = Variable{Int}(index=[time])
@@ -57,13 +58,16 @@ add_comp!(m, C, after=:B) # test a later first than model
 # Component order is B -> C -> A.
 
 connect_param!(m, :A, :parA, :C, :varC)
-
 unconns = unconnected_params(m)
-@test length(unconns) == 1
+@test length(unconns) == 0
+
+nothingparams = nothing_params(m)
+@test length(nothingparams) == 1
+
 c = compdef(m, :C)
-uconn = unconns[1]
-@test uconn.comp_name == :C
-@test uconn.datum_name == :parC
+nothingparam = nothingparams[1]
+@test nothingparam.comp_name == :C
+@test nothingparam.datum_name == :parC
 
 connect_param!(m, :C => :parC, :B => :varB)
 
@@ -81,7 +85,7 @@ c = compdef(m, :C)
 
 @test length(get_connections(m, :A, :all)) == 1
 
-@test length(unconnected_params(m)) == 0
+@test length(nothing_params(m)) == 0
 
 #############################################
 #  Tests for connecting scalar parameters   #

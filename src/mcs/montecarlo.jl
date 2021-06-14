@@ -33,6 +33,7 @@ end
 
 function Base.show(io::IO, sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
     println("SimulationInstance{$T}")
+    print_nonempty("translist for model params", sim_inst.translist_modelparams)
     
     Base.show(io, sim_inst.sim_def)
 
@@ -48,9 +49,17 @@ function Base.show(obj::T) where T <: AbstractSimulationData
     nothing
 end
 
-# Store results for a single parameter and return the dataframe for this particular
-# trial/scenario 
-function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, trialnum::Int, scen_name::Union{Nothing, String}, results::Dict{Tuple, DataFrame})
+"""
+    _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+                        trialnum::Int, scen_name::Union{Nothing, String}, 
+                        results::Dict{Tuple, DataFrame})
+
+Store `results` for a single parameter `datum_key` in model `m` and return the 
+dataframe for this particular `trial_num`/`scen_name` combination.
+"""
+function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+                            trialnum::Int, scen_name::Union{Nothing, String}, 
+                            results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
@@ -98,7 +107,17 @@ function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}
     return trial_df
 end
 
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+"""
+    _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
+                        scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, 
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+
+Save the stored simulation results ` from trial `trialnum` and scenario `scen_name`
+to files in the directory `output_dir`
+"""
+function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
+                                scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, 
+                                streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
     model_index = 1
@@ -131,9 +150,11 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, sc
 end
 
 """
-    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
+    _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::String, 
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
 
-Save the stored simulation results in `trial_df` from trial `trialnum` to files in the directory `output_dir`
+Save the stored simulation results in `trial_df` from trial `trialnum` to files 
+in the directory `output_dir`
 """
 function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
     filename = joinpath(output_dir, "$datum_name.csv")
@@ -144,6 +165,11 @@ function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir
     end
 end
 
+"""
+    save_trial_inputs(sim_inst::SimulationInstance, filename::String)
+
+Save the trial inputs for `sim_inst` to `filename`.
+"""
 function save_trial_inputs(sim_inst::SimulationInstance, filename::String)
     mkpath(dirname(filename), mode=0o750)   # ensure that the specified path exists
     save(filename, sim_inst)
@@ -227,21 +253,12 @@ is necessary when we are applying distributions by adding or multiplying origina
 function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
 
     # If there is a MarginalModel, need to copy the params for both the base and marginal modeldefs separately
-    flat_model_list = [] 
-    for m in sim_inst.models
-        if m isa MarginalModel
-            push!(flat_model_list, m.base)
-            push!(flat_model_list, m.modified)
-        else
-            push!(flat_model_list, m)
-        end
-    end
-
+    flat_model_list = _get_flat_model_list(sim_inst)
     param_vec = Vector{Dict{Symbol, ModelParameter}}(undef, length(flat_model_list))
 
     for (i, m) in enumerate(flat_model_list)
         md = modelinstance_def(m)
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramname => copy(external_param(md, trans.paramname)) for trans in sim_inst.sim_def.translist)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramnames[i] => copy(model_param(md, trans.paramnames[i])) for trans in sim_inst.translist_modelparams)
     end
 
     return param_vec
@@ -249,41 +266,36 @@ end
 
 function _restore_sim_params!(sim_inst::SimulationInstance{T}, 
                               param_vec::Vector{Dict{Symbol, ModelParameter}}) where T <: AbstractSimulationData
+    
     # Need to flatten the list of models so that if there is a MarginalModel,
-    #   both its base and marginal models will have their separate params restored
-    flat_model_list = [] 
-    for m in sim_inst.models
-        if m isa MarginalModel
-            push!(flat_model_list, m.base)
-            push!(flat_model_list, m.modified)
-        else
-            push!(flat_model_list, m)
-        end
-    end
-    for (m, params) in zip(flat_model_list, param_vec)
+    # both its base and marginal models will have their separate params restored
+    flat_model_list = _get_flat_model_list(sim_inst)
+
+    for (i, m) in enumerate(flat_model_list)
+        params = param_vec[i]
         md = m.mi.md
-        for trans in sim_inst.sim_def.translist
-            name = trans.paramname
+        for trans in sim_inst.translist_modelparams
+            name = trans.paramnames[i]
             param = params[name]
-            _restore_param!(param, name, md, trans)
+            _restore_param!(param, name, md, i, trans)
         end
     end
 
     return nothing
 end
 
-function _restore_param!(param::ScalarModelParameter{T}, name::Symbol, md::ModelDef, trans::TransformSpec) where T
-    md_param = external_param(md, name)
+function _restore_param!(param::ScalarModelParameter{T}, name::Symbol, md::ModelDef, i::Int, trans::TransformSpec_ModelParams) where T
+    md_param = model_param(md, name)
     md_param.value = param.value
 end
 
-function _restore_param!(param::ArrayModelParameter{T}, name::Symbol, md::ModelDef, trans::TransformSpec) where T
-    md_param = external_param(md, name)
-    indices = _param_indices(param, md, trans)
+function _restore_param!(param::ArrayModelParameter{T}, name::Symbol, md::ModelDef, i::Int, trans::TransformSpec_ModelParams) where T
+    md_param = model_param(md, name)
+    indices = _param_indices(param, md, i, trans)
     md_param.values[indices...] = param.values[indices...]
 end
 
-function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::TransformSpec) where T
+function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, i::Int, trans::TransformSpec_ModelParams) where T
     pdims = dim_names(param)   # returns [] for scalar parameters
     num_pdims = length(pdims)
 
@@ -297,8 +309,8 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
     end
 
     if num_pdims != num_dims
-        pname = trans.paramname
-        error("Dimension mismatch: external parameter :$pname has $num_pdims dimensions ($pdims); Sim has $num_dims")
+        pname = trans.paramnames[i]
+        error("Dimension mismatch: model parameter :$pname has $num_pdims dimensions ($pdims); Sim has $num_dims")
     end
 
     indices = Vector()
@@ -312,7 +324,7 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, trans::Tran
     return indices
 end
 
-function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, trans::TransformSpec, rvalue::Number) where T
+function _perturb_param!(param::ScalarModelParameter{T}, md::ModelDef, i::Int, trans::TransformSpec_ModelParams, rvalue::Number) where T
     op = trans.op
 
     if op == :(=)
@@ -328,12 +340,12 @@ end
 
 # rvalue is an Array so we expect the dims to match and don't need to worry about
 # broadcasting
-function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
-    trans::TransformSpec, rvalue::Array{<: Number, N}) where {T, N}
+function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
+    trans::TransformSpec_ModelParams, rvalue::Array{<: Number, N}) where {T, N}
     
     op = trans.op
     pvalue = value(param)
-    indices = _param_indices(param, md, trans)
+    indices = _param_indices(param, md, i, trans)
 
     if op == :(=)
         pvalue[indices...] = rvalue
@@ -348,11 +360,11 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef,
 end
 
 # rvalue is a Number so we might need to deal with broadcasting
-function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, 
-                         trans::TransformSpec, rvalue::Number) where {T, N}
+function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
+                         trans::TransformSpec_ModelParams, rvalue::Number) where {T, N}
     op = trans.op
     pvalue = value(param)
-    indices = _param_indices(param, md, trans)
+    indices = _param_indices(param, md, i, trans)
 
     if op == :(=)
         
@@ -402,15 +414,13 @@ function _perturb_params!(sim_inst::SimulationInstance{T}, trialnum::Int) where 
 
     trialdata = get_trial(sim_inst, trialnum)
 
-    for m in sim_inst.models
-        # If it's a MarginalModel, need to perturb the params in both the base and marginal modeldefs
-        mds = m isa MarginalModel ? [m.base.mi.md, m.modified.mi.md] : [m.mi.md]
-        for md in mds
-            for trans in sim_inst.sim_def.translist        
-                param = external_param(md, trans.paramname)
-                rvalue = getfield(trialdata, trans.rvname)
-                _perturb_param!(param, md, trans, rvalue)
-            end
+    # If it's a MarginalModel, need to perturb the params in both the base and marginal modeldefs
+    flat_model_list = _get_flat_model_list(sim_inst)
+    for (i, m) in enumerate(flat_model_list)
+        for trans in sim_inst.translist_modelparams       
+            param = model_param(m.mi.md, trans.paramnames[i])
+            rvalue = getfield(trialdata, trans.rvname)
+            _perturb_param!(param, m.mi.md, i, trans, rvalue)
         end
     end
     return nothing
@@ -445,9 +455,9 @@ function _compute_output_dir(orig_output_dir, tup)
 end
 
 """
-    run(sim_def::SimulationDef{T}, 
-            models::Union{Vector{M <: AbstractModel}, AbstractModel}, 
-            samplesize::Int; 
+    Base.run(sim_def::SimulationDef{T}, 
+            models::Union{Vector{M}, AbstractModel}, 
+            samplesize::Int;
             ntimesteps::Int=typemax(Int), 
             trials_output_filename::Union{Nothing, AbstractString}=nothing, 
             results_output_dir::Union{Nothing, AbstractString}=nothing, 
@@ -456,7 +466,7 @@ end
             scenario_func::Union{Nothing, Function}=nothing,
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing,
-            results_in_memory::Bool=true)
+            results_in_memory::Bool=true) where {T <: AbstractSimulationData, M <: AbstractModel}
 
 Run the simulation definition `sim_def` for the `models` using `samplesize` samples.
 
@@ -524,6 +534,7 @@ function Base.run(sim_def::SimulationDef{T},
     sim_inst = SimulationInstance{typeof(sim_def.data)}(sim_def)
     set_models!(sim_inst, models)
     generate_trials!(sim_inst, samplesize; filename=trials_output_filename)
+    set_translist_modelparams!(sim_inst) # should this use m.md or m.mi.md (after building below)?
 
     if (scenario_func === nothing) != (scenario_args === nothing)
         error("run: scenario_func and scenario_arg must both be nothing or both set to non-nothing values")
@@ -532,14 +543,14 @@ function Base.run(sim_def::SimulationDef{T},
     for m in sim_inst.models
         is_built(m) || build!(m)
     end
-    
+
     trials = 1:sim_inst.trials
 
     # Save the original dir since we modify the output_dir to store scenario results
     orig_results_output_dir = results_output_dir
 
     # booleans vars to simplify the repeated tests in the loop below
-    has_results_output_dir     = (orig_results_output_dir !== nothing)
+    has_results_output_dir  = (orig_results_output_dir !== nothing)
     has_scenario_func  = (scenario_func !== nothing)
     has_outer_scenario = (has_scenario_func && scenario_placement == OUTER)
     has_inner_scenario = (has_scenario_func && scenario_placement == INNER)
@@ -645,26 +656,139 @@ function Base.run(sim_def::SimulationDef{T},
     return sim_inst
 end
 
+"""
+    _get_flat_model_list(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+
+Return a flattened vector of models, splatting out the base and modified models of 
+a MarginalModel.
+"""
+function _get_flat_model_list(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+
+    flat_model_list = []
+    for m in sim_inst.models
+        if m isa MarginalModel
+            push!(flat_model_list, m.base)
+            push!(flat_model_list, m.modified)
+        else
+            push!(flat_model_list, m)
+        end
+    end
+    return flat_model_list
+end
+
+"""
+    _get_flat_model_list_names(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+
+Return a vector of names referring to a flattened vector of models, splatting out 
+the base and modified models of a MarginalModel.
+"""
+function _get_flat_model_list_names(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData 
+
+    flat_model_list_names = [] # use for errors
+    for (i, m) in enumerate(sim_inst.models)
+        if m isa MarginalModel
+            push!(flat_model_list_names, Symbol("Model$(i)_Base"))
+            push!(flat_model_list_names, Symbol("Model$(i)_Modified"))
+        else
+            push!(flat_model_list_names, Symbol("Model$(i)"))
+        end
+    end
+    return flat_model_list_names
+
+end
+
 # Set models
-""" 
-	    set_models!(sim_inst::SimulationInstance{T}, models::Union{Vector{M <: AbstractModel}})
+"""
+    set_models!(sim_inst::SimulationInstance{T}, models::Vector{M}) where {T <: AbstractSimulationData, M <: AbstractModel}
 	
-	Set the `models` to be used by the SimulationDef held by `sim_inst`. 
+Set the `models` to be used by the SimulationDef held by `sim_inst`. 
 """
 function set_models!(sim_inst::SimulationInstance{T}, models::Vector{M}) where {T <: AbstractSimulationData, M <: AbstractModel}
     sim_inst.models = models
     _reset_results!(sim_inst)    # sets results vector to same length
 end
 
-# Convenience methods for single model and MarginalModel
-""" 
-set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)
+"""
+    set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)  where T <: AbstractSimulationData
 	
-    Set the model `m` to be used by the Simulatoin held by `sim_inst`.
+Set the model `m` to be used by the Simulation held by `sim_inst`.
 """
 set_models!(sim_inst::SimulationInstance{T}, m::AbstractModel)  where T <: AbstractSimulationData = set_models!(sim_inst, [m])
 
+"""
+    set_translist_modelparams!(sim_inst::SimulationInstance{T})
 
+Create the transform spec list for the simulation instance, finding the matching
+model parameter names for each transform spec parameter for each model.
+"""
+function set_translist_modelparams!(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData
+
+    # build flat model list that splats out the base and modified models of MarginalModel
+    flat_model_list = _get_flat_model_list(sim_inst)
+    flat_model_list_names = _get_flat_model_list_names(sim_inst)
+
+    # allocate simulation instance translist
+    sim_inst.translist_modelparams = Vector{TransformSpec_ModelParams}(undef, length(sim_inst.sim_def.translist))
+
+    for (trans_idx, trans) in enumerate(sim_inst.sim_def.translist)
+        
+        # initialize the vector of model parameters
+        model_parameters_vec = Vector{Symbol}(undef, length(flat_model_list))
+
+        # handling an unshared parameter specific to a component/parameter pair
+        compname = trans.compname
+        if !isnothing(compname)
+            for (model_idx, m) in enumerate(flat_model_list)
+                
+                # check for component in the model
+                compname in keys(components(m.md)) || error("Component $compname does not exist in $(flat_model_list_names[model_idx]).")
+
+                model_parameters_vec[model_idx] = get_model_param_name(m.md, compname, trans.paramname)
+            end
+
+        # no component, so this should be referring to a shared parameter ... but 
+        # historically might not have done so and been using one set by default etc.
+        else
+            paramname = trans.paramname
+            suggestion_string = "use the `ComponentName.ParameterName` syntax in your SimulationDefinition to explicitly define this transform ie. `ComponentName.$paramname = RandomVariable`"
+            
+            for (model_idx, m) in enumerate(flat_model_list)
+                model_name = flat_model_list_names[model_idx]
+
+                # found the shared parameter
+                if has_parameter(m.md, paramname)
+                    model_parameters_vec[model_idx] = paramname 
+
+                # didn't find the shared parameter, will try to resolve
+                else
+                    @warn "Parameter name $paramname not found in $model_name's shared parameter list, will attempt to resolve."
+                    unshared_paramname = nothing
+                    unshared_compname = nothing 
+                                        
+                    for (compname, compdef) in components(m.md)
+                        if has_parameter(compdef, paramname)
+                            if isnothing(unshared_paramname) # first time the parameter was found in a component
+                                unshared_paramname = get_model_param_name(m.md, compname, paramname) # NB might not need to use m.mi.md here could be m.md
+                                unshared_compname = compname
+                            else # already found in a previous component
+                                error("Cannot resolve because parameter name $paramname found in more than one component of $model_name, including $unshared_compname and $compname. Please $suggestion_string.")
+                            end
+                        end
+                    end
+                    if isnothing(unshared_paramname)
+                        error("Cannot resolve because $paramname not found in any of the components of $model_name.  Please $suggestion_string.")
+                    else
+                        @warn("Found $paramname in $unshared_compname with model parameter name $unshared_paramname. Will use this model parameter, but in the future we suggest you $suggestion_string")
+                        model_parameters_vec[model_idx] = unshared_paramname 
+                    end
+                end
+            end
+        end
+        new_trans = TransformSpec_ModelParams(model_parameters_vec, trans.op, trans.rvname, trans.dims)
+        sim_inst.translist_modelparams[trans_idx] = new_trans
+    end
+end
+            
 #
 # Iterator functions for Simulation instance directly, and for use as an IterableTable.
 #

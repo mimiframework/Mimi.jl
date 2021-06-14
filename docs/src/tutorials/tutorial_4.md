@@ -11,13 +11,11 @@ Working through the following tutorial will require:
 
 **If you have not yet prepared these, go back to the first tutorial to set up your system.**
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
-
 ## Constructing A One-Region Model
 
 In this example, we construct a stylized model of the global economy and its changing greenhouse gas emission levels through time. The overall strategy involves creating components for the economy and emissions separately, and then defining a model where the two components are coupled together.
 
-There are two main steps to creating a component, both within the  `@defcomp` macro which defines a component:
+There are two main steps to creating a component, both within the  [`@defcomp`](@ref) macro which defines a component:
 
 * List the parameters and variables.
 * Use the `run_timestep` function `run_timestep(p, v, d, t)` to set the equations of that component.
@@ -26,25 +24,26 @@ Starting with the economy component, each variable and parameter is listed. If e
 
 Next, the `run_timestep` function must be defined along with the various equations of the `grosseconomy` component. In this step, the variables and parameters are linked to this component and must be identified as either a variable or a parameter in each equation. For this example, `v` will refer to variables while `p` refers to parameters.
 
-It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the how to guide How-to Guide 4: Work with Timesteps, Parameters, and Variables 
+It is important to note that `t` below is an `AbstractTimestep`, and the specific API for using this argument are described in detail in the how to guide How-to Guide 4: Work with Timesteps.
 
 ```jldoctest tutorial4; output = false
 using Mimi # start by importing the Mimi package to your space
 
 @defcomp grosseconomy begin
 	YGROSS	= Variable(index=[time])	# Gross output
-	K	    = Variable(index=[time])	# Capital
-	l	    = Parameter(index=[time])	# Labor
-	tfp	    = Parameter(index=[time])	# Total factor productivity
-	s	    = Parameter(index=[time])	# Savings rate
-	depk	= Parameter()			    # Depreciation rate on capital - Note that it has no time index
-	k0	    = Parameter()			    # Initial level of capital
-	share	= Parameter()			    # Capital share
+	K	= Variable(index=[time])	# Capital
+	l	= Parameter(index=[time])	# Labor
+	tfp	= Parameter(index=[time])	# Total factor productivity
+	s	= Parameter(index=[time])	# Savings rate
+	depk	= Parameter()			# Depreciation rate on capital - Note that it has no time index
+	k0	= Parameter()			# Initial level of capital
+	share	= Parameter()			# Capital share
 
 	function run_timestep(p, v, d, t)
 		# Define an equation for K
 		if is_first(t)
-			# Note the use of v. and p. to distinguish between variables and parameters
+			# Note the use of v. and p. to distinguish between variables and 
+			# parameters
 			v.K[t] 	= p.k0	
 		else
 			v.K[t] 	= (1 - p.depk)^5 * v.K[t-1] + v.YGROSS[t-1] * p.s[t-1] * 5
@@ -63,14 +62,14 @@ Next, the component for greenhouse gas emissions must be created.  Although the 
 
 ```jldoctest tutorial4; output = false
 @defcomp emissions begin
-	E 	    = Variable(index=[time])	# Total greenhouse gas emissions
+	E	= Variable(index=[time])	# Total greenhouse gas emissions
 	sigma	= Parameter(index=[time])	# Emissions output ratio
 	YGROSS	= Parameter(index=[time])	# Gross output - Note that YGROSS is now a parameter
 
 	function run_timestep(p, v, d, t)
 
-		# Define an equation for E
-		v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
+	# Define an equation for E
+	v.E[t] = p.YGROSS[t] * p.sigma[t]	# Note the p. in front of YGROSS
 	end
 end
 
@@ -82,7 +81,7 @@ We can now use Mimi to construct a model that binds the `grosseconomy` and `emis
 
 * Once the model is defined, [`set_dimension!`](@ref) is used to set the length and interval of the time step.
 * We then use [`add_comp!`](@ref) to incorporate each component that we previously created into the model.  It is important to note that the order in which the components are listed here matters.  The model will run through each equation of the first component before moving onto the second component. One can also use the optional `first` and `last` keyword arguments to indicate a subset of the model's time dimension when the component should start and end.
-* Next, [`set_param!`](@ref) is used to assign values to each parameter in the model, with parameters being uniquely tied to each component. If _population_ was a parameter for two different components, it must be assigned to each one using [`set_param!`](@ref) two different times. The syntax is `set_param!(model_name, :component_name, :parameter_name, value)`
+* Next, [`update_param!`](@ref) is used to assign values each component parameter with an external connection to an unshared model parameter. If _population_ was a parameter for two different components, it must be assigned to each one using [`update_param!`](@ref) two different times. The syntax is `update_param!(model_name, :component_name, :parameter_name, value)`.  Alternatively if these parameters are always meant to use the same value, one could use [`add_shared_param!`](@ref) to create a shared model parameter and add it to the model, and then use [`connect_param!`](@ref) to connect both. This syntax would use `add_shared_param!(model_name, :model_param_name, value)` followed by `connect_param!(model_name, :component_name, :parameter_name, :model_param_name)` twice, once for each component.
 * If any variables of one component are parameters for another, [`connect_param!`](@ref) is used to couple the two components together. In this example, _YGROSS_ is a variable in the `grosseconomy` component and a parameter in the `emissions` component. The syntax is `connect_param!(model_name, :component_name_parameter, :parameter_name, :component_name_variable, :variable_name)`, where `:component_name_variable` refers to the component where your parameter was initially calculated as a variable.
 * Finally, the model can be run using the command `run(model_name)`.
 * To access model results, use `model_name[:component, :variable_name]`.
@@ -101,18 +100,19 @@ function construct_model()
 	add_comp!(m, grosseconomy)  
 	add_comp!(m, emissions)
 
-	# Set parameters for the grosseconomy component
-	set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-	set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-	set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
-	set_param!(m, :grosseconomy, :depk, 0.1)
-	set_param!(m, :grosseconomy, :k0, 130.)
-	set_param!(m, :grosseconomy, :share, 0.3)
+	# Update parameters for the grosseconomy component
+	update_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+	update_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+	update_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+	update_param!(m, :grosseconomy, :depk, 0.1)
+	update_param!(m, :grosseconomy, :k0, 130.)
+	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# Set parameters for the emissions component
-	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	# Update parameters for the emissions component
+	update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	
+	# connect parameters for the emissions component
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-	# Note that connect_param! was used here.
 
 	return m
 
@@ -124,7 +124,7 @@ construct_model (generic function with 1 method)
 
 ```
 
-Note that as an alternative to using many of the `set_param!` calls above, one may use the `default` keyword argument in `@defcomp` when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
+Note that as an alternative to using many of the [`update_param!`](@ref) calls above, one may use the `default` keyword argument in [`@defcomp`](@ref) when first defining a `Variable` or `Parameter`, as shown in `examples/tutorial/01-one-region-model/one-region-model-defaults.jl`.
 
 Now we can run the model and examine the results:
 
@@ -155,7 +155,7 @@ We can now modify our two-component model of the globe to include multiple regio
 * When using [`@defcomp`](@ref), a regions index must be specified. In addition, for variables that have a regional index it is necessary to include `(index=[regions])`. This can be combined with the time index as well, `(index=[time, regions])`.
 * In the `run_timestep` function, unlike the time dimension, regions must be specified and looped through in any equations that contain a regional variable or parameter.
 * [`set_dimension!`](@ref) must be used to specify your regions in the same way that it is used to specify your timestep.
-* When using [`set_param!`](@ref) for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into [`set_param!`](@ref) rather than an entire equation.
+* When using [`update_param!`](@ref) for values with a time and regional dimension, an array is used.  Each row corresponds to a time step, while each column corresponds to a separate region. For regional values with no timestep, a vector can be used. It is often easier to create an array of parameter values before model construction. This way, the parameter name can be entered into [`update_param!`](@ref) rather than an entire equation.
 * When constructing regionalized models with multiple components, it is often easier to save each component as a separate file and to then write a function that constructs the model.  When this is done, `using Mimi` must be speficied for each component. This approach will be used here.
 
 To create a three-regional model, we will again start by constructing the grosseconomy and emissions components, making adjustments for the regional index as needed.  Each component should be saved as a separate file.
@@ -299,15 +299,14 @@ function construct_MyModel()
 	add_comp!(m, grosseconomy)
 	add_comp!(m, emissions)
 
-	set_param!(m, :grosseconomy, :l, l)
-	set_param!(m, :grosseconomy, :tfp, tfp)
-	set_param!(m, :grosseconomy, :s, s)
-	set_param!(m, :grosseconomy, :depk,depk)
-	set_param!(m, :grosseconomy, :k0, k0)
-	set_param!(m, :grosseconomy, :share, 0.3)
+	update_param!(m, :grosseconomy, :l, l)
+	update_param!(m, :grosseconomy, :tfp, tfp)
+	update_param!(m, :grosseconomy, :s, s)
+	update_param!(m, :grosseconomy, :depk,depk)
+	update_param!(m, :grosseconomy, :k0, k0)
+	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# set parameters for emissions component
-	set_param!(m, :emissions, :sigma, sigma)
+	update_param!(m, :emissions, :sigma, sigma)
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     return m
@@ -348,4 +347,4 @@ explore(m)
 ```
 
 ----
-Next, feel free to move on to the next tutorial, which will go into depth on how to **run a sensitvity analysis** on a own model.
+Next, feel free to move on to the next tutorial, which will go into depth on how to **run a sensitivity analysis** on a own model.

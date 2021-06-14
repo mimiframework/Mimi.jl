@@ -55,7 +55,14 @@ function Base.getindex(mm::MarginalModel, comp_path::ComponentPath, name::Symbol
     return (mm.modified.mi[comp_path, name] .- mm.base.mi[comp_path, name]) ./ mm.delta
 end
 
-# DEPRECATION - EVENTUALLY REMOVE (and go back to default getproperty behavior)
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors --
+
+# -- throw warnings --
+
 function Base.getproperty(base::MarginalModel, s::Symbol)
     if (s == :marginal)
         error("Use of `MarginalModel.marginal` is deprecated in favor of `MarginalModel.modified`.")

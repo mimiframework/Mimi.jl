@@ -1,7 +1,7 @@
 using Mimi
 using Test
 
-@testset "Mimi-SA" begin
+@testset "Mimi-MCS" begin
 
     @info("test_empirical.jl")
     include("test_empirical.jl")
@@ -19,11 +19,14 @@ using Test
     include("test_defmcs_delta.jl")
 
     @info("test_reshaping.jl")
-    include("test_reshaping.jl")    
+    include("test_reshaping.jl")
 
     @info("test_payload.jl")
     include("test_payload.jl")
 
     @info("test_marginalmodel.jl")
     include("test_marginalmodel.jl")
+
+    @info("test_translist.jl")
+    include("test_translist.jl")
 end

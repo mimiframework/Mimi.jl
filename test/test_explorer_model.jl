@@ -35,12 +35,12 @@ set_dimension!(m, :regions, 3)
 set_dimension!(m, :four, 4)
 
 add_comp!(m, MyComp)
-set_param!(m, :MyComp, :a, ones(101,3))
-set_param!(m, :MyComp, :b, 1:101)
-set_param!(m, :MyComp, :c, [4,5,6])
-set_param!(m, :MyComp, :d, .5)
-set_param!(m, :MyComp, :e, [1,2,3,4])
-set_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
+update_param!(m, :MyComp, :a, ones(101,3))
+update_param!(m, :MyComp, :b, 1:101)
+update_param!(m, :MyComp, :c, [4,5,6])
+update_param!(m, :MyComp, :d, .5)
+update_param!(m, :MyComp, :e, [1,2,3,4])
+update_param!(m, :MyComp, :f, [1.0 2.0; 3.0 4.0])
 
 run(m)
 
@@ -98,7 +98,7 @@ set_dimension!(m2, :regions, 3)
 set_dimension!(m2, :four, 4)
 
 add_comp!(m2, MyComp2)
-set_param!(m2, :MyComp2, :a, ones(101, 3, 4)) 
+update_param!(m2, :MyComp2, :a, ones(101, 3, 4)) 
 
 run(m2)
 
@@ -140,8 +140,8 @@ set_dimension!(m, :time, time_index)
 set_dimension!(m, :regions, regions)
 set_dimension!(m, :foo, 3)
 add_comp!(m, gdp)
-set_param!(m, :gdp, :gdp0, [3; 7] .* ones(length(regions), 3, 2))
-set_param!(m, :gdp, :growth, [0.02; 0.03] .* ones(length(regions), 3, nsteps, 2))
+update_param!(m, :gdp, :gdp0, [3; 7] .* ones(length(regions), 3, 2))
+update_param!(m, :gdp, :growth, [0.02; 0.03] .* ones(length(regions), 3, nsteps, 2))
 set_leftover_params!(m, Dict{String, Any}([
     "pgrowth" => ones(length(regions), 3, nsteps),
     "mat" => rand(length(regions), nsteps)
@@ -176,14 +176,14 @@ set_dimension!(m, :baz, [:A, :B, :C])
 
 add_comp!(m, example)
 
-set_param!(m, :example, :p0, 1:10)
-set_param!(m, :example, :p1, 6:10)
-set_param!(m, :example, :p2, 4:6)
+update_param!(m, :example, :p0, 1:10)
+update_param!(m, :example, :p1, 6:10)
+update_param!(m, :example, :p2, 4:6)
 
-set_param!(m, :example, :p3, reshape(1:15, 5, 3))
-set_param!(m, :example, :p4, reshape(1:15, 3, 5))
-set_param!(m, :example, :p5, reshape(1:30, 10, 3))
-set_param!(m, :example, :p6, reshape(1:30, 10, 3))
+update_param!(m, :example, :p3, reshape(1:15, 5, 3))
+update_param!(m, :example, :p4, reshape(1:15, 3, 5))
+update_param!(m, :example, :p5, reshape(1:30, 10, 3))
+update_param!(m, :example, :p6, reshape(1:30, 10, 3))
 
 run(m)
 explore(m)

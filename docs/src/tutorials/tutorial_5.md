@@ -11,8 +11,6 @@ Working through the following tutorial will require:
 
 **If you have not yet prepared these, go back to the first tutorial to set up your system.**
 
-Note that we have recently released Mimi v1.0.0, which is a breaking release and thus we cannot promise backwards compatibility with version lower than v1.0.0 although several of these tutorials may run properly with older versions. For assistance updating your own model to v1.0.0, or if you are curious about the primary changes made, see the How-to Guide on porting to Mimi v1.0.0. Mimi v0.10.0 is functionally dentical to Mimi v1.0.0, but includes deprecation warnings instead of errors to assist users in porting to v1.0.0.
-
 MimiDICE2010 is required for the second example in this tutorial. If you are not yet comfortable with downloading and running a registered Mimi model, refer to Tutorial 2 for instructions.
 
 ## The API
@@ -136,15 +134,14 @@ function construct_MyModel()
 	add_comp!(m, grosseconomy)
 	add_comp!(m, emissions)
 
-	set_param!(m, :grosseconomy, :l, l)
-	set_param!(m, :grosseconomy, :tfp, tfp)
-	set_param!(m, :grosseconomy, :s, s)
-	set_param!(m, :grosseconomy, :depk,depk)
-	set_param!(m, :grosseconomy, :k0, k0)
-	set_param!(m, :grosseconomy, :share, 0.3)
+	update_param!(m, :grosseconomy, :l, l)
+	update_param!(m, :grosseconomy, :tfp, tfp)
+	update_param!(m, :grosseconomy, :s, s)
+	update_param!(m, :grosseconomy, :depk,depk)
+	update_param!(m, :grosseconomy, :k0, k0)
+	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# set parameters for emissions component
-	set_param!(m, :emissions, :sigma, sigma)
+	update_param!(m, :emissions, :sigma, sigma)
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)
 
     return m
@@ -172,23 +169,28 @@ Mimi.Model
 
 #### Step 2. Define the Simulation
 
-The `@defsim` macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
+The [`@defsim`](@ref) macro is the first step in the process, and returns a `SimulationDef`. The following syntax allows users to define random variables (RVs) as distributions,  and associate model parameters with the defined random variables.
 
-There are two ways of assigning random variables to model parameters in the `@defsim` macro. Notice that both of the following syntaxes are used in the following example. 
+There are two ways of assigning random variables to model parameters in the [`@defsim`](@ref) macro. Notice that both of the following syntaxes are used in the following example. 
  
 The first is the following:
 ```julia
 rv(rv1) = Normal(0, 0.8)    # create a random variable called "rv1" with the specified distribution
-param1 = rv1                # then assign this random variable "rv1" to the parameter "param1" in the model
+param1 = rv1                # then assign this random variable "rv1" to the shared model parameter "param1" in the model
+comp1.param2 = rv1          # then assign this random variable "rv1" to the unshared model parameter "param2" in component `comp1`
 ```
 
-The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to `param1`.
+The second is a shortcut, in which you can directly assign the distribution on the right-hand side to the name of the model parameter on the left hand side. With this syntax, a single random variable is created under the hood and then assigned to our shared model parameter `param1` and unshared model parameter `param2`.
 ```julia
 param1 = Normal(0, 0.8)
+comp1.param2 = Normal(1,0)
 ```
+
+Note here that if we have a shared model parameter we can assign based on its name, but if we have an unshared model parameter specific to one component/parameter pair we need to specify both.  If the component is not specified Mimi will throw a warning and try to resolve under the hood with assumptions, proceeding if possible and erroring if not.
+
 **It is important to note** that for each trial, a random variable on the right hand side of an assignment, be it using an explicitly defined random variable with `rv(rv1)` syntax or using shortcut syntax as above, will take on the value of a **single** draw from the given distribution.  This means that even if the random variable is applied to more than one parameter on the left hand side (such as assigning to a slice), each of these parameters will be assigned the same value, not different draws from the distribution
 
-The `@defsim` macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a `@defsim` call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
+The [`@defsim`](@ref) macro also selects the sampling method. Simple random sampling (also called Monte Carlo sampling) is the default. Other options include Latin Hypercube sampling and Sobol sampling. Below we show just one example of a [`@defsim`](@ref) call, but the How-to guide referenced at the beginning of this tutorial gives a more comprehensive overview of the options.
 
 ```jldoctest tutorial5; output = false, filter = r".*"s
 using Mimi
@@ -208,18 +210,18 @@ sd = @defsim begin
     sampling(LHSData, corrlist=[(:name1, :name2, 0.7), (:name1, :name3, 0.5)])
 
     # assign RVs to model Parameters
-    share = Uniform(0.2, 0.8)
+    grosseconomy.share = Uniform(0.2, 0.8)
 
     # you can use the *= operator to replace the values in the parameter with the 
     # product of the original value and the value of the RV for the current 
     # trial (note that in both lines below, all indexed values will be mulitplied by the
     # same draw from the given random parameter (name2 or Uniform(0.8, 1.2))
-    sigma[:, Region1] *= name2
-    sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
+    emissions.sigma[:, Region1] *= name2
+    emissions.sigma[2020:5:2050, (Region2, Region3)] *= Uniform(0.8, 1.2)
 
     # For parameters that have a region dimension, you can assign an array of distributions, 
     # keyed by region label, which must match the region labels in the model
-    depk = [Region1 => Uniform(0.7, .9),
+    grosseconomy.depk = [Region1 => Uniform(0.7, .9),
             Region2 => Uniform(0.8, 1.),
             Region3 => Truncated(Normal(), 0, 1)]
 
@@ -235,9 +237,9 @@ end
 
 #### Step 3. Run Simulation
 
-Next, use the `run` function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the `run` function**.
+Next, use the [`run`](@ref) function to run the simulation for the specified simulation definition, model (or list of models), and number of trials. View the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md) for **critical and useful details on the full signature of the [`run`](@ref) function**.
 
-In its simplest use, the `run` function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's "external parameters" that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
+In its simplest use, the [`run`](@ref) function generates and iterates over a sample of trial data from the distributions of the random variables defined in the `SimulationDef`, perturbing the subset of Mimi's model parameters that have been assigned random variables, and then runs the given Mimi model(s) for each set of trial data. The function returns a `SimulationInstance`, which holds a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`. Optionally, trial values and/or model results are saved to CSV files. Note that if there is concern about in-memory storage space for the results, use the `results_in_memory` flag set to `false` to incrementally clear the results from memory. 
 
 ```jldoctest tutorial5; output = false, filter = r".*"s
 # Run 100 trials, and optionally save results to the indicated directories
@@ -253,7 +255,7 @@ E_results = getdataframe(si, :emissions, :E)
 ```
 #### Step 4. Explore and Plot Results
 
-As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both `explore` and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
+As described in the internals documentation [here](https://github.com/mimiframework/Mimi.jl/blob/master/docs/src/internals/montecarlo.md), Mimi provides both [`explore`](@ref) and `Mimi.plot` to explore the results of both a run `Model` and a run `SimulationInstance`. 
 
 To view your results in an interactive application viewer, simply call:
 
@@ -267,7 +269,7 @@ If desired, you may also include a `title` for your application window. If more 
 explore(si; title = "MyWindow", model_index = 1) # we do not indicate scen_name here since we have no scenarios
 ```
 
-To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as `explore` (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
+To view the results for one of the saved variables from the `save` command in `@defsim`, use the (unexported to avoid namespace collisions) `Mimi.plot` function.  This function has the same keyword arguments and requirements as [`explore`](@ref) (except for `title`), and three required arguments: the `SimulationInstance`, the component name (as a `Symbol`), and the variable name (as a `Symbol`).
 
 ```julia
 Mimi.plot(si, :grosseconomy, :K)

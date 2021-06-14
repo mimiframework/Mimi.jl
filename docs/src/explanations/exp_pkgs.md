@@ -23,6 +23,8 @@ run(m)
 
 ## Registries and The Mimi Registry
 
+*Update (5/3/2020): Please note that going forward we are moving away from this model and encouraging registration in the General Registry to keep things simple and seamless for users instead of requiring extra maintenance and communication by our team. This will not be a breaking change, so current models registered with the Mimi registry will work as expected.*
+
 Packages can be registered in a [Registry](https://julialang.github.io/Pkg.jl/v1/registries/), and "registries contain information about packages, such as available releases and dependencies, and where they can be downloaded. The [General registry](https://github.com/JuliaRegistries/General) is the default one, and is installed automatically".
 
 The Mimi registry is a custom registry maintained by the Mimi development team that colocates several Mimi models in one central registry in the same way julia colates packages in the General registry, where `Mimi` and other packages you commonly may use are located. While the development team maintains this registry and has some basic requirements such as continuous integration tesing (CI) and proper package structure as dictated by julia, they do not claim responsibility or knowledge of the content or quality of the models themselves. 

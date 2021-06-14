@@ -22,9 +22,9 @@ Note that you can retrieve values from a ModelInstance in the same way you index
 
 ## The init function
 
-The `init` function can optionally be called within `@defcomp` and **before** `run_timestep`.  Similarly to `run_timestep`, this function is called with parameters `init(p, v, d)`, where the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined.   
+The `init` function can optionally be called within [`@defcomp`](@ref) and **before** `run_timestep`.  Similarly to `run_timestep`, this function is called with parameters `init(p, v, d)`, where the component state (defined by the first three arguments) has fields for the Parameters, Variables, and Dimensions of the component you defined.   
 
-If defined for a specific component, this function will run **before** the timestep loop, and should only be used for parameters or variables without a time index e.g. to compute the values of scalar variables that only depend on scalar parameters. Note that when using `init`, it may be necessary to add special handling in the `run_timestep` function for the first timestep, in particular for difference equations.  A skeleton `@defcomp` script using both `run_timestep` and `init` would appear as follows:
+If defined for a specific component, this function will run **before** the timestep loop, and should only be used for parameters or variables without a time index e.g. to compute the values of scalar variables that only depend on scalar parameters. Note that when using `init`, it may be necessary to add special handling in the `run_timestep` function for the first timestep, in particular for difference equations.  A skeleton [`@defcomp`](@ref) script using both `run_timestep` and `init` would appear as follows:
 
 ```julia
 @defcomp component1 begin

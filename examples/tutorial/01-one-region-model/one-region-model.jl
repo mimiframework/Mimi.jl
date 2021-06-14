@@ -43,18 +43,17 @@ function construct_model()
 	add_comp!(m, grosseconomy)  
 	add_comp!(m, emissions)
 
-	# Set parameters for the grosseconomy component
-	set_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
-	set_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
-	set_param!(m, :grosseconomy, :s, ones(20).* 0.22)
-	set_param!(m, :grosseconomy, :depk, 0.1)
-	set_param!(m, :grosseconomy, :k0, 130.)
-	set_param!(m, :grosseconomy, :share, 0.3)
+	# Update parameters for the grosseconomy component
+	update_param!(m, :grosseconomy, :l, [(1. + 0.015)^t *6404 for t in 1:20])
+	update_param!(m, :grosseconomy, :tfp, [(1 + 0.065)^t * 3.57 for t in 1:20])
+	update_param!(m, :grosseconomy, :s, ones(20).* 0.22)
+	update_param!(m, :grosseconomy, :depk, 0.1)
+	update_param!(m, :grosseconomy, :k0, 130.)
+	update_param!(m, :grosseconomy, :share, 0.3)
 
-	# Set parameters for the emissions component
-	set_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
+	# Update and connect parameters for the emissions component
+	update_param!(m, :emissions, :sigma, [(1. - 0.05)^t *0.58 for t in 1:20])
 	connect_param!(m, :emissions, :YGROSS, :grosseconomy, :YGROSS)  
-    # Note that connect_param! was used here.
 
 	return m
 

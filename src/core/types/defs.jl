@@ -14,9 +14,6 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, and `
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
-# Deprecate old definition in favor of standard name
-@deprecate name(obj::AbstractNamedObj) nameof(obj)
-
 # Similar structure is used for variables and parameters (parameters merely adds `default`)
 @class mutable DatumDef <: NamedObj begin
     comp_path::Union{Nothing, ComponentPath}
@@ -156,7 +153,7 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
 @class mutable CompositeComponentDef <: ComponentDef begin
     internal_param_conns::Vector{InternalParameterConnection}
 
-    # Names of external params that the ConnectorComps will use as their :input2 parameters.
+    # Names of model params that the ConnectorComps will use as their :input2 parameters.
     backups::Vector{Symbol}
 
     function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}=nothing)
@@ -206,7 +203,7 @@ ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentP
 
 @class mutable ModelDef <: CompositeComponentDef begin
     external_param_conns::Vector{ExternalParameterConnection}
-    external_params::Dict{Symbol, ModelParameter}
+    model_params::Dict{Symbol, ModelParameter}
 
     number_type::DataType
     dirty::Bool
@@ -216,16 +213,16 @@ ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentP
         CompositeComponentDef(self)  # call super's initializer
 
         ext_conns  = Vector{ExternalParameterConnection}()
-        ext_params = Dict{Symbol, ModelParameter}()
+        model_params = Dict{Symbol, ModelParameter}()
 
         # N.B. @class-generated method
-        return ModelDef(self, ext_conns, ext_params, number_type, false)
+        return ModelDef(self, ext_conns, model_params, number_type, false)
     end
 end
 
 external_param_conns(md::ModelDef) = md.external_param_conns
 
-external_params(md::ModelDef) = md.external_params
+model_params(md::ModelDef) = md.model_params
 
 #
 # Reference types offer a more convenient syntax for interrogating Components.
@@ -252,3 +249,16 @@ end
 end
 
 var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)
+
+##
+## DEPRECATIONS - Should move from warning --> error --> removal
+##
+
+# -- throw errors --
+
+# -- throw warnings --
+
+@deprecate external_params(md::ModelDef) model_params(md)
+
+# Deprecate old definition in favor of standard name
+@deprecate name(obj::AbstractNamedObj) nameof(obj)

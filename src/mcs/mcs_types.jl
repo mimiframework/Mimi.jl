@@ -82,6 +82,7 @@ Base.iterate(ss::SampleStore{T}) where T = iterate(ss.values)
 Base.iterate(ss::SampleStore{T}, idx) where T = iterate(ss.values, idx)
 
 struct TransformSpec
+    compname::Union{Nothing, Symbol} # if this is not nothing we assume the paramname is a shared model parameter
     paramname::Symbol
     op::Symbol
     rvname::Symbol
@@ -91,8 +92,28 @@ struct TransformSpec
         if ! (op in (:(=), :(+=), :(*=)))
             error("Valid operators are =, +=, and *= (got $op)")
         end
-   
-        return new(paramname, op, rvname, dims)
+        return new(nothing, paramname, op, rvname, dims)
+    end 
+
+    function TransformSpec(compname::Union{Nothing, Symbol}, paramname::Symbol, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+        if ! (op in (:(=), :(+=), :(*=)))
+            error("Valid operators are =, +=, and *= (got $op)")
+        end
+        return new(compname, paramname, op, rvname, dims)
+    end 
+end
+
+struct TransformSpec_ModelParams
+    paramnames::Vector{Symbol}
+    op::Symbol
+    rvname::Symbol
+    dims::Vector{Any}
+
+    function TransformSpec_ModelParams(paramnames::Vector{Symbol}, op::Symbol, rvname::Symbol, dims::Vector{T}=[]) where T
+        if ! (op in (:(=), :(+=), :(*=)))
+            error("Valid operators are =, +=, and *= (got $op)")
+        end
+        return new(paramnames, op, rvname, dims)
     end 
 end
 
@@ -162,6 +183,7 @@ mutable struct SimulationInstance{T}
     models::Vector{M} where M <: AbstractModel
     results::Vector{Dict{Tuple, DataFrame}}
     payload::Any
+    translist_modelparams::Vector{TransformSpec_ModelParams} 
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
         self = new()
@@ -170,6 +192,13 @@ mutable struct SimulationInstance{T}
         self.current_data = nothing
         self.sim_def = deepcopy(sim_def)
         self.payload = deepcopy(self.sim_def.payload)
+
+        # This will mirror self.sim_def.translist, but can only be created after 
+        # models are added because it looks for the actual model parameter 
+        # names for unshared parameters used in the statements, and tries to resolve
+        # ones written as shared parameters but which may in actuality be unshared
+        # ie. defaults
+        self.translist_modelparams = Vector{TransformSpec_ModelParams}(undef, 0)
 
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{AbstractModel}(undef, 0)
@@ -189,7 +218,7 @@ function SimulationDef{T}() where T <: AbstractSimulationData
 end
 
 """
-    set_payload!(sim_def::SimulationDef, payload) 
+    set_payload!(sim_def::SimulationDef, payload)
 
 Attach a user's `payload` to the `SimulationDef`. A copy of the payload object
 will be stored in the `SimulationInstance` at run time so it can be

@@ -9,9 +9,11 @@ Mimi is a [Julia](http://julialang.org) package that provides a component model 
 
 ## NEWS
 
+We recently tagged and released a feature relese revamping the API surrounding parameters, please see https://www.mimiframework.org/Mimi.jl/dev/howto/howto_5/ and https://www.mimiframework.org/Mimi.jl/dev/howto/howto_9/.
+
 On 7/15/2020 we officially tagged and released Mimi v1.0.0, which has some new features, documentation, and quite a bit of internals work as well.  Since this is a major version change, there are some breaking changes that may require you to update your code.  We have done the updates for the existing models in the Mimi registry (FUND, DICE, etc.), and will release new major versions of those today as well, so if you are using the latest version of Mimi and the latest version of the packages, all should run smoothly.
 
-**Please view the how to guide here: https://www.mimiframework.org/Mimi.jl/stable/howto/howto_6/ for a run-down of how you should update your own code.**
+**Please view the how to guide here: https://www.mimiframework.org/Mimi.jl/stable/howto/howto_7/ for a run-down of how you should update your own code.**
 
 In addition please do not hesitate to ask any questions on the forum, we are working hard to keep this transition smooth.
 

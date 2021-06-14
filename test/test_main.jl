@@ -5,7 +5,7 @@ using Mimi
 
 import Mimi: 
     reset_variables,
-    variable, variable_names, external_param,
+    variable, variable_names, model_param,
     compdefs, dimension, compinstance
 
 @defcomp foo1 begin
@@ -31,20 +31,21 @@ set_dimension!(x1, :time, 2010:10:2030)
 set_dimension!(x1, :idx3, 1:3)
 set_dimension!(x1, :idx4, 1:4)
 add_comp!(x1, foo1)
-set_param!(x1, :foo1, :par1, 5.0)
+update_param!(x1, :foo1, :par1, 5.0)
 
 @test length(dimension(x1.md, :index1)) == 3
 
-par1 = external_param(x1, :par1)
+@test_throws ErrorException par1 = model_param(x1, :par1) # not shared
+par1 = model_param(x1, :foo1, :par1)
 @test par1.value == 5.0
 
-update_param!(x1, :par1, 6.0)
-par1 = external_param(x1, :par1)
+@test_throws ErrorException update_param!(x1, :par1, 6.0) # not shared
+update_param!(x1, :foo1, :par1, 6.0)
+par1 = model_param(x1, :foo1, :par1)
 @test par1.value == 6.0
 
-set_param!(x1, :foo1, :par2, [true true false; true false false; true true true])
-
-set_param!(x1, :foo1, :par3, [1.0, 2.0, 3.0])
+update_param!(x1, :foo1, :par2, [true true false; true false false; true true true])
+update_param!(x1, :foo1, :par3, [1.0, 2.0, 3.0])
 
 Mimi.build!(x1)
 
@@ -67,23 +68,44 @@ set_dimension!(m, :time, 2010:10:2030)
 set_dimension!(m, :idx3, 1:3)
 set_dimension!(m, :idx4, 1:4)
 add_comp!(m, foo1)
-set_param!(m, :par1, 6.0)
-set_param!(m, :par2, [true true false; true false false; true true true])
-set_param!(m, :par3, [1.0, 2.0, 3.0])
+
+update_param!(m, :foo1, :par1, 6.0)
+update_param!(m, :foo1, :par2, [true true false; true false false; true true true])
+update_param!(m, :foo1, :par3, [1.0, 2.0, 3.0])
 
 run(m)
 @test m.md.dirty == false
-update_param!(m, :par1, 7.0)
+update_param!(m, :foo1, :par1, 7.0)
 @test m.md.dirty == true # should dirty the model
 
 run(m)
 mi = Mimi.build(m)
+
 par1 = 6.0
 par2 = [false false false; false false false; false false false]
 par3 = [3.0, 2.0, 1.0];
-update_param!(mi, :par1, par1)
-update_param!(mi, :par2, par2)
-update_param!(mi, :par3, par3)
+
+@test_throws KeyError update_param!(mi, :par1, par1) # not shared
+@test_throws KeyError update_param!(mi, :par2, par2) # not shared
+@test_throws KeyError update_param!(mi, :par3, par3) # not shared
+
+update_param!(mi, Mimi.get_model_param_name(m, :foo1, :par1), par1)
+update_param!(mi, Mimi.get_model_param_name(m, :foo1, :par2), par2)
+update_param!(mi, Mimi.get_model_param_name(m, :foo1, :par3), par3)
+
+@test mi[:foo1, :par1] == par1
+@test mi[:foo1, :par2] == par2
+@test mi[:foo1, :par3] == par3
+@test m.md.dirty == false # should not dirty the model
+
+par1 = 7.0
+par2 = [true false false; true false false; true false false]
+par3 = [1.0, 2.0, 3.0];
+
+update_param!(mi, :foo1, :par1,  par1)
+update_param!(mi, :foo1, :par2,  par2)
+update_param!(mi, :foo1, :par3,  par3)
+
 @test mi[:foo1, :par1] == par1
 @test mi[:foo1, :par2] == par2
 @test mi[:foo1, :par3] == par3

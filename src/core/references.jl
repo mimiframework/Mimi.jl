@@ -2,7 +2,7 @@
     set_param!(ref::ComponentReference, name::Symbol, value)
 
 Set a component parameter as `set_param!(reference, name, value)`.
-This creates a unique name :compname_paramname in the model's external parameter list, 
+This creates a unique name :compname_paramname in the model's model parameter list, 
 and sets the parameter only in the referenced component to that value.
 """
 function set_param!(ref::ComponentReference, name::Symbol, value)
@@ -15,7 +15,7 @@ end
     update_param!(ref::ComponentReference, name::Symbol, value)
 
 Update a component parameter as `update_param!(reference, name, value)`.
-This uses the unique name :compname_paramname in the model's external parameter list, 
+This uses the unique name :compname_paramname in the model's model parameter list, 
 and updates the parameter only in the referenced component to that value.
 """
 function update_param!(ref::ComponentReference, name::Symbol, value)
@@ -28,7 +28,7 @@ end
     Base.setindex!(ref::ComponentReference, value, name::Symbol)
 
 Set a component parameter as `reference[name] = value`.
-This creates a unique name :compname_paramname in the model's external parameter list, 
+This creates a unique name :compname_paramname in the model's model parameter list, 
 and sets the parameter only in the referenced component to that value.
 """
 function Base.setindex!(ref::ComponentReference, value, name::Symbol)

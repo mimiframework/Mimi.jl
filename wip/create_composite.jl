@@ -95,9 +95,9 @@ end
 end
 
 add_comp!(m, top, nameof(top))
-set_param!(m, :fooA1, 1)
-set_param!(m, :fooA2, 2)
-set_param!(m, :foo3, 10)
-set_param!(m, :foo4, 20)
-set_param!(m, :par_1_1, collect(1:length(Mimi.time_labels(m.md))))
+set_param!(m, :top, :fooA1, 1)
+set_param!(m, :top, 2)
+set_param!(m, :top, 10)
+set_param!(m, :top, 20)
+set_param!(m, :top, :par_1_1, collect(1:length(Mimi.time_labels(m.md))))
 run(m)

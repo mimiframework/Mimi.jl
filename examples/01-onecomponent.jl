@@ -6,7 +6,7 @@ using Mimi
 @defcomp component1 begin
 
     # First define the state this component will hold
-    savingsrate = Parameter()
+    savingsrate = Parameter(default = 1.0)
 
     # Second, define the (optional) init function for the component
     function init(p, v, d)

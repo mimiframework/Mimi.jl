@@ -1,5 +1,11 @@
-connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
+"""
+    _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
 
+For each value in `vals`, if the value is a `TimestepArray` swap in a new 
+TimestepArray with the same type parameterization but with its `data` field 
+holding a view of the original value's `data` defined by the first and last
+indices of Component `comp_def`.
+"""
 # helper function to substitute views for data 
 function _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
     times = [keys(comp_def.dim_dict[:time])...]
@@ -12,6 +18,13 @@ function _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
     end
 end
 
+"""
+    _get_view(val::TimestepArray{T_TS, T, N, ti, S}, first_idx, last_idx) where {T_TS, T, N, ti, S}
+
+Return a TimestepArray with the same type parameterization as the `val` TimestepArray,
+but with its `data` field holding a view of the `val.data` based on the entered
+`first-idx` and `last_idx`. 
+"""
 function _get_view(val::TimestepArray{T_TS, T, N, ti, S}, first_idx, last_idx) where {T_TS, T, N, ti, S}
     
     idxs  = Array{Any}(fill(:, N))
@@ -21,7 +34,12 @@ function _get_view(val::TimestepArray{T_TS, T, N, ti, S}, first_idx, last_idx) w
     return TimestepArray{T_TS, T, N, ti}(val.data isa SubArray ? view(val.data.parent, idxs...) : view(val.data, idxs...))
 end
 
-# Return the datatype to use for instance variables/parameters
+"""
+    _instance_datatype(md::ModelDef, def::AbstractDatumDef)
+
+Return the datatype of the AbstractDataumDef `def` in ModelDef `md`, which will
+be used to create ModelInstance instance variables and parameters.    
+"""
 function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
     dims = dim_names(def)
@@ -51,6 +69,13 @@ function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     return T
 end
 
+"""
+    _instantiate_datum(md::ModelDef, def::AbstractDatumDef)
+
+Return the parameterized datum, broadly either Scalar or Array, pertaining to 
+AbstractDatumDef `def` in the Model Def `md`, that will support instantiate of parameters 
+and variables.
+"""
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
 function _instantiate_datum(md::ModelDef, def::AbstractDatumDef)
     dtype = _instance_datatype(md, def)
@@ -106,7 +131,12 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
     return ComponentInstanceVariables(names, types, values, paths)
 end
 
-# Creates the top-level vars for the model
+"""
+    function _instantiate_vars(md::ModelDef)
+
+Create the top-level variables for the Model Def `md` and return the dictionary 
+of the resulting ComponentInstanceVariables.
+"""
 function _instantiate_vars(md::ModelDef)
     vdict = Dict{ComponentPath, Any}()
     recurse(md, cd -> vdict[cd.comp_path] = _instantiate_component_vars(md, cd); leaf_only=true)
@@ -194,20 +224,29 @@ function _get_leaf_level_epcs(md::ModelDef, epc::ExternalParameterConnection)
     par_sub_paths, param_names = _find_paths_and_names(comp, epc.param_name)
 
     leaf_epcs = ExternalParameterConnection[]
-    external_param_name = epc.external_param
+    model_param_name = epc.model_param_name
 
     top_path = epc.comp_path
 
     for (par_sub_path, param_name) in zip(par_sub_paths, param_names)
         param_path = ComponentPath(top_path, par_sub_path)
-        epc = ExternalParameterConnection(param_path, param_name, external_param_name)
+        epc = ExternalParameterConnection(param_path, param_name, model_param_name)
         push!(leaf_epcs, epc)
     end
 
     return leaf_epcs
 end
 
-# Collect all parameters with connections to allocated variable storage
+# generic helper function to get connector component name
+connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
+
+"""
+    _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
+
+Collect all parameters in ModelDef `md` with connections to allocated variable 
+storage in `var_dict` and return a dictionary of (comp_path, par_name) => ModelParameter 
+elements.
+"""
 function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
 
     # @info "Collecting params for $(comp_def.comp_id)"
@@ -228,7 +267,7 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
     end
 
     for epc in external_param_conns(md)
-        param = external_param(md, epc.external_param)
+        param = model_param(md, epc.model_param_name)
         leaf_level_epcs = _get_leaf_level_epcs(md, epc)
         for leaf_epc in leaf_level_epcs
             pdict[(leaf_epc.comp_path, leaf_epc.param_name)] = (param isa ScalarModelParameter ? param : value(param))
@@ -244,13 +283,19 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
         conn_comp = compdef(md, connector_comp_name(i))
         conn_path = conn_comp.comp_path
 
-        param = external_param(md, backup)
+        param = model_param(md, backup)
         pdict[(conn_path, :input2)] = (param isa ScalarModelParameter ? param : value(param))
     end
 
     return pdict
 end
 
+"""
+    _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
+
+Create the top-level parameters for the Model Def `md` using the parameter dictionary
+`par_dict` and return the resulting ComponentInstanceParameters.
+"""
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     # @info "Instantiating params for $(comp_def.comp_path)"
     comp_path = comp_def.comp_path
@@ -263,7 +308,16 @@ function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{Compon
     return ComponentInstanceParameters(names, types, vals, paths)
 end
 
-# Return a built leaf or composite LeafComponentInstance
+"""
+    _build(comp_def::ComponentDef,
+                    var_dict::Dict{ComponentPath, Any},
+                    par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
+                    time_bounds::Tuple{Int, Int})
+
+Return a built leaf or composite LeafComponentInstance created using ComponentDef
+`comp_def`, variables and parameters from `var_dict` and `par_dict` and the time 
+bounds set by `time_bounds`.
+"""
 function _build(comp_def::ComponentDef,
                 var_dict::Dict{ComponentPath, Any},
                 par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
@@ -278,6 +332,16 @@ function _build(comp_def::ComponentDef,
     return LeafComponentInstance(comp_def, vars, pars, time_bounds)
 end
 
+"""
+    _build(comp_def::AbstractCompositeComponentDef,
+                    var_dict::Dict{ComponentPath, Any},
+                    par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
+                    time_bounds::Tuple{Int, Int})
+
+Return a built CompositeComponentInstance created using AbstractCompositeComponentDef
+`comp_def`, variables and parameters from `var_dict` and `par_dict` and the time 
+bounds set by `time_bounds`.
+"""
 function _build(comp_def::AbstractCompositeComponentDef,
                 var_dict::Dict{ComponentPath, Any},
                 par_dict::Dict{Tuple{ComponentPath, Symbol}, Any},
@@ -294,6 +358,12 @@ function _build(comp_def::AbstractCompositeComponentDef,
     return CompositeComponentInstance(comps, comp_def, time_bounds, variables, parameters)
 end
 
+"""
+    _get_variables(comp_def::AbstractCompositeComponentDef)
+
+Return a vector of NamedTuples for all variables in the CompositeComponentInstance
+`comp_def`.
+"""
 # helper functions for to create the variables and parameters NamedTuples for a 
 # CompositeComponentInstance
 function _get_variables(comp_def::AbstractCompositeComponentDef)
@@ -307,6 +377,12 @@ function _get_variables(comp_def::AbstractCompositeComponentDef)
     return variables
 end
 
+"""
+    _get_parameters(comp_def::AbstractCompositeComponentDef)
+
+Return a vector of NamedTuples for all parameters in the CompositeComponentInstance
+`comp_def`.
+"""
 function _get_parameters(comp_def::AbstractCompositeComponentDef)
 
     namespace = comp_def.namespace
@@ -319,35 +395,21 @@ function _get_parameters(comp_def::AbstractCompositeComponentDef)
 end
 
 """
-    _set_defaults!(md::ModelDef)
+    _build(md::ModelDef)
 
-Look for default values for any unset parameters and set those values. The
-depth-first search starts stores results in a dict, so higher-level settings
-(i.e., closer to ModelDef in the hierarchy) overwrite lower-level ones.
+Build ModelDef `md` (lowest build function called by `build(md::ModelDef)`) and return the ModelInstance..
 """
-function _set_defaults!(md::ModelDef)
-    not_set = unconnected_params(md)
-    isempty(not_set) && return
-
-    for ref in not_set
-        comp_name, par_name = ref.comp_name, ref.datum_name
-        pardef = md[comp_name][par_name]
-        default_value = pardef.default
-        default_value === nothing || set_param!(md, par_name, default_value)
-    end
-end
-
 function _build(md::ModelDef)
 
     # @info "_build(md)"
     add_connector_comps!(md)
 
-    # check if all parameters are set
-    not_set = unconnected_params(md)
-
-    if ! isempty(not_set)
-        params = join([p.datum_name for p in not_set], "\n  ")
-        error("Cannot build model; the following parameters are not set:\n  $params")
+    # check if any of the parameters initialized with the value(s) of nothing 
+    # are  still nothing
+    nothingparams = nothing_params(md)
+    if ! isempty(nothingparams)
+        params = join([p.datum_name for p in nothingparams], "\n  ")
+        error("Cannot build model; the following parameters still have values of `nothing` and need to be updated:\n  $params")
     end
 
     vdict = _instantiate_vars(md)
@@ -366,15 +428,23 @@ function _build(md::ModelDef)
     return mi
 end
 
+"""
+    build(m::Model)
+
+Build Model `m` and return the ModelInstance.
+"""
 function build(m::Model)    
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
-    _set_defaults!(md)  # apply defaults to unset parameters in the model instance's copy of the model definition
-    
     mi = _build(md)
     return mi
 end
 
+"""
+    build!(m::Model)
+
+Build Model `m` for and dirty `m`'s ModelDef.
+"""
 function build!(m::Model)
     m.mi = build(m)
     m.md.dirty = false
@@ -400,11 +470,21 @@ function create_marginal_model(base::Model, delta::Float64=1.0)
     mm = MarginalModel(base, delta)
 end
 
+"""
+    Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
+
+Run the marginal model `mm` once with `ntimesteps`.
+"""
 function Base.run(mm::MarginalModel; ntimesteps::Int=typemax(Int))
     run(mm.base, ntimesteps=ntimesteps)
     run(mm.modified, ntimesteps=ntimesteps)
 end
 
+"""
+    build!(mm::MarginalModel)
+
+Build MarginalModel `mm` by building both its `base` and `modified models`.
+"""
 function build!(mm::MarginalModel)
     build!(mm.base)
     build!(mm.modified)
