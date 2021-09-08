@@ -812,6 +812,11 @@ function update_param!(mi::ModelInstance, name::Symbol, value)
     return nothing
 end
 
+# set parameter delegation method to retain backwards compatibility
+function set_param!(mi::ModelInstance, name::Symbol, value)
+    update_param!(mi, name, value)
+end
+
 """
     update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
 
@@ -832,6 +837,11 @@ function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol,
     end
 
     return nothing
+end
+
+# set parameter delegation method to retain backwards compatibility
+function set_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
+    update_param!(mi, comp_name, param_name, value)
 end
 
 """
