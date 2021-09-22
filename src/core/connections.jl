@@ -827,7 +827,18 @@ not dirty the model, and should  be used carefully and specifically for things l
 our MCS work.
 """
 function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
-    param = mi.md.model_params[get_model_param_name(mi.md, comp_name, param_name)]
+
+    model_param_name = get_model_param_name(mi.md, comp_name, param_name)
+    param = model_param(mi.md, model_param_name)
+
+    is_shared(param) && error("$comp_name:$param_name is connected to a ",
+            "a shared model parameter with name $model_param_name in the model, ",
+            "to update the shared model parameter please call `update_param!(mi, $model_param_name, value)` ", 
+            "to explicitly update a shared parameter that may be connected to ", 
+            "several components. If you want to disconnect $comp_name:$param_name ",
+            "from the shared model parameter and connect it to it's own unshared ",
+            "model parameter, first use `disconnect_param!` and then you can use this same ", 
+            "call to `update_param!`.")
 
     if param isa ScalarModelParameter
         param.value = value
