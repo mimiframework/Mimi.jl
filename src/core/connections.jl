@@ -307,10 +307,14 @@ Try calling:
         backup_param_name = nothing
     end
 
-    # Check the units, if provided
-    if ! ignoreunits && ! verify_units(variable_unit(src_comp_def, src_var_name),
-                                       parameter_unit(dst_comp_def, dst_par_name))
-        error("Units of $src_comp_path:$src_var_name do not match $dst_comp_path:$dst_par_name.")
+    # Check the units, if both are provided
+    var_unit = variable_unit(src_comp_def, src_var_name)
+    par_unit = parameter_unit(dst_comp_def, dst_par_name)
+
+    if !ignoreunits && var_unit !== "" && par_unit !== "" 
+        if ! verify_units(var_unit, par_unit)
+            error("Units of $src_comp_path:$src_var_name ($var_unit) do not match $dst_comp_path:$dst_par_name ($par_unit).")
+        end
     end
 
     conn = InternalParameterConnection(src_comp_path, src_var_name, dst_comp_path, dst_par_name,
