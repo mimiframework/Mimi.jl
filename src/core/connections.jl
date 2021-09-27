@@ -65,8 +65,14 @@ function _check_attributes(obj::AbstractCompositeComponentDef,
 
     param_def = parameter(comp_def, param_name)
 
+    # handle string case 
     t1 = eltype(mod_param.values)
     t2 = eltype(param_def.datatype)
+    
+    # handle String case
+    if t1 == Char; t1 = String; end
+    if t2 == Char; t2 = String; end
+
     if !(t1 <: Union{Missing, t2})
         error("Mismatched datatype of parameter connection: Component: $(nameof(comp_def)) ",
         "Parameter: $param_name ($t2) to Model Parameter ($t1). Mimi requires that ",
