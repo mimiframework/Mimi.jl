@@ -21,11 +21,11 @@ using Mimi
 end
 
 @defcomp ConnectorCompMatrix begin
-    regions = Index()
+    ConnectorCompMatrix_Dim2 = Index()
 
-    input1 = Parameter(index = [time, regions])
-    input2 = Parameter(index = [time, regions])
-    output =  Variable(index = [time, regions])
+    input1 = Parameter(index = [time, ConnectorCompMatrix_Dim2])
+    input2 = Parameter(index = [time, ConnectorCompMatrix_Dim2])
+    output =  Variable(index = [time, ConnectorCompMatrix_Dim2])
 
     first = Parameter() # first year to use the shorter data
     last = Parameter()  # last year to use the shorter data
@@ -38,7 +38,7 @@ end
             input = p.input2
         end 
 
-        for r in d.regions
+        for r in d.ConnectorCompMatrix_Dim2
             v.output[t, r] = @allow_missing(input[t, r])
         end
     end
