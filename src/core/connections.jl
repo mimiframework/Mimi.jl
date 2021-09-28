@@ -1073,10 +1073,6 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
                 error("Connector components for parameters with > 2 dimensions are not implemented.")
             end
 
-            if num_dims == 2
-                ConnectorCompMatrix_Dim2 = 1:size(model_param(obj, conn.backup).values,2)
-            end
-
             # Fetch the definition of the appropriate connector commponent
             conn_comp_def = (num_dims == 1 ? Mimi.ConnectorCompVector : Mimi.ConnectorCompMatrix)
             conn_comp_name = connector_comp_name(i) # generate a new name
@@ -1086,7 +1082,9 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # required it, and for now let the first and last of the component 
             # be free and thus be set to the same as the model
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
-            set_dimension!(obj, :ConnectorCompMatrix_Dim2, ConnectorCompMatrix_Dim2)
+            if num_dims == 2
+                set_dimension!(obj, :ConnectorCompMatrix_Dim2, 1:size(model_param(obj, conn.backup).values,2))
+            end
             conn_path = conn_comp.comp_path
 
             # remove the connections added in add_comp!
