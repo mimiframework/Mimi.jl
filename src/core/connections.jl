@@ -1086,7 +1086,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # required it, and for now let the first and last of the component 
             # be free and thus be set to the same as the model
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
-            set_dimension!(m, :ConnectorCompMatrix_Dim2, ConnectorCompMatrix_Dim2)
+            set_dimension!(obj, :ConnectorCompMatrix_Dim2, ConnectorCompMatrix_Dim2)
             conn_path = conn_comp.comp_path
 
             # remove the connections added in add_comp!
