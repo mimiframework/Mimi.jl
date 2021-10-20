@@ -745,3 +745,32 @@ reset_time_val(x, zeros(10))
 reset_time_val(y, collect(reshape(zeros(8), 4, 2)))
 
 end #module
+
+#------------------------------------------------------------------------------
+# 8. Test handling of offsets for TimestepValue and TimestepIndex
+#------------------------------------------------------------------------------
+
+@defcomp testcomp begin
+    
+    par = Parameter(index=[time])
+    var_tvalue = Variable(index=[time])
+    var_tindex = Variable(index=[time])
+
+    function run_timestep(p, v, d, t)
+        tvalue = TimestepValue(2010)
+        tindex = TimestepIndex(1)
+
+        v.var_tvalue[t] = p.par[tvalue]
+        v.var_tindex[t] = p.par[tindex]
+
+    end
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2020)
+add_comp!(m, testcomp, first = 2010)
+update_param!(m, :testcomp, :par, collect(2000:2020))
+run(m)
+
+comp_years_offset = 2020-2010+1
+@test m[:testcomp, :var_tvalue][comp_years_offset:end] == m[:testcomp, :var_tindex][comp_years_offset:end] == fill(m[:testcomp, :par][comp_years_offset], 11)
