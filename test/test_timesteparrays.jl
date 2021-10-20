@@ -2,8 +2,6 @@ module TestTimestepArrays
 
 using Mimi
 using Test
-using Query
-using DataFrames
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, TimestepArray, next_timestep, hasvalue,
@@ -776,9 +774,5 @@ set_dimension!(m, :regions, ["A", "B"])
 add_comp!(m, testcomp, first = 2003)
 run(m)
 
-df = getdataframe(m, :testcomp, :var_tvalue) |> @filter(_.time == 2003) |> DataFrame
-@test df.var_tvalue == [999., 999.]
-
-df = getdataframe(m, :testcomp, :var_tindex) |> @filter(_.time == 2003) |> DataFrame
-@test df.var_tindex == [999., 999.]
-
+@test m[:testcomp, :var_tvalue][findfirst(i -> i == 2003, 2000:2005), :] == [999., 999.]
+@test m[:testcomp, :var_tindex][findfirst(i -> i == 2003, 2000:2005), :] == [999., 999.]
