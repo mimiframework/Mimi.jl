@@ -2,6 +2,8 @@ module TestTimestepArrays
 
 using Mimi
 using Test
+using Query
+using DataFrames
 
 import Mimi:
     FixedTimestep, VariableTimestep, TimestepVector, TimestepMatrix, TimestepArray, next_timestep, hasvalue,
@@ -747,30 +749,36 @@ reset_time_val(y, collect(reshape(zeros(8), 4, 2)))
 end #module
 
 #------------------------------------------------------------------------------
-# 8. Test handling of offsets for TimestepValue and TimestepIndex
+# 8. Test handling of offsets for TimestepValue and TimestepIndex with a TimestepMatrix
+#   --> this is a very specific test to handle PR #857, specifically for methods
+#       using offset - 1 in time.jl
 #------------------------------------------------------------------------------
 
 @defcomp testcomp begin
-    
-    par = Parameter(index=[time])
-    var_tvalue = Variable(index=[time])
-    var_tindex = Variable(index=[time])
+
+    var_tvalue = Variable(index=[time, regions])
+    var_tindex = Variable(index=[time, regions])
 
     function run_timestep(p, v, d, t)
-        tvalue = TimestepValue(2010)
-        tindex = TimestepIndex(1)
+        for r in d.regions
+            tvalue = TimestepValue(2003)
+            tindex = TimestepIndex(1)
 
-        v.var_tvalue[t] = p.par[tvalue]
-        v.var_tindex[t] = p.par[tindex]
-
+            v.var_tvalue[tvalue,r] = 999
+            v.var_tindex[tindex,r] = 999
+        end
     end
 end
 
 m = Model()
-set_dimension!(m, :time, 2000:2020)
-add_comp!(m, testcomp, first = 2010)
-update_param!(m, :testcomp, :par, collect(2000:2020))
+set_dimension!(m, :time, 2000:2005)
+set_dimension!(m, :regions, ["A", "B"])
+add_comp!(m, testcomp, first = 2003)
 run(m)
 
-comp_years_offset = 2020-2010+1
-@test m[:testcomp, :var_tvalue][comp_years_offset:end] == m[:testcomp, :var_tindex][comp_years_offset:end] == fill(m[:testcomp, :par][comp_years_offset], 11)
+df = getdataframe(m, :testcomp, :var_tvalue) |> @filter(_.time == 2003) |> DataFrame
+@test df.var_tvalue == [999., 999.]
+
+df = getdataframe(m, :testcomp, :var_tindex) |> @filter(_.time == 2003) |> DataFrame
+@test df.var_tindex == [999., 999.]
+
