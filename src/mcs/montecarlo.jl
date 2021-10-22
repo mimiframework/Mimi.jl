@@ -523,11 +523,11 @@ function Base.run(sim_def::SimulationDef{T},
     end
             
     # Quick check for results saving
-    if (!results_in_memory) && (results_output_dir === nothing)
-        error("The results_in_memory keyword arg is set to ($results_in_memory) and 
-        results_output_dir keyword arg is set to ($results_output_dir), thus 
-        results will not be saved either in memory or in a file.")
-    end
+    # if (!results_in_memory) && (results_output_dir === nothing)
+    #     error("The results_in_memory keyword arg is set to ($results_in_memory) and 
+    #     results_output_dir keyword arg is set to ($results_output_dir), thus 
+    #     results will not be saved either in memory or in a file.")
+    # end
 
     # Initiate the SimulationInstance and set the models and trials for the copied 
     # sim held within sim_inst
