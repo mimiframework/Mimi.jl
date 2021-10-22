@@ -50,14 +50,14 @@ function Base.show(obj::T) where T <: AbstractSimulationData
 end
 
 """
-    _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+    _store_param_results!(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
                         trialnum::Int, scen_name::Union{Nothing, String}, 
                         results::Dict{Tuple, DataFrame})
 
 Store `results` for a single parameter `datum_key` in model `m` and return the 
 dataframe for this particular `trial_num`/`scen_name` combination.
 """
-function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+function _store_param_results!(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
                             trialnum::Int, scen_name::Union{Nothing, String}, 
                             results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
@@ -122,10 +122,14 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int,
 
     model_index = 1
     for (m, results) in zip(sim_inst.models, sim_inst.results)
-        for datum_key in savelist
-            trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
-            if output_dir !== nothing
+        for datum_key in savelist       
+            
+            # store parameter results to the sim_inst.results dictionary and return the 
+            # trial df that can be optionally streamed out to a file 
+            trial_df = _store_param_results!(m, datum_key, trialnum, scen_name, results)
 
+            if output_dir !== nothing
+                
                 # get sub_dir, which is different from output_dir if there are multiple models
                 if (length(sim_inst.results) > 1)
                     sub_dir = joinpath(output_dir, "model_$(model_index)")
