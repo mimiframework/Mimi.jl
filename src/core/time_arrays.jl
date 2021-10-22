@@ -171,7 +171,13 @@ function Base.getindex(v::TimestepVector, ts::VariableTimestep{TIMES}) where {TI
 end
 
 function Base.getindex(v::TimestepVector{FixedTimestep{FIRST, STEP, LAST}, T_data}, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, LAST, T_time} 
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t, remainder = divrem(ts.value - FIRST, STEP)
+	remainder==0 || error("Invalid index.")
+
+	t += ts.offset + 1
+
+	0 < t <= length(FIRST:STEP:LAST) || error("Invalid index.")
+
 	v.data isa SubArray ? view_offset = v.data.offset1 : view_offset = 0
 	t = t - view_offset
 	data = v.data[t]
