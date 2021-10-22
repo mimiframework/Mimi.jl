@@ -122,10 +122,10 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int,
 
     model_index = 1
     for (m, results) in zip(sim_inst.models, sim_inst.results)
-        for datum_key in savelist
-            trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
+        for datum_key in savelist            
             if output_dir !== nothing
-
+                trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
+                
                 # get sub_dir, which is different from output_dir if there are multiple models
                 if (length(sim_inst.results) > 1)
                     sub_dir = joinpath(output_dir, "model_$(model_index)")
