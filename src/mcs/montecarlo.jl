@@ -641,7 +641,10 @@ function Base.run(sim_def::SimulationDef{T},
                         post_trial_func(sim_inst, trialnum, ntimesteps, tup)
                     end
 
-                    _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
+                    if results_in_memory || results_output_dir!==nothing
+                        _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
+                    end
+                    
                     _restore_sim_params!(sim_inst, original_values)
 
                     counter += 1
