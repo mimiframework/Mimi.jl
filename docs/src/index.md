@@ -49,3 +49,4 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 * [RICE+AIR](https://github.com/Environment-Research/AIR)
 * [Moore-Ag.jl](https://github.com/ckingdon95/MooreAg.jl)*
 * [MimiIWG.jl](https://github.com/rffscghg/MimiIWG.jl)*
+* [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl)
