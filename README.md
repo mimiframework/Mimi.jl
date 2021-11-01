@@ -9,6 +9,10 @@ Mimi is a [Julia](http://julialang.org) package that provides a component model 
 
 ## NEWS
 
+11/1/2021
+
+Check out the new[MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl) component, pulling in various SSP and RCP data sources into a component to streamline running Mimi models as forced by the SSPs and RCPs.
+
 6/14/2021
 
 We recently tagged and released a feature relese revamping the API surrounding parameters, please see https://www.mimiframework.org/Mimi.jl/dev/howto/howto_5/ and https://www.mimiframework.org/Mimi.jl/dev/howto/howto_9/.
