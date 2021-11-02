@@ -745,3 +745,34 @@ reset_time_val(x, zeros(10))
 reset_time_val(y, collect(reshape(zeros(8), 4, 2)))
 
 end #module
+
+#------------------------------------------------------------------------------
+# 8. Test handling of offsets for TimestepValue and TimestepIndex with a TimestepMatrix
+#   --> this is a very specific test to handle PR #857, specifically for methods
+#       using offset - 1 in time.jl
+#------------------------------------------------------------------------------
+
+@defcomp testcomp begin
+
+    var_tvalue = Variable(index=[time, regions])
+    var_tindex = Variable(index=[time, regions])
+
+    function run_timestep(p, v, d, t)
+        for r in d.regions
+            tvalue = TimestepValue(2003)
+            tindex = TimestepIndex(1)
+
+            v.var_tvalue[tvalue,r] = 999
+            v.var_tindex[tindex,r] = 999
+        end
+    end
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2005)
+set_dimension!(m, :regions, ["A", "B"])
+add_comp!(m, testcomp, first = 2003)
+run(m)
+
+@test m[:testcomp, :var_tvalue][findfirst(i -> i == 2003, 2000:2005), :] == [999., 999.]
+@test m[:testcomp, :var_tindex][findfirst(i -> i == 2003, 2000:2005), :] == [999., 999.]

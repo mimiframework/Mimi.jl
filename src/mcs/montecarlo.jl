@@ -50,14 +50,14 @@ function Base.show(obj::T) where T <: AbstractSimulationData
 end
 
 """
-    _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+    _store_param_results!(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
                         trialnum::Int, scen_name::Union{Nothing, String}, 
                         results::Dict{Tuple, DataFrame})
 
 Store `results` for a single parameter `datum_key` in model `m` and return the 
 dataframe for this particular `trial_num`/`scen_name` combination.
 """
-function _store_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+function _store_param_results!(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
                             trialnum::Int, scen_name::Union{Nothing, String}, 
                             results::Dict{Tuple, DataFrame})
     @debug "\nStoring trial results for $datum_key"
@@ -122,10 +122,14 @@ function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int,
 
     model_index = 1
     for (m, results) in zip(sim_inst.models, sim_inst.results)
-        for datum_key in savelist
-            trial_df = _store_param_results(m, datum_key, trialnum, scen_name, results)
-            if output_dir !== nothing
+        for datum_key in savelist       
+            
+            # store parameter results to the sim_inst.results dictionary and return the 
+            # trial df that can be optionally streamed out to a file 
+            trial_df = _store_param_results!(m, datum_key, trialnum, scen_name, results)
 
+            if output_dir !== nothing
+                
                 # get sub_dir, which is different from output_dir if there are multiple models
                 if (length(sim_inst.results) > 1)
                     sub_dir = joinpath(output_dir, "model_$(model_index)")
@@ -523,11 +527,11 @@ function Base.run(sim_def::SimulationDef{T},
     end
             
     # Quick check for results saving
-    if (!results_in_memory) && (results_output_dir === nothing)
-        error("The results_in_memory keyword arg is set to ($results_in_memory) and 
-        results_output_dir keyword arg is set to ($results_output_dir), thus 
-        results will not be saved either in memory or in a file.")
-    end
+    # if (!results_in_memory) && (results_output_dir === nothing)
+    #     error("The results_in_memory keyword arg is set to ($results_in_memory) and 
+    #     results_output_dir keyword arg is set to ($results_output_dir), thus 
+    #     results will not be saved either in memory or in a file.")
+    # end
 
     # Initiate the SimulationInstance and set the models and trials for the copied 
     # sim held within sim_inst
@@ -637,7 +641,10 @@ function Base.run(sim_def::SimulationDef{T},
                         post_trial_func(sim_inst, trialnum, ntimesteps, tup)
                     end
 
-                    _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
+                    if results_in_memory || results_output_dir!==nothing
+                        _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
+                    end
+                    
                     _restore_sim_params!(sim_inst, original_values)
 
                     counter += 1

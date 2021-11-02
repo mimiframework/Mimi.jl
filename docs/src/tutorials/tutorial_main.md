@@ -23,6 +23,9 @@ If you find a bug in these tutorials, or have a clarifying question or suggestio
 
 [Tutorial 6: Create a Model Including Composite Components](@ref) expands on Tutorial 4 and explains how to create a model from scratch including the use of composite components.
 
+[Tutorial 7: Couple Two Existing Models](@ref) demonstrates how to couple together two models, both configured as packages, specifically in this case replacing (most of) the [FUND model](https://github.com/fund-model/MimiFUND.jl)'s climate module with the [FAIR model](https://github.com/anthofflab/MimiFAIR.jl).
+
+
 ## Additional Tutorals
 
 #### AERE Workshop Tutorials: 
