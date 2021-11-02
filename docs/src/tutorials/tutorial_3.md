@@ -135,7 +135,11 @@ run(m)
 ```
 ## Component and Structural Modifications: The API
 
-Most model modifications will include not only parametric updates, but also structural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. The most useful functions of the common API, in these cases are likely **[`replace!`](@ref), [`add_comp!`](@ref)** along with **`delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference. 
+Most model modifications will include not only parametric updates, but also structural changes and component modification, addition, replacement, and deletion along with the required re-wiring of parameters etc. 
+
+We recommend trying to use the user-facing API to modify existing models by importing the model (and with it its various components) as demonstrated in examples such as [MimiFUND-MimiFAIR-Flat.jl](https://github.com/anthofflab/MimiFUND-MimiFAIR-Flat.jl/blob/main/MimiFUND-MimiFAIR-Flat.ipynb) from Tutorial 7.  When this API is not satisfactory, you may wish to make changes directly to the model repository, which for many completed models is configured as a julia Package. **In this case, the use of environments and package versioning may become one level more complicated, so please do not hesitate to reach out on the forum** for up-front help on workflow ... pausing for a moment to get that straight **will save you a lot of time**.  We will work on getting standard videos and tutorials up as resources as well.
+
+The most useful functions of the common API, in these cases are likely **[`replace!`](@ref), [`add_comp!`](@ref)** along with **`delete!`** and the requisite functions for parameter setting and connecting.  For detail on the public API functions look at the API reference. 
 
 If you wish to modify the component structure we recommend you also look into the **built-in helper components `adder`, `multiplier`,`ConnectorCompVector`, and `ConnectorCompMatrix`** in the `src/components` folder, as these can prove quite useful.  
 

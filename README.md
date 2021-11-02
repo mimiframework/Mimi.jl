@@ -15,7 +15,7 @@ We recently tagged and released a feature relese revamping the API surrounding p
 
 5/3/2021
 
-We have written up a repository and accompanying notebook [here](https://github.com/anthofflab/MimiFUND-MimiFAIR-Flat.jl/blob/main/MimiFUND-MimiFAIR-Flat.ipynb) to demonstrate the steps to couple together two models, specifically in this case replacng (most of) the [FUND model](https://github.com/fund-model/MimiFUND.jl)'s climate module with the [FAIR model](https://github.com/anthofflab/MimiFAIR.jl).
+We have written up a repository and accompanying notebook [here](https://github.com/anthofflab/MimiFUND-MimiFAIR-Flat.jl/blob/main/MimiFUND-MimiFAIR-Flat.ipynb) to demonstrate the steps to couple together two models, specifically in this case replacing (most of) the [FUND model](https://github.com/fund-model/MimiFUND.jl)'s climate module with the [FAIR model](https://github.com/anthofflab/MimiFAIR.jl).
 
 7/15/2020
 

@@ -11,6 +11,8 @@ The documentation is organized into the following four sections, roughly adherin
 3. Technical Reference
 4. Explanations
 
+**IMPORANT**: If at any point julia-related issues with workflows, environments, and/or package versioning become frustrating, please do not hesitate to reach out.  This can be a hurdle to learn at first, but taking a moment to get it right early will save you **a lot** of time down the road.  We are more than happy to help you, and are getting together some standardized resources in the meantime.
+
 ## Getting started
 
 We aim to assist users of all different experience levels, starting with first-time users. If this is your first time using Mimi, we recommend you begin with the Tutorials. In addition, looking through the code at the links below to various existing models based on Mimi can be instructive. 
