@@ -61,6 +61,11 @@ struct DimValueNamedTuple <: MimiStruct
     end
 end
 
+# Special case support for Dicts so we can use dot notation on dimension.
+# The run_timestep() and init() funcs pass a DimValueNamedTuple of dimensions by name
+# as the "d" parameter.
+Base.getproperty(obj::DimValueNamedTuple, property::Symbol) = getfield(obj, :nt)[property]
+
 # Superclass for both LeafComponentInstance and CompositeComponentInstance.
 # This allows the former to be type-parameterized and the latter to not be.
 @class mutable ComponentInstance <: MimiClass begin
