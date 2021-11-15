@@ -24,7 +24,7 @@ function _generate_run_func(comp_name, module_name, args, body)
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
                                      $(v)::Mimi.ComponentInstanceVariables, 
-                                     $(d)::Mimi.DimValueDict, 
+                                     $(d)::Mimi.DimValueNamedTuple, 
                                      $(t)::T) where {T <: Mimi.AbstractTimestep}
             $(body...)
             return nothing
@@ -47,7 +47,7 @@ function _generate_init_func(comp_name, module_name, args, body)
     func = :(
         global function $(func_name)($(p)::Mimi.ComponentInstanceParameters, 
                                      $(v)::Mimi.ComponentInstanceVariables, 
-                                     $(d)::Mimi.DimValueDict)
+                                     $(d)::Mimi.DimValueNamedTuple)
             $(body...)
             return nothing
         end

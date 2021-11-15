@@ -273,7 +273,7 @@ function reset_variables(obj::AbstractCompositeComponentInstance)
     return nothing
 end
 
-function init(ci::AbstractComponentInstance, dims::DimValueDict)
+function init(ci::AbstractComponentInstance, dims::DimValueNamedTuple)
     # @info "init($(ci.comp_id))"
     reset_variables(ci)
 
@@ -283,7 +283,7 @@ function init(ci::AbstractComponentInstance, dims::DimValueDict)
     return nothing
 end
 
-function init(obj::AbstractCompositeComponentInstance, dims::DimValueDict)
+function init(obj::AbstractCompositeComponentInstance, dims::DimValueNamedTuple)
     for ci in components(obj)
         init(ci, dims)
     end
@@ -312,7 +312,7 @@ function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
     end
 end
 
-function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueDict)
+function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueNamedTuple)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
         ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts))
     end
@@ -320,7 +320,7 @@ function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValu
     return nothing
 end
 
-function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::DimValueDict)
+function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::DimValueNamedTuple)
     if _runnable(cci, clock)
         for ci in components(cci)
             run_timestep(ci, clock, dims)
@@ -351,14 +351,14 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     clock = Clock(time_keys)
 
-    # Get the dimensions dictionary
-    dim_val_dict = DimValueDict(dim_dict(mi.md), clock)
+    # Get the dimensions named tuple
+    dim_val_named_tuple = DimValueNamedTuple(dim_dict(mi.md), clock)
 
     # recursively initializes all components
-    init(mi, dim_val_dict)
+    init(mi, dim_val_named_tuple)
 
     while ! finished(clock)
-        run_timestep(mi, clock, dim_val_dict)
+        run_timestep(mi, clock, dim_val_named_tuple)
         advance(clock)
     end
 
