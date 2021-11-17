@@ -273,7 +273,7 @@ function reset_variables(obj::AbstractCompositeComponentInstance)
     return nothing
 end
 
-function init(ci::AbstractComponentInstance, dims::DimValueNamedTuple)
+function init(ci::AbstractComponentInstance, dims::NamedTuple)
     # @info "init($(ci.comp_id))"
     reset_variables(ci)
 
@@ -283,7 +283,7 @@ function init(ci::AbstractComponentInstance, dims::DimValueNamedTuple)
     return nothing
 end
 
-function init(obj::AbstractCompositeComponentInstance, dims::DimValueNamedTuple)
+function init(obj::AbstractCompositeComponentInstance, dims::NamedTuple)
     for ci in components(obj)
         init(ci, dims)
     end
@@ -312,7 +312,7 @@ function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
     end
 end
 
-function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValueNamedTuple)
+function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::NamedTuple)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
         ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts))
     end
@@ -320,7 +320,7 @@ function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::DimValu
     return nothing
 end
 
-function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::DimValueNamedTuple)
+function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::NamedTuple)
     if _runnable(cci, clock)
         for ci in components(cci)
             run_timestep(ci, clock, dims)
@@ -351,8 +351,14 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     clock = Clock(time_keys)
 
-    # Get the dimensions named tuple
-    dim_val_named_tuple = DimValueNamedTuple(dim_dict(mi.md), clock)
+    # Get the dimensions Named Tuple from the dimension dictionary which will be 
+    # passed to run_timestep() and init(), so we can safely implement Base.getproperty(),
+    # allowing `d.regions` etc.
+    # All values in the named tuple are vectors of Ints, except the `:time` value, which is a
+    # vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
+    # into timestep arrays.
+    d = Dict([name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict])
+    dim_val_named_tuple = NamedTuple(d)
 
     # recursively initializes all components
     init(mi, dim_val_named_tuple)
