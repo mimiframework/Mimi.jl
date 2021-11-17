@@ -22,10 +22,10 @@ function _generate_run_func(comp_name, module_name, args, body)
 
     # Needs "global" so function is defined outside the "let" statement
     func = :(
-        global function $(func_name)($(p), #Mimi.ComponentInstanceParameters,
-                                     $(v), #Mimi.ComponentInstanceVariables
-                                     $(d), #NamedTuple
-                                     $(t)::T) #T <: Mimi.AbstractTimestep
+        global function $(func_name)($(p), #::Mimi.ComponentInstanceParameters,
+                                     $(v), #::Mimi.ComponentInstanceVariables
+                                     $(d), #::NamedTuple
+                                     $(t)) #::T <: Mimi.AbstractTimestep
             $(body...)
             return nothing
         end
@@ -45,9 +45,9 @@ function _generate_init_func(comp_name, module_name, args, body)
     func_name = Symbol("init_$(module_name)_$(comp_name)")
 
     func = :(
-        global function $(func_name)($(p), #Mimi.ComponentInstanceParameters
-                                     $(v), #Mimi.ComponentInstanceVariables
-                                     $(d)) #NamedTuple
+        global function $(func_name)($(p), #::Mimi.ComponentInstanceParameters
+                                     $(v), #::Mimi.ComponentInstanceVariables
+                                     $(d)) #::NamedTuple
             $(body...)
             return nothing
         end
