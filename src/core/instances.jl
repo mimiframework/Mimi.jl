@@ -357,9 +357,8 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     # All values in the named tuple are vectors of Ints, except the `:time` value, which is a
     # vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
     # into timestep arrays.
-    d = Dict([name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict])
-    dim_val_named_tuple = NamedTuple(d)
-
+    dim_val_named_tuple = NamedTuple([name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict])
+    
     # recursively initializes all components
     init(mi, dim_val_named_tuple)
 
