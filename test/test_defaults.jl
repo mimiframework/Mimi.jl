@@ -58,4 +58,18 @@ run(m)
 @test m[:A, :p1] == 40
 @test Mimi.model_param(m, :model_p1).value == 30
 
+# try setting defaults for Strings or Symbols
+@defcomp A begin
+    p1 = Parameter{String}(default = "hello")
+    p2 = Parameter{Symbol}(default = :goodbye)
+end
+
+m = Model()
+set_dimension!(m, :time, 1:10)
+add_comp!(m, A)
+run(m)
+ 
+@test m[:A, :p1] == "hello"
+@test m[:A, :p2] == :goodbye
+
 end
