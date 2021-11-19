@@ -83,8 +83,9 @@ end
 
 function add_parameter(comp_def::ComponentDef, name, datatype, dimensions, description, unit, default)
     if default !== nothing
-        if length(dimensions) != ndims(default)
-            error("Default value has different number of dimensions ($(ndims(default))) than parameter '$name' ($(length(dimensions)))")
+        ndims_default = (default isa Symbol || default isa String) ? 0 : ndims(default)
+        if length(dimensions) != ndims_default
+            error("Default value has different number of dimensions ($(ndims_default))) than parameter '$name' ($(length(dimensions)))")
         end
     end
     p = ParameterDef(name, comp_def.comp_path, datatype, dimensions, description, unit, default)
