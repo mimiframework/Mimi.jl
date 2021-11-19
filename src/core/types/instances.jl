@@ -47,24 +47,6 @@ end
     end
 end
 
-# A container class that wraps the dimension dictionary when passed to run_timestep()
-# and init(), so we can safely implement Base.getproperty(), allowing `d.regions` etc.
-# All values in the dictionary are vectors of Ints, except the `:time` value, which is a
-# vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
-# into timestep arrays.
-struct DimValueDict <: MimiStruct
-    dict::Dict{Symbol, Union{Vector{Int}, Vector{AbstractTimestep}}}
-
-    function DimValueDict(dim_dict::AbstractDict, clock::Clock)
-        d = Dict([name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict])
-        new(d)
-    end
-end
-
-# Special case support for Dicts so we can use dot notation on dimension.
-# The run_timestep() and init() funcs pass a DimValueDict of dimensions by name
-# as the "d" parameter.
-Base.getproperty(obj::DimValueDict, property::Symbol) = getfield(obj, :dict)[property]
 
 # Superclass for both LeafComponentInstance and CompositeComponentInstance.
 # This allows the former to be type-parameterized and the latter to not be.
