@@ -149,6 +149,7 @@ mutable struct SimulationDef{T}
     nt_type::Any                    # a generated NamedTuple type to hold data for a single trial
     data::T                         # data specific to a given sensitivity analysis method
     payload::Any                    # opaque (to Mimi) data the user wants access to in callbacks
+    payload2::Any                   # opaque (to Mimi) data the user wants access to in callbacks. Unlike payload, this will not get copied
 
     function SimulationDef{T}(rvlist::Vector, 
                            translist::Vector{TransformSpec}, 
@@ -165,6 +166,7 @@ mutable struct SimulationDef{T}
 
         self.data = data
         self.payload = nothing
+        self.payload2 = nothing
 
         return self
     end
@@ -183,6 +185,7 @@ mutable struct SimulationInstance{T}
     models::Vector{M} where M <: AbstractModel
     results::Vector{Dict{Tuple, DataFrame}}
     payload::Any
+    payload2::Any
     translist_modelparams::Vector{TransformSpec_ModelParams} 
 
     function SimulationInstance{T}(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
@@ -190,8 +193,17 @@ mutable struct SimulationInstance{T}
         self.trials = 0
         self.current_trial = 0
         self.current_data = nothing
+
+        # This is a bit convoluted, but we want to make sure to exclude payload2 from the deepcopy
+        # call here
+        payload2 = sim_def.payload2
+        sim_def.payload2 = nothing
         self.sim_def = deepcopy(sim_def)
-        self.payload = deepcopy(self.sim_def.payload)
+        sim_def.payload2 = payload2
+        self.sim_def.payload2 = payload2
+
+        self.payload = deepcopy(self.sim_def.payload)       
+        self.payload2 = payload2
 
         # This will mirror self.sim_def.translist, but can only be created after 
         # models are added because it looks for the actual model parameter 
@@ -228,6 +240,15 @@ is not used by Mimi in any way; it can be anything useful to the user.
 set_payload!(sim_def::SimulationDef, payload) = (sim_def.payload = payload)
 
 """
+   set_payload2!(sim_def::SimulationDef, payload)
+
+Attach a user's `payload` to the `SimulationDef`. No copy of the user
+data will ever be made. The value is not used by Mimi in any way; it
+can be anything useful to the user.
+"""
+set_payload2!(sim_def::SimulationDef, payload) = sim_def.payload2 = payload
+
+"""
     payload(sim_def::SimulationDef)
 
 Return the `payload` value set by the user via `set_payload!()`.
@@ -235,11 +256,25 @@ Return the `payload` value set by the user via `set_payload!()`.
 payload(sim_def::SimulationDef) = sim_def.payload
 
 """
+   payload2(sim_def::SimulationDef)
+
+Return the `payload` value set by the user via `set_payload2!()`.
+"""
+payload2(sim_def::SimulationDef) = sim_def.payload2
+
+"""
     payload(sim_inst::SimulationInstance)
 
 Return the copy of the `payload` value stored in the `SimulationInstance` set by the user via `set_payload!()`.
 """
 payload(sim_inst::SimulationInstance) = sim_inst.payload
+
+"""
+    payload2(sim_inst::SimulationInstance)
+
+Return the `payload` value stored in the `SimulationInstance` set by the user via `set_payload2!()`.
+"""
+payload2(sim_inst::SimulationInstance) = sim_inst.payload2
 
 struct MCSData <: AbstractSimulationData end
 
