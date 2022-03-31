@@ -109,15 +109,14 @@ function _check_attributes(obj::AbstractCompositeComponentDef,
 end
 
 """
-    _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalParameterConnection,
-            var_dict::Dict{ComponentPath, Any})
+    _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalParameterConnection)
 
-Check that the attributes of the source variable match the attributes of the
-destination Parameter in InternalParameterConnection `ipc` and an object `obj
-with variables defined by var_dict.  Check dimensions and (TODO) datatypes.
+Check that the dimensions of the source variable match the attributes of the
+destination Parameter in InternalParameterConnection `ipc` and an object `obj`. Note
+that the names of the dimensions need not match, just the length of dimensions in
+the same position.
 """
-function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalParameterConnection,
-    var_dict::Dict{ComponentPath, Any})
+function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalParameterConnection)
 
         var_def =  Mimi.variable(Mimi.find_comp(obj, ipc.src_comp_path), ipc.src_var_name)
         param_def = Mimi.parameter(Mimi.find_comp(obj, ipc.dst_comp_path), ipc.dst_par_name)
@@ -125,31 +124,29 @@ function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalPara
         param_dims = Mimi.dim_names(param_def)
         var_dims = Mimi.dim_names(var_def)
 
+        param_comp_name = nameof(Mimi.find_comp(obj, ipc.dst_comp_path))
+        var_comp_name = nameof(Mimi.find_comp(obj, ipc.src_comp_path))
+
         if size(param_dims) != size(var_dims)
             d1 = size(var_dims)
             d2 = size(param_dims)
             error("Mismatched dimensions of internal parameter connection: ",
-                "DESTINATION: Component $(nameof(Mimi.find_comp(obj, ipc.dst_comp_path)))'s Parameter $(ipc.dst_par_name) (size $d2) ",
-                "SOURCE: Component $(nameof(Mimi.find_comp(obj, ipc.src_comp_path)))'s Variable $(ipc.src_var_name) (size $d1).")
+                "DESTINATION: Component $(param_comp_name)'s Parameter $(ipc.dst_par_name) (size $d2) ",
+                "SOURCE: Component $(var_comp_name)'s Variable $(ipc.src_var_name) (size $d1).")
         end
 
         for (i, dim) in enumerate(param_dims)
-            if isa(dim, Symbol) && dim !== :time # time needs a check that includes backup data (TODO)
+            if isa(dim, Symbol)
                 param_dim_size = dim_count(obj,dim)
-
-                src_vars = var_dict[ipc.src_comp_path]
-                var_value_obj = Mimi.get_property_obj(src_vars, ipc.src_var_name)
-                var_data_size = size(var_value_obj.data,i)
+                var_dim_size = dim_count(obj, var_dims[i])
                 
-                if param_dim_size != var_data_size
+                if param_dim_size != var_dim_size
                     error("Mismatched data size for internal parameter connection: ",
-                    "dimension :$dim in $(nameof(Mimi.find_comp(obj, ipc.dst_comp_path)))'s Parameter $(ipc.dst_par_name) has $param_dim_size elements; ",
-                    "while the same positioned (#$i) dimension for $(nameof(Mimi.find_comp(obj, ipc.src_comp_path)))'s Variable $(ipc.src_var_name) has $var_data_size elements.")
+                    "dimension :$dim in $(param_comp_name)'s Parameter $(ipc.dst_par_name) has $param_dim_size elements; ",
+                    "while the same positioned (#$i) dimension for $(var_comp_name)'s Variable $(ipc.src_var_name) has $var_dim_size elements.")
                 end
             end
         end
-
-        # TODO datatype
 end
 """
     _check_attributes(obj::AbstractCompositeComponentDef,
