@@ -129,8 +129,8 @@ function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalPara
             d1 = size(var_dims)
             d2 = size(param_dims)
             error("Mismatched dimensions of internal parameter connection: ",
-                "Component: $(nameof(Mimi.find_comp(obj, ipc.dst_comp_path))) Parameter: $(ipc.dst_par_name) (size $d2) ",
-                "Component: $(nameof(Mimi.find_comp(obj, ipc.src_comp_path))) Variable: $(ipc.src_var_name) (size $d1).")
+                "DESTINATION: Component $(nameof(Mimi.find_comp(obj, ipc.dst_comp_path)))'s Parameter $(ipc.dst_par_name) (size $d2) ",
+                "SOURCE: Component $(nameof(Mimi.find_comp(obj, ipc.src_comp_path)))'s Variable $(ipc.src_var_name) (size $d1).")
         end
 
         for (i, dim) in enumerate(param_dims)
