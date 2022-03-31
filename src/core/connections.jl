@@ -134,7 +134,7 @@ function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalPara
         end
 
         for (i, dim) in enumerate(param_dims)
-            if isa(dim, Symbol)
+            if isa(dim, Symbol) && dim !== :time # time needs a check that includes backup data (TODO)
                 param_dim_size = dim_count(obj,dim)
 
                 src_vars = var_dict[ipc.src_comp_path]
