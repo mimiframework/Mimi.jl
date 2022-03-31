@@ -15,7 +15,7 @@ pkg_that_errored = []
 
 # first set of packages to test
 packages_to_test = [
-    "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "master")
+    "MimiDICE2010" => ("https://github.com/anthofflab/MimiDICE2010.jl", "master"),
     "MimiDICE2013" => ("https://github.com/anthofflab/MimiDICE2013.jl", "master"), 
     "MimiDICE2016" => ("https://github.com/AlexandrePavlov/MimiDICE2016.jl", "master"),
     "MimiDICE2016R2" => ("https://github.com/anthofflab/MimiDICE2016R2.jl", "master"),
