@@ -87,7 +87,7 @@ function _check_attributes(obj::AbstractCompositeComponentDef,
     if ! isempty(param_dims) && size(param_dims) != size(model_dims)
         d1 = size(model_dims)
         d2 = size(param_dims)
-        error("Mismatched dimensions of parameter connection: Component: $(nameof(comp_def)) Parameter: $param_name ($d2) to Model Parameter ($d1)")
+        error("Mismatched dimensions of parameter connection: Component: $(nameof(comp_def)) Parameter: $param_name (size $d2) to Model Parameter (size $d1)")
     end
 
     # Don't check sizes for ConnectorComps since they won't match.
@@ -108,6 +108,46 @@ function _check_attributes(obj::AbstractCompositeComponentDef,
     end
 end
 
+"""
+    _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalParameterConnection)
+
+Check that the dimensions of the source variable match the attributes of the
+destination Parameter in InternalParameterConnection `ipc` and an object `obj`. Note
+that the names of the dimensions need not match, just the length of dimensions in
+the same position.
+"""
+function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalParameterConnection)
+
+        var_def =  Mimi.variable(Mimi.find_comp(obj, ipc.src_comp_path), ipc.src_var_name)
+        param_def = Mimi.parameter(Mimi.find_comp(obj, ipc.dst_comp_path), ipc.dst_par_name)
+
+        param_dims = Mimi.dim_names(param_def)
+        var_dims = Mimi.dim_names(var_def)
+
+        param_comp_name = nameof(Mimi.find_comp(obj, ipc.dst_comp_path))
+        var_comp_name = nameof(Mimi.find_comp(obj, ipc.src_comp_path))
+
+        if size(param_dims) != size(var_dims)
+            d1 = size(var_dims)
+            d2 = size(param_dims)
+            error("Mismatched dimensions of internal parameter connection: ",
+                "DESTINATION: Component $(param_comp_name)'s Parameter $(ipc.dst_par_name) (size $d2) ",
+                "SOURCE: Component $(var_comp_name)'s Variable $(ipc.src_var_name) (size $d1).")
+        end
+
+        for (i, dim) in enumerate(param_dims)
+            if isa(dim, Symbol)
+                param_dim_size = dim_count(obj,dim)
+                var_dim_size = dim_count(obj, var_dims[i])
+                
+                if param_dim_size != var_dim_size
+                    error("Mismatched data size for internal parameter connection: ",
+                    "dimension :$dim in $(param_comp_name)'s Parameter $(ipc.dst_par_name) has $param_dim_size elements; ",
+                    "while the same positioned (#$i) dimension for $(var_comp_name)'s Variable $(ipc.src_var_name) has $var_dim_size elements.")
+                end
+            end
+        end
+end
 """
     _check_attributes(obj::AbstractCompositeComponentDef,
                 comp_def::AbstractComponentDef, param_name::Symbol, 

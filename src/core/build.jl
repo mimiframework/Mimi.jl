@@ -261,7 +261,8 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
         ipcs = _get_leaf_level_ipcs(md, conn)
         src_vars = var_dict[ipcs[1].src_comp_path]
         var_value_obj = get_property_obj(src_vars, ipcs[1].src_var_name)
-        for ipc in ipcs
+        for ipc in ipcs 
+            _check_attributes(md, ipc)
             pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
         end
     end
