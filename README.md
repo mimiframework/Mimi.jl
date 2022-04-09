@@ -5,13 +5,13 @@
 
 # Mimi - Integrated Assessment Modeling Framework
 
-Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org). The [Documentation](https://www.mimiframework.org/Mimi.jl/stable/) includes information on the installation and use of this package, step-by-step tutorials, how-to guides, and techincal reference. The development team closely monitors the [Mimi Framework forum](https://forum.mimiframework.org) and we suggest this as a starting place for any questions users may have.
+Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org). The [Documentation](https://www.mimiframework.org/Mimi.jl/stable/) includes information on the installation and use of this package, step-by-step tutorials, how-to guides, and technical reference. The development team closely monitors the [Mimi Framework forum](https://forum.mimiframework.org) and we suggest this as a starting place for any questions users may have.
 
 ## NEWS
 
 11/1/2021
 
-Check out the new[MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl) component, pulling in various SSP and RCP data sources into a component to streamline running Mimi models as forced by the SSPs and RCPs.
+Check out the new [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl) component, pulling in various SSP and RCP data sources into a component to streamline running Mimi models as forced by the SSPs and RCPs.
 
 6/14/2021
 
