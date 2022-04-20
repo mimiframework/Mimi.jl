@@ -28,7 +28,7 @@ function get_time_index_position(obj::AbstractCompositeComponentDef, comp_name::
 	get_time_index_position(dim_names(compdef(obj, comp_name), datum_name))
 end
 
-const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange}
+const AnyIndex = Union{Int, Vector{Int}, Tuple, Colon, OrdinalRange, Vector{Bool}}
 
 # Helper function for getindex; throws a MissingException if data is missing, otherwise returns data
 function _missing_data_check(data, t)
