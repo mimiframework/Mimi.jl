@@ -1175,13 +1175,11 @@ end
          #   (3) it does not have a values attribute of nothing, as assigned on initialization
 
          if (param isa ArrayModelParameter) && (dimname in param.dim_names) && !is_nothing_param(param)
-             println("resizing $param")
              # get the dimensions of the new data
              idx = findfirst(i->i==dimname, param.dim_names)
              datadims = collect(size(param.values))
              datadims[idx] = length(dim_keys(obj, dimname))
 
-             println("new dims are $datadims")
              new_data = fill(missing, datadims...)
              update_param!(obj, name, new_data)
          end

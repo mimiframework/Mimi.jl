@@ -110,6 +110,7 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
 
      # check if (1) redefining dim (2) modifying a ModelDef (3) length of dimension has changed
      if name!== :time && redefined && (ccd isa ModelDef) && dim_length_change
+        @warn("The new $name dimension keys have a different length than the original, user will need to explicitly `update_param!` all parameters using this dimension.")
          _resize_parameters!(ccd, name)
      end
 
