@@ -89,7 +89,6 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
    
     redefined = has_dim(ccd, name)
     dim = Dimension(keys)
-    dim_length_change = redefined ? (length(keys) !== length(dim_keys(ccd, name))) : false
 
     if name == :time
 
@@ -106,14 +105,7 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
         redefined && (ccd isa ModelDef) && _pad_parameters!(ccd)
     end
 
-    newdim = set_dimension!(ccd, name, dim)
-
-    # check if (1) redefining dim (2) modifying a ModelDef (3) length of dimension has changed
-    if name!== :time && redefined && (ccd isa ModelDef) && dim_length_change
-        _resize_parameters!(ccd, name)
-    end
-
-    return newdim
+    return set_dimension!(ccd, name, dim)
 
 end
 

@@ -1022,10 +1022,10 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             # since this is a special case of replacing an existing model param
             add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else
-            param.values.data = value
+            copyto!(param.values.data, value)
         end
     else
-        param.values = value
+        copyto!(param.values, value)
     end
 
     dirty!(obj)
@@ -1184,34 +1184,6 @@ function _pad_parameters!(obj::ModelDef)
            padded_data = _get_padded_data(param, param_times, model_times)
            update_param!(obj, name, padded_data)
 
-        end
-    end
-end
-
-"""
-_resize_parameters!(obj::ModelDef, dimname::Symbol)
-
-Take each model parameter of the Model Definition `obj` and with a dimension
-`name` and `update_param!` with an array of missings of the appropriate size. 
-"""
-function _resize_parameters!(obj::ModelDef, dimname::Symbol)
-
-    for (name, param) in obj.model_params
-        # there is only a chance we need to resize a parameter if:
-        #   (1) it is an ArrayModelParameter
-        #   (2) it has a `dimname` dimension
-        #   (3) it does not have a values attribute of nothing, as assigned on initialization
-
-        if (param isa ArrayModelParameter) && (dimname in param.dim_names) && !is_nothing_param(param)
-            println("resizing $param")
-            # get the dimensions of the new data
-            idx = findfirst(i->i==dimname, param.dim_names)
-            datadims = collect(size(param.values))
-            datadims[idx] = length(dim_keys(obj, dimname))
-
-            println("new dims are $datadims")
-            new_data = fill(missing, datadims...)
-            update_param!(obj, name, new_data)
         end
     end
 end
