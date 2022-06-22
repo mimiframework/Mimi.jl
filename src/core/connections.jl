@@ -324,10 +324,20 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
         end
 
+        # create a backup parameter name with the destination leaf component and 
+        # parameter names, as well as a trailing integer to ensure uniqueness in
+        # edge cases.  Check if the name is already used, and if so increment the 
+        # trailing integer until it is a unique model parameter name to the model
+        i = 1
+        backup_param_name = Symbol("backup_", dst_comp_path.names[end], "_", dst_par_name, "_", i)
+        while haskey(obj.model_params, backup_param_name)
+            i += 1
+            backup_param_name = Symbol("backup_", dst_comp_path.names[end], "_", dst_par_name, "_", i)
+        end
+
         # NB: potentially unsafe way to add parameter/might be duplicating work so
         # advise shifting to create_model_param ... but leaving it as is for now
-        add_model_array_param!(obj, dst_par_name, values, dst_dims)
-        backup_param_name = dst_par_name
+        add_model_array_param!(obj, backup_param_name, values, dst_dims)
 
     else
         # cannot use backup_offset keyword argument if there is no backup
