@@ -724,8 +724,8 @@ end
 Add an model parameter with name `name` and Model Parameter `value` to ModelDef `md`.
 """
 function add_model_param!(md::ModelDef, name::Symbol, value::ModelParameter)
-    # if haskey(obj.model_params, name)
-    #     @warn "Redefining model param :$name in $(obj.comp_path) from $(obj.model_params[name]) to $value"
+    # if haskey(md.model_params, name)
+    #     @warn "Redefining model param :$name in $(md.comp_path) from $(md.model_params[name]) to $value"
     # end
     md.model_params[name] = value
     dirty!(md)
@@ -750,6 +750,9 @@ using it and only do so under the hood.
 function add_model_param!(md::ModelDef, name::Symbol, value::Number;
                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                             is_shared::Bool = false)
+    # if haskey(md.model_params, name)
+    #     @warn "Redefining model param :$name in $(md.comp_path) from $(md.model_params[name]) to $value"
+    # end                        
     add_model_scalar_param!(md, name, value, is_shared = is_shared)
 end
 
@@ -767,6 +770,9 @@ function add_model_param!(md::ModelDef, name::Symbol,
                              value::Union{AbstractArray, AbstractRange, Tuple};
                              param_dims::Union{Nothing,Array{Symbol}} = nothing, 
                              is_shared::Bool = false)
+    # if haskey(md.model_params, name)
+    #     @warn "Redefining model param :$name in $(md.comp_path) from $(md.model_params[name]) to $value"
+    # end  
 
     ti = get_time_index_position(param_dims)
     if !isnothing(ti)
