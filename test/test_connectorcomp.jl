@@ -2,6 +2,8 @@ module TestConnectorComp
 
 using Mimi
 using Test
+using Query
+using DataFrames
 
 import Mimi: compdef, compdefs, components, getspan
 
@@ -261,5 +263,31 @@ short_var = model6[:Short, :var]
 @test all(ismissing, short_var[1:year_dim[late_start]-1])
 @test short_var[year_dim[late_start]:end] == years[year_dim[late_start]:end]
 
+#------------------------------------------------------------------------------
+#  6. Test multiple, identical components with backup
+#------------------------------------------------------------------------------
+
+model1 = Model()
+set_dimension!(model1, :time, years)
+
+add_comp!(model1, Short, :Short_A, first=late_start)
+add_comp!(model1, Long, :Long_A)
+update_param!(model1, :Short_A, :a, 2.)
+connect_param!(model1, :Long_A, :x, :Short_A, :b, zeros(length(years)));
+
+add_comp!(model1, Short, :Short_B, first=late_start)
+add_comp!(model1, Long, :Long_B)
+update_param!(model1, :Short_B, :a, 2.)
+connect_param!(model1, :Long_B, :x, :Short_B, :b, ones(length(years)))
+
+run(model1)
+
+# the backup data should differ 
+@test all(iszero, (getdataframe(model1, :Long_A, :x) |> @filter(_.time < late_start) |> DataFrame).x)
+@test all(i -> i == 1., (getdataframe(model1, :Long_B, :x) |> @filter(_.time < late_start) |> DataFrame).x)
+
+# should see two model parameters added to the model instance
+@test haskey(model1.mi.md.model_params, :backup_Long_A_x_1) # created to connect to :Long_A
+@test haskey(model1.mi.md.model_params, :backup_Long_B_x_1) #created to connect to :Long B
 
 end #module
