@@ -53,10 +53,10 @@ At this point, you cannot `run(m)`, you will encounter:
 run(m)
 ERROR: Cannot build model; the following parameters still have values of nothing 
 and need to be updated or set:
-  A, p2
-  B, p3
-  B, p4
-  B, p5
+  p2 (in Component A)
+  p3 (in Component B)
+  p4 (in Component B)
+  p5 (in Component B)
 ```
 Per the above, we need to update these parameters so that they are connected to a non-`nothing` value.  We have three cases here, (1) we want to update the value of an unshared parameter from `nothing` to a value, (2) we want to add a shared parameter and connect one or, more commonly, several component parameters to it, or (3) we want to connect a parameter to another component's variable.
 
