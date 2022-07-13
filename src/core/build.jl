@@ -409,8 +409,8 @@ function _build(md::ModelDef)
     # are  still nothing
     nothingparams = nothing_params(md)
     if ! isempty(nothingparams)
-        params = join([p.datum_name for p in nothingparams], "\n  ")
-        error("Cannot build model; the following parameters still have values of `nothing` and need to be updated:\n  $params")
+        params = join([string(p.comp_name, ", ", p.datum_name) for p in nothingparams], "\n  ")
+        error("Cannot build model; the following component, parameter pairs still have values of `nothing` and need to be updated:\n  $params")
     end
 
     vdict = _instantiate_vars(md)
