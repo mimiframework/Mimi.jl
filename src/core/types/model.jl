@@ -41,10 +41,10 @@ struct MarginalModel <: AbstractModel
     base::Model
     modified::Model
     delta::Float64
+end
 
-    function MarginalModel(base::Model, delta::Float64=1.0)
-        return new(base, Model(base), delta)
-    end
+function MarginalModel(base::Model, delta::Float64=1.0)
+    return MarginalModel(base, Model(base), delta)
 end
 
 function Base.getindex(mm::MarginalModel, comp_name::Symbol, name::Symbol)
