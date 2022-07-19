@@ -1176,6 +1176,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
     return nothing
 end
 
+
 """
     _pad_parameters!(obj::ModelDef)
 
