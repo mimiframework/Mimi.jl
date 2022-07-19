@@ -118,7 +118,6 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
     end
 
     return set_dimension!(ccd, name, dim)
-     
 end
 
 """
