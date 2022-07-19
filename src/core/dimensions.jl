@@ -89,7 +89,6 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
    
     redefined = has_dim(ccd, name)
     dim = Dimension(keys)
-    dim_length_change = redefined ? (length(keys) !== length(dim_keys(ccd, name))) : false
 
     if name == :time
 
@@ -104,17 +103,21 @@ function set_dimension!(ccd::AbstractCompositeComponentDef, name::Symbol, keys::
         # if we are redefining the time dimension for a Model Definition
         # pad the time arrays with missings and update their time labels 
         redefined && (ccd isa ModelDef) && _pad_parameters!(ccd)
+
+    # redefining a non-time dimension for a ModelDef
+    elseif redefined && (ccd isa ModelDef)
+
+        for (k, v) in ccd.model_params
+            # We will reset any parameters with this dimension to nothing,
+            # noting that this is only necessary to check if they are array model 
+            # parameters, and thus have dimensionality, and are not already nothing
+            if (v isa ArrayModelParameter) && (name in v.dim_names) && !is_nothing_param(v)
+                ccd.model_params[k] = ArrayModelParameter(nothing, v.dim_names, v.is_shared)
+            end
+        end
     end
 
-    newdim = set_dimension!(ccd, name, dim)
-
-     # check if (1) redefining dim (2) modifying a ModelDef (3) length of dimension has changed
-     if name!== :time && redefined && (ccd isa ModelDef) && dim_length_change
-        @warn("The new $name dimension keys have a different length than the original, parameters using that dimension are reset to `missings`, user will need to call `update_param!` to set them.")
-         _resize_parameters!(ccd, name)
-     end
-
-     return newdim
+    return set_dimension!(ccd, name, dim)
      
 end
 

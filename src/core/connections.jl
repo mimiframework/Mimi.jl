@@ -1177,32 +1177,6 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
 end
 
 """
- _resize_parameters!(obj::ModelDef, dimname::Symbol)
-
- Take each model parameter of the Model Definition `obj` and with a dimension
- `name` and `update_param!` with an array of missings of the appropriate size. 
- """
- function _resize_parameters!(obj::ModelDef, dimname::Symbol)
-
-     for (name, param) in obj.model_params
-         # there is only a chance we need to resize a parameter if:
-         #   (1) it is an ArrayModelParameter
-         #   (2) it has a `dimname` dimension
-         #   (3) it does not have a values attribute of nothing, as assigned on initialization
-
-         if (param isa ArrayModelParameter) && (dimname in param.dim_names) && !is_nothing_param(param)
-             # get the dimensions of the new data
-             idx = findfirst(i->i==dimname, param.dim_names)
-             datadims = collect(size(param.values))
-             datadims[idx] = length(dim_keys(obj, dimname))
-
-             new_data = fill(missing, datadims...)
-             update_param!(obj, name, new_data)
-         end
-     end
- end
- 
-"""
     _pad_parameters!(obj::ModelDef)
 
 Take each model parameter of the Model Definition `obj` and `update_param!` 
