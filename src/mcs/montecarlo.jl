@@ -381,7 +381,7 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
             broadcast_flag ? pvalue[indices...] .= rvalue : pvalue[indices...] = rvalue
         
         else
-            indices1, ts, indices2 = split_indices(indices, ti)
+            indices1, ts, indices2 = indices[1:ti - 1], indices[ti], indices[ti + 1:end]
             non_ts_indices = [indices1..., indices2...]
             broadcast_flag = isempty(non_ts_indices) ? false : sum(map(x -> length(x) > 1, non_ts_indices)) > 0
             
