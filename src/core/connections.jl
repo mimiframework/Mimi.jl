@@ -1038,10 +1038,10 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
             # since this is a special case of replacing an existing model param
             add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
         else
-            param.values.data = value
+            copyto!(param.values.data, value)
         end
     else
-        param.values = value
+        copyto!(param.values, value)
     end
 
     dirty!(obj)
