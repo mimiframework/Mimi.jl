@@ -5,7 +5,8 @@ using Test
 
 import Mimi:
     compdef, AbstractDimension, RangeDimension, Dimension, key_type, first_period, last_period,
-    ComponentReference, ComponentPath, ComponentDef, time_labels, model_params
+    ComponentReference, ComponentPath, ComponentDef, time_labels, model_params,
+    is_nothing_param, get_model_param_name
 
 ## 
 ## Constants
@@ -227,5 +228,65 @@ connect_param!(m, :comp3 => :par3, :comp2 => :var2)
 
 error_msg = (try eval(run(m)) catch err err end).msg
 @test occursin("Mismatched data size for internal parameter connection", error_msg)
+
+## Test resetting a non-time dimension
+@defcomp mycomp begin
+    par = Parameter(index=[region])
+    var = Variable(index=[region])
+    function init(p,v,d)
+        for r in d.region
+            v.var[r] = p.par[r]
+        end
+    end
+    function run_timestep(p,v,d,t)
+    end
+end
+
+m = Model()
+set_dimension!(m, :time, 2000:2002)
+set_dimension!(m, :region, ["A", "B", "C"])
+add_comp!(m, mycomp)
+update_param!(m, :mycomp, :par, [1., 2., 3.])
+run(m)
+@test m[:mycomp, :var] == [1., 2., 3.]
+
+set_dimension!(m, :region, ["A", "B"]) # reset to shorter
+@test is_nothing_param(m.md.model_params[get_model_param_name(m.md, :mycomp, :par)])
+@test_throws ErrorException run(m)
+update_param!(m, :mycomp, :par, [100., 200.])
+run(m)
+@test m[:mycomp, :var] == [100., 200.]
+
+set_dimension!(m, :region, ["A", "B"]) # reset to the same - no check, still will reset to nothing
+@test is_nothing_param(m.md.model_params[get_model_param_name(m.md, :mycomp, :par)])
+@test_throws ErrorException run(m)
+update_param!(m, :mycomp, :par, [100., 200.])
+run(m)
+@test m[:mycomp, :var] == [100., 200.]
+
+# try a shared model parameter
+m = Model()
+set_dimension!(m, :time, 2000:2002)
+set_dimension!(m, :region, ["A", "B", "C"])
+add_comp!(m, mycomp, :mycomp1)
+add_comp!(m, mycomp, :mycomp2)
+
+add_shared_param!(m, :shared_parameter, [5., 6., 7.]; dims = [:region])
+connect_param!(m, :mycomp1, :par, :shared_parameter)
+connect_param!(m, :mycomp2, :par, :shared_parameter)
+run(m)
+
+@test m[:mycomp1, :var] == [5., 6., 7.]
+@test m[:mycomp2, :var] == [5., 6., 7.]
+
+set_dimension!(m, :region, ["A", "B"]) # reset to the same - no check, still will reset to nothing
+@test get_model_param_name(m.md, :mycomp1, :par) == get_model_param_name(m.md, :mycomp2, :par) == :shared_parameter
+@test is_nothing_param(m.md.model_params[:shared_parameter])
+@test_throws ErrorException run(m)
+update_param!(m, :shared_parameter, [100., 200.])
+run(m)
+
+@test m[:mycomp1, :var] == [100., 200.]
+@test m[:mycomp2, :var] == [100., 200.]
 
 end #module
