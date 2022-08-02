@@ -2,9 +2,9 @@
 
 ## Parameters
 
-Component parameters in Mimi obtain values either (1) from a variable calculated by another component and passed through an internal connection or (2) from an externally set value stored in a model parameter.  For the latter case, model parameters can be unshared, such that they can only connect to one component/parameter pair and must be accessed by specifying both the component and component's parameter name, or shared, such that they can connect to mulitple component/parameter pairs and have a unique name they can be referenced with. 
+Component parameters in Mimi obtain values either (1) from a variable calculated by another component and passed through an internal connection or (2) from an externally set value stored in a model parameter.  For the latter case, model parameters can be unshared, such that they can only connect to one component/parameter pair and must be accessed by specifying both the component and component's parameter name, or shared, such that they can connect to multiple component/parameter pairs and have a unique name they can be referenced with. 
 
-In the next few subsections we will present the API for setting, connecting, and updating parameters as presented by different potential use cases. The API consistes of only a few primary functions:
+In the next few subsections we will present the API for setting, connecting, and updating parameters as presented by different potential use cases. The API consists of only a few primary functions:
 
 - [`update_param!`](@ref)
 - [`add_shared_param!`](@ref)
@@ -173,7 +173,7 @@ update_leftover_params!(m::Model, parameters::Dict)
 For example, given a model `m` with with component `A`'s parameters `p1` and `p2` which have not been updated from `nothing`, along with component `B`'s parameter `p1` that has not been updated.  In this case the following will update those parameters and make the model runnable:
 ```
 parameters = Dict((:A, :p1) => 1, (:A, :p2) => :foo, (:B, :p1) => 100)
-update_leftover_params!(m, parameeters)
+update_leftover_params!(m, parameters)
 ```
 Note that your dictionary `parameters` **must include all leftover parameters that need to be set**, not just a subset of them, or it will error when it cannot find a desired key.
 
@@ -187,7 +187,7 @@ For each (k, v) pair in the provided `parameters` dictionary, [`update_param!`](
 
 For example, given a model `m` with a shared model parameter `shared_param` connected to several component parameters, and two unshared model parameters `p1` and `p2` in a component `A`:
 ```julia
-# update shared model parameters and unshared model parameters seprately
+# update shared model parameters and unshared model parameters separately
 shared_dict = Dict(:shared_param => 1)
 unshared_dict = Dict((:A, :p5) => 2, (:A, :p6) => 3)
 update_params!(m, shared_dict)
