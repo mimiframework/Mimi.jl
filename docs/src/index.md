@@ -38,17 +38,20 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 * [MimiDICE2016R2.jl](https://github.com/anthofflab/MimiDICE2016R2.jl)
 * [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)*
 * [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)*
-* [Mimi-FAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
+* [MimiFAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
+* [MimiFAIR13.jl](https://github.com/FrankErrickson/MimiFAIR13.jl)
+* [MimiFAIRv1_6_2.jl](https://github.com/FrankErrickson/MimiFAIRv1_6_2.jl) (currently in closed BETA)
+* [MimiFAIRv2.jl](https://github.com/FrankErrickson/MimiFAIRv2.jl)
 * [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl/)*
 * [MimiPAGE2020.jl](https://github.com/openmodels/MimiPAGE2020.jl)*
-* [Mimi-MAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
-* [Mimi-HECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
-* [Mimi-CIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
-* [Mimi-BRICK.jl](https://github.com/anthofflab/mimi-brick.jl) (currently in closed BETA)
+* [MimiMAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
+* [MimiHECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
+* [MimiCIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
+* [MimiBRICK.jl](https://github.com/anthofflab/mimi-brick.jl)
 * [mimi_NICE](https://github.com/fdennig/mimi_NICE)
 * [AWASH](http://awashmodel.org/)
 * [PAGE-ICE](https://github.com/openmodels/PAGE-ICE)
 * [RICE+AIR](https://github.com/Environment-Research/AIR)
-* [Moore-Ag.jl](https://github.com/ckingdon95/MooreAg.jl)*
+* [MooreAg.jl](https://github.com/ckingdon95/MooreAg.jl)*
 * [MimiIWG.jl](https://github.com/rffscghg/MimiIWG.jl)*
 * [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl)
