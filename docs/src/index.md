@@ -47,7 +47,7 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 * [MimiMAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
 * [MimiHECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
 * [MimiCIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
-* [MimiBRICK.jl](https://github.com/anthofflab/mimi-brick.jl)
+* [MimiBRICK.jl](https://github.com/raddleverse/MimiBRICK.jl)
 * [mimi_NICE](https://github.com/fdennig/mimi_NICE)
 * [AWASH](http://awashmodel.org/)
 * [PAGE-ICE](https://github.com/openmodels/PAGE-ICE)
