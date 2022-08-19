@@ -1,6 +1,3 @@
-using LightGraphs
-using MetaGraphs
-
 """
     disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef, param_name::Symbol)
 
