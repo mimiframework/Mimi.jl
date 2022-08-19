@@ -3,7 +3,7 @@ using Pkg
 # We need these for the doctests. We install them before we load any
 # package so that we don't run into precompile problems
 # Pkg.add(PackageSpec(url="https://github.com/fund-model/MimiFUND.jl", rev="master"))
-Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
+# Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
 
 using Mimi
 import Electron
