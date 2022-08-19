@@ -2,8 +2,8 @@ using Pkg
 
 # We need these for the doctests. We install them before we load any
 # package so that we don't run into precompile problems
-# Pkg.add(PackageSpec(url="https://github.com/fund-model/MimiFUND.jl", rev="master"))
-# Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
+Pkg.add(PackageSpec(url="https://github.com/fund-model/MimiFUND.jl", rev="master"))
+Pkg.add(PackageSpec(url="https://github.com/anthofflab/MimiDICE2010.jl", rev="master"))
 
 using Mimi
 import Electron
@@ -128,8 +128,8 @@ Electron.prep_test_env()
     @info("mcs/runtests.jl")
     @time include("mcs/runtests.jl")
     
-    # @info("doctests")
-    # @time doctest(Mimi)
+    @info("doctests")
+    @time doctest(Mimi)
 
     for app in Electron.applications()
         close(app)
