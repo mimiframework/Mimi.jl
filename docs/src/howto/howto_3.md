@@ -178,9 +178,9 @@ As previously mentioned and included in the tutorial, the [`@defsim`](@ref) macr
 *Latin Hypercube sampling divides the distribution into equally-spaced quantiles, obtains values at those quantiles, and then shuffles the values. The result is better representation of the tails of the distribution with fewer samples than would be required for purely random sampling.*
 
 3. Sobol sampling and analysis (`SobolData`)
-4. Delta samping and analysis (`DeltaData`) - **Beta**, we don't recommend use yet
+4. Delta sampling and analysis (`DeltaData`) - **Beta**, we don't recommend use yet
 
-### Include Sampling Strategy-specifc Parameters
+### Include Sampling Strategy-specific Parameters
 
 Certain sampling strategies support (or necessitate) further customization. These may include:
 
@@ -320,7 +320,7 @@ By default, all defined models are run. In some cases, you may want to run some 
 
 ## 3. The `analyze` function
 
-The `analyze` function takes a simulation instance, runs a sensitivity analysis method as determined by the type of simulation instance, and returns the results. It is currenlty defined for a `SobolSimulationInstance` and the `DeltaSimulationInstance` (**Beta**) subtypes of `SimulationInstance`.
+The `analyze` function takes a simulation instance, runs a sensitivity analysis method as determined by the type of simulation instance, and returns the results. It is currently defined for a `SobolSimulationInstance` and the `DeltaSimulationInstance` (**Beta**) subtypes of `SimulationInstance`.
 
 This function wraps the `analyze` function in the [GlobalSensitivityAnalysis.jl](https://github.com/lrennels/GlobalSensitivityAnalysis.jl) package, so please view the README of this package for the most up to date information. 
 

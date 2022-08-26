@@ -63,7 +63,7 @@ add_comp!(m, FAIR_component) # will run from 1765 to 1950
     ```
     
 ----
-#### The following options are now available for further modifcations if this end state is not desireable:
+#### The following options are now available for further modifications if this end state is not desireable:
 
 - If you want to update a component's run period, you may use the function `Mimi.set_first_last!(m, :ComponentName, first = new_first, last = new_last)` to specify when you want the component to run.
 - You can update shared model parameters to have values in place of the assumed `missing`s using the [`update_param!`](@ref) function 

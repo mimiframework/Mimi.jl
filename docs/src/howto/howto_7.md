@@ -2,7 +2,7 @@
 
 The release of Mimi v0.5.0 is a breaking release, necessitating the adaptation of existing models' syntax and structure in order for those models to run on this new version.  This guide provides an overview of the steps required to get most models using the v0.4.0 API working with v0.5.0.  It is **not** a comprehensive review of all changes and new functionalities, but a guide to the minimum steps required to port old models between versions.  For complete information on the new version and its functionalities, see the full documentation.
 
-This guide is organized into six main sections, each descripting an independent set of changes that can be undertaken in any order desired.  
+This guide is organized into six main sections, each describing an independent set of changes that can be undertaken in any order desired.  
 
 1) Defining components
 2) Constructing a model
@@ -11,7 +11,7 @@ This guide is organized into six main sections, each descripting an independent 
 5) Plotting
 6) Advanced topics
 
-**A Note on Function Naming**: There has been a general overhaul on function names, especially those in the explicity user-facing API, to be consistent with Julia conventions and the conventions of this Package.  These can be briefly summarized as follows:
+**A Note on Function Naming**: There has been a general overhaul on function names, especially those in the explicitly user-facing API, to be consistent with Julia conventions and the conventions of this Package.  These can be briefly summarized as follows:
 
 - use `_` for readability
 - append all functions with side-effects, i.e., non-pure functions that return a value but leave all else unchanged with a `!`
@@ -22,7 +22,7 @@ This guide is organized into six main sections, each descripting an independent 
 
 The `run_timestep` function is now contained by the `@defcomp` macro, and takes the parameters `p, v, d, t`, referring to Parameters, Variables, and Dimensions of the component you defined.  The fourth argument is an `AbstractTimestep`, i.e., either a `FixedTimestep` or a `VariableTimestep`.  Similarly, the optional `init` function is also contained by `@defcomp`, and takes the parameters `p, v, d`.  Thus, as described in the user guide, defining a single component is now done as follows:
 
-In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmatic expressions.  The full API as described later in this document in **Advanced Topics:  Timesteps and available functions**.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`
+In this version, the fourth argument (`t` below) can no longer always be used simply as an `Int`. Indexing with `t` is still permitted, but special care must be taken when comparing `t` with conditionals or using it in arithmetic expressions.  The full API as described later in this document in **Advanced Topics:  Timesteps and available functions**.  Since differential equations are commonly used as the basis for these models' equations, the most commonly needed change will be changing `if t == 1` to `if is_first(t)`
 
 ```julia
 @defcomp component1 begin

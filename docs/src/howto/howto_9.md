@@ -11,9 +11,9 @@ Here we briefly summarize the new, encouraged parameter API.  We encourage users
 
 ### Parameters
 
-Component parameters in Mimi obtain values either (1) from a variable calculated by another component and passed through an internal connection or (2) from an externally set value stored in a model parameter.  For the latter case, model parameters can be unshared, such that they can only connect to one component/parameter pair and must be accessed by specifying both the component and component's parameter name, or shared, such that they can connect to mulitple component/parameter pairs and have a unique name they can be referenced with. 
+Component parameters in Mimi obtain values either (1) from a variable calculated by another component and passed through an internal connection or (2) from an externally set value stored in a model parameter.  For the latter case, model parameters can be unshared, such that they can only connect to one component/parameter pair and must be accessed by specifying both the component and component's parameter name, or shared, such that they can connect to multiple component/parameter pairs and have a unique name they can be referenced with. 
 
-In the next few subsections we will present the API for setting, connecting, and updating parameters as presented by different potential use cases. The API consistes of only a few primary functions:
+In the next few subsections we will present the API for setting, connecting, and updating parameters as presented by different potential use cases. The API consists of only a few primary functions:
 
 - [`update_param!`](@ref)
 - [`add_shared_param!`](@ref)
@@ -35,7 +35,7 @@ myparameter = myrv
 # or the shortcut:
 myparameter = Normal(0,1)
 ```
-Now, this syntax will only work if `myparameter` is a shared model parameter and thus accesible with that name.  If the parameter is an unshared model parameter, use dot syntax like
+Now, this syntax will only work if `myparameter` is a shared model parameter and thus accessible with that name.  If the parameter is an unshared model parameter, use dot syntax like
 ```julia
 rv(myrv) = Normal(0,1)
 mycomponent.myparameter = myrv
@@ -144,7 +144,7 @@ For each (k, v) pair in the provided `parameters` dictionary, [`update_params!`]
 
 For example, given a model `m` with a shared model parameter `model_param_name` connected to several component parameters, and two unshared model parameters `p1` and `p2` in a component `A`:
 ```julia
-# update shared model parameters and unshared model parameters seprately
+# update shared model parameters and unshared model parameters separately
 shared_dict = Dict(:model_param_name => 1)
 unshared_dict = Dict((:A, :p5) => 2, (:A, :p6) => 3)
 update_params!(m, shared_dict)
@@ -185,7 +185,7 @@ or
 rv(myrv) = Normal(0,1)
 myparameter = myrv
 ```
-Now, this syntax will only work if `myparameter` is a shared model parameter and thus accesible with that name.  If the parameter is an unshared model parameter, use dot syntax like
+Now, this syntax will only work if `myparameter` is a shared model parameter and thus accessible with that name.  If the parameter is an unshared model parameter, use dot syntax like
 ```
 mycomponent.myparameter = Normal(0,1)
 ```
