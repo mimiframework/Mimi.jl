@@ -25,7 +25,7 @@ As we work to enhance and improve Mimi we will release new versions of the packa
 pkg> update Mimi
 ```
 
-Finally, when in doubt, ask your question on the [Mimi Framework forum](https://forum.mimiframework.org) or post an [Issue](https://github.com/mimiframework/Mimi.jl/issues) to the Github repository, the latter being especially pertintent if you have a specific request for the development team.   Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
+Finally, when in doubt, ask your question on the [Mimi Framework forum](https://forum.mimiframework.org) or post an [Issue](https://github.com/mimiframework/Mimi.jl/issues) to the Github repository, the latter being especially pertinent if you have a specific request for the development team.   Don't be shy about either option, we would much prefer to be inundated with lots of questions and help people out than people give up on Mimi!
 
 ## Models using Mimi
 

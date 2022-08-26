@@ -15,7 +15,7 @@ Check out the new [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl) compo
 
 6/14/2021
 
-We recently tagged and released a feature relese revamping the API surrounding parameters, please see https://www.mimiframework.org/Mimi.jl/dev/howto/howto_5/ and https://www.mimiframework.org/Mimi.jl/dev/howto/howto_9/.
+We recently tagged and released a feature release revamping the API surrounding parameters, please see https://www.mimiframework.org/Mimi.jl/dev/howto/howto_5/ and https://www.mimiframework.org/Mimi.jl/dev/howto/howto_9/.
 
 5/3/2021
 

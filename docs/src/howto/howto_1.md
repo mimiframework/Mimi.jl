@@ -163,13 +163,13 @@ add_comp!(m, ComponentA, :GDP)
 
 The first argument to [`add_comp!`](@ref) is the model, the second is the name of the ComponentId defined by [`@defcomp`](@ref). If an optional third symbol is provided (as in the second line above), this will be used as the name of the component in this model. This allows you to add multiple versions of the same component to a model, with different names.
 
-The [`add_comp!`](@ref) function has two more optional keyword arguments, `first` and `last`, which can be used to indicate a fixed start and/or end time (year in this case) that the compnonent should run for (within the bounds of the model's time dimension).  For example, the following indicates that `ComponentA` should only run from 1900 to 2000.
+The [`add_comp!`](@ref) function has two more optional keyword arguments, `first` and `last`, which can be used to indicate a fixed start and/or end time (year in this case) that the component should run for (within the bounds of the model's time dimension).  For example, the following indicates that `ComponentA` should only run from 1900 to 2000.
 
 ```julia
 add_comp!(m, ComponentA; first = 1900, last = 2000)
 ```
 
-The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model. When assigned from external data, parameters are externally connected to a model parameter, which can be a shared model parameter with its own name and connected to more than one component-parameter pair, or an unshared model paarameter accessible only through the component-parameter pair names and connected solely to that parameter.
+The next step is to set the values for all the parameters in the components. Parameters can either have their values assigned from external data, or they can internally connect to the values from variables in other components of the model. When assigned from external data, parameters are externally connected to a model parameter, which can be a shared model parameter with its own name and connected to more than one component-parameter pair, or an unshared model parameter accessible only through the component-parameter pair names and connected solely to that parameter.
 
 To make an external connection to an unshared model parameter, the syntax is as follows:
 

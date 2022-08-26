@@ -1,6 +1,6 @@
 # Reference Guide: Composite Components
 
-Prior versions of Mimi supported only "flat" models, i.e., with one level of components. The current version supports mulitple layers of components, with some components being "final" or leaf components, and others being "composite" components which themselves contain other leaf or composite components. This approach allows for a cleaner organization of complex models, and allows the construction of building blocks that can be re-used in multiple models.
+Prior versions of Mimi supported only "flat" models, i.e., with one level of components. The current version supports multiple layers of components, with some components being "final" or leaf components, and others being "composite" components which themselves contain other leaf or composite components. This approach allows for a cleaner organization of complex models, and allows the construction of building blocks that can be re-used in multiple models.
 
 To the degree possible, composite components are designed to operate the same as leaf components, though there are necessarily differences:
 
