@@ -132,4 +132,6 @@
     plot_type_test(p)
     p = Mimi.plot(si_disk, :grosseconomy, :depk_var; interactive = true, results_output_dir = results_output_dir); 
     plot_type_test(p)
+
+    Mimi.close_explore_app()
 end

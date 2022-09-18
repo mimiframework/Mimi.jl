@@ -56,4 +56,6 @@
         p_type = _is_VegaLite_v3() ? VegaLite.VLSpec : VegaLite.VLSpec{:plot}
         @test typeof(Mimi.plot(m, :top, item)) == p_type
     end
+
+    Mimi.close_explore_app()
 end

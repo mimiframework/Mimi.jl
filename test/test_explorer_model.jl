@@ -198,4 +198,6 @@
         end
         @test static_spec["name"] == interactive_spec["name"] == name
     end
+
+    Mimi.close_explore_app()
 end
