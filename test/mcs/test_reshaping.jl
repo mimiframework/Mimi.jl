@@ -40,7 +40,7 @@
         save(grosseconomy.K, grosseconomy.YGROSS, emissions.E, emissions.E_Global)
     end
 
-    output_dir = joinpath(tempdir(), "mcs")
+    output_dir = mktempdir()
     si = run(sd, m, N; results_output_dir = output_dir, trials_output_filename = joinpath(output_dir, "trialdata.csv"))
 
     d = readdlm(joinpath(output_dir, "trialdata.csv"), ',')

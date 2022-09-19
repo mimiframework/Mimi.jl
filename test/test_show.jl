@@ -23,7 +23,7 @@
     end
 
     compid = ComponentId(@__MODULE__, :something)
-    test_show(compid, "ComponentId(Main.Testmodule.something)")
+    test_show(compid, "ComponentId($(string(@__MODULE__)).something)")
 
     struct Foo <: MimiStruct
         a::Dict

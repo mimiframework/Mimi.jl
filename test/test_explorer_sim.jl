@@ -50,7 +50,7 @@
     end
 
     si = run(sd, m, N)
-    results_output_dir = tempdir()
+    results_output_dir = mktempdir()
     si_disk = run(sd, m, N; results_output_dir = results_output_dir, results_in_memory = false)
 
     ## 1. Specs and Menu

@@ -9,7 +9,7 @@
 
     m = construct_MyModel()
     N = 10
-    output_dir = joinpath(tempdir(), "sim")
+    output_dir = mktempdir()
 
     sd = @defsim begin
 

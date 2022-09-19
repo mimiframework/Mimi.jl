@@ -49,7 +49,7 @@
         println("$(ci.comp_id).E_Global: $value")
     end
 
-    output_dir = joinpath(tempdir(), "sim")
+    output_dir = mktempdir()
     si = run(sd, m, N; trials_output_filename=joinpath(output_dir, "trialdata.csv"), results_output_dir=output_dir)
 
     # Test that the proper number of trials were saved
