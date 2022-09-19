@@ -6,6 +6,13 @@ export save
 
 global app = nothing
 
+function close_explore_app()
+    if !isnothing(app)
+        close(app)
+        global app = nothing
+    end
+end
+
 #include functions and modules
 include("getdataparts.jl")
 include("buildspecs.jl")

@@ -1,41 +1,37 @@
-module TestAdder
+@testitem "Adder" begin
+    ############################################
+    # adder component without a different name #
+    ############################################
 
-using Mimi
-using Test
+    model1 = Model()
+    set_dimension!(model1, :time, 1:10)
+    add_comp!(model1, Mimi.adder)
 
-############################################
-# adder component without a different name #
-############################################
+    x = collect(1:10)
+    y = collect(2:2:20)
 
-model1 = Model()
-set_dimension!(model1, :time, 1:10)
-add_comp!(model1, Mimi.adder)
+    update_param!(model1, :adder, :input, x)
+    update_param!(model1, :adder, :add, y)
 
-x = collect(1:10)
-y = collect(2:2:20)
+    run(model1)
 
-update_param!(model1, :adder, :input, x)
-update_param!(model1, :adder, :add, y)
+    for i in 1:10
+        @test model1[:adder, :output][i] == 3i
+    end
 
-run(model1)
+    ##############################################
+    # test adder component with a different name #
+    ##############################################
 
-for i in 1:10
-    @test model1[:adder, :output][i] == 3i
+    model2 = Model()
+    set_dimension!(model2, :time, 1:10)
+    add_comp!(model2, Mimi.adder, :compA)
+    update_param!(model2, :compA, :input, x)
+    update_param!(model2, :compA, :add, y)
+    run(model2)
+
+    for i in 1:10
+        @test model2[:compA, :output][i] == 3i
+    end
+
 end
-
-##############################################
-# test adder component with a different name #
-##############################################
-
-model2 = Model()
-set_dimension!(model2, :time, 1:10)
-add_comp!(model2, Mimi.adder, :compA)
-update_param!(model2, :compA, :input, x)
-update_param!(model2, :compA, :add, y)
-run(model2)
-
-for i in 1:10
-    @test model2[:compA, :output][i] == 3i
-end
-
-end #module

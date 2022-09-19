@@ -1,37 +1,33 @@
-module TestMultiplier
+@testitem "Multiplier" begin
+    ############################################
+    # adder component without a different name #
+    ############################################
 
-using Mimi
-using Test
+    model1 = Model()
+    set_dimension!(model1, :time, 1:10)
+    add_comp!(model1, Mimi.multiplier)
 
-############################################
-# adder component without a different name #
-############################################
+    x = collect(1:10)
+    y = collect(2:2:20)
 
-model1 = Model()
-set_dimension!(model1, :time, 1:10)
-add_comp!(model1, Mimi.multiplier)
+    update_param!(model1, :multiplier, :input, x)
+    update_param!(model1, :multiplier, :multiply, y)
 
-x = collect(1:10)
-y = collect(2:2:20)
+    run(model1)
 
-update_param!(model1, :multiplier, :input, x)
-update_param!(model1, :multiplier, :multiply, y)
+    @test model1[:multiplier, :output] == x.*y
 
-run(model1)
+    ##############################################
+    # test adder component with a different name #
+    ##############################################
 
-@test model1[:multiplier, :output] == x.*y
+    model2 = Model()
+    set_dimension!(model2, :time, 1:10)
+    add_comp!(model2, Mimi.multiplier, :compA)
+    update_param!(model2, :compA, :input, x)
+    update_param!(model2, :compA, :multiply, y)
+    run(model2)
 
-##############################################
-# test adder component with a different name #
-##############################################
+    @test model2[:compA, :output] == x.*y
 
-model2 = Model()
-set_dimension!(model2, :time, 1:10)
-add_comp!(model2, Mimi.multiplier, :compA)
-update_param!(model2, :compA, :input, x)
-update_param!(model2, :compA, :multiply, y)
-run(model2)
-
-@test model2[:compA, :output] == x.*y
-
-end #module
+end
