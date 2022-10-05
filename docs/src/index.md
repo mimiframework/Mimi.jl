@@ -29,29 +29,30 @@ Finally, when in doubt, ask your question on the [Mimi Framework forum](https://
 
 ## Models using Mimi
 
-*an asterisk after a model name indicates that this model is registered in the [MimiRegistry](https://github.com/mimiframework/Mimi.jl) as described in Tutorial 1*
-
-* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)*
-* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)*
-* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)*
+* [MimiBRICK.jl](https://github.com/raddleverse/MimiBRICK.jl)
+* [MimiCIAM.jl](https://github.com/anthofflab/mimi-ciam.jl)
+* [MimiDICE2010.jl](https://github.com/anthofflab/MimiDICE2010.jl)
+* [MimiDICE2013.jl](https://github.com/anthofflab/MimiDICE2013.jl)
 * [MimiDICE2016.jl](https://github.com/AlexandrePavlov/MimiDICE2016.jl) (version R not R2)
 * [MimiDICE2016R2.jl](https://github.com/anthofflab/MimiDICE2016R2.jl)
-* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)*
-* [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)*
-* [MimiFAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)*
+* [MimiFAIR.jl](https://github.com/anthofflab/mimi-fair.jl/)
 * [MimiFAIR13.jl](https://github.com/FrankErrickson/MimiFAIR13.jl)
-* [MimiFAIRv1_6_2.jl](https://github.com/FrankErrickson/MimiFAIRv1_6_2.jl) (currently in closed BETA)
+* [MimiFAIRv1\_6\_2.jl](https://github.com/FrankErrickson/MimiFAIRv1_6_2.jl)
 * [MimiFAIRv2.jl](https://github.com/FrankErrickson/MimiFAIRv2.jl)
-* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl/)*
-* [MimiPAGE2020.jl](https://github.com/openmodels/MimiPAGE2020.jl)*
-* [MimiMAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)*
-* [MimiHECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)*
-* [MimiCIAM.jl](https://github.com/anthofflab/mimi-ciam.jl) (currently in closed BETA)
-* [MimiBRICK.jl](https://github.com/raddleverse/MimiBRICK.jl)
+* [MimiFUND.jl](https://github.com/fund-model/MimiFUND.jl)
+* [MimiGIVE.jl](https://github.com/rffscghg/MimiGIVE.jl)
+* [MimiHECTOR.jl](https://github.com/anthofflab/mimi-hector.jl)
+* [MimiIWG.jl](https://github.com/rffscghg/MimiIWG.jl)
+* [MimiMAGICC.jl](https://github.com/anthofflab/mimi-magicc.jl)
+* [MimiMooreEtAlAgricultureImpacts.jl](https://github.com/rffscghg/MimiMooreEtAlAgricultureImpacts.jl)
+* [Mimi\_NAS\_pH.jl](https://github.com/FrankErrickson/Mimi_NAS_pH.jl)
 * [mimi_NICE](https://github.com/fdennig/mimi_NICE)
+* [MimiPAGE2009.jl](https://github.com/anthofflab/MimiPAGE2009.jl/)
+* [MimiPAGE2020.jl](https://github.com/openmodels/MimiPAGE2020.jl)
+* [MimiRFFSPs.jl](https://github.com/rffscghg/MimiRFFSPs.jl)
+* [MimiRICE2010.jl](https://github.com/anthofflab/MimiRICE2010.jl)
+* [Mimi-SNEASY.jl](https://github.com/anthofflab/mimi-sneasy.jl)
+* [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl)
 * [AWASH](http://awashmodel.org/)
 * [PAGE-ICE](https://github.com/openmodels/PAGE-ICE)
 * [RICE+AIR](https://github.com/Environment-Research/AIR)
-* [MooreAg.jl](https://github.com/ckingdon95/MooreAg.jl)*
-* [MimiIWG.jl](https://github.com/rffscghg/MimiIWG.jl)*
-* [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl)
