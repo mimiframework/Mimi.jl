@@ -7,6 +7,8 @@
 
 Mimi is a [Julia](http://julialang.org) package that provides a component model for [integrated assessment models](https://en.wikipedia.org/wiki/Integrated_assessment_modelling), as described in detail on the [Mimi Framework Homepage](https://www.mimiframework.org). The [Documentation](https://www.mimiframework.org/Mimi.jl/stable/) includes information on the installation and use of this package, step-by-step tutorials, how-to guides, and technical reference. The development team closely monitors the [Mimi Framework forum](https://forum.mimiframework.org) and we suggest this as a starting place for any questions users may have.
 
+Also, note that if at any point julia-related issues with workflows, environments, and/or package versioning become frustrating, please do not hesitate to reach out via the [forum](https://forum.mimiframework.org).  This can be a hurdle to learn at first, but taking a moment to get it right early will save you **a lot** of time down the road.  We are more than happy to help you, and are getting together some standardized resources in the meantime.
+
 ## NEWS
 
 11/1/2021
