@@ -13,7 +13,7 @@ Also, note that if at any point julia-related issues with workflows, environment
 
 11/27/2022
 
-The newest model on our platform, [MimiGIVE](https://github.com/rffscghg/MimiGIVE.jl/tree/main/src) is a fully open source model featured in the recent Nature publication [Comprehensive evidence implies a higher social cost of CO2](https://www.nature.com/articles/s41586-022-05224-9) and featured in recent [EPA work](https://www.epa.gov/environmental-economics/scghg).
+The newest model on our platform, [MimiGIVE](https://github.com/rffscghg/MimiGIVE.jl/tree/main/src) is a fully open source model featured in the recent Nature publication [Comprehensive evidence implies a higher social cost of CO2](https://www.nature.com/articles/s41586-022-05224-9) and recent [EPA work](https://www.epa.gov/environmental-economics/scghg).
 
 11/1/2021
 
