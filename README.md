@@ -11,6 +11,10 @@ Also, note that if at any point julia-related issues with workflows, environment
 
 ## NEWS
 
+11/27/2022
+
+The newest model on our platform, [MimiGIVE](https://github.com/rffscghg/MimiGIVE.jl/tree/main/src) is a fully open source model featured in the recent Nature publication [Comprehensive evidence implies a higher social cost of CO2](https://www.nature.com/articles/s41586-022-05224-9) and featured in recent [EPA work](https://www.epa.gov/environmental-economics/scghg).
+
 11/1/2021
 
 Check out the new [MimiSSPs.jl](https://github.com/anthofflab/MimiSSPs.jl) component, pulling in various SSP and RCP data sources into a component to streamline running Mimi models as forced by the SSPs and RCPs.
