@@ -20,9 +20,9 @@ function disconnect_param!(obj::AbstractCompositeComponentDef, comp_def::Abstrac
     filter!(x -> !(x.dst_comp_path == path && x.dst_par_name == param_name), obj.internal_param_conns)
 
     if obj isa ModelDef
-        
+
         # if disconnecting an unshared parameter, it will become unreachable since
-        # it's name is a random, unique symbol so remove it from the ModelDef's 
+        # it's name is a random, unique symbol so remove it from the ModelDef's
         # list of model parameters
         model_param_name = get_model_param_name(obj, nameof(comp_def), param_name; missing_ok = true)
         if !isnothing(model_param_name) && !(model_param(obj, model_param_name).is_shared)
@@ -51,24 +51,24 @@ verify_units(unit1::AbstractString, unit2::AbstractString) = (unit1 == unit2)
 
 """
     _check_attributes(obj::AbstractCompositeComponentDef,
-                comp_def::AbstractComponentDef, param_name::Symbol, 
+                comp_def::AbstractComponentDef, param_name::Symbol,
                 mod_param::ArrayModelParameter)
 
 Check that the attributes of the ArrayModelParameter `mod_param` match the attributes
-of the model parameter `param_name` in component `comp_def` of object `obj`, 
-including datatype and dimensions. 
+of the model parameter `param_name` in component `comp_def` of object `obj`,
+including datatype and dimensions.
 """
 function _check_attributes(obj::AbstractCompositeComponentDef,
                        comp_def::AbstractComponentDef, param_name::Symbol, mod_param::ArrayModelParameter)
 
-    is_nothing_param(mod_param) && return 
+    is_nothing_param(mod_param) && return
 
     param_def = parameter(comp_def, param_name)
 
-    # handle string case 
+    # handle string case
     t1 = eltype(mod_param.values)
     t2 = eltype(param_def.datatype)
-    
+
     # handle String case
     if t1 == Char; t1 = String; end
     if t2 == Char; t2 = String; end
@@ -139,7 +139,7 @@ function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalPara
             if isa(dim, Symbol)
                 param_dim_size = dim_count(obj,dim)
                 var_dim_size = dim_count(obj, var_dims[i])
-                
+
                 if param_dim_size != var_dim_size
                     error("Mismatched data size for internal parameter connection: ",
                     "dimension :$dim in $(param_comp_name)'s Parameter $(ipc.dst_par_name) has $param_dim_size elements; ",
@@ -150,18 +150,18 @@ function _check_attributes(obj::AbstractCompositeComponentDef, ipc::InternalPara
 end
 """
     _check_attributes(obj::AbstractCompositeComponentDef,
-                comp_def::AbstractComponentDef, param_name::Symbol, 
+                comp_def::AbstractComponentDef, param_name::Symbol,
                 mod_param::ScalarModelParameter)
 
 Check that the attributes of the ScalarModelParameter `mod_param` match the attributes
-of the model parameter `param_name` in component `comp_def` of object `obj`, 
-including datatype. 
+of the model parameter `param_name` in component `comp_def` of object `obj`,
+including datatype.
 """
 function _check_attributes(obj::AbstractCompositeComponentDef,
-                        comp_def::AbstractComponentDef, param_name::Symbol, 
+                        comp_def::AbstractComponentDef, param_name::Symbol,
                         mod_param::ScalarModelParameter)
-    
-    is_nothing_param(mod_param) && return 
+
+    is_nothing_param(mod_param) && return
 
     param_def = parameter(comp_def, param_name)
     t1 = typeof(mod_param.value)
@@ -201,13 +201,13 @@ the model parameter `model_param_name`.
 function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractComponentDef,
                         param_name::Symbol, model_param_name::Symbol; check_attributes::Bool=true,
                         ignoreunits::Bool = false)
-    
+
     mod_param = model_param(obj, model_param_name)
 
     # check the attributes between the shared model parameter and the component parameter
     check_attributes && _check_attributes(obj, comp_def, param_name, mod_param)
 
-    # check for collisions 
+    # check for collisions
     if is_shared(mod_param)
         conns = filter(i -> i.model_param_name == model_param_name, external_param_conns(obj))
         if !(isempty(conns)) # need to check collisions
@@ -215,15 +215,15 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractCo
             push!(pairs, comp_def => param_name)
 
             # which fields to check for collisions in subcomponents
-            # NB: we don't need the types of the parameters to connected to 
-            # exactly match, if they both satisfy _check_attributes above with the 
+            # NB: we don't need the types of the parameters to connected to
+            # exactly match, if they both satisfy _check_attributes above with the
             # model parameter that is good enough --> we take :datatype out of the
             # fields list below
             fields = ignoreunits ? [:dim_names] : [:dim_names, :unit]
 
             collisions = _find_collisions(fields, Vector(pairs))
-            
-            if ! isempty(collisions) 
+
+            if ! isempty(collisions)
                 if :unit in collisions
                     error("Cannot connect $(nameof(comp_def)):$(param_name) to shared model ",
                             "parameter $model_param_name, it has a conflicting ",
@@ -234,7 +234,7 @@ function connect_param!(obj::AbstractCompositeComponentDef, comp_def::AbstractCo
                     spec = join(collisions, " and ")
                     error("Cannot connect $(nameof(comp_def)):$(param_name) to shared model parameter ",
                         "$model_param_name, it has conflicting values for the $spec of other ",
-                        "parameters connected to this shared model parameter.") 
+                        "parameters connected to this shared model parameter.")
                 end
             end
         end
@@ -259,10 +259,10 @@ end
 Bind the parameter `dst_par_name` of one component `dst_comp_path` of composite `obj` to a
 variable `src_var_name` in another component `src_comp_path` of the same model using
 `backup` to provide default values and the `ignoreunits` flag to indicate the need to
-check match units between the two.  The `backup_offset` argument, which is only valid 
+check match units between the two.  The `backup_offset` argument, which is only valid
 when `backup` data has been set, indicates that the backup data should be used for
-a specified number of timesteps after the source component begins. ie. the value would be 
-`1` if the destination component parameter should only use the source component 
+a specified number of timesteps after the source component begins. ie. the value would be
+`1` if the destination component parameter should only use the source component
 data for the second timestep and beyond.
 """
 function _connect_param!(obj::AbstractCompositeComponentDef,
@@ -310,7 +310,7 @@ function _connect_param!(obj::AbstractCompositeComponentDef,
 
             # get first and last of the ModelDef, NOT the ComponentDef
             first = first_period(obj)
-            last = last_period(obj) 
+            last = last_period(obj)
 
             T = eltype(backup)
 
@@ -357,7 +357,7 @@ Try calling:
     var_unit = variable_unit(src_comp_def, src_var_name)
     par_unit = parameter_unit(dst_comp_def, dst_par_name)
 
-    if !ignoreunits && var_unit !== "" && par_unit !== "" 
+    if !ignoreunits && var_unit !== "" && par_unit !== ""
         if ! verify_units(var_unit, par_unit)
             error("Units of $src_comp_path:$src_var_name ($var_unit) do not match $dst_comp_path:$dst_par_name ($par_unit).")
         end
@@ -374,23 +374,23 @@ end
     connect_param!(obj::AbstractCompositeComponentDef,
                     dst_comp_name::Symbol, dst_par_name::Symbol,
                     src_comp_name::Symbol, src_var_name::Symbol,
-                    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                    backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false,
                     backup_offset::Union{Nothing, Int} = nothing)
 
 Bind the parameter `dst_par_name` of one component `dst_comp_name` of composite `obj` to a
 variable `src_var_name` in another component `src_comp_name` of the same model using
 `backup` to provide default values and the `ignoreunits` flag to indicate the need to
-check match units between the two.  The `backup_offset` argument, which is only valid 
+check match units between the two.  The `backup_offset` argument, which is only valid
 when `backup` data has been set, indicates that the backup data should be used for
-a specified number of timesteps after the source component begins. ie. the value would be 
-`1` if the destination component parameter should only use the source component 
+a specified number of timesteps after the source component begins. ie. the value would be
+`1` if the destination component parameter should only use the source component
 data for the second timestep and beyond.
 """
 
 function connect_param!(obj::AbstractCompositeComponentDef,
                         dst_comp_name::Symbol, dst_par_name::Symbol,
                         src_comp_name::Symbol, src_var_name::Symbol,
-                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false,
                         backup_offset::Union{Nothing, Int} = nothing)
     _connect_param!(obj, ComponentPath(obj, dst_comp_name), dst_par_name,
                         ComponentPath(obj, src_comp_name), src_var_name,
@@ -406,15 +406,15 @@ end
 Bind the parameter `dst[2]` of one component `dst[1]` of composite `obj`
 to a variable `src[2]` in another component `src[1]` of the same composite
 using `backup` to provide default values and the `ignoreunits` flag to indicate the need
-to check match units between the two.  The `backup_offset` argument, which is only valid 
+to check match units between the two.  The `backup_offset` argument, which is only valid
 when `backup` data has been set, indicates that the backup data should be used for
-a specified number of timesteps after the source component begins. ie. the value would be 
-`1` if the destination componentm parameter should only use the source component 
+a specified number of timesteps after the source component begins. ie. the value would be
+`1` if the destination componentm parameter should only use the source component
 data for the second timestep and beyond.
 """
 function connect_param!(obj::AbstractCompositeComponentDef,
                         dst::Pair{Symbol, Symbol}, src::Pair{Symbol, Symbol},
-                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false, 
+                        backup::Union{Nothing, Array}=nothing; ignoreunits::Bool=false,
                         backup_offset::Union{Nothing, Int} = nothing)
     connect_param!(obj, dst[1], dst[2], src[1], src[2], backup; ignoreunits=ignoreunits, backup_offset=backup_offset)
 end
@@ -511,7 +511,7 @@ Return true if `param`'s values is nothing, and false otherwise.
 function is_nothing_param(param::ArrayModelParameter)
     return isnothing(param.values)
 end
- 
+
 """
     unconnected_params(obj::AbstractCompositeComponentDef)
 
@@ -527,9 +527,9 @@ end
 
 Update all of the parameters in `ModelDef` `md` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are Tuples of Symbols (or convertible to Symbols ie. Strings) 
-of (comp_name, param_name) that match the component-parameter pair of 
-unset parameters in the model.  All resulting connected model parameters will be 
+the dictionary keys are Tuples of Symbols (or convertible to Symbols ie. Strings)
+of (comp_name, param_name) that match the component-parameter pair of
+unset parameters in the model.  All resulting connected model parameters will be
 unshared model parameters.
 """
 function update_leftover_params!(md::ModelDef, parameters)
@@ -554,12 +554,12 @@ end
 
 Set all of the parameters in `ModelDef` `md` that don't have a value and are not connected
 to some other component to a value from a dictionary `parameters`. This method assumes
-the dictionary keys are Symbols (or convertible into Symbols ie. Strings) that 
-match the names of unset parameters in the model. All resulting connected model 
+the dictionary keys are Symbols (or convertible into Symbols ie. Strings) that
+match the names of unset parameters in the model. All resulting connected model
 parameters will be shared model parameters.
 
 Note that this function `set_leftover_params! has been deprecated, and uses should
-be transitioned to using `update_leftover_params!` with keys specific to component-parameter 
+be transitioned to using `update_leftover_params!` with keys specific to component-parameter
 pairs i.e. (comp_name, param_name) => value in the dictionary.
 """
 function set_leftover_params!(md::ModelDef, parameters::Dict) where T
@@ -575,7 +575,7 @@ function set_leftover_params!(md::ModelDef, parameters::Dict) where T
 
         # check whether we need to add the model parameter to the ModelDef
         if isnothing(model_param(md, param_name, missing_ok=true))
-            if haskey(parameters, param_name)  
+            if haskey(parameters, param_name)
                 value = parameters[param_name]
                 param = create_model_param(md, param_def, value; is_shared = true)
                 add_model_param!(md, param_name, param)
@@ -590,7 +590,7 @@ end
 """
     internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
 
-Return internal param conns to a given destination component on `dst_comp_path` in `obj`.  
+Return internal param conns to a given destination component on `dst_comp_path` in `obj`.
 """
 function internal_param_conns(obj::AbstractCompositeComponentDef, dst_comp_path::ComponentPath)
     return filter(x->x.dst_comp_path == dst_comp_path, internal_param_conns(obj))
@@ -599,7 +599,7 @@ end
 """
     internal_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
 
-Return internal param conns to a given destination component `comp_name` in `obj`.  
+Return internal param conns to a given destination component `comp_name` in `obj`.
 """
 function internal_param_conns(obj::AbstractCompositeComponentDef, comp_name::Symbol)
     return internal_param_conns(obj, ComponentPath(obj.comp_path, comp_name))
@@ -640,7 +640,7 @@ end
 """
     model_param(obj::ModelDef, name::Symbol; missing_ok=false)
 
-Return the ModelParameter in `obj` with name `name`.  If `missing_ok` is set 
+Return the ModelParameter in `obj` with name `name`.  If `missing_ok` is set
 to `true`, return nothing if parameter is not found, otherwise error.
 """
 function model_param(obj::ModelDef, name::Symbol; missing_ok=false)
@@ -655,7 +655,7 @@ end
     model_param(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok = false)
 
 Return the ModelParameter in `obj` connected to component `comp_name`'s parameter
-`param_name`. If `missing_ok` is set to `true`, return nothing if parameter is not 
+`param_name`. If `missing_ok` is set to `true`, return nothing if parameter is not
 found, otherwise error.
 """
 function model_param(obj::ModelDef, comp_name::Symbol, param_name::Symbol; missing_ok = false)
@@ -725,37 +725,37 @@ end
 
 """
     add_model_param!(md::ModelDef, name::Symbol, value::Number;
-                        param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                        param_dims::Union{Nothing,Array{Symbol}} = nothing,
                         is_shared::Bool = false)
 
-Create and add a model parameter with name `name` and Model Parameter `value` 
+Create and add a model parameter with name `name` and Model Parameter `value`
 to ModelDef `md`. The Model Parameter will be created with value `value`, dimensions
-`param_dims` which can be left to be created automatically from the Model Def, and 
+`param_dims` which can be left to be created automatically from the Model Def, and
 an is_shared attribute `is_shared` which defaults to false.
 
 WARNING: this has been mostly replaced by combining create_model_param with add_model_param
-method using the paramdef ... certain checks are not done here ... should be careful 
+method using the paramdef ... certain checks are not done here ... should be careful
 using it and only do so under the hood.
 """
 function add_model_param!(md::ModelDef, name::Symbol, value::Number;
-                            param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                            param_dims::Union{Nothing,Array{Symbol}} = nothing,
                             is_shared::Bool = false)
     add_model_scalar_param!(md, name, value, is_shared = is_shared)
 end
 
 """
     add_model_param!(md::ModelDef, name::Symbol, value::Number;
-                        param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                        param_dims::Union{Nothing,Array{Symbol}} = nothing,
                         is_shared::Bool = false)
 
-Create and add a model parameter with name `name` and Model Parameter `value` 
+Create and add a model parameter with name `name` and Model Parameter `value`
 to ModelDef `md`. The Model Parameter will be created with value `value`, dimensions
-`param_dims` which can be left to be created automatically from the Model Def, and 
+`param_dims` which can be left to be created automatically from the Model Def, and
 an is_shared attribute `is_shared` which defaults to false.
 """
 function add_model_param!(md::ModelDef, name::Symbol,
                              value::Union{AbstractArray, AbstractRange, Tuple};
-                             param_dims::Union{Nothing,Array{Symbol}} = nothing, 
+                             param_dims::Union{Nothing,Array{Symbol}} = nothing,
                              is_shared::Bool = false)
 
     ti = get_time_index_position(param_dims)
@@ -772,7 +772,7 @@ end
 
 """
     add_model_array_param!(md::ModelDef,
-                                name::Symbol, value::TimestepVector, 
+                                name::Symbol, value::TimestepVector,
                                 dims; is_shared::Bool = false)
 
 Add a one dimensional time-indexed array parameter indicated by `name` and
@@ -780,7 +780,7 @@ Add a one dimensional time-indexed array parameter indicated by `name` and
 will default to false. In this case `dims` must be `[:time]`.
 """
 function add_model_array_param!(md::ModelDef,
-                                    name::Symbol, value::TimestepVector, 
+                                    name::Symbol, value::TimestepVector,
                                     dims; is_shared::Bool = false)
     param = ArrayModelParameter(value, [:time], is_shared)  # must be :time
     add_model_param!(md, name, param)
@@ -788,7 +788,7 @@ end
 
 """
     add_model_array_param!(md::ModelDef,
-                              name::Symbol, value::TimestepMatrix, dims; 
+                              name::Symbol, value::TimestepMatrix, dims;
                               is_shared::Bool = false)
 
 Add a multi-dimensional time-indexed array parameter `name` with value
@@ -796,7 +796,7 @@ Add a multi-dimensional time-indexed array parameter `name` with value
 will default to false. In this case `dims` must contain `[:time]`.
 """
 function add_model_array_param!(md::ModelDef,
-                                name::Symbol, value::TimestepArray, dims; 
+                                name::Symbol, value::TimestepArray, dims;
                                 is_shared::Bool = false)
     !(:time in dims) && error("When adding an `ArrayModelParameter` the dimensions array must include `:time`, but here it is $dims.")
     param = ArrayModelParameter(value, dims, is_shared)
@@ -805,15 +805,15 @@ end
 
 """
     add_model_array_param!(md::ModelDef,
-                              name::Symbol, value::AbstractArray, dims; 
+                              name::Symbol, value::AbstractArray, dims;
                               is_shared::Bool = false)
 
-Add an array type parameter `name` with value `value` and `dims` dimensions to the 
-Model Def `md`. The `is_shared` attribute of the ArrayModelParameter will default to 
-false. 
+Add an array type parameter `name` with value `value` and `dims` dimensions to the
+Model Def `md`. The `is_shared` attribute of the ArrayModelParameter will default to
+false.
 """
 function add_model_array_param!(md::ModelDef,
-                                   name::Symbol, value::AbstractArray, dims; 
+                                   name::Symbol, value::AbstractArray, dims;
                                    is_shared::Bool = false)
     param = ArrayModelParameter(value, dims === nothing ? Vector{Symbol}() : dims, is_shared)
     add_model_param!(md, name, param)
@@ -833,7 +833,7 @@ end
     update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
 
 Update the `value` of a model parameter in composite `obj`, referenced
-by `name`. The update_timesteps keyword argument is deprecated, we keep it here 
+by `name`. The update_timesteps keyword argument is deprecated, we keep it here
 just to provide warnings.
 """
 function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
@@ -845,7 +845,7 @@ end
     update_param!(mi::ModelInstance, name::Symbol, value)
 
 Update the `value` of a model parameter in `ModelInstance` `mi`, referenced
-by `name`.  This is an UNSAFE update as it does not dirty the model, and should 
+by `name`.  This is an UNSAFE update as it does not dirty the model, and should
 be used carefully and specifically for things like our MCS work.
 """
 function update_param!(mi::ModelInstance, name::Symbol, value)
@@ -865,9 +865,9 @@ end
 """
     update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
 
-Update the `value` of a model parameter in `ModelInstance` `mi`, connected to 
-component `comp_name`'s parameter `param_name`. This is an UNSAFE updat as it does 
-not dirty the model, and should  be used carefully and specifically for things like 
+Update the `value` of a model parameter in `ModelInstance` `mi`, connected to
+component `comp_name`'s parameter `param_name`. This is an UNSAFE updat as it does
+not dirty the model, and should  be used carefully and specifically for things like
 our MCS work.
 """
 function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol, value)
@@ -877,11 +877,11 @@ function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol,
 
     is_shared(param) && error("$comp_name:$param_name is connected to a ",
             "a shared model parameter with name $model_param_name in the model, ",
-            "to update the shared model parameter please call `update_param!(mi, $model_param_name, value)` ", 
-            "to explicitly update a shared parameter that may be connected to ", 
+            "to update the shared model parameter please call `update_param!(mi, $model_param_name, value)` ",
+            "to explicitly update a shared parameter that may be connected to ",
             "several components. If you want to disconnect $comp_name:$param_name ",
             "from the shared model parameter and connect it to it's own unshared ",
-            "model parameter, first use `disconnect_param!` and then you can use this same ", 
+            "model parameter, first use `disconnect_param!` and then you can use this same ",
             "call to `update_param!`.")
 
     if param isa ScalarModelParameter
@@ -898,8 +898,8 @@ end
 """
     update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
 
-Update the `value` of the unshared model parameter in Model Def `md` connected to component 
-`comp_name`'s parameter `param_name`. 
+Update the `value` of the unshared model parameter in Model Def `md` connected to component
+`comp_name`'s parameter `param_name`.
 """
 function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
 
@@ -908,7 +908,7 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
     # check if we need a new parameter, maybe because it was previously a nothing
     # parameter that got disconnected
     if isnothing(model_param_name)
-        
+
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
 
@@ -925,16 +925,39 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
         mod_param = model_param(md, model_param_name)
         is_shared(mod_param) && error("$comp_name:$param_name is connected to a ",
                 "a shared model parameter with name $model_param_name in the model, ",
-                "to update the shared model parameter please call `update_param!(m, $model_param_name, value)` ", 
-                "to explicitly update a shared parameter that may be connected to ", 
+                "to update the shared model parameter please call `update_param!(m, $model_param_name, value)` ",
+                "to explicitly update a shared parameter that may be connected to ",
                 "several components. If you want to disconnect $comp_name:$param_name ",
                 "from the shared model parameter and connect it to it's own unshared ",
-                "model parameter, first use `disconnect_param!` and then you can use this same ", 
+                "model parameter, first use `disconnect_param!` and then you can use this same ",
                 "call to `update_param!`.")
 
         # update the parameter
         _update_param!(md, model_param_name, value)
     end
+end
+
+"""
+    update_param!(mi::MarginalInstance, comp_name::Symbol, param_name::Symbol, value)
+
+As update_param!(mi::ModelInstance, comp_name::Symbol,
+param_name::Symbol, value), applied to both models in a
+MarginalInstance.
+"""
+function update_param!(mi::MarginalInstance, comp::Symbol, param::Symbol, value)
+    update_param!(mi.base, comp, param, value)
+    update_param!(mi.modified, comp, param, value)
+end
+
+"""
+    update_param!(mi::MarginalInstance, param::Symbol, value)
+
+As update_param!(mi::ModelInstance, name::Symbol, value), applied to
+both models in a MarginalInstance.
+"""
+function update_param!(mi::MarginalInstance, param::Symbol, value)
+    update_param!(mi.base, param, value)
+    update_param!(mi.modified, param, value)
 end
 
 """
@@ -984,7 +1007,7 @@ end
 Update the `value` of the array model parameter `name` in object `obj`.
 """
 function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
-   
+
     # Get original parameter
     param = model_param(obj, name)
 
@@ -1000,13 +1023,13 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
         end
     end
 
-    # Check if the parameter dimensions match the model dimensions.  Note that we 
-    # previously checked if parameter dimensions matched the dimensions of the 
+    # Check if the parameter dimensions match the model dimensions.  Note that we
+    # previously checked if parameter dimensions matched the dimensions of the
     # parameter they were to replace, but given dimensions of a model can be changed,
-    # we now choose to enforce that the new dimensions match the current model state, 
+    # we now choose to enforce that the new dimensions match the current model state,
     # whatever that is.
 
-    expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,) 
+    expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,)
     size(value) != expected_size ? error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).") : nothing
 
     # check if updating timestep labels is necessary
@@ -1049,11 +1072,11 @@ function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol
 
     # create the unshared model parameter
     param = create_model_param(obj, param_def, value)
-    
-    # Need to check the dimensions of the parameter data against component 
+
+    # Need to check the dimensions of the parameter data against component
     # before adding it to the model's parameter list
     _check_attributes(obj, comp_def, param_name, param)
-    
+
     # add the unshared model parameter to the model def, which will replace the
     # old one and thus keep the connection in tact
     add_model_param!(obj, name, param)
@@ -1065,10 +1088,10 @@ end
 For each (k, v) in the provided `parameters` dictionary, `update_param!`
 is called to update the model parameter identified by k to value v.
 
-For updating unshared parameters, each key k must be a Tuple matching the name of a 
+For updating unshared parameters, each key k must be a Tuple matching the name of a
 component in `obj` and the name of an parameter in that component.
 
-For updating shared parameters, each key k must be a symbol or convert to a symbol 
+For updating shared parameters, each key k must be a symbol or convert to a symbol
 matching the name of a shared model parameter that already exists in the model.
 """
 function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; update_timesteps = nothing)
@@ -1079,7 +1102,7 @@ function update_params!(obj::AbstractCompositeComponentDef, parameters::Dict; up
             model_param_name = get_model_param_name(obj, first(k), last(k))
         else
             model_param_name = k
-        end 
+        end
         _update_param!(obj, model_param_name, v)
     end
     nothing
@@ -1118,8 +1141,8 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             conn_comp_name = connector_comp_name(i) # generate a new name
             i += 1 # increment connector comp counter
 
-            # Add the connector component before the user-defined component that 
-            # required it, and for now let the first and last of the component 
+            # Add the connector component before the user-defined component that
+            # required it, and for now let the first and last of the component
             # be free and thus be set to the same as the model
             conn_comp = add_comp!(obj, conn_comp_def, conn_comp_name, before=comp_name)
             if num_dims == 2
@@ -1144,7 +1167,7 @@ function add_connector_comps!(obj::AbstractCompositeComponentDef)
             # add a connection between ConnectorComp and the external backup data
             add_external_param_conn!(obj, ExternalParameterConnection(conn_path, :input2, conn.backup))
 
-            # set the first and last parameters for WITHIN the component which 
+            # set the first and last parameters for WITHIN the component which
             # decide when backup is used and when connection is used
             src_comp_def = compdef(obj, conn.src_comp_path)
 
@@ -1164,9 +1187,9 @@ end
 """
     _pad_parameters!(obj::ModelDef)
 
-Take each model parameter of the Model Definition `obj` and `update_param!` 
+Take each model parameter of the Model Definition `obj` and `update_param!`
 with new data values that are altered to match a new time dimension by (1) trimming
-the values down if the time dimension has been shortened and (2) padding with missings 
+the values down if the time dimension has been shortened and (2) padding with missings
 as necessary.
 """
 function _pad_parameters!(obj::ModelDef)
@@ -1191,9 +1214,9 @@ end
 """
     _get_padded_data(param::ArrayModelParameter, param_times::Vector, model_times::Vector)
 
-Obtain the new data values for the Array Model Paramter `param` with current 
-time labels `param_times` such that they are altered to match a new time dimension 
-with keys `model_times` by (1) trimming the values down if the time dimension has 
+Obtain the new data values for the Array Model Paramter `param` with current
+time labels `param_times` such that they are altered to match a new time dimension
+with keys `model_times` by (1) trimming the values down if the time dimension has
 been shortened and (2) padding with missings as necessary.
 """
 function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model_times::Vector)
@@ -1201,13 +1224,13 @@ function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model
     data = param.values.data
     ti = get_time_index_position(param)
 
-    # first handle the back end 
+    # first handle the back end
     model_last = last(model_times)
     param_last = last(param_times)
 
     if model_last < param_last # trim down the data
-        
-        trim_idx = findfirst(isequal(last(model_times)), param_times) 
+
+        trim_idx = findfirst(isequal(last(model_times)), param_times)
         idxs = repeat(Any[:], ndims(data))
         idxs[ti] = 1:trim_idx
         data = data[idxs...]
@@ -1222,7 +1245,7 @@ function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model
 
     end
 
-    # now handle the front end 
+    # now handle the front end
     model_first = first(model_times)
     param_first = first(param_times)
 
@@ -1237,14 +1260,14 @@ function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model
 
     end
 
-    return data 
+    return data
 end
 
 """
     _get_param_times(param::ArrayModelParameter{TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti, S}})
 
 Return the time labels that parameterize the `TimestepValue` which in turn parameterizes
-the ArrayModelParameter `param`. 
+the ArrayModelParameter `param`.
 """
 function _get_param_times(param::ArrayModelParameter{TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti, S}}) where {FIRST, STEP, LAST, T, N, ti, S}
     return collect(FIRST:STEP:LAST)
@@ -1254,7 +1277,7 @@ end
     _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}})
 
 Return the time labels that parameterize the `TimestepValue` which in turn parameterizes
-the ArrayModelParameter `param`. 
+the ArrayModelParameter `param`.
 """
 function _get_param_times(param::ArrayModelParameter{TimestepArray{VariableTimestep{TIMES}, T, N, ti, S}}) where {TIMES, T, N, ti, S}
     return [TIMES...]
@@ -1264,7 +1287,7 @@ end
     add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[])
 
 User-facing API function to add a shared parameter to Model Def `md` with name
-`name` and value `value`, and an array of dimension names `dims` which dfaults to 
+`name` and value `value`, and an array of dimension names `dims` which dfaults to
 an empty vector.  The `is_shared` attribute of the added Model Parameter will be `true`.
 
 The `value` can by a scalar, an array, or a NamedAray. Optional keyword argument 'dims' is a list
@@ -1273,20 +1296,20 @@ model's index labels. Optional keyword argument `datatype` allows user to specif
 to use for the shared model parameter.
 """
 function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing)
-    
+
     # Check provided name: make sure shared model parameter name does not exist already
     has_parameter(md, name) && error("Cannot add parameter :$name, the model already has a shared parameter with this name.")
 
-    # Check provided dims: 
+    # Check provided dims:
     #   (1) handle NamedArray
     #   (2) make sure provided dims names exist in the model
     #   (3) make sure number of provided dims matches value
 
-    if value isa NamedArray 
+    if value isa NamedArray
         !isempty(dims) && dims !== dimnames(value) && @warn "Provided dims are $dims, provided NamedArray value has dims $(dimnames(value)), will use value dims $(dimnames(value))."
         dims = dimnames(value)
     end
-    
+
     for dim in dims
         isa(dim, Symbol) && !has_dim(md, dim) && error("Model doesn't have dimension :$dim indicated in the dims of added shared parameter, $dims.")
     end
@@ -1296,13 +1319,13 @@ function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{S
         " were given but provided value has $(ndims(value)). This is done with the `dims` keyword argument ",
         " ie. : `add_shared_param!(md, name, value; dims = [:time])")
     end
-    
-    # get the data type to use to create ParameterDef, which we either get from 
-    # the data_type argument and just check against provided data in `value`, or we 
+
+    # get the data type to use to create ParameterDef, which we either get from
+    # the data_type argument and just check against provided data in `value`, or we
     # infer from the provided data in `value` with the caveat that any number
     # type will be raised to number_type(md) for now (except Bools)
     value, data_type = _resolve_datatype(md, value, data_type)
-            
+
     # create the ParameterDef
 
     # note here that this will take our `data_type` and provide some logic including
@@ -1327,7 +1350,7 @@ function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{S
 
     # add the shared model parameter to the model def
     add_model_param!(md, name, param)
-    
+
 end
 
 # helper functions to return the data_type and (maybe converted) value to use
@@ -1335,11 +1358,11 @@ end
 # parameter
 
 function _resolve_datatype(md::ModelDef, value::Any, data_type::DataType)
-    
+
     # if a data_type is not provided get it from `value`
     if data_type <: Nothing
         value, data_type = _resolve_datatype_nothing(md, value, data_type)
-    
+
     # otherwise check data_type against DataType of `value ``
     else
         value, data_type = _resolve_datatype_value(md, value, data_type)
@@ -1358,17 +1381,17 @@ function _resolve_datatype_nothing(md::ModelDef, value::Any, data_type::DataType
         catch; end
     end
 
-    # if it is still not a DataType, try converting it to a Number and if 
+    # if it is still not a DataType, try converting it to a Number and if
     # successful convert the values and update the data_type
     if !(value_data_type isa DataType)
         try value = convert.(Number, value)
         catch; end
-        value_data_type = eltype(value) 
+        value_data_type = eltype(value)
     end
 
     # if it still isn't a datatype, then I give up just go with Any
     if !(value_data_type isa DataType)
-        value_data_type = Any 
+        value_data_type = Any
     end
 
     # raise to Number to lower the constraints, except for a Boolean make a
@@ -1387,21 +1410,21 @@ function _resolve_datatype_value(md::ModelDef, value::Any, data_type::DataType)
 
         # mirrors what we do in _update_param!
         if value isa AbstractArray
-            try  
-                value = convert(Array{data_type}, value) 
+            try
+                value = convert(Array{data_type}, value)
             catch e
                 error("Mismatched datatypes: elements of provided `value` have a ",
                 "DataType ($value_data_type) and cannot be converted to the provided ",
-                "DataType in `data_type` argument ($data_type). Please resolve by ", 
+                "DataType in `data_type` argument ($data_type). Please resolve by ",
                 "converting the data you provided or changing the `data_type` argument.")
             end
         else
-            try 
+            try
                 value = convert(data_type, value)
             catch e
                 error("Mismatched datatypes: `value` has a ",
                 "DataType ($value_data_type) and do not match the provided ",
-                "DataType in `data_type` argument ($data_type). Please resolve by ", 
+                "DataType in `data_type` argument ($data_type). Please resolve by ",
                 "converting the data you provided or changing the `data_type` argument.")
             end
         end
@@ -1448,17 +1471,17 @@ function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef,
     # create a sentinal unshared parameter
     if isnothing(value)
         param = ArrayModelParameter(value, param_dims, is_shared)
-    
+
     # have a value - in the initiliazation of parameters case this is a default
     # value set in defcomp
     else
-              
+
         # check dimensions
         if value isa NamedArray
             dims = dimnames(value)
             dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
         end
-                
+
         # convert the number type and, if NamedArray, convert to Array
         if dtype <: AbstractArray
             value = convert(dtype, value)
@@ -1477,11 +1500,11 @@ function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef,
         ti = get_time_index_position(param_dims)
         if ti !== nothing   # there is a time dimension
             T = eltype(value)
-            values = get_timestep_array(md, T, num_dims, ti, value)            
+            values = get_timestep_array(md, T, num_dims, ti, value)
         else
             values = value
         end
-             
+
         param = ArrayModelParameter(values, param_dims, is_shared)
     end
     return param
@@ -1516,7 +1539,7 @@ function create_scalar_model_param(md::ModelDef, param_def::AbstractParameterDef
         value = convert(dtype, value)
         param = ScalarModelParameter(value, is_shared)
     end
-    
+
     return param
 end
 
@@ -1524,9 +1547,9 @@ end
 ## DEPRECATIONS - Should move from warning --> error --> removal
 ##
 
-# -- throw errors -- 
+# -- throw errors --
 
-# -- throw warnings -- 
+# -- throw warnings --
 
 @deprecate external_param(obj::ModelDef, name::Symbol; missing_ok=false) model_param(obj, name,; missing_ok = missing_ok)
 
