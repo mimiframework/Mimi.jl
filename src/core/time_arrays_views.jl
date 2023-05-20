@@ -63,7 +63,7 @@ end
 
 function Base.view(v::TimestepVector, ts::TimestepIndex) 
 	_index_bounds_check(v.data, 1, ts.index)
-	data = view(v.data. ts.index)
+	data = view(v.data, ts.index)
 	_missing_view_data_check(data, ts.index)
 end
 
@@ -143,12 +143,14 @@ end
 
 function Base.view(arr::TimestepArray{FixedTimestep{A_FIRST, A_STEP, A_LAST}, T, N, ti}, idxs::Union{FixedTimestep{T_FIRST, T_STEP, T_LAST}, AnyIndex}...) where {A_FIRST, A_STEP, A_LAST, T_FIRST, T_STEP, T_LAST, T, N, ti}
 	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
-	return _missing_view_data_check(arr.data[idxs1..., ts.t, idxs2...])
+	data = view(arr.data, idxs1..., ts.t, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{VariableTimestep{A_TIMES}, T, N, ti}, idxs::Union{VariableTimestep{T_TIMES}, AnyIndex}...) where {A_TIMES, T_TIMES, T, N, ti}
 	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
-	return _missing_view_data_check(arr.data[idxs1..., ts.t, idxs2...])
+	data = view(arr.data, idxs1..., ts.t, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T_data, N, ti}, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, LAST, T_time}
@@ -157,7 +159,8 @@ function Base.view(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T_data, 
 	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
 	arr.data isa SubArray ? view_offset = arr.data.indices[ti][1] - 1 : view_offset = 0
 	t = t - view_offset
-	return _missing_view_data_check(arr.data[idxs1..., t, idxs2...])
+	data = view(arr.data, idxs1..., t, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, TIMES, T_time}
@@ -166,7 +169,8 @@ function Base.view(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, i
 	t = _get_time_value_position(TIMES, ts)
 	arr.data isa SubArray ? view_offset = arr.data.indices[ti][1] - 1 : view_offset = 0
 	t = t - view_offset
-	return _missing_view_data_check(arr.data[idxs1..., t, idxs2...])
+	data = view(arr.data, idxs1..., t, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti}, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, FIRST, STEP, LAST}
@@ -174,7 +178,8 @@ function Base.view(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T, N, ti
 	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
 	t = ts.index
 	_index_bounds_check(arr.data, ti, t)
-	return _missing_view_data_check(arr.data[idxs1..., t, idxs2...])
+	data = view(arr.data, idxs1..., t, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::Union{TimestepIndex, AnyIndex}...) where {T, N, ti, TIMES}
@@ -182,14 +187,16 @@ function Base.view(arr::TimestepArray{VariableTimestep{TIMES}, T, N, ti}, idxs::
 	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
 	t = ts.index
 	_index_bounds_check(arr.data, ti, t)
-	return _missing_view_data_check(arr.data[idxs1..., t, idxs2...])
+	data = view(arr.data, idxs1..., t, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 # Indexing with arrays of TimestepIndexes or TimestepValues
 function Base.view(arr::TimestepArray{TS, T, N, ti}, idxs::Union{Array{TimestepIndex,1}, AnyIndex}...) where {TS, T, N, ti}
 	idxs1, ts_array, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
 	ts_idxs = _get_ts_indices(ts_array)
-	return _missing_view_data_check(arr.data[idxs1..., ts_idxs, idxs2...])
+	data = view(arr.data, idxs1..., ts_idxs, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T_data, N, ti}, idxs::Union{Array{TimestepValue{T_time},1}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, LAST, T_time}
@@ -197,7 +204,8 @@ function Base.view(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T_data, 
 	ts_idxs = _get_ts_indices(ts_array, [FIRST:STEP:LAST...])
 	arr.data isa SubArray ? view_offset = arr.data.indices[ti][1] - 1 : view_offset = 0
 	ts_idxs = ts_idxs .- view_offset
-	return _missing_view_data_check(arr.data[idxs1..., ts_idxs, idxs2...])
+	data = view(arr.data, idxs1..., ts_idxs, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 function Base.view(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, idxs::Union{Array{TimestepValue{T_time},1}, AnyIndex}...) where {T_data, N, ti, TIMES, T_time}
@@ -205,7 +213,8 @@ function Base.view(arr::TimestepArray{VariableTimestep{TIMES}, T_data, N, ti}, i
 	ts_idxs = _get_ts_indices(ts_array, TIMES)
 	arr.data isa SubArray ? view_offset = arr.data.indices[ti][1] - 1 : view_offset = 0
 	ts_idxs = ts_idxs .- view_offset
-	return _missing_view_data_check(arr.data[idxs1..., ts_idxs, idxs2...])
+	data = view(arr.data, idxs1..., ts_idxs, idxs2...)
+	return _missing_view_data_check(data)
 end
 
 # Colon support - this allows the time dimension to be indexed with a colon
