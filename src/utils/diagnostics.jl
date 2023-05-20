@@ -13,6 +13,7 @@ function find_type_instabilities(m, comp, tool=InteractiveUtils.code_warntype)
     v = typeof(mi.comps_dict[comp].variables)
     p = typeof(mi.comps_dict[comp].parameters)    
     d = typeof(NamedTuple(name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict))
-
-    tool(f, (p, v, d, Int))
+    t = typeof(clock.ts)
+    
+    tool(f, (p, v, d, t))
 end
