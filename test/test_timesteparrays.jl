@@ -740,8 +740,6 @@
     reset_time_val(x, zeros(10))
     reset_time_val(y, collect(reshape(zeros(8), 4, 2)))
 
-    end #module
-
     #------------------------------------------------------------------------------
     # 8. Test handling of offsets for TimestepValue and TimestepIndex with a TimestepMatrix
     #   --> this is a very specific test to handle PR #857, specifically for methods
