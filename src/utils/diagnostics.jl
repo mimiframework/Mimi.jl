@@ -6,7 +6,8 @@ function find_type_instabilities(m, comp, tool=InteractiveUtils.code_warntype)
     time_keys::Vector{Int} = dim_keys(mi.md, :time)
     clock = Clock(time_keys)
 
-    dim_dict = getproperty(mi.comps_dict[comp].comp_id.module_obj, mi.comps_dict[comp].comp_id.comp_name).dim_dict
+    dim_dict_keys = collect(keys(getproperty(mi.comps_dict[comp].comp_id.module_obj, mi.comps_dict[comp].comp_id.comp_name).dim_dict))
+    dim_dict = OrderedDict([k => m.md.dim_dict[k] for k in dim_dict_keys])
 
     f = mi.comps_dict[comp].run_timestep
     v = typeof(mi.comps_dict[comp].variables)
