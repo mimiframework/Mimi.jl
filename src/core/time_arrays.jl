@@ -566,6 +566,38 @@ function hasvalue(arr::TimestepArray{VariableTimestep{A_TIMES}, T, N, ti},
 	return A_TIMES[1] <= gettime(ts) <= last_period(arr) && all([1 <= idx <= size(arr, i) for (i, idx) in enumerate(idxs)])
 end
 
+#
+# View Methods
+#
+
+function _missing_view_data_check(data, t)
+	if data[1] === missing
+		throw(MissingException("Cannot get index; data is missing. You may have tried to access a value in timestep $t that has not yet been computed."))
+	else
+		return data
+	end
+end
+
+function _missing_data_view_check(data)
+	if data[1] === missing
+		throw(MissingException("Cannot get index; data is missing."))
+	else
+		return data
+	end
+end
+
+# TimestepArray methods - incomplete - could expand to include all possible permutations
+
+function Base.view(arr::TimestepArray{FixedTimestep{A_FIRST, A_STEP, A_LAST}, T, N, ti}, idxs::Union{FixedTimestep{T_FIRST, T_STEP, T_LAST}, AnyIndex}...) where {A_FIRST, A_STEP, A_LAST, T_FIRST, T_STEP, T_LAST, T, N, ti}
+	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	return _missing_data_view_check(view(arr.data, idxs1..., ts.t, idxs2...))
+end
+
+function Base.view(arr::TimestepArray{VariableTimestep{A_TIMES}, T, N, ti}, idxs::Union{VariableTimestep{T_TIMES}, AnyIndex}...) where {A_TIMES, T_TIMES, T, N, ti}
+	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
+	return _missing_data_view_check(view(arr.data, idxs1..., ts.t, idxs2...))
+end
+
 ##
 ## DEPRECATIONS - Should move from warning --> error --> removal
 ##
