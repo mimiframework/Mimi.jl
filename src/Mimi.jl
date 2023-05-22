@@ -78,7 +78,6 @@ include("explorer/explore.jl")
 include("utils/getdataframe.jl")
 include("utils/graph.jl")
 include("utils/misc.jl")
-include("utils/diagnostics.jl")
 
 # Load built-in components
 include("components/adder.jl")
