@@ -8,7 +8,6 @@ using Electron
 using JSON
 using NamedArrays
 using StringBuilders
-import InteractiveUtils
 
 export
     @defcomp,
