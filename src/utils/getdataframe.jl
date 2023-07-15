@@ -86,7 +86,7 @@ function _df_helper(m::AbstractModel, comp_name::Symbol, item_name::Symbol, dims
             data = vcat(top, data, bottom)
         end
 
-        df[!, item_name] = cat([vec(data[i, :]) for i = 1:len_dim1]...; dims=1)
+        df[!, item_name] = collect(vec(data'))
     else
 
         # shift the data to be padded with missings if this data is shorter than the model
