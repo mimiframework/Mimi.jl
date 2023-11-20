@@ -584,7 +584,7 @@ function Base.run(sim_def::SimulationDef{T},
     ntrials = length(trials)
     total_runs = nscenarios * ntrials
     counter = 1
-    p = Progress(total_runs, counter, "Running $ntrials trials for $nscenarios scenarios...")
+    p = Progress(total_runs; dt = counter, desc = "Running $ntrials trials for $nscenarios scenarios...")
 
     for outer_tup in arg_tuples_outer
         if has_outer_scenario
