@@ -160,7 +160,7 @@ end
 Save the stored simulation results in `trial_df` from trial `trialnum` to files 
 in the directory `output_dir`
 """
-function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir::AbstractString, streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}})
     filename = joinpath(output_dir, "$datum_name.csv")
     if haskey(streams, filename)
         write(streams[filename], trial_df)
@@ -365,7 +365,7 @@ end
 
 # rvalue is a Number so we might need to deal with broadcasting
 function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
-                         trans::TransformSpec_ModelParams, rvalue::Number) where {T, N}
+                         trans::TransformSpec_ModelParams, rvalue::Number) where T
     op = trans.op
     pvalue = value(param)
     indices = _param_indices(param, md, i, trans)
