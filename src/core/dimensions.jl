@@ -188,7 +188,7 @@ dim_count(def::AbstractDatumDef) = length(dim_names(def))
 Run through all necesssary safety checks for redefining `obj`'s time dimenson to 
 a new dimension with keys `keys`.
 """
-function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange}) where T
+function _check_time_redefinition(obj::AbstractCompositeComponentDef, keys::Union{Int, Vector, Tuple, AbstractRange})
 
     # get useful variables 
     curr_keys = time_labels(obj)

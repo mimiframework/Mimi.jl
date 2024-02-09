@@ -569,7 +569,7 @@ Note that this function `set_leftover_params! has been deprecated, and uses shou
 be transitioned to using `update_leftover_params!` with keys specific to component-parameter 
 pairs i.e. (comp_name, param_name) => value in the dictionary.
 """
-function set_leftover_params!(md::ModelDef, parameters::Dict) where T
+function set_leftover_params!(md::ModelDef, parameters::Dict)
     # @warn "The function `set_leftover_params! has been deprecated, please use `update_leftover_params!` with keys specific to component, parameter pairs i.e. (comp_name, param_name) => value in the dictionary.")
     parameters = Dict(Symbol.(k) => v for (k, v) in parameters)
     for param_ref in nothing_params(md)
