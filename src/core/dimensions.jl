@@ -141,7 +141,7 @@ end
     function add_dimension!(comp::AbstractComponentDef, name)
 
 Add a dimension of name `name` to `comp`, where the dimension will be `nothing` 
-unless `name` is an Int in which case we create an "anonymouse" dimension on 
+unless `name` is an Int in which case we create an "anonymous" dimension on 
 the fly with keys `1` through `count` where `count` = `name`.
 """
 function add_dimension!(comp::AbstractComponentDef, name)
