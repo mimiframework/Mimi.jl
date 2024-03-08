@@ -26,7 +26,7 @@ function Base.show(io::IO, sim_def::SimulationDef{T}) where T <: AbstractSimulat
 
     print_nonempty("translist", sim_def.translist)
     print_nonempty("savelist",  sim_def.savelist)
-    println("  nt_type: $(sim_def.nt_type)")
+    println("  nt_type: $(_get_nt_type(sim_def))")
 
     Base.show(io, sim_def.data)  # note: data::T
 end
@@ -199,7 +199,7 @@ function get_trial(sim_inst::SimulationInstance, trialnum::Int)
     sim_def = sim_inst.sim_def
 
     vals = [rand(rv.dist) for rv in values(sim_def.rvdict)]
-    sim_inst.current_data = sim_def.nt_type((vals...,))
+    sim_inst.current_data = _get_nt_type(sim_def)((vals...,))
     sim_inst.current_trial = trialnum
     
     return sim_inst.current_data
@@ -827,9 +827,9 @@ end
 IteratorInterfaceExtensions.isiterable(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = true
 TableTraits.isiterabletable(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = true
 
-IteratorInterfaceExtensions.getiterator(sim_inst::SimulationInstance{T}) where T = SimIterator{sim_inst.sim_def.nt_type, T}(sim_inst)
+IteratorInterfaceExtensions.getiterator(sim_inst::SimulationInstance{T}) where T = SimIterator{_get_nt_type(sim_inst.sim_def), T}(sim_inst)
 
-column_names(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = fieldnames(sim_def.nt_type)
+column_names(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = fieldnames(_get_nt_type(sim_def))
 column_types(sim_def::SimulationDef{T}) where T <: AbstractSimulationData = [eltype(fld) for fld in values(sim_def.rvdict)]
 
 column_names(sim_inst::SimulationInstance{T}) where T <: AbstractSimulationData = column_names(sim_inst.sim_def)

@@ -200,10 +200,18 @@ end
 #
 
 function _update_nt_type!(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
-    names = (keys(sim_def.rvdict)...,)
-    types = [eltype(fld) for fld in values(sim_def.rvdict)]
-    sim_def.nt_type = NamedTuple{names, Tuple{types...}}
+    sim_def.nt_type = nothing
     nothing
+end
+
+function _get_nt_type(sim_def::SimulationDef{T}) where T <: AbstractSimulationData
+    if sim_def.nt_type===nothing
+        names = (keys(sim_def.rvdict)...,)
+        types = [eltype(fld) for fld in values(sim_def.rvdict)]
+        sim_def.nt_type = NamedTuple{names, Tuple{types...}}
+    end
+
+    return sim_def.nt_type
 end
 
 """

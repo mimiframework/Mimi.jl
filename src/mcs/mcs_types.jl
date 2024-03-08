@@ -162,7 +162,7 @@ mutable struct SimulationDef{T}
 
         names = (keys(self.rvdict)...,)
         types = [eltype(fld) for fld in values(self.rvdict)]
-        self.nt_type = NamedTuple{names, Tuple{types...}}
+        self.nt_type = nothing
 
         self.data = data
         self.payload = nothing
