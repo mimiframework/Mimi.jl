@@ -525,7 +525,7 @@ the specified name.
 Run model `m` once.
 """
 function Base.run(m::Model; ntimesteps::Int=typemax(Int), rebuild::Bool=false,
-                  dim_keys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+                  dim_keys::Union{Nothing, Dict{Symbol, Vector{T}} where T <: DimensionKeyTypes}=nothing)
     if length(m) == 0
         error("Cannot run a model with no components.")
     end

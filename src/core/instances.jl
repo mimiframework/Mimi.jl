@@ -336,7 +336,7 @@ end
 Run the `ModelInstance` `mi` once with `ntimesteps` and dimension keys `dimkeys`.
 """
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
-                  dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
+                  dimkeys::Union{Nothing, Dict{Symbol, Vector{T}} where T <: DimensionKeyTypes}=nothing)
 
     if length(components(mi)) == 0
         error("Cannot run the model: no components have been created.")
