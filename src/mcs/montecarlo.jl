@@ -321,6 +321,10 @@ function _param_indices(param::ArrayModelParameter{T}, md::ModelDef, i::Int, tra
     for (dim_name, dim_values) in zip(pdims, tdims)
         dim = dimension(md, dim_name)
         dim_indices = dim[dim_values]
+
+        # reduce a singleton Vector to just an Integer
+        isa(dim_indices, Vector{Int64}) && size(dim_indices) == (1,) ? dim_indices = dim_indices[1] : nothing
+
         dim_name == :time ? dim_indices = TimestepIndex.(dim_indices) : nothing
         push!(indices, dim_indices)
     end
