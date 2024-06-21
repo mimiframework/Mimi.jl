@@ -28,7 +28,13 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         paths = _get_all_paths(m)
         comp_path = paths[comp_name];
         value = m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name]
-        name = "$comp_name : $item_name = $value"
+        value_typeof = typeof(value)
+        if value_typeof in [Symbol, String, Number]
+            name = "$comp_name : $item_name = $value"
+        else
+            @warn("Dimensionless $comp_name.$item_name has the type $(value_typeof), displaing this is not yet implemented in explorer")
+            name = "$comp_name : $item_name = (CANNOT DISPLAY)"
+        end
         spec = createspec_singlevalue(name)
 
     # we do not support over two indexed dimensions right now
