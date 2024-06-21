@@ -29,7 +29,7 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         comp_path = paths[comp_name];
         value = m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name]
         value_typeof = typeof(value)
-        if value_typeof in [Symbol, String, Number]
+        if value_typeof <: Symbol || value_typeof <: String || value_typeof <: Number
             name = "$comp_name : $item_name = $value"
         else
             @warn("Dimensionless $comp_name.$item_name has the type $(value_typeof), displaing this is not yet implemented in explorer")
