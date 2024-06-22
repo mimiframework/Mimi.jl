@@ -71,10 +71,16 @@ function _menu_item(m::Model, comp_name::Symbol, item_name::Symbol)
         paths = _get_all_paths(m)
         comp_path = paths[comp_name];
         value = m[comp_path, item_name]
-        name = "$comp_name : $item_name = $value"
+        value_typeof = typeof(value)
+        if value_typeof <: Symbol || value_typeof <: String || value_typeof <: Number || value_typeof <: Array
+            name = "$comp_name : $item_name = $value"
+        else
+            @warn("$comp_name.$item_name has 0 indexed dimensions and type $(value_typeof), displaying this type directly in the menu is not yet implemented in explorer")
+            name = "$comp_name : $item_name (value has type $(value_typeof), cannot display in menu)"
+        end
     elseif length(dims) > 2
         @warn("$comp_name.$item_name has > 2 indexed dimensions, not yet implemented in explorer")
-        name = "$comp_name : $item_name (CANNOT DISPLAY)"
+        name = "$comp_name : $item_name (value has > 2 indexed dims, cannot display a plot)"
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end
@@ -93,7 +99,7 @@ function _menu_item(sim_inst::SimulationInstance, datum_key::Tuple{Symbol, Symbo
 
     if length(dims) > 2
         @warn("$comp_name.$item_name has >2 graphing dims, not yet implemented in explorer")
-        name = "$comp_name : $item_name (CANNOT DISPLAY)"
+        name = "$comp_name : $item_name (value has > 2 indexed dims, cannot display a plot)"
     else
         name = "$comp_name : $item_name"          # the name is needed for the list label
     end

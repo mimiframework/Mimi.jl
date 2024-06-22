@@ -6,7 +6,7 @@
     import Mimi: 
         dataframe_or_scalar, _spec_for_item, menu_item_list, getdataframe, dim_names
 
-    # Helper function returns true if VegaLite is verison 3 or above, and false otherwise
+    # Helper function returns true if VegaLite is version 3 or above, and false otherwise
     function _is_VegaLite_v3()
         return isdefined(VegaLite, :vlplot) ? true : false
     end
@@ -200,4 +200,29 @@
     end
 
     Mimi.close_explore_app()
+
+    # 9. Dimensionless parameter names and displays, including one which is a Model
+    @defcomp example begin
+        p0 = Parameter{Symbol}(default=:MySymbol)
+        p1 = Parameter{String}(default="MyString")
+        p2 = Parameter(default=1.0) #Float
+        p3 = Parameter(default=2) #Integer
+        p4 = Parameter{Mimi.Model}()
+    
+        x = Variable(index = [time])
+        function run_timestep(p,v,d,t)
+            v.x[t] = 0
+        end
+    end
+
+    m = Model()
+    set_dimension!(m, :time, 2000:2009)
+    add_comp!(m, example)
+
+    m2 = Model() # empty model for testing
+    update_param!(m, :example, :p4, m2)
+
+    run(m)
+    explore(m)
+
 end
