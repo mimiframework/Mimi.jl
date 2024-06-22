@@ -29,13 +29,13 @@ function _spec_for_item(m::Model, comp_name::Symbol, item_name::Symbol; interact
         comp_path = paths[comp_name];
         value = m[comp_path, item_name] === nothing ? m[comp_name, item_name] : m[comp_path, item_name]
         value_typeof = typeof(value)
-        if value_typeof <: Symbol || value_typeof <: String || value_typeof <: Number
+        if value_typeof <: Symbol || value_typeof <: String || value_typeof <: Number || value_typeof <: Array
             name = "$comp_name : $item_name = $value"
         else
-            @warn("Dimensionless $comp_name.$item_name has the type $(value_typeof), displaing this is not yet implemented in explorer")
-            name = "$comp_name : $item_name = (CANNOT DISPLAY)"
+            @warn("Dimensionless $comp_name.$item_name has the type $(value_typeof), displaying this is not yet implemented in explorer")
+            name = "$comp_name : $item_name (CANNOT DISPLAY)"
         end
-        spec = createspec_singlevalue(name)
+        spec = Mimi.createspec_singlevalue(name)
 
     # we do not support over two indexed dimensions right now
     elseif length(dims) > 2
