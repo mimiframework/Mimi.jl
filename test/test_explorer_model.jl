@@ -1,4 +1,4 @@
-# @testitem "Explorer Model 1" begin
+@testitem "Explorer Model 1" begin
     using DataFrames
     using VegaLite
     using Electron
@@ -225,4 +225,4 @@
     run(m)
     explore(m)
 
-# end
+end
