@@ -377,14 +377,16 @@ function _perturb_param!(param::ArrayModelParameter{T}, md::ModelDef, i::Int,
 
         # If there is no time index we have all methods needed to broadcast normally
         if isnothing(ti)
-            broadcast_flag = sum(map(x -> length(x) > 1, indices)) > 0
+            # broadcast_flag = sum(map(x -> length(x) > 1, indices)) > 0
+            broadcast_flag = any(map(x -> isa(x, Array), indices)) # check if any of the elements of the indices Vector are Arrays (likely Vectors)
             broadcast_flag ? pvalue[indices...] .= rvalue : pvalue[indices...] = rvalue
         
         else
             indices1, ts, indices2 = indices[1:ti - 1], indices[ti], indices[ti + 1:end]
             non_ts_indices = [indices1..., indices2...]
-            broadcast_flag = isempty(non_ts_indices) ? false : sum(map(x -> length(x) > 1, non_ts_indices)) > 0
-            
+            # broadcast_flag = isempty(non_ts_indices) ? false : sum(map(x -> length(x) > 1, non_ts_indices)) > 0
+            broadcast_flag = isempty(non_ts_indices) ? false : any(map(x -> isa(x, Array), non_ts_indices)) # check if any of the elements of the indices Vector are Arrays (likely Vectors)
+
             # Loop over the Array of TimestepIndex 
             if isa(ts, Array) 
                 for el in ts
