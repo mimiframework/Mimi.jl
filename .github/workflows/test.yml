@@ -14,5 +14,7 @@ jobs:
     uses: julia-vscode/testitem-workflow/.github/workflows/testitemci.yml@main
     with:
       include-linux-x86: false
+      github_job_prep_script: test/github_job_prep.jl
+      env: '{"DISPLAY": ":99"}'
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
