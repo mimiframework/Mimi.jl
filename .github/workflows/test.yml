@@ -15,6 +15,6 @@ jobs:
     with:
       include-linux-x86: false
       github_job_prep_script: test/github_job_prep.jl
-      env: '{"DISPLAY": ":99"}'
+      env: '{"DISPLAY": ":99", "PYTHON": ""}'
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
