@@ -312,18 +312,18 @@ function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
     end
 end
 
-function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::NamedTuple)
+function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::NamedTuple, dim_keys::Function)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
-        ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts))
+        ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts); dim_keys=dim_keys)
     end
 
     return nothing
 end
 
-function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::NamedTuple)
+function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::NamedTuple, dim_keys::Function)
     if _runnable(cci, clock)
         for ci in components(cci)
-            run_timestep(ci, clock, dims)
+            run_timestep(ci, clock, dims, dim_keys)
         end
     end
     return nothing
@@ -359,11 +359,19 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     # into timestep arrays.
     dim_val_named_tuple = NamedTuple(name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict(mi.md))
     
+    # Define dim_keys, a function that allows the component to return the keys
+    # of a given dimension. This is passed through and serves as a keyword argument
+    # to the run_timestep function of each component so they may access the dimension
+    # key information.
+    function dim_keys(dim_name::Symbol)
+        return dim_keys(mi, dim_name)
+    end
+
     # recursively initializes all components
     init(mi, dim_val_named_tuple)
 
     while ! finished(clock)
-        run_timestep(mi, clock, dim_val_named_tuple)
+        run_timestep(mi, clock, dim_val_named_tuple, dim_keys)
         advance(clock)
     end
 
