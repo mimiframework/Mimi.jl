@@ -1,4 +1,4 @@
-# @testitem "Components" begin
+@testitem "Components" begin
     import Mimi:
         compdefs, compdef, compkeys, has_comp, first_period,
         last_period, compmodule, compname, compinstance, dim_keys, dim_values,
@@ -191,4 +191,4 @@
     @test my_model[:testcomp5, :var2] == [1,2,3]
     @test my_model[:testcomp5, :var3] == [:A, :B, :C]
 
-# end
+end
