@@ -178,7 +178,7 @@
             v.var1[t] = p.par1[t]
             for region in d.region
                 v.var2[region] = region
-                v.var3[region] = dim_keys(:region)[region]
+                v.var3[region] = get_dim_keys(:region)[region]
             end
         end
     end

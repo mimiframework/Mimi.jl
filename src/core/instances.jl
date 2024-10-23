@@ -312,18 +312,18 @@ function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
     end
 end
 
-function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::NamedTuple, dim_keys::Function)
+function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::NamedTuple, get_dim_keys::Function)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
-        ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts); dim_keys=dim_keys)
+        ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts); get_dim_keys=get_dim_keys)
     end
 
     return nothing
 end
 
-function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::NamedTuple, dim_keys::Function)
+function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dims::NamedTuple, get_dim_keys::Function)
     if _runnable(cci, clock)
         for ci in components(cci)
-            run_timestep(ci, clock, dims, dim_keys)
+            run_timestep(ci, clock, dims, get_dim_keys)
         end
     end
     return nothing
@@ -363,7 +363,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     # of a given dimension. This is passed through and serves as a keyword argument
     # to the run_timestep function of each component so they may access the dimension
     # key information.
-    function dim_keys(dim_name::Symbol)
+    function get_dim_keys(dim_name::Symbol)
         return dim_keys(mi, dim_name)
     end
 
@@ -371,7 +371,7 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
     init(mi, dim_val_named_tuple)
 
     while ! finished(clock)
-        run_timestep(mi, clock, dim_val_named_tuple, dim_keys)
+        run_timestep(mi, clock, dim_val_named_tuple, get_dim_keys)
         advance(clock)
     end
 

@@ -26,7 +26,7 @@ function _generate_run_func(comp_name, module_name, args, body)
                                      $(v), #::Mimi.ComponentInstanceVariables
                                      $(d), #::NamedTuple
                                      $(t); #::T <: Mimi.AbstractTimestep
-                                     dim_keys::Function) #::Function
+                                     get_dim_keys::Function) #::Function
             $(body...)
             return nothing
         end
@@ -49,7 +49,7 @@ function _generate_init_func(comp_name, module_name, args, body)
         global function $(func_name)($(p), #::Mimi.ComponentInstanceParameters
                                      $(v), #::Mimi.ComponentInstanceVariables
                                      $(d); #::NamedTuple
-                                     dim_keys::Function) #::Function
+                                     get_dim_keys::Function) #::Function
             $(body...)
             return nothing
         end
