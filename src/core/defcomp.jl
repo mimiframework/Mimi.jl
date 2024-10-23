@@ -48,8 +48,7 @@ function _generate_init_func(comp_name, module_name, args, body)
     func = :(
         global function $(func_name)($(p), #::Mimi.ComponentInstanceParameters
                                      $(v), #::Mimi.ComponentInstanceVariables
-                                     $(d); #::NamedTuple
-                                     get_dim_keys::Function) #::Function
+                                     $(d)) #::NamedTuple
             $(body...)
             return nothing
         end
