@@ -91,6 +91,17 @@ function get_param_value(ci::AbstractComponentInstance, name::Symbol)
 end
 
 """
+    get_param_value(model::Model, comp_name::Symbol, param_name::Symbol)
+
+Return the value of parameter `param_name` in component `comp_name` of model `model`.
+"""
+function get_param_value(model::Model, comp_name::Symbol, param_name::Symbol)
+    comp_instance = compinstance(model.mi, comp_name)
+    param_value = get_param_value(comp_instance, param_name)
+    return param_value
+end
+
+"""
     get_var_value(ci::AbstractComponentInstance, name::Symbol)
 
 Return the value of variable `name` in component `ci`.
@@ -194,16 +205,16 @@ function _get_datum(ci::CompositeComponentInstance, datum_name::Symbol)
             error("$datum_name is not a parameter or a variable in component $(ci.comp_path).")
         end
     end
-    
+
     ref = getproperty(which, datum_name)
-    
+
     return _get_datum(ci.comps_dict[ref.comp_name], ref.datum_name)
 end
 
 function _get_datum(ci::LeafComponentInstance, datum_name::Symbol)
     vars = variables(ci)
 
-    if datum_name in names(vars) 
+    if datum_name in names(vars)
         which = vars
     else
         pars = parameters(ci)
@@ -231,7 +242,7 @@ function Base.getindex(mi::ModelInstance, comp_path::ComponentPath, datum::Symbo
     _get_datum(mi[comp_path], datum)
 end
 
-@delegate Base.getindex(m::Model, comp_path::ComponentPath, datum::Symbol) => mi 
+@delegate Base.getindex(m::Model, comp_path::ComponentPath, datum::Symbol) => mi
 
 function Base.getindex(obj::AbstractCompositeComponentInstance, comp_name::Symbol, datum::Symbol)
     ci = obj[comp_name]
@@ -292,7 +303,7 @@ end
 
 _runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
 
-function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}    
+function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
     if ci.first == FIRST && ci.last == LAST
         return ts
     else
@@ -332,7 +343,7 @@ end
 """
     Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
             dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
-            
+
 Run the `ModelInstance` `mi` once with `ntimesteps` and dimension keys `dimkeys`.
 """
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
@@ -351,14 +362,14 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     clock = Clock(time_keys)
 
-    # Get the dimensions Named Tuple from the dimension dictionary which will be 
+    # Get the dimensions Named Tuple from the dimension dictionary which will be
     # passed to run_timestep() and init(), so we can safely implement Base.getproperty(),
     # allowing `d.regions` etc.
     # All values in the named tuple are vectors of Ints, except the `:time` value, which is a
     # vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
     # into timestep arrays.
     dim_val_named_tuple = NamedTuple(name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict(mi.md))
-    
+
     # recursively initializes all components
     init(mi, dim_val_named_tuple)
 
