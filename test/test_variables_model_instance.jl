@@ -55,6 +55,10 @@
     @test_throws ErrorException get_var_value(ci, :missingvar)
     @test typeof(var_value) <: TimestepArray
 
+    var_value = get_var_value(my_model, :testcomp1, :var1)
+    @test_throws ErrorException get_var_value(ci, :missingvar)
+    @test typeof(var_value) <: TimestepArray
+
     params = parameters(mi, :testcomp1)
     params2 = parameters(mi, :testcomp1)
     @test typeof(params) <: ComponentInstanceParameters

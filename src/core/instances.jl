@@ -121,6 +121,17 @@ function get_var_value(ci::AbstractComponentInstance, name::Symbol)
 end
 
 """
+    get_var_value(model::Model, comp_name::Symbol, var_name::Symbol)
+
+Return the value of variable `var_name` in component `comp_name` of model `model`.
+"""
+function get_var_value(model::Model, comp_name::Symbol, var_name::Symbol)
+    comp_instance = compinstance(model.mi, comp_name)
+    var_value = get_var_value(comp_instance, var_name)
+    return var_value
+end
+
+"""
     set_param_value(ci::AbstractComponentInstance, name::Symbol, value)
 
 Set the value of parameter `name` in component `ci` to `value`.
