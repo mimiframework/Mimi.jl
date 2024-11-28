@@ -38,7 +38,7 @@ In addition please do not hesitate to ask any questions on the forum, we are wor
 ## Contributions and Questions
 
 You can interact with the Mimi development team via issues and pull requests here on github, and in the [Mimi Framework forum](https://forum.mimiframework.org). Contributions to Mimi are also most welcome, and
-please get in touch with [David Anthoff](http://www.david-anthoff.com) or [Lisa Rennels](lisarennels.com) if you want to be involved in any way with this effort.
+please get in touch with [David Anthoff](http://www.david-anthoff.com) or [Lisa Rennels](https://lisarennels.com) if you want to be involved in any way with this effort.
 
 ## Acknowledgements
 
