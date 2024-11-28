@@ -44,20 +44,14 @@
     #test convenience functions that can be called with name symbol
 
     param_value = get_param_value(ci, :par1)
-    @test typeof(param_value)<: TimestepArray
+    @test typeof(param_value) <: TimestepArray
     @test_throws ErrorException get_param_value(ci, :missingpar)
-
-    param_value = get_param_value(my_model, :testcomp1, :par1)
-    @test typeof(param_value)<: TimestepArray
-    @test_throws ErrorException get_param_value(ci, :missingpar)
+    @test typeof(get_param_value(my_model, :testcomp1, :par1)) <: TimestepArray
 
     var_value = get_var_value(ci, :var1)
     @test_throws ErrorException get_var_value(ci, :missingvar)
     @test typeof(var_value) <: TimestepArray
-
-    var_value = get_var_value(my_model, :testcomp1, :var1)
-    @test_throws ErrorException get_var_value(ci, :missingvar)
-    @test typeof(var_value) <: TimestepArray
+    @test typeof(get_var_value(my_model, :testcomp1, :var1)) <: TimestepArray
 
     params = parameters(mi, :testcomp1)
     params2 = parameters(mi, :testcomp1)
