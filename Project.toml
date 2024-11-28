@@ -58,7 +58,6 @@ julia = "1.6"
 [extras]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-ExcelFiles = "89b67f3b-d1aa-5f6f-9ca4-282e8d98620d"
 ExcelReaders = "c04bee98-12a5-510c-87df-2a230cb6e075"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 NamedArrays = "86f7a689-2022-50b4-a561-43c23ac3c673"
@@ -71,4 +70,4 @@ TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["TestItemRunner", "Pkg", "Statistics", "NamedArrays", "ExcelFiles", "ExcelReaders", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query"]
+test = ["TestItemRunner", "Pkg", "Statistics", "NamedArrays", "ExcelReaders", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query"]
