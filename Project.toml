@@ -56,6 +56,7 @@ VegaLite = "1, 2, 3"
 julia = "1.6"
 
 [extras]
+DataFrames = "0.19.1, 0.20, 0.21, 0.22, 1.0"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
@@ -66,7 +67,8 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
+XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 ZipFile = "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea"
 
 [targets]
-test = ["TestItemRunner", "Pkg", "Statistics", "NamedArrays", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query"]
+test = ["TestItemRunner", "Pkg", "Statistics", "NamedArrays", "DataFrames", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query", "XLSX"]
