@@ -2,6 +2,7 @@
     using XLSX
     using Random
     using Statistics
+    using DataFrames
     using Mimi: EmpiricalDistribution
 
     filename = joinpath(@__DIR__, "RB-ECS-distribution.xlsx")
