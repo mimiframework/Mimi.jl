@@ -1,12 +1,18 @@
 @testitem "empirical" begin
-    using ExcelFiles
+    using XLSX
     using Random
     using Statistics
+    using DataFrames
+    using Mimi: EmpiricalDistribution
 
-    include("../../wip/load_empirical_dist.jl")
+    filename = joinpath(@__DIR__, "RB-ECS-distribution.xlsx")
 
-    filename = joinpath(@__DIR__, "RB-ECS-distribution.xls")
-    d = load_empirical_dist(filename, "Sheet1!A2:A1001", "Sheet1!B2:B1001")
+    dist_data = XLSX.readtable(filename, "Sheet1") |> DataFrame
+    rename!(dist_data, [:CS, :prob])
+    dist_data.CS = Float64.(dist_data.CS)
+    dist_data.prob = Float64.(dist_data.prob)
+
+    d = EmpiricalDistribution(dist_data.CS, dist_data.prob)
 
     # Set the seed to get repeatable results (with some caveats...)
     Random.seed!(1234567)
@@ -18,7 +24,6 @@
     # @info "quantiles: $q\n expected: $expected"
 
     @test isapprox(q, expected, atol=0.01)
-
 
     # Test that the EmpiricalDistribution gets saved as a SampleStore and values 
     # get re-used across multiple scenarios
