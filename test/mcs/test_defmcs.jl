@@ -200,7 +200,7 @@
     @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
     # delete all created directories and files
-    rm(output_dir, recursive = true)
+    # rm(output_dir, recursive = true) # 
 
     loop_counter = 0
 
@@ -232,7 +232,7 @@
     @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
     # delete all created directories and files
-    rm(output_dir, recursive = true)
+    # rm(output_dir, recursive = true)
 
     loop_counter = 0
 
@@ -254,7 +254,7 @@
     @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
     # delete all created directories and files
-    rm(output_dir, recursive = true)
+    # rm(output_dir, recursive = true)
 
     function post_trial(sim_inst::SimulationInstance, trialnum::Int, ntimesteps::Int, tup::Union{Nothing,Tuple})
         global loop_counter    
@@ -282,7 +282,7 @@
     @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
     # delete all created directories and files
-    rm(output_dir, recursive = true)
+    # rm(output_dir, recursive = true)
 
     N = 1000
 
