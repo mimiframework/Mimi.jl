@@ -150,7 +150,7 @@
     @test results_disk[:, 3] ≈ results_disk[:, 3] atol = 1e-9
 
     # delete all created directories and files
-    rm(output_dir, recursive = true)
+    # rm(output_dir, recursive = true)
 
     #
     # Test scenario loop capability
