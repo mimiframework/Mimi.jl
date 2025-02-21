@@ -8,6 +8,7 @@ using Electron
 using JSON
 using NamedArrays
 using StringBuilders
+import InteractiveUtils
 
 export
     @defcomp,
@@ -82,5 +83,7 @@ include("utils/misc.jl")
 include("components/adder.jl")
 include("components/multiplier.jl")
 include("components/connector.jl")
+
+include("utils/code_warntype.jl")
 
 end # module
