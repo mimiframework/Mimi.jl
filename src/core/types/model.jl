@@ -55,6 +55,31 @@ function Base.getindex(mm::MarginalModel, comp_path::ComponentPath, name::Symbol
     return (mm.modified.mi[comp_path, name] .- mm.base.mi[comp_path, name]) ./ mm.delta
 end
 
+"""
+    MarginalInstance
+
+A pair of built Models (ModelInstances), corresponding to the base and modified models from a MarginalModel.
+This is useful for allowing the same code to function on Models and MarginalModels.
+"""
+
+struct MarginalInstance
+    base::ModelInstance
+    modified::ModelInstance
+    delta::Float64
+
+    function MarginalInstance(base::ModelInstance, modified::ModelInstance, delta::Float64)
+        return new(base, modified, delta)
+    end
+end
+
+function Base.getindex(mi::MarginalInstance, comp_path::Symbol, name::Symbol)
+    return (mi.modified[comp_path, name] .- mi.base[comp_path, name]) ./ mi.delta
+end
+
+function has_comp(mi::MarginalInstance, name::Symbol)
+    has_comp(mi.base, name)
+end
+
 ##
 ## DEPRECATIONS - Should move from warning --> error --> removal
 ##

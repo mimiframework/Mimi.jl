@@ -1,12 +1,12 @@
 """
     _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
 
-For each value in `vals`, if the value is a `TimestepArray` swap in a new 
-TimestepArray with the same type parameterization but with its `data` field 
+For each value in `vals`, if the value is a `TimestepArray` swap in a new
+TimestepArray with the same type parameterization but with its `data` field
 holding a view of the original value's `data` defined by the first and last
 indices of Component `comp_def`.
 """
-# helper function to substitute views for data 
+# helper function to substitute views for data
 function _substitute_views!(vals::Array{T, N}, comp_def) where {T, N}
     times = [keys(comp_def.dim_dict[:time])...]
     first_idx = findfirst(times .== comp_def.first)
@@ -23,10 +23,10 @@ end
 
 Return a TimestepArray with the same type parameterization as the `val` TimestepArray,
 but with its `data` field holding a view of the `val.data` based on the entered
-`first-idx` and `last_idx`. 
+`first-idx` and `last_idx`.
 """
 function _get_view(val::TimestepArray{T_TS, T, N, ti, S}, first_idx, last_idx) where {T_TS, T, N, ti, S}
-    
+
     idxs  = Array{Any}(fill(:, N))
     idxs[ti] = first_idx:last_idx
     # if we are making a connection, the val.data may already be a view, in which case
@@ -38,7 +38,7 @@ end
     _instance_datatype(md::ModelDef, def::AbstractDatumDef)
 
 Return the datatype of the AbstractDataumDef `def` in ModelDef `md`, which will
-be used to create ModelInstance instance variables and parameters.    
+be used to create ModelInstance instance variables and parameters.
 """
 function _instance_datatype(md::ModelDef, def::AbstractDatumDef)
     dtype = def.datatype == Number ? number_type(md) : def.datatype
@@ -72,8 +72,8 @@ end
 """
     _instantiate_datum(md::ModelDef, def::AbstractDatumDef)
 
-Return the parameterized datum, broadly either Scalar or Array, pertaining to 
-AbstractDatumDef `def` in the Model Def `md`, that will support instantiate of parameters 
+Return the parameterized datum, broadly either Scalar or Array, pertaining to
+AbstractDatumDef `def` in the Model Def `md`, that will support instantiate of parameters
 and variables.
 """
 # Create the Ref or Array that will hold the value(s) for a Parameter or Variable
@@ -121,7 +121,7 @@ function _instantiate_component_vars(md::ModelDef, comp_def::ComponentDef)
 
     # this line was replaced with the one below because calling _instance_datatype
     # does not concretely type the S type parameter (the type of the TimestepArray's
-    # and thus DataType[typeof(val) for val in values] errored when trying to 
+    # and thus DataType[typeof(val) for val in values] errored when trying to
     # convert typeof(val<:TimestepArray) to a DataType
 
     # types  = DataType[_instance_datatype(md, def) for def in var_defs]
@@ -134,7 +134,7 @@ end
 """
     function _instantiate_vars(md::ModelDef)
 
-Create the top-level variables for the Model Def `md` and return the dictionary 
+Create the top-level variables for the Model Def `md` and return the dictionary
 of the resulting ComponentInstanceVariables.
 """
 function _instantiate_vars(md::ModelDef)
@@ -187,7 +187,7 @@ end
 """
     _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
 
-Returns a vector of InternalParameterConnections that represent all of the connections at the leaf level 
+Returns a vector of InternalParameterConnections that represent all of the connections at the leaf level
 that need to be made under the hood as specified by `conn`.
 """
 function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
@@ -204,7 +204,7 @@ function _get_leaf_level_ipcs(md::ModelDef, conn::InternalParameterConnection)
     var_sub_path, var_name = _find_paths_and_names(comp, conn.src_var_name)
     var_path = ComponentPath(top_src_path, var_sub_path[1])
 
-    ipcs = [InternalParameterConnection(var_path, var_name[1], param_path, param_name, 
+    ipcs = [InternalParameterConnection(var_path, var_name[1], param_path, param_name,
         conn.ignoreunits, conn.backup; backup_offset=conn.backup_offset) for (param_path, param_name) in
         zip(param_paths, param_names)]
     return ipcs
@@ -214,7 +214,7 @@ end
 """
     _get_leaf_level_epcs(md::AbstractCompositeComponentDef, epc::ExternalParameterConnection)
 
-Returns a vector that has a new ExternalParameterConnections that represent all of the connections at the leaf level 
+Returns a vector that has a new ExternalParameterConnections that represent all of the connections at the leaf level
 that need to be made under the hood as specified by `epc`.
 """
 function _get_leaf_level_epcs(md::ModelDef, epc::ExternalParameterConnection)
@@ -243,8 +243,8 @@ connector_comp_name(i::Int) = Symbol("ConnectorComp$i")
 """
     _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
 
-Collect all parameters in ModelDef `md` with connections to allocated variable 
-storage in `var_dict` and return a dictionary of (comp_path, par_name) => ModelParameter 
+Collect all parameters in ModelDef `md` with connections to allocated variable
+storage in `var_dict` and return a dictionary of (comp_path, par_name) => ModelParameter
 elements.
 """
 function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
@@ -261,7 +261,7 @@ function _collect_params(md::ModelDef, var_dict::Dict{ComponentPath, Any})
         ipcs = _get_leaf_level_ipcs(md, conn)
         src_vars = var_dict[ipcs[1].src_comp_path]
         var_value_obj = get_property_obj(src_vars, ipcs[1].src_var_name)
-        for ipc in ipcs 
+        for ipc in ipcs
             _check_attributes(md, ipc)
             pdict[(ipc.dst_comp_path, ipc.dst_par_name)] = var_value_obj
         end
@@ -300,7 +300,7 @@ Create the top-level parameters for the Model Def `md` using the parameter dicti
 function _instantiate_params(comp_def::ComponentDef, par_dict::Dict{Tuple{ComponentPath, Symbol}, Any})
     # @info "Instantiating params for $(comp_def.comp_path)"
     comp_path = comp_def.comp_path
-    names = parameter_names(comp_def)   
+    names = parameter_names(comp_def)
     vals  = Any[par_dict[(comp_path, name)] for name in names]
     _substitute_views!(vals, comp_def)
     types = DataType[typeof(val) for val in vals]
@@ -316,7 +316,7 @@ end
                     time_bounds::Tuple{Int, Int})
 
 Return a built leaf or composite LeafComponentInstance created using ComponentDef
-`comp_def`, variables and parameters from `var_dict` and `par_dict` and the time 
+`comp_def`, variables and parameters from `var_dict` and `par_dict` and the time
 bounds set by `time_bounds`.
 """
 function _build(comp_def::ComponentDef,
@@ -340,7 +340,7 @@ end
                     time_bounds::Tuple{Int, Int})
 
 Return a built CompositeComponentInstance created using AbstractCompositeComponentDef
-`comp_def`, variables and parameters from `var_dict` and `par_dict` and the time 
+`comp_def`, variables and parameters from `var_dict` and `par_dict` and the time
 bounds set by `time_bounds`.
 """
 function _build(comp_def::AbstractCompositeComponentDef,
@@ -365,7 +365,7 @@ end
 Return a vector of NamedTuples for all variables in the CompositeComponentInstance
 `comp_def`.
 """
-# helper functions for to create the variables and parameters NamedTuples for a 
+# helper functions for to create the variables and parameters NamedTuples for a
 # CompositeComponentInstance
 function _get_variables(comp_def::AbstractCompositeComponentDef)
 
@@ -374,7 +374,7 @@ function _get_variables(comp_def::AbstractCompositeComponentDef)
     names = [k for (k,v) in var_defs]
     vals = [v.ref for (k,v) in var_defs]
     variables = (; zip(names, vals)...)
-    
+
     return variables
 end
 
@@ -405,7 +405,7 @@ function _build(md::ModelDef)
     # @info "_build(md)"
     add_connector_comps!(md)
 
-    # check if any of the parameters initialized with the value(s) of nothing 
+    # check if any of the parameters initialized with the value(s) of nothing
     # are  still nothing
     nothingparams = nothing_params(md)
     if ! isempty(nothingparams)
@@ -423,7 +423,7 @@ function _build(md::ModelDef)
     time_bounds = (firstindex(t), lastindex(t))
 
     _propagate_time_dim!(md, t) # this might not be needed, but is a final propagation to double check everything
-    
+
     ci = _build(md, vdict, pdict, time_bounds)
     mi = ModelInstance(ci, md)
     return mi
@@ -434,7 +434,7 @@ end
 
 Build Model `m` and return the ModelInstance.
 """
-function build(m::Model)    
+function build(m::Model)
     # Reference a copy in the ModelInstance to avoid changes underfoot
     md = deepcopy(m.md)
     mi = _build(md)
@@ -489,4 +489,23 @@ Build MarginalModel `mm` by building both its `base` and `modified models`.
 function build!(mm::MarginalModel)
     build!(mm.base)
     build!(mm.modified)
+end
+
+"""
+    build(mm::MarginalModel)
+
+Build MarginalModel `mm` by returning a MarginalInstance with build ModelInstances.
+"""
+function build(mm::MarginalModel)
+    MarginalInstance(build(mm.base), build(mm.modified), mm.delta)
+end
+
+"""
+    Base.run(mm::MarginalInstance; ntimesteps::Int=typemax(Int))
+
+Run the built marginal model `mi` once with `ntimesteps`.
+"""
+function Base.run(mi::MarginalInstance; ntimesteps::Int=typemax(Int))
+    run(mi.base, ntimesteps=ntimesteps)
+    run(mi.modified, ntimesteps=ntimesteps)
 end
