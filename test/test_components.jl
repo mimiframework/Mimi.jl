@@ -160,4 +160,35 @@
     ci = compinstance(m, :C) # Get the component instance
     @test ci.first == 2010      # The component instance's first and last values are the same as the comp def
     @test ci.last == 2090
+
+    # 3. Test using the dim_keys function in run_timestep
+    my_model = Model()
+    set_dimension!(my_model, :time, 2000:2010) # Set the time dimension
+    set_dimension!(my_model, :region, [:A, :B, :C]) # Set the region dimension
+
+    @defcomp testcomp5 begin
+
+        var1 = Variable(index=[time])
+        par1 = Parameter(index=[time])
+
+        var2 = Variable{Int}(index=[region]) # hold region idxs 1:n
+        var3 = Variable{Symbol}(index=[region]) # hold region keys
+
+        function run_timestep(p, v, d, t)
+            v.var1[t] = p.par1[t]
+            for region in d.region
+                v.var2[region] = region
+                v.var3[region] = get_dim_keys(:region)[region]
+            end
+        end
+    end
+
+    add_comp!(my_model, testcomp5)
+    update_param!(my_model, :testcomp5, :par1, collect(1:11))
+
+    run(my_model)
+
+    @test my_model[:testcomp5, :var2] == [1,2,3]
+    @test my_model[:testcomp5, :var3] == [:A, :B, :C]
+
 end
