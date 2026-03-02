@@ -181,3 +181,36 @@
     @test m[:X, :y] == 2 * ones(6)          # Successfully ran the run_timestep function from X_repl
 
 end
+
+
+@testitem "replace_with_start_times" begin
+
+    # Testing that if the "old" component was added with a start time different than the model,
+    # this start time is preserved through the component replacement
+
+    @defcomp X begin
+        x = Parameter(index = [time])
+        y = Variable(index = [time])
+        function run_timestep(p, v, d, t)
+            v.y[t] = p.x[t]
+        end
+    end
+
+    m = Model()
+    set_dimension!(m, :time, 2000:2020)
+
+    add_comp!(m, X, :A, first=2005)
+    update_param!(m, :A, :x, ones(21))
+
+    add_comp!(m, X, :B, first=2005)
+    connect_param!(m, :B => :x, :A => :y)
+
+    replace!(m, :B => X)
+
+    # should run without error with orginal "short" internal parameter connection
+    run(m)
+
+    # test that the start time is preserved
+    @test m.md.namespace[:B].first == 2005
+
+end
