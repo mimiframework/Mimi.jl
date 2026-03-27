@@ -3,9 +3,36 @@
 #
 
 # Supertype for variables and parameters in component instances
-@class ComponentInstanceData{NT <: NamedTuple} <: MimiClass begin
+struct ComponentInstanceParameters{NT <: NamedTuple} <: AbstractComponentInstanceData
     nt::NT
     comp_paths::Vector{ComponentPath}   # records the origin of each datum
+
+    function ComponentInstanceParameters(nt::NT, paths::Vector{ComponentPath}) where {NT <: NamedTuple}
+        return new{NT}(nt, paths)
+    end
+
+    function ComponentInstanceParameters(names::Vector{Symbol},
+                                         types::Vector{DataType},
+                                         values::Vector{Any},
+                                         paths)
+        return _datum_instance(ComponentInstanceParameters, names, types, values, paths)
+    end
+end
+
+struct ComponentInstanceVariables{NT <: NamedTuple} <: AbstractComponentInstanceData
+    nt::NT
+    comp_paths::Vector{ComponentPath}   # records the origin of each datum
+
+    function ComponentInstanceVariables(nt::NT, paths::Vector{ComponentPath}) where {NT <: NamedTuple}
+        return new{NT}(nt, paths)
+    end
+
+    function ComponentInstanceVariables(names::Vector{Symbol},
+                                        types::Vector{DataType},
+                                        values::Vector{Any},
+                                        paths)
+        return _datum_instance(ComponentInstanceVariables, names, types, values, paths)
+    end
 end
 
 nt(obj::AbstractComponentInstanceData) = getfield(obj, :nt)
@@ -21,80 +48,44 @@ function _datum_instance(subtype::Type{<: AbstractComponentInstanceData},
     return subtype(NT(values), Vector{ComponentPath}(paths))
 end
 
-@class ComponentInstanceParameters <: ComponentInstanceData begin
-    function ComponentInstanceParameters(nt::NT, paths::Vector{ComponentPath}) where {NT <: NamedTuple}
-        return new{NT}(nt, paths)
-    end
 
-    function ComponentInstanceParameters(names::Vector{Symbol},
-                                         types::Vector{DataType},
-                                         values::Vector{Any},
-                                         paths)
-        return _datum_instance(ComponentInstanceParameters, names, types, values, paths)
-    end
+# Shared initializer for ComponentInstance fields on subtypes
+function _init_component_instance!(self::AbstractComponentInstance,
+                                   comp_def::AbstractComponentDef,
+                                   time_bounds::Tuple{Int,Int},
+                                   name::Symbol=nameof(comp_def))
+    self.comp_name = name
+    self.comp_id = comp_def.comp_id
+    self.comp_path = comp_def.comp_path
+
+    # If first or last is `nothing`, substitute first or last time period
+    self.first = @or(comp_def.first, time_bounds[1])
+    self.last  = @or(comp_def.last,  time_bounds[2])
 end
 
-@class ComponentInstanceVariables <: ComponentInstanceData begin
-    function ComponentInstanceVariables(nt::NT, paths::Vector{ComponentPath}) where {NT <: NamedTuple}
-        return new{NT}(nt, paths)
-    end
-
-    function ComponentInstanceVariables(names::Vector{Symbol},
-                                        types::Vector{DataType},
-                                        values::Vector{Any},
-                                        paths)
-        return _datum_instance(ComponentInstanceVariables, names, types, values, paths)
-    end
-end
-
-
-# Superclass for both LeafComponentInstance and CompositeComponentInstance.
-# This allows the former to be type-parameterized and the latter to not be.
-@class mutable ComponentInstance <: MimiClass begin
+mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables,
+                                     TP <: ComponentInstanceParameters} <: AbstractComponentInstance
     comp_name::Symbol
     comp_id::ComponentId
     comp_path::ComponentPath
     first::Union{Nothing, Int}
     last::Union{Nothing, Int}
-
-    function ComponentInstance(self::AbstractComponentInstance,
-                               comp_def::AbstractComponentDef,
-                               time_bounds::Tuple{Int,Int},
-                               name::Symbol=nameof(comp_def))
-        self.comp_name = name
-        self.comp_id = comp_id = comp_def.comp_id
-        self.comp_path = comp_def.comp_path
-
-        # If first or last is `nothing`, substitute first or last time period
-        self.first = @or(comp_def.first, time_bounds[1])
-        self.last  = @or(comp_def.last,  time_bounds[2])
-    end
-
-    function ComponentInstance(comp_def::AbstractComponentDef,
-                               time_bounds::Tuple{Int,Int},
-                               name::Symbol=nameof(comp_def))
-        self = new()
-        return ComponentInstance(self, comp_def, time_bounds, name)
-    end
-end
-
-@class mutable LeafComponentInstance{TV <: ComponentInstanceVariables,
-                                     TP <: ComponentInstanceParameters} <: ComponentInstance begin
     variables::TV                   # TBD: write functions to extract these from type instead of storing?
     parameters::TP
     init::Union{Nothing, Function}
     run_timestep::Union{Nothing, Function}
 
-    function LeafComponentInstance(self::AbstractComponentInstance,
-                                   comp_def::AbstractComponentDef,
+    function LeafComponentInstance(comp_def::AbstractComponentDef,
                                    vars::TV, pars::TP,
                                    time_bounds::Tuple{Int,Int},
                                    name::Symbol=nameof(comp_def)) where
                                 {TV <: ComponentInstanceVariables,
                                  TP <: ComponentInstanceParameters}
 
-        # superclass initializer
-        ComponentInstance(self, comp_def, time_bounds, name)
+        self = new{TV, TP}()
+
+        # initialize base ComponentInstance fields
+        _init_component_instance!(self, comp_def, time_bounds, name)
 
         self.variables = vars
         self.parameters = pars
@@ -135,15 +126,6 @@ end
     end
 end
 
-function LeafComponentInstance(comp_def::AbstractComponentDef, vars::TV, pars::TP,
-                               time_bounds::Tuple{Int,Int},
-                               name::Symbol=nameof(comp_def)) where
-        {TV <: ComponentInstanceVariables, TP <: ComponentInstanceParameters}
-
-    self = LeafComponentInstance{TV, TP}()
-    return LeafComponentInstance(self, comp_def, vars, pars, time_bounds, name)
-end
-
 # These can be called on CompositeComponentInstances and ModelInstances
 compdef(obj::AbstractComponentInstance) = compdef(comp_id(obj))
 Base.pathof(obj::AbstractComponentInstance) = obj.comp_path
@@ -169,28 +151,15 @@ function _comp_instance_vars_pars(comp_def::AbstractCompositeComponentDef,
     return vars, pars
 end
 
-@class mutable CompositeComponentInstance <: ComponentInstance begin
+mutable struct CompositeComponentInstance <: AbstractCompositeComponentInstance
+    comp_name::Symbol
+    comp_id::ComponentId
+    comp_path::ComponentPath
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
     comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
     variables::NamedTuple
     parameters::NamedTuple
-
-    function CompositeComponentInstance(self::AbstractCompositeComponentInstance,
-                                        comps::Vector{<: AbstractComponentInstance},
-                                        comp_def::AbstractCompositeComponentDef,
-                                        time_bounds::Tuple{Int,Int},
-                                        variables::NamedTuple, 
-                                        parameters::NamedTuple,
-                                        name::Symbol=nameof(comp_def))
-
-        comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
-        for ci in comps
-            comps_dict[ci.comp_name] = ci
-        end
-
-        ComponentInstance(self, comp_def, time_bounds, name)
-        CompositeComponentInstance(self, comps_dict, variables, parameters)
-        return self
-    end
 
     # TBD: Construct vars and params from sub-components
     function CompositeComponentInstance(comps::Vector{<: AbstractComponentInstance},
@@ -199,7 +168,18 @@ end
                                         variables::NamedTuple, 
                                         parameters::NamedTuple,
                                         name::Symbol=nameof(comp_def))
-        CompositeComponentInstance(new(), comps, comp_def, time_bounds, variables, parameters, name)
+        self = new()
+
+        comps_dict = OrderedDict{Symbol, AbstractComponentInstance}()
+        for ci in comps
+            comps_dict[ci.comp_name] = ci
+        end
+
+        _init_component_instance!(self, comp_def, time_bounds, name)
+        self.comps_dict = comps_dict
+        self.variables = variables
+        self.parameters = parameters
+        return self
     end
 end
 
@@ -213,6 +193,20 @@ is_leaf(ci::AbstractCompositeComponentInstance) = false
 is_composite(ci::AbstractComponentInstance) = !is_leaf(ci)
 
 # ModelInstance holds the built model that is ready to be run
-@class ModelInstance <: CompositeComponentInstance begin
+mutable struct ModelInstance <: AbstractCompositeComponentInstance
+    comp_name::Symbol
+    comp_id::ComponentId
+    comp_path::ComponentPath
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
+    comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
+    variables::NamedTuple
+    parameters::NamedTuple
     md::ModelDef
+end
+
+# Convenience constructor: wrap an existing CompositeComponentInstance with a ModelDef
+function ModelInstance(ci::CompositeComponentInstance, md::ModelDef)
+    return ModelInstance(ci.comp_name, ci.comp_id, ci.comp_path, ci.first, ci.last,
+                         ci.comps_dict, ci.variables, ci.parameters, md)
 end

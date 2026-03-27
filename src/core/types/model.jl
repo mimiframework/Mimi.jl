@@ -2,7 +2,7 @@
 # User-facing Model types providing a simplified API to model definitions and instances.
 #
 
-abstract type AbstractModel <: MimiStruct end
+abstract type AbstractModel end
 
 """
     Model

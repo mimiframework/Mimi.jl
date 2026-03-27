@@ -81,20 +81,6 @@ function _show_field(io::IO, name::Symbol, vec::Vector{T}; show_empty=true) wher
     nothing
 end
 
-function _show_field(io::IO, name::Symbol, vec::Vector{<: AbstractMimiType}; show_empty=true)
-    if !show_empty && isempty(vec)
-        return
-    end
-
-    print(io, "\n")
-    print_indented(io, name, ": ")
-    io = indent(io)
-    for (i, value) in enumerate(vec)
-        print(io, "\n")
-        print_indented(io, "$i: ", value)
-    end
-end
-
 function _show_fields(io::IO, obj, names; show_empty=true)
     for name in names
         value = getfield(obj, name)
@@ -137,7 +123,9 @@ function show(io::IO, obj::ParameterDef)
     _show_field(indent(io), :default, obj.default)
 end
 
-function show(io::IO, obj::AbstractMimiType)
+# Generic show helper for Mimi types: prints type name, extracts :name field
+# if present, then shows remaining fields indented.
+function _default_show(io::IO, obj)
     print(io, typeof(obj))
 
     # If a name is present, print it as type(name)
@@ -150,6 +138,20 @@ function show(io::IO, obj::AbstractMimiType)
     end
 
     _show_fields(indent(io), obj, fields)
+end
+
+# Targeted show methods for concrete types that relied on the old fallback
+for T in [
+    DatumDef, SubComponent, CompositeParameterDef, CompositeVariableDef,
+    ComponentReference, VariableReference,
+    ComponentInstanceParameters, ComponentInstanceVariables,
+    LeafComponentInstance, CompositeComponentInstance,
+    FixedTimestep, VariableTimestep, Clock, TimestepArray,
+    ScalarModelParameter, ArrayModelParameter,
+    InternalParameterConnection, ExternalParameterConnection,
+    MarginalModel
+]
+    @eval Base.show(io::IO, obj::$T) = _default_show(io, obj)
 end
 
 function show(io::IO, obj::AbstractComponentDef)

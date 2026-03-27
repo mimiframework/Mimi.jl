@@ -2,7 +2,7 @@
 # Types supporting parameterized Timestep and Clock objects
 #
 
-abstract type AbstractTimestep <: MimiStruct end
+abstract type AbstractTimestep end
 
 struct FixedTimestep{FIRST, STEP, LAST} <: AbstractTimestep
     t::Int
@@ -48,7 +48,7 @@ struct TimestepIndex
     index::Int
 end
 
-mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
+mutable struct Clock{T <: AbstractTimestep}
 	ts::T
 
 	function Clock{T}(FIRST::Int, STEP::Int, LAST::Int) where T
@@ -60,7 +60,7 @@ mutable struct Clock{T <: AbstractTimestep} <: MimiStruct
     end
 end
 
-mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti, S<:AbstractArray{T,N}} <: MimiStruct
+mutable struct TimestepArray{T_TS <: AbstractTimestep, T, N, ti, S<:AbstractArray{T,N}}
    
     data::S
 
