@@ -85,8 +85,18 @@ end
 
 
 # Helper functions for TimestepValue type
+
+# O(1) position lookup for FixedTimestep arrays — avoids allocating [FIRST:STEP:LAST...]
+function _get_fixed_time_value_position(FIRST, STEP, LAST, ts::TimestepValue)
+	t, remainder = divrem(ts.value - FIRST, STEP)
+	remainder == 0 || error("cannot use TimestepValue with value $(ts.value), value is not in the TimestepArray")
+	t += ts.offset + 1
+	0 < t <= div(LAST - FIRST, STEP) + 1 || error("TimestepValue index $(ts.value) with offset $(ts.offset) is out of bounds")
+	return t
+end
+
 function _get_time_value_position(times::Union{Tuple, Array}, ts::TimestepValue{T}) where T
-	t = findfirst(isequal.(ts.value, times))
+	t = findfirst(==(ts.value), times)
 	if t === nothing
 		error("cannot use TimestepValue with value $(ts.value), value is not in the TimestepArray")
 	end
@@ -215,7 +225,7 @@ function Base.setindex!(v::TimestepVector, val, ts::VariableTimestep{TIMES}) whe
 end
 
 function Base.setindex!(v::TimestepVector{FixedTimestep{FIRST, STEP, LAST}, T_data}, val, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, LAST, T_time}
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	v.data isa SubArray ? view_offset = v.data.offset1 : view_offset = 0
 	t = t - view_offset
 	setindex!(v.data, val, t)
@@ -257,7 +267,7 @@ function Base.getindex(mat::TimestepMatrix{VariableTimestep{M_TIMES}, T, 2}, idx
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T_data, 1}, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, FIRST, STEP, LAST, T_time} 
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	mat.data isa SubArray ? view_offset = mat.data.indices[1][1] - 1 : view_offset = 0
 	t = t - view_offset
 	data = mat.data[t, idx]
@@ -280,7 +290,7 @@ function Base.getindex(mat::TimestepMatrix, ts::TimestepIndex, idx::AnyIndex)
 end
 
 function Base.getindex(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T_data, 2}, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, LAST, T_time} 
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	mat.data isa SubArray ? view_offset = mat.data.indices[2][1] - 1 : view_offset = 0
 	t = t - view_offset
 	data = mat.data[idx, t]
@@ -319,7 +329,7 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{M_TIMES}, T, 2}, va
 end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T_data, 1}, val, ts::TimestepValue{T_time}, idx::AnyIndex) where {T_data, FIRST, STEP, LAST, T_time}
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	mat.data isa SubArray ? view_offset = mat.data.indices[1][1] - 1 : view_offset = 0
 	t = t - view_offset
 	setindex!(mat.data, val, t, idx)
@@ -333,7 +343,7 @@ function Base.setindex!(mat::TimestepMatrix{VariableTimestep{TIMES}, T_data, 1},
 end
 
 function Base.setindex!(mat::TimestepMatrix{FixedTimestep{FIRST, STEP, LAST}, T_data, 2}, val, idx::AnyIndex, ts::TimestepValue{T_time}) where {T_data, FIRST, STEP, LAST, T_time}
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	mat.data isa SubArray ? view_offset = mat.data.indices[2][1] - 1 : view_offset = 0
 	t = t - view_offset
 	setindex!(mat.data, val, idx, t)
@@ -410,7 +420,7 @@ end
 function Base.getindex(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T_data, N, ti}, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, LAST, T_time}
 	_single_index_check(arr.data, idxs)
 	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	arr.data isa SubArray ? view_offset = arr.data.indices[ti][1] - 1 : view_offset = 0
 	t = t - view_offset
 	return _missing_data_check(arr.data[idxs1..., t, idxs2...])
@@ -454,7 +464,7 @@ end
 function Base.setindex!(arr::TimestepArray{FixedTimestep{FIRST, STEP, LAST}, T_data, N, ti}, val, idxs::Union{TimestepValue{T_time}, AnyIndex}...) where {T_data, N, ti, FIRST, STEP, LAST, T_time}
 	_single_index_check(arr.data, idxs)
 	idxs1, ts, idxs2 = idxs[1:ti - 1], idxs[ti], idxs[ti + 1:end]
-	t = _get_time_value_position([FIRST:STEP:LAST...], ts)
+	t = _get_fixed_time_value_position(FIRST, STEP, LAST, ts)
 	arr.data isa SubArray ? view_offset = arr.data.indices[ti][1] - 1 : view_offset = 0
 	t = t - view_offset
 	setindex!(arr.data, val, idxs1..., t, idxs2...)
