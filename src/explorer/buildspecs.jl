@@ -493,14 +493,17 @@ function createspec_trumpet_static(name, df, dffields)
 end
 
 function createspec_trumpet_interactive(name, df, dffields)
+    temp_data_file_name = tempname()
 
-    datapart = getdatapart(df, dffields, :trumpet) #returns JSONtext type 
+    df = select(df, 1 => (i -> Date.(i)) => :time, 2, 3, copycols=false)
+    CSVFiles.save(CSVFiles.FileIO.File{CSVFiles.FileIO.format"CSV"}(temp_data_file_name), df)
+    
     spec = Dict(
         "name"  => name,
         "VLspec" => Dict(
-            "\$schema" => "https://vega.github.io/schema/vega-lite/v3.json",
+            "\$schema" => "https://vega.github.io/schema/vega-lite/v5.json",
             "description" => "plot for a specific component variable pair",
-            "data"=> Dict("values" => datapart),
+            "data"=> Dict("url" => string(URI(FilePaths.Path(temp_data_file_name))), "format" => Dict("type" => "csv")),
             "vconcat" => [
                 Dict(
                     "title" => "$name",
