@@ -18,9 +18,9 @@
     "react-dom": "^16.13.1",
     "react-scripts": "5.0.1",
     "typescript": "^3.7.5",
-    "vega": "^5.33.0",
-    "vega-embed": "^6.10.0",
-    "vega-lite": "^4.14.1"
+    "vega": "^6.2.0",
+    "vega-embed": "^7.1.0",
+    "vega-lite": "^6.4.1"
   },
   "scripts": {
     "start": "react-scripts start",
