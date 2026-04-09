@@ -1208,7 +1208,8 @@ function _replace!(obj::AbstractCompositeComponentDef,
         delete!(obj, comp_name)
     end
 
-    ref = add_comp!(obj, comp_id, comp_name; before=before, after=after)
+    # Add the new component, preserving old ordering and old first/last timestep specifications
+    ref = add_comp!(obj, comp_id, comp_name; before=before, after=after, first=old_comp.first, last=old_comp.last)
 
     return ref
 end
