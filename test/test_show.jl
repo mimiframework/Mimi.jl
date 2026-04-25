@@ -1,6 +1,6 @@
 @testitem "Show" begin
     import Mimi:
-        compdefs, compdef, ComponentId, MimiStruct, ParameterDef
+        compdefs, compdef, ComponentId, ParameterDef
 
     @defcomp X begin    
         x = Parameter(index = [time])
@@ -25,7 +25,7 @@
     compid = ComponentId(@__MODULE__, :something)
     test_show(compid, "ComponentId($(string(@__MODULE__)).something)")
 
-    struct Foo <: MimiStruct
+    struct Foo
         a::Dict
         b::Int
         c::Float64

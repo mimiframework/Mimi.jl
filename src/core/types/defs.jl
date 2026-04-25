@@ -2,9 +2,14 @@
 # Types supporting structural definition of models and their components
 #
 
-# Objects with a `name` attribute
-@class NamedObj <: MimiClass begin
+# Similar structure is used for variables and parameters (parameters merely adds `default`)
+mutable struct DatumDef <: AbstractDatumDef
     name::Symbol
+    comp_path::Union{Nothing, ComponentPath}
+    datatype::DataType
+    dim_names::Vector{Symbol}
+    description::String
+    unit::String
 end
 
 """
@@ -14,8 +19,10 @@ Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, and `
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
-# Similar structure is used for variables and parameters (parameters merely adds `default`)
-@class mutable DatumDef <: NamedObj begin
+Base.pathof(obj::AbstractDatumDef) = obj.comp_path
+
+mutable struct VariableDef <: AbstractVariableDef
+    name::Symbol
     comp_path::Union{Nothing, ComponentPath}
     datatype::DataType
     dim_names::Vector{Symbol}
@@ -23,17 +30,20 @@ Base.nameof(obj::AbstractNamedObj) = obj.name
     unit::String
 end
 
-Base.pathof(obj::AbstractDatumDef) = obj.comp_path
-
-@class mutable VariableDef <: DatumDef
-
-@class mutable ParameterDef <: DatumDef begin
+mutable struct ParameterDef <: AbstractParameterDef
+    name::Symbol
+    comp_path::Union{Nothing, ComponentPath}
+    datatype::DataType
+    dim_names::Vector{Symbol}
+    description::String
+    unit::String
     # ParameterDef adds a default value, which can be specified in @defcomp
     default::Any
 end
 
-@class mutable ComponentDef <: NamedObj begin
-    comp_id::Union{Nothing, ComponentId}    # allow anonynous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
+mutable struct ComponentDef <: AbstractComponentDef
+    name::Symbol
+    comp_id::Union{Nothing, ComponentId}    # allow anonymous top-level (composite) ComponentDefs (must be referenced by a ModelDef)
     comp_path::Union{Nothing, ComponentPath}
     dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
     namespace::OrderedDict{Symbol, Any}
@@ -46,40 +56,37 @@ end
     # detached (i.e., "template") components and is set when added to a composite.
     parent::Any
 
-
-    function ComponentDef(self::ComponentDef, comp_id::Nothing)
+    function ComponentDef(::Nothing)
         error("Leaf ComponentDef objects must have a valid ComponentId name (not nothing)")
-    end
-
-    # ComponentDefs are created "empty". Elements are subsequently added.
-    function ComponentDef(self::AbstractComponentDef, comp_id::Union{Nothing, ComponentId}=nothing;
-                          name::Union{Nothing, Symbol}=nothing)
-        if comp_id === nothing
-            # ModelDefs are anonymous, but since they're gensym'd, they can claim the Mimi package
-            comp_id = ComponentId(Mimi, @or(name, gensym(nameof(typeof(self)))))
-        end
-
-        name = @or(name, comp_id.comp_name)
-        NamedObj(self, name)
-
-        self.comp_id = comp_id
-
-        # self.comp_path = nothing    # this is set in add_comp!() and ModelDef()
-        self.comp_path = ComponentPath(name)    # this is set in add_comp!() and ModelDef()
-
-        self.dim_dict  = OrderedDict{Symbol, Union{Nothing, Dimension}}()
-        self.namespace = OrderedDict{Symbol, Any}()
-        self.first = self.last = nothing
-        self.is_uniform = true
-        self.parent = nothing
-        return self
     end
 
     function ComponentDef(comp_id::Union{Nothing, ComponentId};
                           name::Union{Nothing, Symbol}=nothing)
         self = new()
-        return ComponentDef(self, comp_id; name=name)
+        _init_component_def!(self, comp_id; name=name)
+        return self
     end
+end
+
+# Shared initializer for ComponentDef and its subtypes
+function _init_component_def!(self::AbstractComponentDef, comp_id::Union{Nothing, ComponentId}=nothing;
+                              name::Union{Nothing, Symbol}=nothing)
+    if comp_id === nothing
+        # ModelDefs are anonymous, but since they're gensym'd, they can claim the Mimi package
+        comp_id = ComponentId(Mimi, @or(name, gensym(nameof(typeof(self)))))
+    end
+
+    name = @or(name, comp_id.comp_name)
+    self.name = name
+    self.comp_id = comp_id
+    self.comp_path = ComponentPath(name)
+    self.dim_dict  = OrderedDict{Symbol, Union{Nothing, Dimension}}()
+    self.namespace = OrderedDict{Symbol, Any}()
+    self.first = nothing
+    self.last = nothing
+    self.is_uniform = true
+    self.parent = nothing
+    return self
 end
 
 ns(obj::AbstractComponentDef) = obj.namespace
@@ -93,7 +100,7 @@ isuniform(obj::AbstractComponentDef) = obj.is_uniform
 Base.parent(obj::AbstractComponentDef) = obj.parent
 
 # Used by @defcomposite to communicate subcomponent information
-struct SubComponent <: MimiStruct
+struct SubComponent
     module_obj::Union{Nothing, Module}
     comp_name::Symbol
     alias::Union{Nothing, Symbol}
@@ -106,7 +113,14 @@ struct UnnamedReference
     datum_name::Symbol  # name of the parameter or variable in the subcomponent's namespace
 end
 
-@class CompositeParameterDef <: ParameterDef begin
+struct CompositeParameterDef <: AbstractParameterDef
+    name::Symbol
+    comp_path::Union{Nothing, ComponentPath}
+    datatype::DataType
+    dim_names::Vector{Symbol}
+    description::String
+    unit::String
+    default::Any
     refs::Vector{UnnamedReference}
 end
 
@@ -134,7 +148,13 @@ function CompositeParameterDef(obj, param_ref)
     return CompositeParameterDef(pname, pathof(obj), pardef.datatype, pardef.dim_names, pardef.description, pardef.unit, pardef.default, [param_ref])
 end
 
-@class CompositeVariableDef <: VariableDef begin
+struct CompositeVariableDef <: AbstractVariableDef
+    name::Symbol
+    comp_path::Union{Nothing, ComponentPath}
+    datatype::DataType
+    dim_names::Vector{Symbol}
+    description::String
+    unit::String
     ref::UnnamedReference
 end
 
@@ -146,11 +166,20 @@ end
 
 # Define which types can appear in the namespace dict for leaf and composite compdefs
 global const LeafNamespaceElement      = AbstractDatumDef
-global const CompositeDatumDef         = Union{AbstractCompositeParameterDef, AbstractCompositeVariableDef}
+global const CompositeDatumDef         = Union{CompositeParameterDef, CompositeVariableDef}
 global const CompositeNamespaceElement = Union{AbstractComponentDef, CompositeDatumDef}
 global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNamespaceElement}
 
-@class mutable CompositeComponentDef <: ComponentDef begin
+mutable struct CompositeComponentDef <: AbstractCompositeComponentDef
+    name::Symbol
+    comp_id::Union{Nothing, ComponentId}
+    comp_path::Union{Nothing, ComponentPath}
+    dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
+    namespace::OrderedDict{Symbol, Any}
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
+    is_uniform::Bool
+    parent::Any
     internal_param_conns::Vector{InternalParameterConnection}
 
     # Names of model params that the ConnectorComps will use as their :input2 parameters.
@@ -158,16 +187,11 @@ global const NamespaceElement          = Union{LeafNamespaceElement, CompositeNa
 
     function CompositeComponentDef(comp_id::Union{Nothing, ComponentId}=nothing)
         self = new()
-        CompositeComponentDef(self, comp_id)
-        return self
-    end
-
-    function CompositeComponentDef(self::AbstractCompositeComponentDef, comp_id::Union{Nothing, ComponentId}=nothing)
-        ComponentDef(self, comp_id) # call superclass' initializer
-
+        _init_component_def!(self, comp_id)
         self.comp_path = ComponentPath(self.name)
         self.internal_param_conns = Vector{InternalParameterConnection}()
         self.backups = Vector{Symbol}()
+        return self
     end
 end
 
@@ -201,22 +225,34 @@ ComponentPath(obj::AbstractCompositeComponentDef, path::AbstractString) = comp_p
 
 ComponentPath(obj::AbstractCompositeComponentDef, names::Symbol...) = ComponentPath(obj.comp_path.names..., names...)
 
-@class mutable ModelDef <: CompositeComponentDef begin
+mutable struct ModelDef <: AbstractCompositeComponentDef
+    name::Symbol
+    comp_id::Union{Nothing, ComponentId}
+    comp_path::Union{Nothing, ComponentPath}
+    dim_dict::OrderedDict{Symbol, Union{Nothing, Dimension}}
+    namespace::OrderedDict{Symbol, Any}
+    first::Union{Nothing, Int}
+    last::Union{Nothing, Int}
+    is_uniform::Bool
+    parent::Any
+    internal_param_conns::Vector{InternalParameterConnection}
+    backups::Vector{Symbol}
     external_param_conns::Vector{ExternalParameterConnection}
     model_params::Dict{Symbol, ModelParameter}
-
     number_type::DataType
     dirty::Bool
 
     function ModelDef(number_type::DataType=Float64)
         self = new()
-        CompositeComponentDef(self)  # call super's initializer
-
-        ext_conns  = Vector{ExternalParameterConnection}()
-        model_params = Dict{Symbol, ModelParameter}()
-
-        # N.B. @class-generated method
-        return ModelDef(self, ext_conns, model_params, number_type, false)
+        _init_component_def!(self)
+        self.comp_path = ComponentPath(self.name)
+        self.internal_param_conns = Vector{InternalParameterConnection}()
+        self.backups = Vector{Symbol}()
+        self.external_param_conns = Vector{ExternalParameterConnection}()
+        self.model_params = Dict{Symbol, ModelParameter}()
+        self.number_type = number_type
+        self.dirty = false
+        return self
     end
 end
 
@@ -229,7 +265,7 @@ model_params(md::ModelDef) = md.model_params
 #
 
 # A container for a component, for interacting with it within a model.
-@class ComponentReference <: MimiClass begin
+struct ComponentReference <: AbstractComponentReference
     parent::AbstractComponentDef
     comp_path::ComponentPath
 end
@@ -244,9 +280,14 @@ end
 
 # A container for a variable within a component, to improve connect_param! aesthetics,
 # by supporting subscripting notation via getindex & setindex .
-@class VariableReference <: ComponentReference begin
+struct VariableReference <: AbstractComponentReference
+    parent::AbstractComponentDef
+    comp_path::ComponentPath
     var_name::Symbol
 end
+
+# Construct from a ComponentReference (inheriting parent and comp_path)
+VariableReference(ref::ComponentReference, var_name::Symbol) = VariableReference(getfield(ref, :parent), getfield(ref, :comp_path), var_name)
 
 var_name(comp_ref::VariableReference) = getfield(comp_ref, :var_name)
 
