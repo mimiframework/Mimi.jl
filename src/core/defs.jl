@@ -821,7 +821,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 
         else    # after !== nothing, since we've handled all other possibilities above
             if ! has_comp(obj, after)
-                error("Component to add before ($before) does not exist")
+                error("Component to add after ($after) does not exist")
             end
 
             for (k, v) in components(obj)
