@@ -68,13 +68,13 @@ function _fix_comp_path!(child::AbstractComponentDef, parent::AbstractCompositeC
 end
 
 """
-    fix_comp_paths!(md::AbstractModelDef)
+    fix_comp_paths!(md::ModelDef)
 
 Recursively set the ComponentPaths in a tree below a ModelDef to the absolute path equivalent.
 This includes updating the component paths for all internal/external connections. For leaf components, 
 we also update the ComponentPath for ParameterDefs and VariableDefs.
 """
-function fix_comp_paths!(md::AbstractModelDef)
+function fix_comp_paths!(md::ModelDef)
     for child in compdefs(md)
         _fix_comp_path!(child, md)
     end

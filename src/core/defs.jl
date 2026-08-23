@@ -226,7 +226,7 @@ function Base.setindex!(comp::AbstractCompositeComponentDef, value::CompositeNam
     _save_to_namespace(comp, key, value)
 end
 
-# Leaf components store DatumDef instances in the namespace
+# Leaf components store AbstractDatumDef instances in the namespace
 function Base.setindex!(comp::ComponentDef, value::LeafNamespaceElement, key::Symbol)
     _save_to_namespace(comp, key, value)
 end

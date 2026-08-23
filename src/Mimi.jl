@@ -1,6 +1,5 @@
 module Mimi
 
-using Classes
 using DataFrames
 using DataStructures
 using Distributions

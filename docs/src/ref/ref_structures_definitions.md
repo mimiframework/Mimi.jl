@@ -25,13 +25,13 @@ first::Union{Nothing, Int}
 last::Union{Nothing, Int}
 is_uniform::Bool
 ```
-The namespace of a leaf component can hold `ParameterDef`s and `VariableDef`s, both which are subclasses of `DatumDef` (see below for more details on these types).
+The namespace of a leaf component can hold `ParameterDef`s and `VariableDef`s, both which are subtypes of `AbstractDatumDef` (see below for more details on these types).
 
 ## Composite components
 
-Composite components are defined using the [`@defcomposite`](@ref) macro which generates a composite component definition of the type `CompositeComponentDef` which has the following fields, in addition to the fields of a `ComponentDef`:
+Composite components are defined using the [`@defcomposite`](@ref) macro which generates a composite component definition of the type `CompositeComponentDef` which has the following fields, in addition to the fields listed above for a `ComponentDef`:
 ```
-# CompositeComponentDef <: ComponentDef 
+# CompositeComponentDef <: AbstractCompositeComponentDef
 internal_param_conns::Vector{InternalParameterConnection}   
 backups::Vector{Symbol}
 ```
@@ -41,9 +41,9 @@ The namespace of a composite component can hold `CompositeParameterDef`s and`Com
 
 Note: we use "datum" to refer collectively to parameters and variables. Parameters are values that are fed into a component, and variables are values calculated by a component's `run_timestep` function.
 
-Datum are defined with the [`@defcomp`](@ref) and [`@defcomposite`](@ref) macros, and have the following fields:
+Datum are defined with the [`@defcomp`](@ref) and [`@defcomposite`](@ref) macros. All datum definition types are subtypes of the abstract type `AbstractDatumDef`, and each declares the following fields:
 ```
-# DatumDef
+# fields common to every AbstractDatumDef
 name::Symbol
 comp_path::Union{Nothing, ComponentPath}
 datatype::DataType
@@ -51,21 +51,24 @@ dim_names::Vector{Symbol}
 description::String
 unit::String
 ```
-The only difference between a ParameterDef and a VariableDef is that parameters can have default values.
+The only difference between a `ParameterDef` and a `VariableDef` is that parameters can have default values.
 ```
-# ParameterDef <: DatumDef
+# ParameterDef <: AbstractParameterDef
+# (common fields, plus:)
 default::Any
 
-# VariableDef <: DatumDef
-# (This class adds no new fields. It exists to differentiate variables from parameters.)
+# VariableDef <: AbstractVariableDef
+# (common fields only; this type exists to differentiate variables from parameters.)
 ```
 
-`CompositeParameterDef`s and `CompositeVariableDef`s are defined in the `@defcomposite` macro, and point to datum from their subcomponents. (Remember, composite components do not have `run_timestep` functions, so no values are actually calculated in a composite component.) Thus, `CompositeParameterDef`s and `CompositeVariableDef`s inherit all the fields from `ParameterDef`s and `VariableDef`s, and have an additional field to record which subcomponent(s)' datum they reference.
+`CompositeParameterDef`s and `CompositeVariableDef`s are defined in the `@defcomposite` macro, and point to datum from their subcomponents. (Remember, composite components do not have `run_timestep` functions, so no values are actually calculated in a composite component.) Thus, `CompositeParameterDef`s and `CompositeVariableDef`s carry the same fields as `ParameterDef`s and `VariableDef`s, plus an additional field to record which subcomponent(s)' datum they reference.
 ```
-# CompositeParameterDef <: ParameterDef
+# CompositeParameterDef <: AbstractParameterDef
+# (ParameterDef's fields, plus:)
 refs::Vector{UnnamedReference}
 
-# CompositeVariableDef <: VariableDef
+# CompositeVariableDef <: AbstractVariableDef
+# (VariableDef's fields, plus:)
 ref::UnnamedReference
 ```
 Note: a `CompositeParameterDef` can reference multiple subcomponents' parameters, but a `CompositeVariableDef` can only reference a variable from one subcomponent.

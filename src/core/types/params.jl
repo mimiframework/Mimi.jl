@@ -2,7 +2,7 @@
 # Types supporting Parameters and their connections
 #
 
-abstract type ModelParameter <: MimiStruct end
+abstract type ModelParameter end
 
 mutable struct ScalarModelParameter{T} <: ModelParameter
     value::T
@@ -61,7 +61,7 @@ dim_names(obj::ScalarModelParameter) = []
 is_shared(obj::ArrayModelParameter) = obj.is_shared
 is_shared(obj::ScalarModelParameter) = obj.is_shared
 
-abstract type AbstractConnection <: MimiStruct end
+abstract type AbstractConnection end
 
 struct InternalParameterConnection <: AbstractConnection
     src_comp_path::ComponentPath

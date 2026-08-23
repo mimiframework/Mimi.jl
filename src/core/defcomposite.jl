@@ -240,13 +240,13 @@ end
 # Helper function for detecting whether a specified datum has already been imported or connected
 function _is_connected(obj::AbstractCompositeComponentDef, comp_name::Symbol, datum_name::Symbol)
     for (k, item) in obj.namespace
-        if isa(item, AbstractCompositeParameterDef)
+        if isa(item, CompositeParameterDef)
             for ref in item.refs
                 if ref.comp_name == comp_name && ref.datum_name == datum_name
                     return true
                 end
             end
-        elseif isa(item, AbstractCompositeVariableDef)
+        elseif isa(item, CompositeVariableDef)
             ref = item.ref
             if ref.comp_name == comp_name && ref.datum_name == datum_name
                 return true

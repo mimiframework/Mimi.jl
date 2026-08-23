@@ -35,7 +35,7 @@ makedocs(
 		"Reference Guides" => Any[
 			"Reference Guides Intro" => "ref/ref_main.md",
 			"Mimi API" => "ref/ref_API.md",
-			"Structures: Classes.jl and Types" => "ref/ref_structures_classes_types.md", 
+			"Core Types" => "ref/ref_structures_classes_types.md",
 			"Structures: Definitions" => "ref/ref_structures_definitions.md", 
 			"Structures: Instances" => "ref/ref_structures_instances.md"
 		],
