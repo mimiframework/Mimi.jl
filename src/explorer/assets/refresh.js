@@ -1,3 +1,5 @@
+const fs = require('node:fs/promises');
+
 // Mimi UI
 
 function refresh(menu_item_list) {
@@ -30,5 +32,15 @@ function refresh(menu_item_list) {
 }
 
 function display(spec) {
-    vegaEmbed("#vis", spec["VLspec"], {actions: false});
+    const loader = {
+        load: async function(uri, options) {
+            const parsedUri = new URL(uri)
+            if (parsedUri.protocol!='file') {
+                throw new Error('Only file URIs are allowed in the vega-lite spec.');
+            }
+
+            return await fs.readFile(new URL(uri))
+        },
+    }
+    vegaEmbed("#vis", spec["VLspec"], {actions: false, loader: loader});
 }
