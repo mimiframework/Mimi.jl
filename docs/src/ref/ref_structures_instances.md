@@ -2,8 +2,9 @@
 
 ## Models and Components
 
+Every component instance type is a subtype of the abstract type `AbstractComponentInstance`, and each declares the following fields:
 ```
-# ComponentInstance
+# fields common to every AbstractComponentInstance
 comp_name::Symbol
 comp_id::ComponentID
 comp_path::ComponentPath (from top (model) down)
@@ -11,20 +12,23 @@ first::Int
 last::Int
 ```
 ```
-# LeafComponentInstance <: ComponentInstance
+# LeafComponentInstance <: AbstractComponentInstance
+# (common fields, plus:)
 variables::ComponentInstanceVariables
 parameters::ComponentInstanceParameters
 init::Union{Nothing, Function}
 run_timestep::Union{Nothing, Function}
 ```
 ```
-# CompositeComponentInstance <: ComponentInstance
-comps_dict::OrderedDict{Symbol, ComponentInstance}
+# CompositeComponentInstance <: AbstractCompositeComponentInstance
+# (common fields, plus:)
+comps_dict::OrderedDict{Symbol, AbstractComponentInstance}
 parameters::NamedTuple
 variables::NamedTuple
 ```
 ```
-# ModelInstance <: CompositeComponentInstance
+# ModelInstance <: AbstractCompositeComponentInstance
+# (CompositeComponentInstance's fields, plus:)
 md::ModelDef
 ```
 

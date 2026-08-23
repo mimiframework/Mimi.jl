@@ -142,7 +142,7 @@ end
 
 # Targeted show methods for concrete types that relied on the old fallback
 for T in [
-    DatumDef, SubComponent, CompositeParameterDef, CompositeVariableDef,
+    SubComponent, CompositeParameterDef, CompositeVariableDef,
     ComponentReference, VariableReference,
     ComponentInstanceParameters, ComponentInstanceVariables,
     LeafComponentInstance, CompositeComponentInstance,

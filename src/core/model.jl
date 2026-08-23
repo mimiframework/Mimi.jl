@@ -313,7 +313,7 @@ Return the number of timesteps a given component in a model will run for.
 """
     datumdef(comp_def::ComponentDef, item::Symbol)
 
-Return a DatumDef for `item` in the given component `comp_def`.
+Return an `AbstractDatumDef` for `item` in the given component `comp_def`.
 """
 function datumdef(comp_def::AbstractComponentDef, item::Symbol)
     if has_variable(comp_def, item)
@@ -329,7 +329,7 @@ end
 """
     datumdef(m::Model, comp_name::Symbol, item::Symbol)
 
-Return a DatumDef for `item` in the given component `comp_name` of model `m`.
+Return an `AbstractDatumDef` for `item` in the given component `comp_name` of model `m`.
 """
 datumdef(m::Model, comp_name::Symbol, item::Symbol) = datumdef(compdef(m.md, comp_name), item)
 

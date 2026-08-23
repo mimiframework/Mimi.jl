@@ -2,25 +2,17 @@
 # Types supporting structural definition of models and their components
 #
 
-# Similar structure is used for variables and parameters (parameters merely adds `default`)
-mutable struct DatumDef <: AbstractDatumDef
-    name::Symbol
-    comp_path::Union{Nothing, ComponentPath}
-    datatype::DataType
-    dim_names::Vector{Symbol}
-    description::String
-    unit::String
-end
-
 """
-    nameof(obj::NamedDef) = obj.name
+    nameof(obj::AbstractNamedObj) = obj.name
 
-Return the name of `def`.  `NamedDef`s include `DatumDef`, `ComponentDef`, and `CompositeComponentDef`
+Return the name of `def`.  `AbstractNamedObj`s include `AbstractDatumDef`, `ComponentDef`,
+and `CompositeComponentDef`
 """
 Base.nameof(obj::AbstractNamedObj) = obj.name
 
 Base.pathof(obj::AbstractDatumDef) = obj.comp_path
 
+# Similar structure is used for variables and parameters (parameters merely adds `default`)
 mutable struct VariableDef <: AbstractVariableDef
     name::Symbol
     comp_path::Union{Nothing, ComponentPath}

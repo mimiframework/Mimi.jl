@@ -4,18 +4,18 @@
 
 #### Types
 
-All Mimi types are defined in `Mimi/src/core/types.jl`.
+All Mimi types are defined under `Mimi/src/core/types/`.
 
 The types are broadly divided into two categories reflecting "structural definitions" versus "instantiated model info". Structural definition types include:
 
   * `ModelDef`
   * `ComponentDef`
-  * `DatumDef` (used for both variable and parameter definitions)
+  * `VariableDef` and `ParameterDef` (both subtypes of `AbstractDatumDef`)
 
 Instantiated model info types include:
 
   * `ModelInstance`
-  * `ComponentInstance`
+  * `LeafComponentInstance` and `CompositeComponentInstance`
   * `ComponentInstanceVariables`
   * `ComponentInstanceParameters`
 
@@ -47,9 +47,9 @@ The types `InternalParameterConnection` and `ExternalParameterConnection` are no
 [We may merge these two connection types since the only functional differences are that the `ExternalParameterConnections` type has fewer fields and its instances are stored in a separate list in the model.]
 
 
-#### ComponentInstanceData
+#### AbstractComponentInstanceData
 
-`ComponentInstanceVariables` and `ComponentInstanceParameters` are parametric types that are subtypes of `ComponentInstanceData`. The names and types of the variables or parameters are encoded into the type information; the struct proper contains only the parameter or variable values. Use of this parametric type allows us to use `@generated` to produce type-specific `getproperty` and `setproperty!` functions that efficiently access model parameters. [See *Dot-overloading*, below.]
+`ComponentInstanceVariables` and `ComponentInstanceParameters` are parametric types that are subtypes of `AbstractComponentInstanceData`. The names and types of the variables or parameters are encoded into the type information; the struct proper contains only the parameter or variable values. Use of this parametric type allows us to use `@generated` to produce type-specific `getproperty` and `setproperty!` functions that efficiently access model parameters. [See *Dot-overloading*, below.]
 
 
 ## 2. Changes to `@defcomp`

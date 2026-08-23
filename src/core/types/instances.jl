@@ -193,7 +193,7 @@ is_leaf(ci::AbstractCompositeComponentInstance) = false
 is_composite(ci::AbstractComponentInstance) = !is_leaf(ci)
 
 # ModelInstance holds the built model that is ready to be run
-mutable struct ModelInstance <: AbstractCompositeComponentInstance
+struct ModelInstance <: AbstractCompositeComponentInstance
     comp_name::Symbol
     comp_id::ComponentId
     comp_path::ComponentPath
