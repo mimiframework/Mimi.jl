@@ -25,7 +25,8 @@ function _generate_run_func(comp_name, module_name, args, body)
         global function $(func_name)($(p), #::Mimi.ComponentInstanceParameters,
                                      $(v), #::Mimi.ComponentInstanceVariables
                                      $(d), #::NamedTuple
-                                     $(t)) #::T <: Mimi.AbstractTimestep
+                                     $(t); #::T <: Mimi.AbstractTimestep
+                                     get_dim_keys::Function) #::Function
             $(body...)
             return nothing
         end
