@@ -821,7 +821,7 @@ function _insert_comp!(obj::AbstractCompositeComponentDef, comp_def::AbstractCom
 
         else    # after !== nothing, since we've handled all other possibilities above
             if ! has_comp(obj, after)
-                error("Component to add before ($before) does not exist")
+                error("Component to add after ($after) does not exist")
             end
 
             for (k, v) in components(obj)
@@ -1208,7 +1208,8 @@ function _replace!(obj::AbstractCompositeComponentDef,
         delete!(obj, comp_name)
     end
 
-    ref = add_comp!(obj, comp_id, comp_name; before=before, after=after)
+    # Add the new component, preserving old ordering and old first/last timestep specifications
+    ref = add_comp!(obj, comp_id, comp_name; before=before, after=after, first=old_comp.first, last=old_comp.last)
 
     return ref
 end
