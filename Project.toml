@@ -66,7 +66,7 @@ FileIO = "1"
 julia = "1.10"
 GlobalSensitivityAnalysis = "1.0"
 DataFrames = "0.19.1, 0.20, 0.21, 0.22, 1.0"
-Electron = "3.1, 4, 5, 6"
+Electron = "3.1, 4, 5, 6, 7.0"
 FilePaths = "0.8, 0.9"
 
 [targets]
