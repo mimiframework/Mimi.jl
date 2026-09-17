@@ -43,7 +43,15 @@ ScalarModelParameter(value) = ScalarModelParameter{typeof(value)}(value)
 ScalarModelParameter(value, is_shared) = ScalarModelParameter{typeof(value)}(value, is_shared)
 
 Base.convert(::Type{ScalarModelParameter{T}}, value::Number) where {T} = ScalarModelParameter{T}(T(value))
-Base.convert(::Type{T}, s::ScalarModelParameter{T}) where {T} = T(s.value)
+
+# NB: there is deliberately no `convert(::Type{T}, ::ScalarModelParameter{T})`
+# method here. An unconstrained `Type{T}` in argument position 1 supersedes the
+# generic `Base.convert` methods and so invalidates every poorly-inferred
+# `convert` call site in Base and in our dependencies -- ~1450 method instances,
+# which is a large fraction of the compiled code we cache during precompilation.
+# Callers that may hold a `ScalarModelParameter` unwrap it with `value(param)`
+# instead; component code never sees one, because `_get_prop` already returns
+# `.value` (see core/instances.jl).
 
 ArrayModelParameter(value, dims::Vector{Symbol}) = ArrayModelParameter{typeof(value)}(value, dims)
 ArrayModelParameter(value, dims::Vector{Symbol}, is_shared::Bool) = ArrayModelParameter{typeof(value)}(value, dims, is_shared)
