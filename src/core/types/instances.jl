@@ -50,7 +50,7 @@ end
 
 
 # Shared initializer for ComponentInstance fields on subtypes
-function _init_component_instance!(self::AbstractComponentInstance,
+function _init_component_instance!(@nospecialize(self::AbstractComponentInstance),
                                    comp_def::AbstractComponentDef,
                                    time_bounds::Tuple{Int,Int},
                                    name::Symbol=nameof(comp_def))
@@ -61,6 +61,46 @@ function _init_component_instance!(self::AbstractComponentInstance,
     # If first or last is `nothing`, substitute first or last time period
     self.first = @or(comp_def.first, time_bounds[1])
     self.last  = @or(comp_def.last,  time_bounds[2])
+end
+
+#
+# Look up the `init_<module>_<comp>` / `run_timestep_<module>_<comp>` function
+# that `@defcomp` generated for this component, or `nothing` if the component
+# does not define one (as in some of our test cases, and for composites, which
+# use a standard method that just loops over inner components).
+#
+# TBD: use FunctionWrapper here?
+#
+function _component_func(@nospecialize(self::AbstractComponentInstance), which::String)
+    #
+    # TBD: since LeafComponentInstance is no longer a superclass of
+    # CompositeComponentInstance this test should be unnecessary. Double-check
+    # this though...
+    #
+    is_composite(self) && return nothing
+
+    comp_module = compmodule(self)
+    func_name = Symbol("$(which)_$(nameof(comp_module))_$(self.comp_id.comp_name)")
+    try
+        getfield(comp_module, func_name)
+    catch err
+        # @info "Eval of $func_name in module $comp_module failed"
+        nothing
+    end
+end
+
+# Type-independent tail of the LeafComponentInstance constructor; see the
+# comment at the call site.
+function _finish_leaf_instance!(@nospecialize(self::AbstractComponentInstance),
+                                comp_def::AbstractComponentDef,
+                                time_bounds::Tuple{Int,Int},
+                                name::Symbol)
+    _init_component_instance!(self, comp_def, time_bounds, name)
+
+    self.init         = _component_func(self, "init")
+    self.run_timestep = _component_func(self, "run_timestep")
+
+    return nothing
 end
 
 mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables,
@@ -84,38 +124,13 @@ mutable struct LeafComponentInstance{TV <: ComponentInstanceVariables,
 
         self = new{TV, TP}()
 
-        # initialize base ComponentInstance fields
-        _init_component_instance!(self, comp_def, time_bounds, name)
-
         self.variables = vars
         self.parameters = pars
 
-        comp_module = compmodule(self)
-
-        # The try/catch allows components with no run_timestep function (as in some of our test cases)
-        # CompositeComponentInstances use a standard method that just loops over inner components.
-        # TBD: use FunctionWrapper here?
-        function get_func(name)
-
-            #
-            # TBD: since this class is no longer a superclass of CompositeComponentInstance
-            # this test should be unnecessary. Double-check this though...
-            #
-            if is_composite(self)
-                return nothing
-            end
-
-            func_name = Symbol("$(name)_$(nameof(comp_module))_$(self.comp_id.comp_name)")
-            try
-                getfield(comp_module, func_name)
-            catch err
-                # @info "Eval of $func_name in module $comp_module failed"
-                nothing
-            end
-        end
-
-        self.init         = get_func("init")
-        self.run_timestep = get_func("run_timestep")
+        # Everything else is type-independent, so it lives in a helper that is
+        # not specialized on TV/TP -- a large model has one pair of those per
+        # component, and this constructor is otherwise cheap.
+        _finish_leaf_instance!(self, comp_def, time_bounds, name)
 
         return self
     end

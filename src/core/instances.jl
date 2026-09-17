@@ -247,23 +247,35 @@ Return the size of index `dim_name` in model instance `mi`.
 """
 @delegate dim_count(mi::ModelInstance, dim_name::Symbol) => md
 
-function reset_variables(ci::AbstractComponentInstance)
-    # @info "reset_variables($(ci.comp_id))"
-    vars = ci.variables
+#
+# Reset one stored variable to its "not yet computed" value. Dispatching on the
+# stored object here, rather than branching on the declared NamedTuple field
+# type inside a loop, is what lets `_reset_variables` below stay unspecialized:
+# there are only a handful of distinct datum types, whereas there is a distinct
+# `ComponentInstanceVariables{NT}` per component in the model.
+#
+_reset_variable!(@nospecialize(obj)) = nothing
 
-    for (name, T) in zip(names(vars), types(vars))
-        value = getproperty(vars, name)
+_reset_variable!(obj::ScalarModelParameter{<: AbstractFloat}) = (obj.value = NaN; nothing)
 
-        if (T <: AbstractArray || T <: TimestepArray) && eltype(value) <: AbstractFloat
-            fill!(value, NaN)
+_reset_variable!(obj::ScalarModelParameter) = (obj.value = 0; nothing)   # integer or bool
 
-        elseif T <: AbstractFloat || (T <: ScalarModelParameter && T.parameters[1] <: AbstractFloat)
-            setproperty!(vars, name, NaN)
+function _reset_variable!(obj::Union{AbstractArray, TimestepArray})
+    eltype(obj) <: AbstractFloat && fill!(obj, NaN)
+    return nothing
+end
 
-        elseif (T <: ScalarModelParameter)    # integer or bool
-            setproperty!(vars, name, 0)
-        end
+Base.@nospecializeinfer function _reset_variables(@nospecialize(vars::NamedTuple))
+    for i in 1:nfields(vars)
+        _reset_variable!(getfield(vars, i))
     end
+    return nothing
+end
+
+function reset_variables(@nospecialize(ci::AbstractComponentInstance))
+    # @info "reset_variables($(ci.comp_id))"
+    _reset_variables(nt(ci.variables))
+    return nothing
 end
 
 function reset_variables(obj::AbstractCompositeComponentInstance)
@@ -273,7 +285,7 @@ function reset_variables(obj::AbstractCompositeComponentInstance)
     return nothing
 end
 
-function init(ci::AbstractComponentInstance, dims::NamedTuple)
+function init(@nospecialize(ci::AbstractComponentInstance), dims::NamedTuple)
     # @info "init($(ci.comp_id))"
     reset_variables(ci)
 
@@ -290,9 +302,17 @@ function init(obj::AbstractCompositeComponentInstance, dims::NamedTuple)
     return nothing
 end
 
-_runnable(ci::AbstractComponentInstance, clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
+#
+# The component instance argument is `@nospecialize`d throughout the run loop.
+# None of these bodies depend on the concrete `LeafComponentInstance{TV, TP}`
+# type -- they only touch `first`, `last`, `init` and `run_timestep`, all of
+# which are declared with abstract field types anyway -- but a large model has
+# a distinct instance type per component (48 of them in MimiGIVE), so
+# specializing here means recompiling the whole run loop dozens of times.
+#
+_runnable(@nospecialize(ci::AbstractComponentInstance), clock::Clock) = (ci.first <= gettime(clock) <= ci.last)
 
-function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}    
+function get_shifted_ts(@nospecialize(ci), ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, STEP, LAST}
     if ci.first == FIRST && ci.last == LAST
         return ts
     else
@@ -301,7 +321,7 @@ function get_shifted_ts(ci, ts::FixedTimestep{FIRST, STEP, LAST}) where {FIRST, 
     end
 end
 
-function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
+function get_shifted_ts(@nospecialize(ci), ts::VariableTimestep{TIMES}) where {TIMES}
     if ci.first == TIMES[1] && ci.last == TIMES[end]
         return ts
     else
@@ -312,7 +332,7 @@ function get_shifted_ts(ci, ts::VariableTimestep{TIMES}) where {TIMES}
     end
 end
 
-function run_timestep(ci::AbstractComponentInstance, clock::Clock, dims::NamedTuple)
+function run_timestep(@nospecialize(ci::AbstractComponentInstance), clock::Clock, dims::NamedTuple)
     if ci.run_timestep !== nothing && _runnable(ci, clock)
         ci.run_timestep(parameters(ci), variables(ci), dims, get_shifted_ts(ci, clock.ts))
     end

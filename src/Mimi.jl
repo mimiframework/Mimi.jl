@@ -85,4 +85,7 @@ include("components/connector.jl")
 
 include("utils/code_warntype.jl")
 
+# Must come last: the workload exercises the full model-building pipeline.
+include("precompile.jl")
+
 end # module
