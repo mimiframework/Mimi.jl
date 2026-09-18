@@ -62,7 +62,7 @@ end
 # Build a small two-component model. `years` may be a UnitRange (uniform time,
 # giving FixedTimestep) or a Vector (non-uniform, giving VariableTimestep); both
 # are exercised below.
-function _precompile_model(years)
+function _workload_model(years)
     nsteps = length(years)
     regions = [:R1, :R2]
     nregions = length(regions)
@@ -93,7 +93,7 @@ end
 
 @compile_workload begin
     # Uniform time dimension: FixedTimestep, the common case.
-    m = _precompile_model(2000:5:2020)
+    m = _workload_model(2000:5:2020)
     run(m)
 
     m[:emissions, :E]
@@ -111,7 +111,13 @@ end
     mm[:emissions, :E_Global]
 
     # Non-uniform time dimension: VariableTimestep.
-    mv = _precompile_model([2000, 2005, 2015, 2030])
+    mv = _workload_model([2000, 2005, 2015, 2030])
     run(mv)
     mv[:emissions, :E]
+
+    # Exercise the `precompile_model` path itself, so that model packages calling
+    # it in their own workload do not have to compile it first. Reuse a model we
+    # have already built rather than a new time horizon, which would pull in a
+    # whole extra set of TimestepArray types for no benefit.
+    precompile_model(m)
 end

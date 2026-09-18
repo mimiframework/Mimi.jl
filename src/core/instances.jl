@@ -350,9 +350,28 @@ function run_timestep(cci::AbstractCompositeComponentInstance, clock::Clock, dim
 end
 
 """
+    _dim_value_named_tuple(mi::ModelInstance, clock::Clock)
+
+Build the dimensions Named Tuple that is passed to `run_timestep()` and `init()`,
+from the model instance's dimension dictionary. Having it as a Named Tuple lets us
+implement `Base.getproperty()` on it, so that component code can say `d.regions`.
+
+All values are vectors of Ints, except the `:time` value, which is a vector of
+`AbstractTimestep`s, so that `d.time` returns values usable for indexing into
+timestep arrays.
+
+`precompile_model` needs to produce exactly the same type as `Base.run` passes, so
+both call this rather than building the Named Tuple themselves.
+"""
+function _dim_value_named_tuple(mi::ModelInstance, clock::Clock)
+    return NamedTuple(name => (name == :time ? timesteps(clock) : collect(values(dim)))
+                      for (name, dim) in dim_dict(mi.md))
+end
+
+"""
     Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
             dimkeys::Union{Nothing, Dict{Symbol, Vector{T} where T <: DimensionKeyTypes}}=nothing)
-            
+
 Run the `ModelInstance` `mi` once with `ntimesteps` and dimension keys `dimkeys`.
 """
 function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
@@ -371,14 +390,8 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     clock = Clock(time_keys)
 
-    # Get the dimensions Named Tuple from the dimension dictionary which will be 
-    # passed to run_timestep() and init(), so we can safely implement Base.getproperty(),
-    # allowing `d.regions` etc.
-    # All values in the named tuple are vectors of Ints, except the `:time` value, which is a
-    # vector of AbstractTimesteps, so that `d.time` returns values that can be used for indexing
-    # into timestep arrays.
-    dim_val_named_tuple = NamedTuple(name => (name == :time ? timesteps(clock) : collect(values(dim))) for (name, dim) in dim_dict(mi.md))
-    
+    dim_val_named_tuple = _dim_value_named_tuple(mi, clock)
+
     # recursively initializes all components
     init(mi, dim_val_named_tuple)
 
@@ -389,3 +402,82 @@ function Base.run(mi::ModelInstance, ntimesteps::Int=typemax(Int),
 
     nothing
 end
+
+# Submit one component instance's `init` and `run_timestep` for compilation,
+# recursing into composites the way the run loop does. Returns the number of
+# functions submitted.
+function _precompile_component(@nospecialize(ci::AbstractComponentInstance), dims::NamedTuple, clock::Clock)
+    n = 0
+
+    if ci isa AbstractCompositeComponentInstance
+        for child in components(ci)
+            n += _precompile_component(child, dims, clock)
+        end
+        return n
+    end
+
+    pars, vars = parameters(ci), variables(ci)
+
+    if ci.init !== nothing
+        precompile(ci.init, (typeof(pars), typeof(vars), typeof(dims)))
+        n += 1
+    end
+
+    if ci.run_timestep !== nothing
+        # Note the shifted timestep: `get_shifted_ts` returns a timestep
+        # parameterized on the *component's* first and last, which differ from the
+        # model's whenever the component was added with `first`/`last` keywords.
+        ts = get_shifted_ts(ci, clock.ts)
+        precompile(ci.run_timestep, (typeof(pars), typeof(vars), typeof(dims), typeof(ts)))
+        n += 1
+    end
+
+    return n
+end
+
+"""
+    precompile_model(m::Model)
+    precompile_model(mm::MarginalModel)
+
+Compile the `init` and `run_timestep` functions of every component in `m` without
+running it, building `m` first if it is not already built. Returns the number of
+functions submitted for compilation.
+
+This is meant for `PrecompileTools.@compile_workload` blocks in packages that
+define a Mimi model, so that a user's first `run` in a fresh session does not pay
+to compile the model's components. Prefer simply running a model in the workload
+where you can, since that caches the surrounding machinery too; reach for this
+when running is not possible during precompilation -- most commonly when the
+model's input data is a large download that must not happen at build time.
+
+A component's compiled code is specific to the model it was built in: the
+signature depends on the model's time dimension, its full set of dimensions, the
+component's `first`/`last` placement, and the model's number type. So this has to
+be given a model, and the model has to be built the same way the user will build
+it.
+
+# Examples
+
+```julia
+using PrecompileTools
+
+@compile_workload begin
+    Mimi.precompile_model(my_model())
+end
+```
+"""
+function precompile_model(m::Model)
+    is_built(m) || build!(m)
+
+    mi = modelinstance(m)
+    clock = Clock(dim_keys(mi.md, :time))
+    dims = _dim_value_named_tuple(mi, clock)
+
+    n = 0
+    for ci in components(mi)
+        n += _precompile_component(ci, dims, clock)
+    end
+    return n
+end
+
+precompile_model(mm::MarginalModel) = precompile_model(mm.base) + precompile_model(mm.modified)
