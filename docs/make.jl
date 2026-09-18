@@ -30,7 +30,8 @@ makedocs(
 		"Advanced How-to Guides" => Any[
 			"Advanced How-to Guides Intro" => "howto_advanced/howto_adv_main.md",
 			"Build and Init Functions" => "howto_advanced/howto_adv_buildinit.md",
-			"Using Datum References" => "howto_advanced/howto_adv_datumrefs.md"
+			"Using Datum References" => "howto_advanced/howto_adv_datumrefs.md",
+			"Reducing Time to First Result" => "howto_advanced/howto_adv_precompilation.md"
 		],
 		"Reference Guides" => Any[
 			"Reference Guides Intro" => "ref/ref_main.md",

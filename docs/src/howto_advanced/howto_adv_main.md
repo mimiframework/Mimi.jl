@@ -11,3 +11,6 @@ If you find a bug in these guides, or have a clarifying question or suggestion, 
 
 - [Advanced How-to Guide: Using Datum References](@ref) describes how to use references to datum, or more specifically components, for scenarios where such use improves code brevity and understandability.
 
+
+- [Advanced How-to Guide: Reducing Time to First Result](@ref) describes how a package that defines a Mimi model can precompile it, so that its users do not pay to compile the model on their first run.
+
