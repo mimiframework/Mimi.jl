@@ -135,6 +135,20 @@ function Base.reset(s::SampleStore{T}) where T
     return nothing
 end
 
+"""
+    _trial_value(dist, trialnum::Int)
+
+Return the value of a random variable with distribution `dist` for trial `trialnum`.
+
+Once `generate_trials!` has run, every random variable in a `SimulationDef` holds a
+`SampleStore` of pre-generated values, so this is a plain indexed read: it depends only on
+`trialnum`, not on how many trials have been run before it, which is what allows trials to
+be run in any order and concurrently. The fallback method draws a new value and is
+therefore order-dependent; it is only reachable on the serial code path.
+"""
+_trial_value(ss::SampleStore, trialnum::Int) = ss.values[trialnum]
+_trial_value(dist, trialnum::Int) = rand(dist)
+
 abstract type AbstractSimulationData end
 
 """
@@ -215,6 +229,30 @@ mutable struct SimulationInstance{T}
         # These are parallel arrays; each model has a corresponding results dict
         self.models = Vector{AbstractModel}(undef, 0)
         self.results = [Dict{Tuple, DataFrame}()]
+
+        return self
+    end
+
+    # Create a lightweight view of an existing `SimulationInstance` that substitutes a
+    # different set of `models`. This is what gives each worker task of a parallel run its
+    # own model instances to perturb and run, while `sim_def`, the transform list, the
+    # payloads and the results storage stay shared with the instance `run` returns, so that
+    # the user's trial callbacks see exactly what they see in a serial run.
+    function SimulationInstance{T}(sim_inst::SimulationInstance{T}, 
+                                   models::Vector{M}) where {T <: AbstractSimulationData, M <: AbstractModel}
+        self = new()
+        self.trials = sim_inst.trials
+
+        # the one-trial cache used by `get_trial` is per-view, so views never race over it
+        self.current_trial = 0
+        self.current_data = nothing
+
+        self.sim_def = sim_inst.sim_def
+        self.models = models
+        self.results = sim_inst.results
+        self.payload = sim_inst.payload
+        self.payload2 = sim_inst.payload2
+        self.translist_modelparams = sim_inst.translist_modelparams
 
         return self
     end

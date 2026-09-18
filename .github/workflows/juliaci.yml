@@ -12,7 +12,9 @@ jobs:
     with:
       include-linux-x86: false
       github_job_prep_script: test/github_job_prep.jl
-      env: '{"DISPLAY": ":99", "PYTHON": ""}'
+      # JULIA_NUM_THREADS so that the `parallel` test item actually exercises threads,
+      # rather than interleaving the worker tasks on a single one
+      env: '{"DISPLAY": ":99", "PYTHON": "", "JULIA_NUM_THREADS": "4"}'
     permissions: write-all
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
