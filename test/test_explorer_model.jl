@@ -61,7 +61,7 @@
     end
 
     s = menu_item_list(m)
-    @test collect(keys(s)) == ["pars", "vars"]
+    @test issetequal(keys(s), ["pars", "vars"])
     @test length(collect(keys(s["pars"]))) == 6
     @test length(collect(keys(s["vars"]))) == 1
 
