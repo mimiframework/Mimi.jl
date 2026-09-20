@@ -47,6 +47,41 @@ function _missing_data_check(data)
 	end
 end
 
+#
+# OffsetTimeArray -- see the docstring on the type in types/time.jl. Presents data
+# that spans only part of the model's time dimension as though it spanned all of
+# it, throwing a MissingException rather than storing `missing` padding.
+#
+
+Base.size(a::OffsetTimeArray{T, N, ti}) where {T, N, ti} =
+	ntuple(d -> d == ti ? a.len : size(a.parent, d), Val(N))
+
+Base.IndexStyle(::Type{<:OffsetTimeArray}) = IndexCartesian()
+
+Base.parent(a::OffsetTimeArray) = a.parent
+
+@noinline function _throw_offset_time_write_error(t)
+	error("Cannot set a value in timestep $t; this parameter holds data for only part ",
+		"of the model's time dimension, and the position written to is outside it.")
+end
+
+# Positions the underlying data does not cover read as `missing`, exactly as they did
+# when the padding was materialized. Component code never sees that `missing`: the
+# TimestepArray getindex methods route it through _missing_data_check, which raises a
+# MissingException (which is in turn what @allow_missing, and so ConnectorComp,
+# catches).
+@inline function Base.getindex(a::OffsetTimeArray{T, N, ti}, I::Vararg{Int, N}) where {T, N, ti}
+	i = I[ti] - a.offset
+	1 <= i <= size(a.parent, ti) || return missing
+	return a.parent[ntuple(d -> d == ti ? i : I[d], Val(N))...]
+end
+
+@inline function Base.setindex!(a::OffsetTimeArray{T, N, ti}, val, I::Vararg{Int, N}) where {T, N, ti}
+	i = I[ti] - a.offset
+	1 <= i <= size(a.parent, ti) || _throw_offset_time_write_error(I[ti])
+	return setindex!(a.parent, val, ntuple(d -> d == ti ? i : I[d], Val(N))...)
+end
+
 # Helper function for getindex; throws an error if the TimestepIndex index is out of range of the TimestepArray
 function _index_bounds_check(data, dim, t)
 	if size(data, dim) < t

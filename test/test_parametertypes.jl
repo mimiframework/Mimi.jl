@@ -73,7 +73,11 @@
 
     # Check that explicit number type for model works as expected
     numtype = Float32
-    arrtype = Union{Missing, numtype}
+    # Model parameters are no longer unconditionally widened to
+    # `Union{Missing, numtype}`; a value that cannot hold a `missing` is stored
+    # under its own element type so that it need not be copied. Every parameter
+    # set below is given plain numeric data, so all of them are stored narrowly.
+    arrtype = numtype
 
     m = Model(numtype)
 
