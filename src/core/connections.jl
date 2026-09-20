@@ -849,20 +849,25 @@ Update the `value` of a model parameter in composite `obj`, referenced
 by `name`. The update_timesteps keyword argument is deprecated, we keep it here 
 just to provide warnings.
 """
-function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing)
+function update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; update_timesteps = nothing, copy::Bool = true)
     !isnothing(update_timesteps) ? @warn("Use of the `update_timesteps` keyword argument is no longer supported or needed, time labels will be adjusted automatically if necessary.") : nothing
-    _update_param!(obj::AbstractCompositeComponentDef, name, value)
+    _update_param!(obj::AbstractCompositeComponentDef, name, value; copy = copy)
 end
 
 """
     update_param!(mi::ModelInstance, name::Symbol, value)
 
 Update the `value` of a model parameter in `ModelInstance` `mi`, referenced
-by `name`.  This is an UNSAFE update as it does not dirty the model, and should 
+by `name`.  This is an UNSAFE update as it does not dirty the model, and should
 be used carefully and specifically for things like our MCS work.
+
+NB: this writes into the parameter's storage in place, which is why it reaches an
+already-built instance without a rebuild. A parameter set with `copy = false` is
+backed by the caller's own array and so cannot be updated this way.
 """
 function update_param!(mi::ModelInstance, name::Symbol, value)
     param = mi.md.model_params[name]
+    _check_no_copy_mutation(param, name, "update")
 
     if param isa ScalarModelParameter
         param.value = value
@@ -894,8 +899,10 @@ function update_param!(mi::ModelInstance, comp_name::Symbol, param_name::Symbol,
             "to explicitly update a shared parameter that may be connected to ", 
             "several components. If you want to disconnect $comp_name:$param_name ",
             "from the shared model parameter and connect it to it's own unshared ",
-            "model parameter, first use `disconnect_param!` and then you can use this same ", 
+            "model parameter, first use `disconnect_param!` and then you can use this same ",
             "call to `update_param!`.")
+
+    _check_no_copy_mutation(param, model_param_name, "update")
 
     if param isa ScalarModelParameter
         param.value = value
@@ -914,7 +921,7 @@ end
 Update the `value` of the unshared model parameter in Model Def `md` connected to component 
 `comp_name`'s parameter `param_name`. 
 """
-function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value)
+function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, value; copy::Bool = true)
 
     model_param_name = get_model_param_name(md, comp_name, param_name; missing_ok = true)
 
@@ -925,7 +932,7 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
         comp_def = find_comp(md, comp_name)
         param_def = comp_def[param_name]
 
-        param = create_model_param(md, param_def, value; is_shared = false)
+        param = create_model_param(md, param_def, value; is_shared = false, copy = copy)
 
         model_param_name = gensym()
         add_model_param!(md, model_param_name, param)
@@ -946,7 +953,7 @@ function update_param!(md::ModelDef, comp_name::Symbol, param_name::Symbol, valu
                 "call to `update_param!`.")
 
         # update the parameter
-        _update_param!(md, model_param_name, value)
+        _update_param!(md, model_param_name, value; copy = copy)
     end
 end
 
@@ -955,7 +962,7 @@ end
 
 Update the `value` of the model parameter `name` in Model Def `md`.
 """
-function _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+function _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; copy::Bool = true)
     param = model_param(obj, name, missing_ok=true)
     if param === nothing
         error("Cannot update parameter $name; $name not found in composite's model parameters.")
@@ -963,12 +970,12 @@ function _update_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
 
     # handle nothing params
     if is_nothing_param(param)
-        _update_nothing_param!(obj, name, value)
+        _update_nothing_param!(obj, name, value; copy = copy)
     else
         if param isa ScalarModelParameter
-            _update_scalar_param!(param, name, value)
+            _update_scalar_param!(param, name, value; copy = copy)
         else
-            _update_array_param!(obj, name, value)
+            _update_array_param!(obj, name, value; copy = copy)
         end
     end
     dirty!(obj)
@@ -979,7 +986,8 @@ end
 
 Update the `value` of the scalar model parameter `param`.
 """
-function _update_scalar_param!(param::ScalarModelParameter, name, value)
+function _update_scalar_param!(param::ScalarModelParameter, name, value; copy::Bool = true)
+    param.copy = copy
     if ! (value isa typeof(param.value))
         try
             value = convert(typeof(param.value), value)
@@ -996,7 +1004,7 @@ end
 
 Update the `value` of the array model parameter `name` in object `obj`.
 """
-function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
+function _update_array_param!(obj::AbstractCompositeComponentDef, name, value; copy::Bool = true)
    
     # Get original parameter
     param = model_param(obj, name)
@@ -1022,23 +1030,20 @@ function _update_array_param!(obj::AbstractCompositeComponentDef, name, value)
     expected_size = ([length(dim_keys(obj, d)) for d in dim_names(param)]...,) 
     size(value) != expected_size ? error("Cannot update parameter $name; expected array of size $expected_size but got array of size $(size(value)).") : nothing
 
-    # check if updating timestep labels is necessary
+    # Install new storage rather than writing into the existing storage.
+    #
+    # This used to copyto! into the old array whenever the time labels were
+    # unchanged. Rebinding instead is what lets a ModelInstance built from a
+    # `copy = false` parameter alias the caller's array (see deepcopy_internal in
+    # types/params.jl): updating the definition now leaves the array an already-built
+    # instance is holding untouched, which is the isolation the build-time deepcopy
+    # provides for ordinary parameters.
     if param.values isa TimestepArray
-        time_label_change = time_labels(param.values) != dim_keys(obj, :time)
-        N = ndims(value)
-        if time_label_change
-            T = eltype(value)
-            ti = get_time_index_position(param)
-            new_timestep_array = get_timestep_array(obj, T, N, ti, value)
-            # NB: potentially unsafe way to add parameter/might be duplicating work so
-            # advise shifting to create_model_param ... but leaving it as is for now
-            # since this is a special case of replacing an existing model param
-            add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared))
-        else
-            copyto!(param.values.data, value)
-        end
+        ti = get_time_index_position(param)
+        new_timestep_array = get_timestep_array(obj, eltype(value), ndims(value), ti, value)
+        add_model_param!(obj, name, ArrayModelParameter(new_timestep_array, dim_names(param), param.is_shared, copy))
     else
-        copyto!(param.values, value)
+        add_model_param!(obj, name, ArrayModelParameter(value, dim_names(param), param.is_shared, copy))
     end
 
     dirty!(obj)
@@ -1051,7 +1056,7 @@ end
 Update the `value` of the model parameter `name` in object `obj` where the model
 parameter has an initial value of nothing likely from instanitate during `add_comp!`.
 """
-function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol, value)
+function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol, value; copy::Bool = true)
 
     # get the component def and param def
     conn = filter(i -> i.model_param_name == name, obj.external_param_conns)[1]
@@ -1061,7 +1066,7 @@ function _update_nothing_param!(obj::AbstractCompositeComponentDef, name::Symbol
     param_def = comp_def[param_name]
 
     # create the unshared model parameter
-    param = create_model_param(obj, param_def, value)
+    param = create_model_param(obj, param_def, value; copy = copy)
     
     # Need to check the dimensions of the parameter data against component 
     # before adding it to the model's parameter list
@@ -1195,10 +1200,21 @@ function _pad_parameters!(obj::ModelDef)
 
            param_times = _get_param_times(param)
            padded_data = _get_padded_data(param, param_times, model_times)
-           update_param!(obj, name, padded_data)
+
+           # Rebind the parameter directly rather than routing through
+           # update_param!. We are replacing the storage and its time labels
+           # wholesale, and the generic update path would try to copy the new data
+           # into the old storage -- which cannot work when either side covers only
+           # part of the time dimension.
+           ti = get_time_index_position(param)
+           new_values = get_timestep_array(obj, eltype(padded_data), ndims(padded_data), ti, padded_data)
+           add_model_param!(obj, name, ArrayModelParameter(new_values, param.dim_names, param.is_shared))
 
         end
     end
+
+    dirty!(obj)
+    nothing
 end
 
 """
@@ -1214,43 +1230,56 @@ function _get_padded_data(param::ArrayModelParameter, param_times::Vector, model
     data = param.values.data
     ti = get_time_index_position(param)
 
-    # first handle the back end 
+    # if this parameter was already adjusted to an earlier time dimension, start from
+    # the data it actually holds rather than wrapping a wrapper. `param_times` already
+    # describes the *presented* extent, so shift it to describe the parent instead.
+    if data isa OffsetTimeArray
+        param_times = param_times[(data.offset + 1):(data.offset + size(parent(data), ti))]
+        data = parent(data)
+    end
+
+    # first handle the back end: if the model's time dimension now ends before the
+    # parameter's data does, trim the data down. This is the one case that must
+    # still copy, since we are discarding values.
     model_last = last(model_times)
     param_last = last(param_times)
 
     if model_last < param_last # trim down the data
-        
-        trim_idx = findfirst(isequal(last(model_times)), param_times) 
+
+        trim_idx = findfirst(isequal(last(model_times)), param_times)
         idxs = repeat(Any[:], ndims(data))
         idxs[ti] = 1:trim_idx
         data = data[idxs...]
-
-    elseif model_last > param_last # pad the data
-
-        pad_length = length(model_times[findfirst(isequal(param_last), model_times)+1:end])
-        dims = [size(data)...]
-        dims[ti] = pad_length
-        end_padding_rows = Array{Union{Missing, Number}}(missing, dims...)
-        data = vcat(data, end_padding_rows)
+        param_times = param_times[1:trim_idx]
 
     end
 
-    # now handle the front end 
+    # now handle the front end
+    #
+    # note we do not allow for any trimming off the front end
     model_first = first(model_times)
     param_first = first(param_times)
 
-    # note we do not allow for any trimming off the front end
+    offset = 0
     if model_first < param_first
-
-        pad_length = length(model_times[1:findfirst(isequal(param_first), model_times)-1])
-        dims = [size(data)...]
-        dims[ti] = pad_length
-        begin_padding_rows = Array{Union{Missing, Number}}(missing, dims...)
-        data = vcat(begin_padding_rows, data)
-
+        pos = findfirst(isequal(param_first), model_times)
+        pos === nothing && error("Cannot adjust parameter data to the model's time ",
+            "dimension; the parameter's first time label $param_first is not one of ",
+            "the model's time labels.")
+        offset = pos - 1
     end
 
-    return data 
+    # Any remaining shortfall at either end is presented lazily rather than being
+    # materialized as `missing` padding: an OffsetTimeArray reports the model's full
+    # time length but stores only the data we have, and reads outside that extent
+    # return `missing` just as reads of the old padding did. The difference is that
+    # the data is no longer copied and does not gain a selector byte per element.
+    len = length(model_times)
+    if offset == 0 && size(data, ti) == len
+        return data
+    end
+
+    return OffsetTimeArray{ti}(data, offset, len)
 end
 
 """
@@ -1285,7 +1314,7 @@ of the dimension names of the provided data, and will be used to check that they
 model's index labels. Optional keyword argument `datatype` allows user to specify a datatype
 to use for the shared model parameter.
 """
-function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing)
+function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing, copy::Bool = true)
     
     # Check provided name: make sure shared model parameter name does not exist already
     has_parameter(md, name) && error("Cannot add parameter :$name, the model already has a shared parameter with this name.")
@@ -1324,7 +1353,7 @@ function add_shared_param!(md::ModelDef, name::Symbol, value::Any; dims::Array{S
     param_def = ParameterDef(name, nothing, data_type, dims, "", "", nothing)
 
     # create the model parameter
-    param = create_model_param(md, param_def, value; is_shared = true)
+    param = create_model_param(md, param_def, value; is_shared = true, copy = copy)
 
     # double check the dimensions between the model and the created parameter
     param_dims = dim_names(param_def)
@@ -1431,12 +1460,30 @@ matching parameter definition `param_def` and with `value`.  The keyword argumen
 is_shared defaults to false, and thus an unshared parameter would be created, whereas
 setting `is_shared` to true creates a shared parameter.
 """
-function create_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+function create_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false, copy::Bool = true)
     if dim_count(param_def) > 0
-        return create_array_model_param(md, param_def, value; is_shared = is_shared)
+        return create_array_model_param(md, param_def, value; is_shared = is_shared, copy = copy)
     else
-        return create_scalar_model_param(md, param_def, value; is_shared = is_shared)
+        return create_scalar_model_param(md, param_def, value; is_shared = is_shared, copy = copy)
     end
+end
+
+"""
+    _model_param_eltype(base_type, value)
+
+Return the element type to store a model parameter's `value` under, given the
+`base_type` from its definition.
+
+Historically this was always `Union{Missing, base_type}`. That widening forces a
+copy of any value a caller supplies, which defeats backing a parameter with
+externally owned memory, and it is unnecessary: a model parameter is fully
+populated before the model runs, so it has no "not yet computed" state for
+`missing` to represent. We therefore only widen when the value itself can actually
+carry a `missing`.
+"""
+function _model_param_eltype(base_type, value)
+    elt = value isa AbstractArray ? eltype(value) : typeof(value)
+    return Missing <: elt ? Union{Missing, base_type} : base_type
 end
 
 """
@@ -1447,7 +1494,7 @@ matching parameter definition `param_def` and with `value`.  The keyword argumen
 is_shared defaults to false, and thus an unshared parameter would be created, whereas
 setting `is_shared` to true creates a shared parameter.
 """
-function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false, copy::Bool = true)
 
     # gather info
     param_name = nameof(param_def)
@@ -1456,35 +1503,45 @@ function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef,
     data_type = param_def.datatype
 
     # data type
-    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
+    #
+    # NB: this is no longer unconditionally widened to `Union{Missing, ...}`. A
+    # value whose element type cannot hold `missing` is stored as-is, because
+    # widening it would force the `convert` below to allocate a copy -- which in
+    # turn makes it impossible to back a parameter with externally owned memory
+    # such as an `Mmap.mmap`ed array. Callers who do supply `missing`s still get
+    # the widened type, and parameters connected to another component's variable
+    # are handed that variable's storage object directly (see `_collect_params`)
+    # so they continue to inherit its element type.
+    base_type = (data_type == Number ? number_type(md) : data_type)
+    dtype = _model_param_eltype(base_type, value)
 
     # create a sentinal unshared parameter
     if isnothing(value)
-        param = ArrayModelParameter(value, param_dims, is_shared)
-    
+        param = ArrayModelParameter(value, param_dims, is_shared, copy)
+
     # have a value - in the initiliazation of parameters case this is a default
     # value set in defcomp
     else
-              
+
         # check dimensions
         if value isa NamedArray
             dims = dimnames(value)
             dims !== nothing && check_parameter_dimensions(md, value, dims, param_name)
         end
-                
-        # convert the number type and, if NamedArray, convert to Array
-        if dtype <: AbstractArray
-            value = convert(dtype, value)
-        else
-            # check that number of dimensions matches
-            value_dims = length(size(value))
-            if num_dims != value_dims
-                error("Mismatched data size: dimension :$param_name",
-                    " in has $num_dims dimensions; indicated value",
-                    " has $value_dims dimensions.")
-            end
-            value = convert(Array{dtype, num_dims}, value)
+
+        # check that number of dimensions matches
+        value_dims = length(size(value))
+        if num_dims != value_dims
+            error("Mismatched data size: dimension :$param_name",
+                " in has $num_dims dimensions; indicated value",
+                " has $value_dims dimensions.")
         end
+
+        # convert the number type and, if NamedArray, convert to Array. When the
+        # value is already exactly the right type we keep it *by reference*, so
+        # that an externally supplied array (e.g. `Mmap.mmap`ed file data)
+        # reaches `run_timestep` without being copied.
+        value = value isa Array{dtype, num_dims} ? value : convert(Array{dtype, num_dims}, value)
 
         # create TimestepArray if there is a time dim
         ti = get_time_index_position(param_dims)
@@ -1495,7 +1552,7 @@ function create_array_model_param(md::ModelDef, param_def::AbstractParameterDef,
             values = value
         end
              
-        param = ArrayModelParameter(values, param_dims, is_shared)
+        param = ArrayModelParameter(values, param_dims, is_shared, copy)
     end
     return param
 end
@@ -1508,7 +1565,7 @@ matching parameter definition `param_def` and with `value`.  The keyword argumen
 is_shared defaults to false, and thus an unshared parameter would be created, whereas
 setting `is_shared` to true creates a shared parameter.
 """
-function create_scalar_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false)
+function create_scalar_model_param(md::ModelDef, param_def::AbstractParameterDef, value::Any; is_shared::Bool = false, copy::Bool = true)
 
     # gather info
     param_name = nameof(param_def)
@@ -1516,18 +1573,23 @@ function create_scalar_model_param(md::ModelDef, param_def::AbstractParameterDef
     num_dims = dim_count(param_def)
     data_type = param_def.datatype
 
-    # get data type
-    dtype = Union{Missing, (data_type == Number ? number_type(md) : data_type)}
+    # get data type -- see `_model_param_eltype` for why this is not unconditionally
+    # widened to `Union{Missing, ...}`
+    base_type = (data_type == Number ? number_type(md) : data_type)
+    dtype = _model_param_eltype(base_type, value)
 
     # create a sentinal unshared parameter
     if isnothing(value)
-        param = ScalarModelParameter(value, is_shared)
+        param = ScalarModelParameter(value, is_shared, copy)
 
     # have a value - in the initiliazation of parameters case this is a default
     # value set in defcomp
     else
-        value = convert(dtype, value)
-        param = ScalarModelParameter(value, is_shared)
+        # as above, keep the value by reference when it is already the right
+        # type; this matters for scalar parameters whose value is itself a large
+        # array, e.g. `Parameter{Array{Float64,3}}()`
+        value = value isa dtype ? value : convert(dtype, value)
+        param = ScalarModelParameter(value, is_shared, copy)
     end
     
     return param

@@ -193,7 +193,7 @@ Update the `value` of an model parameter in model `m`, referenced by
 `name`. The update_timesteps keyword argument is deprecated, we keep it here 
 just to provide warnings.
 """
-@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing) => md
+@delegate update_param!(m::Model, name::Symbol, value; update_timesteps = nothing, copy::Bool = true) => md
 
 """
     update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value)
@@ -201,7 +201,7 @@ just to provide warnings.
 Update the `value` of the unshared model parameter in Model `m`'s Model Def connected
 to component `comp_name`'s parameter `param_name`. 
 """
-@delegate update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value) => md
+@delegate update_param!(m::Model, comp_name::Symbol, param_name::Symbol, value; copy::Bool = true) => md
 
 """
     update_params!(m::Model, parameters::Dict; update_timesteps = nothing)
@@ -452,7 +452,7 @@ model's index labels.  This must be included if the `value` is not a scalar, and
 to an empty vector. Optional keyword argument `datatype` allows user to specify a datatype
 to use for the shared model parameter.
 """
-@delegate add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing) => md
+@delegate add_shared_param!(m::Model, name::Symbol, value::Any; dims::Array{Symbol}=Symbol[], data_type::DataType=Nothing, copy::Bool = true) => md
                     
 """
     add_model_array_param!(m::Model, name::Symbol, value::Union{AbstractArray, TimestepArray}, dims)
