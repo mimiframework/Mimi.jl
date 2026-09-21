@@ -201,3 +201,64 @@
     # v_time[2015] = p_scalar * p_time[2015] = name1 * (1.0 * name2)
     @test first_period.v_time ≈ name1_draws .* name2_draws
 end
+
+@testitem "parallel worker models keep state held only by the model instance" begin
+    using Distributions
+    using Random
+
+    # Not everything a model carries is in its ModelDef. Code that reaches a parameter
+    # through `compinstance` writes into the built ModelInstance and nowhere else --
+    # `MimiFUND.perturb_marginal_emissions!` is one such, and MimiFUND's own SCC simulation
+    # calls it from its `scenario_func`. A worker task whose model was rebuilt from the
+    # ModelDef would run without those values and quietly return different answers for
+    # whichever trials it happened to claim.
+
+    @defcomp instance_state begin
+        scale = Parameter(default = 1.0)                        # perturbed by the simulation
+        pulse = Parameter(index = [time], default = zeros(10))  # set on the instance only
+        v     = Variable(index = [time])
+
+        function run_timestep(p, v, d, t)
+            v.v[t] = p.scale * p.pulse[t]
+        end
+    end
+
+    function make_model()
+        m = Model()
+        set_dimension!(m, :time, 1:10)
+        add_comp!(m, instance_state)
+        run(m)          # build it; `pulse` is zeros in the definition and stays that way
+
+        # write straight into the built instance, leaving the ModelDef untouched
+        param = Mimi.get_param_value(Mimi.compinstance(m, :instance_state), :pulse)
+        param.data[:] = collect(1.0:10.0)
+        return m
+    end
+
+    pulse_of(m) = Mimi.get_param_value(Mimi.compinstance(m, :instance_state), :pulse).data
+
+    # the copy a worker is handed carries the instance's values, not the definition's
+    # zeros. Asserted directly, because the end-to-end check below only sees the bug when
+    # the scheduler actually gives some trials to a worker other than the first.
+    m = make_model()
+    copies = Mimi._copy_models([m])
+    @test pulse_of(copies[1]) == collect(1.0:10.0)
+    @test pulse_of(copies[1]) !== pulse_of(m)       # and it is a copy, not the same array
+
+    sd = @defsim begin
+        instance_state.scale = Uniform(0.5, 1.5)
+        save(instance_state.v)
+    end
+
+    N = 100
+
+    Random.seed!(3)
+    serial = run(sd, make_model(), N)
+    Random.seed!(3)
+    parallel = run(sd, make_model(), N; ntasks = 4)
+
+    @test serial.results == parallel.results
+
+    # `pulse` is zero in the ModelDef, so a worker that lost it writes a row of zeros
+    @test !any(iszero, parallel.results[1][(:instance_state, :v)].v)
+end

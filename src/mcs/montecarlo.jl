@@ -759,10 +759,20 @@ end
 
 Return an independent copy of `models` for one worker task of a parallel run.
 
-Each model is rebuilt from its `ModelDef`, so that changes a `scenario_func` made to the
-definition are picked up. The copies are made through an `IdDict` memo so that identity
-relationships within `models` survive: if, say, a `MarginalModel`'s `base` model is also an
-element of `models`, it remains a single shared model in the copy, as in the original.
+Each model is copied whole, its built `ModelInstance` included, rather than being rebuilt
+from its `ModelDef`. That matters because not everything a model carries is in its
+definition: code that reaches a parameter through `compinstance` writes into the instance
+alone, and rebuilding would silently drop those values, leaving the worker running a
+different model from the one the caller set up. `MimiFUND.perturb_marginal_emissions!` is
+one such: it writes an emissions pulse straight into the instance, and MimiFUND's own SCC
+simulation calls it from a `scenario_func`.
+
+Changes a `scenario_func` makes to the *definition* are still picked up, because a model
+whose `ModelDef` has been touched is not `is_built` and so is rebuilt here.
+
+The copies are made through an `IdDict` memo so that identity relationships within `models`
+survive: if, say, a `MarginalModel`'s `base` model is also an element of `models`, it
+remains a single shared model in the copy, as in the original.
 """
 function _copy_models(models::Vector{M}) where M <: AbstractModel
     memo = IdDict()
@@ -771,8 +781,8 @@ end
 
 function _copy_model(m::Model, memo::IdDict)
     return get!(memo, m) do
-        m_copy = Model(m)   # this deepcopies the ModelDef
-        build!(m_copy)
+        m_copy = deepcopy(m)
+        is_built(m_copy) || build!(m_copy)
         m_copy
     end
 end
