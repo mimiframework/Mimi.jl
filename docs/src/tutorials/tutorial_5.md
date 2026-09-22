@@ -397,5 +397,6 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
                  scenario_func::Union{Nothing, Function}=nothing,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
                  scenario_args=nothing,
-                 results_in_memory::Bool=true) where T <: AbstractSimulationData
+                 results_in_memory::Bool=true,
+                 ntasks::Union{Int, Symbol}=1) where T <: AbstractSimulationData
 ```

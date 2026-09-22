@@ -206,7 +206,8 @@ function Base.run(sim_def::SimulationDef{T}, models::Union{Vector{Model}, Model}
                  scenario_func::Union{Nothing, Function}=nothing,
                  scenario_placement::ScenarioLoopPlacement=OUTER,
                  scenario_args=nothing,
-                 results_in_memory::Bool=true) where T <: AbstractSimulationData
+                 results_in_memory::Bool=true,
+                 ntasks::Union{Int, Symbol}=1) where T <: AbstractSimulationData
 ```
 
 Using this function allows a user to run the simulation definition `sim_def` for the `models` using `samplesize` samples.
@@ -233,6 +234,31 @@ scenario_func(sim_inst::SimulationInstance, tup::Tuple)
 By default, the scenario loop encloses the simulation loop, but the scenario loop can be placed inside the simulation loop by specifying `scenario_placement=INNER`. When `INNER`  is specified, the `scenario_func` is called after any `pre_trial_func` but before the model is run.
 
 Finally, [`run`](@ref) returns the type `SimulationInstance` that contains a copy of the original `SimulationDef` in addition to trials information (`trials`, `current_trial`, and `current_data`), the model list `models`, and results information in `results`.
+
+### Running trials in parallel
+
+By default the trials of a simulation run one after another on the calling task. Setting the `ntasks` keyword argument runs them on that many tasks instead, or on one task per thread julia was started with if you pass `ntasks=:auto`:
+
+```julia
+si = run(sd, m, 100_000; ntasks = 8)
+```
+
+Each task beyond the first gets its own copy of the model or models, and takes the next trial that has not been claimed yet as soon as it is free. Two things follow from that. First, `ntasks` bounds how much memory the run needs as well as how parallel it is: there are never more than `ntasks` model instances alive, whatever the number of trials, which is why the number is left to you rather than always using every thread. Second, trials are handed out one at a time rather than split into fixed blocks up front, so the tasks stay busy even when some trials take much longer than others.
+
+To get any actual parallelism julia has to be started with more than one thread, with `julia --threads=8` or by setting the `JULIA_NUM_THREADS` environment variable. `Threads.nthreads(:default)` reports how many are available, and `ntasks=:auto` uses exactly that many.
+
+Results are stored in trial order regardless of `ntasks`, both in the results held in memory and in the CSV files written to `results_output_dir`, so a parallel run gives byte-identical output to a serial one.
+
+Storing them is the one part of the run that stays sequential: the worker tasks extract each trial's results in parallel, but a single writer task appends them and drives the CSV files. That puts a ceiling on the speedup, and the ceiling is lower the more a simulation `save`s per trial. If a run is not scaling as you expect, look at the size of the savelist before reaching for more tasks.
+
+#### Thread safety and reproducibility
+
+Mimi takes care of the parts of a simulation it owns, but a simulation also runs your code, and that part is up to you:
+
+- **Your callbacks are called from the worker tasks.** `pre_trial_func`, `post_trial_func` and a `scenario_func` placed `INNER` all run on whichever task is running that trial, and several trials are in flight at once. The `sim_inst` they are handed refers to that task's own models, so reading and modifying `sim_inst.models` is safe. Anything *shared* is not, and the simulation's payload is where shared state usually hides: writing `payload[trialnum] = result`, where each trial writes to its own slot of a pre-allocated array, is safe, but appending to a shared vector or accumulating into a shared scalar is a data race. So is *running or modifying a model held in the payload*, as opposed to one reached through `sim_inst.models` — a payload model is a single object shared by every worker. Reading `sim_inst.results` from a callback is also unsafe while the run is in progress.
+- **Writing to a file or a stream from a callback.** A `post_trial_func` that opens a file and appends its trial's answer is a common pattern, and it does not survive being called from several tasks at once: rows come out in an arbitrary order, rows go missing, and a row can be torn in half. Either guard the write with a lock, or — better — have the callback record its result in a pre-allocated array indexed by `trialnum` and write the file once, after `run` returns. The same applies to anything holding an open stream, including one passed in through the payload.
+- **Random numbers.** All of Mimi's own draws, for every sampling strategy, are made up front by `generate_trials!` before any trial runs, so trial data is unaffected by `ntasks`: seeding once with `Random.seed!` before `run` reproduces the same trial data every time. If, on the other hand, your components or callbacks call `rand()` themselves, those draws come from julia's task-local random number generator. Each worker task has its own independent stream, and which stream a given trial draws from depends on which task happened to claim it, so those draws will not be reproducible and will differ from a serial run. If you need bit-reproducible results, either leave `ntasks` at 1 or move the randomness into `@defsim` random variables so that it comes from the pre-generated trial data. A model that holds its *own* random number generator object and shares it across trials is a data race and is not supported.
+- **The models you passed in.** The first worker uses them, so after a parallel run they hold the state of whichever trial that worker happened to run last.
 
 ### Internal Functions to [`run`](@ref)
 
