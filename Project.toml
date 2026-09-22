@@ -54,6 +54,7 @@ test = ["TestItemRunner", "Pkg", "Statistics", "NamedArrays", "DataFrames", "Del
 InteractiveUtils = "1.10"
 Dates = "1.10"
 IteratorInterfaceExtensions = "0.1.1, 1"
+Logging = "1.10"
 Random = "1.10"
 Serialization = "1.10"
 VegaLite = "1, 2, 3"
