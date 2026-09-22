@@ -51,8 +51,11 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 test = ["TestItemRunner", "Pkg", "Statistics", "NamedArrays", "DataFrames", "DelimitedFiles", "Documenter", "Random", "Test", "ZipFile", "MacroTools", "Query", "XLSX"]
 
 [compat]
+InteractiveUtils = "1.10"
+Dates = "1.10"
 IteratorInterfaceExtensions = "0.1.1, 1"
 Random = "1.10"
+Serialization = "1.10"
 VegaLite = "1, 2, 3"
 Electron = "3.1, 4, 5, 6, 7"
 TableTraits = "0.4.1, 1"
