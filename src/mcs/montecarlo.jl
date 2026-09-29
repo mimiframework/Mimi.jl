@@ -50,107 +50,124 @@ function Base.show(obj::T) where T <: AbstractSimulationData
 end
 
 """
-    _store_param_results!(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
-                        trialnum::Int, scen_name::Union{Nothing, String}, 
-                        results::Dict{Tuple, DataFrame})
+    TrialDatumResult
 
-Store `results` for a single parameter `datum_key` in model `m` and return the 
-dataframe for this particular `trial_num`/`scen_name` combination.
+The values of one saved datum, for one model, from a single trial, extracted into a
+`DataFrame` and tagged with everything `_store_trial_results!` needs in order to file it
+away.
+
+Extracting a trial's results is deliberately separated from storing them. Extraction reads
+the model instances that just ran and has to happen before the trial's parameter
+perturbations are undone, so in a parallel run it happens on the worker task that owns
+those instances. Storing appends to the accumulating result frames and writes the CSV save
+streams, neither of which may be touched by more than one task, so it happens on a single
+writer task.
 """
-function _store_param_results!(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
-                            trialnum::Int, scen_name::Union{Nothing, String}, 
-                            results::Dict{Tuple, DataFrame})
-    @debug "\nStoring trial results for $datum_key"
+struct TrialDatumResult
+    model_index::Int
+    datum_key::Tuple{Symbol, Symbol}
+    scen_name::Union{Nothing, String}
+    output_dir::Union{Nothing, String}
+    trial_df::DataFrame
+end
+
+"""
+    _extract_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol},
+                        trialnum::Int, scen_name::Union{Nothing, String})
+
+Return a `DataFrame` holding the values of the single datum `datum_key` in model `m` for
+trial `trialnum` of scenario `scen_name`. The returned frame shares no storage with `m`, so
+`m` is free to run the next trial as soon as this returns.
+"""
+function _extract_param_results(m::AbstractModel, datum_key::Tuple{Symbol, Symbol}, 
+                            trialnum::Int, scen_name::Union{Nothing, String})
+    @debug "Extracting trial results for $datum_key"
 
     (comp_name, datum_name) = datum_key
     dims = dim_names(m, comp_name, datum_name)
-    has_scen = ! (scen_name === nothing)
 
     if length(dims) == 0        # scalar value
-        value = m[comp_name, datum_name]
-        # println("Scalar: $value")
-
-        if haskey(results, datum_key)
-            results_df = results[datum_key]
-        else        
-            cols = [[], []]
-            names = [datum_name, :trialnum]
-            if has_scen
-                push!(cols, [])
-                push!(names, :scen)
-            end
-            results_df = DataFrame(cols, names)
-            results[datum_key] = results_df
-        end
-
-        trial_df = DataFrame(datum_name => value, :trialnum => trialnum)
-        has_scen ? trial_df[!, :scen] .= scen_name : nothing
-        append!(results_df, trial_df) 
-        # println("results_df: $results_df")
-
+        trial_df = DataFrame(datum_name => m[comp_name, datum_name], :trialnum => trialnum)
     else
         trial_df = getdataframe(m, comp_name, datum_name)
         trial_df[!, :trialnum] .= trialnum
-        has_scen ? trial_df[!, :scen] .= scen_name : nothing
-        # println("size of trial_df: $(size(trial_df))")
+    end
 
-        if haskey(results, datum_key)
-            results_df = results[datum_key]
-            # println("Appending trial_df $(size(trial_df)) to results_df $(size(results_df))")
-            append!(results_df, trial_df)
-        else
-            # println("Setting results[$datum_key] = trial_df $(size(trial_df))")
-            results[datum_key] = trial_df
-        end
+    if scen_name !== nothing
+        trial_df[!, :scen] .= scen_name
     end
 
     return trial_df
 end
 
 """
-    _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
-                        scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, 
-                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+    _extract_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int,
+                        scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String},
+                        extracted::Vector{TrialDatumResult}) where T <: AbstractSimulationData
 
-Save the stored simulation results ` from trial `trialnum` and scenario `scen_name`
-to files in the directory `output_dir`
+Append the results of trial `trialnum` of scenario `scen_name`, for every datum in the
+simulation's savelist and every model in `sim_inst`, to `extracted`.
 """
-function _store_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
-                                scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String}, 
-                                streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+function _extract_trial_results(sim_inst::SimulationInstance{T}, trialnum::Int, 
+                            scen_name::Union{Nothing, String}, output_dir::Union{Nothing, String},
+                            extracted::Vector{TrialDatumResult}) where T <: AbstractSimulationData
     savelist = sim_inst.sim_def.savelist
 
-    model_index = 1
-    for (m, results) in zip(sim_inst.models, sim_inst.results)
-        for datum_key in savelist       
-            
-            # store parameter results to the sim_inst.results dictionary and return the 
-            # trial df that can be optionally streamed out to a file 
-            trial_df = _store_param_results!(m, datum_key, trialnum, scen_name, results)
-
-            if output_dir !== nothing
-                
-                # get sub_dir, which is different from output_dir if there are multiple models
-                if (length(sim_inst.results) > 1)
-                    sub_dir = joinpath(output_dir, "model_$(model_index)")
-                else
-                    sub_dir = output_dir   
-                end      
-                mkpath(sub_dir, mode=0o750) 
-
-                # get filtered trial_df, which is different from trial_df if there are multiple scenarios
-                if scen_name !== nothing
-                    trial_df_filtered = filter(row -> row[:scen] .== scen_name, trial_df)[:, 1:end-1] # remove scen field
-                else
-                    trial_df_filtered = trial_df
-                end
-
-                datum_name = join(map(string, datum_key), "_")
-                _save_trial_results(trial_df_filtered, datum_name, sub_dir, streams)
-            end
+    # zip stops at the shorter of the two, which matters only if a scenario_func replaced
+    # the model list without also resetting the results list
+    for (model_index, (m, _)) in enumerate(zip(sim_inst.models, sim_inst.results))
+        for datum_key in savelist
+            trial_df = _extract_param_results(m, datum_key, trialnum, scen_name)
+            push!(extracted, TrialDatumResult(model_index, datum_key, scen_name, output_dir, trial_df))
         end
-        model_index += 1
     end
+
+    return extracted
+end
+
+"""
+    _store_trial_results!(sim_inst::SimulationInstance{T}, extracted::Vector{TrialDatumResult},
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+
+Add the previously extracted results of one trial to the results held by `sim_inst`, and
+stream them out to their CSV files for those that name an output directory.
+
+This must only ever be called from one task at a time.
+"""
+function _store_trial_results!(sim_inst::SimulationInstance{T}, extracted::Vector{TrialDatumResult},
+                            streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}) where T <: AbstractSimulationData
+    # if there is more than one model, each model's results go in their own subdirectory
+    has_model_subdirs = length(sim_inst.results) > 1
+
+    for result in extracted
+        datum_key = result.datum_key
+        trial_df  = result.trial_df
+        results   = sim_inst.results[result.model_index]
+
+        if haskey(results, datum_key)
+            append!(results[datum_key], trial_df)
+        else
+            # `similar(df, 0)` gives an empty frame with the same columns and column types,
+            # so the accumulated results never alias a frame we just handed out
+            results[datum_key] = append!(similar(trial_df, 0), trial_df)
+        end
+
+        if result.output_dir !== nothing
+            sub_dir = has_model_subdirs ? joinpath(result.output_dir, "model_$(result.model_index)") : result.output_dir
+
+            # get filtered trial_df, which is different from trial_df if there are multiple scenarios
+            if result.scen_name !== nothing
+                trial_df_filtered = filter(row -> row[:scen] .== result.scen_name, trial_df)[:, 1:end-1] # remove scen field
+            else
+                trial_df_filtered = trial_df
+            end
+
+            datum_name = join(map(string, datum_key), "_")
+            _save_trial_results(trial_df_filtered, datum_name, sub_dir, streams)
+        end
+    end
+
+    return nothing
 end
 
 """
@@ -165,6 +182,7 @@ function _save_trial_results(trial_df::DataFrame, datum_name::String, output_dir
     if haskey(streams, filename)
         write(streams[filename], trial_df)
     else
+        mkpath(output_dir, mode=0o750)      # only needed before we first create the file
         streams[filename] = savestreaming(filename, trial_df)
     end
 end
@@ -184,11 +202,13 @@ end
 """
     get_trial(sim_inst::SimulationInstance, trialnum::Int)
 
-Return a NamedTuple with the data for next trial. Note that the `trialnum`
-parameter is used only to support a 1-deep data cache that allows this
-function to be called successively with the same `trialnum` to retrieve
-the same NamedTuple. If `trialnum` does not match the current trial number,
-the argument is ignored.
+Return a NamedTuple with the data for trial `trialnum`, backed by a 1-deep cache so that
+calling this repeatedly with the same `trialnum` returns the same NamedTuple.
+
+Once `generate_trials!` has run, every random variable holds a `SampleStore` of
+pre-generated values, so this is a pure function of `trialnum`: trials can be asked for in
+any order, and by several tasks at once, and still get the values they would have got in a
+serial run.
 """
 function get_trial(sim_inst::SimulationInstance, trialnum::Int)
 
@@ -198,7 +218,7 @@ function get_trial(sim_inst::SimulationInstance, trialnum::Int)
 
     sim_def = sim_inst.sim_def
 
-    vals = [rand(rv.dist) for rv in values(sim_def.rvdict)]
+    vals = [_trial_value(rv.dist, trialnum) for rv in values(sim_def.rvdict)]
     sim_inst.current_data = _get_nt_type(sim_def)((vals...,))
     sim_inst.current_trial = trialnum
     
@@ -262,11 +282,25 @@ function _copy_sim_params(sim_inst::SimulationInstance{T}) where T <: AbstractSi
 
     for (i, m) in enumerate(flat_model_list)
         md = modelinstance_def(m)
-        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramnames[i] => copy(model_param(md, trans.paramnames[i])) for trans in sim_inst.translist_modelparams)
+        param_vec[i] = Dict{Symbol, ModelParameter}(trans.paramnames[i] => _snapshot_param(model_param(md, trans.paramnames[i])) for trans in sim_inst.translist_modelparams)
     end
 
     return param_vec
 end
+
+"""
+    _snapshot_param(param::ModelParameter)
+
+Return a copy of `param` that owns its values, so that perturbing the original does not
+change the copy along with it.
+
+`Base.copy` of an `ArrayModelParameter` produces a new parameter wrapped around the *same*
+values, which would leave `_restore_sim_params!` assigning an array to itself and so
+silently accumulating each trial's `+=` and `*=` perturbations onto the last trial's values
+instead of onto the original ones.
+"""
+_snapshot_param(param::ScalarModelParameter) = copy(param)
+_snapshot_param(param::ArrayModelParameter) = deepcopy(param)
 
 function _restore_sim_params!(sim_inst::SimulationInstance{T}, 
                               param_vec::Vector{Dict{Symbol, ModelParameter}}) where T <: AbstractSimulationData
@@ -460,6 +494,369 @@ function _compute_output_dir(orig_output_dir, tup)
     return output_dir
 end
 
+#
+# Running trials
+#
+
+"""
+    _TrialConfig
+
+Everything about running a trial that stays fixed for one iteration of the outer scenario
+loop. Bundling it up lets the serial and the parallel code paths share a single trial loop
+body, `_run_trial!`, so that the two cannot drift apart.
+
+The `inner_tups`, `scen_names` and `output_dirs` fields are parallel vectors with one entry
+per iteration of the inner scenario loop. When there is no inner scenario loop they hold a
+single entry, so the trial loop doesn't have to special-case the two forms. Computing the
+scenario names and output directories once here also keeps `mkpath` out of the trial loop.
+"""
+struct _TrialConfig
+    ntimesteps::Int
+    pre_trial_func::Union{Nothing, Function}
+    post_trial_func::Union{Nothing, Function}
+    scenario_func::Union{Nothing, Function}
+    has_inner_scenario::Bool
+    outer_tup::Any
+    inner_tups::Vector{Any}
+    scen_names::Vector{Union{Nothing, String}}
+    output_dirs::Vector{Union{Nothing, String}}
+    store_results::Bool
+end
+
+# the number of (trial, scenario) units of work the progress meter counts for one trial
+_progress_step(config::_TrialConfig) = length(config.inner_tups)
+
+"""
+    _run_trial!(sim_inst::SimulationInstance{T}, trialnum::Int, config::_TrialConfig,
+                original_values::Vector{Dict{Symbol, ModelParameter}},
+                extracted::Vector{TrialDatumResult}) where T <: AbstractSimulationData
+
+Run trial `trialnum` on the models held by `sim_inst`, append the trial's results to
+`extracted`, and restore the perturbed parameters from `original_values` afterwards.
+
+In a parallel run `sim_inst` is the calling worker's own view of the simulation, so every
+model that is perturbed, run and read here belongs to that worker alone.
+"""
+function _run_trial!(sim_inst::SimulationInstance{T}, trialnum::Int, config::_TrialConfig,
+                    original_values::Vector{Dict{Symbol, ModelParameter}},
+                    extracted::Vector{TrialDatumResult}) where T <: AbstractSimulationData
+    @debug "Running trial $trialnum"
+
+    for (i, inner_tup) in enumerate(config.inner_tups)
+        tup = config.has_inner_scenario ? inner_tup : config.outer_tup
+
+        _perturb_params!(sim_inst, trialnum)
+
+        if config.pre_trial_func !== nothing
+            @debug "Calling pre_trial_func($trialnum, $tup)"
+            config.pre_trial_func(sim_inst, trialnum, config.ntimesteps, tup)
+        end
+
+        if config.has_inner_scenario
+            @debug "Calling inner scenario_func with $inner_tup"
+            config.scenario_func(sim_inst, inner_tup)
+        end
+
+        for m in sim_inst.models   # note that list of models may be changed in scenario_func
+            @debug "Running model"
+            run(m, ntimesteps=config.ntimesteps)
+        end
+
+        if config.post_trial_func !== nothing
+            @debug "Calling post_trial_func($trialnum, $tup)"
+            config.post_trial_func(sim_inst, trialnum, config.ntimesteps, tup)
+        end
+
+        # this reads the models this task just ran and has to happen before the parameters
+        # are restored below, which is why extracting results is separate from storing them
+        if config.store_results
+            _extract_trial_results(sim_inst, trialnum, config.scen_names[i], config.output_dirs[i], extracted)
+        end
+
+        _restore_sim_params!(sim_inst, original_values)
+    end
+
+    return nothing
+end
+
+"""
+    _run_trials_serial!(sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}},
+                        p::Progress, reset_results::Bool) where T <: AbstractSimulationData
+
+Run every trial of the simulation, one after another, on the calling task.
+"""
+function _run_trials_serial!(sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                            streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}},
+                            p::Progress, reset_results::Bool) where T <: AbstractSimulationData
+    # Save the params to be perturbed so we can reset them after each trial
+    original_values = _copy_sim_params(sim_inst)
+    step = _progress_step(config)
+
+    try
+        for trialnum in 1:sim_inst.trials
+            extracted = TrialDatumResult[]
+            _run_trial!(sim_inst, trialnum, config, original_values, extracted)
+            _store_trial_results!(sim_inst, extracted, streams)
+
+            ProgressMeter.next!(p; step=step)
+
+            reset_results && _reset_results!(sim_inst)
+        end
+    finally
+        close.(values(streams))   # use broadcasting to close all streams
+    end
+
+    return nothing
+end
+
+"""
+    _run_trials_parallel!(sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                        streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}},
+                        p::Progress, reset_results::Bool, ntasks::Int) where T <: AbstractSimulationData
+
+Run every trial of the simulation across `ntasks` worker tasks.
+
+Each worker owns one set of model instances for its whole lifetime and claims trials from a
+shared counter, so the work is balanced at the granularity of a single trial while the
+number of live model instances -- and so the memory the run needs -- is capped at `ntasks`.
+
+Workers only extract each trial's results; a single writer task stores them, because
+neither the accumulating result frames nor the CSV save streams may be touched by more than
+one task. Results that arrive out of order are held by the writer until their turn comes,
+so results are stored in trial order however the workers happen to interleave.
+"""
+function _run_trials_parallel!(sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                            streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}},
+                            p::Progress, reset_results::Bool, ntasks::Int) where T <: AbstractSimulationData
+    ntrials = sim_inst.trials
+    next_trial = Threads.Atomic{Int}(1)
+    aborted = Threads.Atomic{Bool}(false)
+
+    # Give each worker its own view of the simulation, holding its own models. Worker 1
+    # uses the models the caller gave us, so `sim_inst.models` still refers to models that
+    # really ran, and only ntasks-1 copies are needed. The copies are made up front so that
+    # a model that fails to build fails before any trial has run.
+    worker_insts = Vector{SimulationInstance{T}}(undef, ntasks)
+    worker_insts[1] = sim_inst
+    for i in 2:ntasks
+        worker_insts[i] = SimulationInstance{T}(sim_inst, _copy_models(sim_inst.models))
+    end
+
+    # bounded, so that workers block rather than queueing up an unbounded number of trial
+    # results if the writer falls behind
+    channel = Channel{Tuple{Int, Vector{TrialDatumResult}}}(2 * ntasks)
+
+    writer = Threads.@spawn _writer_loop(channel, sim_inst, config, streams, p, reset_results)
+
+    # if the writer fails this closes the channel with its exception, so that a worker
+    # blocked in `put!` fails too rather than deadlocking
+    bind(channel, writer)
+
+    err = nothing
+    try
+        @sync for worker_inst in worker_insts
+            Threads.@spawn _worker_loop(worker_inst, config, next_trial, ntrials, aborted, channel)
+        end
+    catch e
+        err = e
+    finally
+        aborted[] = true    # tell any worker still running to stop claiming trials
+        close(channel)      # tell the writer that no more results are coming
+    end
+
+    # Wait for the writer to drain, and surface its failure if it had one: that is the more
+    # informative error, since the workers will only have seen the channel close under them.
+    try
+        wait(writer)
+    catch e
+        throw(_unwrap_task_exception(e))
+    end
+
+    err === nothing || throw(_unwrap_task_exception(err))
+
+    return nothing
+end
+
+"""
+    _worker_loop(sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                next_trial::Threads.Atomic{Int}, ntrials::Int, aborted::Threads.Atomic{Bool},
+                channel::Channel) where T <: AbstractSimulationData
+
+Claim trials until they run out, running each one and sending its results to the writer
+task. This is the body of one worker task of a parallel run, and `sim_inst` is that
+worker's own view of the simulation.
+"""
+function _worker_loop(sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                    next_trial::Threads.Atomic{Int}, ntrials::Int, aborted::Threads.Atomic{Bool},
+                    channel::Channel{Tuple{Int, Vector{TrialDatumResult}}}) where T <: AbstractSimulationData
+    try
+        # each worker perturbs and restores its own models, so it needs its own snapshot
+        original_values = _copy_sim_params(sim_inst)
+
+        while ! aborted[]
+            trialnum = Threads.atomic_add!(next_trial, 1)
+            trialnum > ntrials && break
+
+            extracted = TrialDatumResult[]
+            _run_trial!(sim_inst, trialnum, config, original_values, extracted)
+
+            # blocks while the channel is full, which is what stops the workers from
+            # getting arbitrarily far ahead of the writer
+            put!(channel, (trialnum, extracted))
+        end
+    catch
+        # stop the other workers rather than have them run the rest of the simulation when
+        # we already know that it has failed
+        aborted[] = true
+        rethrow()
+    end
+
+    return nothing
+end
+
+"""
+    _writer_loop(channel::Channel, sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}},
+                p::Progress, reset_results::Bool) where T <: AbstractSimulationData
+
+Store the results the workers send until the channel is closed. This is the only task in a
+parallel run that touches the simulation's results or the CSV save streams.
+"""
+function _writer_loop(channel::Channel{Tuple{Int, Vector{TrialDatumResult}}},
+                    sim_inst::SimulationInstance{T}, config::_TrialConfig,
+                    streams::Dict{String, CSVFiles.CSVFileSaveStream{IOStream}},
+                    p::Progress, reset_results::Bool) where T <: AbstractSimulationData
+    # Trials finish in whatever order the workers get to them, so hold those that arrive
+    # early until it is their turn. Only one trial per worker can be waiting, plus whatever
+    # the channel is buffering, so this stays small.
+    pending = Dict{Int, Vector{TrialDatumResult}}()
+    next_expected = 1
+    step = _progress_step(config)
+
+    try
+        for (trialnum, extracted) in channel
+            pending[trialnum] = extracted
+
+            while haskey(pending, next_expected)
+                _store_trial_results!(sim_inst, pop!(pending, next_expected), streams)
+
+                ProgressMeter.next!(p; step=step)
+
+                reset_results && _reset_results!(sim_inst)
+                next_expected += 1
+            end
+        end
+    finally
+        close.(values(streams))   # use broadcasting to close all streams
+    end
+
+    return nothing
+end
+
+"""
+    _copy_models(models::Vector{M}) where M <: AbstractModel
+
+Return an independent copy of `models` for one worker task of a parallel run.
+
+Each model is copied whole, its built `ModelInstance` included, rather than being rebuilt
+from its `ModelDef`. That matters because not everything a model carries is in its
+definition: code that reaches a parameter through `compinstance` writes into the instance
+alone, and rebuilding would silently drop those values, leaving the worker running a
+different model from the one the caller set up. `MimiFUND.perturb_marginal_emissions!` is
+one such: it writes an emissions pulse straight into the instance, and MimiFUND's own SCC
+simulation calls it from a `scenario_func`.
+
+Changes a `scenario_func` makes to the *definition* are still picked up, because a model
+whose `ModelDef` has been touched is not `is_built` and so is rebuilt here.
+
+The copies are made through an `IdDict` memo so that identity relationships within `models`
+survive: if, say, a `MarginalModel`'s `base` model is also an element of `models`, it
+remains a single shared model in the copy, as in the original.
+"""
+function _copy_models(models::Vector{M}) where M <: AbstractModel
+    memo = IdDict()
+    return AbstractModel[_copy_model(m, memo) for m in models]
+end
+
+function _copy_model(m::Model, memo::IdDict)
+    return get!(memo, m) do
+        m_copy = deepcopy(m)
+        is_built(m_copy) || build!(m_copy)
+        m_copy
+    end
+end
+
+function _copy_model(mm::MarginalModel, memo::IdDict)
+    return get!(memo, mm) do
+        MarginalModel(_copy_model(mm.base, memo), _copy_model(mm.modified, memo), mm.delta)
+    end
+end
+
+"""
+    _unwrap_task_exception(e)
+
+Return the exception that actually caused `e`, digging through the `CompositeException` and
+`TaskFailedException` wrappers that `@sync` and `wait` add, so that an error thrown by a
+model or by a trial callback reaches the caller as itself.
+"""
+function _unwrap_task_exception(e)
+    if e isa CompositeException && ! isempty(e.exceptions)
+        return _unwrap_task_exception(first(e.exceptions))
+
+    elseif e isa TaskFailedException
+        exceptions = current_exceptions(e.task)
+        isempty(exceptions) && return e
+        return _unwrap_task_exception(first(exceptions).exception)
+    end
+
+    return e
+end
+
+"""
+    _resolve_ntasks(ntasks::Union{Int, Symbol}, ntrials::Int)
+
+Return the number of worker tasks to run trials with, resolving `:auto` to the number of
+threads julia was started with, and clamping to the number of trials.
+"""
+function _resolve_ntasks(ntasks::Union{Int, Symbol}, ntrials::Int)
+    if ntasks isa Symbol
+        ntasks === :auto || error("run: ntasks must be a positive integer or :auto (got :$ntasks)")
+        ntasks = Threads.nthreads(:default)
+    end
+
+    ntasks >= 1 || error("run: ntasks must be a positive integer or :auto (got $ntasks)")
+
+    # more workers than trials would just be workers sitting idle holding model instances
+    ntasks = max(1, min(ntasks, ntrials))
+
+    if ntasks > 1 && Threads.nthreads(:default) == 1
+        @warn string("run: ntasks=$ntasks was requested, but julia is running with a single ",
+                    "thread, so the trials will be interleaved rather than actually run in ",
+                    "parallel. Start julia with --threads=N, or set the JULIA_NUM_THREADS ",
+                    "environment variable, to run on more than one thread.")
+    end
+
+    return ntasks
+end
+
+"""
+    _check_parallel_sampling(sim_inst::SimulationInstance)
+
+Error unless every random variable is backed by pre-generated samples, which is what allows
+trials to be run out of order.
+"""
+function _check_parallel_sampling(sim_inst::SimulationInstance)
+    for (name, rv) in sim_inst.sim_def.rvdict
+        rv.dist isa SampleStore || error(
+            "run: cannot run with ntasks > 1 because random variable :$name is not backed " *
+            "by pre-generated samples (it holds a $(typeof(rv.dist))). Trial data has to " *
+            "be generated up front for trials to be run in any order.")
+    end
+
+    return nothing
+end
+
 """
     Base.run(sim_def::SimulationDef{T}, 
             models::Union{Vector{M}, AbstractModel}, 
@@ -472,7 +869,8 @@ end
             scenario_func::Union{Nothing, Function}=nothing,
             scenario_placement::ScenarioLoopPlacement=OUTER,
             scenario_args=nothing,
-            results_in_memory::Bool=true) where {T <: AbstractSimulationData, M <: AbstractModel}
+            results_in_memory::Bool=true,
+            ntasks::Union{Int, Symbol}=1) where {T <: AbstractSimulationData, M <: AbstractModel}
 
 Run the simulation definition `sim_def` for the `models` using `samplesize` samples.
 
@@ -506,6 +904,16 @@ placed inside the simulation loop by specifying `scenario_placement=INNER`. When
 is specified, the `scenario_func` is called after any `pre_trial_func` but before the model
 is run.
 
+Set `ntasks` to run trials in parallel on that many tasks, or to `:auto` to use one task per
+thread julia was started with. It defaults to 1, which runs trials one after another on the
+calling task. Every task beyond the first gets its own copy of the models, so `ntasks` caps
+how much memory the run needs as well as how parallel it is, and trials are handed out one
+at a time so that tasks stay busy even when trials take different amounts of time. Results
+are stored in trial order whatever `ntasks` is. Note that `pre_trial_func`,
+`post_trial_func` and `scenario_func` are called from those tasks, so anything they share --
+the simulation payload above all -- has to be safe to use from several tasks at once; see
+"How-to Guide 3: Conduct Monte Carlo Simulations and Sensitivity Analysis" for the details.
+
 Returns the type `SimulationInstance` that contains a copy of the original `SimulationDef`,
 along with mutated information about trials, in addition to the model list and 
 results information.
@@ -521,7 +929,8 @@ function Base.run(sim_def::SimulationDef{T},
                 scenario_func::Union{Nothing, Function}=nothing,
                 scenario_placement::ScenarioLoopPlacement=OUTER,
                 scenario_args=nothing,
-                results_in_memory::Bool=true) where {T <: AbstractSimulationData, M <: AbstractModel}
+                results_in_memory::Bool=true,
+                ntasks::Union{Int, Symbol}=1) where {T <: AbstractSimulationData, M <: AbstractModel}
 
     # If the provided models list has both a Model and a MarginalModel, it will be a Vector{Any}, and needs to be converted
     if models isa Vector{Any}
@@ -550,7 +959,12 @@ function Base.run(sim_def::SimulationDef{T},
         is_built(m) || build!(m)
     end
 
-    trials = 1:sim_inst.trials
+    ntasks = _resolve_ntasks(ntasks, sim_inst.trials)
+    ntasks > 1 && _check_parallel_sampling(sim_inst)
+
+    # Force creation of the lazily built NamedTuple type now, rather than leaving worker
+    # tasks to race over creating it on their first call to get_trial
+    _get_nt_type(sim_inst.sim_def)
 
     # Save the original dir since we modify the output_dir to store scenario results
     orig_results_output_dir = results_output_dir
@@ -561,8 +975,15 @@ function Base.run(sim_def::SimulationDef{T},
     has_outer_scenario = (has_scenario_func && scenario_placement == OUTER)
     has_inner_scenario = (has_scenario_func && scenario_placement == INNER)
 
+    # results are only worth extracting from the models if they are going to be kept
+    store_results = results_in_memory || has_results_output_dir
+
+    # when results are only wanted on disk, they are cleared from memory after each trial
+    reset_results = has_results_output_dir && ! results_in_memory
+
+    scen_name = nothing
+
     if has_scenario_func
-        scen_names  = [arg.first  for arg in scenario_args]
         scen_values = [arg.second for arg in scenario_args]
 
         # precompute all combinations of scenario arguments so we can run
@@ -578,15 +999,13 @@ function Base.run(sim_def::SimulationDef{T},
         end
     else
         arg_tuples = arg_tuples_outer = arg_tuples_inner = (nothing,)
-        scen_name = nothing
     end
     
     # Set up progress bar
     nscenarios = length(arg_tuples)
-    ntrials = length(trials)
+    ntrials = sim_inst.trials
     total_runs = nscenarios * ntrials
-    counter = 1
-    p = Progress(total_runs; dt = counter, desc = "Running $ntrials trials for $nscenarios scenarios...")
+    p = Progress(total_runs; dt = 1, desc = "Running $ntrials trials for $nscenarios scenarios...")
 
     for outer_tup in arg_tuples_outer
         if has_outer_scenario
@@ -599,66 +1018,34 @@ function Base.run(sim_def::SimulationDef{T},
             # we'll need a scenario name for the DataFrame
             scen_name = join(map(string, outer_tup), "_")
         end
-                
-        # Save the params to be perturbed so we can reset them after each trial
-        original_values = _copy_sim_params(sim_inst)        
-        
+
+        # Precompute the scenario name and output dir of each iteration of the inner loop;
+        # neither varies by trial, so this also keeps mkpath out of the trial loop
+        if has_inner_scenario
+            # `vec` because a product of several scenario args iterates as a matrix
+            inner_tups        = vec(Any[tup for tup in arg_tuples_inner])
+            inner_scen_names  = Union{Nothing, String}[join(map(string, tup), "_") for tup in inner_tups]
+            inner_output_dirs = Union{Nothing, String}[_compute_output_dir(orig_results_output_dir, tup) for tup in inner_tups]
+        else
+            inner_tups        = Any[nothing]
+            inner_scen_names  = Union{Nothing, String}[scen_name]
+            inner_output_dirs = Union{Nothing, String}[results_output_dir]
+        end
+
+        config = _TrialConfig(ntimesteps, pre_trial_func, post_trial_func, scenario_func,
+                            has_inner_scenario, outer_tup, inner_tups, inner_scen_names,
+                            inner_output_dirs, store_results)
+
         # Reset internal index to 1 for all stored parameters to reuse the data
         _reset_rvs!(sim_inst.sim_def)
 
         # Create a Dictionary of streams
         streams = Dict{String, CSVFiles.CSVFileSaveStream{IOStream}}()
 
-        try 
-            for (i, trialnum) in enumerate(trials)
-                @debug "Running trial $trialnum"
-
-                for inner_tup in arg_tuples_inner
-                    tup = has_inner_scenario ? inner_tup : outer_tup
-
-                    _perturb_params!(sim_inst, trialnum)
-
-                    if pre_trial_func !== nothing
-                        @debug "Calling pre_trial_func($trialnum, $tup)"
-                        pre_trial_func(sim_inst, trialnum, ntimesteps, tup)
-                    end               
-
-                    if has_inner_scenario
-                        @debug "Calling inner scenario_func with $inner_tup"
-                        scenario_func(sim_inst, inner_tup)
-
-                        results_output_dir = _compute_output_dir(orig_results_output_dir, inner_tup)
-
-                        # we'll need a scenario name for the DataFrame
-                        scen_name = join(map(string, inner_tup), "_")
-                    end
-
-                    for m in sim_inst.models   # note that list of models may be changed in scenario_func
-                        @debug "Running model"
-                        run(m, ntimesteps=ntimesteps)
-                    end
-                    
-                    if post_trial_func !== nothing
-                        @debug "Calling post_trial_func($trialnum, $tup)"
-                        post_trial_func(sim_inst, trialnum, ntimesteps, tup)
-                    end
-
-                    if results_in_memory || results_output_dir!==nothing
-                        _store_trial_results(sim_inst, trialnum, scen_name, results_output_dir, streams)
-                    end
-                    
-                    _restore_sim_params!(sim_inst, original_values)
-
-                    counter += 1
-                    ProgressMeter.update!(p, counter)                
-
-                    if has_results_output_dir && ! results_in_memory
-                        _reset_results!(sim_inst)
-                    end
-                end
-            end
-        finally 
-            close.(values(streams))   # use broadcasting to close all stream 
+        if ntasks == 1
+            _run_trials_serial!(sim_inst, config, streams, p, reset_results)
+        else
+            _run_trials_parallel!(sim_inst, config, streams, p, reset_results, ntasks)
         end
     end
 
