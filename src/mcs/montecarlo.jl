@@ -804,6 +804,14 @@ function set_translist_modelparams!(sim_inst::SimulationInstance{T}) where T <: 
                 end
             end
         end
+        # A simulation perturbs these parameters in place on every trial, so it
+        # cannot be given one whose storage belongs to the caller.
+        for (model_idx, m) in enumerate(flat_model_list)
+            _check_no_copy_mutation(model_param(m.md, model_parameters_vec[model_idx]),
+                                    model_parameters_vec[model_idx],
+                                    "attach a random variable to")
+        end
+
         new_trans = TransformSpec_ModelParams(model_parameters_vec, trans.op, trans.rvname, trans.dims)
         sim_inst.translist_modelparams[trans_idx] = new_trans
     end

@@ -18,10 +18,10 @@ Update a component parameter as `update_param!(reference, name, value)`.
 This uses the unique name :compname_paramname in the model's model parameter list, 
 and updates the parameter only in the referenced component to that value.
 """
-function update_param!(ref::ComponentReference, name::Symbol, value)
+function update_param!(ref::ComponentReference, name::Symbol, value; copy::Bool = true)
     compdef = find_comp(ref)
     unique_name = Symbol("$(compdef.name)_$name")
-    update_param!(parent(ref), unique_name, value)
+    update_param!(parent(ref), unique_name, value; copy = copy)
 end
 
 """
